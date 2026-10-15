@@ -180,14 +180,26 @@ pub fn overlay(
                 lennard_jones_diameter: arguments.lennard_jones_diameter,
                 lennard_jones_energy: arguments.lennard_jones_energy,
                 alpha_params: arguments.alpha_params,
-                liquid_conductivity: vector_of::<3>(&arguments.liquid_conductivity, &arguments.name, "liquid_conductivity")?,
+                liquid_conductivity: vector_of::<3>(
+                    &arguments.liquid_conductivity,
+                    &arguments.name,
+                    "liquid_conductivity",
+                )?,
                 liqvisc: vector_of::<4>(&arguments.liqvisc, &arguments.name, "liqvisc")?,
                 liqvisc_model: arguments.liqvisc_model,
                 wax_former: arguments.wax_former,
                 cp_solid: vector_of::<4>(&arguments.cp_solid, &arguments.name, "cp_solid")?,
                 cp_liquid: vector_of::<5>(&arguments.cp_liquid, &arguments.name, "cp_liquid")?,
-                solid_density_coefs: vector_of::<4>(&arguments.solid_density_coefs, &arguments.name, "solid_density_coefs")?,
-                liquid_density_coefs: vector_of::<4>(&arguments.liquid_density_coefs, &arguments.name, "liquid_density_coefs")?,
+                solid_density_coefs: vector_of::<4>(
+                    &arguments.solid_density_coefs,
+                    &arguments.name,
+                    "solid_density_coefs",
+                )?,
+                liquid_density_coefs: vector_of::<4>(
+                    &arguments.liquid_density_coefs,
+                    &arguments.name,
+                    "liquid_density_coefs",
+                )?,
                 ..Default::default()
             },
         );

@@ -66,10 +66,7 @@ pub fn tbp_cut_boundaries(
         ));
     }
     let count = cumulative_volume_percent.len();
-    if count < 2
-        || boiling_point.len() != count
-        || specific_gravity.len() != count - 1
-    {
+    if count < 2 || boiling_point.len() != count || specific_gravity.len() != count - 1 {
         return Err(AzothError::invalid_input(
             "cumulative_volume_percent",
             format!(
@@ -101,7 +98,9 @@ pub fn tbp_cut_boundaries(
         {
             return Err(AzothError::invalid_input(
                 format!("cumulative_volume_percent[{index}]"),
-                format!("a cumulative yield is finite and between 0 and 100, and this is {yield_percent}"),
+                format!(
+                    "a cumulative yield is finite and between 0 and 100, and this is {yield_percent}"
+                ),
             ));
         }
         // The class's own `!(yield > previous)`, written out: a NaN and a non-increasing pair are
@@ -111,7 +110,10 @@ pub fn tbp_cut_boundaries(
         {
             return Err(AzothError::invalid_input(
                 format!("cumulative_volume_percent[{index}]"),
-                format!("the cumulative yields must strictly increase, and {yield_percent} follows {}", cumulative_volume_percent[index - 1]),
+                format!(
+                    "the cumulative yields must strictly increase, and {yield_percent} follows {}",
+                    cumulative_volume_percent[index - 1]
+                ),
             ));
         }
     }
@@ -119,13 +121,18 @@ pub fn tbp_cut_boundaries(
         if !temperature.is_finite() || *temperature <= 0.0 {
             return Err(AzothError::invalid_input(
                 format!("boiling_point[{index}]"),
-                format!("a boiling-point boundary is finite and positive, and this is {temperature}"),
+                format!(
+                    "a boiling-point boundary is finite and positive, and this is {temperature}"
+                ),
             ));
         }
         if index > 0 && *temperature <= boiling_point[index - 1] {
             return Err(AzothError::invalid_input(
                 format!("boiling_point[{index}]"),
-                format!("the boiling-point boundaries must strictly increase, and {temperature} follows {}", boiling_point[index - 1]),
+                format!(
+                    "the boiling-point boundaries must strictly increase, and {temperature} follows {}",
+                    boiling_point[index - 1]
+                ),
             ));
         }
     }
@@ -145,8 +152,8 @@ pub fn tbp_cut_boundaries(
         .windows(2)
         .map(|pair| (pair[1] - pair[0]) / 100.0)
         .collect();
-    let lower_boiling_point: Vec<ThermodynamicTemperature> =
-        boiling_point[..boiling_point.len() - 1]
+    let lower_boiling_point: Vec<ThermodynamicTemperature> = boiling_point
+        [..boiling_point.len() - 1]
         .iter()
         .map(|value| kelvins(*value))
         .collect();

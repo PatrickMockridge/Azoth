@@ -83,7 +83,11 @@ fn every_case_in_the_spec() {
             ),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the group count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the group count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,
@@ -167,7 +171,11 @@ fn a_row_without_a_boiling_point_sorts_by_its_molar_mass() {
         None,
     )
     .expect("computes");
-    assert_eq!(result.reference_index, vec![0.0], "0.2 kg/mol sorts below 400 K's own key");
+    assert_eq!(
+        result.reference_index,
+        vec![0.0],
+        "0.2 kg/mol sorts below 400 K's own key"
+    );
     assert_eq!(result.group_moles, vec![2.0]);
 
     // And the other half of the same field: a row that states no density adds its mass to the
@@ -254,11 +262,10 @@ fn the_inheriting_variant_changes_two_numbers_and_not_the_walk() {
         },
     ];
 
-    let own = characterize_to_reference(&source, &reference, None, None, None, None)
+    let own =
+        characterize_to_reference(&source, &reference, None, None, None, None).expect("computes");
+    let inherited = characterize_to_reference(&source, &reference, Some(true), None, None, None)
         .expect("computes");
-    let inherited =
-        characterize_to_reference(&source, &reference, Some(true), None, None, None)
-            .expect("computes");
 
     // The walk is the same walk: the groups and their moles are untouched.
     assert_eq!(own.reference_index, inherited.reference_index);
@@ -331,8 +338,8 @@ fn the_delumping_flag_rebins_the_source_without_moving_its_total() {
         ref_row(0.2, Some(527.8)),
         ref_row(0.3, Some(630.83)),
     ];
-    let plain = characterize_to_reference(&source, &reference, None, None, None, None)
-        .expect("computes");
+    let plain =
+        characterize_to_reference(&source, &reference, None, None, None, None).expect("computes");
     let delumped = characterize_to_reference(&source, &reference, None, Some(true), Some(4), None)
         .expect("computes");
 

@@ -54,12 +54,26 @@ fn every_case_in_the_spec() {
         let expected = case
             .expected_vector("mass_fraction")
             .expect("the case expects a row of mass fractions");
-        assert_eq!(result.mass_fraction.len(), expected.len(), "{context}: the cut count");
+        assert_eq!(
+            result.mass_fraction.len(),
+            expected.len(),
+            "{context}: the cut count"
+        );
         for (index, (got, want)) in result.mass_fraction.iter().zip(expected).enumerate() {
-            common::assert_close(*got, *want, case.tolerance, &format!("{context}::w[{index}]"));
+            common::assert_close(
+                *got,
+                *want,
+                case.tolerance,
+                &format!("{context}::w[{index}]"),
+            );
         }
         if let Some(want) = case.expected_value("total_declared_fraction") {
-            common::assert_close(result.total_declared_fraction, want, case.tolerance, &context);
+            common::assert_close(
+                result.total_declared_fraction,
+                want,
+                case.tolerance,
+                &context,
+            );
         }
         // **A scalar output, so `expected_value`.** This read `expected_vector` while the case
         // states a number, which meant `None` and a comparison that never ran - every case here
@@ -85,14 +99,20 @@ fn the_mass_basis_resolves_to_itself() {
     // input - which is what says the gravity conversion is skipped and not merely inert here.
     let result = assay_mass_fractions(
         AssayBasis::Mass,
-        &[cut(0.4, Some(700.0)), cut(0.35, Some(820.0)), cut(0.25, Some(900.0))],
+        &[
+            cut(0.4, Some(700.0)),
+            cut(0.35, Some(820.0)),
+            cut(0.25, Some(900.0)),
+        ],
     )
     .expect("computes");
     assert_eq!(result.mass_fraction, vec![0.4, 0.35, 0.25]);
     // And with no densities at all, which a mass basis is allowed: only the bulk density is lost.
-    let without =
-        assay_mass_fractions(AssayBasis::Mass, &[cut(0.4, None), cut(0.35, None), cut(0.25, None)])
-            .expect("computes");
+    let without = assay_mass_fractions(
+        AssayBasis::Mass,
+        &[cut(0.4, None), cut(0.35, None), cut(0.25, None)],
+    )
+    .expect("computes");
     assert_eq!(without.mass_fraction, result.mass_fraction);
     assert_eq!(without.bulk_density, None);
 }
@@ -104,7 +124,11 @@ fn a_mass_basis_may_state_a_density_for_some_cuts_and_not_others() {
     // cut does not, and the fractions are unaffected while the bulk density goes.
     let partial = assay_mass_fractions(
         AssayBasis::Mass,
-        &[cut(0.4, Some(700.0)), cut(0.35, None), cut(0.25, Some(900.0))],
+        &[
+            cut(0.4, Some(700.0)),
+            cut(0.35, None),
+            cut(0.25, Some(900.0)),
+        ],
     )
     .expect("computes");
     assert_eq!(partial.mass_fraction, vec![0.4, 0.35, 0.25]);
@@ -130,8 +154,8 @@ fn a_volume_basis_is_the_gravity_weighted_renormalisation() {
 #[test]
 fn the_closure_is_a_hard_error_and_its_tolerance_is_a_thousandth() {
     // `1.0005` is inside and is normalised; `1.003` is outside and raises with the sum it saw.
-    let inside =
-        assay_mass_fractions(AssayBasis::Mass, &[cut(0.5, None), cut(0.5005, None)]).expect("computes");
+    let inside = assay_mass_fractions(AssayBasis::Mass, &[cut(0.5, None), cut(0.5005, None)])
+        .expect("computes");
     assert!((inside.total_declared_fraction - 1.0005).abs() < 1e-15);
     assert!((inside.mass_fraction.iter().sum::<f64>() - 1.0).abs() < 1e-15);
     assert!((inside.mass_fraction[0] - 0.499_750_124_937_531).abs() < 1e-15);

@@ -210,7 +210,10 @@ impl TestCase {
     /// not state at all - the distinction the other accessors make.
     #[must_use]
     pub fn record(&self, name: &str) -> Option<&'static [&'static [RecordField]]> {
-        self.records.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
+        self.records
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
     }
 
     /// Fetch an expected scalar output. `None` if the test does not assert it.

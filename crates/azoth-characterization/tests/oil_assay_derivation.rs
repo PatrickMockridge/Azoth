@@ -81,7 +81,10 @@ fn cuts_of(case: &TestCase) -> Vec<AssayCutDerivation> {
             api_gravity: common::record_number(row, "api_gravity"),
             molar_mass: common::record_number(row, "molar_mass").map(kilograms_per_mole),
             average_boiling_point: common::record_number(row, "average_boiling_point"),
-            watson_characterization_factor: common::record_number(row, "watson_characterization_factor"),
+            watson_characterization_factor: common::record_number(
+                row,
+                "watson_characterization_factor",
+            ),
             standard_component_name: common::record_name(row, "standard_component_name")
                 .map(str::to_string),
         })
@@ -124,7 +127,11 @@ fn every_case_in_the_spec() {
             ("moles", result.moles.clone(), case.expected_vector("moles")),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the component count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the component count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,
@@ -159,8 +166,16 @@ fn the_three_routes_are_taken_in_the_class_s_order() {
         with_molar_mass(with_density(cut("cut_c", 0.3), 850.0), 0.25),
     ];
     let result = oil_assay_derivation(AssayBasis::Mass, &cuts, 1000.0).expect("computes");
-    assert_eq!(result.component_name, vec!["cut_a_PC", "n-heptane", "cut_c_PC"]);
-    common::assert_close(result.molar_mass[0].value, 0.112_610_323_807_509, 1e-12, "cut_a");
+    assert_eq!(
+        result.component_name,
+        vec!["cut_a_PC", "n-heptane", "cut_c_PC"]
+    );
+    common::assert_close(
+        result.molar_mass[0].value,
+        0.112_610_323_807_509,
+        1e-12,
+        "cut_a",
+    );
     common::assert_close(result.molar_mass[1].value, 0.100_205, 1e-12, "n-heptane");
     common::assert_close(result.molar_mass[2].value, 0.25, 1e-12, "cut_c");
     assert!((result.mass_balance_error - 0.0).abs() < 1e-15);
@@ -172,13 +187,19 @@ fn a_gravity_and_a_boiling_point_each_fall_back_to_the_cut_s_other_field() {
     // point from a Watson factor.
     let by_api = oil_assay_derivation(
         AssayBasis::Mass,
-        &[
-            with_boiling_point(with_gravity(cut("light", 1.0), 55.0), 340.0),
-        ],
+        &[with_boiling_point(
+            with_gravity(cut("light", 1.0), 55.0),
+            340.0,
+        )],
         100.0,
     )
     .expect("computes");
-    common::assert_close(by_api.molar_mass[0].value, 0.078_528_223_866_995_3, 1e-12, "api");
+    common::assert_close(
+        by_api.molar_mass[0].value,
+        0.078_528_223_866_995_3,
+        1e-12,
+        "api",
+    );
 
     let by_watson = oil_assay_derivation(
         AssayBasis::Mass,
@@ -186,7 +207,12 @@ fn a_gravity_and_a_boiling_point_each_fall_back_to_the_cut_s_other_field() {
         100.0,
     )
     .expect("computes");
-    common::assert_close(by_watson.molar_mass[0].value, 0.132_491_038_438_475, 1e-12, "watson");
+    common::assert_close(
+        by_watson.molar_mass[0].value,
+        0.132_491_038_438_475,
+        1e-12,
+        "watson",
+    );
 }
 
 #[test]
@@ -238,7 +264,10 @@ fn the_class_s_own_validations_are_refusals_here() {
     assert!(matches!(
         oil_assay_derivation(
             AssayBasis::Mass,
-            &[with_density(with_standard(cut("a", 1.0), "n-heptane"), 800.0)],
+            &[with_density(
+                with_standard(cut("a", 1.0), "n-heptane"),
+                800.0
+            )],
             100.0
         ),
         Err(AzothError::InvalidInput { .. })
@@ -271,14 +300,21 @@ fn a_cut_that_can_reach_no_molar_mass_is_refused_by_the_field_it_lacks() {
         &[with_density(cut("a", 1.0), 780.0)],
         100.0,
     );
-    assert!(matches!(no_boiling_point, Err(AzothError::InvalidInput { .. })));
+    assert!(matches!(
+        no_boiling_point,
+        Err(AzothError::InvalidInput { .. })
+    ));
 
     // **A stated molar mass still needs a gravity** - and not for the correlation, which this
     // route never reaches: the class reads `resolveDensity` for every cut it derives, before it
     // asks whether the cut has a molar mass at all. So the third route is taken with no boiling
     // point, and not with no density.
     assert!(matches!(
-        oil_assay_derivation(AssayBasis::Mass, &[with_molar_mass(cut("a", 1.0), 0.25)], 100.0),
+        oil_assay_derivation(
+            AssayBasis::Mass,
+            &[with_molar_mass(cut("a", 1.0), 0.25)],
+            100.0
+        ),
         Err(AzothError::InvalidInput { .. })
     ));
     let stated = oil_assay_derivation(

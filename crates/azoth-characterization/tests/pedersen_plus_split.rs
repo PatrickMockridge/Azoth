@@ -38,11 +38,20 @@ fn every_case_in_the_spec() {
             ("density_slope", result.density_slope),
         ] {
             if let Some(expected) = case.expected_value(name) {
-                common::assert_close(actual, expected, case.tolerance, &format!("{context}::{name}"));
+                common::assert_close(
+                    actual,
+                    expected,
+                    case.tolerance,
+                    &format!("{context}::{name}"),
+                );
             }
         }
         if let Some(expected) = case.expected_vector("cut_z") {
-            assert_eq!(result.cut_z.len(), expected.len(), "{context}: the cut count");
+            assert_eq!(
+                result.cut_z.len(),
+                expected.len(),
+                "{context}: the cut count"
+            );
             for (index, (actual, want)) in result.cut_z.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *actual,
@@ -64,7 +73,11 @@ fn every_case_in_the_spec() {
             ),
             (
                 "cut_density",
-                result.cut_density.iter().map(|q| q.value).collect::<Vec<_>>(),
+                result
+                    .cut_density
+                    .iter()
+                    .map(|q| q.value)
+                    .collect::<Vec<_>>(),
                 case.expected_vector("cut_density"),
             ),
         ] {
@@ -75,7 +88,12 @@ fn every_case_in_the_spec() {
                 "{context}::{name}: the cut count"
             );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
-                common::assert_close(*got, *want, case.tolerance, &format!("{context}::{name}[{index}]"));
+                common::assert_close(
+                    *got,
+                    *want,
+                    case.tolerance,
+                    &format!("{context}::{name}[{index}]"),
+                );
             }
         }
         common::assert_consistent(&result, &context);
@@ -99,9 +117,11 @@ fn the_gravity_line_is_anchored_one_carbon_below_the_first_cut() {
     .expect("the capture's first row computes");
     // `PVTsimDensities[20 - 6]`, the table's fifteenth row.
     let anchor = 0.862_999_975_681_305;
-    let residual =
-        result.density_intercept + result.density_slope * 19.0_f64.ln() - anchor;
-    assert!(residual.abs() < 1.0e-12, "the anchor residual is {residual}");
+    let residual = result.density_intercept + result.density_slope * 19.0_f64.ln() - anchor;
+    assert!(
+        residual.abs() < 1.0e-12,
+        "the anchor residual is {residual}"
+    );
 }
 
 #[test]

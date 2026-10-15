@@ -141,7 +141,9 @@ impl PlusFractionTables {
 /// The tables, parsed once from the embedded CSV.
 fn tables() -> &'static PlusFractionTables {
     static TABLES: OnceLock<PlusFractionTables> = OnceLock::new();
-    TABLES.get_or_init(|| parse_tables().expect("the embedded PVTsim plus-fraction tables should parse"))
+    TABLES.get_or_init(|| {
+        parse_tables().expect("the embedded PVTsim plus-fraction tables should parse")
+    })
 }
 
 fn parse_tables() -> std::result::Result<PlusFractionTables, String> {
@@ -159,7 +161,10 @@ fn parse_tables() -> std::result::Result<PlusFractionTables, String> {
             .map_err(|error| format!("row {}: carbon number: {error}", row + 2))?;
         let expected = previous.map_or(TABLE_FIRST_CARBON_NUMBER, |last| last + 1);
         if carbon_number != expected {
-            return Err(format!("row {}: C{carbon_number} after C{expected}", row + 2));
+            return Err(format!(
+                "row {}: C{carbon_number} after C{expected}",
+                row + 2
+            ));
         }
         previous = Some(carbon_number);
         molar_mass.push(
@@ -300,11 +305,7 @@ fn density_slope_fixed_point(
 }
 
 /// `setfvecCD`: the gravity residuals, on the **g/mol** scale the class uses here.
-fn gravity_residuals(
-    split: &Split,
-    anchor: f64,
-    table: &PlusFractionTables,
-) -> Result<[f64; 2]> {
+fn gravity_residuals(split: &Split, anchor: f64, table: &PlusFractionTables) -> Result<[f64; 2]> {
     let mut temp = 0.0;
     let mut temp2 = 0.0;
     for i in split.first..split.last {

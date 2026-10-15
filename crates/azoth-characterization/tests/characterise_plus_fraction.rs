@@ -35,7 +35,11 @@ fn every_case_in_the_spec() {
         let result = call(case);
         let context = format!("{}::{}", spec.id, case.id);
         if let Some(expected) = case.expected_string("selected_model") {
-            assert_eq!(result.selected_model.as_str(), expected, "{context}::selected_model");
+            assert_eq!(
+                result.selected_model.as_str(),
+                expected,
+                "{context}::selected_model"
+            );
         }
         for (name, actual, expected) in [
             (
@@ -55,7 +59,11 @@ fn every_case_in_the_spec() {
             ),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the lump count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the lump count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,

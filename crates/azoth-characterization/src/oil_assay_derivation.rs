@@ -155,7 +155,10 @@ pub fn oil_assay_derivation(
         if !seen.insert(cut.name.as_str()) {
             return Err(AzothError::invalid_input(
                 "cuts",
-                format!("two cuts carry the name `{}`, and a component cannot be named twice", cut.name),
+                format!(
+                    "two cuts carry the name `{}`, and a component cannot be named twice",
+                    cut.name
+                ),
             ));
         }
     }
@@ -235,7 +238,9 @@ pub fn oil_assay_derivation(
                         format!("`{substance}` is not a substance the databank carries"),
                     )
                 })?;
-                let mass = entry.molar_mass.filter(|value| value.is_finite() && *value > 0.0);
+                let mass = entry
+                    .molar_mass
+                    .filter(|value| value.is_finite() && *value > 0.0);
                 let Some(mass) = mass else {
                     return Err(AzothError::invalid_input(
                         "cuts",
@@ -282,8 +287,8 @@ pub fn oil_assay_derivation(
         moles.push(cut_moles);
     }
 
-    let mass_balance_error = (reconstructed - total_assay_mass).abs()
-        / total_assay_mass.abs().max(MASS_BALANCE_FLOOR);
+    let mass_balance_error =
+        (reconstructed - total_assay_mass).abs() / total_assay_mass.abs().max(MASS_BALANCE_FLOOR);
     if !mass_balance_error.is_finite() || mass_balance_error > MASS_BALANCE_TOLERANCE {
         return Err(AzothError::invalid_input(
             "total_assay_mass",

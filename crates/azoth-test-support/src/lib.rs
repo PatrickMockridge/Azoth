@@ -123,10 +123,12 @@ pub fn expected_record(case: &TestCase, name: &str) -> &'static [&'static [Recor
 /// per-row properties takes records rather than aligned vectors.
 #[must_use]
 pub fn record_number(row: &[RecordField], name: &str) -> Option<f64> {
-    row.iter().find(|field| field.name == name).and_then(|field| match field.value {
-        FieldValue::Number(value) => Some(value),
-        FieldValue::Name(_) | FieldValue::Flag(_) => None,
-    })
+    row.iter()
+        .find(|field| field.name == name)
+        .and_then(|field| match field.value {
+            FieldValue::Number(value) => Some(value),
+            FieldValue::Name(_) | FieldValue::Flag(_) => None,
+        })
 }
 
 /// One field of one record, as a name.
@@ -135,10 +137,12 @@ pub fn record_number(row: &[RecordField], name: &str) -> Option<f64> {
 /// cut that names no standard component is not a cut whose name is empty.
 #[must_use]
 pub fn record_name(row: &[RecordField], name: &str) -> Option<&'static str> {
-    row.iter().find(|field| field.name == name).and_then(|field| match field.value {
-        FieldValue::Name(value) => Some(value),
-        FieldValue::Number(_) | FieldValue::Flag(_) => None,
-    })
+    row.iter()
+        .find(|field| field.name == name)
+        .and_then(|field| match field.value {
+            FieldValue::Name(value) => Some(value),
+            FieldValue::Number(_) | FieldValue::Flag(_) => None,
+        })
 }
 
 /// Assert that a skipped test says why it is skipped.

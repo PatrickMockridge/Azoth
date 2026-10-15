@@ -61,7 +61,11 @@ fn every_case_in_the_spec() {
             ),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the lump count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the lump count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,
@@ -103,7 +107,10 @@ fn the_default_is_the_classs_own_seven() {
     // Compared field by field rather than as a whole result: an absent optional input makes the
     // spec's range check on it *skipped*, and the skipped check is a warning, so the two runs
     // differ by that and by nothing else.
-    assert_eq!(defaulted.fraction_of_heavy_end, stated.fraction_of_heavy_end);
+    assert_eq!(
+        defaulted.fraction_of_heavy_end,
+        stated.fraction_of_heavy_end
+    );
     assert_eq!(defaulted.lump_mole_fraction, stated.lump_mole_fraction);
     assert_eq!(defaulted.lump_molar_mass, stated.lump_molar_mass);
     assert_eq!(defaulted.lump_density, stated.lump_density);
@@ -126,7 +133,10 @@ fn a_lump_count_above_the_cut_count_is_refused() {
         Some(3),
     );
     let error = refused.expect_err("three lumps from two cuts is refused");
-    assert!(error.to_string().contains('3'), "the refusal names the count: {error}");
+    assert!(
+        error.to_string().contains('3'),
+        "the refusal names the count: {error}"
+    );
     assert!(matches!(error, AzothError::InvalidInput { .. }));
 }
 
@@ -144,14 +154,7 @@ fn the_three_vectors_have_to_be_one_table() {
         None,
     );
     assert!(matches!(refused, Err(AzothError::InvalidInput { .. })));
-    let empty = lumping(
-        kilograms_per_mole(0.4),
-        0.1,
-        &[],
-        &[],
-        &[],
-        None,
-    );
+    let empty = lumping(kilograms_per_mole(0.4), 0.1, &[], &[], &[], None);
     assert!(matches!(empty, Err(AzothError::InvalidInput { .. })));
 }
 

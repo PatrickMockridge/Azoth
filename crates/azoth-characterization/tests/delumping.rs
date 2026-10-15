@@ -47,7 +47,12 @@ fn call(case: &TestCase) -> DelumpingResult {
 }
 
 /// One row's field, compared against the case's own, absence included.
-fn assert_row(expected: &[azoth_core::spec::RecordField], fraction: &SubFraction, at: &str, tol: f64) {
+fn assert_row(
+    expected: &[azoth_core::spec::RecordField],
+    fraction: &SubFraction,
+    at: &str,
+    tol: f64,
+) {
     assert_eq!(
         fraction.name,
         common::record_name(expected, "name").expect("every row is named"),
@@ -74,7 +79,9 @@ fn assert_row(expected: &[azoth_core::spec::RecordField], fraction: &SubFraction
         ("boiling_point", fraction.boiling_point, "boiling_point"),
     ] {
         match (got, common::record_number(expected, name)) {
-            (Some(got), Some(want)) => common::assert_close(got, want, tol, &format!("{at}::{label}")),
+            (Some(got), Some(want)) => {
+                common::assert_close(got, want, tol, &format!("{at}::{label}"))
+            }
             (None, None) => {}
             (got, want) => panic!("{at}::{label}: {got:?} against {want:?}"),
         }
@@ -96,7 +103,12 @@ fn every_case_in_the_spec() {
             "{context}: the sub-fraction count"
         );
         for (index, (fraction, row)) in result.fractions.iter().zip(expected).enumerate() {
-            assert_row(row, fraction, &format!("{context}::fractions[{index}]"), case.tolerance);
+            assert_row(
+                row,
+                fraction,
+                &format!("{context}::fractions[{index}]"),
+                case.tolerance,
+            );
         }
         common::assert_consistent(&result, &context);
     }
@@ -127,7 +139,12 @@ fn the_moles_and_the_mass_are_each_conserved_by_a_different_mechanism() {
         );
         let moles: f64 = children.iter().map(|f| f.moles).sum();
         let mass: f64 = children.iter().map(|f| f.moles * f.molar_mass.value).sum();
-        common::assert_close(moles, parent.moles, 1e-12, &format!("{}::moles", parent.name));
+        common::assert_close(
+            moles,
+            parent.moles,
+            1e-12,
+            &format!("{}::moles", parent.name),
+        );
         common::assert_close(
             mass,
             parent.moles * parent.molar_mass.value,
@@ -144,7 +161,11 @@ fn a_resolution_of_one_is_the_identity_and_not_an_error() {
     let lumps = vec![lump("heavy", 2.0, 0.30), lump("light", 1.0, 0.10)];
     let result = delumping(&lumps, 1).expect("computes");
     assert_eq!(
-        result.fractions.iter().map(|f| f.name.as_str()).collect::<Vec<_>>(),
+        result
+            .fractions
+            .iter()
+            .map(|f| f.name.as_str())
+            .collect::<Vec<_>>(),
         vec!["heavy", "light"],
         "the identity keeps the input's order"
     );
@@ -157,7 +178,11 @@ fn a_lump_the_method_cannot_split_is_passed_through_rather_than_refused() {
     // refused: the method defines what it does with one, and it is unsplit and unsorted-by-split.
     let lumps = vec![lump("empty", 0.0, 0.20), lump("real", 1.0, 0.20)];
     let result = delumping(&lumps, 2).expect("computes");
-    assert_eq!(result.fractions.len(), 3, "one passed through, one split in two");
+    assert_eq!(
+        result.fractions.len(),
+        3,
+        "one passed through, one split in two"
+    );
     assert!(
         result.fractions.iter().any(|f| f.name == "empty"),
         "the lump it could not split is still in the answer"

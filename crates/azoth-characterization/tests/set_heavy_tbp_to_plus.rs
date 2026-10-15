@@ -2,9 +2,7 @@
 //!
 //! Every expected value is a row of `validation/neqsim/captures/set_heavy_tbp_probe.tsv`.
 
-use azoth_characterization::{
-    SetHeavyTbpToPlusResult, model_gen, set_heavy_tbp_to_plus,
-};
+use azoth_characterization::{SetHeavyTbpToPlusResult, model_gen, set_heavy_tbp_to_plus};
 use azoth_core::units::{kilograms_per_cubic_meter, kilograms_per_mole};
 use azoth_core::{AzothError, spec::TestCase};
 use azoth_test_support as common;
@@ -53,7 +51,11 @@ fn every_case_in_the_spec() {
         let result = call(case);
         let context = format!("{}::{}", spec.id, case.id);
         for (name, got, want) in [
-            ("plus_index", result.plus_index, case.expected_value("plus_index")),
+            (
+                "plus_index",
+                result.plus_index,
+                case.expected_value("plus_index"),
+            ),
             (
                 "plus_molar_mass",
                 result.plus_molar_mass.value,
@@ -103,11 +105,17 @@ fn rows(names: &[&str], molar_mass: &[f64], density: &[f64]) -> (Vec<String>, Ve
 }
 
 fn density_of(values: &[f64]) -> Vec<azoth_core::units::MassDensity> {
-    values.iter().map(|value| kilograms_per_cubic_meter(*value)).collect()
+    values
+        .iter()
+        .map(|value| kilograms_per_cubic_meter(*value))
+        .collect()
 }
 
 fn mass_of(values: &[f64]) -> Vec<azoth_core::units::MolarMass> {
-    values.iter().map(|value| kilograms_per_mole(*value)).collect()
+    values
+        .iter()
+        .map(|value| kilograms_per_mole(*value))
+        .collect()
 }
 
 #[test]
@@ -157,7 +165,12 @@ fn a_name_that_carries_no_carbon_number_is_refused_by_name() {
         &[720.0, 800.0, 840.0],
     );
     let names: Vec<&str> = names.iter().map(String::as_str).collect();
-    let refused = set_heavy_tbp_to_plus(&names, &mass_of(&mass), &[1.0 / 3.0; 3], &density_of(&density));
+    let refused = set_heavy_tbp_to_plus(
+        &names,
+        &mass_of(&mass),
+        &[1.0 / 3.0; 3],
+        &density_of(&density),
+    );
     let error = refused.expect_err("`AB_PC` carries no carbon number");
     assert!(
         error.to_string().contains("AB_PC"),
@@ -170,12 +183,7 @@ fn a_name_that_carries_no_carbon_number_is_refused_by_name() {
 fn a_plus_end_at_the_first_row_is_refused_because_the_row_below_it_is_what_the_class_reads() {
     // The capture's fourth fluid: one row, so the winner is index zero and the class reads index
     // -1. A longer slate whose largest carbon number happens to be first is the same read.
-    let one = set_heavy_tbp_to_plus(
-        &["C9_PC"],
-        &mass_of(&[0.15]),
-        &[1.0],
-        &density_of(&[780.0]),
-    );
+    let one = set_heavy_tbp_to_plus(&["C9_PC"], &mass_of(&[0.15]), &[1.0], &density_of(&[780.0]));
     assert!(matches!(one, Err(AzothError::InvalidInput { .. })));
 
     let (names, mass, density) = rows(&["C20_PC", "C7_PC"], &[0.35, 0.1], &[900.0, 720.0]);
@@ -191,13 +199,18 @@ fn components_that_are_not_the_slates_rows_are_never_handed_over() {
     // light end passed anyway carries no carbon number and is refused like any other name.
     let (names, mass, density) = rows(&["methane", "C7_PC"], &[0.016, 0.1], &[422.182, 720.0]);
     let names: Vec<&str> = names.iter().map(String::as_str).collect();
-    let refused = set_heavy_tbp_to_plus(&names, &mass_of(&mass), &[0.5, 0.5], &density_of(&density));
+    let refused =
+        set_heavy_tbp_to_plus(&names, &mass_of(&mass), &[0.5, 0.5], &density_of(&density));
     assert!(matches!(refused, Err(AzothError::InvalidInput { .. })));
 }
 
 #[test]
 fn the_slate_is_four_aligned_columns() {
-    let (names, mass, density) = rows(&["C7_PC", "C20_PC", "C9_PC"], &[0.1, 0.35, 0.14], &[720.0, 900.0, 750.0]);
+    let (names, mass, density) = rows(
+        &["C7_PC", "C20_PC", "C9_PC"],
+        &[0.1, 0.35, 0.14],
+        &[720.0, 900.0, 750.0],
+    );
     let names: Vec<&str> = names.iter().map(String::as_str).collect();
     assert!(matches!(
         set_heavy_tbp_to_plus(

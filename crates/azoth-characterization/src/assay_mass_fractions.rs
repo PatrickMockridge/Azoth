@@ -147,7 +147,10 @@ pub fn assay_mass_fractions(
         ));
     }
 
-    let normalised: Vec<f64> = cuts.iter().map(|cut| cut.declared_fraction / total).collect();
+    let normalised: Vec<f64> = cuts
+        .iter()
+        .map(|cut| cut.declared_fraction / total)
+        .collect();
     let mass_fraction = if basis == AssayBasis::Mass {
         normalised
     } else {

@@ -13,7 +13,8 @@ fn call(case: &TestCase) -> TbpCutBoundariesResult {
         case.string("name_prefix").expect("the case names a prefix"),
         case.vector("cumulative_volume_percent")
             .expect("the case states a curve"),
-        case.vector("boiling_point").expect("the case states a curve"),
+        case.vector("boiling_point")
+            .expect("the case states a curve"),
         case.vector("specific_gravity")
             .expect("the case states a curve"),
     )
@@ -51,12 +52,20 @@ fn every_case_in_the_spec() {
             ),
             (
                 "average_boiling_point",
-                result.average_boiling_point.iter().map(|q| q.value).collect(),
+                result
+                    .average_boiling_point
+                    .iter()
+                    .map(|q| q.value)
+                    .collect(),
                 case.expected_vector("average_boiling_point"),
             ),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the cut count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the cut count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,
@@ -69,7 +78,11 @@ fn every_case_in_the_spec() {
         // **The names are asserted here and not in the case**, because the case generator carries
         // no string-vector expectation - the same reason `reactive_tp_flash` asserts `phase_type`
         // in its own test.
-        assert_eq!(result.cut_name, expected_names(case), "{context}: the cut names");
+        assert_eq!(
+            result.cut_name,
+            expected_names(case),
+            "{context}: the cut names"
+        );
         common::assert_consistent(&result, &context);
     }
 }
@@ -81,7 +94,9 @@ fn expected_names(case: &TestCase) -> Vec<String> {
         .expected_vector("volume_fraction")
         .expect("the case states cuts")
         .len();
-    (1..=count).map(|index| format!("{prefix}{index}")).collect()
+    (1..=count)
+        .map(|index| format!("{prefix}{index}"))
+        .collect()
 }
 
 #[test]

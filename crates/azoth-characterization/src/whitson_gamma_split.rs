@@ -165,7 +165,13 @@ pub fn estimate_shape(m_plus: f64, dens_plus: f64) -> f64 {
 fn density_uop(molar_masses: &[f64], kw: f64) -> Vec<f64> {
     molar_masses
         .iter()
-        .map(|m| if *m > 0.0 { 6.0108 * (m * 1000.0).powf(0.179_47) * kw.powf(-1.182_41) } else { 0.0 })
+        .map(|m| {
+            if *m > 0.0 {
+                6.0108 * (m * 1000.0).powf(0.179_47) * kw.powf(-1.182_41)
+            } else {
+                0.0
+            }
+        })
         .collect()
 }
 
@@ -320,15 +326,14 @@ pub fn whitson_gamma_split(
     let kw = watson_factor(molar_mass.value, dens_plus);
     let densities = match density_model {
         WhitsonDensityModel::Uop => density_uop(&cut_molar_mass, kw),
-        WhitsonDensityModel::Soreide => density_soreide(&cut_molar_mass, molar_mass.value, dens_plus, kw),
+        WhitsonDensityModel::Soreide => {
+            density_soreide(&cut_molar_mass, molar_mass.value, dens_plus, kw)
+        }
     };
 
     Ok(WhitsonGammaSplitResult {
         cut_z,
-        cut_molar_mass: cut_molar_mass
-            .into_iter()
-            .map(kilograms_per_mole)
-            .collect(),
+        cut_molar_mass: cut_molar_mass.into_iter().map(kilograms_per_mole).collect(),
         cut_density: densities
             .into_iter()
             .map(|d| kilograms_per_cubic_meter(d * 1000.0))

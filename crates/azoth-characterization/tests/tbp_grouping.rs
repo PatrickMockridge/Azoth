@@ -35,9 +35,18 @@ fn every_case_in_the_spec() {
         let expected = case
             .expected_vector("group_fraction")
             .expect("the case expects twenty bins");
-        assert_eq!(result.group_fraction.len(), expected.len(), "{context}: the bin count");
+        assert_eq!(
+            result.group_fraction.len(),
+            expected.len(),
+            "{context}: the bin count"
+        );
         for (index, (got, want)) in result.group_fraction.iter().zip(expected).enumerate() {
-            common::assert_close(*got, *want, case.tolerance, &format!("{context}::bin[{index}]"));
+            common::assert_close(
+                *got,
+                *want,
+                case.tolerance,
+                &format!("{context}::bin[{index}]"),
+            );
         }
         common::assert_consistent(&result, &context);
     }
@@ -78,7 +87,8 @@ fn a_component_below_the_lowest_threshold_is_in_no_bin() {
 fn two_components_between_one_pair_of_thresholds_share_a_bin() {
     // 100.0 C and 120.0 C are both above 98.9 and below 126.1, so the class has nothing to tell
     // them apart by - it carries a boiling point and no carbon number.
-    let result = tbp_grouping(&[kelvins(373.15), kelvins(393.15)], &[0.25, 0.75]).expect("computes");
+    let result =
+        tbp_grouping(&[kelvins(373.15), kelvins(393.15)], &[0.25, 0.75]).expect("computes");
     assert!((result.group_fraction[7] - 1.0).abs() < 1e-15);
     for (index, value) in result.group_fraction.iter().enumerate() {
         if index != 7 {

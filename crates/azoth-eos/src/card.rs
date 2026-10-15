@@ -94,7 +94,6 @@ pub const COMPONENT_PARAMETERS: &[(&str, &str)] = &[
     ("liquid_density_coefs_3", "dimensionless"),
     ("solid_density_coefs_4", "dimensionless"),
     ("liquid_density_coefs_4", "dimensionless"),
-
     // The electrolyte data. `ion` is not here: it is a class rather than a number with a
     // unit, and `ComponentBody` carries it beside this table rather than in it.
     ("ionic_charge", "dimensionless"),
@@ -729,8 +728,10 @@ fn resolve_components(
             .iter()
             .all(Option::is_some)
             .then(|| liquid_conductivity.map(|value| value.expect("checked present")));
-        override_.liqvisc =
-            liqvisc.iter().all(Option::is_some).then(|| liqvisc.map(|value| value.expect("checked present")));
+        override_.liqvisc = liqvisc
+            .iter()
+            .all(Option::is_some)
+            .then(|| liqvisc.map(|value| value.expect("checked present")));
         override_.cp_solid = cp_solid
             .iter()
             .all(Option::is_some)
@@ -753,7 +754,10 @@ fn resolve_components(
         // publishes exactly that number - and an UMR-CPA set states five, so the length is
         // the card's. What is refused is a gap: a set that states `_3` without `_2` is not a
         // prefix, and the correlation reads the vector positionally.
-        let stated = alpha_params.iter().take_while(|value| value.is_some()).count();
+        let stated = alpha_params
+            .iter()
+            .take_while(|value| value.is_some())
+            .count();
         if alpha_params[stated..].iter().any(Option::is_some) {
             return Err(AzothError::invalid_input(
                 format!("components.{name}"),
@@ -777,7 +781,9 @@ fn resolve_components(
         {
             return Err(AzothError::invalid_input(
                 format!("components.{name}.liqvisc_model"),
-                format!("{model} is not a liquid-viscosity expression this build runs; it reads 0 to 4"),
+                format!(
+                    "{model} is not a liquid-viscosity expression this build runs; it reads 0 to 4"
+                ),
             ));
         }
         override_.liqvisc_model = body.liqvisc_model;
@@ -1213,7 +1219,6 @@ mod tests {
         ("liquid_density_coefs_3", "dimensionless"),
         ("solid_density_coefs_4", "dimensionless"),
         ("liquid_density_coefs_4", "dimensionless"),
-
         // The electrolyte data. `ion` is absent here as it is from `COMPONENT_PARAMETERS`:
         // it is a class rather than a number with a unit, and the schema states it as a
         // boolean beside these.

@@ -27,7 +27,9 @@ use crate::transport_gen::{
 /// is hand-written** because an optional enum is a shape `gen_python_wrappers` refuses.
 #[pyfunction]
 #[pyo3(signature = (molar_mass, density, mole_fraction, first_carbon_number, plus_model=None, number_of_lumps=None))]
-#[pyo3(text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, plus_model=None, number_of_lumps=None)")]
+#[pyo3(
+    text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, plus_model=None, number_of_lumps=None)"
+)]
 pub fn characterise_plus_fraction(
     py: Python<'_>,
     molar_mass: f64,
@@ -56,7 +58,9 @@ pub fn characterise_plus_fraction(
 /// `density_model` names one of the two gravity correlations, `uop` by default.
 #[pyfunction]
 #[pyo3(signature = (molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number, alpha=None, eta=None, density_model=None, auto_estimate_shape=None))]
-#[pyo3(text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number, alpha=None, eta=None, density_model=None, auto_estimate_shape=None)")]
+#[pyo3(
+    text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number, alpha=None, eta=None, density_model=None, auto_estimate_shape=None)"
+)]
 #[allow(clippy::too_many_arguments)] // one per declared input, as the spec states them
 pub fn whitson_gamma_split(
     py: Python<'_>,

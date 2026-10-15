@@ -104,7 +104,9 @@ pub(crate) fn split(lumps: &[Lump], resolution: i64) -> Vec<SubFraction> {
             continue;
         }
         let position = |k: usize| k as f64 / (resolution - 1) as f64;
-        let weights: Vec<f64> = (0..resolution).map(|k| (-DECAY * position(k)).exp()).collect();
+        let weights: Vec<f64> = (0..resolution)
+            .map(|k| (-DECAY * position(k)).exp())
+            .collect();
         let weight_sum: f64 = weights.iter().sum();
         let grid: Vec<f64> = (0..resolution)
             .map(|k| lump.molar_mass.value * (1.0 - WINDOW + 2.0 * WINDOW * position(k)))
@@ -164,7 +166,10 @@ fn quantile_boundaries(rows: &[SubFraction], count: usize) -> Vec<f64> {
     if count <= 1 || rows.is_empty() {
         return Vec::new();
     }
-    let total: f64 = rows.iter().map(|row| row.moles * row.molar_mass.value).sum();
+    let total: f64 = rows
+        .iter()
+        .map(|row| row.moles * row.molar_mass.value)
+        .sum();
     // The class's own `!(totalMass > MASS_TOLERANCE)`, NaN included: a mass it cannot order is a
     // mass it will not place a cut on.
     if total.is_nan() || total <= MASS_TOLERANCE {
@@ -206,7 +211,10 @@ pub(crate) fn equal_mass_boundaries(reference: &[Lump], resolution: i64) -> Vec<
         .iter()
         .map(|lump| sorting_key(lump.boiling_point, lump.molar_mass.value))
         .collect();
-    let midpoints: Vec<f64> = keys.windows(2).map(|pair| midpoint(pair[0], pair[1])).collect();
+    let midpoints: Vec<f64> = keys
+        .windows(2)
+        .map(|pair| midpoint(pair[0], pair[1]))
+        .collect();
     if resolution <= 1 {
         return midpoints;
     }
@@ -270,5 +278,8 @@ pub fn delumping(lumps: &[Lump], resolution: i64) -> Result<DelumpingResult> {
     let fractions = split(lumps, resolution);
 
     apply_checks(spec.derived_checks(), |_quantity| None, &mut warnings)?;
-    Ok(DelumpingResult { fractions, warnings })
+    Ok(DelumpingResult {
+        fractions,
+        warnings,
+    })
 }

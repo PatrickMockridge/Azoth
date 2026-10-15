@@ -56,15 +56,16 @@ fn every_case_in_the_spec() {
         let context = format!("{}::{}", spec.id, case.id);
         for (name, actual) in [("shape", result.shape)] {
             if let Some(expected) = case.expected_value(name) {
-                common::assert_close(actual, expected, case.tolerance, &format!("{context}::{name}"));
+                common::assert_close(
+                    actual,
+                    expected,
+                    case.tolerance,
+                    &format!("{context}::{name}"),
+                );
             }
         }
         for (name, actual, expected) in [
-            (
-                "cut_z",
-                result.cut_z.clone(),
-                case.expected_vector("cut_z"),
-            ),
+            ("cut_z", result.cut_z.clone(), case.expected_vector("cut_z")),
             (
                 "cut_molar_mass",
                 result.cut_molar_mass.iter().map(|q| q.value).collect(),
@@ -77,7 +78,11 @@ fn every_case_in_the_spec() {
             ),
         ] {
             let Some(expected) = expected else { continue };
-            assert_eq!(actual.len(), expected.len(), "{context}::{name}: the cut count");
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "{context}::{name}: the cut count"
+            );
             for (index, (got, want)) in actual.iter().zip(expected).enumerate() {
                 common::assert_close(
                     *got,
@@ -125,7 +130,12 @@ fn the_carbon_numbers_label_the_row_and_do_not_move_the_windows() {
     // number would not reproduce.
     let one = from_one.cut_z[5] / from_one.cut_z[0];
     let twenty = from_twenty.cut_z[5] / from_twenty.cut_z[0];
-    common::assert_close(one, twenty, 1e-12, "the abundance ratio over the first six cuts");
+    common::assert_close(
+        one,
+        twenty,
+        1e-12,
+        "the abundance ratio over the first six cuts",
+    );
 }
 
 #[test]
@@ -192,7 +202,12 @@ fn the_scale_is_the_shape_it_used_that_derives_it() {
         true,
     )
     .expect("computes");
-    common::assert_close(estimated.shape, 0.621_390_782_386_720, 1e-12, "the estimated shape");
+    common::assert_close(
+        estimated.shape,
+        0.621_390_782_386_720,
+        1e-12,
+        "the estimated shape",
+    );
     let expected = (0.4 - estimated.minimum_molar_mass.value) / estimated.shape;
     common::assert_close(estimated.scale.value, expected, 1e-15, "the derived scale");
 }

@@ -2161,9 +2161,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             liquid_density_kg_per_m3: over
                 .normal_liquid_density
                 .unwrap_or(base.liquid_density_kg_per_m3),
-            liquid_conductivity: over
-                .liquid_conductivity
-                .unwrap_or(base.liquid_conductivity),
+            liquid_conductivity: over.liquid_conductivity.unwrap_or(base.liquid_conductivity),
             alpha_params: over
                 .alpha_params
                 .clone()
