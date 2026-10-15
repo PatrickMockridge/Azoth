@@ -22,6 +22,13 @@
 //   2. **`cpaon` is a property of the phase's site count**, not of the model: it is zero when
 //      `getTotalNumberOfAccociationSites() == 0`. `n_sites` is printed beside it so a run
 //      that cannot exercise the off case says so rather than looking like it did.
+//   3. **`ader` is the Huron-Vidal quantity, and this fluid does not run Huron-Vidal.**
+//      `SystemElectrolyteCPAstatoil` is given `setMixingRule(10)`, which the javadoc of
+//      `SystemInterface.setMixingRule(int)` defines as "classic mixing rule with temperature
+//      and composition dependent kij of CPA" - not rule 4, which is Huron-Vidal and which
+//      `SystemFurstElectrolyteEos`'s own test uses. Every `ader` row below is therefore
+//      `0.0`, and that is a measurement rather than a gap: a classic-rule phase has no
+//      `alphaMix` to report, so `A` comes from the sum over pairs instead.
 //
 // The rows are `key = value` and the blocks are `#`-opened, the shape
 // `tools/neqsim_layer_diff.py` reads.
@@ -121,6 +128,11 @@ public class BrineProbe {
           row("charge[" + i + "]", phase.getComponent(i).getIonicCharge());
           row("b[" + i + "]", species.getb());
           row("a[" + i + "]", species.geta());
+          // **The Huron-Vidal rule's own per-component quantity.** The phase's `A` is
+          // `n B R T alphaMix` with `alphaMix = sum_i x_i ader_i`, so `ader` is where a
+          // divergence in `A` localises to a component. An ion's first term is `1e-35`
+          // over `b_i R T`, so everything an ion contributes is its `-ln gamma_i/lambda`.
+          row("ader[" + i + "]", species.getAder());
           row("n_sites_c[" + i + "]", phase.getComponent(i).getNumberOfAssociationSites());
         }
 
@@ -142,6 +154,18 @@ public class BrineProbe {
         row("calc_lngVV", cpa.calc_lngVV());
         row("calc_lngVVV", cpa.calc_lngVVV());
         row("hcpatot", field(cpa, "hcpatot"));
+
+        // `alphaMix`, summed here from the rows above rather than read from a getter, so the
+        // two can be checked against each other.
+        double alphaMix = 0.0;
+        for (int i = 0; i < n; i++) {
+          alphaMix += phase.getComponent(i).getx()
+              * ((neqsim.thermo.component.ComponentEosInterface) phase.getComponent(i)).getAder();
+        }
+        row("alpha_mix", alphaMix);
+        // The identity the port checks `A` against: `calcA() = n B R T alphaMix`.
+        row("A_from_alpha_mix", phase.getNumberOfMolesInPhase() * phase.getB()
+            * 8.3144621 * phase.getTemperature() * alphaMix);
 
         // The two halves of the sum, separately.
         row("FCPA", cpa.FCPA());
