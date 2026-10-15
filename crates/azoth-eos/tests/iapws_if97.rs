@@ -1,9 +1,15 @@
-//! The IAPWS-IF97 (water) steam formulation, checked against NeqSim.
+//! The IAPWS-IF97 (water) steam formulation, checked against NeqSim and against the standard.
 //!
-//! **The oracle is `validation/neqsim/captures/iapws_if97_probe.tsv`**, written by
-//! `validation/neqsim/IapwsIf97Probe.java` against the pinned jar. It was NeqSim's own shipped
-//! `Iapws_if97Test` literals copied by hand until 2026-10-15, which an earlier reader could not
-//! re-run and so could not say whether a pin move had changed.
+//! **Two oracles, and they answer different questions.** `properties_reproduce_neqsim` reads
+//! `validation/neqsim/captures/iapws_if97_probe.tsv`, written by
+//! `validation/neqsim/IapwsIf97Probe.java` against the pinned jar, and says *this port is what
+//! NeqSim computes*. `the_release_check_values_hold` reads the IAPWS release's own verification
+//! tables and says *what NeqSim computes is the standard* - so a pin bump that moved NeqSim away
+//! from R7-97 would fail here rather than pass everywhere.
+//!
+//! The capture became the first oracle on 2026-10-15; before that the digits were NeqSim's own
+//! shipped `Iapws_if97Test` literals copied by hand, which an earlier reader could not re-run and
+//! so could not say whether a pin move had changed.
 
 // The oracle values are NeqSim's ground truth, so their full digits are the point, and
 // the per-state tuple is clearer than a factored type.
@@ -89,6 +95,107 @@ fn properties_reproduce_neqsim() {
         assert_close(props.s, s, 1e-9);
         assert_close(props.cp, cp, 1e-9);
         assert_close(props.w, w, 1e-9);
+    }
+}
+
+/// **The release's own verification values, which are not NeqSim's.**
+///
+/// IAPWS R7-97 states check values for Region 1 and Region 2 to nine significant digits, and they
+/// are what any implementation of the formulation is judged by. They are written here rather than
+/// read from a capture on purpose: the test above says *this port agrees with NeqSim*, and this
+/// one says *NeqSim agrees with the standard* - so a pin bump that moved the class away from
+/// R7-97 fails here instead of passing everywhere.
+///
+/// Measured against the pinned jar, NeqSim reproduces all thirty of these numbers to `3.1e-9`
+/// relative, which is the release's own nine-digit rounding; the bound below is a decade above it.
+#[test]
+fn the_release_check_values_hold() {
+    // (p in MPa, T in K, v, h, s, cp, w), R7-97 Table 5 and Table 15.
+    let region_1: [(f64, f64, f64, f64, f64, f64, f64); 3] = [
+        (
+            3.0,
+            300.0,
+            0.100_215_168e-2,
+            0.115_331_273e3,
+            0.392_294_792,
+            0.417_301_218e1,
+            0.150_773_921e4,
+        ),
+        (
+            80.0,
+            300.0,
+            0.971_180_894e-3,
+            0.184_142_828e3,
+            0.368_563_852,
+            0.401_008_987e1,
+            0.163_469_054e4,
+        ),
+        (
+            3.0,
+            500.0,
+            0.120_241_800e-2,
+            0.975_542_239e3,
+            0.258_041_912e1,
+            0.465_580_682e1,
+            0.124_071_337e4,
+        ),
+    ];
+    let region_2: [(f64, f64, f64, f64, f64, f64, f64); 3] = [
+        (
+            0.0035,
+            300.0,
+            0.394_913_866e2,
+            0.254_991_145e4,
+            0.852_238_967e1,
+            0.191_300_162e1,
+            0.427_920_172e3,
+        ),
+        (
+            0.0035,
+            700.0,
+            0.923_015_898e2,
+            0.333_568_375e4,
+            0.101_749_996e2,
+            0.208_141_274e1,
+            0.644_289_068e3,
+        ),
+        (
+            30.0,
+            700.0,
+            0.542_946_619e-2,
+            0.263_149_474e4,
+            0.517_540_298e1,
+            0.103_505_092e2,
+            0.480_386_523e3,
+        ),
+    ];
+
+    for (name, states) in [("Region 1", region_1), ("Region 2", region_2)] {
+        for (p, t, v, h, s, cp, w) in states {
+            let context = &format!("{name} at p = {p} MPa, T = {t} K");
+            // The region the release states this state is in is the one the class has to select,
+            // which is a separate reading of the formulation from the properties themselves.
+            assert_eq!(
+                t <= iapws_if97::saturation_temperature(p),
+                name == "Region 1",
+                "{context}: the class selected the other region"
+            );
+            let props = iapws_if97::properties(p, t);
+            for (field, actual, expected) in [
+                ("v", props.v, v),
+                ("h", props.h, h),
+                ("s", props.s, s),
+                ("cp", props.cp, cp),
+                ("w", props.w, w),
+            ] {
+                let relative = (actual / expected - 1.0).abs();
+                assert!(
+                    relative <= 1.0e-8,
+                    "{context}: {field} = {actual} against the release's {expected} \
+                     ({relative:e} from it)"
+                );
+            }
+        }
     }
 }
 
