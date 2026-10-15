@@ -65,6 +65,20 @@ public class BrineProbe {
     }
   }
 
+  /** One declared field, by name, walking the class chain, as an object. */
+  private static Object reflect(Object target, String name) {
+    for (Class<?> k = target.getClass(); k != null; k = k.getSuperclass()) {
+      try {
+        Field f = k.getDeclaredField(name);
+        f.setAccessible(true);
+        return f.get(target);
+      } catch (Throwable ignored) {
+        // keep walking up
+      }
+    }
+    return null;
+  }
+
   /** One declared field, by name, walking the class chain. */
   private static double field(Object target, String name) {
     for (Class<?> k = target.getClass(); k != null; k = k.getSuperclass()) {
@@ -145,6 +159,12 @@ public class BrineProbe {
           // over `b_i R T`, so everything an ion contributes is its `-ln gamma_i/lambda`.
           row("ader[" + i + "]", species.getAder());
           row("n_sites_c[" + i + "]", phase.getComponent(i).getNumberOfAssociationSites());
+          // **What the phase actually reads as the association parameters**, which is not
+          // always the table's row: `COMP.csv` gives `CO2` a `2A` scheme with both
+          // `associationenergy` and `associationboundingvolume_SRK` at `0.0`, and the
+          // component's two sites still come out at `X = 0.628` rather than `1.0`.
+          row("assoc_energy[" + i + "]", phase.getComponent(i).getAssociationEnergy());
+          row("assoc_volume[" + i + "]", phase.getComponent(i).getAssociationVolume());
         }
 
         if (!(phase instanceof PhaseElectrolyteCPA)) {
@@ -174,6 +194,18 @@ public class BrineProbe {
               * ((neqsim.thermo.component.ComponentEosInterface) phase.getComponent(i)).getAder();
         }
         row("alpha_mix", alphaMix);
+
+        // **The association strength matrix the phase built.** `calcDeltaNog` for an
+        // Elliott pair is `sqrt(t1 t2)` with `t = (exp(eps/RT) - 1) b kappa` of the *self*
+        // pair, so a component whose energy and volume are zero should have an all-zero row
+        // and a site fraction of exactly `1.0`. Printing the matrix is what says whether
+        // that is what the phase computed.
+        Object deltaNog = reflect(cpa, "deltaNog");
+        if (deltaNog instanceof double[][] matrix) {
+          for (int i = 0; i < matrix.length; i++) {
+            System.out.printf("deltaNog[%d] = %s%n", i, java.util.Arrays.toString(matrix[i]));
+          }
+        }
         // The identity the port checks `A` against: `calcA() = n B R T alphaMix`.
         row("A_from_alpha_mix", phase.getNumberOfMolesInPhase() * phase.getB()
             * 8.3144621 * phase.getTemperature() * alphaMix);
