@@ -176,3 +176,30 @@ def test_a_target_that_selects_nothing_is_caught() -> None:
     target = f"{module.TESTS}/test_test_scope.py"
     assert module.collects_nothing(f"{target} -k definitely_not_a_test") == "collects nothing"
     assert module.collects_nothing(target) is None
+
+
+# ------------------------------------------------- a kernel change reaches its Python mirror
+
+
+def test_a_rust_kernel_change_reaches_its_python_mirror() -> None:
+    """**The hole that made the two-implementation promise not hold.**
+
+    Python targets were produced only from `python/` and `specs/` paths, so a change to a Rust
+    kernel ran cargo, clippy and `maturin develop` and **not one pytest**. The
+    cross-implementation agreement test - the whole reason the library is written twice - never
+    ran for the change most likely to break it.
+    """
+    joined = " ".join(commands_for(["crates/azoth-eos/src/flash.rs"]))
+    assert "test_cross_impl.py" in joined, "the agreement test is the point"
+    assert "test_model_cases.py" in joined
+    assert '-k "eos."' in joined, "and it is the namespace, not a hundred ids nobody can check"
+
+
+def test_a_crate_with_no_namespace_says_what_it_reaches() -> None:
+    """Five members name no namespace; each has to say, or a change reaches nothing in silence."""
+    module = tool()
+    assert module.crate_claim("azoth-wasm").jobs == ("ui",)
+    assert f"{module.TESTS}" in module.crate_claim("azoth-python").files
+    assert len(module.crate_claim("azoth-core").namespaces) == len(module.crate_namespaces())
+    assert module.crate_claim("azoth-test-support").empty(), "its users' tests carry it"
+    assert module.table_problems() == []

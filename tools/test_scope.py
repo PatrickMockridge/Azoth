@@ -321,6 +321,50 @@ def crate_namespaces() -> dict[str, str]:
     }
 
 
+#: The members that name no namespace, kept as a tuple so [`table_problems`] can refuse a new
+#: crate that is in neither this list nor the namespace map. A crate that reaches nothing has to
+#: say so, rather than reach nothing in silence.
+NAMELESS_CRATES = ("azoth-cli", "azoth-core", "azoth-python", "azoth-test-support", "azoth-wasm")
+
+
+def crate_claim(crate: str) -> Claim:
+    """The Python side a change to **this crate** reaches.
+
+    **The mirror, not the sweep.** A change to `crates/azoth-eos` runs the `eos` namespace's
+    Python tests, because those are the other half of the same calculation - and until this
+    existed, a kernel change ran no pytest at all, so the cross-implementation agreement test,
+    which is the whole reason the library is written twice, never ran for the change most likely
+    to break it.
+
+    A crate that merely *depends* on the changed one is covered on the Rust side by [`reaches`]
+    and does not drag its Python mirror in. That is the difference between targeted and
+    everything.
+    """
+    namespace = crate_namespaces().get(crate)
+    if namespace is not None:
+        return Claim(namespaces=(namespace,))
+    if crate == "azoth-core":
+        # Units, the shared types and the databank: every namespace is a wrapper over it, so a
+        # change here is as wide as the Python side gets - and it says so rather than picking one.
+        return Claim(namespaces=tuple(sorted(crate_namespaces().values())))
+    if crate == "azoth-python":
+        # The extension itself: the whole Python surface is what it is.
+        return Claim(files=(TESTS,))
+    if crate == "azoth-cli":
+        return Claim(files=(f"{TESTS}/validation/test_mcp_conformance.py",))
+    if crate == "azoth-wasm":
+        return Claim(jobs=("ui",))
+    if crate == "azoth-test-support":
+        # A dev-dependency: `reaches` puts every crate that uses it in the Rust set, and their
+        # namespaces are theirs to claim.
+        return Claim()
+    raise SystemExit(
+        f"test_scope: the member {crate!r} names no namespace and is in no crate entry, so a "
+        "change to it would reach no Python test. Add one to NAMELESS_CRATES and to "
+        "`crate_claim`; seven namespaces once reached nothing this way."
+    )
+
+
 @lru_cache(maxsize=1)
 def discovered_namespaces() -> frozenset[str]:
     """Every namespace three independent sources know about, unioned.
@@ -390,6 +434,12 @@ def table_problems() -> list[str]:
         for target in targets:
             if not (ROOT / target).exists():
                 problems.append(f"MODULE_TESTS[{module!r}] names {target}, which is absent")
+    for crate in members():
+        if crate not in crate_namespaces() and crate not in NAMELESS_CRATES:
+            problems.append(
+                f"the member {crate!r} names no namespace and is in no crate entry, so a change "
+                "to it would reach no Python test"
+            )
     return problems
 
 
@@ -716,14 +766,28 @@ def python_commands(
     out: list[tuple[str, str, str]] = []
     for path in sorted(files):
         out.append((f"the test file itself: {path}", PYTEST, path))
+
+    #: A `-k` term per namespace, plus the ids a spec named outright.
+    terms: set[str] = set(ids)
+    covered: list[str] = []
+    named: set[str] = set()
     for namespace in sorted(namespaces):
         for target in namespace_targets(namespace):
             out.append((f"the {namespace} namespace's own tests", PYTEST, target))
-        # **A change inside a namespace reaches that namespace's ids**, whether or not a spec
-        # moved with it. Only a `specs/` path contributed ids before, so `azoth/standards/...`
-        # with no spec edit reached nothing - and the file it changed was real code.
-        ids = ids | set(ids_of(namespace))
-    if ids:
+            if (ROOT / target).is_dir():
+                covered.append(str(ROOT / target) + "/")
+        # **A change inside a namespace reaches that whole namespace**, whether or not a spec
+        # moved with it: only a `specs/` path contributed ids before, so `azoth/standards/...`
+        # reached nothing - and the file it changed was real code. The term is the namespace and
+        # a dot, which pytest accepts (`-k "process."` selects 106 of 431), rather than a hundred
+        # ids that nobody can check by reading.
+        namespace_ids = set(ids_of(namespace))
+        if namespace_ids:
+            terms.add(f"{namespace}.")
+            named |= set(id_named_files(namespace_ids))
+    named = {path for path in named if not any(str(ROOT / path).startswith(d) for d in covered)}
+
+    if terms:
         unknown = sorted(ids - registered_ids())
         if unknown:
             raise SystemExit(
@@ -731,28 +795,27 @@ def python_commands(
                 "nothing - and the one thing that looks like is a pass. `declared_id` reads an "
                 "`id =` line out of any spec file, including the ones whose id is not a model."
             )
-        expression = " or ".join(sorted(ids))
+        expression = " or ".join(sorted(terms))
         out.append(
             (
-                f"the cases of {sorted(ids)}",
+                f"the cases of {sorted(terms)}",
                 PYTEST,
                 f'{TESTS}/models/test_model_cases.py -k "{expression}"',
             )
         )
         out.append(
             (
-                f"{sorted(ids)} on both kernels",
+                f"{sorted(terms)} on both kernels",
                 PYTEST,
                 f'{TESTS}/test_cross_impl.py -k "{expression}"',
             )
         )
-        named = id_named_files(ids)
         if named:
             out.append(
                 (
                     "the files that test these ids by name",
                     PYTEST,
-                    " ".join(named),
+                    " ".join(sorted(named)),
                 )
             )
     return out
@@ -791,6 +854,16 @@ def scope(
         docs |= claim.docs
         config |= claim.config
         generated |= claim.generated
+
+    # **A crate change reaches its Python mirror.** This is the half that did not exist: Python
+    # targets came only from `python/` and `specs/` paths, so a kernel edit ran cargo and not one
+    # pytest - and `test_cross_impl.py`, the Rust-against-Python agreement test the library is
+    # built around, never ran for the change most likely to break it.
+    for crate in sorted(crates):
+        crate_side = crate_claim(crate)
+        namespaces |= set(crate_side.namespaces)
+        files |= set(crate_side.files)
+        jobs |= set(crate_side.jobs)
 
     commands = rust_scope(crates, edges) + commands
     commands += python_commands(namespaces, ids, files)
