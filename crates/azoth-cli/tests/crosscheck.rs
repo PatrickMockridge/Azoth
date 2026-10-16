@@ -17,7 +17,13 @@ struct Fixture(PathBuf);
 
 impl Fixture {
     fn write(name: &str, body: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("azoth-crosscheck-{name}.toml"));
+        // **The process id is in the name because `/tmp` is shared.** `cargo test` runs several
+        // test binaries at once, and a worktree and the checkout it came from can be running
+        // this file at the same time; a fixed name is two runs writing one file.
+        let path = std::env::temp_dir().join(format!(
+            "azoth-crosscheck-{}-{name}.toml",
+            std::process::id()
+        ));
         std::fs::write(&path, body).expect("the fixture should be writable");
         Self(path)
     }

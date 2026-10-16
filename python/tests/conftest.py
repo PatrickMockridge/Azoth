@@ -13,10 +13,13 @@ promise is checked by nothing and the suite stays green anyway. Setting
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
 from azoth import available
+
+from _extension import STALE, state
 
 #: Above this, a test that is **not parametrised** and not marked `slow_sweep` is a finding.
 #: A parametrised test is selectable by `-k`, so being slow is a property of the case, not a
@@ -63,6 +66,16 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Skip Rust-only tests, or fail them when Rust is required."""
     if "rust" in available():
+        # **A build older than the sources is worse than no build.** `available()` says the
+        # extension imports; it does not say the extension is the Rust in this tree. When a
+        # merge or a checkout has rewritten the sources since the last `maturin develop`, every
+        # Rust-backed test is passing against code nobody wrote - so stop, and name the fix.
+        if state(Path(__file__).resolve().parents[2]) == STALE:
+            raise pytest.UsageError(
+                "the built extension is older than the Rust sources, so these tests would run "
+                "against a build nobody wrote. Run `maturin develop` (a merge that touches a "
+                "signature leaves the old binary in place and the suite green)."
+            )
         return
     require_rust = os.environ.get("AZOTH_REQUIRE_RUST") == "1"
     for item in items:

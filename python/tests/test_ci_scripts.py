@@ -353,3 +353,34 @@ def test_the_derived_status_follows_the_evidence() -> None:
     # The counts travel with the status.
     both = [{"id": "a"}, {"id": "b", "status": "skipped"}]
     assert derive(verified, both) == ("verified", 1, 1, 1)
+
+
+def _module_of(entry: str) -> str:
+    """The module a `filterwarnings` entry names - `action:message:category:module:lineno`."""
+    parts = entry.split(":")
+    return parts[3] if len(parts) > 3 else ""
+
+
+def test_a_warning_filter_can_only_silence_a_dependency() -> None:
+    """**`filterwarnings = ["error"]` is why the suite notices anything at all.**
+
+    A relaxation with no module silences *azoth's own* warnings along with the dependency's,
+    and a warning the library raises about its own arithmetic is exactly the kind that should
+    stop a run. So every filter past the base has to name a third-party module.
+    """
+    config = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    filters = config["tool"]["pytest"]["ini_options"]["filterwarnings"]
+    assert filters[0] == "error", "the base is what turns a warning into a failure"
+    for entry in filters[1:]:
+        module = _module_of(entry)
+        assert module and not module.startswith("azoth"), (
+            f"{entry!r} names no third-party module, so it would silence azoth's own warnings "
+            "with the dependency's"
+        )
+
+
+def test_that_rule_would_actually_reject_a_bad_relaxation() -> None:
+    """The positive control: a rule that only ever sees good input proves nothing."""
+    assert _module_of("default::DeprecationWarning:azoth.*") == "azoth.*"
+    assert _module_of("default::DeprecationWarning:pint.*") == "pint.*"
+    assert _module_of("error") == "", "the base names no module, which is why it is the base"

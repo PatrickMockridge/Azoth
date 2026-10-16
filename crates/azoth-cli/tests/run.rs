@@ -151,7 +151,10 @@ fn a_document_the_checker_refuses_is_not_run() {
     let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
         .expect("the shipped flowsheet is there")
         .replace("from = \"hx1.outlet\"", "from = \"hx1.vent\"");
-    let path = std::env::temp_dir().join("azoth-cli-run-refused.toml");
+    // **The process id is in the name because `/tmp` is shared** - see the note in
+    // `crosscheck.rs`; a fixed name is two runs writing one file.
+    let path =
+        std::env::temp_dir().join(format!("azoth-cli-run-refused-{}.toml", std::process::id()));
     std::fs::write(&path, text).expect("the fixture is writable");
 
     let output = azoth(&[
