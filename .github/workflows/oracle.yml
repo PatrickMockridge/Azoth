@@ -1,0 +1,71 @@
+name: oracle
+
+# **The NeqSim sweep, which has never run in CI.**
+#
+# Every number the port is held to came from NeqSim, and `validation/neqsim/captures/*.tsv` is
+# where those readings live. `tools/oracle_sweep.py` re-runs the probes against the jar and
+# reports a capture that has moved - so it is the only thing that can say whether the oracle is
+# still the oracle. It ran nowhere but a developer's box, when someone remembered.
+#
+# **Weekly rather than nightly**, because the cost is setup rather than compute: a JDK, a full
+# Maven build of NeqSim, and a clone at the pinned revision. It can only move when the pin in
+# `databank/manifest.toml` moves, and that is a human decision.
+#
+# **It reads the pin rather than naming it.** A hard-coded commit here would be a second copy of
+# the version this whole repository is oracled against, and it would be the copy that drifts.
+#
+# `tools/oracle_sweep.py` spawns one `javac` plus about 124 JVMs, and a JVM takes an 11.8 GiB
+# heap by default - which is why `tools/gated.sh` caps it on a developer's box. A runner has the
+# memory for it; this job is one reason the nightly was never going to be the place.
+
+on:
+  schedule:
+    # 05:37 UTC Monday. Off the hour, and away from the nightly's 04:17.
+    - cron: "37 5 * * 1"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  sweep:
+    name: the NeqSim captures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # **The pin, read out of the manifest** the same way every other tool reads it.
+      - id: pin
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib, tomllib
+          doc = tomllib.loads(pathlib.Path("databank/manifest.toml").read_text(encoding="utf-8"))
+          pin = next(u for u in doc["upstreams"] if u["id"] == "neqsim")
+          print(f"commit={pin['commit']}")
+          print(f"short={pin['commit'][:7]}")
+          PY
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: neqsim-${{ steps.pin.outputs.short }}
+      - name: Build NeqSim at the pinned revision
+        run: |
+          git clone --filter=blob:none https://github.com/equinor/neqsim.git /tmp/neqsim
+          git -C /tmp/neqsim checkout "${{ steps.pin.outputs.commit }}"
+          mvn -q -B -f /tmp/neqsim/pom.xml package -DskipTests
+      # `tools/oracle_sweep.py` looks for `neqsim-<short>.jar` beside the probes, which is where
+      # a developer puts the jar they built. `.gitignore` keeps it out of the tree.
+      - name: Put the jar where the sweep looks for it
+        run: |
+          jar=$(find /tmp/neqsim -name 'neqsim-*.jar' -not -name '*sources*' | head -1)
+          test -n "$jar" || { echo "::error::the NeqSim build produced no jar"; exit 1; }
+          cp "$jar" "validation/neqsim/neqsim-${{ steps.pin.outputs.short }}.jar"
+      - name: The sweep
+        run: python tools/oracle_sweep.py

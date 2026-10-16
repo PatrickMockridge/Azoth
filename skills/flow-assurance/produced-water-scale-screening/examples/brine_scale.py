@@ -13,7 +13,7 @@ Z = [
     0.00160513643659711,
 ]
 
-pitzer = azoth.eos.pitzer_phase(BRINE, T=q(298.15, "K"), x=Z)
+pitzer = azoth.eos.pitzer_phase(BRINE, T=q(298.15, "K"), P=q(10.0, "bar"), x=Z)
 water = Z[0]
 print(f"gamma Na+ {pitzer.gamma[1]:.6f}   gamma Cl- {pitzer.gamma[2]:.6f}")
 print(f"water activity {pitzer.water_activity:.6f}")

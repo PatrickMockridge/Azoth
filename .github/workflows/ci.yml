@@ -382,6 +382,16 @@ jobs:
         working-directory: ui
       - run: npm run build
         working-directory: ui
+      # **The boundary the Rust tests cannot reach.** Every function in `azoth-wasm` is a call
+      # into the wire layer and a string out, so what is untested there is the seam itself: that
+      # a wasm-bindgen constructor works, that a `Result` arrives as a JS exception rather than a
+      # trap, and that the module carries its own palette with no filesystem and no fetch. The
+      # file documents exactly these two commands and nothing ran them.
+      - name: the wasm boundary, driven the way a browser drives it
+        run: |
+          wasm-pack build crates/azoth-wasm --target nodejs --out-dir pkg --release \
+            --no-pack --no-typescript
+          node crates/azoth-wasm/test/smoke.mjs crates/azoth-wasm/pkg/azoth_wasm.js
 
   docs-build:
     name: docs-build
