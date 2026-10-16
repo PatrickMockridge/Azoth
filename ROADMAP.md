@@ -183,16 +183,16 @@ reaches equilibrium through.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
-  **The brine operations are not ported, and the reason this entry gave was wrong.**
-  `CO2BrinePhaseEquilibrium`, `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and
-  `CalcIonicComposition` were said to need the EoS/GE hybrid seam. They do not: their gate is
+  **Of the four brine operations, one is ported.** `CO2BrinePhaseEquilibrium` is
+  `eos.co2_brine_phase_equilibrium`, on the electrolyte-CPA route above; its supported
+  composition is CO2, water and ions alone with `water > CO2`, and it is not a flash - it
+  holds one aqueous phase and runs its own two trials and its own ion-confined split. **Owed:
+  `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and `CalcIonicComposition`.** Their
+  gate was once recorded here as the EoS/GE hybrid seam, and that was wrong: it is
   `fluid instanceof SystemElectrolyteCPAstatoil`, which extends `SystemFurstElectrolyteEos`
-  extends `SystemSrkEos` — so the hybrid route, whose dispatch needs a `SystemEosGE`, is not in
-  the chain at all. What they need is the **electrolyte CPA** route and their own 576 lines:
-  `CO2BrinePhaseEquilibrium`'s supported composition is CO2, water and ions alone with
-  `water > CO2`, and `SaturateWithWater` and `CalcIonicComposition` are operations of their own.
-  **The seam those four were recorded as waiting on is ported** — `eos.hybrid_eos_ge_flash` and
-  `reactions.reactive_hybrid_eos_ge_flash` — and it was never the blocker here.
+  extends `SystemSrkEos`, so the hybrid route is not in their chain at all — that route is
+  ported (`eos.hybrid_eos_ge_flash`, `reactions.reactive_hybrid_eos_ge_flash`) and was never
+  the blocker.
 - **Electrolytes.** Ported, each with the id that carries it: `ComponentGePitzer`,
   `PhasePitzer` (`eos.pitzer_phase`) and `SystemPitzer`, with the `Pitzer*` machinery
   (`PitzerNeutralInteraction`, `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`,

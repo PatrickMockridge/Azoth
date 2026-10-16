@@ -596,6 +596,30 @@ pub fn chung_viscosity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Constrained CO2/brine phase selection.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, moles))]
+#[pyo3(text_signature = "(components, T, P, moles)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn co2_brine_phase_equilibrium(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyCo2BrinePhaseEquilibriumResult> {
+    azoth_eos::co2_brine_phase_equilibrium::co2_brine_phase_equilibrium(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &moles,
+    )
+    .map(|r| crate::transport_gen::PyCo2BrinePhaseEquilibriumResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// CO2 reference phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

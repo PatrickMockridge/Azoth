@@ -1555,6 +1555,84 @@ impl From<&azoth_eos::results::ChungViscosityResult> for PyChungViscosityResult 
         }
     }
 }
+/// Result of `eos.co2_brine_phase_equilibrium`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Co2BrinePhaseEquilibriumResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCo2BrinePhaseEquilibriumResult {
+    /// how many phases the feed settles into: one aqueous phase, or that and a CO2-rich one.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// which root the first phase was solved on, as the class labels it: `gas` or `oil` where a trial found the feed unstable, and `aqueous` where neither did. **The second phase, where there is one, is the aqueous phase**, so this and `phase_count` are the whole of what the labels say.
+    #[pyo3(get)]
+    pub accepted_root: String,
+    /// the mole fraction of the feed in each phase, summing to one.
+    #[pyo3(get)]
+    pub phase_fractions: Vec<f64>,
+    /// the composition of each phase, each row summing to one. An ion is at `1e-50` outside the aqueous phase, which is the class's own floor rather than a computed amount.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// `ln phi_i` in each phase: the cubic's, the electrolyte's and the association's, summed.
+    #[pyo3(get)]
+    pub ln_phi: Vec<Vec<f64>>,
+    /// the more negative of the two trials' tangent-plane distances, or the least positive where both are stable. Negative means the single-aqueous feed lies inside the tangent plane and is unstable.
+    #[pyo3(get)]
+    pub minimum_trial_distance: f64,
+    /// composition steps taken, summed over the two normalised trials and, where a root was unstable, its split.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// the worst `|z_i - sum_k beta_k x_ik|` over the components, which the acceptance check holds to `1e-10`.
+    #[pyo3(get)]
+    pub max_material_balance_residual: f64,
+    /// the worst `|ln(f_i^rich / f_i^aqueous)|` over the molecular components, which the acceptance check holds to `1e-8`. An ion carries no ratio, because it is in one phase.
+    #[pyo3(get)]
+    pub max_log_fugacity_residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCo2BrinePhaseEquilibriumResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "Co2BrinePhaseEquilibriumResult(phase_count={:?}, accepted_root={:?}, phase_fractions={:?}, x={:?}, ln_phi={:?}, minimum_trial_distance={:?}, iterations={:?}, max_material_balance_residual={:?}, max_log_fugacity_residual={:?}, {} warning(s))",
+            self.phase_count,
+            self.accepted_root,
+            self.phase_fractions,
+            self.x,
+            self.ln_phi,
+            self.minimum_trial_distance,
+            self.iterations,
+            self.max_material_balance_residual,
+            self.max_log_fugacity_residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::Co2BrinePhaseEquilibriumResult>
+    for PyCo2BrinePhaseEquilibriumResult
+{
+    fn from(r: &azoth_eos::results::Co2BrinePhaseEquilibriumResult) -> Self {
+        Self {
+            phase_count: r.phase_count,
+            accepted_root: r.accepted_root.clone(),
+            phase_fractions: r.phase_fractions.clone(),
+            x: r.x.clone(),
+            ln_phi: r.ln_phi.clone(),
+            minimum_trial_distance: r.minimum_trial_distance,
+            iterations: r.iterations,
+            max_material_balance_residual: r.max_material_balance_residual,
+            max_log_fugacity_residual: r.max_log_fugacity_residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.co2_phase`, transported.
 #[pyclass(
     frozen,

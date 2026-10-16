@@ -610,6 +610,43 @@ class ChungViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Co2BrinePhaseEquilibriumResult(_HasWarnings):
+    """Result of ``eos.co2_brine_phase_equilibrium``."""
+
+    CALC_ID: ClassVar[str] = "eos.co2_brine_phase_equilibrium"
+
+    #: how many phases the feed settles into: one aqueous phase, or that and a CO2-rich one.
+    phase_count: int
+
+    #: which root the first phase was solved on, as the class labels it: `gas` or `oil` where a trial found the feed unstable, and `aqueous` where neither did. **The second phase, where there is one, is the aqueous phase**, so this and `phase_count` are the whole of what the labels say.
+    accepted_root: str
+
+    #: the mole fraction of the feed in each phase, summing to one.
+    phase_fractions: tuple[float, ...]
+
+    #: the composition of each phase, each row summing to one. An ion is at `1e-50` outside the aqueous phase, which is the class's own floor rather than a computed amount.
+    x: tuple[tuple[float, ...], ...]
+
+    #: `ln phi_i` in each phase: the cubic's, the electrolyte's and the association's, summed.
+    ln_phi: tuple[tuple[float, ...], ...]
+
+    #: the more negative of the two trials' tangent-plane distances, or the least positive where both are stable. Negative means the single-aqueous feed lies inside the tangent plane and is unstable.
+    minimum_trial_distance: float
+
+    #: composition steps taken, summed over the two normalised trials and, where a root was unstable, its split.
+    iterations: int
+
+    #: the worst `|z_i - sum_k beta_k x_ik|` over the components, which the acceptance check holds to `1e-10`.
+    max_material_balance_residual: float
+
+    #: the worst `|ln(f_i^rich / f_i^aqueous)|` over the molecular components, which the acceptance check holds to `1e-8`. An ion carries no ratio, because it is in one phase.
+    max_log_fugacity_residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Co2PhaseResult(_HasWarnings):
     """Result of ``eos.co2_phase``."""
 

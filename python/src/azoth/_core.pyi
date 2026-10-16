@@ -482,6 +482,19 @@ class ChungViscosityResult:
     warnings: list[Warning]
 
 @final
+class Co2BrinePhaseEquilibriumResult:
+    phase_count: int
+    accepted_root: str
+    phase_fractions: list[float]
+    x: list[list[float]]
+    ln_phi: list[list[float]]
+    minimum_trial_distance: float
+    iterations: int
+    max_material_balance_residual: float
+    max_log_fugacity_residual: float
+    warnings: list[Warning]
+
+@final
 class Co2PhaseResult:
     z_factor: float
     u: Qty
@@ -2531,6 +2544,12 @@ def chung_viscosity(
     T: float,
     V: float,
 ) -> ChungViscosityResult: ...
+def co2_brine_phase_equilibrium(
+    components: list[str],
+    T: float,
+    P: float,
+    moles: list[float],
+) -> Co2BrinePhaseEquilibriumResult: ...
 def co2_phase(T: float, P: float) -> Co2PhaseResult: ...
 def co2_water_diffusivity(T: float) -> Co2WaterDiffusivityResult: ...
 def costald_molar_volume(

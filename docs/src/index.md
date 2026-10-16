@@ -171,6 +171,7 @@ Five sections, and the difference between them is the point:
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
 - [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state
 - [`eos.capillary_dew_point`](./eos/capillary_dew_point.md) — Capillary dew point
+- [`eos.co2_brine_phase_equilibrium`](./eos/co2_brine_phase_equilibrium.md) — Constrained CO2/brine phase selection
 - [`eos.co2_phase`](./eos/co2_phase.md) — CO2 reference phase state
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.desmukh_mather_phase`](./eos/desmukh_mather_phase.md) — Activity coefficients of a Desmukh-Mather electrolyte phase

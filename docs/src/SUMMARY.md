@@ -104,6 +104,7 @@
   - [Bubble-point temperature](./eos/bubble_temperature.md)
   - [BWRS (MBWR-32) phase state](./eos/bwrs_phase.md)
   - [Capillary dew point](./eos/capillary_dew_point.md)
+  - [Constrained CO2/brine phase selection](./eos/co2_brine_phase_equilibrium.md)
   - [CO2 reference phase state](./eos/co2_phase.md)
   - [Mixture critical point](./eos/critical_point.md)
   - [Activity coefficients of a Desmukh-Mather electrolyte phase](./eos/desmukh_mather_phase.md)

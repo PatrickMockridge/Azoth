@@ -1,0 +1,94 @@
+id = "eos.co2_brine_phase_equilibrium"
+name = "Constrained CO2/brine phase selection"
+kind = "procedure"
+assumptions = [
+    "NeqSim's `CO2BrinePhaseEquilibrium`, over the fluid `eos.electrolyte_cpa_statoil_phase` builds. The supported feed is CO2, water and ions alone with more water than CO2 by moles, and anything else is refused.",
+    "**the reference is one aqueous phase at the feed's own composition**, and the trial is a CO2-rich one on the requested root. It is not a flash: the class never calls `TPflash`, it drives `init(1)` and reads fugacity coefficients.",
+    "**two roots are tried and the lower-Gibbs one wins**, a vapour (`GAS`) and a liquid (`OIL`). A root whose trial distance is above `-1e-8` is not split at all, and a feed with neither unstable stays a single aqueous phase.",
+    "**where the two roots coincide the label is a tie-break, not a property of the state.** At 200 bara both roots of the CO2-rich phase are `Z = 0.415472999952953`, so `accepted_root` compares two equal energies and the phases, fractions and compositions agree either way.",
+    "**the tangent-plane trial is normalised.** `w_i = f_i^aq / (P phi_i^trial)`, `x_i = max(1e-50, w_i / sum w)`, and the distance is `-ln(sum w)`. An ion's weight is zero, so the confinement is by construction and not a penalty.",
+    "**the split's `K_i` is `phi_i^aqueous / phi_i^CO2-rich` and an ion's is zero.** The zero is the confinement. Compositions are `x_i = z_i/(1 + beta(K_i - 1))` and `y_i = K_i x_i`, both floored at `1e-50`.",
+    "**`beta` is a bisection on the constrained Rachford-Rice**, `sum_i z_i (K_i - 1)/(1 + beta(K_i - 1))`, on `[0, 1 - 1e-12]` over 80 steps - not a Newton, because an ion's `K = 0` puts the curvature on the wrong side for one.",
+    "**the answer is accepted only if it passes four checks**: every phase's fractions sum to one, the phase fractions sum to one, each component's recovered moles equal the feed's to `1e-10`, and the molecular fugacity ratio between the two phases is within `1e-8` of one.",
+    "**a two-phase answer must have a CO2-rich first phase** (`x_CO2 > 0.5`) and an aqueous second one, or the answer is not a split and is refused rather than reported.",
+    "**no hydrate and no salt-solid phase is created**, upstream and here: the class uses the equation of state's own parameters and nothing else. The aqueous phase's identity is preserved through the copy back.",
+    "**an unsupported feed is an error and not a flag.** `isApplicable` throws upstream, and a model that ran anyway would be answering a CO2/brine question about a fluid that is not one.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. DOI 10.1016/0378-3812(82)85001-2. The tangent-plane criterion the trial evaluates.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `CO2BrinePhaseEquilibrium` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim master `CO2BrinePhaseEquilibrium`"
+edition = "Its `run`: the single-aqueous reference, the two normalised tangent-plane trials, the ion-confined split with its constrained Rachford-Rice bisection, the Gibbs comparison between the roots, and `verify`'s four checks."
+[algorithm]
+scheme = "normalized_tangent_plane_with_ion_confined_split"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 100
+initialisation = "per_root_seed"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the feed's substances, by name: CO2, water and the ions. The order is the order of `moles` and of the output compositions, and the name decides which of the three roles a component takes."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the feed's mole numbers, which are normalised into the overall composition the solve is written in. **Moles and not mole fractions**, because the class takes a system and the conservation check reads the inventory."
+[outputs]
+[outputs.phase_count]
+unit = "dimensionless"
+description = "how many phases the feed settles into: one aqueous phase, or that and a CO2-rich one."
+[outputs.accepted_root]
+type = "string"
+description = "which root the first phase was solved on, as the class labels it: `gas` or `oil` where a trial found the feed unstable, and `aqueous` where neither did. **The second phase, where there is one, is the aqueous phase**, so this and `phase_count` are the whole of what the labels say."
+[outputs.phase_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per phase"
+description = "the mole fraction of the feed in each phase, summing to one."
+[outputs.x]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per phase, one column per component"
+description = "the composition of each phase, each row summing to one. An ion is at `1e-50` outside the aqueous phase, which is the class's own floor rather than a computed amount."
+[outputs.ln_phi]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per phase, one column per component"
+description = "`ln phi_i` in each phase: the cubic's, the electrolyte's and the association's, summed."
+[outputs.minimum_trial_distance]
+unit = "dimensionless"
+description = "the more negative of the two trials' tangent-plane distances, or the least positive where both are stable. Negative means the single-aqueous feed lies inside the tangent plane and is unstable."
+[outputs.iterations]
+unit = "dimensionless"
+description = "composition steps taken, summed over the two normalised trials and, where a root was unstable, its split."
+[outputs.max_material_balance_residual]
+unit = "dimensionless"
+description = "the worst `|z_i - sum_k beta_k x_ik|` over the components, which the acceptance check holds to `1e-10`."
+[outputs.max_log_fugacity_residual]
+unit = "dimensionless"
+description = "the worst `|ln(f_i^rich / f_i^aqueous)|` over the molecular components, which the acceptance check holds to `1e-8`. An ion carries no ratio, because it is in one phase."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.co2_brine_phase_equilibrium"
+rust = "azoth_eos::co2_brine_phase_equilibrium"

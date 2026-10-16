@@ -60,6 +60,7 @@ pub mod card;
 pub mod chapman_enskog_diffusivity;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
+pub mod co2_brine_phase_equilibrium;
 pub mod co2_phase;
 pub mod co2_water_diffusivity;
 pub mod costald_molar_volume;
@@ -254,6 +255,7 @@ pub use chung_viscosity::chung_viscosity;
 pub use co2_phase::co2_phase;
 pub use co2_water_diffusivity::co2_water_diffusivity;
 pub use costald_molar_volume::costald_molar_volume;
+pub use co2_brine_phase_equilibrium::co2_brine_phase_equilibrium;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
 pub use desmukh_mather_phase::desmukh_mather_phase;
@@ -337,7 +339,8 @@ pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChapmanEnskogDiffusivityResult,
-    ChungConductivityResult, ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult,
+    ChungConductivityResult, ChungViscosityResult, Co2BrinePhaseEquilibriumResult,
+    Co2PhaseResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult,
     DewTemperatureResult, EffectiveDiffusionResult, EosCgPhaseResult, FreezingPointResult,
     ElectrolyteCpaStatoilPhaseResult, FullerSchettlerGiddingsDiffusivityResult,

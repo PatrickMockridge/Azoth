@@ -81,6 +81,7 @@ from azoth.core.result import (
     ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
@@ -89,11 +90,11 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EffectiveDiffusionResult,
+    ElectrolyteCpaStatoilPhaseResult,
     EosCgPhaseResult,
     FreezingPointResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
-    ElectrolyteCpaStatoilPhaseResult,
     FurstElectrolytePhaseResult,
     GeFlashResult,
     GeNrtlFlashResult,
@@ -259,6 +260,7 @@ __all__ = [
     "chapman_enskog_diffusivity",
     "chung_conductivity",
     "chung_viscosity",
+    "co2_brine_phase_equilibrium",
     "co2_phase",
     "component",
     "costald_molar_volume",
@@ -267,8 +269,8 @@ __all__ = [
     "dew_pressure",
     "dew_temperature",
     "effective_diffusion",
-    "eos_cg_phase",
     "electrolyte_cpa_statoil_phase",
+    "eos_cg_phase",
     "from_model",
     "from_names",
     "fuller_schettler_giddings_diffusivity",
@@ -429,6 +431,7 @@ _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
+_CO2_BRINE_PHASE_EQUILIBRIUM = "eos.co2_brine_phase_equilibrium"
 _ELECTROLYTE_CPA_STATOIL_PHASE = "eos.electrolyte_cpa_statoil_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
 _FURST_ELECTROLYTE_MOD2004_PHASE = "eos.furst_electrolyte_mod2004_phase"
@@ -3733,6 +3736,38 @@ def electrolyte_cpa_statoil_phase(
     """
     return resolve(_ELECTROLYTE_CPA_STATOIL_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, x=x, compressed_phase=compressed_phase
+    )
+
+
+def co2_brine_phase_equilibrium(
+    components: list[str],
+    T: Q,
+    P: Q,
+    moles: list[float],
+) -> Co2BrinePhaseEquilibriumResult:
+    """The fluid phases a CO2/water/ion feed settles into, at a temperature and pressure.
+
+    NeqSim's ``CO2BrinePhaseEquilibrium``, which is **not a flash**: it holds one aqueous
+    phase at the feed's own composition, tries a vapour root and a liquid one against it with
+    a normalised tangent-plane trial, and where a trial says the feed is unstable solves its
+    own two-phase split. **An ion's `K` is zero**, so the ions are confined to the aqueous
+    phase by construction rather than by a penalty, and the answer's first phase is the
+    CO2-rich one wherever there are two.
+
+    The feed's scope is the class's own: CO2, water and ions alone, with more water than CO2
+    by moles. Anything else is refused rather than answered.
+
+    Raises:
+        InvalidInputError: if ``moles`` is not one entry per component or is not a feed, or
+            the feed is outside the class's scope.
+        PropertyUnavailableError: if a name is not in the databank.
+        SolverNotConvergedError: if a trial or a split does not converge, or the answer fails
+            its acceptance checks.
+
+    See :func:`azoth.eos.reference.co2_brine_phase_equilibrium`.
+    """
+    return resolve(_CO2_BRINE_PHASE_EQUILIBRIUM)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, moles=moles
     )
 
 

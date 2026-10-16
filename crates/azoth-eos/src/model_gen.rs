@@ -8,6 +8,7 @@
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
 //!   - specs/models/eos/capillary_dew_point.toml
+//!   - specs/models/eos/co2_brine_phase_equilibrium.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/desmukh_mather_phase.toml
@@ -1094,6 +1095,138 @@ pub static CAPILLARY_DEW_POINT_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&CAPILLARY_DEW_POINT_ALGORITHM),
     checks: CAPILLARY_DEW_POINT_CHECKS,
     cases: CAPILLARY_DEW_POINT_CASES,
+};
+
+static CO2_BRINE_PHASE_EQUILIBRIUM_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static CO2_BRINE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_40_bara_brine_splits_on_the_vapour_root",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061792, 1.90119515401325, 1.90119515401325],
+        )],
+        matrices: &[],
+        expected: &[
+            ("phase_count", 2.0),
+            ("minimum_trial_distance", -1.01204895691117),
+        ],
+        expected_vectors: &[("phase_fractions", &[0.126893612594058, 0.873106387405942])],
+        expected_strings: &[("accepted_root", "gas")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_100_bara_dilute_brine_stays_one_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[(
+            "moles",
+            &[0.5, 55.508435061792, 0.900566125585225, 0.900566125585225],
+        )],
+        matrices: &[],
+        expected: &[
+            ("phase_count", 1.0),
+            ("minimum_trial_distance", 0.955844772906865),
+        ],
+        expected_vectors: &[("phase_fractions", &[1.0])],
+        expected_strings: &[("accepted_root", "aqueous")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_200_bara_brine_splits_on_the_liquid_root",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 20000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061792, 1.90119515401325, 1.90119515401325],
+        )],
+        matrices: &[],
+        expected: &[
+            ("phase_count", 2.0),
+            ("minimum_trial_distance", -0.852840281978997),
+        ],
+        expected_vectors: &[("phase_fractions", &[0.123070314190228, 0.876929685809773])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static CO2_BRINE_PHASE_EQUILIBRIUM_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "normalized_tangent_plane_with_ion_confined_split",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("per_root_seed"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.co2_brine_phase_equilibrium`.
+pub static CO2_BRINE_PHASE_EQUILIBRIUM_SPEC: ModelSpec = ModelSpec {
+    id: "eos.co2_brine_phase_equilibrium",
+    kind: "procedure",
+    algorithm: Some(&CO2_BRINE_PHASE_EQUILIBRIUM_ALGORITHM),
+    checks: CO2_BRINE_PHASE_EQUILIBRIUM_CHECKS,
+    cases: CO2_BRINE_PHASE_EQUILIBRIUM_CASES,
 };
 
 static CO2_PHASE_CHECKS: &[SpecCheck] = &[
@@ -11152,6 +11285,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,
     &CAPILLARY_DEW_POINT_SPEC,
+    &CO2_BRINE_PHASE_EQUILIBRIUM_SPEC,
     &CO2_PHASE_SPEC,
     &CRITICAL_POINT_SPEC,
     &DESMUKH_MATHER_PHASE_SPEC,

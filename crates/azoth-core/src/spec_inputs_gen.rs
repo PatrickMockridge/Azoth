@@ -26,6 +26,7 @@
 //!   - specs/calcs/eos/chapman_enskog_diffusivity.toml
 //!   - specs/calcs/eos/chung_conductivity.toml
 //!   - specs/calcs/eos/chung_viscosity.toml
+//!   - specs/models/eos/co2_brine_phase_equilibrium.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/calcs/eos/co2_water_diffusivity.toml
 //!   - specs/calcs/eos/costald_molar_volume.toml
@@ -466,6 +467,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.chung_viscosity", "kappa", "dimensionless"),
     ("eos.chung_viscosity", "T", "thermodynamic_temperature"),
     ("eos.chung_viscosity", "V", "molar_volume"),
+    (
+        "eos.co2_brine_phase_equilibrium",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.co2_brine_phase_equilibrium", "P", "pressure"),
+    ("eos.co2_brine_phase_equilibrium", "moles", "amount"),
     ("eos.co2_phase", "T", "thermodynamic_temperature"),
     ("eos.co2_phase", "P", "pressure"),
     (

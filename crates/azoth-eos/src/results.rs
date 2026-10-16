@@ -3143,6 +3143,62 @@ impl CalcResult for ElectrolyteCpaStatoilPhaseResult {
     }
 }
 
+/// Result of `eos.co2_brine_phase_equilibrium`.
+///
+/// The phase order is the class's and not the solver's: the CO2-rich phase is first where
+/// there is one, and the aqueous phase is last. That is the one order the answer has, and
+/// [`verify`] refuses a two-phase state that is not in it.
+///
+/// [`verify`]: crate::co2_brine_phase_equilibrium
+#[derive(Debug, Clone, PartialEq)]
+pub struct Co2BrinePhaseEquilibriumResult {
+    /// How many phases the feed settles into: one aqueous phase, or that and a CO2-rich one.
+    pub phase_count: u32,
+    /// Which root the first phase was solved on: `gas` or `oil` where a trial found the feed
+    /// unstable, and `aqueous` where neither did. The second phase, where there is one, is
+    /// the aqueous phase.
+    pub accepted_root: String,
+    /// The mole fraction of the feed in each phase, summing to one.
+    pub phase_fractions: Vec<f64>,
+    /// The composition of each phase, one vector per phase, each summing to one.
+    pub x: Vec<Vec<f64>>,
+    /// `ln phi_i` in each phase, one vector per phase.
+    pub ln_phi: Vec<Vec<f64>>,
+    /// The more negative of the two trials' tangent-plane distances, or the least positive
+    /// where both are stable.
+    pub minimum_trial_distance: f64,
+    /// Composition steps taken, summed over the two trials and, where a root was unstable,
+    /// its split.
+    pub iterations: u32,
+    /// The worst `|z_i - sum_k beta_k x_ik|`, which the acceptance check holds to `1e-10`.
+    pub max_material_balance_residual: f64,
+    /// The worst `|ln(f_i^rich / f_i^aqueous)|` over the molecular components, which the
+    /// acceptance check holds to `1e-8`. An ion carries no ratio, because it is in one phase.
+    pub max_log_fugacity_residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for Co2BrinePhaseEquilibriumResult {
+    const CALC_ID: &'static str = "eos.co2_brine_phase_equilibrium";
+    const FIELDS: &'static [&'static str] = &[
+        "phase_count",
+        "accepted_root",
+        "phase_fractions",
+        "x",
+        "ln_phi",
+        "minimum_trial_distance",
+        "iterations",
+        "max_material_balance_residual",
+        "max_log_fugacity_residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.furst_electrolyte_mod2004_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FurstElectrolyteMod2004PhaseResult {

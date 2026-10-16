@@ -33,6 +33,7 @@ from azoth.core.result import (
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     ColebrookResult,
@@ -288,6 +289,7 @@ __all__ = [
     "choked_flow_area",
     "chung_conductivity",
     "chung_viscosity",
+    "co2_brine_phase_equilibrium",
     "co2_phase",
     "co2_water_diffusivity",
     "component_splitter",
@@ -988,6 +990,29 @@ def chung_viscosity(omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: floa
     )
     return ChungViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def co2_brine_phase_equilibrium(components: list[str], T: Q, P: Q, moles: list[float]) -> Co2BrinePhaseEquilibriumResult:
+    """``eos.co2_brine_phase_equilibrium``, computed in Rust."""
+    spec = _models_gen.model("eos.co2_brine_phase_equilibrium")
+    result = _core.co2_brine_phase_equilibrium(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [_si(spec, "moles", v) for v in moles],
+    )
+    return Co2BrinePhaseEquilibriumResult(
+        phase_count=result.phase_count,
+        accepted_root=result.accepted_root,
+        phase_fractions=tuple(result.phase_fractions),
+        x=tuple(tuple(row) for row in result.x),
+        ln_phi=tuple(tuple(row) for row in result.ln_phi),
+        minimum_trial_distance=result.minimum_trial_distance,
+        iterations=result.iterations,
+        max_material_balance_residual=result.max_material_balance_residual,
+        max_log_fugacity_residual=result.max_log_fugacity_residual,
         warnings=_warnings(result.warnings),
     )
 

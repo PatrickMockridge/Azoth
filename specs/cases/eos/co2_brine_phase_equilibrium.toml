@@ -1,0 +1,74 @@
+model = "eos.co2_brine_phase_equilibrium"
+
+# The feed is `validation/neqsim/BrineProbe.java`'s `brine(pressure, salt, co2)`: CO2 at
+# `co2` moles, water at `1/0.01801528`, and `salt/(100 - salt)/0.05844277` of each of `Na+`
+# and `Cl-`. `validation/neqsim/captures/brine_probe.tsv` is the probe's stdout.
+
+[[cases]]
+id = "the_40_bara_brine_splits_on_the_vapour_root"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `co2_brine_phase_equilibrium at 40 bara 10 pct salt`: a
+vapour-rich phase at a fraction of `0.126893612594058` against the aqueous one, so the feed
+is unstable and the `GAS` trial is the one that splits. `minimum_trial_distance` is negative
+for the same reason. The ions sit at the class's `1e-50` floor in the vapour phase rather
+than at a computed amount, which is the confinement."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 4000000.0
+moles = [10.0, 55.5084350617920, 1.90119515401325, 1.90119515401325]
+[cases.expected]
+phase_count = 2
+accepted_root = "gas"
+phase_fractions = [0.126893612594058, 0.873106387405942]
+minimum_trial_distance = -1.01204895691117
+x = [
+    [0.999495590252868, 0.000504409747132646, 1.0e-50, 1.0e-50],
+    [0.0199838194896444, 0.917183084665082, 0.0314165479226367, 0.0314165479226367],
+]
+
+[[cases]]
+id = "the_100_bara_dilute_brine_stays_one_phase"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `co2_brine_phase_equilibrium at 100 bara 5 pct salt 0.5 mol`: at
+a fifth of the CO2 and half the salt the feed is stable, `minimum_trial_distance` is
+*positive* at `0.955844772906865`, and the answer is the aqueous reference itself. This is
+the case that separates "no split" from "a split that failed" - the phase count is one and
+the root is `aqueous`, not a two-phase answer with a vanishing fraction."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 10000000.0
+moles = [0.5, 55.5084350617920, 0.900566125585225, 0.900566125585225]
+[cases.expected]
+phase_count = 1
+accepted_root = "aqueous"
+phase_fractions = [1.0]
+minimum_trial_distance = 0.955844772906865
+x = [[0.00864908739574473, 0.960194612100920, 0.0155781502516677, 0.0155781502516677]]
+
+[[cases]]
+id = "the_200_bara_brine_splits_on_the_liquid_root"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `co2_brine_phase_equilibrium at 200 bara 10 pct salt`: the same
+feed as the 40 bara case at five times the pressure. **`accepted_root` is not asserted here**,
+and the reason is a measurement rather than a gap: at this pressure the CO2-rich phase's
+vapour and liquid roots are the same root (`Z = 0.415472999952953` on both), so the two trials
+reach one fixed point and the class's choice between them is a strict comparison of two
+numerically equal Gibbs energies. NeqSim's arithmetic made the `OIL` one lower and this
+library's makes the `GAS` one; the phase count, fractions and compositions are the same
+either way, and those are what this case pins. The 40 bara case is where the roots differ and
+the label is determined."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 20000000.0
+moles = [10.0, 55.5084350617920, 1.90119515401325, 1.90119515401325]
+[cases.expected]
+phase_count = 2
+phase_fractions = [0.123070314190228, 0.876929685809773]
+minimum_trial_distance = -0.852840281978997
+x = [
+    [0.997335918289868, 0.00266408171013201, 1.0e-50, 1.0e-50],
+    [0.0245574556221962, 0.912883392588640, 0.0312795758945822, 0.0312795758945822],
+]

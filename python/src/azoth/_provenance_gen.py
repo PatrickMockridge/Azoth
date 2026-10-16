@@ -290,6 +290,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'eos.co2_brine_phase_equilibrium': {
+        "calc_id": 'eos.co2_brine_phase_equilibrium',
+        "name": 'Constrained CO2/brine phase selection',
+        "spec": {'path': 'specs/models/eos/co2_brine_phase_equilibrium.toml', 'sha256': '7b94b6329acedc64957aded45c2aa88e4245698137c99adc06583f7f3e81979e'},
+        "code": [{'path': 'python/src/azoth/eos/reference/co2_brine_phase_equilibrium.py', 'sha256': 'ce83847039bf17197ac86666f46fd911976f1273b674fbd7c15a757d98de437a'}, {'path': 'crates/azoth-eos/src/co2_brine_phase_equilibrium.rs', 'sha256': '77a1ae42288bd8cbab8ad0841f725a2e19f87b0e3d6489f28d8f7fcece7112bf'}],
+        "source": 'NeqSim master `CO2BrinePhaseEquilibrium`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'eos.co2_phase': {
         "calc_id": 'eos.co2_phase',
         "name": 'CO2 reference phase state',
