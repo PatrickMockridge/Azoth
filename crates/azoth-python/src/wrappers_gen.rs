@@ -451,6 +451,30 @@ pub fn bubble_temperature(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Molalities and activity coefficients of a phase.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn calc_ionic_composition(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyCalcIonicCompositionResult> {
+    azoth_eos::calc_ionic_composition::calc_ionic_composition(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &x,
+    )
+    .map(|r| crate::transport_gen::PyCalcIonicCompositionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Capillary dew point.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

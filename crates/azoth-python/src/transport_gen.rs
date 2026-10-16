@@ -1354,6 +1354,59 @@ impl From<&azoth_eos::results::BwrsPhaseResult> for PyBwrsPhaseResult {
         }
     }
 }
+/// Result of `eos.calc_ionic_composition`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CalcIonicCompositionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCalcIonicCompositionResult {
+    /// each component's moles per kilogram of water: the class's `mmol/kgSolvent` column over 1000, which is this vocabulary's unit for the quantity. Water's own entry is a restatement of its molar mass, `1/M_water`, and is not corrected out of the solvent's mass.
+    #[pyo3(get)]
+    pub molality: Vec<PyQty>,
+    /// kilograms of the component per kilogram of water: the class's `mg/kgSolvent` column over `1e6`. Dimensionless because a mass ratio is, and water's own entry is one for the same reason its molality is its molar mass's reciprocal.
+    #[pyo3(get)]
+    pub mass_ratio: Vec<f64>,
+    /// `gamma_i` at the component's own reference state: symmetric (pure component) for a `solvent`, unsymmetric (infinite dilution in water) for everything else. An ion's is therefore well below one at a brine's ionic strength, and water's is at one.
+    #[pyo3(get)]
+    pub activity_coefficient: Vec<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCalcIonicCompositionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CalcIonicCompositionResult(molality={:?}, mass_ratio={:?}, activity_coefficient={:?}, {} warning(s))",
+            self.molality,
+            self.mass_ratio,
+            self.activity_coefficient,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::CalcIonicCompositionResult> for PyCalcIonicCompositionResult {
+    fn from(r: &azoth_eos::results::CalcIonicCompositionResult) -> Self {
+        Self {
+            molality: r
+                .molality
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol/kg".to_string(),
+                })
+                .collect(),
+            mass_ratio: r.mass_ratio.clone(),
+            activity_coefficient: r.activity_coefficient.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.capillary_dew_point`, transported.
 #[pyclass(
     frozen,

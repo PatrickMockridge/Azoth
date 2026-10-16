@@ -55,6 +55,7 @@ pub mod bubble_temperature;
 pub mod bwrs;
 pub mod bwrs_mixture;
 pub mod bwrs_phase;
+pub mod calc_ionic_composition;
 pub mod capillary_dew_point;
 pub mod card;
 pub mod chapman_enskog_diffusivity;
@@ -255,6 +256,7 @@ pub use chung_viscosity::chung_viscosity;
 pub use co2_phase::co2_phase;
 pub use co2_water_diffusivity::co2_water_diffusivity;
 pub use costald_molar_volume::costald_molar_volume;
+pub use calc_ionic_composition::calc_ionic_composition;
 pub use co2_brine_phase_equilibrium::co2_brine_phase_equilibrium;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
@@ -339,7 +341,8 @@ pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChapmanEnskogDiffusivityResult,
-    ChungConductivityResult, ChungViscosityResult, Co2BrinePhaseEquilibriumResult,
+    CalcIonicCompositionResult, ChungConductivityResult, ChungViscosityResult,
+    Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult,
     DewTemperatureResult, EffectiveDiffusionResult, EosCgPhaseResult, FreezingPointResult,

@@ -1,0 +1,49 @@
+model = "eos.calc_ionic_composition"
+
+# `validation/neqsim/BrineProbe.java` flashes `brine(pressure, salt, co2)` and reports on the
+# aqueous phase it lands on; `validation/neqsim/captures/brine_probe.tsv` is its stdout, and
+# the `phase_x` rows beside each table are the composition these cases take.
+#
+# **The tolerance is the oracle's, not this model's.** The class formats through
+# `DecimalFormat("#.#####E0")` and parses the string back, so every captured number carries
+# six significant figures and nothing below them is stated. `1e-5` is the rounding the
+# capture itself has.
+
+[[cases]]
+id = "the_40_bara_aqueous_phase_at_ten_percent_salt"
+tolerance = 1e-05
+source = """`brine_probe.tsv`, `calc_ionic_composition at 40 bara 10 pct salt aqueous`: the
+aqueous phase of the flashed ten-per-cent brine, whose own composition the capture states
+beside the table. **The two reference states are both live here**: water is a `solvent`, so
+its coefficient is against a pure water phase and sits at `0.999046`; `CO2`, `Na+` and `Cl-`
+are `solute`s, so theirs are against an infinite-dilution binary with water, and an ion's at
+this ionic strength is well below one."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 4000000.0
+x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397]
+[cases.expected]
+molality = [1.20945, 55.5093, 1.90138, 1.90138]
+mass_ratio = [0.0532279, 1.0, 0.0437126, 0.0674038]
+activity_coefficient = [1.05024, 0.999046, 0.68748, 0.69305]
+
+[[cases]]
+id = "the_100_bara_aqueous_phase_at_five_percent_salt"
+tolerance = 1e-05
+source = """`brine_probe.tsv`, `calc_ionic_composition at 100 bara 5 pct salt aqueous`. Half
+the salt and five times the pressure, so the CO2 is *more* soluble and the ions are not:
+`CO2`'s molality rises to `1646.61` while `Na+`'s halves to `900.594`. Kept because **the
+ions' coefficients move the other way here** - `Na+` is `1.16645` against the 40 bara case's
+`0.68748`, and `Cl-` is `0.416939` against `0.69305` - so a port that read the two reference
+states the same way, or that dropped the pressure from the reference build, would pass one
+case and fail the other."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 10000000.0
+x = [0.0279290026609336, 0.941520156597900, 0.0152754203705830, 0.0152754203705830]
+[cases.expected]
+molality = [1.64661, 55.5093, 0.900594, 0.900594]
+mass_ratio = [0.0724674, 1.0, 0.0207047, 0.0319261]
+activity_coefficient = [0.89545, 1.00298, 1.16645, 0.416939]

@@ -183,16 +183,17 @@ reaches equilibrium through.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
-  **Of the four brine operations, one is ported.** `CO2BrinePhaseEquilibrium` is
-  `eos.co2_brine_phase_equilibrium`, on the electrolyte-CPA route above; its supported
-  composition is CO2, water and ions alone with `water > CO2`, and it is not a flash - it
-  holds one aqueous phase and runs its own two trials and its own ion-confined split. **Owed:
-  `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and `CalcIonicComposition`.** Their
-  gate was once recorded here as the EoS/GE hybrid seam, and that was wrong: it is
-  `fluid instanceof SystemElectrolyteCPAstatoil`, which extends `SystemFurstElectrolyteEos`
-  extends `SystemSrkEos`, so the hybrid route is not in their chain at all — that route is
-  ported (`eos.hybrid_eos_ge_flash`, `reactions.reactive_hybrid_eos_ge_flash`) and was never
-  the blocker.
+  **Of the four brine operations, two are ported.** `CO2BrinePhaseEquilibrium` is
+  `eos.co2_brine_phase_equilibrium` and `CalcIonicComposition` is `eos.calc_ionic_composition`,
+  both on the electrolyte-CPA route above. The first is not a flash - it holds one aqueous
+  phase and runs its own two trials and its own ion-confined split - and the second solves
+  nothing at all: it reads a phase and reports molalities and activity coefficients at
+  `Phase`'s two reference states. **Owed: `ReactiveCO2BrinePhaseEquilibrium` and
+  `SaturateWithWater`.** Their gate was once recorded here as the EoS/GE hybrid seam, and that
+  was wrong: it is `fluid instanceof SystemElectrolyteCPAstatoil`, which extends
+  `SystemFurstElectrolyteEos` extends `SystemSrkEos`, so the hybrid route is not in their
+  chain at all — that route is ported (`eos.hybrid_eos_ge_flash`,
+  `reactions.reactive_hybrid_eos_ge_flash`) and was never the blocker.
 - **Electrolytes.** Ported, each with the id that carries it: `ComponentGePitzer`,
   `PhasePitzer` (`eos.pitzer_phase`) and `SystemPitzer`, with the `Pitzer*` machinery
   (`PitzerNeutralInteraction`, `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`,

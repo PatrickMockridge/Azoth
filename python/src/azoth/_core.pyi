@@ -454,6 +454,13 @@ class BwrsPhaseResult:
     warnings: list[Warning]
 
 @final
+class CalcIonicCompositionResult:
+    molality: list[float]
+    mass_ratio: list[float]
+    activity_coefficient: list[float]
+    warnings: list[Warning]
+
+@final
 class CapillaryDewPointResult:
     temperature: Qty
     incipient: list[float]
@@ -2500,6 +2507,12 @@ def bwrs_phase(
     P: float,
     z: list[float],
 ) -> BwrsPhaseResult: ...
+def calc_ionic_composition(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+) -> CalcIonicCompositionResult: ...
 def capillary_dew_point(
     Tc: list[float],
     Pc: list[float],

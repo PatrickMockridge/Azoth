@@ -3199,6 +3199,34 @@ impl CalcResult for Co2BrinePhaseEquilibriumResult {
     }
 }
 
+/// Result of `eos.calc_ionic_composition`.
+///
+/// Three columns, one entry per component, in the order the components were given. The
+/// class's own table has a header row and a trailing empty one; those are the report and not
+/// the answer, and neither is here.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CalcIonicCompositionResult {
+    /// Each component's moles per kilogram of water, in mol/kg.
+    pub molality: Vec<f64>,
+    /// Kilograms of the component per kilogram of water.
+    pub mass_ratio: Vec<f64>,
+    /// `gamma_i` at the component's own reference state: symmetric for a `solvent`,
+    /// unsymmetric for everything else.
+    pub activity_coefficient: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CalcIonicCompositionResult {
+    const CALC_ID: &'static str = "eos.calc_ionic_composition";
+    const FIELDS: &'static [&'static str] =
+        &["molality", "mass_ratio", "activity_coefficient", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.furst_electrolyte_mod2004_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FurstElectrolyteMod2004PhaseResult {

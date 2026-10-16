@@ -22,6 +22,7 @@
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
+//!   - specs/models/eos/calc_ionic_composition.toml
 //!   - specs/models/eos/capillary_dew_point.toml
 //!   - specs/calcs/eos/chapman_enskog_diffusivity.toml
 //!   - specs/calcs/eos/chung_conductivity.toml
@@ -428,6 +429,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.bwrs_phase", "T", "thermodynamic_temperature"),
     ("eos.bwrs_phase", "P", "pressure"),
     ("eos.bwrs_phase", "z", "dimensionless"),
+    (
+        "eos.calc_ionic_composition",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.calc_ionic_composition", "P", "pressure"),
+    ("eos.calc_ionic_composition", "x", "dimensionless"),
     ("eos.capillary_dew_point", "P", "pressure"),
     ("eos.capillary_dew_point", "y", "dimensionless"),
     ("eos.capillary_dew_point", "pore_radius", "length"),

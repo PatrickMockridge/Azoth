@@ -1,0 +1,66 @@
+id = "eos.calc_ionic_composition"
+name = "Molalities and activity coefficients of a phase"
+kind = "direct"
+assumptions = [
+    "NeqSim's `CalcIonicComposition`, which solves nothing: it reads one phase and reports three columns per component. The phase is the caller's, so its `T`, `P` and composition are the inputs rather than a feed to flash.",
+    "**the solvent is the component named `water`**, found by name as the class finds it - not chosen by `REFERENCESTATETYPE`. The two concentration columns are `n_i/(n_water M_water) 1000` and `n_i M_i/(n_water M_water) 1e6`, with the databank's molar masses in kg/mol.",
+    "**the activity coefficient is `exp(ln phi_i - ln phi_i^reference)`**, the reference chosen per component by `REFERENCESTATETYPE`: `solvent` takes a *pure* phase of that component, anything else an *infinite-dilution* binary of it with water.",
+    "**the reference is a second phase and not a rearrangement.** Both are evaluated on the same electrolyte-CPA fluid at the same `T` and `P` on the liquid root, which is what the class's `initRefPhases` builds and what `this.getType()` selects.",
+    "**the infinite-dilution binary is `1e-10` mol of the component beside `10` mol of water**, the class's own amounts, so the solute's mole fraction is `1e-11` rather than a limit taken analytically. That is a composition the phase is solved at.",
+    "**upstream rounds what it reports to six significant figures**, because the class formats through `DecimalFormat(\"#.#####E0\")` and parses the string back. A case's tolerance is the *oracle's* precision and not this model's, which is why it is looser here than elsewhere.",
+    "`x` is checked rather than renormalised.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `CalcIonicComposition` is the port source, and `Phase.getActivityCoefficient`, `getLogPureComponentFugacity` and `getLogInfiniteDiluteFugacity` are the reference-state construction it calls.",
+    "Lewis, G. N.; Randall, M. (1923). \"Thermodynamics and the Free Energy of Chemical Substances.\" McGraw-Hill. The symmetric and unsymmetric reference states the two branches select between.",
+]
+[source]
+standard = "NeqSim master `CalcIonicComposition`"
+edition = "Its `run` - three columns per component, the molalities over the water's mass and the activity coefficient at the class's own reference - over `Phase`'s two reference-state constructions."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the phase is made of, by name, in the order every output vector is indexed by. `water` must be one of them, because it is the solvent the two concentration columns are per kilogram of."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions, checked rather than renormalised"
+[outputs]
+[outputs.molality]
+type = "vector"
+unit = "mol/kg"
+length = "one per component"
+description = "each component's moles per kilogram of water: the class's `mmol/kgSolvent` column over 1000, which is this vocabulary's unit for the quantity. Water's own entry is a restatement of its molar mass, `1/M_water`, and is not corrected out of the solvent's mass."
+[outputs.mass_ratio]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "kilograms of the component per kilogram of water: the class's `mg/kgSolvent` column over `1e6`. Dimensionless because a mass ratio is, and water's own entry is one for the same reason its molality is its molar mass's reciprocal."
+[outputs.activity_coefficient]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`gamma_i` at the component's own reference state: symmetric (pure component) for a `solvent`, unsymmetric (infinite dilution in water) for everything else. An ion's is therefore well below one at a brine's ionic strength, and water's is at one."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.calc_ionic_composition"
+rust = "azoth_eos::calc_ionic_composition"

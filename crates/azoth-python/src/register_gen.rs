@@ -40,6 +40,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyBubblePressureResult>()?;
     m.add_class::<crate::transport_gen::PyBubbleTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyBwrsPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyCalcIonicCompositionResult>()?;
     m.add_class::<crate::transport_gen::PyCapillaryDewPointResult>()?;
     m.add_class::<crate::transport_gen::PyChapmanEnskogDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyChungConductivityResult>()?;
@@ -292,6 +293,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::bwrs_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::calc_ionic_composition,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::capillary_dew_point,
         m

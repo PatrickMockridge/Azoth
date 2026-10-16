@@ -41,6 +41,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.bubble_pressure" => azoth_eos::results::BubblePressureResult::FIELDS.to_vec(),
         "eos.bubble_temperature" => azoth_eos::results::BubbleTemperatureResult::FIELDS.to_vec(),
         "eos.bwrs_phase" => azoth_eos::results::BwrsPhaseResult::FIELDS.to_vec(),
+        "eos.calc_ionic_composition" => azoth_eos::results::CalcIonicCompositionResult::FIELDS.to_vec(),
         "eos.capillary_dew_point" => azoth_eos::results::CapillaryDewPointResult::FIELDS.to_vec(),
         "eos.chapman_enskog_diffusivity" => azoth_eos::results::ChapmanEnskogDiffusivityResult::FIELDS.to_vec(),
         "eos.chung_conductivity" => azoth_eos::results::ChungConductivityResult::FIELDS.to_vec(),

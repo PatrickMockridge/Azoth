@@ -328,6 +328,18 @@ public class BrineProbe {
     System.out.printf("# %s%n", label);
     try {
       new ThermodynamicOperations(fluid).TPflash();
+      // **The phase the table is about**, which the table itself does not state. The model
+      // takes a phase and not a feed - the class solves nothing - so its composition is the
+      // input a case needs, and the table gives it only as six-figure molalities.
+      PhaseInterface reported = fluid.getPhase(phase);
+      text("phase_type", String.valueOf(reported.getType()));
+      row("phase_T", reported.getTemperature());
+      row("phase_P", reported.getPressure());
+      for (int i = 0; i < reported.getNumberOfComponents(); i++) {
+        text("phase_name[" + i + "]", reported.getComponent(i).getComponentName());
+        row("phase_x[" + i + "]", reported.getComponent(i).getx());
+        row("phase_n[" + i + "]", reported.getComponent(i).getNumberOfMolesInPhase());
+      }
       CalcIonicComposition calc = new CalcIonicComposition(fluid, phase);
       calc.run();
       String[][] table = calc.getResultTable();

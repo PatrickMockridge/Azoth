@@ -78,6 +78,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |
+| [`eos.calc_ionic_composition`](./calc_ionic_composition.md) | `direct composition` | NeqSim master `CalcIonicComposition` |
 | [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim master `CapillaryDewPointFlash` |
 | [`eos.co2_brine_phase_equilibrium`](./co2_brine_phase_equilibrium.md) | `normalized_tangent_plane_with_ion_confined_split` | NeqSim master `CO2BrinePhaseEquilibrium` |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |

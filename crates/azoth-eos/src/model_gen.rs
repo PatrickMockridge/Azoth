@@ -7,6 +7,7 @@
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
+//!   - specs/models/eos/calc_ionic_composition.toml
 //!   - specs/models/eos/capillary_dew_point.toml
 //!   - specs/models/eos/co2_brine_phase_equilibrium.toml
 //!   - specs/models/eos/co2_phase.toml
@@ -900,6 +901,119 @@ pub static BWRS_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&BWRS_PHASE_ALGORITHM),
     checks: BWRS_PHASE_CHECKS,
     cases: BWRS_PHASE_CASES,
+};
+
+static CALC_IONIC_COMPOSITION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static CALC_IONIC_COMPOSITION_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_40_bara_aqueous_phase_at_ten_percent_salt",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[(
+            "x",
+            &[
+                0.0199838194895481,
+                0.917183084665173,
+                0.0314165479226397,
+                0.0314165479226397,
+            ],
+        )],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("molality", &[1.20945, 55.5093, 1.90138, 1.90138]),
+            ("mass_ratio", &[0.0532279, 1.0, 0.0437126, 0.0674038]),
+            (
+                "activity_coefficient",
+                &[1.05024, 0.999046, 0.68748, 0.69305],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_100_bara_aqueous_phase_at_five_percent_salt",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 283.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[(
+            "x",
+            &[
+                0.0279290026609336,
+                0.9415201565979,
+                0.015275420370583,
+                0.015275420370583,
+            ],
+        )],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("molality", &[1.64661, 55.5093, 0.900594, 0.900594]),
+            ("mass_ratio", &[0.0724674, 1.0, 0.0207047, 0.0319261]),
+            (
+                "activity_coefficient",
+                &[0.89545, 1.00298, 1.16645, 0.416939],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.calc_ionic_composition`.
+pub static CALC_IONIC_COMPOSITION_SPEC: ModelSpec = ModelSpec {
+    id: "eos.calc_ionic_composition",
+    kind: "direct",
+    algorithm: None,
+    checks: CALC_IONIC_COMPOSITION_CHECKS,
+    cases: CALC_IONIC_COMPOSITION_CASES,
 };
 
 static CAPILLARY_DEW_POINT_CHECKS: &[SpecCheck] = &[
@@ -11284,6 +11398,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,
+    &CALC_IONIC_COMPOSITION_SPEC,
     &CAPILLARY_DEW_POINT_SPEC,
     &CO2_BRINE_PHASE_EQUILIBRIUM_SPEC,
     &CO2_PHASE_SPEC,

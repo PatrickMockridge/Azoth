@@ -534,6 +534,25 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CalcIonicCompositionResult(_HasWarnings):
+    """Result of ``eos.calc_ionic_composition``."""
+
+    CALC_ID: ClassVar[str] = "eos.calc_ionic_composition"
+
+    #: each component's moles per kilogram of water: the class's `mmol/kgSolvent` column over 1000, which is this vocabulary's unit for the quantity. Water's own entry is a restatement of its molar mass, `1/M_water`, and is not corrected out of the solvent's mass.
+    molality: tuple[Q, ...]
+
+    #: kilograms of the component per kilogram of water: the class's `mg/kgSolvent` column over `1e6`. Dimensionless because a mass ratio is, and water's own entry is one for the same reason its molality is its molar mass's reciprocal.
+    mass_ratio: tuple[float, ...]
+
+    #: `gamma_i` at the component's own reference state: symmetric (pure component) for a `solvent`, unsymmetric (infinite dilution in water) for everything else. An ion's is therefore well below one at a brine's ionic strength, and water's is at one.
+    activity_coefficient: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CapillaryDewPointResult(_HasWarnings):
     """Result of ``eos.capillary_dew_point``."""
 

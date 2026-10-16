@@ -25,6 +25,7 @@ from azoth.core.result import (
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
+    CalcIonicCompositionResult,
     CapillaryDewPointResult,
     ChapmanEnskogDiffusivityResult,
     CharacterisePlusFractionResult,
@@ -281,6 +282,7 @@ __all__ = [
     "bubble_pressure",
     "bubble_temperature",
     "bwrs_phase",
+    "calc_ionic_composition",
     "capillary_dew_point",
     "chapman_enskog_diffusivity",
     "characterise_plus_fraction",
@@ -902,6 +904,23 @@ def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
         cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def calc_ionic_composition(components: list[str], T: Q, P: Q, x: list[float]) -> CalcIonicCompositionResult:
+    """``eos.calc_ionic_composition``, computed in Rust."""
+    spec = _models_gen.model("eos.calc_ionic_composition")
+    result = _core.calc_ionic_composition(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return CalcIonicCompositionResult(
+        molality=tuple(from_si(q.magnitude_si, q.unit) for q in result.molality),
+        mass_ratio=tuple(result.mass_ratio),
+        activity_coefficient=tuple(result.activity_coefficient),
         warnings=_warnings(result.warnings),
     )
 

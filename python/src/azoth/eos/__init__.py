@@ -77,6 +77,7 @@ from azoth.core.result import (
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
+    CalcIonicCompositionResult,
     CapillaryDewPointResult,
     ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
@@ -256,6 +257,7 @@ __all__ = [
     "bubble_temperature",
     "bwrs_coefficients",
     "bwrs_phase",
+    "calc_ionic_composition",
     "capillary_dew_point",
     "chapman_enskog_diffusivity",
     "chung_conductivity",
@@ -431,6 +433,7 @@ _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
+_CALC_IONIC_COMPOSITION = "eos.calc_ionic_composition"
 _CO2_BRINE_PHASE_EQUILIBRIUM = "eos.co2_brine_phase_equilibrium"
 _ELECTROLYTE_CPA_STATOIL_PHASE = "eos.electrolyte_cpa_statoil_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
@@ -3768,6 +3771,34 @@ def co2_brine_phase_equilibrium(
     """
     return resolve(_CO2_BRINE_PHASE_EQUILIBRIUM)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, moles=moles
+    )
+
+
+def calc_ionic_composition(
+    components: list[str],
+    T: Q,
+    P: Q,
+    x: list[float],
+) -> CalcIonicCompositionResult:
+    """Each component's molality and activity coefficient in one phase.
+
+    NeqSim's ``CalcIonicComposition``, which solves nothing: it reads a phase and reports
+    three columns. **The activity coefficient is not a ratio to water.** It is
+    ``exp(ln phi_i - ln phi_i^reference)``, the reference chosen per component by the
+    databank's ``REFERENCESTATETYPE``: a solvent takes a *pure* phase of itself, and
+    everything else an **infinite-dilution binary with water**. So an ion's coefficient is at
+    the unsymmetric reference, and at a brine's ionic strength it is well below one.
+
+    Raises:
+        InvalidInputError: if ``x`` is not a composition, a name is not in the databank, or no
+            component is named ``water``.
+        PropertyUnavailableError: if the databank states no molar mass for a component.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.calc_ionic_composition`.
+    """
+    return resolve(_CALC_IONIC_COMPOSITION)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x
     )
 
 
