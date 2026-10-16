@@ -342,6 +342,10 @@ UNCHECKABLE = {
 #: `--check` runner does not have, so a claim that reaches one emits it explicitly.
 CARGO_GENERATORS = ("gen_ui_fixtures",)
 
+#: Checkers that cannot be run here at all: they read a GitHub API and need a token, so a local
+#: invocation could only ever fail. Their own test is what a change to one reaches.
+NETWORK_CHECKS = {"check_nightly": "it asks the GitHub API; .github/workflows/liveness.yml runs it"}
+
 
 @lru_cache(maxsize=1)
 def registered_ids() -> frozenset[str]:
@@ -953,6 +957,11 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
                         f"python tools/{tool}.py --check",
                     )
                 )
+            elif tool in NETWORK_CHECKS:
+                # **Reading the command is not running it.** These need a token and a network,
+                # so a change to one is covered by its own test and by the workflow that runs
+                # it - not by a local invocation that could only fail.
+                pass
             elif tool.startswith(("check_", "audit_")) or tool.endswith("_lint"):
                 commands.append(
                     Command(f"the checker that changed: {tool}", SCRIPT, f"python tools/{tool}.py")

@@ -1,0 +1,41 @@
+name: liveness
+
+# **Does the nightly still exist?**
+#
+# Everything the scoped-push design buys rests on the nightly actually running: a green push
+# says nothing about the tree, and the nightly is what closes that gap within a day. GitHub
+# disables a scheduled workflow after roughly sixty days without repository activity, and it
+# does so silently - no failure, no notification, just a gate that stops existing.
+#
+# **The push trigger is the load-bearing part.** A daily schedule alone would be disabled by
+# the same inactivity it is meant to detect. Running on a push to main means the check re-arms
+# itself exactly when the repository is active, and a schedule that stopped being a schedule is
+# noticed by the next thing that happens.
+#
+# `tools/check_nightly.py` returns 2, not 0, when it cannot read the API. An outage is not a
+# healthy nightly.
+
+on:
+  schedule:
+    # 08:17 UTC - four hours after the nightly, so a slow run is finished rather than in flight.
+    - cron: "17 8 * * *"
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  heartbeat:
+    name: the nightly ran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tools/check_nightly.py --check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
