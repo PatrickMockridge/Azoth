@@ -164,3 +164,15 @@ def test_the_whole_tracked_tree_is_placed() -> None:
     or `lean/` change used to be refused outright, which failed the CI job that ran the tool.
     """
     assert tool().audit() == 0
+
+
+def test_a_target_that_selects_nothing_is_caught() -> None:
+    """`--verify-selection`, measured rather than reasoned about.
+
+    `-k` deselecting everything exits 5, so this is the check that turns "the gate ran" into
+    "the gate ran something" - the distinction the map's silent zeros lived in.
+    """
+    module = tool()
+    target = f"{module.TESTS}/test_test_scope.py"
+    assert module.collects_nothing(f"{target} -k definitely_not_a_test") == "collects nothing"
+    assert module.collects_nothing(target) is None

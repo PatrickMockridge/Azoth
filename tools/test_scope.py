@@ -961,6 +961,67 @@ def tracked_paths() -> list[str]:
     return sorted({line for line in f"{listed}\n{untracked}".split("\n") if line.strip()})
 
 
+def pytest_env() -> dict[str, str]:
+    """The environment the suite runs under: `PYTHONPATH` stated rather than inherited."""
+    return {**os.environ, "PYTHONPATH": str(ROOT / "python" / "src")}
+
+
+def collects_nothing(command: str) -> str | None:
+    """Why a pytest target is empty, or `None` when it collects something.
+
+    `-k` deselecting everything exits 5 rather than 0, so a lone wrong id is already loud. The
+    silent case is a wrong id *inside an `or`*, where the expression still selects the valid
+    ones - and a target whose file moved. Both are what this catches, without running a test.
+    """
+    target, _, expression = command.partition(" -k ")
+    argv = [
+        python_runner(),
+        "-m",
+        "pytest",
+        "--collect-only",
+        "-q",
+        "-o",
+        "addopts=",
+        "-p",
+        "no:cacheprovider",
+    ]
+    argv += target.split()
+    if expression:
+        argv += ["-k", expression.strip().strip('"')]
+    result = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, env=pytest_env())
+    if result.returncode == 5:
+        return "collects nothing"
+    if result.returncode != 0:
+        tail = [line for line in result.stdout.splitlines() if line.strip()][-1:]
+        return f"collection failed ({' '.join(tail)})"
+    if not result.stdout.strip():
+        return "collects nothing"
+    return None
+
+
+def verify_selection(commands: list[tuple[str, str, str]]) -> int:
+    """**Every emitted pytest target has to collect at least one test.**
+
+    A target that collects nothing is a green run over nothing, which is the failure this whole
+    tool exists to make impossible. Checking it costs a collection and no execution, and it is
+    the only thing that can catch an id that is registered but not parametrised.
+    """
+    bad: list[str] = []
+    for _, kind, command in commands:
+        if kind != PYTEST:
+            continue
+        problem = collects_nothing(command)
+        if problem:
+            bad.append(f"{command}: {problem}")
+    if bad:
+        print(f"test_scope: {len(bad)} pytest target(s) select nothing:")
+        for entry in bad:
+            print(f"    {entry}")
+        return 2
+    print("# every pytest target collects something")
+    return 0
+
+
 def audit() -> int:
     """**Every path in the tree, through the table.**
 
@@ -1030,6 +1091,11 @@ def main() -> int:
         help="walk every tracked path through the table, rather than the diff",
     )
     parser.add_argument(
+        "--verify-selection",
+        action="store_true",
+        help="collect every pytest target, and refuse one that selects nothing",
+    )
+    parser.add_argument(
         "--no-gate",
         action="store_true",
         help="print the bare commands, for a runner that has no tools/gated.sh",
@@ -1070,6 +1136,8 @@ def main() -> int:
             "stops being trustworthy, and an untrusted tool is a sweep waiting to happen."
         )
         return 2
+    if args.verify_selection:
+        return verify_selection(commands)
     if not commands:
         print(f"# nothing in {len(paths)} changed path(s) reaches a test")
         return 0
