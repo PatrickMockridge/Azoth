@@ -300,3 +300,22 @@ def test_a_crate_with_no_namespace_says_what_it_reaches() -> None:
     assert len(module.crate_claim("azoth-core").namespaces) == len(module.crate_namespaces())
     assert module.crate_claim("azoth-test-support").empty(), "its users' tests carry it"
     assert module.table_problems() == []
+
+
+# ------------------------------------------------- the tool is not defeated by its own caller
+
+
+def test_a_workflow_writes_the_command_list_outside_the_tree() -> None:
+    """**The redirect is a path in the diff, and the refusal lands inside it.**
+
+    An untracked file is treated as a change, deliberately: a new kernel or model is exactly the
+    file that must not escape the map. A shell redirect creates its target *before* the command
+    runs, so `--job python-test > scope.sh` handed the tool an unclaimed path named after its own
+    output - and the message explaining the refusal was written into the file being refused. The
+    job failed with exit 2 and nothing in the log, on every push. Nothing about the tool's rules
+    was wrong; the caller was writing into the tree it was asking about.
+    """
+    for workflow in sorted((TOOLS.parent / ".github" / "workflows").glob("*.yml")):
+        for number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+            if "scope.sh" in line and not line.lstrip().startswith("#"):
+                assert "$RUNNER_TEMP/scope.sh" in line, f"{workflow.name}:{number}: {line}"

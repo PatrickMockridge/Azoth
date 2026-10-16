@@ -204,9 +204,9 @@ jobs:
       - name: the scoped Rust set
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
-            --no-gate --job rust-test > scope.sh
-          cat scope.sh
-          bash -e scope.sh
+            --no-gate --job rust-test > "$RUNNER_TEMP/scope.sh"
+          cat "$RUNNER_TEMP/scope.sh"
+          bash -e "$RUNNER_TEMP/scope.sh"
       # **The front end's fixtures are the library's own output, and this is what says so.**
       # The check lives in this job rather than in `ui` for one reason: it runs the CLI, so it
       # needs a cargo build, and this job has just made one. The `ui` job's own gate is
@@ -284,9 +284,9 @@ jobs:
           PYTHONPATH: ""
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
-            --no-gate --job python-test > scope.sh
-          cat scope.sh
-          bash -e scope.sh
+            --no-gate --job python-test > "$RUNNER_TEMP/scope.sh"
+          cat "$RUNNER_TEMP/scope.sh"
+          bash -e "$RUNNER_TEMP/scope.sh"
       # **Every target has to collect something.** An empty collection is a green run over
       # nothing, and it is the one failure a scoped set can hide that a full one cannot.
       - name: every target selects a test

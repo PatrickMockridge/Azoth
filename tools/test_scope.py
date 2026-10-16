@@ -1431,12 +1431,20 @@ def main() -> int:
         for path in sorted(paths):
             print(f"#   {path}")
     if unclaimed:
-        print("test_scope: no rule claims these paths, so this tool cannot say what they reach:")
+        # **To stderr, because the caller may be redirecting stdout into a file.** CI writes the
+        # command list to one, and the shell creates that file before this runs - so it is an
+        # untracked path this tool then refuses, and the reason went into the file it refused.
+        # The message has to survive the redirect that caused it.
+        print(
+            "test_scope: no rule claims these paths, so this tool cannot say what they reach:",
+            file=sys.stderr,
+        )
         for path in unclaimed:
-            print(f"    {path}")
+            print(f"    {path}", file=sys.stderr)
         print(
             "Add a rule to tools/test_scope.py. A path nothing claims is how the scoped set "
-            "stops being trustworthy, and an untrusted tool is a sweep waiting to happen."
+            "stops being trustworthy, and an untrusted tool is a sweep waiting to happen.",
+            file=sys.stderr,
         )
         return 2
 
