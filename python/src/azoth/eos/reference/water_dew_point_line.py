@@ -75,9 +75,7 @@ def water_dew_point_line(
     for index in range(NUMBER_OF_POINTS):
         p_si = low_si + step * index
         try:
-            point = water_dew_point_multiphase(
-                components, z, ureg.Quantity(p_si, "Pa"), eos
-            )
+            point = water_dew_point_multiphase(components, z, ureg.Quantity(p_si, "Pa"), eos)
         except AzothError:
             failed += 1
         else:

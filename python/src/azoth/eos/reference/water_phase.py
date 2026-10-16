@@ -365,8 +365,7 @@ def _properties(p_mpa: float, t: float) -> dict[str, float]:
             * (1.0 + 2.0 * pi * dr["gp"] + pi * pi * dr["gp"] ** 2)
             / (
                 (1.0 - pi * pi * dr["gpp"])
-                + (1.0 + pi * dr["gp"] - tau * pi * dr["gpt"]) ** 2
-                / (tau * tau * d["gtt"])
+                + (1.0 + pi * dr["gp"] - tau * pi * dr["gpt"]) ** 2 / (tau * tau * d["gtt"])
             )
         )
 

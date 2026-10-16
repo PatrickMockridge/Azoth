@@ -92,9 +92,7 @@ def water_dew_point_multiphase(
     apply_checks(checks.on_input, {"P": p_si}.get, warnings)
 
     if len(components) != len(z):
-        raise InvalidInputError(
-            "z", f"{len(components)} components and {len(z)} mole fractions"
-        )
+        raise InvalidInputError("z", f"{len(components)} components and {len(z)} mole fractions")
 
     from azoth.eos import components as databank
 

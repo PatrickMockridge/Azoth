@@ -257,9 +257,7 @@ def is_wide(tokens: list[str]) -> bool:
         return all(p in WIDE_PYTEST_ROOTS for p in pos)
     if prog == "mypy":
         return not any(not t.startswith("-") for t in tokens[1:])
-    if prog in BUILD_TOOLS:
-        return True
-    return False
+    return prog in BUILD_TOOLS
 
 
 def is_heavy(tokens: list[str]) -> bool:
@@ -272,9 +270,7 @@ def is_heavy(tokens: list[str]) -> bool:
         return True
     # **The sweep is heavy because of what it spawns, not because of the word.** Denying the
     # mention was denying `grep -n oracle_sweep tools/`, which runs no JVM at all.
-    if prog.startswith("python") and any(t.endswith("oracle_sweep.py") for t in tokens[1:]):
-        return True
-    return False
+    return prog.startswith("python") and any(t.endswith("oracle_sweep.py") for t in tokens[1:])
 
 
 def wrapped(tokens: list[str]) -> bool:

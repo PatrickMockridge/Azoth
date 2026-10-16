@@ -371,7 +371,9 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     # `eos.stability_test` ports** - the two share a name and nothing else - and the difference
     # is the whole of what this model was missing: the override adds a pure-component trial per
     # eligible component, which is what finds a water-rich phase in a gas carrying ppm water.
-    seeding = multiflash_stability_test(mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed)
+    seeding = multiflash_stability_test(
+        mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed
+    )
     warnings.extend(seeding.warnings)
 
     base_count = len(phases)

@@ -1173,16 +1173,18 @@ def _cpa_cross() -> dict[tuple[str, str], CrossRule]:
     A pair with no row at all, or a selector of zero, is :data:`ELLIOTT` - the handler's zero
     initialisation, so absence needs no separate handling here.
     """
+
+    def given(text: str) -> float | None:
+        """NeqSim's `Math.abs(value) > 1e-10`, so a value at or below it is the combining
+        rule for that value alone - `None` here rather than a zero."""
+        value = _absent_is_zero(text)
+        return None if abs(value) <= 1.0e-10 else value
+
     pairs: dict[tuple[str, str], CrossRule] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         a, b = row["component_a"], row["component_b"]
         if _absent_is_zero(row["cpaassosiationtype"]) == 0.0:
             continue
-        # NeqSim's `Math.abs(value) > 1e-10`, so a value at or below it is the combining
-        # rule for that value alone - `None` here rather than a zero.
-        given = lambda text: (  # noqa: E731
-            None if abs(_absent_is_zero(text)) <= 1.0e-10 else _absent_is_zero(text)
-        )
         rule = CrossRule("cr1", energy=given(row["cpaepscross"]), volume=given(row["cpabetacross"]))
         pairs[(a, b)] = rule
         pairs[(b, a)] = rule
@@ -3415,7 +3417,7 @@ def _assemble(
     )
 
 
-def _cpa_statoil_alpha_m(entry: Any) -> float:
+def _cpa_statoil_alpha_m(entry: DatabankEntry) -> float:
     """The Soave coefficient ``AttractiveTermCPAstatoil`` reads for one substance.
 
     ``mCPA_SRK`` where the row carries a fitted CPA set, and the ordinary SRK ``kappa``

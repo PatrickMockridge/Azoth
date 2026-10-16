@@ -17,9 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from azoth import available
-
 from _extension import STALE, state
+from azoth import available
 
 #: Above this, a test that is **not parametrised** and not marked `slow_sweep` is a finding.
 #: A parametrised test is selectable by `-k`, so being slow is a property of the case, not a
