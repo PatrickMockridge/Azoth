@@ -131,11 +131,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `test_scope.py` diffs against the commit this push starts from, so that commit
+          # has to be in the clone; the default fetch-depth of one has only the tip.
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      # Two steps because `--doc` cannot be combined with `--all-targets`.
-      - run: cargo test --workspace --all-targets
-      - run: cargo test --workspace --doc
+      # **What this change reaches, which is not the whole workspace.** The full set runs in
+      # `.github/workflows/nightly.yml` on a 24-hour cycle. A push runs the crates its diff
+      # touches and every crate that depends on them - read off the manifests by
+      # `tools/test_scope.py`, never listed here, because a list here would be a second copy
+      # of the graph and would be the one that drifts.
+      - name: the scoped Rust set
+        run: |
+          BASE="${{ github.event.before }}"
+          case "$BASE" in ""|0000000000000000000000000000000000000000) BASE="HEAD~1" ;; esac
+          python tools/test_scope.py --base "$BASE" --no-gate --only rust > scope.sh
+          cat scope.sh
+          bash -e scope.sh
       # **The front end's fixtures are the library's own output, and this is what says so.**
       # The check lives in this job rather than in `ui` for one reason: it runs the CLI, so it
       # needs a cargo build, and this job has just made one. The `ui` job's own gate is
@@ -166,6 +179,9 @@ jobs:
       VIRTUAL_ENV: ${{ github.workspace }}/.venv
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `test_scope.py` diffs against the commit this push starts from.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -186,13 +202,30 @@ jobs:
       # Builds the extension against the venv interpreter, so both backends are
       # available and the cross-implementation tests actually run.
       - run: .venv/bin/maturin develop
-      - run: .venv/bin/python -m pytest
+      # **What this change reaches, which is not the whole suite.** The full Python tree runs
+      # in `.github/workflows/nightly.yml`. A push runs its own models' cases on both
+      # backends, the namespaces its diff touches, and the generator checks - the list comes
+      # from `tools/test_scope.py`, which reads the specs and the manifests rather than a
+      # table kept here.
+      #
+      # **The trade, stated because it is real**: a push can go green while something the
+      # nightly would have caught is red, for up to a day. That is what buys an hour per
+      # change back, and the nightly is what makes it safe. A release tag should require a
+      # green nightly.
+      - name: the scoped Python set
         env:
           # Absent on a runner, but stated so a developer copying this command
           # does not get a different result because their shell sets it.
           PYTHONPATH: ""
+        run: |
+          BASE="${{ github.event.before }}"
+          case "$BASE" in ""|0000000000000000000000000000000000000000) BASE="HEAD~1" ;; esac
+          python tools/test_scope.py --base "$BASE" --no-gate --only python > scope.sh
+          cat scope.sh
+          bash -e scope.sh
       # The skill tests: smoke checks that the API the skills document still exists.
-      # Collected separately because the main run is scoped to python/tests.
+      # Collected separately because the main run is scoped to python/tests. Not scoped in
+      # turn: they read the skills, which no diff here claims, and they are quick.
       - run: .venv/bin/python -m pytest skills
         env:
           PYTHONPATH: ""

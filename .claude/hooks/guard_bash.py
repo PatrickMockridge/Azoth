@@ -65,16 +65,34 @@ JVM_PROGRAMS = {"java", "javac"}
 
 
 def segments(cmd: str) -> list[list[str]]:
-    """Split a shell command on operators and tokenise each part."""
-    out = []
-    for part in re.split(r"&&|\|\||\||;|\n", cmd):
-        part = part.strip()
-        if not part:
-            continue
-        try:
-            out.append(shlex.split(part))
-        except ValueError:
-            continue
+    """Split a shell command on its operators, **respecting quotes**.
+
+    The first version split the raw string on `|`, `;`, `&&` and `||` and then tried to
+    tokenise the pieces. That reads a quoted pattern as an operator: `grep -n -E "cargo
+    test|pytest" ci.yml` was cut down the middle of its own pattern, and the `pytest`
+    fragment was then refused as a repo-wide run - for a command that runs no tests at all.
+
+    `shlex` with `punctuation_chars` emits an operator as its own token **only where it is
+    not quoted**, which is the distinction that was missing. Unbalanced quotes mean the
+    command cannot be read: an empty result, which the caller treats as nothing to check.
+    """
+    lexer = shlex.shlex(cmd, posix=True, punctuation_chars="|&;")
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    out: list[list[str]] = []
+    current: list[str] = []
+    try:
+        for token in lexer:
+            if token and all(character in "|&;" for character in token):
+                if current:
+                    out.append(current)
+                current = []
+            else:
+                current.append(token)
+    except ValueError:
+        return []
+    if current:
+        out.append(current)
     return out
 
 
@@ -165,10 +183,11 @@ def decide(cmd: str) -> tuple[bool, str]:
             continue
         if is_wide(tokens) and not full_gate:
             return False, (
-                "That is the full gate set (197 Rust test files / ~111 Python "
-                "test files). It runs once per tranche, at close-out, not per "
-                "edit. Test what the change touches instead, or if this really "
-                f"is close-out, prefix it: {FULL_GATE_TOKEN} {WRAPPER} <cmd>"
+                "That is the whole suite (223 Rust test files / 141 Python test "
+                "files). It runs nightly, in .github/workflows/nightly.yml, and is "
+                "not what a push needs: run `python tools/test_scope.py --run` for "
+                "the set this change reaches, or if you do want everything, "
+                f"prefix it: {FULL_GATE_TOKEN} {WRAPPER} <cmd>"
             )
         if is_heavy(tokens):
             return False, (
@@ -230,6 +249,14 @@ SELFTEST: list[tuple[str, bool]] = [
     ("git status", True),
     ("ls -la tools", True),
     ("ruff check python/src", True),
+    # the scoped runner is what the deny message tells you to use, so it must be allowed
+    ("python tools/test_scope.py --run", True),
+    ("python tools/test_scope.py --lane nightly --no-gate", True),
+    # **a quoted pattern is not an operator.** This was refused as a repo-wide run before the
+    # split learned about quotes, and it runs no tests at all.
+    ('grep -n -E "cargo test|pytest" .github/workflows/ci.yml', True),
+    # and a real pipe still separates
+    ("cargo test -p azoth-eos | tail -5", False),
 ]
 
 

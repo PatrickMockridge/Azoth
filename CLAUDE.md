@@ -17,9 +17,21 @@ heat transfer) with an agentic layer on top.
 This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inactive,
 `earlyoom` absent), so a runaway thrashes the desktop instead of failing one process.
 
-- **Test what the change touches.** A change to one model cannot break another.
-  The full gate set runs **once per tranche, at close-out, before the push** — never
-  while iterating, never per edit.
+- **`python tools/test_scope.py --run` is the gate.** It reads the diff and runs what it
+  reaches: the crates whose sources changed *and every crate that depends on them*, the
+  namespaces and model cases on both backends, the generator checks whose output could have
+  moved. A path it cannot place is an error rather than a shrug, so nothing escapes the map
+  in silence. `--explain` says why each command is there; `--lane iterate` is the same set
+  with the slow global sweeps deselected, for the inner loop.
+- **The whole suite runs nightly**, on a 24-hour cycle, in
+  `.github/workflows/nightly.yml` — on a runner with the memory this box lacks. It is the
+  only thing that runs the tests no diff claimed, so it is not a thing to type, and a red
+  one is a finding to triage rather than scenery. `python tools/test_scope.py --lane
+  nightly` prints exactly what that job runs.
+- **The trade this buys, stated plainly:** a push is verified against what it reaches, not
+  against the tree, so something the nightly would have caught can be red for up to a day.
+  That is what it costs to stop paying an hour per change. A release tag should require a
+  green nightly.
 - **Wrap every heavy command** in `tools/gated.sh`: it runs the command under
   `systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0` and caps the JVM
   heap at 2 GiB. Heavy = `cargo build|test|clippy|run|bench`, `pytest`, `maturin`,
@@ -27,7 +39,7 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   `javac` plus ~124 JVMs, each defaulting to an 11.8 GiB heap.
 - `-j 10` on cargo; `--test-threads 10` after `--` on tests.
 - Never run two heavy commands at once.
-- `.claude/hooks/guard_bash.py` (a PreToolUse hook) enforces the wrapper and the
-  close-out gate. `AZOTH_FULL_GATE=1`, visible in the transcript, is the only way past
-  the gate.
+- `.claude/hooks/guard_bash.py` (a PreToolUse hook) enforces the wrapper and refuses a
+  repo-wide test run. `AZOTH_FULL_GATE=1`, visible in the transcript, is the only way past
+  that refusal — for the rare local full run, not for a push.
 

@@ -455,7 +455,7 @@ class BwrsPhaseResult:
 
 @final
 class CalcIonicCompositionResult:
-    molality: list[float]
+    molality: list[Qty]
     mass_ratio: list[float]
     activity_coefficient: list[float]
     warnings: list[Warning]

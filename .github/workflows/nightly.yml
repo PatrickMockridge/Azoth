@@ -1,0 +1,64 @@
+name: nightly
+
+# The full gate, once a day. **This is where "everything" lives.**
+#
+# The push and pull-request jobs run `tools/test_scope.py` and test what the diff reaches.
+# The whole suite - both languages, every generator - is this job's, on a 24-hour cycle and
+# on a runner with the memory a developer box does not have. So a green push is not a claim
+# that the tree is sound; it is a claim that nothing *this change reaches* is broken, and
+# this job is what closes the gap within a day.
+#
+# **A red nightly is a finding, not scenery.** It is the only thing that runs the tests no
+# diff claimed, so it is the only place a cross-cutting break shows up before a release.
+# Triage it before starting the next tranche; a red one left standing makes every later red
+# unreadable.
+#
+# The command list is not repeated here. It is `python tools/test_scope.py --lane nightly
+# --no-gate`, which is the same source the developer's `--lane push` reads - two copies of
+# the list would be two things to keep in step, and the one that drifts is always the one
+# nobody is looking at.
+
+on:
+  schedule:
+    # 04:17 UTC. Not on the hour and not on a half hour: every repository on GitHub that asks
+    # for "nightly" lands on the same few minutes, and the queue is worst exactly there.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  # Fail fast on a Rust warning rather than letting it accumulate.
+  RUSTFLAGS: -D warnings
+  # **The point of running this suite with the Rust backend.** Without it a broken extension
+  # build makes every test pass on the Python path, and the cross-language agreement this
+  # project promises is then verified by nothing.
+  AZOTH_REQUIRE_RUST: "1"
+  VIRTUAL_ENV: ${{ github.workspace }}/.venv
+
+jobs:
+  full:
+    name: full
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      # `--no-install-project` because the build backend is maturin and building here would
+      # build the extension twice; `maturin develop` below installs it properly. The `dev`
+      # extra rather than a repeated list, for the reason `ci.yml` states at length.
+      - run: uv sync --extra dev --no-install-project
+      - name: the full gate
+        run: |
+          python tools/test_scope.py --lane nightly --no-gate > nightly.sh
+          cat nightly.sh
+          bash -e nightly.sh

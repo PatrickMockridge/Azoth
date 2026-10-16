@@ -32,6 +32,7 @@ import subprocess
 import sys
 import tomllib
 from collections.abc import Mapping
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -454,15 +455,42 @@ def bridge_call(name: str) -> int | None:
     return count
 
 
-def record_fields(type_name: str) -> list[tuple[str, str]] | None:
-    """A record's `pub` fields as `(name, type)`, or `None` where no crate declares it."""
+#: A `pub struct` declaration, with or without generic parameters: `pub struct Row<T> {`.
+#:
+#: The brace is required, so a unit struct (`pub struct Foo;`) is not one - which is what the
+#: per-call scan this replaced also required.
+_PUB_STRUCT = re.compile(r"^pub struct (\w+)\s*(?:<[^{;]*>)?\s*\{", re.M)
+
+
+@lru_cache(maxsize=1)
+def _struct_fields() -> dict[str, tuple[tuple[str, str], ...]]:
+    """Every `pub struct` under `crates/*/src`, by name, with its `pub` fields.
+
+    **Built once, because the question is asked once per kernel parameter.** [`record_fields`]
+    answers "is this slice's element type a record?", and for almost every parameter the answer
+    is *no* - so a scan that read and blanked every Rust source file per call read the whole tree
+    about fifty times per wrapper, and `--check` took **7 minutes 27 seconds** for what is a
+    few seconds of work. That was the single largest cost in the test suite.
+
+    The first declaration in sorted path order wins, which is what the per-call scan returned.
+    """
+    found: dict[str, tuple[tuple[str, str], ...]] = {}
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
-        match = re.search(rf"^pub struct {re.escape(type_name)}\s*(?:<[^{{;]*>)?\s*\{{", text, re.M)
-        if match is None:
-            continue
-        return rust_index._field_decls(rust_index._block(text, match.end() - 1, str(path)))
-    return None
+        for match in _PUB_STRUCT.finditer(text):
+            name = match.group(1)
+            if name in found:
+                continue
+            found[name] = tuple(
+                rust_index._field_decls(rust_index._block(text, match.end() - 1, str(path)))
+            )
+    return found
+
+
+def record_fields(type_name: str) -> list[tuple[str, str]] | None:
+    """A record's `pub` fields as `(name, type)`, or `None` where no crate declares it."""
+    fields = _struct_fields().get(type_name)
+    return None if fields is None else list(fields)
 
 
 def record_slice(kind: str, aliases: set[str]) -> str | None:
