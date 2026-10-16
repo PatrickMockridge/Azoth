@@ -13,6 +13,8 @@ venv/
 .mypy_cache/
 .ruff_cache/
 .coverage
+# What `coverage json` writes, which `tools/check_coverage.py` reads in the same job.
+coverage.json
 htmlcov/
 # The compiled extension module is a build artifact, never committed.
 *.so

@@ -234,6 +234,9 @@ jobs:
     needs: scope
     if: needs.scope.outputs.python-test == 'true'
     env:
+      # The scoped set runs instrumented, so the check below can say whether the tests that ran
+      # executed the lines the diff changed. One run rather than two.
+      AZOTH_COVERAGE: "1"
       # The whole point of this job. Without it, a broken extension build makes
       # every test pass on the Python path while the cross-language agreement
       # this project promises is verified by nothing.
@@ -292,6 +295,16 @@ jobs:
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
             --job python-test --verify-selection
+      # **And the tests that ran executed the changed lines.** `--verify-selection` proves the
+      # targets collect something; a target can collect forty tests and touch none of the code
+      # the diff changed. This writes the document the check reads, from the run above.
+      - name: did the scoped set run the changed lines?
+        env:
+          PYTHONPATH: ""
+        run: |
+          .venv/bin/python -m coverage json -o coverage.json
+          python tools/check_coverage.py \
+            --base "${{ needs.scope.outputs.base }}" --json coverage.json
       # The skill tests: smoke checks that the API the skills document still exists.
       # Collected separately because the main run is scoped to python/tests. Not scoped in
       # turn: they read the skills, which no diff here claims, and they are quick.

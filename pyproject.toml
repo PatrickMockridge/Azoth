@@ -43,6 +43,11 @@ dev = [
   # is a dev-time artefact and `azoth.keycard` checks only what it needs to build
   # objects safely.
   "jsonschema>=4.20",
+  # **So a push can prove the scoped set ran the lines it changed.** `test_scope.py` emits the
+  # targets a diff reaches and `--verify-selection` proves they collect something; neither says
+  # the tests executed the changed code. `tools/check_coverage.py` reads what this writes, and
+  # the CI job runs the scoped set instrumented rather than twice.
+  "pytest-cov>=6",
 ]
 agent = [
   # Running an orchestration needs the DeepSeek Harness runtime; exporting the

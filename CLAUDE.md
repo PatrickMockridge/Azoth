@@ -25,9 +25,18 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   places nowhere*. `--explain` says why each command is there; `--lane iterate` deselects the
   `slow_sweep`-marked global sweeps, for the inner loop, and both lanes name the ones they
   reach.
-- **`--audit` walks every tracked path through the table**, so the day a directory is added
-  and no rule knows it the gate says so. `--verify-selection` collects every emitted target
-  and refuses one that selects nothing — an empty collection is a green run over nothing.
+- **Three checks say whether the scoped set is worth trusting.** `--audit` walks every
+  tracked path through the table, so the day a directory is added and no rule knows it the
+  gate says so; `--verify-selection` collects every emitted target and refuses one that
+  selects nothing, because an empty collection is a green run over nothing; and the scoped
+  Python run is instrumented (`AZOTH_COVERAGE=1`), with `tools/check_coverage.py` refusing a
+  changed file no line of which ran — a target can collect forty tests and touch none of the
+  code the diff changed. It asserts one fact per file, never a percentage: a threshold is a
+  number to game, and the file nobody touched keeps its zero.
+- **Mutation testing is not run, deliberately.** The instrument this repository already has is
+  an independent second implementation, which catches the class a mutation score proxies for —
+  a wrong operator in one language — at the cost of one comparison rather than N mutant
+  builds. That is a stated limit, not an oversight.
 - **On a push, four jobs run whatever the diff says** — `spec-validate`, `rust-lint`
   (`cargo fmt` only; the workspace clippy is in the nightly), `python-lint` and
   `provenance`, all flat-cost and build-free — and **the other eight run only if the diff

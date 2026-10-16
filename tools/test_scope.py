@@ -342,9 +342,13 @@ UNCHECKABLE = {
 #: `--check` runner does not have, so a claim that reaches one emits it explicitly.
 CARGO_GENERATORS = ("gen_ui_fixtures",)
 
-#: Checkers that cannot be run here at all: they read a GitHub API and need a token, so a local
-#: invocation could only ever fail. Their own test is what a change to one reaches.
-NETWORK_CHECKS = {"check_nightly": "it asks the GitHub API; .github/workflows/liveness.yml runs it"}
+#: Checkers that cannot be run **here**, and why. Each needs something this box does not have -
+#: a token, or an artefact an instrumented run writes - so a local invocation could only fail.
+#: Their own test is what a change to one reaches.
+UNRUNNABLE: dict[str, str] = {
+    "check_nightly": "it asks the GitHub API; .github/workflows/liveness.yml runs it",
+    "check_coverage": "it reads a coverage document the instrumented run writes; CI runs it",
+}
 
 
 @lru_cache(maxsize=1)
@@ -957,10 +961,10 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
                         f"python tools/{tool}.py --check",
                     )
                 )
-            elif tool in NETWORK_CHECKS:
-                # **Reading the command is not running it.** These need a token and a network,
-                # so a change to one is covered by its own test and by the workflow that runs
-                # it - not by a local invocation that could only fail.
+            elif tool in UNRUNNABLE:
+                # **Writing the command is not running it.** These need a token or an artefact
+                # this box does not have, so a change to one is covered by its own test and by
+                # the workflow that runs it - not by an invocation that could only fail.
                 pass
             elif tool.startswith(("check_", "audit_")) or tool.endswith("_lint"):
                 commands.append(
@@ -1113,6 +1117,12 @@ def render(entry: Command, lane: str, gate: bool = True) -> str:
                 # exit 5 and this tool calls a failure. Skip it whole, and say so.
                 return f"# the iterate lane skips {target}: every test in it is a marked sweep"
             target = f'{target} -m "not {MARKER}"'
+        if os.environ.get("AZOTH_COVERAGE") == "1":
+            # **One instrumented run, not two.** `--cov-append` accumulates across the several
+            # pytest invocations a scoped set is, and a job that ran the suite twice - once to
+            # test and once to measure - would pay the whole cost again for the measurement.
+            # The document is written once afterwards by `coverage json`.
+            target = f"{target} --cov=azoth --cov-append --cov-report="
         # **`PYTHONPATH` is set, not inherited.** This box has ROS on the path, which puts
         # `/opt/ros/...` in front of the interpreter and makes pytest's plugin autoload import
         # a `launch` module that needs a `yaml` the venv does not have - so a bare `pytest`
