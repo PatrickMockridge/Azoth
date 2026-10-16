@@ -83,6 +83,17 @@ CARGO, CLIPPY, PYTEST, SCRIPT = "cargo", "clippy", "pytest", "script"
 TOOL_DIRS = (ROOT / "tools", ROOT / ".claude" / "hooks")
 
 
+def venv_bin() -> str:
+    """The venv's `bin`, for the tools that live there and are on nobody's PATH.
+
+    `maturin` is the one: `uv sync --extra dev` installs it into the venv and this box has no
+    `maturin` on `PATH`, so a bare `maturin develop` fails with "command not found" - on the
+    one step a Rust change cannot skip, which is how it would go unnoticed until a crate
+    change ran it.
+    """
+    return python_runner().rsplit("/", 1)[0]
+
+
 def python_runner() -> str:
     """The interpreter the suite runs under, as a path relative to the checkout.
 
@@ -243,7 +254,7 @@ def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[tuple[str, 
                 "a crate the extension links, so it must be rebuilt before any Rust-backed "
                 "Python test means anything",
                 SCRIPT,
-                "maturin develop",
+                f"{venv_bin()}/maturin develop",
             )
         )
     return out
@@ -436,7 +447,7 @@ def render(entry: tuple[str, str, str], lane: str, gate: bool = True) -> str:
             if gate
             else f"PYTHONPATH={ROOT / 'python' / 'src'} {python_runner()} -m pytest {target} -q"
         )
-    if kind in (CARGO, CLIPPY) or command.startswith((".venv/bin/maturin", "maturin")):
+    if kind in (CARGO, CLIPPY) or command.endswith("/maturin develop"):
         return f"tools/gated.sh {command}" if gate else command
     return command
 
@@ -495,7 +506,7 @@ def nightly(gate: bool) -> list[str]:
             CLIPPY,
             "cargo clippy --workspace --all-targets -- -D warnings",
         ),
-        ("the extension both backends need", SCRIPT, "maturin develop"),
+        ("the extension both backends need", SCRIPT, f"{venv_bin()}/maturin develop"),
         ("the whole Python suite", PYTEST, TESTS),
         ("the skills' smoke checks", PYTEST, "skills"),
     ]
