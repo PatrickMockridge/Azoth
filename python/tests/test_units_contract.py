@@ -42,6 +42,8 @@ from azoth._registry_gen import CALCS
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si
 from azoth.keycard import UNIT_VOCABULARY
 
+pytestmark = pytest.mark.slow_sweep
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 UNIT_SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "unit.schema.json"

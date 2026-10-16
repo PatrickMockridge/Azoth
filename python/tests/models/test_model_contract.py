@@ -309,6 +309,7 @@ def test_every_result_field_is_declared_in_the_spec() -> None:
 
 
 @pytest.mark.requires_rust
+@pytest.mark.slow_sweep
 def test_every_declared_range_check_runs() -> None:
     """No model may declare a bound that its own cases never evaluate.
 

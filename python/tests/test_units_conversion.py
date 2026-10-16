@@ -25,6 +25,8 @@ import _helpers as h
 from azoth.core.errors import UnitMismatchError
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for, ureg
 
+pytestmark = pytest.mark.slow_sweep
+
 #: The SI base magnitude of one of each unit, where it is not simply 1.0.
 #:
 #: **A unit of a dimension whose SI base is its own unit is 1.0**, and that was every

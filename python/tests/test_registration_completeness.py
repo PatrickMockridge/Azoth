@@ -61,6 +61,8 @@ from azoth import _models_gen
 from azoth._dispatch import result_types
 from azoth._registry_gen import CALCS
 
+pytestmark = pytest.mark.slow_sweep
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STUB_PATH = REPO_ROOT / "python" / "src" / "azoth" / "_core.pyi"
 

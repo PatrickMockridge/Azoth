@@ -27,6 +27,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TOOLS = REPO_ROOT / "tools"
 
@@ -44,6 +46,7 @@ def tools_module(name: str) -> ModuleType:
         sys.path.pop(0)
 
 
+@pytest.mark.slow_sweep
 def test_every_recorded_case_agrees_at_its_layers() -> None:
     """The gate, run where it runs in CI: every case, every layer it shares.
 

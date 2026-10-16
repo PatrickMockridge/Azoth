@@ -96,6 +96,10 @@ pythonpath = ["python/src", "python/tests"]
 addopts = "-q --strict-markers --strict-config"
 markers = [
   "requires_rust: test needs the compiled azoth._core extension",
+  # A single function that loops over every registered id, so no `-k` can narrow it. The
+  # `iterate` lane deselects these by marker; the nightly runs them. Registered here because
+  # `--strict-markers` makes a half-adopted marker an immediate collection error.
+  "slow_sweep: a global sweep that no `-k` can narrow; the iterate lane deselects it",
 ]
 filterwarnings = ["error"]
 

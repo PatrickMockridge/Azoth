@@ -93,6 +93,7 @@ def test_the_specification_states_the_real_number_of_ids() -> None:
 
 
 @pytest.mark.requires_rust
+@pytest.mark.slow_sweep
 def test_every_declared_range_check_runs() -> None:
     """No calc may declare a bound its own cases never evaluate.
 

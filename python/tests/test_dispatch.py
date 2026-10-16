@@ -26,6 +26,8 @@ import pytest
 from azoth import _dispatch, active_backend, available, backend_info
 from azoth._dispatch import RustBackendUnavailableError, use_backend
 
+pytestmark = pytest.mark.slow_sweep
+
 
 def test_python_is_always_available() -> None:
     """The reference implementation is the fallback, so it must never be absent."""

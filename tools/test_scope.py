@@ -21,11 +21,14 @@ it comes back green. Seven namespaces did exactly that until `--audit` walked th
 
 # The lanes
 
-`iterate` is the inner loop - the push set with the known-slow global sweeps deselected by
-node id. They need deselecting by node id because a single test function loops over every
-registered id internally, so `-k` cannot reach inside it.
+`iterate` is the inner loop - the push set with the `slow_sweep`-marked global sweeps
+deselected **by marker**. A marked test is one function looping over every registered id, so
+`-k` cannot reach inside it; the marker lives on the test rather than in a list here because a
+list went stale, and could not see the 462-second layer diff at all until someone timed the
+suite.
 
-`push` is the default and is what the pre-push gate runs.
+`push` is the default and is what the pre-push gate runs. Both lanes name the marked sweeps a
+diff reaches, so the minutes are stated rather than discovered.
 
 `nightly` is everything in both languages, run by `.github/workflows/nightly.yml` on a
 24-hour cycle. The full set is the nightly's job and is not something anyone types.
@@ -46,13 +49,14 @@ So the sweep runs whenever a generated file could have moved, which is exact and
 from __future__ import annotations
 
 import argparse
+import ast
 import os
 import re
 import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -69,22 +73,11 @@ import rust_index  # noqa: E402
 #: Where the Python tests live, as a path prefix and as a pytest argument.
 TESTS = "python/tests"
 
-#: The global sweeps whose expensive functions cannot be deselected by id, because one
-#: function loops over every registered model internally. `iterate` deselects them.
-#:
-#: Named rather than made selectable: parametrising them is a second, larger piece of work,
-#: and until it is done this tuple is the honest statement of what `-k` cannot reach.
-SLOW_SWEEPS = (
-    f"{TESTS}/models/test_model_contract.py::test_every_declared_range_check_runs",
-    f"{TESTS}/test_registry_contract.py::test_every_declared_range_check_runs",
-    f"{TESTS}/test_registration_completeness.py",
-    f"{TESTS}/test_result_json.py",
-    f"{TESTS}/test_dispatch.py",
-    f"{TESTS}/test_units_contract.py",
-    f"{TESTS}/test_units_conversion.py",
-    f"{TESTS}/test_solver_contract.py",
-    f"{TESTS}/test_batch.py::test_batch_of_one_equals_scalar_including_warnings",
-)
+#: The marker a test carries when it loops over every registered id and so cannot be narrowed
+#: by `-k`. **Registered in `pyproject.toml`, and the iterate lane deselects it by marker** -
+#: not by a list of node ids here, which goes stale in silence and missed the 462-second layer
+#: diff entirely until someone timed the suite.
+MARKER = "slow_sweep"
 
 #: A command's kind, which decides how it is wrapped and whether the lane can narrow it.
 CARGO, CLIPPY, PYTEST, SCRIPT = "cargo", "clippy", "pytest", "script"
@@ -521,8 +514,12 @@ def nearest_test_dir(path: str) -> str | None:
 def python_claim(path: str, parts: list[str]) -> Claim:
     """A path under `python/`: a test file, a fixture, a module, or a namespace package."""
     if path.startswith(f"{TESTS}/"):
-        if path.endswith(".py"):
+        name = parts[-1]
+        if name.startswith("test_") and name.endswith(".py"):
             return Claim(files=(path,))
+        # **`conftest.py`, `_helpers.py` and a vendored fixture are not test files.** Handing one
+        # to pytest collects nothing, and the tests it reaches are the ones beside it - which for
+        # a `conftest` is a whole directory, because that is what a conftest is for.
         directory = nearest_test_dir(path)
         if directory is None:
             return Claim(inert="a fixture under the test tree with no test beside it")
@@ -855,10 +852,10 @@ def scope(
         config |= claim.config
         generated |= claim.generated
 
-    # **A crate change reaches its Python mirror.** This is the half that did not exist: Python
-    # targets came only from `python/` and `specs/` paths, so a kernel edit ran cargo and not one
-    # pytest - and `test_cross_impl.py`, the Rust-against-Python agreement test the library is
-    # built around, never ran for the change most likely to break it.
+    # **A crate change reaches its Python mirror.** Python targets came only from `python/` and
+    # `specs/` paths, so a kernel edit ran cargo and not one pytest - and `test_cross_impl.py`,
+    # the Rust-against-Python agreement test the library is built around, never ran for the
+    # change most likely to break it.
     for crate in sorted(crates):
         crate_side = crate_claim(crate)
         namespaces |= set(crate_side.namespaces)
@@ -959,11 +956,16 @@ def render(entry: tuple[str, str, str], lane: str, gate: bool = True) -> str:
         return f"# {reason}"
     if kind == PYTEST:
         target = command
-        # A target already narrowed by `-k` is the id itself and needs no further narrowing;
-        # anything wider - a file, a namespace directory - carries the slow sweeps with it.
-        if lane == "iterate" and " -k " not in target:
-            deselects = " ".join(f"--deselect {node}" for node in SLOW_SWEEPS)
-            target = f"{target} {deselects}"
+        # **Deselected by marker, and unconditionally.** `-m` composes with `-k` by AND, so a
+        # narrowed target is narrowed further rather than left carrying the sweeps - which is
+        # what the old `" -k " not in target` guard silently did.
+        if lane == "iterate":
+            wanted = bare_targets(command)
+            if wanted and all(module_is_a_sweep(name) for name in wanted):
+                # Filtering a wholly-marked file leaves an empty collection, which pytest calls
+                # exit 5 and this tool calls a failure. Skip it whole, and say so.
+                return f"# the iterate lane skips {target}: every test in it is a marked sweep"
+            target = f'{target} -m "not {MARKER}"'
         # **`PYTHONPATH` is set, not inherited.** This box has ROS on the path, which puts
         # `/opt/ros/...` in front of the interpreter and makes pytest's plugin autoload import
         # a `launch` module that needs a `yaml` the venv does not have - so a bare `pytest`
@@ -982,6 +984,71 @@ def render(entry: tuple[str, str, str], lane: str, gate: bool = True) -> str:
     if kind in (CARGO, CLIPPY) or command.endswith("/maturin develop"):
         return f"tools/gated.sh {command}" if gate else command
     return command
+
+
+def bare_targets(command: str) -> list[str]:
+    """The path arguments of a pytest command, past any `-k`/`-m` that follows them."""
+    return command.split(" -")[0].split()
+
+
+@cache
+def module_is_a_sweep(path: str) -> bool:
+    """True when a *file* carries the marker for its whole module.
+
+    Needed because `-m "not slow_sweep"` over a file like this collects **nothing**, and pytest
+    calls that exit 5 - so the iterate lane has to skip the file outright rather than filter it
+    to zero and read the empty collection as a failure.
+    """
+    file = ROOT / path
+    if file.suffix != ".py" or not file.is_file():
+        return False
+    try:
+        tree = ast.parse(file.read_text(encoding="utf-8"))
+    except SyntaxError:
+        return False
+    return any(
+        isinstance(entry, ast.Assign)
+        and any(getattr(name, "id", "") == "pytestmark" for name in entry.targets)
+        and MARKER in ast.dump(entry.value)
+        for entry in tree.body
+    )
+
+
+def marked_sweeps(commands: list[tuple[str, str, str]]) -> list[str]:
+    """The marked sweeps a command set reaches, by node id.
+
+    **For naming the cost, not for selecting the tests.** Selection is pytest's own
+    (`-m "not slow_sweep"` or its absence); this only says *which* minutes a reader is about to
+    spend, which is the difference between a gate that is trusted and one that is tolerated. It
+    reads the tree with `ast` rather than asking pytest, because it runs on every push.
+    """
+    found: set[str] = set()
+    for _, kind, command in commands:
+        if kind != PYTEST:
+            continue
+        for target in bare_targets(command):
+            path = ROOT / target
+            files = sorted(path.rglob("test_*.py")) if path.is_dir() else [path]
+            for file in files:
+                if file.suffix != ".py" or not file.exists():
+                    continue
+                try:
+                    tree = ast.parse(file.read_text(encoding="utf-8"))
+                except SyntaxError:
+                    continue
+                relative = file.relative_to(ROOT)
+                if module_is_a_sweep(str(relative)):
+                    # One line for a whole file, not one per function: a module-level mark means
+                    # the file, and listing its forty tests buries the ones that are marked
+                    # individually.
+                    found.add(str(relative))
+                    continue
+                for entry in tree.body:
+                    if not isinstance(entry, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        continue
+                    if any(MARKER in ast.dump(decorator) for decorator in entry.decorator_list):
+                        found.add(f"{relative}::{entry.name}")
+    return sorted(found)
 
 
 def changed_paths(args: argparse.Namespace) -> list[str]:
@@ -1214,6 +1281,13 @@ def main() -> int:
     if not commands:
         print(f"# nothing in {len(paths)} changed path(s) reaches a test")
         return 0
+
+    sweeps = marked_sweeps(commands)
+    if sweeps:
+        verb = "has deselected" if args.lane == "iterate" else "reaches"
+        print(f"# this diff {verb} {len(sweeps)} marked slow sweep(s):")
+        for sweep in sweeps:
+            print(f"#   {sweep}")
 
     for reason, kind, command in commands:
         line = render((reason, kind, command), args.lane, gate=not args.no_gate)

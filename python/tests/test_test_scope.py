@@ -14,6 +14,7 @@ refusal: a path a rule *claims and then places nowhere*, and an id a `-k` can ne
 from __future__ import annotations
 
 import importlib
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -176,6 +177,67 @@ def test_a_target_that_selects_nothing_is_caught() -> None:
     target = f"{module.TESTS}/test_test_scope.py"
     assert module.collects_nothing(f"{target} -k definitely_not_a_test") == "collects nothing"
     assert module.collects_nothing(target) is None
+
+
+# ------------------------------------------------------ what the iterate lane may narrow
+
+
+def test_the_iterate_lane_deselects_by_marker_rather_than_by_name() -> None:
+    """**The list went stale; the marker cannot.** A node id in this tool goes stale the moment
+    a sweep is renamed, and the 462-second layer diff was missing from the list entirely."""
+    module = tool()
+    line = module.render(("x", module.PYTEST, f"{module.TESTS}/eos"), "iterate", gate=False)
+    assert f'-m "not {module.MARKER}"' in line
+    assert "--deselect" not in line
+    push = module.render(("x", module.PYTEST, f"{module.TESTS}/eos"), "push", gate=False)
+    assert module.MARKER not in push, "the push lane runs the sweeps: that is the cost it buys"
+
+
+def test_a_wholly_marked_file_is_skipped_rather_than_filtered_to_nothing() -> None:
+    """A filter over a file where every test is marked leaves an empty collection, and pytest
+    calls an empty collection exit 5 - which the tool would read as a failure. So the iterate
+    lane skips such a file whole and says why, rather than turning a skip into a red."""
+    module = tool()
+    line = module.render(
+        ("x", module.PYTEST, f"{module.TESTS}/test_dispatch.py"), "iterate", gate=False
+    )
+    assert line.startswith("#"), line
+    assert "skips" in line
+    assert module.module_is_a_sweep(f"{module.TESTS}/test_dispatch.py")
+    assert not module.module_is_a_sweep(f"{module.TESTS}/eos")
+
+
+def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:
+    """The tool names them and pytest deselects them, so the two must describe one set.
+
+    Checked against pytest rather than against a second list, which is the drift this replaced.
+    """
+    module = tool()
+    named = module.marked_sweeps([("the suite", module.PYTEST, module.TESTS)])
+    files = sorted({entry.split("::")[0] for entry in named})
+    assert files, "the suite has slow sweeps; if this is empty the markers were dropped"
+    result = subprocess.run(
+        [
+            module.python_runner(),
+            "-m",
+            "pytest",
+            "--collect-only",
+            "-q",
+            "-m",
+            module.MARKER,
+            "-o",
+            "addopts=",
+            "-p",
+            "no:cacheprovider",
+            *files,
+        ],
+        cwd=module.ROOT,
+        capture_output=True,
+        text=True,
+        env=module.pytest_env(),
+    )
+    collected = {line.split("::", 1)[0] for line in result.stdout.splitlines() if "::" in line}
+    assert collected == set(files), "the marker and the tool disagree about which files sweep"
 
 
 # ------------------------------------------------- a kernel change reaches its Python mirror

@@ -95,11 +95,12 @@ def calc_ionic_composition(
         )
 
     entries = [entry(name) for name in components]
-    if entries[water].molar_mass is None:
+    water_molar_mass = entries[water].molar_mass
+    if water_molar_mass is None:
         raise PropertyUnavailableError(
             components[water], "a molar mass", "the concentration columns are per kilogram of it"
         )
-    water_mass = entries[water].molar_mass.to("kg/mol").magnitude
+    water_mass = water_molar_mass.to("kg/mol").magnitude
 
     fluid, _ = electrolyte_cpa_statoil_mixture_of(list(components))
     reduced = reduced_parameters(fluid, t_si, p_si)
@@ -115,11 +116,12 @@ def calc_ionic_composition(
         # this times the molar mass times `1e6`; the vocabulary states the quantity itself.
         per_kg = x[i] / x[water] / water_mass
         molality.append(per_kg)
-        if entries[i].molar_mass is None:
+        molar_mass = entries[i].molar_mass
+        if molar_mass is None:
             raise PropertyUnavailableError(
                 components[i], "a molar mass", "the mass column is the molar one times it"
             )
-        mass_ratio.append(per_kg * entries[i].molar_mass.to("kg/mol").magnitude)
+        mass_ratio.append(per_kg * molar_mass.to("kg/mol").magnitude)
         reference = (
             _pure_log_fugacity(components[i], t_si, p_si)
             if entries[i].reference_state == SOLVENT

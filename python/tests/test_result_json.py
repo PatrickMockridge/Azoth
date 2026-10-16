@@ -29,6 +29,8 @@ from azoth.core.provenance import FRAMEWORK_DOCUMENT_KEYS
 from azoth.core.units import CANONICAL_UNITS, unit_for
 from azoth.core.warnings import Warning, WarningCode
 
+pytestmark = pytest.mark.slow_sweep
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 

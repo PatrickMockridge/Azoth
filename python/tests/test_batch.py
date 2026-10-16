@@ -244,6 +244,7 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
     }, sorted(excluded)
 
 
+@pytest.mark.slow_sweep
 def test_batch_of_one_equals_scalar_including_warnings() -> None:
     """Property 1: one element through the batch path is the scalar path.
 

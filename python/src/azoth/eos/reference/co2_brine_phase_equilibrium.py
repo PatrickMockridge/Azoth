@@ -27,7 +27,11 @@ from azoth.core.result import Co2BrinePhaseEquilibriumResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.components import electrolyte_cpa_statoil_mixture_of, entry
-from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
+from azoth.eos.reference._mixture_state import (
+    ReducedParameters,
+    phase_state,
+    reduced_parameters,
+)
 
 MODEL_ID = "eos.co2_brine_phase_equilibrium"
 
@@ -66,7 +70,7 @@ class _Layer:
     @classmethod
     def of(
         cls,
-        reduced: object,
+        reduced: ReducedParameters,
         kij: tuple[tuple[float, ...], ...],
         x: Sequence[float],
         *,
@@ -255,7 +259,7 @@ def co2_brine_phase_equilibrium(
 
 
 def _normalised_trial(
-    reduced: object,
+    reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],
     z: Sequence[float],
     is_ion: Sequence[bool],
@@ -297,7 +301,7 @@ def _normalised_trial(
 
 
 def _solve_split(
-    reduced: object,
+    reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],
     z: Sequence[float],
     is_ion: Sequence[bool],
