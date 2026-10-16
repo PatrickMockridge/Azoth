@@ -24,7 +24,6 @@ fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::ElectrolyteCpaStatoilPh
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
 
-
 #[test]
 fn every_case_in_the_spec() {
     let spec = azoth_eos::model_gen::model(MODEL_ID).expect("the model should be in its table");
