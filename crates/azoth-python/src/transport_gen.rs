@@ -2052,6 +2052,49 @@ impl From<&azoth_eos::results::EffectiveDiffusionResult> for PyEffectiveDiffusio
         }
     }
 }
+/// Result of `eos.electrolyte_cpa_statoil_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ElectrolyteCpaStatoilPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyElectrolyteCpaStatoilPhaseResult {
+    /// the compressibility factor at the chosen root
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// the fugacity coefficients, as logarithms, at the chosen root: the cubic's, the electrolyte's and the association's, summed. An ion's is large and negative, because its attraction is `1e-35` and its covolume is not.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyElectrolyteCpaStatoilPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ElectrolyteCpaStatoilPhaseResult(z_factor={:?}, ln_phi={:?}, {} warning(s))",
+            self.z_factor,
+            self.ln_phi,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ElectrolyteCpaStatoilPhaseResult>
+    for PyElectrolyteCpaStatoilPhaseResult
+{
+    fn from(r: &azoth_eos::results::ElectrolyteCpaStatoilPhaseResult) -> Self {
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.eos_cg_phase`, transported.
 #[pyclass(
     frozen,

@@ -93,6 +93,7 @@ from azoth.core.result import (
     FreezingPointResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
+    ElectrolyteCpaStatoilPhaseResult,
     FurstElectrolytePhaseResult,
     GeFlashResult,
     GeNrtlFlashResult,
@@ -267,6 +268,7 @@ __all__ = [
     "dew_temperature",
     "effective_diffusion",
     "eos_cg_phase",
+    "electrolyte_cpa_statoil_phase",
     "from_model",
     "from_names",
     "fuller_schettler_giddings_diffusivity",
@@ -427,6 +429,7 @@ _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
+_ELECTROLYTE_CPA_STATOIL_PHASE = "eos.electrolyte_cpa_statoil_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
 _FURST_ELECTROLYTE_MOD2004_PHASE = "eos.furst_electrolyte_mod2004_phase"
 _GE_FLASH = "eos.ge_flash"
@@ -3696,6 +3699,40 @@ def soreide_whitson_phase(
         x=x,
         salinity=salinity,
         compressed_phase=compressed_phase,
+    )
+
+
+def electrolyte_cpa_statoil_phase(
+    components: list[str],
+    T: Q,
+    P: Q,
+    x: list[float],
+    compressed_phase: str,
+) -> ElectrolyteCpaStatoilPhaseResult:
+    """One electrolyte-CPA phase's state at a temperature, pressure and composition.
+
+    NeqSim's ``SystemElectrolyteCPAstatoil``, whose phase is ``PhaseElectrolyteCPAstatoil``.
+    It is :func:`furst_electrolyte_phase` with the Wertheim association added, and the two
+    terms are **added** - every member of ``PhaseElectrolyteCPA`` is
+    ``super.<x>() + cpaon dFCPA<x>()`` - so this is the sum and not a re-derivation.
+
+    **The distribution function is the classical ``1/(1 - 1.9 eta)``**, which
+    ``PhaseElectrolyteCPAstatoil.calc_g`` overrides the simplified Carnahan-Starling default
+    with: the form the ``aCPA``/``bCPA`` columns were fitted under. At the brine's own
+    ``eta = 0.20366`` the default would give ``1.7788`` where NeqSim gives ``1.6312``.
+
+    **There is no flash**, for the same reason :func:`furst_electrolyte_phase` has none.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``x`` is not a composition, a name is not in the databank, or
+            ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.electrolyte_cpa_statoil_phase`.
+    """
+    return resolve(_ELECTROLYTE_CPA_STATOIL_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x, compressed_phase=compressed_phase
     )
 
 

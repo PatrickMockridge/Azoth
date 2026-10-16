@@ -1,0 +1,67 @@
+id = "eos.electrolyte_cpa_statoil_phase"
+name = "Phase state of an electrolyte-CPA fluid"
+kind = "direct"
+assumptions = [
+    "NeqSim's `SystemElectrolyteCPAstatoil` - phase `PhaseElectrolyteCPAstatoil`, components `ComponentElectrolyteCPAstatoil`. It is `SystemFurstElectrolyteEos` with the Wertheim association added, and the cubic and the ions' role in the short-range correlation are that fluid's.",
+    "**the two terms are added, not re-derived.** Every member of `PhaseElectrolyteCPA` is `super.<x>() + cpaon * dFCPA<x>()` - seven on the phase and four on the component - so the pressure is the sum of the two, term by term.",
+    "**three of the Fürst fluid's statements do not hold here.** The attractive term is `AttractiveTermCPAstatoil`, Soave with `mCPA_SRK`; the mixing rule is the classical one with the CPA `kij`; and the ion covolumes are the `furstParamsCPA` set, a 50 % difference.",
+    "**the association is off when the phase has no sites.** `cpaon` is zero unless `getTotalNumberOfAccociationSites()` is positive, which is a property of the composition. In a CO2/water brine it is never zero: even the gas phase carries water and reports six sites.",
+    "**the radial distribution function is `1/(1 - 1.9 eta)`**, which `PhaseElectrolyteCPAstatoil.calc_g` overrides the interface's simplified Carnahan-Starling default with. The `aCPA`/`bCPA` columns were fitted under this form.",
+    "**the association's cross rule is NeqSim's CR-1 table, not Elliott.** Rule 10 is `CPAMixingRuleHandler`, which reads `cpaAssosiationType` per pair: `CO2`/`water` takes CR-1 and bonds, at a site fraction of `0.6282`.",
+    "**and the rule is temperature-dependent.** `cpakijT_SRK` is added as `kij + kijT * T`, so `CO2`/`water` is `+0.04055` at 283.15 K against the constant column's `-0.27686`. The `PhaseSrkCPA` family is owed the same term.",
+    "**there is no flash.** `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which the mixing rule this system installs refuses. The cases record phase states at compositions NeqSim's own flash reports.",
+    "no `h_res` or `s_res`: the departure is not assembled, so one reported here would be the cubic's alone.",
+    "`x` is checked rather than renormalised.",
+]
+references = [
+    "Furst, W.; Renon, H. (1993). \"Representation of excess properties of electrolyte solutions using a new equation of state.\" AIChE Journal 39(2), 335-343.",
+    "Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). \"An Equation of State for Associating Fluids.\" Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SystemElectrolyteCPAstatoil`, `PhaseElectrolyteCPA`, `PhaseElectrolyteCPAstatoil` and `ComponentElectrolyteCPAstatoil` are the port source.",
+]
+[source]
+standard = "NeqSim master `SystemElectrolyteCPAstatoil`"
+edition = "`PhaseElectrolyteCPA` and its two subclasses, over `SystemFurstElectrolyteEos`'s fluid. The association is `PhaseCPAInterface`'s and the distribution function is the override the statoil phase installs."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, ions included. Each one's critical constants, dielectric coefficients, association set and heat-capacity coefficients come from the databank, and the name decides its role in the short-range correlation."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. Both the electrolyte terms and the association carry a pressure, so neither root is the cubic's."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root: the cubic's, the electrolyte's and the association's, summed. An ion's is large and negative, because its attraction is `1e-35` and its covolume is not."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.electrolyte_cpa_statoil_phase"
+rust = "azoth_eos::electrolyte_cpa_statoil_phase"

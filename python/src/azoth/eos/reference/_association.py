@@ -151,21 +151,29 @@ NON_ASSOCIATING = AssociationComponent(SiteScheme.NON_ASSOCIATING, 0.0, 0.0)
 class CrossRule:
     """The cross-association rule for one component pair.
 
-    NeqSim's ``assosSchemeType``: ``0`` is the Elliott rule, which combines two pure
-    components' association strengths geometrically, and ``1`` is CR-1, which uses the
-    pair's own energy and volume. NeqSim initialises the whole matrix to zero - the Elliott
-    rule - and overwrites only the pairs the ``intertemp`` table has a row for.
+    NeqSim's ``assosSchemeType``, read from the interaction table's ``cpaAssosiationType``:
+    ``0`` is the Elliott rule, which combines two pure components' association strengths
+    geometrically, and anything else is CR-1, which uses the pair's own energy and volume.
+    NeqSim initialises the whole matrix to zero - the Elliott rule - and overwrites only the
+    pairs the table has a row for, so an absent row and a zero selector are the same state.
+
+    **A zero in ``cpaBetaCross`` or ``cpaEpsCross`` is not an absent pair.** On the CR-1
+    branch NeqSim takes the table's value only where ``|value| > 1e-10`` and falls back to a
+    combining rule otherwise, so ``DEG``/``water``, ``TEG``/``water`` and ``TEG``/``MEG`` -
+    selector ``1`` with two zeros beside it - run CR-1 on the combining rule rather than
+    reverting to Elliott.
     """
 
     #: ``"elliott"`` or ``"cr1"``.
     kind: str
-    #: ``eps_ij`` in J/mol, for CR-1.
-    energy: float = 0.0
-    #: ``kappa_AB`` for the pair, for CR-1.
-    volume: float = 0.0
+    #: ``eps_ij`` in J/mol, or ``None`` for the arithmetic mean of the two components'.
+    energy: float | None = None
+    #: ``kappa_AB`` for the pair, or ``None`` for the geometric mean of the two components'.
+    volume: float | None = None
 
 
-#: The Elliott rule, NeqSim's default for every pair its table has no row for.
+#: The Elliott rule: NeqSim's zero initialisation, for every pair the table has no row for
+#: and every pair whose selector is zero.
 ELLIOTT = CrossRule("elliott")
 
 #: Which fitted set a cubic reads, **by geometry and not by name**.
@@ -192,8 +200,36 @@ def family_of(cubic_name: str) -> str:
         ) from None
 
 
+#: The radial distribution functions a phase model chooses between.
+#:
+#: **A phase model chooses this, not the components.** NeqSim's ``PhaseCPAInterface.calc_g``
+#: default is the simplified Carnahan-Starling form and every ``PhaseSrkCPA`` family uses it;
+#: ``PhaseElectrolyteCPAstatoil.calc_g`` overrides it with the classical ``1/(1 - 1.9 eta)``,
+#: which is the form the ``aCPA``/``bCPA`` columns of ``COMP.csv`` were fitted under. The two
+#: agree only at ``eta -> 0`` - at ``eta = 0.20366`` the CS form gives ``1.7788`` where the
+#: classical one gives ``1.6312``.
+RDF_CARNAHAN_STARLING = "carnahan_starling"
+RDF_CHAPMAN = "chapman"
+
+
+def _rdf_values(form: str, eta: float) -> tuple[float, float, float]:
+    """``g`` and its two derivatives with respect to the packing fraction, at ``eta``."""
+    if form == RDF_CHAPMAN:
+        inverse = 1.0 / (1.0 - 1.9 * eta)
+        # `ln g = -ln(1 - 1.9 eta)`, so the two derivatives are its powers.
+        return inverse, 1.9 * inverse, 1.9 * 1.9 * inverse * inverse
+    one_minus = 1.0 - eta
+    # d ln g / d eta = 3/(1 - eta) - 1/(2 - eta).
+    d_ln_g_d_eta = 3.0 / one_minus - 1.0 / (2.0 - eta)
+    # d^2 ln g / d eta^2. Both terms are positive: `ln g` carries `-3 ln(1 - eta)`,
+    # whose second derivative is `+3/(1 - eta)^2`, and `1 - eta/2` contributes
+    # `-1/(2 - eta)` and then `-1/(2 - eta)^2`.
+    d2 = 3.0 / (one_minus * one_minus) - 1.0 / ((2.0 - eta) * (2.0 - eta))
+    return (1.0 - eta / 2.0) / (one_minus * one_minus * one_minus), d_ln_g_d_eta, d2
+
+
 class Rdf:
-    """Carnahan-Starling ``g = (1 - eta/2)/(1 - eta)**3`` with ``eta = B/(4V)``.
+    """The radial distribution function ``g`` at contact, with ``eta = B/(4V)``.
 
     ``PhaseCPAInterface.calc_g``, ``calc_lngV`` and ``calc_lngVV``. It is a property of the
     *mixture* - ``g`` carries no component index - so one value serves every component, and
@@ -207,21 +243,22 @@ class Rdf:
         "d_ln_g_dn",
         "d_ln_g_dv",
         "eta",
+        "form",
         "g",
     )
 
-    def __init__(self, covolumes: Sequence[float], moles: Sequence[float], v: float) -> None:
+    def __init__(
+        self,
+        covolumes: Sequence[float],
+        moles: Sequence[float],
+        v: float,
+        form: str = RDF_CARNAHAN_STARLING,
+    ) -> None:
         big_b = sum(b * n for b, n in zip(covolumes, moles, strict=True))
         eta = big_b / (4.0 * v)
-        one_minus = 1.0 - eta
         self.eta = eta
-        self.g = (1.0 - eta / 2.0) / (one_minus * one_minus * one_minus)
-        # d ln g / d eta = 3/(1 - eta) - 1/(2 - eta).
-        d_ln_g_d_eta = 3.0 / one_minus - 1.0 / (2.0 - eta)
-        # d^2 ln g / d eta^2. Both terms are positive: `ln g` carries `-3 ln(1 - eta)`,
-        # whose second derivative is `+3/(1 - eta)^2`, and `1 - eta/2` contributes
-        # `-1/(2 - eta)` and then `-1/(2 - eta)^2`.
-        self.d2_ln_g_d_eta2 = 3.0 / (one_minus * one_minus) - 1.0 / ((2.0 - eta) * (2.0 - eta))
+        self.form = form
+        self.g, d_ln_g_d_eta, self.d2_ln_g_d_eta2 = _rdf_values(form, eta)
         self.d_ln_g_dn = [b * d_ln_g_d_eta / (4.0 * v) for b in covolumes]
         # eta = B/(4V), so d eta/dV = -B/(4V^2).
         d_eta_dv = -big_b / (4.0 * v * v)
@@ -233,7 +270,7 @@ class Rdf:
     @property
     def d_ln_g_d_eta(self) -> float:
         """``d ln g / d eta``, recomputed from the stored packing fraction."""
-        return 3.0 / (1.0 - self.eta) - 1.0 / (2.0 - self.eta)
+        return _rdf_values(self.form, self.eta)[1]
 
     def d2_ln_g_dn_dn(self, b_i: float, b_j: float, v: float) -> float:
         """``d^2 ln g / dn_i dn_j``, from the packing fraction's second derivative.
@@ -276,8 +313,11 @@ def delta_nog(
 
     if rule.kind == "elliott":
         return math.sqrt(strength(a, covolume_a) * strength(c, covolume_c))
-    # CR-1, with the pair's own energy and volume.
-    return (math.exp(rule.energy / (R * t)) - 1.0) * (covolume_a + covolume_c) / 2.0 * rule.volume
+    # CR-1. Each value NeqSim's `getCrossAssociationEnergy`/`getCrossAssociationVolume`
+    # would fall back on is resolved here, where both components are in scope.
+    energy = rule.energy if rule.energy is not None else (a.energy + c.energy) / 2.0
+    volume = rule.volume if rule.volume is not None else math.sqrt(a.volume * c.volume)
+    return (math.exp(energy / (R * t)) - 1.0) * (covolume_a + covolume_c) / 2.0 * volume
 
 
 def _boltzmann_d_ln_dt(energy: float, t: float) -> float:
@@ -296,7 +336,9 @@ def _delta_nog_d_ln_dt(
     if rule.kind == "elliott":
         # `sqrt(K_a K_c)`, so the log-derivative is the mean of the two components'.
         return 0.5 * (_boltzmann_d_ln_dt(a.energy, t) + _boltzmann_d_ln_dt(c.energy, t))
-    return _boltzmann_d_ln_dt(rule.energy, t)
+    return _boltzmann_d_ln_dt(
+        rule.energy if rule.energy is not None else (a.energy + c.energy) / 2.0, t
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -330,10 +372,13 @@ class SiteState:
 class Association:
     """The whole mixture's association parameters."""
 
-    __slots__ = ("components", "cross", "offsets")
+    __slots__ = ("components", "cross", "offsets", "rdf_form")
 
     def __init__(
-        self, components: Sequence[AssociationComponent], cross: Sequence[CrossRule] = ()
+        self,
+        components: Sequence[AssociationComponent],
+        cross: Sequence[CrossRule] = (),
+        rdf_form: str = RDF_CARNAHAN_STARLING,
     ) -> None:
         """A mixture's association parameters.
 
@@ -364,6 +409,7 @@ class Association:
                     )
         self.components = tuple(components)
         self.cross = tuple(cross) if cross else (ELLIOTT,) * (n * n)
+        self.rdf_form = rdf_form
         offsets = [0]
         total = 0
         for component in self.components:
@@ -482,7 +528,7 @@ class Association:
                 ln_phi=(0.0,) * n,
             )
 
-        rdf = Rdf(covolumes, moles, v)
+        rdf = Rdf(covolumes, moles, v, self.rdf_form)
         delta = self.delta_matrix(covolumes, t, rdf)
         # `K_ij = n_j Delta_ij / V`, so that `sum_j K_ij X_j` is `S_i` and the fixed point
         # `X_i = 1/(1 + S_i)` is NeqSim's `solveX2`.
@@ -567,7 +613,7 @@ class Association:
         sites = self.site_count
         if sites == 0:
             return 0.0
-        rdf = Rdf(covolumes, moles, v)
+        rdf = Rdf(covolumes, moles, v, self.rdf_form)
         delta = self.delta_matrix(covolumes, t, rdf)
         x = state.fractions
 
@@ -666,7 +712,7 @@ class Association:
                 d2_helmholtz_dv_dt=0.0,
             )
 
-        rdf = Rdf(covolumes, moles, v)
+        rdf = Rdf(covolumes, moles, v, self.rdf_form)
         delta = self.delta_matrix(covolumes, t, rdf)
         x = state.fractions
         sum_b = sum(b_i * m for b_i, m in zip(covolumes, moles, strict=True))

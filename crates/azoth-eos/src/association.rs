@@ -394,22 +394,74 @@ pub struct AssociationComponent {
 
 /// The cross-association rule for one component pair.
 ///
-/// NeqSim's `assosSchemeType`: `0` is the Elliott rule, which combines two pure
-/// components' association strengths geometrically, and `1` is CR-1, which uses the pair's
-/// own energy and volume. NeqSim initialises the whole matrix to zero - the Elliott rule -
-/// and overwrites only the pairs the `intertemp` table has a row for, reading
-/// `cpaBetaCross` and `cpaEpsCross` from it.
+/// NeqSim's `assosSchemeType`, read from the interaction table's `cpaAssosiationType`: `0` is
+/// the Elliott rule, which combines two pure components' association strengths
+/// geometrically, and anything else is CR-1, which uses the pair's own energy and volume.
+/// NeqSim initialises the whole matrix to zero - the Elliott rule - and overwrites only the
+/// pairs the table has a row for, so **an absent row, a zero selector and the Elliott rule are
+/// the same state**, which is what [`CrossRule::Elliott`] is the default for.
+///
+/// **A zero in `cpaBetaCross` or `cpaEpsCross` is not an absent pair.** On the CR-1 branch
+/// NeqSim takes the table's value only where `|value| > 1e-10` and falls back to a combining
+/// rule otherwise, so `DEG`/`water`, `TEG`/`water` and `TEG`/`MEG` - selector `1` with two
+/// zeros beside it - run CR-1 on the combining rule rather than reverting to Elliott.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CrossRule {
     /// The Elliott rule: `DeltaNog(i,j) = sqrt(DeltaNog(i,i) DeltaNog(j,j))`.
     Elliott,
-    /// CR-1 with the pair's own energy and volume.
+    /// CR-1, `DeltaNog(i,j) = (exp(eps_ij/(R T)) - 1) ((b_i + b_j)/2) kappa_ij`.
     Cr1 {
-        /// `eps_ij`, in J/mol.
-        energy: f64,
-        /// `kappa_AB` for the pair, dimensionless.
-        volume: f64,
+        /// `eps_ij` in J/mol, or `None` for NeqSim's fallback for this value alone: the
+        /// arithmetic mean of the two components' own association energies.
+        energy: Option<f64>,
+        /// `kappa_ij`, or `None` for NeqSim's fallback for this value alone: the geometric
+        /// mean of the two components' own association volumes. `CO2`/`water` takes the
+        /// fallback for the energy (`(0 + 16655)/2`) and the table's value for the volume
+        /// (`0.075`), which is why the two are resolved separately.
+        volume: Option<f64>,
     },
+}
+
+/// Which radial distribution function the association's `Delta` carries.
+///
+/// **A phase model chooses this, not the components.** NeqSim's `PhaseCPAInterface.calc_g`
+/// default is the simplified Carnahan-Starling form and every `PhaseSrkCPA` family uses it;
+/// `PhaseElectrolyteCPAstatoil.calc_g` overrides it with the classical `1/(1 - 1.9 eta)`,
+/// which is the form the `aCPA`/`bCPA` columns of `COMP.csv` were fitted under and is kept
+/// for that reason. The two agree only at `eta -> 0` - at `eta = 0.20366` the CS form gives
+/// `1.7788` where the classical one gives `1.6312` - so a mixture that reads the wrong one is
+/// wrong by 9 % in `g` at a brine's own packing fraction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RdfForm {
+    /// `g = (2 - eta) / (2 (1 - eta)^3)`, NeqSim's `PhaseCPAInterface` default.
+    #[default]
+    CarnahanStarling,
+    /// `g = 1/(1 - 1.9 eta)`, NeqSim's `PhaseElectrolyteCPAstatoil.calc_g`.
+    ///
+    /// `d ln g/d eta = 1.9/(1 - 1.9 eta)` and `d^2 ln g/d eta^2` its square, because
+    /// `ln g = -ln(1 - 1.9 eta)` has no second term.
+    Chapman,
+}
+
+impl RdfForm {
+    /// `g` and its two derivatives with respect to the packing fraction, at `eta`.
+    fn values(self, eta: f64) -> (f64, f64, f64) {
+        match self {
+            Self::CarnahanStarling => {
+                let one_minus = 1.0 - eta;
+                (
+                    (1.0 - eta / 2.0) / (one_minus * one_minus * one_minus),
+                    3.0 / one_minus - 1.0 / (2.0 - eta),
+                    3.0 / (one_minus * one_minus) - 1.0 / ((2.0 - eta) * (2.0 - eta)),
+                )
+            }
+            Self::Chapman => {
+                let inverse = 1.0 / (1.0 - 1.9 * eta);
+                // `ln g = -ln(1 - 1.9 eta)`, so the two derivatives are its powers.
+                (inverse, 1.9 * inverse, 1.9 * 1.9 * inverse * inverse)
+            }
+        }
+    }
 }
 
 /// The whole mixture's association parameters.
@@ -421,6 +473,8 @@ pub struct Association {
     cross: Vec<CrossRule>,
     /// The first site index of each component, with the total appended.
     offsets: Vec<usize>,
+    /// Which radial distribution function this phase model runs.
+    rdf_form: RdfForm,
 }
 
 impl Association {
@@ -476,7 +530,24 @@ impl Association {
             components,
             cross,
             offsets,
+            rdf_form: RdfForm::default(),
         })
+    }
+
+    /// This association, running a different radial distribution function.
+    ///
+    /// The electrolyte-CPA-statoil phase is the caller: everything else in NeqSim's CPA
+    /// family runs the default.
+    #[must_use]
+    pub fn with_rdf_form(mut self, form: RdfForm) -> Self {
+        self.rdf_form = form;
+        self
+    }
+
+    /// Which radial distribution function this association runs.
+    #[must_use]
+    pub fn rdf_form(&self) -> RdfForm {
+        self.rdf_form
     }
 
     /// One component's parameters.
@@ -575,25 +646,27 @@ pub struct Rdf {
     /// `d^2 ln g / d eta^2`, which a second derivative with respect to a *pair* of mole
     /// numbers needs: `d^2 ln g / dn_i dn_j = b_i b_j (d^2 ln g/d eta^2)/(16 V^2)`.
     pub d2_ln_g_d_eta2: f64,
+    /// Which form produced the three above. Carried rather than passed again because
+    /// [`Self::d_ln_g_d_eta`] recomputes from the packing fraction later.
+    form: RdfForm,
 }
 
 impl Rdf {
-    /// Evaluate the distribution function and its derivatives at a state.
+    /// Evaluate the simplified Carnahan-Starling distribution function at a state.
     ///
     /// `covolumes` and `moles` are one entry per component; `v` is the total volume.
     #[must_use]
     pub fn new(covolumes: &[f64], moles: &[f64], v: f64) -> Self {
+        Self::with_form(covolumes, moles, v, RdfForm::CarnahanStarling)
+    }
+
+    /// The same, under a chosen form.
+    #[must_use]
+    pub fn with_form(covolumes: &[f64], moles: &[f64], v: f64, form: RdfForm) -> Self {
         let (b, n) = (covolumes, moles);
         let big_b: f64 = b.iter().zip(n).map(|(bi, ni)| bi * ni).sum();
         let eta = big_b / (4.0 * v);
-        let one_minus = 1.0 - eta;
-        let g = (1.0 - eta / 2.0) / (one_minus * one_minus * one_minus);
-        // d ln g / d eta = 3/(1 - eta) - 1/(2 - eta).
-        let d_ln_g_d_eta = 3.0 / one_minus - 1.0 / (2.0 - eta);
-        // d^2 ln g / d eta^2. The second term is minus: ln g carries -3 ln(1 - eta), whose
-        // first derivative is +3/(1 - eta) and second +3/(1 - eta)^2, while the 1 - eta/2
-        // term contributes -1/(2 - eta) and then -1/(2 - eta)^2.
-        let d2_ln_g_d_eta2 = 3.0 / (one_minus * one_minus) - 1.0 / ((2.0 - eta) * (2.0 - eta));
+        let (g, d_ln_g_d_eta, d2_ln_g_d_eta2) = form.values(eta);
         let d_ln_g_dn = b.iter().map(|bi| bi * d_ln_g_d_eta / (4.0 * v)).collect();
         // eta = B/(4V), so d eta/dV = -B/(4V^2).
         let d_eta_dv = -big_b / (4.0 * v * v);
@@ -608,12 +681,13 @@ impl Rdf {
             d_ln_g_dt: 0.0,
             eta,
             d2_ln_g_d_eta2,
+            form,
         }
     }
 
     /// `d ln g / d eta`, recomputed from the stored packing fraction.
     fn d_ln_g_d_eta(&self) -> f64 {
-        3.0 / (1.0 - self.eta) - 1.0 / (2.0 - self.eta)
+        self.form.values(self.eta).1
     }
 
     /// `d^2 ln g / dn_i dn_j`, from the packing fraction's second derivative.
@@ -658,11 +732,14 @@ pub fn delta_nog(
         ((x.energy / (R * t)).exp() - 1.0) * covolume * x.volume
     };
     match rule {
-        // NeqSim's default for every pair the `intertemp` table has no row for.
+        // NeqSim's zero initialisation: every pair the table has no row for, and every pair
+        // whose selector is zero.
         CrossRule::Elliott => (strength(a, covolume_a) * strength(c, covolume_c)).sqrt(),
-        // CR-1, with the pair's own energy and volume. NeqSim falls back to
-        // `(eps_a + eps_c)/2` and `sqrt(beta_a beta_c)` where the table has no row.
+        // CR-1. Each value NeqSim's `getCrossAssociationEnergy`/`getCrossAssociationVolume`
+        // would fall back on is resolved here, where both components are in scope.
         CrossRule::Cr1 { energy, volume } => {
+            let energy = energy.unwrap_or((a.energy + c.energy) / 2.0);
+            let volume = volume.unwrap_or((a.volume * c.volume).sqrt());
             ((energy / (R * t)).exp() - 1.0) * (covolume_a + covolume_c) / 2.0 * volume
         }
     }
@@ -778,7 +855,7 @@ impl Association {
             });
         }
 
-        let rdf = Rdf::new(covolumes, moles, v);
+        let rdf = Rdf::with_form(covolumes, moles, v, self.rdf_form);
         let delta = self.delta_matrix(covolumes, t, &rdf);
         // `K_ij = n_j Delta_ij / V`, so that `sum_j K_ij X_j` is `S_i` and the fixed point
         // `X_i = 1/(1 + S_i)` is NeqSim's `solveX2`.
@@ -937,7 +1014,9 @@ fn delta_nog_d_ln_dt(
         CrossRule::Elliott => {
             0.5 * (boltzmann_d_ln_dt(a.energy, t) + boltzmann_d_ln_dt(c.energy, t))
         }
-        CrossRule::Cr1 { energy, .. } => boltzmann_d_ln_dt(energy, t),
+        CrossRule::Cr1 { energy, .. } => {
+            boltzmann_d_ln_dt(energy.unwrap_or((a.energy + c.energy) / 2.0), t)
+        }
     }
 }
 
@@ -1052,7 +1131,7 @@ impl Association {
             });
         }
 
-        let rdf = Rdf::new(covolumes, moles, v);
+        let rdf = Rdf::with_form(covolumes, moles, v, self.rdf_form);
         let delta = self.delta_matrix(covolumes, t, &rdf);
         let x = &state.fractions;
         let sum_b: f64 = covolumes.iter().zip(moles).map(|(b, m)| b * m).sum();

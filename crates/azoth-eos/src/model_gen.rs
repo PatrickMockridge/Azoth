@@ -14,6 +14,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/effective_diffusion.toml
+//!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
@@ -1895,6 +1896,135 @@ pub static EFFECTIVE_DIFFUSION_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: EFFECTIVE_DIFFUSION_CHECKS,
     cases: EFFECTIVE_DIFFUSION_CASES,
+};
+
+static ELECTROLYTE_CPA_STATOIL_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static ELECTROLYTE_CPA_STATOIL_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_aqueous_phase_of_the_40_bara_brine",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                0.0199838194895481,
+                0.917183084665173,
+                0.0314165479226397,
+                0.0314165479226397,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.0314046546320745)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                3.65314216519995,
+                -8.04447341518401,
+                -127.642339607682,
+                -170.734154291934,
+            ],
+        )],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_gas_phase_of_the_same_brine",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[0.999495590252868, 0.000504409747132707, 1e-50, 1e-50],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.700255333545298)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                -0.25918565618861,
+                -0.538799955867045,
+                -60.7163097247917,
+                -92.4685400845073,
+            ],
+        )],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_aqueous_phase_with_no_salt",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "water"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[("x", &[0.0250294141123647, 0.974970585887635])],
+        matrices: &[],
+        expected: &[("z_factor", 0.0310103702842816)],
+        expected_vectors: &[("ln_phi", &[3.42797986423899, -8.04127938788781])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.electrolyte_cpa_statoil_phase`.
+pub static ELECTROLYTE_CPA_STATOIL_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.electrolyte_cpa_statoil_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: ELECTROLYTE_CPA_STATOIL_PHASE_CHECKS,
+    cases: ELECTROLYTE_CPA_STATOIL_PHASE_CASES,
 };
 
 static EOS_CG_PHASE_CHECKS: &[SpecCheck] = &[
@@ -11028,6 +11158,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EFFECTIVE_DIFFUSION_SPEC,
+    &ELECTROLYTE_CPA_STATOIL_PHASE_SPEC,
     &EOS_CG_PHASE_SPEC,
     &FREEZING_POINT_SPEC,
     &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,

@@ -1,0 +1,55 @@
+model = "eos.electrolyte_cpa_statoil_phase"
+
+# The states are the two phases of the flash NeqSim's own `CO2BrineHydratePhaseStateTest`
+# builds, at the composition the flash gives each phase, so the electrolyte term and the
+# association are both live and their sum is what is being read. `validation/neqsim/BrineProbe.java`
+# prints them and `validation/neqsim/captures/brine_probe.tsv` is its stdout.
+
+[[cases]]
+id = "the_aqueous_phase_of_the_40_bara_brine"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `electrolyte_cpa_statoil at 40 bara 10 pct salt phase 1`: the aqueous
+phase of a CO2/water/Na+/Cl- fluid NeqSim flashes at 283.15 K and 40 bara, whose ions give
+`dFdV = 0.524031777343553` against the electrolyte's `-1.01610450016655` and the association's
+`1.54013627751010`."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 4000000.0
+x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.0314046546320745
+ln_phi = [3.65314216519995, -8.04447341518401, -127.642339607682, -170.734154291934]
+
+[[cases]]
+id = "the_gas_phase_of_the_same_brine"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `electrolyte_cpa_statoil at 40 bara 10 pct salt phase 0`. The other
+root of the same fluid, where the ions are at `1e-50` but water is not - so the association is
+live here too, and this is the case that says the two terms do not need a liquid."""
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 283.15
+P = 4000000.0
+x = [0.999495590252868, 0.000504409747132707, 1.0e-50, 1.0e-50]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.700255333545298
+ln_phi = [-0.259185656188610, -0.538799955867045, -60.7163097247917, -92.4685400845073]
+
+[[cases]]
+id = "the_aqueous_phase_with_no_salt"
+tolerance = 1e-08
+source = """`brine_probe.tsv`, `electrolyte_cpa_statoil at 40 bara no salt phase 1`. Ions
+absent, and the electrolyte term is still what the phase model runs - so this separates a
+divergence in the association from one in the salt."""
+[cases.inputs]
+components = ["CO2", "water"]
+T = 283.15
+P = 4000000.0
+x = [0.0250294141123647, 0.974970585887635]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.0310103702842816
+ln_phi = [3.42797986423899, -8.04127938788781]

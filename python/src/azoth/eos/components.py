@@ -60,7 +60,7 @@ from azoth.eos.mixture import (
     SoreideWhitsonParameters,
     soreide_whitson_roles,
 )
-from azoth.eos.reference._association import family_of
+from azoth.eos.reference._association import ELLIOTT, RDF_CHAPMAN, CrossRule, family_of
 from azoth.eos.reference._furst_dielectric import (
     NEQSIM_AVOGADRO,
     NEQSIM_PI,
@@ -78,6 +78,7 @@ from azoth.eos.reference._furst_mixing import (
 from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 from azoth.eos.reference.pr_peneloux_shift import pr_peneloux_shift
+from azoth.eos.reference.srk_kappa import srk_kappa
 
 COMPONENTS_CSV = "data/components/components.csv"
 KIJ_CSV = "data/components/kij.csv"
@@ -396,6 +397,11 @@ class FurstElectrolyte:
     #: Whether this is the **2004 revision**, which zeroes five quantities and adds an
     #: extensive `FBornD` to every `ln phi`. See `eos.furst_electrolyte_mod2004_phase`.
     mod2004: bool = False
+    #: Which fitted ion set :meth:`ion_covolume` reads. **There are two**, and they differ by
+    #: 50 %: ``furstParams`` is the base model's and ``furstParamsCPA`` the one
+    #: `ComponentElectrolyteCPA` reinitialises from, so an electrolyte-CPA fluid that read
+    #: the base set would have every ion's covolume wrong.
+    ion_parameters: str = "furstParams"
 
     @classmethod
     def build(
@@ -403,6 +409,7 @@ class FurstElectrolyte:
         species: tuple[FurstSpecies, ...],
         rule: str = "molar_average",
         mod2004: bool = False,
+        ion_parameters: str = "furstParams",
     ) -> FurstElectrolyte:
         """Assemble the term, building the short-range table from the names."""
         components = tuple(
@@ -419,6 +426,7 @@ class FurstElectrolyte:
             table=_furst_wij_table(components, furst_wij),
             rule=rule,
             mod2004=mod2004,
+            ion_parameters=ion_parameters,
         )
 
     def short_range(self, temperature: float, mole_numbers: Sequence[float]) -> Any:
@@ -434,7 +442,7 @@ class FurstElectrolyte:
         species = self.species[index]
         if species.charge == 0.0:
             return None
-        fitted = furst_parameters("furstParams")
+        fitted = furst_parameters(self.ion_parameters)
         p0 = fitted[0] if len(fitted) > 0 else 0.0
         p1 = fitted[1] if len(fitted) > 1 else 0.0
         return p0 * species.table_diameter**3 + p1
@@ -1110,6 +1118,119 @@ def _cpa_kij() -> dict[tuple[str, str], tuple[float, float]]:
         pairs[(a, b)] = columns
         pairs[(b, a)] = columns
     return pairs
+
+
+@cache
+def _cpa_kij_t() -> dict[tuple[str, str], float]:
+    """``cpakijT_SRK``, the CPA rule's temperature coefficient, keyed by the ordered pair.
+
+    **Not ``KIJTSRK``**, which is a different column and zero on ``CO2``/``water`` where this
+    one is ``0.001121``. NeqSim's handler adds it as ``kij(T) = cpakij_SRK + cpakijT_SRK * T``,
+    so on that pair the interaction parameter runs from ``-0.27686`` to ``+0.04055`` across
+    the range a brine is computed at - a sign change, not a correction.
+
+    Only the Soave family: ``PhasePrCPA`` sets the coefficient to zero outright rather than
+    reading a column, which :func:`cpa_kij_t_for` mirrors.
+    """
+    pairs: dict[tuple[str, str], float] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        value = _absent_is_zero(row["cpakijt_srk"])
+        pairs[(a, b)] = value
+        pairs[(b, a)] = value
+    return pairs
+
+
+def _dense(pairs: dict[tuple[int, int], float], n: int) -> tuple[tuple[float, ...], ...]:
+    """A sparse ``(i, j)`` pair mapping as the symmetric matrix a :class:`Mixture` carries."""
+    matrix = [[0.0] * n for _ in range(n)]
+    for (i, j), value in pairs.items():
+        matrix[i][j] = value
+        matrix[j][i] = value
+    return tuple(tuple(row) for row in matrix)
+
+
+def _dense_slopes(pairs: dict[tuple[int, int], float], n: int) -> tuple[tuple[float, ...], ...]:
+    """The temperature coefficients as a matrix, or an empty tuple where every one is zero.
+
+    Empty rather than zeroed because an all-zero coefficient matrix and no coefficient
+    matrix mean the same thing to :meth:`Mixture.effective_kij`, and the empty form is what
+    a mixture whose rule is constant carries.
+    """
+    return _dense(pairs, n) if pairs else ()
+
+
+@cache
+def _cpa_cross() -> dict[tuple[str, str], CrossRule]:
+    """The CPA cross-association rule per ordered pair, from NeqSim's three columns.
+
+    ``cpaAssosiationType`` is the selector - ``0`` is the Elliott rule, anything else CR-1 -
+    and **it is not inferable from the other two**: ``DEG``/``water``, ``TEG``/``water`` and
+    ``TEG``/``MEG`` carry the selector with two zeros beside it and run CR-1 on the combining
+    rule, which a reader of the values alone would put on the wrong branch. Of the 957
+    in-scope pairs, 22 take CR-1.
+
+    A pair with no row at all, or a selector of zero, is :data:`ELLIOTT` - the handler's zero
+    initialisation, so absence needs no separate handling here.
+    """
+    pairs: dict[tuple[str, str], CrossRule] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        if _absent_is_zero(row["cpaassosiationtype"]) == 0.0:
+            continue
+        # NeqSim's `Math.abs(value) > 1e-10`, so a value at or below it is the combining
+        # rule for that value alone - `None` here rather than a zero.
+        given = lambda text: (  # noqa: E731
+            None if abs(_absent_is_zero(text)) <= 1.0e-10 else _absent_is_zero(text)
+        )
+        rule = CrossRule("cr1", energy=given(row["cpaepscross"]), volume=given(row["cpabetacross"]))
+        pairs[(a, b)] = rule
+        pairs[(b, a)] = rule
+    return pairs
+
+
+@cache
+def cpa_cross_for(names: tuple[str, ...]) -> tuple[CrossRule, ...]:
+    """The cross-rule matrix for a list of names, flattened row-major.
+
+    The sibling of :func:`cpa_kij_for`, and read by the same models: NeqSim's
+    ``CPAMixingRuleHandler`` decides the association's cross term with this table, and the
+    phase's site fractions follow from it.
+    """
+    n = len(names)
+    matrix = [ELLIOTT] * (n * n)
+    for i, a in enumerate(names):
+        for j, b in enumerate(names):
+            found = _cpa_cross().get((a.strip().lower(), b.strip().lower()))
+            if found is not None:
+                matrix[i * n + j] = found
+    return tuple(matrix)
+
+
+@cache
+def cpa_kij_t_for(names: tuple[str, ...], family: str) -> dict[tuple[int, int], float]:
+    """The CPA temperature coefficients for a list of components, by index.
+
+    Empty for the Peng-Robinson family, because NeqSim zeroes the coefficient there rather
+    than reading a column; the ``cpakij_PR`` column has no temperature companion at all.
+
+    Raises:
+        InvalidInputError: if `family` is not one of :data:`CPA_FAMILIES`.
+    """
+    if family not in CPA_FAMILIES:
+        raise InvalidInputError(
+            "family",
+            f"{family!r} is not an associating cubic family; expected one of {list(CPA_FAMILIES)}",
+        )
+    if family == "pr":
+        return {}
+    slopes: dict[tuple[int, int], float] = {}
+    for i, a in enumerate(names):
+        for j in range(i + 1, len(names)):
+            stored = _cpa_kij_t().get((a.strip().lower(), names[j].strip().lower()))
+            if stored:
+                slopes[(i, j)] = stored
+    return slopes
 
 
 @cache
@@ -3082,6 +3203,9 @@ def from_names(
         cubic=cubic,
         alpha=alpha_name,
         associating=associating,
+        # The cross-association rule the CPA mixing rule reads per pair. Empty for a
+        # classical fluid, whose association is not on at all.
+        cross=cpa_cross_for(tuple(resolved)) if associating else (),
         # **The names travel with it**, because a `Component` carries critical constants and
         # no name: a model that has to look a substance up by name has nowhere else to read it.
         names=resolved,
@@ -3291,12 +3415,29 @@ def _assemble(
     )
 
 
+def _cpa_statoil_alpha_m(entry: Any) -> float:
+    """The Soave coefficient ``AttractiveTermCPAstatoil`` reads for one substance.
+
+    ``mCPA_SRK`` where the row carries a fitted CPA set, and the ordinary SRK ``kappa``
+    otherwise - which is what ``0.480 + 1.574 omega - 0.176 omega**2`` gives. The same
+    selection `azoth_eos::furst_electrolyte::FurstAttractive::CpaStatoil` makes, and it is
+    the term's whole content: ``AttractiveTermCPAstatoil`` *is* ``AttractiveTermSrk`` with
+    this coefficient installed.
+    """
+    record = entry.association
+    if record is not None and record.has_fitted_set("srk"):
+        return record.alpha_m("srk")
+    return srk_kappa(entry.omega).kappa
+
+
 def furst_mixture_of(
     names: list[str],
     *,
     salinity_rule: str = "molar_average",
     mod2004: bool = False,
     card: keycard.Keycard | None = None,
+    ion_parameters: str = "furstParams",
+    attractive: str = "schwartzentruber",
 ) -> tuple[Mixture, IdealGasModel]:
     """The Fürst fluid: an SRK cubic, the Huron-Vidal rule and the electrolyte term.
 
@@ -3330,7 +3471,7 @@ def furst_mixture_of(
             "needs its own",
         )
 
-    fitted = furst_parameters("furstParams")
+    fitted = furst_parameters(ion_parameters)
     p0 = fitted[0] if len(fitted) > 0 else 0.0
     p1 = fitted[1] if len(fitted) > 1 else 0.0
     species = []
@@ -3361,18 +3502,30 @@ def furst_mixture_of(
         )
 
     hv = huron_vidal_parameters(tuple(resolved), eos="srk")
-    term = FurstElectrolyte.build(tuple(species), _mixing_rule(salinity_rule), mod2004)
+    term = FurstElectrolyte.build(
+        tuple(species), _mixing_rule(salinity_rule), mod2004, ion_parameters
+    )
     # **The rule's own interaction matrix, and not the mixture's default of zero.** The HV
     # rule reads `kij` for the pairs it does not fit, and `hv.kij` is that column - so a
     # mixture built without it evaluates every pair at ideal mixing, which is a plausible
     # phase and a different one.
     n = len(resolved)
     pairs = {(i, j): hv.kij[i * n + j] for i in range(n) for j in range(i + 1, n)}
+    # **`srk_fitted` carries its coefficient per component.** The term reads `alpha_params[0]`
+    # as `m`, so a mixture naming the correlation without giving a value would evaluate every
+    # component at Soave's own `kappa` - the right form with the wrong number for water, whose
+    # fitted `mCPA_SRK` is `0.67359` against Soave's `0.7152`.
+    components = tuple(
+        replace(e.component(alpha=attractive), alpha_params=(_cpa_statoil_alpha_m(e),))
+        if attractive == "srk_fitted"
+        else e.component(alpha=attractive)
+        for e in entries
+    )
     fluid = mixture(
-        tuple(e.component(alpha="schwartzentruber") for e in entries),
+        components,
         kij=pairs,
         cubic=_cubic("srk"),
-        alpha="schwartzentruber",
+        alpha=attractive,
         mixing_rule="huron_vidal",
         huron_vidal=hv,
         furst=term,
@@ -3386,6 +3539,67 @@ def furst_mixture_of(
             cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
             cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
         ),
+    )
+
+
+def electrolyte_cpa_statoil_mixture_of(
+    names: list[str],
+    *,
+    card: keycard.Keycard | None = None,
+) -> tuple[Mixture, IdealGasModel]:
+    """The electrolyte-CPA-statoil fluid: the Fürst one, associating, under the classical RDF.
+
+    NeqSim's ``SystemElectrolyteCPAstatoil``, whose phase is ``PhaseElectrolyteCPAstatoil``
+    and whose components are ``ComponentElectrolyteCPAstatoil``. **It is
+    ``SystemFurstElectrolyteEos`` plus a phase class**, so this is :func:`furst_mixture_of`
+    with two more statements, and the phase class is what makes the two terms coexist - it
+    does it by *adding* them, ``getF() = super.getF() + cpaon FCPA()`` and the same for every
+    derivative.
+
+    The second statement is the RDF. ``PhaseElectrolyteCPAstatoil.calc_g`` overrides
+    ``PhaseCPAInterface``'s simplified Carnahan-Starling default with ``1/(1 - 1.9 eta)``,
+    the form the ``aCPA``/``bCPA`` columns were fitted under.
+
+    **The other three are differences and not a wrapper.** The ion covolumes are the
+    ``furstParamsCPA`` set rather than the base one - a 50 % difference, and the diameter is
+    derived back out of it, so the MSA and Born terms move with it. The attractive term is
+    ``AttractiveTermCPAstatoil``, which is Soave with ``mCPA_SRK``, not Schwartzentruber. And
+    the mixing rule is the *classical* one with the CPA ``kij``, temperature-dependent,
+    because ``SystemElectrolyteCPAstatoil`` sets NeqSim's rule 10 where
+    ``SystemFurstElectrolyteEos`` sets rule 4.
+
+    Raises:
+        PropertyUnavailableError: if a name is not in the databank or carries no
+            heat-capacity coefficients.
+    """
+    fluid, ideal_gas = furst_mixture_of(
+        names,
+        card=card,
+        ion_parameters="furstParamsCPA",
+        attractive="srk_fitted",
+    )
+    resolved = tuple(name.strip().lower() for name in names)
+    return (
+        replace(
+            fluid,
+            associating=True,
+            rdf_form=RDF_CHAPMAN,
+            # **The mixing rule is not the Fürst one.** Rule 10 is `CPAMixingRuleHandler`,
+            # and `PhaseElectrolyteCPA` takes its `PhaseCPAInterface` fallback branch:
+            # `cpakij_SRK` beside `cpakijT_SRK`, added as `kij + kijT * T`. On `CO2`/`water`
+            # the coefficient is `0.001121` against a constant of `-0.27686`, so the pair's
+            # parameter crosses zero inside the range a brine is computed at.
+            mixing_rule="classic",
+            huron_vidal=None,
+            kij=_dense(cpa_kij_for(resolved, "srk", card=card), len(resolved)),
+            kij_t=_dense_slopes(cpa_kij_t_for(resolved, "srk"), len(resolved)),
+            # And the association's cross term, from the same handler's
+            # `cpaAssosiationType`/`cpaBetaCross`/`cpaEpsCross` - `CO2`/`water` is CR-1, and
+            # that is what makes the pair's `DeltaNog` `5.5315` rather than the zero a
+            # geometric mean of `CO2`'s strength and water's gives.
+            cross=cpa_cross_for(resolved),
+        ),
+        ideal_gas,
     )
 
 

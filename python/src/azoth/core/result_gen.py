@@ -804,6 +804,22 @@ class EffectiveDiffusionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ElectrolyteCpaStatoilPhaseResult(_HasWarnings):
+    """Result of ``eos.electrolyte_cpa_statoil_phase``."""
+
+    CALC_ID: ClassVar[str] = "eos.electrolyte_cpa_statoil_phase"
+
+    #: the compressibility factor at the chosen root
+    z_factor: float
+
+    #: the fugacity coefficients, as logarithms, at the chosen root: the cubic's, the electrolyte's and the association's, summed. An ion's is large and negative, because its attraction is `1e-35` and its covolume is not.
+    ln_phi: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class EosCgPhaseResult(_HasWarnings):
     """Result of ``eos.eos_cg_phase``."""
 

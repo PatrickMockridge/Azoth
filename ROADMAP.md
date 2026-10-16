@@ -255,9 +255,13 @@ reaches equilibrium through.
   **carried as unreachable upstream**: 5,727 lines with no non-test construction site
   anywhere — each phase is built only by its own `SystemElectrolyte*`, and
   `SystemThermo`'s factory maps `Electrolyte-CPA-EOS` to `CPAstatoil` and never to
-  `SystemElectrolyteCPA`. `SystemElectrolyteCPAstatoil` and
-  `PhaseElectrolyteCPAstatoil` are **not ported** — 145 lines, eleven `src/main` sites
-  that build them, and Fürst plus the Wertheim association this library already has.
+  `SystemElectrolyteCPA`. `SystemElectrolyteCPAstatoil` and `PhaseElectrolyteCPAstatoil`
+  are **ported** as `eos.electrolyte_cpa_statoil_phase` — 145 lines, and the four
+  differences from the Fürst fluid are the point of it: the ion covolumes are the
+  `furstParamsCPA` set, the attractive term is `AttractiveTermCPAstatoil`, the mixing rule
+  is the classical one with the CPA `kij` (rule 10), and the association's cross term is
+  the CR-1 table rather than Elliott. The four brine operations that run on it are the
+  acid-gas bullet's, above.
 - **Salts and scale.** Ported, each with the id that carries it: `CheckScalePotential`
   (`eos.scale_saturation_ratio`, one salt's `IAP/Ksp` against its solubility product) and
   `MultiSaltPrecipitation` over `CalcSaltSatauration` (`eos.salt_precipitation`, one mineral's

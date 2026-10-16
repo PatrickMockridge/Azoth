@@ -673,7 +673,14 @@ def _association_of(mixture: Mixture) -> Association | None:
                 )
             )
             continue
-        if not record.has_fitted_set(family) or scheme is None:
+        # **The scheme decides the sites, and not the fitted `aCPA`.** `ComponentSrkCPA` reads
+        # `associationsites` from the table, which is `2` for `CO2` - whose `associationenergy`
+        # and `associationboundingvolume_SRK` are both zero - so a component that names a
+        # scheme has its sites whatever its set holds. Gating this on `has_fitted_set` drops
+        # `CO2` entirely, and the `CO2`/`water` cross term with it, because this library's
+        # Rust half reads the scheme alone. The same test the probe's own `n_sites_c[0] = 2`
+        # settles.
+        if scheme is None:
             components.append(NON_ASSOCIATING)
             continue
         components.append(
@@ -683,7 +690,7 @@ def _association_of(mixture: Mixture) -> Association | None:
                 record.volume_srk if family == "srk" else record.volume_pr,
             )
         )
-    return Association(components)
+    return Association(components, cross=mixture.cross, rdf_form=mixture.rdf_form)
 
 
 #: NeqSim's ``hwfc`` for the ``UNIFAC_UMRPRU`` GE model, ``EosMixingRuleHandler.init``.
@@ -838,6 +845,14 @@ def phase_state(
         else pr_z_factor(a_mix, b_mix)
     )
     seed = roots.z_min if liquid else roots.z_max
+    if reduced.furst is not None and reduced.association is not None:
+        # Both terms carry a pressure, and NeqSim's phase for this fluid adds them.
+        return phase_state_at(
+            reduced,
+            kij,
+            x,
+            _electrolyte_cpa_root(reduced, x, seed, a_mix, b_mix, liquid=liquid),
+        )
     if reduced.furst is not None:
         # **The electrolyte terms carry a pressure, so the root is not the cubic's.** The
         # residual is `cubic(Z) - P_e Z/P` with `P_e = -R T d(A_e/(R T))/dV`, the same shape
@@ -1003,6 +1018,48 @@ def _associating_root(
         ) - p_assoc * z / pressure
 
     return _root_with_extra_pressure(residual, seed, b_mix, liquid=liquid, what="associating")
+
+
+def _electrolyte_cpa_root(
+    reduced: ReducedParameters,
+    x: list[float],
+    seed: float,
+    a_mix: float,
+    b_mix: float,
+    *,
+    liquid: bool,
+) -> float:
+    """The root when a mixture carries the electrolyte term *and* the association.
+
+    **This is the composition NeqSim makes, not a term of its own.** Every member of
+    ``PhaseElectrolyteCPA`` is ``super.<x>() + cpaon * dFCPA<x>()``, and its ``super`` is
+    ``PhaseModifiedFurstElectrolyteEos`` - so the equation the root solves carries the two
+    pressures added exactly as the electrolyte's and the association's own roots carry one
+    each. Measured on the pinned jar at 40 bara and 10 % salt, the aqueous phase's
+    ``dFdV = 0.454707314653414`` is the electrolyte's ``-0.707547100498624`` plus the
+    association's ``1.16225441515204`` in the last digit.
+    """
+    cubic = reduced.cubic
+    r_t = R * reduced.t_kelvin
+    pressure = reduced.pressure
+    covolumes = [b * r_t / pressure for b in reduced.b]
+    association = reduced.association
+    furst = reduced.furst
+    assert association is not None and furst is not None  # the caller checked
+
+    def residual(z: float) -> float:
+        v = z * r_t / pressure
+        state = association.solve(covolumes, x, v, reduced.t_kelvin)
+        p_assoc = -r_t * state.d_helmholtz_dv
+        solution = _furst_solve(reduced, x, v)
+        p_furst = -r_t * solution.helmholtz_rt_dv
+        return (
+            z
+            - z / (z - b_mix)
+            + a_mix * z / ((z + cubic.delta1 * b_mix) * (z + cubic.delta2 * b_mix))
+        ) - (p_assoc + p_furst) * z / pressure
+
+    return _root_with_extra_pressure(residual, seed, b_mix, liquid=liquid, what="electrolyte-CPA")
 
 
 def _root_with_extra_pressure(

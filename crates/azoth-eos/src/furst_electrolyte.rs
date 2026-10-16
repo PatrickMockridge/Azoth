@@ -84,6 +84,51 @@ pub struct FurstElectrolyte {
     /// phase's own constant still moves. `shielding_dt` and `xlr_dt` go with them, because
     /// `volInit` never assigns them there.
     mod2004: bool,
+    /// Which fitted parameter set the ions' covolume reads.
+    ///
+    /// **The two families disagree and the source says so.** `ComponentModifiedFurstElectrolyteEos`
+    /// overwrites an ion's covolume with `furstParams[0] d^3 + furstParams[1]`, and
+    /// `ComponentElectrolyteCPA` overrides that method to read `furstParamsCPA[0..1]`
+    /// instead - "reinitializes ionic covolume and diameter from the CPA table". The two
+    /// sets are not close: at the table's `5.68` Å for `Na+` they give `2.5846e-5` and
+    /// `3.8721e-5`, a 50 % difference in the covolume of every ion in the phase, and the
+    /// diameter derived back out of it moves too - so the MSA and Born terms move with it.
+    ion_parameters: IonParameters,
+}
+
+/// Which attractive term a Fürst-family fluid runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FurstAttractive {
+    /// `AttractiveTermSchwartzentruber`, which `ComponentModifiedFurstElectrolyteEos` installs
+    /// and which `SystemFurstElectrolyteEos` runs.
+    #[default]
+    Schwartzentruber,
+    /// `AttractiveTermCPAstatoil`, which is Soave's form `(1 + m(1 - sqrt(Tr)))^2` with
+    /// `m = mcpa_srk` where the row has a fitted CPA set and the acentric factor's Soave `m`
+    /// where it does not. **`SystemElectrolyteCPAstatoil` selects it**, and nothing else in
+    /// NeqSim does: its constructor sets `attractiveTermNumber = 15`.
+    CpaStatoil,
+}
+
+/// Which fitted parameter set an ion's covolume and derived diameter read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum IonParameters {
+    /// `FurstElectrolyteConstants.furstParams`, which the base model reads.
+    #[default]
+    Furst,
+    /// `FurstElectrolyteConstants.furstParamsCPA`, which the electrolyte-CPA component reads.
+    Cpa,
+}
+
+impl IonParameters {
+    /// The databank table this set is stored as.
+    #[must_use]
+    pub fn table(self) -> &'static str {
+        match self {
+            Self::Furst => "furstParams",
+            Self::Cpa => "furstParamsCPA",
+        }
+    }
 }
 
 /// What the term returns at one volume.
@@ -123,6 +168,7 @@ impl FurstElectrolyte {
             table,
             rule,
             mod2004: false,
+            ion_parameters: IonParameters::default(),
         })
     }
 
@@ -163,10 +209,17 @@ impl FurstElectrolyte {
         if species.charge == 0.0 {
             return None;
         }
-        let parameters = crate::databank::furst_parameters("furstParams");
+        let parameters = crate::databank::furst_parameters(self.ion_parameters.table());
         let p0 = parameters.first().copied().unwrap_or(0.0);
         let p1 = parameters.get(1).copied().unwrap_or(0.0);
         Some(p0 * species.table_diameter.powi(3) + p1)
+    }
+
+    /// This term, reading the other fitted parameter set for its ions.
+    #[must_use]
+    pub fn with_ion_parameters(mut self, parameters: IonParameters) -> Self {
+        self.ion_parameters = parameters;
+        self
     }
 
     /// The attraction NeqSim gives an ion, in joules per mole times m³ per mole squared.
@@ -334,6 +387,74 @@ pub fn furst_mod2004_mixture_of(
     furst_mixture_with(names, rule, overlay, true)
 }
 
+/// NeqSim's `SystemElectrolyteCPAstatoil`: the Fürst fluid, with the Wertheim association
+/// added under the classical radial distribution function.
+///
+/// **`SystemElectrolyteCPAstatoil` is `SystemFurstElectrolyteEos` plus a phase class**, so
+/// this resolver is [`furst_mixture_of`] with two more statements. The phase class
+/// (`PhaseElectrolyteCPA`) is what makes the two terms coexist, and it does it by *adding*
+/// them - `getF() = super.getF() + cpaon FCPA()` and the same for every derivative - which is
+/// why the second statement is an association and not a new model.
+///
+/// The third is the RDF. `PhaseElectrolyteCPAstatoil.calc_g` overrides
+/// `PhaseCPAInterface`'s simplified Carnahan-Starling default with `1/(1 - 1.9 eta)`, the
+/// form the `aCPA`/`bCPA` columns were fitted under; at the brine's own `eta = 0.20366` the
+/// default would give `1.7788` where NeqSim gives `1.6312`.
+///
+/// # Errors
+/// * As [`furst_mixture_of`].
+pub fn electrolyte_cpa_statoil_mixture_of(
+    names: &[&str],
+    overlay: Option<&crate::databank::Overlay>,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    let (mixture, ideal_gas) = furst_mixture_reading(
+        names,
+        crate::furst_dielectric::MixingRule::default_for_the_model(),
+        overlay,
+        false,
+        IonParameters::Cpa,
+        FurstAttractive::CpaStatoil,
+    )?;
+    // **The mixing rule is not the Furst one.** `SystemFurstElectrolyteEos`'s own test sets
+    // NeqSim's rule 4, which is Huron-Vidal; every brine fluid sets rule 10, which
+    // `SystemInterface.setMixingRule(int)`'s javadoc defines as "classic mixing rule with
+    // temperature and composition dependent kij of CPA from NeqSim database". So the
+    // electrolyte terms are additive and ride on a *classic* attraction here, and the
+    // interaction column is the CPA one.
+    //
+    // The probe shows it rather than asserting it: `ader`, the Huron-Vidal rule's
+    // per-component quantity, is `0.0` on every phase of every brine state, where the same
+    // probe reads non-zero values for `SystemFurstElectrolyteEos`.
+    // **And the rule is temperature-dependent, not constant.** `PhaseElectrolyteCPA` takes
+    // the handler's `PhaseCPAInterface` fallback branch, which reads `cpakij_SRK` *and*
+    // `cpakijT_SRK` and adds them as `kij + kijT * T`. On `CO2`/`water` the coefficient is
+    // `0.001121` against a constant of `-0.27686`, so the pair's parameter crosses zero
+    // inside the range a brine is computed at.
+    let mixture = mixture
+        .with_mixing_rule(crate::mixing_rule::MixingRule::ClassicT2 {
+            kij: crate::databank::cpa_kij(
+                names,
+                crate::association::AssociationCubic::Srk,
+                overlay,
+            ),
+            kij_t: crate::databank::cpa_kij_t(names, crate::association::AssociationCubic::Srk),
+            // `KIJTType` is `0` on every in-scope pair, which is the linear form. The
+            // `1/T` form has no pair to exercise it, so the selector is not carried.
+            inverse_temperature: vec![false; names.len() * names.len()],
+        })
+        .with_association()?
+        .with_rdf_form(crate::association::RdfForm::Chapman)
+        // **And the association is not Elliott per pair either.** Rule 10 is
+        // `CPAMixingRuleHandler`, which reads `cpaAssosiationType` and puts the pairs it
+        // marks on the CR-1 branch - for `CO2`/`water` that is what makes the cross term
+        // `5.5315` rather than the zero a geometric mean of `0` and water's strength gives.
+        .with_cross(crate::databank::cpa_cross(names));
+    Ok((mixture, ideal_gas))
+}
+
 /// The fluid both Fürst systems are, with the revision chosen.
 ///
 /// # Errors
@@ -343,6 +464,31 @@ pub fn furst_mixture_with(
     rule: crate::furst_dielectric::MixingRule,
     overlay: Option<&crate::databank::Overlay>,
     mod2004: bool,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    furst_mixture_reading(
+        names,
+        rule,
+        overlay,
+        mod2004,
+        IonParameters::Furst,
+        FurstAttractive::Schwartzentruber,
+    )
+}
+
+/// The same, with the ion parameter set chosen.
+///
+/// # Errors
+/// As [`furst_mixture_of`].
+pub fn furst_mixture_reading(
+    names: &[&str],
+    rule: crate::furst_dielectric::MixingRule,
+    overlay: Option<&crate::databank::Overlay>,
+    mod2004: bool,
+    ion_parameters: IonParameters,
+    attractive: FurstAttractive,
 ) -> azoth_core::Result<(
     crate::mixture::Mixture,
     crate::molar_enthalpy_entropy::IdealGasModel,
@@ -379,7 +525,7 @@ pub fn furst_mixture_with(
     // from the fitted covolume**, because that is what the phase's MSA and Born terms read;
     // the *table's* diameter travels beside it for the short-range correlation, which reads
     // a different number. See `furst_mixing`.
-    let fitted = crate::databank::furst_parameters("furstParams");
+    let fitted = crate::databank::furst_parameters(ion_parameters.table());
     let (p0, p1) = (
         fitted.first().copied().unwrap_or(0.0),
         fitted.get(1).copied().unwrap_or(0.0),
@@ -443,8 +589,27 @@ pub fn furst_mixture_with(
         .collect::<azoth_core::Result<Vec<_>>>()?
         .into_iter()
         .zip(&entries)
-        .map(|(c, e)| c.with_alpha_params(e.schwartzentruber.to_vec()))
-        .collect();
+        .map(|(c, e)| -> azoth_core::Result<crate::mixture::Component> {
+            Ok(match attractive {
+                FurstAttractive::Schwartzentruber => {
+                    c.with_alpha_params(e.schwartzentruber.to_vec())
+                }
+                // **Soave's form, with the coefficient carried per component.** `SrkFitted` is
+                // the one variant that takes the coefficient rather than deriving it, and it
+                // refuses a component that has none - so the acentric factor's Soave `m` is put
+                // there here, which is what `AttractiveTermCPAstatoil`'s constructor does for
+                // every substance its four named ones do not cover.
+                FurstAttractive::CpaStatoil => {
+                    let family = crate::association::AssociationCubic::of(crate::Cubic::Srk);
+                    let m = match e.association.as_ref() {
+                        Some(record) if record.has_fitted_set(family) => record.m_srk,
+                        _ => crate::srk_kappa::srk_kappa(e.omega)?.kappa,
+                    };
+                    c.with_alpha_params(vec![m])
+                }
+            })
+        })
+        .collect::<azoth_core::Result<Vec<_>>>()?;
     let ideal_gas = {
         let coefficient = |index: usize| -> Vec<f64> {
             entries
@@ -462,9 +627,13 @@ pub fn furst_mixture_with(
     };
     let term = FurstElectrolyte::new(species, rule)?;
     let term = if mod2004 { term.as_mod2004() } else { term };
+    let term = term.with_ion_parameters(ion_parameters);
     let mixture = crate::mixture::Mixture::new(components, matrix)?
         .with_cubic(crate::Cubic::Srk)
-        .with_alpha(crate::alpha_term::Alpha::Schwartzentruber)
+        .with_alpha(match attractive {
+            FurstAttractive::Schwartzentruber => crate::alpha_term::Alpha::Schwartzentruber,
+            FurstAttractive::CpaStatoil => crate::alpha_term::Alpha::SrkFitted,
+        })
         .with_mixing_rule(crate::mixing_rule::MixingRule::HuronVidal {
             kij: hv.kij,
             hv_gij: hv.hv_gij,

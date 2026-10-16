@@ -471,6 +471,21 @@ pub struct Mixture {
     ///
     /// `None` for a mixture built from constants, which is every caller-supplied one.
     names: Option<Vec<String>>,
+    /// Which radial distribution function the association runs, when it runs one.
+    ///
+    /// A phase model's choice rather than a component's: everything in NeqSim's CPA family
+    /// takes [`crate::association::RdfForm::CarnahanStarling`] except
+    /// `PhaseElectrolyteCPAstatoil`, which keeps the classical `1/(1 - 1.9 eta)` its
+    /// parameter set was fitted under.
+    rdf_form: crate::association::RdfForm,
+    /// The association's cross-rule matrix, flattened row-major, or empty for every pair
+    /// [`crate::association::CrossRule::Elliott`].
+    ///
+    /// Carried rather than looked up in [`Self::association`] for the reason [`Self::furst`]
+    /// is: the table is keyed by name and the `Mixture` holds names only for the mixtures a
+    /// resolver built, while the *resolver* always has them. An empty vector is not "no
+    /// association" - it is NeqSim's zero initialisation, which is the Elliott rule.
+    cross: Vec<crate::association::CrossRule>,
 }
 
 impl Mixture {
@@ -505,6 +520,8 @@ impl Mixture {
             furst: None,
             hydration: None,
             names: None,
+            rdf_form: crate::association::RdfForm::default(),
+            cross: Vec::new(),
         };
         // Refused here rather than at the first phase evaluation: a mixture whose
         // association cannot be computed is a mistake in what was asked for, and the
@@ -589,6 +606,26 @@ impl Mixture {
     pub fn with_association(mut self) -> Result<Self> {
         self.associating = true;
         Ok(self)
+    }
+
+    /// This mixture's association, under a different radial distribution function.
+    ///
+    /// The electrolyte-CPA-statoil phase is the only caller: NeqSim's other CPA families
+    /// leave [`crate::association::RdfForm::CarnahanStarling`] in place.
+    #[must_use]
+    pub fn with_rdf_form(mut self, form: crate::association::RdfForm) -> Self {
+        self.rdf_form = form;
+        self
+    }
+
+    /// This mixture's association, under the cross-rule matrix its resolver read.
+    ///
+    /// Set by the resolvers that install a CPA mixing rule, since it is that rule - and not
+    /// the association itself - that reads NeqSim's `cpaAssosiationType` table.
+    #[must_use]
+    pub fn with_cross(mut self, cross: Vec<crate::association::CrossRule>) -> Self {
+        self.cross = cross;
+        self
     }
 
     /// The components, in order.
@@ -1016,15 +1053,8 @@ impl Mixture {
         // the volume where the *total* pressure equals the specified one. See
         // [`Self::associating_root`].
         let z = match (self.association(), self.furst.as_ref()) {
-            (Some(_), Some(_)) => {
-                return Err(AzothError::invalid_input(
-                    "mixture",
-                    "this mixture carries both the Wertheim association and the Fürst \
-                     electrolyte term. NeqSim's `PhaseElectrolyteCPA` is the model that \
-                     has both, and it is not one this library carries - so a mixture naming \
-                     two terms is a request for a model that does not exist here rather than \
-                     a phase whose pressure is the sum of the two",
-                ));
+            (Some(association), Some(furst)) => {
+                self.electrolyte_cpa_root(reduced, x, &association, furst, side)?
             }
             (Some(association), None) => self.associating_root(reduced, x, &association, side)?,
             (None, Some(furst)) => self.furst_root(reduced, x, furst, side)?,
@@ -1093,6 +1123,53 @@ impl Mixture {
         };
 
         Self::root_with_extra_pressure(&residual, seed, b_mix, side, "associating")
+    }
+
+    /// The root of an electrolyte-CPA mixture's equation of state: both pressures at once.
+    ///
+    /// **This is the composition NeqSim makes, not a term of its own.** Every member of
+    /// `PhaseElectrolyteCPA` is `super.<x>() + cpaon * dFCPA<x>()`, and its `super` is
+    /// `PhaseModifiedFurstElectrolyteEos` - so the equation the root solves carries the
+    /// electrolyte pressure *and* the association's:
+    ///
+    /// ```text
+    /// f(Z) = cubic(Z) - (P_furst + P_assoc) Z/P
+    /// ```
+    ///
+    /// Measured on the pinned jar at 40 bara and 10 % salt, the aqueous phase gives
+    /// `dFdV = 0.454707314653414` against the electrolyte's `-0.707547100498624` and the
+    /// association's `1.16225441515204`, which sum to it in the last digit.
+    ///
+    /// # Errors
+    /// * Propagates both terms' errors.
+    /// * [`AzothError::OutOfRange`] if no root is found above `B`.
+    fn electrolyte_cpa_root(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        association: &Association,
+        furst: &crate::furst_electrolyte::FurstElectrolyte,
+        side: RootSide,
+    ) -> Result<f64> {
+        let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
+        let seed = self.cubic_root(a_mix, b_mix, side)?;
+        let (r, t, p) = (R, reduced.t_kelvin, reduced.pressure);
+        let delta1 = self.cubic.delta1();
+        let delta2 = self.cubic.delta2();
+        let covolumes: Vec<f64> = reduced.b.iter().map(|b| b * r * t / p).collect();
+
+        let residual = |z: f64| -> Result<f64> {
+            let v = z * r * t / p;
+            let state = association.solve(&covolumes, x, v, t)?;
+            let p_assoc = -r * t * state.d_helmholtz_dv;
+            let solution = furst.solve(t, x, v)?;
+            let p_furst = -r * t * solution.helmholtz_rt_dv;
+            let cubic =
+                z - z / (z - b_mix) + a_mix * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
+            Ok(cubic - (p_assoc + p_furst) * z / p)
+        };
+
+        Self::root_with_extra_pressure(&residual, seed, b_mix, side, "electrolyte-CPA")
     }
 
     /// The root of a Fürst electrolyte mixture's equation of state.
@@ -1936,11 +2013,13 @@ impl Mixture {
                     })
                 })
                 .collect(),
-            // No cross-rule overrides: `INTER.csv`'s `cpaBetaCross`/`cpaEpsCross` are
-            // not read yet, and NeqSim's default for every pair is the Elliott rule.
-            Vec::new(),
+            // The cross-rule matrix the resolver read from the interaction table's
+            // `cpaAssosiationType`/`cpaBetaCross`/`cpaEpsCross`. Empty means NeqSim's zero
+            // initialisation for every pair, which is the Elliott rule.
+            self.cross.clone(),
         )
         .ok()
+        .map(|association| association.with_rdf_form(self.rdf_form))
     }
 
     /// The phase-dependent interaction matrix for a composition.

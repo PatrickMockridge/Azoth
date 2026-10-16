@@ -47,11 +47,11 @@ done with it and a reason; the other four are vendored whole, three of them beca
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (39 vendored file(s), 1538 column(s), 1511 carried of which 1200 read, 0 not-vendored entr(ies))
-  311  carried, nothing reads it yet
-  1094  carried with no unit NeqSim states (neqsim-internal)
-  270  not-ported
-   20  not-a-value
+check_manifest: OK (39 vendored file(s), 1538 column(s), 1512 carried of which 1203 read, 0 not-vendored entr(ies))
+  309  carried, nothing reads it yet
+  1095  carried with no unit NeqSim states (neqsim-internal)
+  268  not-ported
+   19  not-a-value
    10  empty-upstream
     1  superseded-by
     7  unreachable-upstream
@@ -59,11 +59,11 @@ check_manifest: OK (39 vendored file(s), 1538 column(s), 1511 carried of which 1
    13  unread-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 311 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 309 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **270 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, eleven
+`not-ported` reason names the class that would close it — **268 columns carry it**, carried
+and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, thirteen
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
 The check refuses a `not-ported` reason with no NeqSim name in it, so the list cannot drift

@@ -1204,14 +1204,14 @@ fn the_derivative_surface_matches_neqsims() {
     }
 }
 
-/// **The two pressure-carrying terms are refused together rather than one winning.**
+/// **The two pressure-carrying terms are added, and the sum is the phase.**
 ///
-/// `PhaseElectrolyteCPA` is the model that has both, and it is carried rather than ported -
-/// so a mixture naming the Wertheim association and the Fürst electrolyte at once is a
-/// request for a model that does not exist here. Silently summing the two pressures would
-/// give a root for neither.
+/// `PhaseElectrolyteCPA` is the model that has both, and every member of it is
+/// `super.<x>() + cpaon dFCPA<x>()` - so a mixture naming the Wertheim association and the
+/// Fürst electrolyte at once is a phase whose pressure is the two contributions' and the
+/// cubic's, term by term. `eos.electrolyte_cpa_statoil_phase` is that phase.
 #[test]
-fn a_mixture_carrying_two_pressure_terms_is_refused() {
+fn a_mixture_carrying_two_pressure_terms_is_the_sum() {
     use azoth_eos::furst_dielectric::MixingRule;
     use azoth_eos::furst_electrolyte::{FurstElectrolyte, FurstSpecies};
 
@@ -1249,16 +1249,30 @@ fn a_mixture_carrying_two_pressure_terms_is_refused() {
          mixture under another model"
     );
 
-    // Both at once is refused, at the phase rather than at construction, because which
-    // terms a mixture runs is not a shape error.
-    let both = furst.with_association();
-    if let Ok(both) = both {
-        let reduced = both
-            .reduced_parameters(kelvins(298.15), pascals(1.0e5))
-            .expect("reduces");
-        let error = both
-            .phase_state(&reduced, &[0.5, 0.5], RootSide::Vapour)
-            .expect_err("the two terms cannot both carry the pressure");
-        assert_eq!(error.field(), Some("mixture"), "{error:?}");
-    }
+    // Both at once is a phase, and both terms are live in it: the state has to differ from
+    // the one the electrolyte carries without the association, or one of them was dropped.
+    let both = furst.clone().with_association().expect("the flag is set");
+    assert!(
+        both.association().is_some(),
+        "water carries a site scheme, so the mixture associates"
+    );
+    let reduced = both
+        .reduced_parameters(kelvins(298.15), pascals(1.0e5))
+        .expect("reduces");
+    let summed = both
+        .phase_state(&reduced, &[0.5, 0.5], RootSide::Vapour)
+        .expect("the two terms are added and the sum is a phase");
+
+    let only_electrolyte = furst
+        .reduced_parameters(kelvins(298.15), pascals(1.0e5))
+        .expect("reduces");
+    let alone = furst
+        .phase_state(&only_electrolyte, &[0.5, 0.5], RootSide::Vapour)
+        .expect("the electrolyte term alone is a phase too");
+    assert!(
+        (summed.z - alone.z).abs() > 1.0e-6,
+        "the association has to move the root, or it is not in the sum: {} against {}",
+        summed.z,
+        alone.z
+    );
 }

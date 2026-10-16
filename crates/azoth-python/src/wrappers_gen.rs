@@ -815,6 +815,32 @@ pub fn effective_diffusion(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Phase state of an electrolyte-CPA fluid.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, x, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn electrolyte_cpa_statoil_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult> {
+    azoth_eos::electrolyte_cpa_statoil_phase::electrolyte_cpa_statoil_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &x,
+        compressed_phase,
+    )
+    .map(|r| crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// EOS-CG phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

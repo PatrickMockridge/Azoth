@@ -51,6 +51,7 @@ from azoth.core.result import (
     DistillationColumnResult,
     EffectiveDiffusionResult,
     EjectorResult,
+    ElectrolyteCpaStatoilPhaseResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
     ExpanderResult,
@@ -305,6 +306,7 @@ __all__ = [
     "distillation_column",
     "effective_diffusion",
     "ejector",
+    "electrolyte_cpa_statoil_phase",
     "eos_cg_phase",
     "equilibrium_constant",
     "expander",
@@ -1150,6 +1152,23 @@ def effective_diffusion(binary_diffusion: Sequence[Sequence[Q]], x: Sequence[flo
     )
     return EffectiveDiffusionResult(
         effective_diffusion=tuple(from_si(q.magnitude_si, q.unit) for q in result.effective_diffusion),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def electrolyte_cpa_statoil_phase(components: list[str], T: Q, P: Q, x: list[float], compressed_phase: str) -> ElectrolyteCpaStatoilPhaseResult:
+    """``eos.electrolyte_cpa_statoil_phase``, computed in Rust."""
+    spec = _models_gen.model("eos.electrolyte_cpa_statoil_phase")
+    result = _core.electrolyte_cpa_statoil_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        compressed_phase,
+    )
+    return ElectrolyteCpaStatoilPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),
     )
 

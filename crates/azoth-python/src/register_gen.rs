@@ -52,6 +52,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyDewPressureResult>()?;
     m.add_class::<crate::transport_gen::PyDewTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyEffectiveDiffusionResult>()?;
+    m.add_class::<crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyFreezingPointResult>()?;
     m.add_class::<crate::transport_gen::PyFullerSchettlerGiddingsDiffusivityResult>()?;
@@ -321,6 +322,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::dew_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::effective_diffusion,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::electrolyte_cpa_statoil_phase,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::eos_cg_phase, m)?)?;

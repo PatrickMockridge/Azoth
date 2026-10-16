@@ -33,6 +33,7 @@ if TYPE_CHECKING:
         HuronVidalParameters,
         UnifacUmrpruParameters,
     )
+    from azoth.eos.reference._association import CrossRule
     from azoth.eos.reference._mixture_state import ReducedParameters as ReducedParametersLike
 
 
@@ -208,6 +209,24 @@ class Mixture:
     cubic: Cubic = field(default=PR)
     alpha: str = field(default="pr")
     associating: bool = field(default=False)
+    #: Which radial distribution function the association runs, when it runs one. A phase
+    #: model's choice rather than a component's: everything in NeqSim's CPA family takes the
+    #: simplified Carnahan-Starling default except `PhaseElectrolyteCPAstatoil`, which keeps
+    #: the classical `1/(1 - 1.9 eta)` its parameter set was fitted under.
+    rdf_form: str = field(default="carnahan_starling")
+    #: The temperature coefficient of the classic rule, one entry per pair: the rule reads
+    #: ``kij + kij_t * T``. Empty for every mixture whose interaction matrix is constant,
+    #: which is what NeqSim's ``KIJTType == 0`` column amounts to for a pair with no
+    #: coefficient. **Not decoration for a CPA fluid**: `CO2`/`water` carries ``0.001121``
+    #: against a constant of ``-0.27686``, so the pair's parameter crosses zero inside the
+    #: range a brine is computed at. See :meth:`effective_kij`.
+    kij_t: tuple[tuple[float, ...], ...] = field(default=())
+    #: The association's cross-rule matrix, flattened row-major, or empty for every pair
+    #: :data:`azoth.eos.reference._association.ELLIOTT`. Carried rather than looked up in the
+    #: association for the reason :attr:`furst` is: the table is keyed by name and the
+    #: *resolver* always has them. An empty tuple is not "no association" - it is NeqSim's
+    #: zero initialisation, which is the Elliott rule.
+    cross: tuple[CrossRule, ...] = field(default=())
     #: How the components' attraction and covolume combine. ``"classic"`` is the van der
     #: Waals one-fluid rule, which reads :attr:`kij`; ``"umr"`` is the universal mixing
     #: rule, which reads the components' UNIFAC group decomposition instead and does not
@@ -312,6 +331,12 @@ class Mixture:
                         )
         else:
             object.__setattr__(self, "kij", tuple(tuple(0.0 for _ in range(n)) for _ in range(n)))
+        if self.kij_t and (len(self.kij_t) != n or any(len(row) != n for row in self.kij_t)):
+            raise InvalidInputError(
+                "kij_t",
+                f"a mixture of {n} components needs an N x N coefficient matrix, but the "
+                f"matrix given is {len(self.kij_t)} x {len(self.kij_t[0]) if self.kij_t else 0}",
+            )
 
     def __len__(self) -> int:
         """How many components there are."""
@@ -320,6 +345,21 @@ class Mixture:
     def flattened_kij(self) -> list[float]:
         """The interaction matrix as one row-major list, for the Rust boundary."""
         return [value for row in self.kij for value in row]
+
+    def effective_kij(self, t_kelvin: float) -> tuple[tuple[float, ...], ...]:
+        """The interaction matrix this rule reads at a temperature.
+
+        ``kij + kij_t * T`` where the rule carries a coefficient, and :attr:`kij` unchanged
+        where it does not - NeqSim's ``CPAMixingRuleHandler`` adds ``intparamT`` as a plain
+        multiple of the absolute temperature, and ``KIJTType`` is ``0`` on every in-scope
+        pair, which is the linear form.
+        """
+        if not self.kij_t:
+            return self.kij
+        return tuple(
+            tuple(base + slope * t_kelvin for base, slope in zip(row, row_t, strict=True))
+            for row, row_t in zip(self.kij, self.kij_t, strict=True)
+        )
 
     def phase_kij(
         self, reduced: ReducedParametersLike, x: Sequence[float]
@@ -398,6 +438,7 @@ class Mixture:
 def mixture(
     components: Iterable[Component],
     kij: Mapping[tuple[int, int], float] | None = None,
+    kij_t: Mapping[tuple[int, int], float] | None = None,
     cubic: Cubic = PR,
     alpha: str = "pr",
     associating: bool = False,
@@ -406,6 +447,7 @@ def mixture(
     soreide_whitson: SoreideWhitsonParameters | None = None,
     huron_vidal: HuronVidalParameters | None = None,
     furst: FurstElectrolyte | None = None,
+    cross: tuple[CrossRule, ...] = (),
     names: Iterable[str] | None = None,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
@@ -456,9 +498,19 @@ def mixture(
             )
         matrix[i][j] = value
         matrix[j][i] = value
+    slopes = [[0.0] * n for _ in range(n)]
+    for (i, j), value in (kij_t or {}).items():
+        if not (0 <= i < n and 0 <= j < n):
+            raise InvalidInputError(
+                "kij_t",
+                f"the pair ({i}, {j}) names a component outside the {n} supplied",
+            )
+        slopes[i][j] = value
+        slopes[j][i] = value
     return Mixture(
         components=resolved,
         kij=tuple(tuple(row) for row in matrix),
+        kij_t=tuple(tuple(row) for row in slopes) if kij_t else (),
         cubic=cubic,
         alpha=alpha,
         associating=associating,
@@ -467,5 +519,6 @@ def mixture(
         soreide_whitson=soreide_whitson,
         huron_vidal=huron_vidal,
         furst=furst,
+        cross=cross,
         names=None if names is None else tuple(names),
     )

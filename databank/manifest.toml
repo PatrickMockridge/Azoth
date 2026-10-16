@@ -1416,22 +1416,36 @@ as = "bijdesmath"
 unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "cpaAssosiationType"
-disposition = "dropped"
+disposition = "used"
+as = "cpaassosiationtype"
+unit = "neqsim-internal"
 reason = """\
-    not-a-value: a selector naming the CPA association scheme. The upstream spelling is \
-    misspelled, and it is kept verbatim so the column can be found."""
+    read by `eos.electrolyte_cpa_statoil_phase`. NeqSim's `CPAMixingRuleHandler` reads it \
+    as the per-pair selector between the Elliott cross rule (`0`) and CR-1 (anything \
+    else), and a pair with no row at all stays at its zero initialisation - Elliott. The \
+    upstream spelling is misspelled and is kept verbatim so the column can be found; \
+    `as` carries the corrected name."""
 [[upstreams.files.columns]]
 name = "cpaBetaCross"
-disposition = "vendored"
+disposition = "used"
 as = "cpabetacross"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
+reason = """\
+    read by `eos.electrolyte_cpa_statoil_phase`. NeqSim's `CPAMixingRuleHandler` \
+    `getCrossAssociationVolume` uses it as CR-1's `kappa_ij` where `|value| > 1e-10` and \
+    `sqrt(kappa_i kappa_j)` otherwise, so a zero here is the geometric mean and not an \
+    absent row."""
 [[upstreams.files.columns]]
 name = "cpaEpsCross"
-disposition = "vendored"
+disposition = "used"
 as = "cpaepscross"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
+reason = """\
+    read by `eos.electrolyte_cpa_statoil_phase`. NeqSim's `CPAMixingRuleHandler` \
+    `getCrossAssociationEnergy` uses it as CR-1's `eps_ij` where `|value| > 1e-10` and \
+    `(eps_i + eps_j)/2` otherwise, so a zero here is the arithmetic mean and not an \
+    absent row. For `CO2`/`water` that is `(0 + 16655)/2` and the pair's whole association \
+    energy: the component's own zeroed `associationenergy` never enters."""
 [[upstreams.files.columns]]
 name = "KIJWhitsonSoriede"
 disposition = "used"

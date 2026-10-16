@@ -378,6 +378,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 2,
         "tests_skipped": 0,
     },
+    'eos.electrolyte_cpa_statoil_phase': {
+        "calc_id": 'eos.electrolyte_cpa_statoil_phase',
+        "name": 'Phase state of an electrolyte-CPA fluid',
+        "spec": {'path': 'specs/models/eos/electrolyte_cpa_statoil_phase.toml', 'sha256': 'b0706d8baaaaeb4fa494957d46f8956580c97d489756f1229ace75cf2d8402e5'},
+        "code": [{'path': 'python/src/azoth/eos/reference/electrolyte_cpa_statoil_phase.py', 'sha256': '0de0c5a24ffda658753e7565b4b66f9136ba6c4f09ef22ff15891ac23af493ef'}, {'path': 'crates/azoth-eos/src/electrolyte_cpa_statoil_phase.rs', 'sha256': '39c3ba7e8c141e47bf0444e24463e2eede76e4cd576ccc066d5b1043c3c5418e'}],
+        "source": 'NeqSim master `SystemElectrolyteCPAstatoil`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'eos.eos_cg_phase': {
         "calc_id": 'eos.eos_cg_phase',
         "name": 'EOS-CG phase state',

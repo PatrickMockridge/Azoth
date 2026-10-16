@@ -1115,8 +1115,39 @@ struct Interaction {
     /// `-0.153` here against `KIJPR`'s `-0.0789`, and reading the wrong one changes the
     /// mixture's attraction by 3.4% and its root by 0.077%.
     cpa_kij_srk: f64,
+    /// NeqSim's `cpakijT_SRK`, the CPA rule's temperature coefficient for the Soave family.
+    ///
+    /// **Not `KIJTSRK`**, which is a different column and zero on `CO2`/`water` where this one
+    /// is `0.001121`. The handler adds it as `kij(T) = cpakij_SRK + cpakijT_SRK * T`, so on that
+    /// pair the interaction parameter runs from `-0.27686` to `+0.04055` across the range a
+    /// brine is computed at - a sign change, not a correction.
+    ///
+    /// Only the Soave family: `PhasePrCPA` sets the coefficient to zero outright, so
+    /// `cpakij_PR` is never temperature-dependent.
+    cpa_kij_t_srk: f64,
     /// NeqSim's `cpakij_PR`, the CPA rule's parameter for the Peng-Robinson family.
     cpa_kij_pr: f64,
+    /// Whether this pair takes NeqSim's CR-1 cross-association branch, from
+    /// `cpaAssosiationType`.
+    ///
+    /// A selector rather than a value, so it is read as a flag the way `calc_wij` is: the
+    /// handler branches on `== 0` and everything else is CR-1. A pair with **no row at all**
+    /// keeps the handler's zero initialisation, which is the Elliott rule - so absence and a
+    /// zero here are the same state, and `false` is the right reading of both.
+    cpa_cr1: bool,
+    /// NeqSim's `cpaBetaCross`, CR-1's cross volume `kappa_ij`, symmetric.
+    ///
+    /// **Zero is a fallback and not an absent row.** The handler takes this value only where
+    /// `|value| > 1e-10` and `sqrt(kappa_i kappa_j)` otherwise. `CO2`/`water` carries `0.075`;
+    /// `DEG`/`water`, `TEG`/`water` and `TEG`/`MEG` carry the selector with a zero here.
+    cpa_beta_cross: f64,
+    /// NeqSim's `cpaEpsCross`, CR-1's cross energy `eps_ij` in J/mol, symmetric.
+    ///
+    /// Same fallback: `(eps_i + eps_j)/2` where this is zero. **Zero on every one of the 22
+    /// CR-1 pairs**, so the energy always comes from the mean - for `CO2`/`water`, `(0 +
+    /// 16655)/2`, which is the pair's whole association energy and means the component's own
+    /// zeroed `associationenergy` never enters the cross term.
+    cpa_eps_cross: f64,
     /// NeqSim's `KIJPCSAFT`, the interaction parameter its PC-SAFT phase reads.
     ///
     /// A third *different* fit, not a refinement of the other two: methane/n-butane is
@@ -1763,7 +1794,11 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "wsgjit",
         "kijwsunifac",
         "cpakij_srk",
+        "cpakijt_srk",
         "cpakij_pr",
+        "cpaassosiationtype",
+        "cpabetacross",
+        "cpaepscross",
         "kijpcsaft",
         "aijdesmath",
         "bijdesmath",
@@ -1820,7 +1855,17 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let kij_ws = optional_number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
         let kij_srk = optional_number(&record, index["kijsrk"], "kijsrk", row)?;
         let cpa_kij_srk = optional_number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
+        let cpa_kij_t_srk = optional_number(&record, index["cpakijt_srk"], "cpakijt_srk", row)?;
         let cpa_kij_pr = optional_number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
+        // A selector rather than a value, read as a flag the way `calc_wij` is.
+        let cpa_cr1 = optional_number(
+            &record,
+            index["cpaassosiationtype"],
+            "cpaassosiationtype",
+            row,
+        )? != 0.0;
+        let cpa_beta_cross = optional_number(&record, index["cpabetacross"], "cpabetacross", row)?;
+        let cpa_eps_cross = optional_number(&record, index["cpaepscross"], "cpaepscross", row)?;
         let pcsaft_kij = optional_number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
         let kij_whitson_soreide = optional_number(
             &record,
@@ -1847,7 +1892,11 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij_pr: value,
                 kij_srk,
                 cpa_kij_srk,
+                cpa_kij_t_srk,
                 cpa_kij_pr,
+                cpa_cr1,
+                cpa_beta_cross,
+                cpa_eps_cross,
                 pcsaft_kij,
                 alpha,
                 gij,
@@ -1873,7 +1922,11 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij_pr: value,
                 kij_srk,
                 cpa_kij_srk,
+                cpa_kij_t_srk,
                 cpa_kij_pr,
+                cpa_cr1,
+                cpa_beta_cross,
+                cpa_eps_cross,
                 pcsaft_kij,
                 alpha,
                 gij: gji,
@@ -2810,6 +2863,81 @@ pub fn cpa_kij(
     out
 }
 
+/// The CPA interaction matrix's temperature coefficients, flattened row-major.
+///
+/// **`cpakijT_SRK`, and the rule reads it as `kij(T) = kij + kijT * T`** - NeqSim's
+/// `CPAMixingRuleHandler`'s caller adds it to the mole-weighted `intparam`, and `KIJTType` is
+/// `0` on every in-scope pair, which is the linear form. It is not decoration: `CO2`/`water`
+/// carries `0.001121`, so at 283.15 K the pair's parameter is `+0.04055` where the constant
+/// column alone says `-0.27686`.
+///
+/// **Zero for the Peng-Robinson family**, because NeqSim zeroes it there: the handler's
+/// `PhasePrCPA` branch sets `intparamT = 0.0` outright rather than reading a column.
+///
+/// An absent pair is zero, which is the temperature-independent interaction. A keycard has
+/// no field for this coefficient, so there is no overlay to consult.
+#[must_use]
+pub fn cpa_kij_t(names: &[&str], cubic: crate::association::AssociationCubic) -> Vec<f64> {
+    let n = names.len();
+    let mut out = vec![0.0; n * n];
+    if cubic == crate::association::AssociationCubic::Pr {
+        return out;
+    }
+    for i in 0..n {
+        for j in 0..n {
+            let key = (
+                names[i].trim().to_lowercase(),
+                names[j].trim().to_lowercase(),
+            );
+            out[i * n + j] = tables()
+                .1
+                .get(&key)
+                .map_or(0.0, |interaction| interaction.cpa_kij_t_srk);
+        }
+    }
+    out
+}
+
+/// The CPA cross-association rule for each ordered pair, flattened row-major.
+///
+/// **`cpaAssosiationType`, `cpaBetaCross` and `cpaEpsCross` decide the association's cross
+/// term, and the selector is not inferable from the other two.** A CR-1 pair may carry two
+/// zeros - `DEG`/`water`, `TEG`/`water` and `TEG`/`MEG` do - and runs on the combining rule
+/// rather than reverting to Elliott, so reading the values alone would put those three pairs
+/// on the wrong branch. Of the 957 in-scope pairs, 22 take CR-1.
+///
+/// An absent pair, and a pair whose selector is zero, are both `CrossRule::Elliott` - the
+/// handler's zero initialisation, so absence needs no separate handling here.
+#[must_use]
+pub fn cpa_cross(names: &[&str]) -> Vec<crate::association::CrossRule> {
+    // NeqSim's `Math.abs(value) > 1e-10`, so a value at or below the threshold is the
+    // combining rule for that value alone.
+    fn given(value: f64) -> Option<f64> {
+        (value.abs() > 1.0e-10).then_some(value)
+    }
+    let n = names.len();
+    let mut out = vec![crate::association::CrossRule::Elliott; n * n];
+    for i in 0..n {
+        for j in 0..n {
+            let key = (
+                names[i].trim().to_lowercase(),
+                names[j].trim().to_lowercase(),
+            );
+            let Some(interaction) = tables().1.get(&key) else {
+                continue;
+            };
+            if !interaction.cpa_cr1 {
+                continue;
+            }
+            out[i * n + j] = crate::association::CrossRule::Cr1 {
+                energy: given(interaction.cpa_eps_cross),
+                volume: given(interaction.cpa_beta_cross),
+            };
+        }
+    }
+    out
+}
+
 /// The PC-SAFT interaction matrix for a list of names, flattened row-major.
 ///
 /// **`KIJPCSAFT`, a third fit.** Methane/n-butane is `0.022` here against the
@@ -2872,11 +3000,22 @@ pub fn associating_mixture_of(
     let family = AssociationCubic::of(cubic);
     let (mixture, ideal_gas) = mixture_of(names, cubic, overlay)?;
     let mixture = mixture
+        // **Constant, and that is a divergence this model states.** NeqSim's rule 10 reads
+        // `cpakijT_SRK` beside `cpakij_SRK` and adds it as `kij + kijT * T` for the
+        // `PhaseSrkCPA` family too, so a fluid whose pair carries a coefficient is a
+        // temperature-dependent rule there and this. `eos.electrolyte_cpa_statoil_phase`
+        // reads it - that phase is what this chunk needed it for - and the CPA family is
+        // owed it, because carrying it means a `T * dkij/dT` on every departure function and
+        // the Python half's derivative surface does not have one.
         .with_mixing_rule(MixingRule::Classic {
             kij: cpa_kij(names, family, overlay),
         })
         .with_cubic(cubic)
-        .with_association()?;
+        .with_association()?
+        // The CPA mixing rule is what reads the cross-association table, so a mixture that
+        // installs the rule installs its cross matrix - of the 957 in-scope pairs, 22 take
+        // CR-1 and every other is the Elliott rule this leaves in place.
+        .with_cross(cpa_cross(names));
     Ok((mixture, ideal_gas))
 }
 

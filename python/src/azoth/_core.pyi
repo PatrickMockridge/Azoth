@@ -552,6 +552,12 @@ class EffectiveDiffusionResult:
     warnings: list[Warning]
 
 @final
+class ElectrolyteCpaStatoilPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
 class EosCgPhaseResult:
     z_factor: float
     u: Qty
@@ -2583,6 +2589,13 @@ def effective_diffusion(
     binary_diffusion: list[list[float]],
     x: list[float],
 ) -> EffectiveDiffusionResult: ...
+def electrolyte_cpa_statoil_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+    compressed_phase: str,
+) -> ElectrolyteCpaStatoilPhaseResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
 def freezing_point(
     components: list[str],

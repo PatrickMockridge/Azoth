@@ -34,6 +34,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/effective_diffusion.toml
+//!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/calcs/eos/fuller_schettler_giddings_diffusivity.toml
@@ -496,6 +497,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "diffusion_coefficient",
     ),
     ("eos.effective_diffusion", "x", "dimensionless"),
+    (
+        "eos.electrolyte_cpa_statoil_phase",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.electrolyte_cpa_statoil_phase", "P", "pressure"),
+    ("eos.electrolyte_cpa_statoil_phase", "x", "dimensionless"),
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),
