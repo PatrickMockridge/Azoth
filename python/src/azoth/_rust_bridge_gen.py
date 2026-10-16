@@ -793,6 +793,7 @@ def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousVi
         [c.Tc.to_base_units().magnitude for c in mixture.components],
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
+        [c.component_class for c in mixture.components],
         mixture.flattened_kij(),
         _association_spec(mixture),
         _molar_masses(mixture, 'a card-added component needs its own molar mass: the mixing rule weights by mass fraction'),

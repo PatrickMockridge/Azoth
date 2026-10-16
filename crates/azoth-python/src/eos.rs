@@ -1309,9 +1309,9 @@ pub fn phase_transport(
 /// ignored: this correlation reads the components' own `LIQVISC` sets and nothing about
 /// the mixture's cubic.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = \"pr\", alpha = \"pr\")"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = \"pr\", alpha = \"pr\")"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1321,6 +1321,7 @@ pub fn aqueous_viscosity(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
@@ -1337,7 +1338,8 @@ pub fn aqueous_viscosity(
     let components = (0..n)
         .map(|i| {
             azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]).map(|c| {
-                c.with_molar_mass(Some(molar_mass[i]))
+                c.with_class(classes[i].clone())
+                    .with_molar_mass(Some(molar_mass[i]))
                     .with_liquid_viscosity(
                         [
                             liqvisc[4 * i],
