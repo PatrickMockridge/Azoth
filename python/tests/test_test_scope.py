@@ -264,7 +264,7 @@ def test_the_plan_reads_what_the_commands_actually_are() -> None:
 def test_a_command_no_job_runs_is_refused() -> None:
     """`jobs_of` refuses rather than returning nothing, because nothing is the silent answer."""
     module = tool()
-    commands, _ = module.scope(["crates/azoth-eos/src/flash.rs"], module.crate_edges())
+    commands, _ = module.scope(["crates/azoth-eos/src/pr_kappa.rs"], module.crate_edges())
     declared = set(module.known_jobs())
     for entry in commands:
         named = set(module.jobs_of(entry))
@@ -286,7 +286,7 @@ def test_a_rust_kernel_change_reaches_its_python_mirror() -> None:
     cross-implementation agreement test - the whole reason the library is written twice - never
     ran for the change most likely to break it.
     """
-    joined = " ".join(commands_for(["crates/azoth-eos/src/flash.rs"]))
+    joined = " ".join(commands_for(["crates/azoth-eos/src/pr_kappa.rs"]))
     assert "test_cross_impl.py" in joined, "the agreement test is the point"
     assert "test_model_cases.py" in joined
     assert '-k "eos."' in joined, "and it is the namespace, not a hundred ids nobody can check"
