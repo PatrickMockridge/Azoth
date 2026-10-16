@@ -5,6 +5,15 @@ on:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+  # **The nightly calls this file, and so will the release.** `mode: full` runs every job
+  # whatever the diff says, which is what makes "the whole suite runs nightly" a fact about one
+  # workflow rather than a claim about two that have to be kept in step. A caller that passes
+  # nothing gets what a push gets.
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        default: scoped
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,6 +21,53 @@ env:
   RUSTFLAGS: -D warnings
 
 jobs:
+  # **The one job that decides all the others.** It reads the diff once, writes `job=<bool>`
+  # lines for every job below, and prints why - so a job that does not run is a job this said
+  # `false` about, visible in the summary, rather than an absence nobody explained. The
+  # decision and the work come from one place: `tools/test_scope.py --plan` and
+  # `tools/test_scope.py --job <name>` read the same table, so they cannot disagree.
+  scope:
+    name: scope
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.plan.outputs.base }}
+      rust-test: ${{ steps.plan.outputs.rust-test }}
+      python-test: ${{ steps.plan.outputs.python-test }}
+      wheel-data: ${{ steps.plan.outputs.wheel-data }}
+      ui: ${{ steps.plan.outputs.ui }}
+      docs-build: ${{ steps.plan.outputs.docs-build }}
+      docs-drift: ${{ steps.plan.outputs.docs-drift }}
+      lean-verify: ${{ steps.plan.outputs.lean-verify }}
+      validation: ${{ steps.plan.outputs.validation }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `test_scope.py` diffs against the commit this push starts from, so that commit has
+          # to be in the clone; the default fetch-depth of one has only the tip.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # **Every tracked path, through the table.** A diff can only show the holes a diff
+      # happens to touch; this walks the whole tree, so the day a directory is added and no
+      # rule knows it the gate says so instead of the map quietly gaining another path that
+      # comes back green.
+      - name: the map places every path
+        run: python tools/test_scope.py --audit
+      - id: plan
+        name: which jobs this diff reaches
+        run: |
+          BASE="${{ github.event.before }}"
+          case "$BASE" in ""|0000000000000000000000000000000000000000) BASE="HEAD~1" ;; esac
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          python tools/test_scope.py --base "$BASE" --plan \
+            ${{ inputs.mode == 'full' && '--full' || '' }} >> "$GITHUB_OUTPUT"
+          {
+            echo "## What this diff reaches"
+            echo
+            python tools/test_scope.py --base "$BASE" --plan --explain
+          } >> "$GITHUB_STEP_SUMMARY"
+
   spec-validate:
     name: spec-validate
     runs-on: ubuntu-latest
@@ -129,6 +185,8 @@ jobs:
   rust-test:
     name: rust-test
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.rust-test == 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -141,12 +199,12 @@ jobs:
       # `.github/workflows/nightly.yml` on a 24-hour cycle. A push runs the crates its diff
       # touches and every crate that depends on them - read off the manifests by
       # `tools/test_scope.py`, never listed here, because a list here would be a second copy
-      # of the graph and would be the one that drifts.
+      # of the graph and would be the one that drifts. The *base* comes from `scope`, so the
+      # job that decides and the job that runs are looking at one diff.
       - name: the scoped Rust set
         run: |
-          BASE="${{ github.event.before }}"
-          case "$BASE" in ""|0000000000000000000000000000000000000000) BASE="HEAD~1" ;; esac
-          python tools/test_scope.py --base "$BASE" --no-gate --only rust > scope.sh
+          python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            --no-gate --job rust-test > scope.sh
           cat scope.sh
           bash -e scope.sh
       # **The front end's fixtures are the library's own output, and this is what says so.**
@@ -166,11 +224,15 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # **The workspace clippy moved to the nightly.** `cargo clippy -p <the diff's crates>` runs
+      # in `rust-test`, where a push needs it; the whole-workspace pass is close-out-shaped and
+      # belongs with the rest of the full surface.
 
   python-test:
     name: python-test
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.python-test == 'true'
     env:
       # The whole point of this job. Without it, a broken extension build makes
       # every test pass on the Python path while the cross-language agreement
@@ -218,11 +280,18 @@ jobs:
           # does not get a different result because their shell sets it.
           PYTHONPATH: ""
         run: |
-          BASE="${{ github.event.before }}"
-          case "$BASE" in ""|0000000000000000000000000000000000000000) BASE="HEAD~1" ;; esac
-          python tools/test_scope.py --base "$BASE" --no-gate --only python > scope.sh
+          python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            --no-gate --job python-test > scope.sh
           cat scope.sh
           bash -e scope.sh
+      # **Every target has to collect something.** An empty collection is a green run over
+      # nothing, and it is the one failure a scoped set can hide that a full one cannot.
+      - name: every target selects a test
+        env:
+          PYTHONPATH: ""
+        run: |
+          python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            --job python-test --verify-selection
       # The skill tests: smoke checks that the API the skills document still exists.
       # Collected separately because the main run is scoped to python/tests. Not scoped in
       # turn: they read the skills, which no diff here claims, and they are quick.
@@ -233,6 +302,8 @@ jobs:
   wheel-data:
     name: wheel-data
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.wheel-data == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -278,6 +349,8 @@ jobs:
   ui:
     name: ui
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.ui == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -313,6 +386,8 @@ jobs:
   docs-build:
     name: docs-build
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.docs-build == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -332,6 +407,8 @@ jobs:
   docs-drift:
     name: docs-drift
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.docs-drift == 'true'
     env:
       VIRTUAL_ENV: ${{ github.workspace }}/.venv
     steps:
@@ -398,6 +475,8 @@ jobs:
   lean-verify:
     name: lean-verify
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.lean-verify == 'true'
     # Mathlib's oleans come from the cache rather than from a build of Mathlib.
     # Without `cache get` this job compiles Mathlib, which is nearer an hour than
     # a minute - so the cache step is not an optimisation, it is what makes the
@@ -469,6 +548,8 @@ jobs:
   validation:
     name: validation
     runs-on: ubuntu-latest
+    needs: scope
+    if: needs.scope.outputs.validation == 'true'
     env:
       # External validation cases, so they need the real implementation on both
       # sides rather than a skip that quietly verifies nothing.

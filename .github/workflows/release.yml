@@ -23,6 +23,16 @@ env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  # **The full gate, at the tag, before anything is built.** Until this existed `release.yml`
+  # ran no tests at all: a tag built five wheels, signed them and published, whatever state the
+  # tree was in. `mode: full` is the whole surface - the same thing the nightly runs - so a
+  # release cannot outrun the suite the way a push deliberately can.
+  gate:
+    name: the full surface
+    uses: ./.github/workflows/ci.yml
+    with:
+      mode: full
+
   # **One wheel per platform, because a wheel is what spares a caller a Rust toolchain** -
   # and until this was a matrix there was exactly one, for manylinux x86_64, so macOS,
   # Windows and arm64 fell through to the sdist and compiled. The sdist does build now,
@@ -37,6 +47,7 @@ jobs:
   wheels:
     name: Wheel (${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
+    needs: [gate]
     # One platform failing must not hide the others' results - a matrix that cancels on the
     # first failure tells you about one platform per push. `collect` still cannot run unless
     # every leg succeeded, because a failed `needs` skips it, so a partial set is never
@@ -84,6 +95,7 @@ jobs:
   sdist:
     name: Build sdist
     runs-on: ubuntu-latest
+    needs: [gate]
     steps:
       - uses: actions/checkout@v4
         with:

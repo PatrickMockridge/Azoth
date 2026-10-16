@@ -36,7 +36,7 @@ def commands_for(paths: list[str]) -> list[str]:
     module = tool()
     commands, unclaimed = module.scope(paths, module.crate_edges())
     assert not unclaimed, f"unclaimed: {unclaimed}"
-    return [command for _, _, command in commands]
+    return [entry.command for entry in commands]
 
 
 def test_a_hydraulics_change_does_not_reach_the_equation_of_state() -> None:
@@ -186,10 +186,11 @@ def test_the_iterate_lane_deselects_by_marker_rather_than_by_name() -> None:
     """**The list went stale; the marker cannot.** A node id in this tool goes stale the moment
     a sweep is renamed, and the 462-second layer diff was missing from the list entirely."""
     module = tool()
-    line = module.render(("x", module.PYTEST, f"{module.TESTS}/eos"), "iterate", gate=False)
+    command = module.Command("x", module.PYTEST, f"{module.TESTS}/eos")
+    line = module.render(command, "iterate", gate=False)
     assert f'-m "not {module.MARKER}"' in line
     assert "--deselect" not in line
-    push = module.render(("x", module.PYTEST, f"{module.TESTS}/eos"), "push", gate=False)
+    push = module.render(command, "push", gate=False)
     assert module.MARKER not in push, "the push lane runs the sweeps: that is the cost it buys"
 
 
@@ -199,7 +200,9 @@ def test_a_wholly_marked_file_is_skipped_rather_than_filtered_to_nothing() -> No
     lane skips such a file whole and says why, rather than turning a skip into a red."""
     module = tool()
     line = module.render(
-        ("x", module.PYTEST, f"{module.TESTS}/test_dispatch.py"), "iterate", gate=False
+        module.Command("x", module.PYTEST, f"{module.TESTS}/test_dispatch.py"),
+        "iterate",
+        gate=False,
     )
     assert line.startswith("#"), line
     assert "skips" in line
@@ -213,7 +216,7 @@ def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:
     Checked against pytest rather than against a second list, which is the drift this replaced.
     """
     module = tool()
-    named = module.marked_sweeps([("the suite", module.PYTEST, module.TESTS)])
+    named = module.marked_sweeps([module.Command("the suite", module.PYTEST, module.TESTS)])
     files = sorted({entry.split("::")[0] for entry in named})
     assert files, "the suite has slow sweeps; if this is empty the markers were dropped"
     result = subprocess.run(
@@ -238,6 +241,38 @@ def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:
     )
     collected = {line.split("::", 1)[0] for line in result.stdout.splitlines() if "::" in line}
     assert collected == set(files), "the marker and the tool disagree about which files sweep"
+
+
+# ------------------------------------------------------------ which jobs a diff has to run
+
+
+def test_the_plan_reads_what_the_commands_actually_are() -> None:
+    """**`--plan` is what every job reads**, so it has to agree with the commands.
+
+    A Python-only change runs the Python suite and the drift job (a registered calc's reference
+    source is in its provenance block) and does **not** recompile the workspace. That pair is
+    the whole point of scoping twelve jobs by the diff instead of running ten of them flat.
+    """
+    module = tool()
+    commands, _ = module.scope(["python/src/azoth/eos/flash.py"], module.crate_edges())
+    jobs = dict(module.plan(commands, full=False))
+    assert jobs["python-test"] and jobs["docs-drift"]
+    assert not jobs["rust-test"], "a Python change does not recompile the workspace"
+    assert jobs["spec-validate"], "and the cheap flat ones still run"
+
+
+def test_a_command_no_job_runs_is_refused() -> None:
+    """`jobs_of` refuses rather than returning nothing, because nothing is the silent answer."""
+    module = tool()
+    commands, _ = module.scope(["crates/azoth-eos/src/flash.rs"], module.crate_edges())
+    declared = set(module.known_jobs())
+    for entry in commands:
+        named = set(module.jobs_of(entry))
+        assert named, entry
+        assert named <= declared, f"{entry.command} names a job ci.yml does not declare"
+    assert "rust-test" in {job for entry in commands for job in module.jobs_of(entry)}, (
+        "a crate change is what the Rust job is for"
+    )
 
 
 # ------------------------------------------------- a kernel change reaches its Python mirror

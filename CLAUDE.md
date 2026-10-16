@@ -18,20 +18,31 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
 `earlyoom` absent), so a runaway thrashes the desktop instead of failing one process.
 
 - **`python tools/test_scope.py --run` is the gate.** It reads the diff and runs what it
-  reaches: the crates whose sources changed *and every crate that depends on them*, the
-  namespaces and model cases on both backends, the generator checks whose output could have
-  moved. A path it cannot place is an error rather than a shrug, so nothing escapes the map
-  in silence. `--explain` says why each command is there; `--lane iterate` is the same set
-  with the slow global sweeps deselected, for the inner loop.
-- **The whole suite runs nightly**, on a 24-hour cycle, in
-  `.github/workflows/nightly.yml` — on a runner with the memory this box lacks. It is the
-  only thing that runs the tests no diff claimed, so it is not a thing to type, and a red
-  one is a finding to triage rather than scenery. `python tools/test_scope.py --lane
-  nightly` prints exactly what that job runs.
+  reaches: the crates whose sources changed *and every crate that depends on them*, and the
+  Python mirror of each of those crates — a kernel change runs `test_cross_impl.py`, because
+  that agreement test is the whole reason every calculation is written twice. A path it
+  cannot place is an error rather than a shrug, and so is a path a rule *claims and then
+  places nowhere*. `--explain` says why each command is there; `--lane iterate` deselects the
+  `slow_sweep`-marked global sweeps, for the inner loop, and both lanes name the ones they
+  reach.
+- **`--audit` walks every tracked path through the table**, so the day a directory is added
+  and no rule knows it the gate says so. `--verify-selection` collects every emitted target
+  and refuses one that selects nothing — an empty collection is a green run over nothing.
+- **On a push, four jobs run whatever the diff says** — `spec-validate`, `rust-lint`
+  (`cargo fmt` only; the workspace clippy is in the nightly), `python-lint` and
+  `provenance`, all flat-cost and build-free — and **the other eight run only if the diff
+  reaches them**. `tools/test_scope.py --plan` makes that decision once, in the `scope` job,
+  and every job reads its own line, so a job that does not run is a job the summary said
+  `false` about rather than an absence nobody explained.
+- **The whole suite runs nightly**, 04:17 UTC, in `.github/workflows/nightly.yml` — which
+  *calls* `ci.yml` with `mode: full` rather than repeating it, so "the nightly runs
+  everything" is a fact about one list. It is the only thing that runs the tests no diff
+  claimed, so it is not a thing to type, and a red one is a finding to triage rather than
+  scenery.
 - **The trade this buys, stated plainly:** a push is verified against what it reaches, not
   against the tree, so something the nightly would have caught can be red for up to a day.
-  That is what it costs to stop paying an hour per change. A release tag should require a
-  green nightly.
+  That is what it costs to stop paying an hour per change. A release tag requires the same
+  full surface, and `release.yml` runs it before building a wheel.
 - **Wrap every heavy command** in `tools/gated.sh`: it runs the command under
   `systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0` and caps the JVM
   heap at 2 GiB. Heavy = `cargo build|test|clippy|run|bench`, `pytest`, `maturin`,

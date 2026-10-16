@@ -58,6 +58,7 @@ import tomllib
 from dataclasses import dataclass
 from functools import cache, lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
 ROOT = Path(__file__).resolve().parent.parent
 CRATES = ROOT / "crates"
@@ -86,6 +87,39 @@ CARGO, CLIPPY, PYTEST, SCRIPT = "cargo", "clippy", "pytest", "script"
 TOOL_DIRS = (ROOT / "tools", ROOT / ".claude" / "hooks")
 
 
+class Command(NamedTuple):
+    """One command, **and the CI job that runs it**.
+
+    The job is a field rather than a second table because the skip decision and the run decision
+    have to be one computation: `--plan` says which jobs run, `--job` says what one of them runs,
+    and both read this. A second list would be a second thing to keep in step, and the two
+    drifting apart is how a job ends up skipped while a command waits for it.
+    """
+
+    reason: str
+    kind: str
+    command: str
+    jobs: tuple[str, ...] = ()
+
+
+#: The jobs that run whatever the diff says, and why each is allowed to. Everything else is
+#: reached by a tag on a command, so a job the diff does not reach is *skipped* - visibly, and
+#: with the reason in the `scope` job's own summary.
+ALWAYS_JOBS = (
+    # Reads the tree and writes nothing; stdlib only, no build.
+    "spec-validate",
+    # `cargo fmt --all --check` is seconds and has no inputs narrower than the tree. The
+    # workspace clippy lives in the nightly; the diff's own clippy comes from `rust-test`.
+    "rust-lint",
+    # ruff and mypy: no build, and mypy is whole-package by nature.
+    "python-lint",
+    # Runs `python tools/provenance.py`, which is git and stdlib.
+    "provenance",
+    # The job that reads this file's `--plan`; it is what decides all the others.
+    "scope",
+)
+
+
 # ------------------------------------------------------------------------ what a path claims
 #
 # **One table, one dispatch, one answer per path.** The first version classified a path in
@@ -109,7 +143,7 @@ class Claim:
     files: tuple[str, ...] = ()
     tools: tuple[str, ...] = ()
     jobs: tuple[str, ...] = ()
-    commands: tuple[tuple[str, str, str], ...] = ()
+    commands: tuple[Command, ...] = ()
     generated: bool = False
     data: bool = False
     docs: bool = False
@@ -185,12 +219,12 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
         "specs/schema/",
         Claim(
             commands=(
-                (
+                Command(
                     "a schema is what the specs are checked against",
                     SCRIPT,
                     "python tools/spec_lint.py",
                 ),
-                (
+                Command(
                     "a key the schema forbids is still a key",
                     SCRIPT,
                     "python tools/check_json_keys.py",
@@ -215,14 +249,24 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
     (
         "specs/unit_ops/",
         Claim(
-            commands=(("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),),
+            commands=(Command("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),),
             files=(f"{TESTS}/test_check_ui.py",),
             generated=True,
         ),
     ),
     (
         "specs/flowsheets/",
-        Claim(files=(f"{TESTS}/test_gen_ui_fixtures.py",), generated=True),
+        Claim(
+            commands=(
+                Command(
+                    "the fixture a flowsheet produces, which only the CLI can make",
+                    SCRIPT,
+                    "python tools/gen_ui_fixtures.py --check",
+                ),
+            ),
+            files=(f"{TESTS}/test_gen_ui_fixtures.py",),
+            generated=True,
+        ),
     ),
 )
 
@@ -231,7 +275,7 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
 ROOT_CLAIMS: dict[str, Claim] = {
     "skills.toml": Claim(
         commands=(
-            (
+            Command(
                 "the skills are validated, not just present",
                 SCRIPT,
                 "python tools/validate_skills.py",
@@ -248,7 +292,7 @@ ROOT_CLAIMS: dict[str, Claim] = {
     ),
     "SPEC.md": Claim(
         commands=(
-            (
+            Command(
                 "a normative page states counts and paths the tree must match",
                 SCRIPT,
                 "python tools/check_doc_claims.py",
@@ -257,12 +301,12 @@ ROOT_CLAIMS: dict[str, Claim] = {
     ),
     "skills/": Claim(
         commands=(
-            (
+            Command(
                 "the skills are validated, not just present",
                 SCRIPT,
                 "python tools/validate_skills.py",
             ),
-            ("the skills' own smoke checks", PYTEST, "skills"),
+            Command("the skills' own smoke checks", PYTEST, "skills"),
         ),
     ),
     "tools/gated.sh": Claim(inert="the memory wrapper the hook requires; no test reads it"),
@@ -293,6 +337,10 @@ INERT_MODULES: dict[str, str] = {
 UNCHECKABLE = {
     "gen_user_data": "it takes a target path, so it is not a `--check` generator",
 }
+
+#: Generators that are checked, but **not by the sweep**: each needs something a plain
+#: `--check` runner does not have, so a claim that reaches one emits it explicitly.
+CARGO_GENERATORS = ("gen_ui_fixtures",)
 
 
 @lru_cache(maxsize=1)
@@ -463,8 +511,13 @@ def claims(path: str) -> Claim:
     if path.endswith(".py") and (parts[0] == "tools" or parts[:2] == [".claude", "hooks"]):
         return Claim(tools=(Path(path).stem,))
 
-    if parts[0] in ("databank", "data", "validation"):
-        return Claim(data=True)
+    if parts[0] in ("databank", "data"):
+        # The databank is packaged into the wheel, which is what `wheel-data` builds and checks.
+        return Claim(data=True, jobs=("wheel-data",))
+
+    if parts[0] == "validation":
+        # The NeqSim captures: read by `python/tests/validation`, which its own job runs.
+        return Claim(data=True, jobs=("validation",))
 
     if parts[0] == "docs" or path in ("README.md", "ROADMAP.md"):
         return Claim(docs=True)
@@ -474,12 +527,18 @@ def claims(path: str) -> Claim:
         # would be a lie, and naming none is how a lockfile edit slips through green.
         return Claim(crates=tuple(members()))
 
-    if parts[0] in (".github", ".claude") or path in (
-        "Cargo.toml",
-        "pyproject.toml",
-        "uv.lock",
-        "CLAUDE.md",
-    ):
+    if path in ("Cargo.toml", "pyproject.toml", "uv.lock"):
+        # What a wheel is built from, so `wheel-data` is what proves the change packaged.
+        return Claim(config=True, jobs=("wheel-data",))
+
+    if parts[0] == ".github":
+        # **`generator_sweep` reads `ci.yml`** to learn which generators to check, so a change
+        # to a workflow changes what the sweep runs - which is the drift job's business.
+        return Claim(config=True, jobs=("docs-drift",))
+
+    if parts[0] == ".claude" or path == "CLAUDE.md":
+        # Nothing in the suite reads a prompt or a policy page. Claimed, placed nowhere, and it
+        # says so rather than emitting a `true` no job runs.
         return Claim(config=True)
 
     for prefix, claim in ROOT_CLAIMS.items():
@@ -560,7 +619,11 @@ def specs_claim(path: str, parts: list[str]) -> Claim:
         return Claim(ids=tuple(found), namespaces=(parts[2],))
     if len(parts) >= 3 and parts[1] == "cases":
         found = declared_id(ROOT / path)
-        return Claim(ids=tuple(found), namespaces=tuple(sorted({i.split(".")[0] for i in found})))
+        return Claim(
+            ids=tuple(found),
+            namespaces=tuple(sorted({i.split(".")[0] for i in found})),
+            jobs=("validation",),
+        )
     for prefix, claim in SPEC_TREES:
         if path.startswith(prefix):
             return claim
@@ -667,7 +730,7 @@ def declared_id(path: Path) -> list[str]:
     return [match.group(1)] if match else []
 
 
-def generator_sweep() -> list[tuple[str, str, str]]:
+def generator_sweep() -> list[Command]:
     """Every `--check` generator CI runs, **read from the workflow rather than listed again**.
 
     `.github/workflows/ci.yml`'s `spec-validate` job is where the hand-written decision lives
@@ -683,7 +746,13 @@ def generator_sweep() -> list[tuple[str, str, str]]:
     # the other end. A generator in either list is checkable, and `--check` is how to ask
     # without writing.
     named = set(re.findall(r"tools/(gen_[\w]+)\.py", workflow))
-    commands = sorted(f"python tools/{stem}.py --check" for stem in named)
+    # **`gen_ui_fixtures` is not in the sweep**: it is the one generator that runs the CLI
+    # (`cargo run -p azoth-cli`) rather than reading the specs, so it cannot run in a job
+    # without a cargo build - and tagging it for the Rust job would make every sweep run that
+    # job. It is emitted by the claims that reach it instead, and reaches `rust-test` there.
+    commands = sorted(
+        f"python tools/{stem}.py --check" for stem in named if stem not in CARGO_GENERATORS
+    )
     unaccounted = sorted(
         path.stem
         for path in (ROOT / "tools").glob("gen_*.py")
@@ -696,29 +765,29 @@ def generator_sweep() -> list[tuple[str, str, str]]:
             "is a stale generated file waiting to be pushed."
         )
     return [
-        ("a generated file embeds the specs or the sources", SCRIPT, command)
+        Command("a generated file embeds the specs or the sources", SCRIPT, command)
         for command in commands
     ]
 
 
-def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[tuple[str, str, str]]:
+def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[Command]:
     """The cargo commands for a set of changed crates, plus the extension rebuild."""
     touched = sorted({crate for crate in crates} | {n for c in crates for n in reaches(c, edges)})
     if not touched:
         return []
     packages = " ".join(f"-p {crate}" for crate in touched)
-    out: list[tuple[str, str, str]] = [
-        (
+    out: list[Command] = [
+        Command(
             "changed crates and everything that depends on them",
             CARGO,
             f"cargo test {packages} --all-targets -j 10 -- --test-threads 10",
         ),
-        (
+        Command(
             "their doc tests, which `--all-targets` cannot carry",
             CARGO,
             f"cargo test {packages} --doc -j 10",
         ),
-        (
+        Command(
             "the same crates' lints",
             CLIPPY,
             f"cargo clippy {packages} --all-targets -j 10 -- -D warnings",
@@ -726,7 +795,7 @@ def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[tuple[str, 
     ]
     if set(touched) & reaches("azoth-python", edges):
         out.append(
-            (
+            Command(
                 "a crate the extension links, so it must be rebuilt before any Rust-backed "
                 "Python test means anything",
                 SCRIPT,
@@ -756,13 +825,11 @@ def id_named_files(ids: set[str]) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
-def python_commands(
-    namespaces: set[str], ids: set[str], files: set[str]
-) -> list[tuple[str, str, str]]:
+def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> list[Command]:
     """The pytest invocations for those namespaces, ids and files."""
-    out: list[tuple[str, str, str]] = []
+    out: list[Command] = []
     for path in sorted(files):
-        out.append((f"the test file itself: {path}", PYTEST, path))
+        out.append(Command(f"the test file itself: {path}", PYTEST, path))
 
     #: A `-k` term per namespace, plus the ids a spec named outright.
     terms: set[str] = set(ids)
@@ -770,7 +837,7 @@ def python_commands(
     named: set[str] = set()
     for namespace in sorted(namespaces):
         for target in namespace_targets(namespace):
-            out.append((f"the {namespace} namespace's own tests", PYTEST, target))
+            out.append(Command(f"the {namespace} namespace's own tests", PYTEST, target))
             if (ROOT / target).is_dir():
                 covered.append(str(ROOT / target) + "/")
         # **A change inside a namespace reaches that whole namespace**, whether or not a spec
@@ -794,14 +861,14 @@ def python_commands(
             )
         expression = " or ".join(sorted(terms))
         out.append(
-            (
+            Command(
                 f"the cases of {sorted(terms)}",
                 PYTEST,
                 f'{TESTS}/models/test_model_cases.py -k "{expression}"',
             )
         )
         out.append(
-            (
+            Command(
                 f"{sorted(terms)} on both kernels",
                 PYTEST,
                 f'{TESTS}/test_cross_impl.py -k "{expression}"',
@@ -809,7 +876,7 @@ def python_commands(
         )
         if named:
             out.append(
-                (
+                Command(
                     "the files that test these ids by name",
                     PYTEST,
                     " ".join(sorted(named)),
@@ -818,9 +885,7 @@ def python_commands(
     return out
 
 
-def scope(
-    paths: list[str], edges: dict[str, set[str]]
-) -> tuple[list[tuple[str, str, str]], list[str]]:
+def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], list[str]]:
     """Every command the paths reach, and the paths nothing claimed."""
     crates: set[str] = set()
     namespaces: set[str] = set()
@@ -828,7 +893,7 @@ def scope(
     files: set[str] = set()
     tools: set[str] = set()
     jobs: set[str] = set()
-    commands: list[tuple[str, str, str]] = []
+    commands: list[Command] = []
     data = docs = config = generated = False
     unclaimed: list[str] = []
 
@@ -882,7 +947,7 @@ def scope(
             # a test, and a rule that cannot be satisfied teaches a reader to ignore the tool.
             if tool.startswith("gen_"):
                 commands.append(
-                    (
+                    Command(
                         f"the generator that changed: {tool}",
                         SCRIPT,
                         f"python tools/{tool}.py --check",
@@ -890,65 +955,138 @@ def scope(
                 )
             elif tool.startswith(("check_", "audit_")) or tool.endswith("_lint"):
                 commands.append(
-                    (f"the checker that changed: {tool}", SCRIPT, f"python tools/{tool}.py")
+                    Command(f"the checker that changed: {tool}", SCRIPT, f"python tools/{tool}.py")
                 )
         test = ROOT / TESTS / f"test_{tool}.py"
         if test.exists():
-            commands.append((f"the test that names {tool}", PYTEST, f"{TESTS}/test_{tool}.py"))
+            commands.append(
+                Command(f"the test that names {tool}", PYTEST, f"{TESTS}/test_{tool}.py")
+            )
         if tool == "guard_bash":
             commands.append(
-                (
+                Command(
                     "the hook's own rule table",
                     SCRIPT,
                     "python .claude/hooks/guard_bash.py --selftest",
                 )
             )
 
-    if crates or ids or tools or data or generated:
+    # **The sweep runs for a Python change too.** A registered calc's reference source is in its
+    # provenance block, so editing `python/src/azoth/eos/reference/...` makes `gen_registry`'s
+    # output stale - which is not a guess: it happened in this very tree, twice.
+    if crates or ids or tools or data or generated or namespaces or files:
         commands += generator_sweep()
     if data:
         for path in ("test_data.py", "test_data_agreement.py", "test_manifest_tally.py"):
-            commands.append(("the databank is every model's input", PYTEST, f"{TESTS}/{path}"))
+            commands.append(
+                Command("the databank is every model's input", PYTEST, f"{TESTS}/{path}")
+            )
     if docs:
         commands += [
-            (
+            Command(
                 "a page states counts and paths the tree must match",
                 SCRIPT,
                 "python tools/check_doc_claims.py",
             ),
-            ("a link can rot", SCRIPT, "python tools/check_links.py"),
+            Command("a link can rot", SCRIPT, "python tools/check_links.py"),
         ]
-    if config:
-        commands.append(("configuration changed; nothing in the suite reads it", SCRIPT, "true"))
-
-    if jobs:
-        # **A job this box cannot run is still placed.** `ui/` and `lean/` reach a job rather
-        # than a command, and saying so is what keeps their diff from being a shrug - the same
-        # honesty the `INERT` entries carry, in the other direction.
+    for job in sorted(jobs):
+        # **A job this box cannot run is still placed.** `ui/`, `lean/` and the wheel are jobs
+        # rather than commands - the work happens on a runner, so all this has to say is *run
+        # that job*. It renders as a comment and `--plan` reads it as a yes.
         commands.append(
-            (
-                f"these reach the {', '.join(sorted(jobs))} job(s), which run on a runner",
-                SCRIPT,
-                "true",
-            )
+            Command(f"this reaches the {job} job, which runs on a runner", SCRIPT, "true", (job,))
         )
 
     seen = set()
     unique = []
     for entry in commands:
-        if entry[2] not in seen:
-            seen.add(entry[2])
+        # Keyed on the job too, so two `true` placeholders for two different jobs both survive.
+        if (entry.command, entry.jobs) not in seen:
+            seen.add((entry.command, entry.jobs))
             unique.append(entry)
     return unique, unclaimed
 
 
-def render(entry: tuple[str, str, str], lane: str, gate: bool = True) -> str:
+def script_jobs(command: str) -> set[str]:
+    """Which job runs a non-cargo, non-pytest command, read off the command itself."""
+    if command.endswith("/maturin develop"):
+        return {"python-test"}
+    if "tools/gen_ui_fixtures" in command:
+        # The one generator that *runs* the CLI rather than reading the specs, so it belongs in
+        # the job that has a cargo build - which is why `ci.yml` keeps it beside `rust-test`.
+        return {"rust-test"}
+    if "tools/gen_" in command:
+        # The `--check` sweeps and the drift job check the same thing from opposite ends.
+        return {"docs-drift"}
+    if "check_links" in command:
+        return {"docs-build"}
+    if command in ("true",):
+        return set()
+    if command.startswith(("python tools/", "python .claude/")):
+        # `spec_lint`, `check_json_keys`, `check_ui`, `validate_skills`, `check_doc_claims` and
+        # the hook's own selftest are the stdlib-only checkers, and `spec-validate` is where the
+        # tree keeps them.
+        return {"spec-validate"}
+    return set()
+
+
+def jobs_of(entry: Command) -> tuple[str, ...]:
+    """Which CI jobs run a command. **The command is what runs, so the job is read from it.**
+
+    A tag stored beside the command would be a second answer to the same question, and the way
+    the two drift apart is a job that is skipped while a command waits for it. A command that
+    names no job is a refusal: a command no job runs is a command nobody runs.
+    """
+    jobs = set(entry.jobs)
+    if entry.kind in (CARGO, CLIPPY):
+        jobs.add("rust-test")
+    elif entry.kind == PYTEST:
+        jobs.add("python-test")
+    else:
+        jobs |= script_jobs(entry.command)
+    if not jobs:
+        raise SystemExit(
+            f"test_scope: no CI job runs {entry.command!r}, so it would never run in CI. Add "
+            "one to `script_jobs`, or tag the claim that emitted it."
+        )
+    return tuple(sorted(jobs))
+
+
+def known_jobs() -> tuple[str, ...]:
+    """Every job `.github/workflows/ci.yml` declares, read from the workflow."""
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    jobs = re.search(r"^jobs:\n(.*?)(?=^\S|\Z)", workflow, re.M | re.S)
+    if jobs is None:
+        raise SystemExit("test_scope: ci.yml has no `jobs:` block to read")
+    return tuple(sorted(re.findall(r"^  ([\w-]+):", jobs.group(1), re.M)))
+
+
+def plan(commands: list[Command], full: bool) -> list[tuple[str, bool]]:
+    """Which jobs run, as `(job, runs)`.
+
+    **One computation decides both.** `--plan` writes these for `$GITHUB_OUTPUT` and the jobs
+    read their own line, so the decision to skip and the decision to run cannot disagree - which
+    is the only way a skipped job is a statement rather than a silence.
+    """
+    tagged = {job for entry in commands for job in jobs_of(entry)}
+    known = set(known_jobs())
+    unknown = sorted(tagged - known)
+    if unknown:
+        raise SystemExit(
+            f"test_scope: {unknown} are named as jobs and are not in ci.yml, so naming them "
+            f"decides nothing. ci.yml has {sorted(known)}."
+        )
+    return [(job, full or job in ALWAYS_JOBS or job in tagged) for job in sorted(known)]
+
+
+def render(entry: Command, lane: str, gate: bool = True) -> str:
     """One command as a shell line.
 
     `gate` wraps the heavy ones in `tools/gated.sh`, which caps memory - **and does not exist
     on a CI runner**, so the nightly calls this with `--no-gate` and runs the bare commands.
     """
-    reason, kind, command = entry
+    reason, kind, command = entry.reason, entry.kind, entry.command
     if kind == SCRIPT and command == "true":
         # **A claim that reaches no command says so on the line, not only under `--explain`.**
         # `ui/` and `lean/` reach a job this box cannot run, and config reaches nothing at all;
@@ -1014,7 +1152,7 @@ def module_is_a_sweep(path: str) -> bool:
     )
 
 
-def marked_sweeps(commands: list[tuple[str, str, str]]) -> list[str]:
+def marked_sweeps(commands: list[Command]) -> list[str]:
     """The marked sweeps a command set reaches, by node id.
 
     **For naming the cost, not for selecting the tests.** Selection is pytest's own
@@ -1023,10 +1161,10 @@ def marked_sweeps(commands: list[tuple[str, str, str]]) -> list[str]:
     reads the tree with `ast` rather than asking pytest, because it runs on every push.
     """
     found: set[str] = set()
-    for _, kind, command in commands:
-        if kind != PYTEST:
+    for entry in commands:
+        if entry.kind != PYTEST:
             continue
-        for target in bare_targets(command):
+        for target in bare_targets(entry.command):
             path = ROOT / target
             files = sorted(path.rglob("test_*.py")) if path.is_dir() else [path]
             for file in files:
@@ -1139,7 +1277,7 @@ def collects_nothing(command: str) -> str | None:
     return None
 
 
-def verify_selection(commands: list[tuple[str, str, str]]) -> int:
+def verify_selection(commands: list[Command]) -> int:
     """**Every emitted pytest target has to collect at least one test.**
 
     A target that collects nothing is a green run over nothing, which is the failure this whole
@@ -1147,12 +1285,12 @@ def verify_selection(commands: list[tuple[str, str, str]]) -> int:
     the only thing that can catch an id that is registered but not parametrised.
     """
     bad: list[str] = []
-    for _, kind, command in commands:
-        if kind != PYTEST:
+    for entry in commands:
+        if entry.kind != PYTEST:
             continue
-        problem = collects_nothing(command)
+        problem = collects_nothing(entry.command)
         if problem:
-            bad.append(f"{command}: {problem}")
+            bad.append(f"{entry.command}: {problem}")
     if bad:
         print(f"test_scope: {len(bad)} pytest target(s) select nothing:")
         for entry in bad:
@@ -1192,27 +1330,28 @@ def audit() -> int:
 
 
 def nightly(gate: bool) -> list[str]:
-    """The whole set: every test in both languages, and every generator reproduced.
+    """**The test half of the full surface**, as commands.
 
-    **`.github/workflows/nightly.yml` runs this**, which is what makes the two agree - the
-    scheduled job is the only thing that runs what no diff claimed, so a second copy of the
-    list in YAML would be a second thing to keep in step.
+    `.github/workflows/nightly.yml` calls `ci.yml` with `mode: full` rather than running a
+    command list, because eleven of those twelve jobs are not commands this tool can express -
+    the Lean build, the front end, the wheel, the docs. So this is what the two *test* jobs run
+    when nothing scopes them, and what a developer types to reproduce them.
     """
-    entries: list[tuple[str, str, str]] = [
-        ("the whole Rust workspace", CARGO, "cargo test --workspace --all-targets"),
-        (
+    entries: list[Command] = [
+        Command("the whole Rust workspace", CARGO, "cargo test --workspace --all-targets"),
+        Command(
             "its doc tests, which `--all-targets` cannot carry",
             CARGO,
             "cargo test --workspace --doc",
         ),
-        (
+        Command(
             "the lints over the same workspace",
             CLIPPY,
             "cargo clippy --workspace --all-targets -- -D warnings",
         ),
-        ("the extension both backends need", SCRIPT, f"{venv_bin()}/maturin develop"),
-        ("the whole Python suite", PYTEST, TESTS),
-        ("the skills' smoke checks", PYTEST, "skills"),
+        Command("the extension both backends need", SCRIPT, f"{venv_bin()}/maturin develop"),
+        Command("the whole Python suite", PYTEST, TESTS),
+        Command("the skills' smoke checks", PYTEST, "skills"),
     ]
     return [render(entry, "nightly", gate) for entry in entries + generator_sweep()]
 
@@ -1245,6 +1384,17 @@ def main() -> int:
         choices=("rust", "python"),
         help="one language's half of the set, for a CI job that has only that toolchain",
     )
+    parser.add_argument("--job", help="one CI job's commands, as `--plan` names them")
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="print `job=<true|false>` for every job in ci.yml, for $GITHUB_OUTPUT",
+    )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="with --plan: every job runs, whatever the diff reaches",
+    )
     args = parser.parse_args()
 
     if args.audit:
@@ -1261,12 +1411,6 @@ def main() -> int:
         print(f"# {len(paths)} path(s) changed against {args.base}")
         for path in sorted(paths):
             print(f"#   {path}")
-    if args.only == "rust":
-        commands = [entry for entry in commands if entry[1] in (CARGO, CLIPPY)]
-    elif args.only == "python":
-        # Everything that is not a cargo invocation: the pytest targets, the generator
-        # checks, the doc checkers and the extension rebuild.
-        commands = [entry for entry in commands if entry[1] not in (CARGO, CLIPPY)]
     if unclaimed:
         print("test_scope: no rule claims these paths, so this tool cannot say what they reach:")
         for path in unclaimed:
@@ -1276,6 +1420,27 @@ def main() -> int:
             "stops being trustworthy, and an untrusted tool is a sweep waiting to happen."
         )
         return 2
+
+    if args.plan:
+        # **The skip decision and the run decision are one computation.** These lines go to
+        # `$GITHUB_OUTPUT` and each job reads its own, so a job that does not run is a job this
+        # said `false` about - visible in the summary rather than absent without explanation.
+        for job, runs in plan(commands, full=args.full):
+            print(f"{job}={'true' if runs else 'false'}")
+        if args.explain:
+            for job, runs in plan(commands, full=args.full):
+                tags = sorted({entry.reason for entry in commands if job in jobs_of(entry)})
+                print(f"# {job}: {'; '.join(tags) if runs and tags else 'nothing reaches it'}")
+        return 0
+
+    if args.only == "rust":
+        commands = [entry for entry in commands if entry.kind in (CARGO, CLIPPY)]
+    elif args.only == "python":
+        # Everything that is not a cargo invocation: the pytest targets, the generator
+        # checks, the doc checkers and the extension rebuild.
+        commands = [entry for entry in commands if entry.kind not in (CARGO, CLIPPY)]
+    if args.job:
+        commands = [entry for entry in commands if args.job in jobs_of(entry)]
     if args.verify_selection:
         return verify_selection(commands)
     if not commands:
@@ -1289,14 +1454,14 @@ def main() -> int:
         for sweep in sweeps:
             print(f"#   {sweep}")
 
-    for reason, kind, command in commands:
-        line = render((reason, kind, command), args.lane, gate=not args.no_gate)
-        print(f"# {reason}\n{line}" if args.explain else line)
+    for entry in commands:
+        line = render(entry, args.lane, gate=not args.no_gate)
+        print(f"# {entry.reason}\n{line}" if args.explain else line)
 
     if args.run:
-        for reason, kind, command in commands:
-            line = render((reason, kind, command), args.lane, gate=not args.no_gate)
-            print(f"\n== {reason}\n== {line}", flush=True)
+        for entry in commands:
+            line = render(entry, args.lane, gate=not args.no_gate)
+            print(f"\n== {entry.reason}\n== {line}", flush=True)
             if subprocess.run(line, shell=True, cwd=ROOT).returncode != 0:
                 print(f"\ntest_scope: failed: {line}")
                 return 1
