@@ -823,19 +823,26 @@ def is_generator_check(entry: Command) -> bool:
     return "tools/gen_" in entry.command and entry.command.endswith("--check")
 
 
+def is_cheap(entry: Command) -> bool:
+    """A check that costs seconds: the generator sweep, and every unconditional CI step.
+
+    `CLOSE_OUT` is flat-cost by construction - that is why those five jobs run on every push -
+    so a formatting or lint failure belongs at the front of the run with the generators.
+    """
+    return is_generator_check(entry) or entry.command in {step.command for step in CLOSE_OUT}
+
+
 def cheap_first(commands: list[Command]) -> list[Command]:
-    """**The generator checks before everything else, because they are minutes and the tests are
+    """**The cheap checks before everything else, because they are seconds and the tests are
     an hour.**
 
-    They catch the most common failure - a generated file that has gone stale - and running them
-    last means that failure is found by whichever test happens to look at the file, after the
-    expensive half has run. Measured twice in one session: a provenance hash carried past a
-    reflow, and the palette fixtures. The order is otherwise unchanged, so the plan still reads
-    in the order it did.
+    They catch the most common failures - a generated file gone stale, a line to reflow, a type
+    the strict check refuses - and running them last means each is found after the expensive
+    half has run. Measured three times in one session: a provenance hash carried past a reflow,
+    the palette fixtures, and a `cargo fmt` failure that cost a ninety-minute scoped run. The
+    order is otherwise unchanged, so the plan still reads in the order it did.
     """
-    return [e for e in commands if is_generator_check(e)] + [
-        e for e in commands if not is_generator_check(e)
-    ]
+    return [e for e in commands if is_cheap(e)] + [e for e in commands if not is_cheap(e)]
 
 
 def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[Command]:

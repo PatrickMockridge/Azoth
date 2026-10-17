@@ -6648,6 +6648,67 @@ impl From<&azoth_eos::results::SaltPrecipitationResult> for PySaltPrecipitationR
         }
     }
 }
+/// Result of `eos.saturate_with_water`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SaturateWithWaterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySaturateWithWaterResult {
+    /// the overall water mole fraction at saturation: the water dissolved in every non-aqueous phase, over the composition the correction produces. **This is what the source's own test asserts**, on the system's `getz()`.
+    #[pyo3(get)]
+    pub water_mole_fraction: f64,
+    /// how many phases are reported, after a residual incipient aqueous phase is dropped.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// the mole fraction of the fluid in each reported phase, renormalised over the phases that remain. Sums to one.
+    #[pyo3(get)]
+    pub phase_fractions: Vec<f64>,
+    /// the composition of each reported phase, each row summing to one.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// the compressibility `Z = PV/RT` of each reported phase.
+    #[pyo3(get)]
+    pub z_factor: Vec<f64>,
+    /// whether flooding produced a free aqueous phase. **`false` means the feed was returned unchanged**, and the warnings say which recovery path fired.
+    #[pyo3(get)]
+    pub aqueous_present: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySaturateWithWaterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SaturateWithWaterResult(water_mole_fraction={:?}, phase_count={:?}, phase_fractions={:?}, x={:?}, z_factor={:?}, aqueous_present={:?}, {} warning(s))",
+            self.water_mole_fraction,
+            self.phase_count,
+            self.phase_fractions,
+            self.x,
+            self.z_factor,
+            self.aqueous_present,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterResult {
+    fn from(r: &azoth_eos::results::SaturateWithWaterResult) -> Self {
+        Self {
+            water_mole_fraction: r.water_mole_fraction,
+            phase_count: r.phase_count,
+            phase_fractions: r.phase_fractions.clone(),
+            x: r.x.clone(),
+            z_factor: r.z_factor.clone(),
+            aqueous_present: r.aqueous_present,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.scale_saturation_ratio`, transported.
 #[pyclass(
     frozen,

@@ -1,0 +1,87 @@
+id = "eos.saturate_with_water"
+name = "Water saturation of a fluid"
+kind = "procedure"
+assumptions = [
+    "**the flood is one feed's worth of water, and the water dissolved in the non-aqueous phases is the answer.** A fluid coexisting with a free aqueous phase is water-saturated by definition, so no iteration is needed.",
+    "**the trace of water is added when the feed has none, and it is carried.** NeqSim adds `totalMoles / 100` of water and re-applies the mixing rule before the flood; that 1% sits in the total the saturation is reported against, which is why the measured values reproduce.",
+    "**an associating fluid is refused.** The operation is a multiphase flash, `eos.tp_multiflash` has no associating case, and the source's two CPA states come out 15-19% apart in opposite directions - refused, not answered.",
+    "**each recovery path returns the feed rather than a flooded fluid.** The class restores the caller's composition when the flood flash diverges or no aqueous phase forms; that state comes back with the reason in `warnings`, not as a refused call.",
+    "**a residual incipient aqueous phase is dropped, not flashed away.** The class calls `removePhase` and re-flashes; a flash here is a function of the composition alone, so the re-flash is the same answer and the removal is the part that shows.",
+    "the phase label is `PhaseEos.init`'s, read through the same `label` the hydrate-inhibitor operation uses: volume over covolume past 1.75 is a gas, and below it the hydrocarbon sum decides between an oil and an aqueous phase.",
+    "**moles, not mole fractions.** The flood adds an absolute amount and the saturation amount is absolute, so a normalised feed would have to be turned back into one first.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SaturateWithWater` is the port source: `run`, `indexOfAqueousPhase`, `runFlashSafely`, `captureMoles` and `restoreMoles`.",
+]
+[source]
+standard = "NeqSim master `SaturateWithWater`"
+edition = "The flood, the dissolved-water correction and the residual-phase removal, over this library's own multiphase flash and phase label."
+[algorithm]
+scheme = "water_flood_then_dissolved_amount"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 1
+initialisation = "feed_plus_one_feed_of_water"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's components, by name, **including `water`**. A feed without it is refused rather than grown."
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component, in the same order"
+description = "the feed's mole numbers. Absolute, because the flood adds one feed's worth of water to it.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature the flash runs at.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure the flash runs at.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid is built on. The source's own cases run `SystemPrEos` and `SystemSrkCPAstatoil`."
+[inputs.associating]
+type = "boolean"
+optional = true
+description = "whether the components associate, which builds the fluid as a CPA mixture instead of a plain cubic. `SystemSrkCPAstatoil` is the source's CPA case."
+[outputs]
+[outputs.water_mole_fraction]
+unit = "dimensionless"
+description = "the overall water mole fraction at saturation: the water dissolved in every non-aqueous phase, over the composition the correction produces. **This is what the source's own test asserts**, on the system's `getz()`.\n"
+[outputs.phase_count]
+unit = "dimensionless"
+description = "how many phases are reported, after a residual incipient aqueous phase is dropped."
+[outputs.phase_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per reported phase"
+description = "the mole fraction of the fluid in each reported phase, renormalised over the phases that remain. Sums to one.\n"
+[outputs.x]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per reported phase, one column per component"
+description = "the composition of each reported phase, each row summing to one.\n"
+[outputs.z_factor]
+type = "vector"
+unit = "dimensionless"
+length = "one per reported phase"
+description = "the compressibility `Z = PV/RT` of each reported phase.\n"
+[outputs.aqueous_present]
+type = "boolean"
+description = "whether flooding produced a free aqueous phase. **`false` means the feed was returned unchanged**, and the warnings say which recovery path fired.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive temperature is not a state the cubic can be evaluated at"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive pressure is not a state the cubic can be evaluated at"
+[implementations]
+python = "azoth.eos.saturate_with_water"
+rust = "azoth_eos::saturate_with_water"

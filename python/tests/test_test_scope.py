@@ -399,12 +399,13 @@ def test_every_unconditional_ci_step_is_in_the_close_out_table() -> None:
     assert declared == expected
 
 
-def test_the_generator_checks_run_before_the_expensive_targets() -> None:
-    """A stale generated file should cost minutes, not the suite.
+def test_the_cheap_checks_run_before_the_expensive_targets() -> None:
+    """A stale generated file, or a line to reflow, should cost seconds and not the suite.
 
-    Measured twice in one session: the provenance hash carried past a reflow, and the palette
-    fixtures. Both were found by a test at the end of an hour; the `gen_*.py --check` that would
-    have said so in three minutes had not run yet.
+    Measured three times in one session: the provenance hash carried past a reflow, the palette
+    fixtures, and a `cargo fmt` failure that arrived after a ninety-minute scoped run. Each was
+    found at the end of the expensive half; the check that would have said so in seconds had not
+    run yet.
     """
     result = subprocess.run(
         [
@@ -420,11 +421,15 @@ def test_the_generator_checks_run_before_the_expensive_targets() -> None:
     )
     lines = result.stdout.splitlines()
     assert lines[0].startswith("python tools/gen_") and lines[0].endswith("--check"), lines[0]
-    # And the close-out block is part of the push lane, at the end.
-    assert lines[-1] == "python tools/test_scope.py --audit", lines[-1]
+    # The close-out block is cheap too, and it comes before any target.
+    audit = lines.index("python tools/test_scope.py --audit")
+    targets = [index for index, line in enumerate(lines) if " -m pytest " in line]
+    assert targets, "the diff reaches a test"
+    assert audit < targets[0], "the close-out checks run before the targets"
 
     module = tool()
     ordered = module.cheap_first(module.full_surface())
-    generators = [entry for entry in ordered if module.is_generator_check(entry)]
-    assert generators, "the sweep is in the full surface"
-    assert ordered[: len(generators)] == generators
+    assert ordered[0].command.startswith("python tools/gen_")
+    cheap = [entry for entry in ordered if module.is_cheap(entry)]
+    assert len(cheap) > len([e for e in ordered if module.is_generator_check(e)])
+    assert ordered[: len(cheap)] == cheap

@@ -1269,6 +1269,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 1,
         "tests_skipped": 0,
     },
+    'eos.saturate_with_water': {
+        "calc_id": 'eos.saturate_with_water',
+        "name": 'Water saturation of a fluid',
+        "spec": {'path': 'specs/models/eos/saturate_with_water.toml', 'sha256': '6de1625d86f762143488f36d72a083c52b315e725099bc6b49b68b15481f7341'},
+        "code": [{'path': 'python/src/azoth/eos/reference/saturate_with_water.py', 'sha256': 'a27ed111a55b208ebcac4b61a8f7d4b0c30934eb53b87ec6dd4d2556edd67784'}, {'path': 'crates/azoth-eos/src/saturate_with_water.rs', 'sha256': '251cff128233653090479886dcfd1a64a41f306513c40a599ff124c101bd0016'}],
+        "source": 'NeqSim master `SaturateWithWater`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 1,
+        "tests_skipped": 0,
+    },
     'eos.scale_saturation_ratio': {
         "calc_id": 'eos.scale_saturation_ratio',
         "name": 'Scale saturation ratio of one salt',

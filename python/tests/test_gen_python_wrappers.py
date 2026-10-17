@@ -63,7 +63,12 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 52 -> 53 when `eos.water_dew_point_line` landed, again the same shape: its kernel takes
 #: `(components, z, minimum_pressure, maximum_pressure, eos)` while the spec declares `eos` and
 #: the two pressures, so the generated wrapper's parameters are not the kernel's.
-KNOWN_HAND_WRITTEN = 53
+#: 53 -> 54 when `eos.saturate_with_water` landed, and its refusal is a different one: the
+#: kernel's parameter names *are* the spec's inputs, and the generator stops at `associating`,
+#: which the spec declares optional and the kernel takes as a `bool`. An optional flag crosses
+#: the boundary as its default rather than as an absence, and no emitted signature can say
+#: which; the wrapper spells the default once and the spec states the input.
+KNOWN_HAND_WRITTEN = 54
 
 
 def _tools_module(name: str) -> ModuleType:

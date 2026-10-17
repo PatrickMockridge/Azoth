@@ -859,10 +859,16 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
     fluids = fluid_inputs(model)
     # Every input the loop above consumed: the fluids' own names, and the per-fluid
     # boundary keys a case uses to describe how each one is built.
+    #
+    # **`eos` and `associating` are consumed only where a `Mixture` was built from them.**
+    # A model that takes `components` verbatim builds its own fluid and may declare these
+    # as inputs of its own (`eos.saturate_with_water` does); consuming them here would drop
+    # them from the call and leave the model on its defaults - measured, a case asking for
+    # `pr` ran as `srk` and agreed with the wrong fluid to 2%.
     resolved = {name for _, name in fluids}
-    resolved |= {_ASSOCIATING_KEY, "eos"}
     for prefix, _ in fluids:
-        resolved |= {f"{prefix}{_ASSOCIATING_KEY}", f"{prefix}eos"}
+        if f"{prefix}mixture" in takes:
+            resolved |= {f"{prefix}{_ASSOCIATING_KEY}", f"{prefix}eos"}
     for name, value in inputs.items():
         # Passed only what the function takes. A fluid's own inputs are resolved above -
         # into a `Mixture`, a coefficient set, or the names verbatim - and a parameter

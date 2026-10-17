@@ -133,6 +133,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyRkDepartureResult>()?;
     m.add_class::<crate::transport_gen::PySaftVrMiePhaseResult>()?;
     m.add_class::<crate::transport_gen::PySaltPrecipitationResult>()?;
+    m.add_class::<crate::transport_gen::PySaturateWithWaterResult>()?;
     m.add_class::<crate::transport_gen::PyScaleSaturationRatioResult>()?;
     m.add_class::<crate::transport_gen::PySchwartzentruberAlphaResult>()?;
     m.add_class::<crate::transport_gen::PySiddiqiLucasDiffusivityResult>()?;
@@ -506,6 +507,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::salt_precipitation,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::saturate_with_water, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::scale_saturation_ratio,
         m

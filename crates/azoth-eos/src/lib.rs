@@ -181,6 +181,7 @@ pub mod rk_departure;
 pub mod saft_vr_mie;
 pub mod saft_vr_mie_phase;
 pub mod salt_precipitation;
+pub mod saturate_with_water;
 pub mod saturation_temperature;
 pub mod scale_saturation_ratio;
 pub mod schwartzentruber_alpha;
@@ -380,6 +381,7 @@ pub use results::{
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
 pub use salt_precipitation::salt_precipitation;
+pub use saturate_with_water::saturate_with_water;
 pub use scale_saturation_ratio::scale_saturation_ratio;
 pub use schwartzentruber_alpha::schwartzentruber_alpha;
 pub use siddiqi_lucas_diffusivity::{SiddiqiLucasForm, siddiqi_lucas_diffusivity};

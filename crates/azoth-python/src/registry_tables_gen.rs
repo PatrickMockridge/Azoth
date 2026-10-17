@@ -134,6 +134,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.rk_departure" => azoth_eos::results::RkDepartureResult::FIELDS.to_vec(),
         "eos.saft_vr_mie_phase" => azoth_eos::results::SaftVrMiePhaseResult::FIELDS.to_vec(),
         "eos.salt_precipitation" => azoth_eos::results::SaltPrecipitationResult::FIELDS.to_vec(),
+        "eos.saturate_with_water" => azoth_eos::results::SaturateWithWaterResult::FIELDS.to_vec(),
         "eos.scale_saturation_ratio" => azoth_eos::results::ScaleSaturationRatioResult::FIELDS.to_vec(),
         "eos.schwartzentruber_alpha" => azoth_eos::results::SchwartzentruberAlphaResult::FIELDS.to_vec(),
         "eos.siddiqi_lucas_diffusivity" => azoth_eos::results::SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),

@@ -3227,6 +3227,48 @@ impl CalcResult for CalcIonicCompositionResult {
     }
 }
 
+/// Result of `eos.saturate_with_water`.
+///
+/// The phases reported are the water-saturated non-aqueous ones: a residual incipient aqueous
+/// phase is dropped, as the class's `removePhase` drops it, and the fractions are renormalised
+/// over what is left. `aqueous_present` is whether flooding found a free aqueous phase at all -
+/// `false` means the feed was returned unchanged and `warnings` says why.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaturateWithWaterResult {
+    /// The overall water mole fraction at saturation, which is what the class's own test
+    /// asserts on `getComponent("water").getz()`.
+    pub water_mole_fraction: f64,
+    /// How many phases are reported after the residual aqueous phase is dropped.
+    pub phase_count: u32,
+    /// The mole fraction of the fluid in each reported phase, summing to one.
+    pub phase_fractions: Vec<f64>,
+    /// The composition of each reported phase, one vector per phase, each summing to one.
+    pub x: Vec<Vec<f64>>,
+    /// The compressibility `Z = PV/RT` of each reported phase.
+    pub z_factor: Vec<f64>,
+    /// Whether the flood produced a free aqueous phase.
+    pub aqueous_present: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SaturateWithWaterResult {
+    const CALC_ID: &'static str = "eos.saturate_with_water";
+    const FIELDS: &'static [&'static str] = &[
+        "water_mole_fraction",
+        "phase_count",
+        "phase_fractions",
+        "x",
+        "z_factor",
+        "aqueous_present",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.furst_electrolyte_mod2004_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FurstElectrolyteMod2004PhaseResult {

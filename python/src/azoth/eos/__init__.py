@@ -170,6 +170,7 @@ from azoth.core.result import (
     RkDepartureResult,
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
+    SaturateWithWaterResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
@@ -340,6 +341,7 @@ __all__ = [
     "rk_departure",
     "saft_vr_mie_phase",
     "salt_precipitation",
+    "saturate_with_water",
     "scale_saturation_ratio",
     "siddiqi_lucas_diffusivity",
     "solid_fugacity",
@@ -435,6 +437,7 @@ _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
 _CALC_IONIC_COMPOSITION = "eos.calc_ionic_composition"
 _CO2_BRINE_PHASE_EQUILIBRIUM = "eos.co2_brine_phase_equilibrium"
+_SATURATE_WITH_WATER = "eos.saturate_with_water"
 _ELECTROLYTE_CPA_STATOIL_PHASE = "eos.electrolyte_cpa_statoil_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
 _FURST_ELECTROLYTE_MOD2004_PHASE = "eos.furst_electrolyte_mod2004_phase"
@@ -3771,6 +3774,32 @@ def co2_brine_phase_equilibrium(
     """
     return resolve(_CO2_BRINE_PHASE_EQUILIBRIUM)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, moles=moles
+    )
+
+
+def saturate_with_water(
+    components: list[str],
+    moles: list[float],
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+    associating: bool = False,
+) -> SaturateWithWaterResult:
+    """The water a fluid holds when it is water-saturated.
+
+    NeqSim's ``SaturateWithWater``: flood the feed with water, flash, and read the water
+    dissolved in the non-aqueous phases - a fluid coexisting with a free aqueous phase is, by
+    definition, saturated - then reset the overall water to that amount and re-flash. **A feed
+    with no water is given a hundredth of a feed of it first**, as the class does.
+
+    Raises:
+        InvalidInputError: if ``moles`` is not one entry per component or is not a feed.
+        PropertyUnavailableError: if a name is not in the databank.
+
+    See :func:`azoth.eos.reference.saturate_with_water`.
+    """
+    return resolve(_SATURATE_WITH_WATER)(  # type: ignore[no-any-return]
+        components=components, moles=moles, T=T, P=P, eos=eos, associating=associating
     )
 
 

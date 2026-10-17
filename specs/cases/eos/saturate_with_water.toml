@@ -1,0 +1,35 @@
+model = "eos.saturate_with_water"
+
+# One of `SaturateWithWaterTest`'s four states. **The other three are not here:**
+#
+# * `testRun` builds a `SystemSrkCPAstatoil` with an `addPlusFraction("C6", ...)`
+#   pseudo-component, and this library has no TBP fraction to build.
+# * `testRun2` and `testRun3` are CPA fluids, and the operation is a *multiphase* flash:
+#   `eos.tp_multiflash` carries no associating case anywhere in this tree, so the state is
+#   refused rather than answered. Measured against those two assertions the port is 19% high
+#   on one and 15% low on the other, in opposite directions - the shape of a wrong fluid, not
+#   a loose one.
+#
+# **The expected value is the source's own published assertion**, not a capture: the test
+# holds `getComponent("water").getz()` to `1e-5`, and `brine_probe.tsv`'s `saturate_with_water
+# PR methane n-heptane ...` block agrees to 1e-11. The feed is water-free, which is the state
+# the class's own `addComponent("water", ...)` step exists for.
+
+[[cases]]
+id = "the_methane_heptane_pr_oil_at_20_c"
+tolerance = 1e-05
+source = """`SaturateWithWaterTest.testRun4`: `SystemPrEos` at 293.15 K and 150 bara, methane 2 /
+n-heptane 75 mol, classic mixing, **no water in the feed**. The class adds a hundredth of a
+feed of water and then floods with a feed's worth, and the saturated oil holds
+`2.4301370485671443e-4` of it. The probe's own block for the same fluid reads
+`2.43013704366255e-4`, five parts in a thousand away because the probe flashes before
+saturating; the test's number is the source's own."""
+[cases.inputs]
+components = ["methane", "n-heptane"]
+T = 293.15
+P = 15000000.0
+moles = [2.0, 75.0]
+eos = "pr"
+associating = false
+[cases.expected]
+water_mole_fraction = 2.4301370485671443e-4

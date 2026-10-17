@@ -37,6 +37,14 @@ pub enum WarningCode {
     /// out-of-range number, because at the trivial solution the number is not out of
     /// range - it is undetermined.
     TrivialSolution,
+    /// The operation could not be carried out on the state it was given, and the input state
+    /// was returned instead.
+    ///
+    /// Distinct from [`Self::SolverNotConverged`], which returns an unconverged answer: here
+    /// there is no answer, and the result is the caller's own state. The caller has to be
+    /// able to tell the two apart, because a number that was never computed is not a number
+    /// to trust less - it is not a number at all.
+    FallbackToInput,
 }
 
 impl WarningCode {
@@ -51,6 +59,7 @@ impl WarningCode {
             Self::TransitionalFlow => "TRANSITIONAL_FLOW",
             Self::SolverNotConverged => "SOLVER_NOT_CONVERGED",
             Self::TrivialSolution => "TRIVIAL_SOLUTION",
+            Self::FallbackToInput => "FALLBACK_TO_INPUT",
         }
     }
 
@@ -63,6 +72,7 @@ impl WarningCode {
             Self::TransitionalFlow,
             Self::SolverNotConverged,
             Self::TrivialSolution,
+            Self::FallbackToInput,
         ]
     }
 

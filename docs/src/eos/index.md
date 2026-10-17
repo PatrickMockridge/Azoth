@@ -133,6 +133,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.rachford_rice`](./rachford_rice.md) | `rachford_rice_nielsen_2023` | Nielsen, L. (2023) |
 | [`eos.saft_vr_mie_phase`](./saft_vr_mie_phase.md) | `direct composition` | Lafitte, T. et al. (2013) |
 | [`eos.salt_precipitation`](./salt_precipitation.md) | `removal_extent_bisection` | NeqSim master `MultiSaltPrecipitation` |
+| [`eos.saturate_with_water`](./saturate_with_water.md) | `water_flood_then_dissolved_amount` | NeqSim master `SaturateWithWater` |
 | [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim master `SystemSoreideWhitson` |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |

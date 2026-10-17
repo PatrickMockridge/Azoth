@@ -167,6 +167,7 @@ from azoth.core.result import (
     RootStructure,
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
+    SaturateWithWaterResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SeparatorResult,
@@ -421,6 +422,7 @@ __all__ = [
     "rk_departure",
     "saft_vr_mie_phase",
     "salt_precipitation",
+    "saturate_with_water",
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
@@ -2739,6 +2741,28 @@ def salt_precipitation(components: list[str], salt: str, T: Q, P: Q, z: list[flo
         final_saturation_ratio=result.final_saturation_ratio,
         iterations=result.iterations,
         extent_of_maximum=result.extent_of_maximum,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def saturate_with_water(components: list[str], moles: list[float], T: Q, P: Q, eos: str='srk', associating: bool=False) -> SaturateWithWaterResult:
+    """``eos.saturate_with_water``, computed in Rust."""
+    spec = _models_gen.model("eos.saturate_with_water")
+    result = _core.saturate_with_water(
+        list(components),
+        [_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        eos,
+        associating,
+    )
+    return SaturateWithWaterResult(
+        water_mole_fraction=result.water_mole_fraction,
+        phase_count=result.phase_count,
+        phase_fractions=tuple(result.phase_fractions),
+        x=tuple(tuple(row) for row in result.x),
+        z_factor=tuple(result.z_factor),
+        aqueous_present=result.aqueous_present,
         warnings=_warnings(result.warnings),
     )
 

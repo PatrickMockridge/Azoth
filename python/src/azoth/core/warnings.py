@@ -50,6 +50,11 @@ class WarningCode(StrEnum):
     #: *did* converge, and what it converged to is not a phase split.
     TRIVIAL_SOLUTION = "TRIVIAL_SOLUTION"
 
+    #: The operation could not be carried out on the state it was given, and the
+    #: input state was returned instead. Distinct from ``SOLVER_NOT_CONVERGED``,
+    #: which returns an unconverged answer: here there is no answer at all.
+    FALLBACK_TO_INPUT = "FALLBACK_TO_INPUT"
+
 
 @dataclass(frozen=True, slots=True)
 class Warning:

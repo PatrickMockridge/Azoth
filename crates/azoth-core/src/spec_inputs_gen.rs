@@ -115,6 +115,7 @@
 //!   - specs/calcs/eos/rk_departure.toml
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
+//!   - specs/models/eos/saturate_with_water.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
@@ -940,6 +941,9 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.salt_precipitation", "z", "dimensionless"),
     ("eos.salt_precipitation", "T", "thermodynamic_temperature"),
     ("eos.salt_precipitation", "P", "pressure"),
+    ("eos.saturate_with_water", "moles", "amount"),
+    ("eos.saturate_with_water", "T", "thermodynamic_temperature"),
+    ("eos.saturate_with_water", "P", "pressure"),
     ("eos.scale_saturation_ratio", "x1", "dimensionless"),
     ("eos.scale_saturation_ratio", "x2", "dimensionless"),
     ("eos.scale_saturation_ratio", "x_water", "dimensionless"),

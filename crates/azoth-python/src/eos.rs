@@ -1359,6 +1359,36 @@ pub fn aqueous_viscosity(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The water a fluid holds when it is water-saturated.
+///
+/// Hand-written rather than generated: the `eos` and `associating` arguments are the fluid's,
+/// and the generated wrapper's rule is that the kernel's names are the spec's inputs - which
+/// they are, but the enum's string is a boundary object the generator leaves to the model.
+#[pyfunction]
+#[pyo3(signature = (components, moles, T, P, eos = "srk", associating = false))]
+#[pyo3(text_signature = "(components, moles, T, P, eos = \"srk\", associating = False)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn saturate_with_water(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    T: f64,
+    P: f64,
+    eos: &str,
+    associating: bool,
+) -> PyResult<crate::transport_gen::PySaturateWithWaterResult> {
+    azoth_eos::saturate_with_water(
+        &components,
+        &moles,
+        kelvins(T),
+        pascals(P),
+        eos,
+        associating,
+    )
+    .map(|r| crate::transport_gen::PySaturateWithWaterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Every model in the workspace, across every namespace that has one.
 ///
 /// The table is generated into the crate that owns its namespace, so a second

@@ -2613,6 +2613,34 @@ class SaltPrecipitationResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SaturateWithWaterResult(_HasWarnings):
+    """Result of ``eos.saturate_with_water``."""
+
+    CALC_ID: ClassVar[str] = "eos.saturate_with_water"
+
+    #: the overall water mole fraction at saturation: the water dissolved in every non-aqueous phase, over the composition the correction produces. **This is what the source's own test asserts**, on the system's `getz()`.
+    water_mole_fraction: float
+
+    #: how many phases are reported, after a residual incipient aqueous phase is dropped.
+    phase_count: int
+
+    #: the mole fraction of the fluid in each reported phase, renormalised over the phases that remain. Sums to one.
+    phase_fractions: tuple[float, ...]
+
+    #: the composition of each reported phase, each row summing to one.
+    x: tuple[tuple[float, ...], ...]
+
+    #: the compressibility `Z = PV/RT` of each reported phase.
+    z_factor: tuple[float, ...]
+
+    #: whether flooding produced a free aqueous phase. **`false` means the feed was returned unchanged**, and the warnings say which recovery path fired.
+    aqueous_present: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleSaturationRatioResult(_HasWarnings):
     """Result of ``eos.scale_saturation_ratio``."""
 

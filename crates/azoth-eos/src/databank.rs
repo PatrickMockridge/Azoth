@@ -3000,15 +3000,17 @@ pub fn associating_mixture_of(
     let family = AssociationCubic::of(cubic);
     let (mixture, ideal_gas) = mixture_of(names, cubic, overlay)?;
     let mixture = mixture
-        // **Constant, and that is a divergence this model states.** NeqSim's rule 10 reads
-        // `cpakijT_SRK` beside `cpakij_SRK` and adds it as `kij + kijT * T` for the
-        // `PhaseSrkCPA` family too, so a fluid whose pair carries a coefficient is a
-        // temperature-dependent rule there and this. `eos.electrolyte_cpa_statoil_phase`
-        // reads it - that phase is what this chunk needed it for - and the CPA family is
-        // owed it, because carrying it means a `T * dkij/dT` on every departure function and
-        // the Python half's derivative surface does not have one.
-        .with_mixing_rule(MixingRule::Classic {
+        // **The rule is temperature-dependent, not constant.** NeqSim's rule 10 reads
+        // `cpakijT_SRK` beside `cpakij_SRK` and adds them as `kij + kijT * T`, and the
+        // coefficient is not small: on `water`/`methane` it is `0.0026055` against a constant
+        // of `-0.827413423`, so the pair's parameter crosses zero inside the range a
+        // produced-water fluid is computed at - which is what the saturation cases measure.
+        .with_mixing_rule(MixingRule::ClassicT2 {
             kij: cpa_kij(names, family, overlay),
+            kij_t: cpa_kij_t(names, family),
+            // `KIJTType` is `0` on every in-scope pair, which is the linear form. The `1/T`
+            // form has no pair to exercise it, so the selector is not carried.
+            inverse_temperature: vec![false; names.len() * names.len()],
         })
         .with_cubic(cubic)
         .with_association()?

@@ -1209,6 +1209,16 @@ class SaltPrecipitationResult:
     warnings: list[Warning]
 
 @final
+class SaturateWithWaterResult:
+    water_mole_fraction: float
+    phase_count: int
+    phase_fractions: list[float]
+    x: list[list[float]]
+    z_factor: list[float]
+    aqueous_present: bool
+    warnings: list[Warning]
+
+@final
 class ScaleSaturationRatioResult:
     saturation_ratio: float
     ion_activity_product: float
@@ -3188,6 +3198,14 @@ def salt_precipitation(
     T: float,
     P: float,
 ) -> SaltPrecipitationResult: ...
+def saturate_with_water(
+    components: list[str],
+    moles: list[float],
+    T: float,
+    P: float,
+    eos: str,
+    associating: bool | None = None,
+) -> SaturateWithWaterResult: ...
 def scale_saturation_ratio(
     salt: str,
     x1: float,

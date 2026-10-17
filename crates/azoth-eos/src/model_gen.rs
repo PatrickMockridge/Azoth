@@ -62,6 +62,7 @@
 //!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
+//!   - specs/models/eos/saturate_with_water.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
@@ -8151,6 +8152,80 @@ pub static SALT_PRECIPITATION_SPEC: ModelSpec = ModelSpec {
     cases: SALT_PRECIPITATION_CASES,
 };
 
+static SATURATE_WITH_WATER_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a non-positive temperature is not a state the cubic can be evaluated at",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a non-positive pressure is not a state the cubic can be evaluated at",
+        },
+    },
+];
+
+static SATURATE_WITH_WATER_CASES: &[TestCase] = &[TestCase {
+    id: "the_methane_heptane_pr_oil_at_20_c",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 293.15), ("P", 15000000.0)],
+    flags: &[("associating", false)],
+    lists: &[("components", &["methane", "n-heptane"])],
+    strings: &[("eos", "pr")],
+    vectors: &[("moles", &[2.0, 75.0])],
+    matrices: &[],
+    expected: &[("water_mole_fraction", 0.00024301370485671443)],
+    expected_vectors: &[],
+    expected_strings: &[],
+    records: &[],
+    expected_records: &[],
+}];
+
+static SATURATE_WITH_WATER_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "water_flood_then_dissolved_amount",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 1,
+    bracket: None,
+    initialisation: Some("feed_plus_one_feed_of_water"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.saturate_with_water`.
+pub static SATURATE_WITH_WATER_SPEC: ModelSpec = ModelSpec {
+    id: "eos.saturate_with_water",
+    kind: "procedure",
+    algorithm: Some(&SATURATE_WITH_WATER_ALGORITHM),
+    checks: SATURATE_WITH_WATER_CHECKS,
+    cases: SATURATE_WITH_WATER_CASES,
+};
+
 static SOREIDE_WHITSON_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -11453,6 +11528,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &RACHFORD_RICE_SPEC,
     &SAFT_VR_MIE_PHASE_SPEC,
     &SALT_PRECIPITATION_SPEC,
+    &SATURATE_WITH_WATER_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,

@@ -647,6 +647,10 @@ fn map_warning(warning: &Warning) -> OutWarning {
         azoth_core::warning::WarningCode::TransitionalFlow => ("MODEL_LIMITATION", "INFO"),
         azoth_core::warning::WarningCode::SolverNotConverged => ("CONVERGENCE_WARNING", "WARNING"),
         azoth_core::warning::WarningCode::TrivialSolution => ("TWO_PHASE_UNCERTAINTY", "CAUTION"),
+        // The model could not carry the operation out and returned the input state, so the
+        // answer is an absence rather than a number to trust less - a `WARNING` and not the
+        // `CAUTION` the two-phase codes carry.
+        azoth_core::warning::WarningCode::FallbackToInput => ("MODEL_LIMITATION", "WARNING"),
     };
     OutWarning::new(
         code,
