@@ -784,7 +784,7 @@ That was the last hole P12 named, and it is the one that let `specs/flowsheets/d
 `OK` for as long as the file existed - so the checker's own promise, that a flowsheet printing
 `OK` is one an executor can consume, was false. `Param` now carries `required`, as
 [the process schema](docs/src/architecture/process-schema.md) states, and the flag's two sources
-agree on all twenty-six runnable entries - which `tests/palette.rs` re-checks on every run.
+agree on all twenty-eight runnable entries - which `tests/palette.rs` re-checks on every run.
 
 **What is named as not built, with the class that would close each**: Broyden through
 `BroydenAccelerator`, for the measured reason above. The tier's own acceptance is the NeqSim
