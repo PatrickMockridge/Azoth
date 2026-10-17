@@ -11,6 +11,7 @@ assumptions = [
     "the propagation is bounded by `2 * dependent + 1` passes, and a component it cannot reach takes NeqSim's seed - the component's Gibbs energy of formation, raw and not negated - after which the propagation continues from it. A component with no databank row is refused rather than seeded with zero.",
     "**a basis narrower than the reaction count is an answer, not an error.** `calcReferencePotentials` returns null there and `calcChemRefPot` reads that as every component's Gibbs energy of formation; `rank` reports the rank it fell short of and `independent` is all zeros.",
     "the rank test is exact only over integers. A non-integral coefficient is refused rather than rounded, because a rounded rank is an approximation the caller cannot tell from the answer.",
+    "**where a name is duplicated, the `usereaction` row answers.** `MDEAprot` has an `Austgen1989` row and a `Huttenhuis2005` row; this id keeps the enabled one, and `reactions.equilibrium_constant` keeps the first - 2.76 apart in `ln K` at 298.15 K.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionList` is the port source: `removeJunkReactions`, `removeDependentReactions` and `calcReferencePotentials`.",

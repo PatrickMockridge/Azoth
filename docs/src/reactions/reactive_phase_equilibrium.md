@@ -87,6 +87,7 @@ not an equation, and both implementations read it from here.
 - **the reaction machinery changes the phase split.** A CO2-water fluid at 400 K and 1.01325 bar is one gas phase without `chemicalReactionInit()` and gas plus aqueous with it, so a caller that flashes first classifies a different phase.
 - **the reaction set is fixed by the substances and not by the phase.** The skipped fluid still carries six reactive components: `removeJunkReactions` reads component names, so a gas with no aqueous phase has a reaction set and nowhere to solve it.
 - **the concentration basis is an input and the other two facts are derived.** The solvent's mass is `sum(n_j M_j)` over the `solvent`-reference components and the mask is which those are, both properties of `moles` and the component databank - so a caller states the basis and nothing else.
+- **a duplicated element name resolves to the later block.** `element.csv` lists `DEACOO-` twice and the matrix inserts by element symbol, so the second block's `H 12` and nitrogen win. The other two reactive ids read the same table.
 
 ## Cases
 

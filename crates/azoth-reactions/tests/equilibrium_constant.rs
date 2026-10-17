@@ -12,8 +12,8 @@
 
 use azoth_core::spec::TestCase;
 use azoth_core::units::kelvins;
-use azoth_reactions::databank::ReactionDataSource;
-use azoth_reactions::equilibrium_constant::equilibrium_constant;
+use azoth_reactions::databank::{ReactionDataSource, reactions};
+use azoth_reactions::equilibrium_constant::{equilibrium_constant, ln_k_of};
 use azoth_reactions::spec_gen;
 use azoth_test_support as common;
 
@@ -172,5 +172,43 @@ fn a_dormant_row_is_answered() {
     assert!(
         result.ln_k.is_finite(),
         "a finite answer for a row the reaction set will not load: {result:?}"
+    );
+}
+
+/// **The table carries `MDEAprot` twice, and the two fits are about 2.76 apart at 298 K.**
+///
+/// This is the premise behind `ln_k_of`. `equilibrium_constant` selects on the name alone and
+/// answers the *first* row - which for this name is the disabled Austgen fit - while the
+/// reaction set loads the enabled Huttenhuis row. A caller that has already selected a row has
+/// to evaluate *that* row: `reactive_phase_equilibrium`'s certification filters on `usereaction`
+/// and then measures the kept row's species against a constant, so a by-name relookup measures
+/// one fit against another's `ln K` - 2.76, against a `2e-6` tolerance.
+#[test]
+fn a_duplicated_reaction_name_carries_two_different_fits() {
+    let rows: Vec<_> = reactions(ReactionDataSource::Standard)
+        .expect("the table loads")
+        .into_iter()
+        .filter(|row| row.name == "MDEAprot")
+        .collect();
+    assert_eq!(rows.len(), 2, "the table carries MDEAprot twice");
+    let first = &rows[0];
+    let enabled = rows
+        .iter()
+        .find(|row| row.use_reaction)
+        .expect("one of the two rows is enabled");
+    assert!(!first.use_reaction, "the first row is the disabled one");
+
+    let t = kelvins(298.15);
+    let by_name = equilibrium_constant(ReactionDataSource::Standard, "MDEAprot", t)
+        .expect("the name resolves")
+        .ln_k;
+    assert!(
+        (by_name - ln_k_of(first, t)).abs() < 1e-12,
+        "the by-name lookup answers the first row"
+    );
+    assert!(
+        (ln_k_of(enabled, t) - by_name).abs() > 2.5,
+        "the enabled fit is a different constant: {} against {by_name}",
+        ln_k_of(enabled, t)
     );
 }

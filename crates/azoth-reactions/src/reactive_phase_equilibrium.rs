@@ -52,7 +52,7 @@ use crate::chemical_equilibrium::{ChemicalEquilibriumResult, MIN_MOLES, chemical
 use crate::databank::{
     ReactionDataSource, element_composition, ionic_charge, reactions, stoichiometry,
 };
-use crate::equilibrium_constant::{GAS_CONSTANT, equilibrium_constant};
+use crate::equilibrium_constant::{GAS_CONSTANT, ln_k_of};
 use crate::model_gen;
 use crate::reactive_phase::is_reactive_phase;
 use crate::reference_potentials::reference_potentials;
@@ -244,8 +244,11 @@ fn certify(
         if !side_present(true) && !side_present(false) {
             continue;
         }
-        let ln_k =
-            equilibrium_constant(source, &row.name, azoth_core::units::kelvins(temperature))?.ln_k;
+        // **The row's own constant, not a lookup by name.** `reaction()` answers the *first* row
+        // where a name is duplicated, so relooking the name up certifies this row's species
+        // against another fit's `ln K` - about 2.76 apart for `MDEAprot` at 298 K, against a
+        // 2e-6 tolerance, which makes a converged fluid uncertifiable.
+        let ln_k = ln_k_of(&row, azoth_core::units::kelvins(temperature));
         let mut quotient = 0.0_f64;
         for (name, coefficient) in &species {
             let index = components

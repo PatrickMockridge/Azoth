@@ -23,7 +23,7 @@
 use azoth_core::units::{MolarEnergy, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::databank::{ReactionDataSource, reaction};
+use crate::databank::{ReactionDataSource, ReactionRow, reaction};
 use crate::spec_gen;
 
 /// The gas constant `ThermodynamicConstantsInterface` fixes, in J/(mol*K).
@@ -101,6 +101,20 @@ impl CalcResult for EquilibriumConstantResult {
 /// assert!((r.reaction_heat.value - 9199.128566216192).abs() < 1e-6);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
+/// **The row's own `ln K`, from the coefficients it was loaded with.**
+///
+/// **Not a lookup by name.** The table carries a name twice where two sources fitted the same
+/// reaction - `MDEAprot` has an Austgen row and a Huttenhuis row whose `ln K` differs by about
+/// 2.76 at 298 K - and `reaction()` answers the first. A caller that has already selected a row
+/// has to evaluate *that* row, or it certifies one fit's species against another fit's constant.
+/// `reference_potentials` avoids this by never relooking the name up; this is the same answer
+/// for the code that needs the constant itself.
+pub fn ln_k_of(row: &ReactionRow, temperature: ThermodynamicTemperature) -> f64 {
+    let [k1, k2, k3, k4] = row.coefficients;
+    let t = temperature.value;
+    k1 + k2 / t + k3 * t.ln() + k4 * t
+}
+
 pub fn equilibrium_constant(
     source: ReactionDataSource,
     reaction_name: &str,
@@ -129,9 +143,9 @@ pub fn equilibrium_constant(
         ),
     })?;
 
-    let [k1, k2, k3, k4] = row.coefficients;
+    let [_, k2, k3, k4] = row.coefficients;
 
-    let ln_k = k1 + k2 / t + k3 * t.ln() + k4 * t;
+    let ln_k = ln_k_of(&row, temperature);
     let k = ln_k.exp();
     let ln_k_derivative = -k2 / (t * t) + k3 / t + k4;
     let reaction_heat = joules_per_mole(ln_k_derivative * t * t * GAS_CONSTANT);

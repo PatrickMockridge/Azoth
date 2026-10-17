@@ -2285,7 +2285,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'reactions.equilibrium_constant',
         "name": 'Equilibrium constant of one reaction',
         "spec": {'path': 'specs/calcs/reactions/equilibrium_constant.toml', 'sha256': '58d7aa508cd9d577710504be302c15c5939e52e8b1e277f3795d2dcbc3f31cbe'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/equilibrium_constant.py', 'sha256': 'a8ddc43a2e15fbc3cc4682a7f2321821a58e5f58ceffc6c057d648a046727686'}, {'path': 'crates/azoth-reactions/src/equilibrium_constant.rs', 'sha256': 'd5799b484ff26fa8ee42ac959886c61a2617c159ee62202bb9df9c6b4d9406ae'}],
+        "code": [{'path': 'python/src/azoth/reactions/reference/equilibrium_constant.py', 'sha256': 'a8ddc43a2e15fbc3cc4682a7f2321821a58e5f58ceffc6c057d648a046727686'}, {'path': 'crates/azoth-reactions/src/equilibrium_constant.rs', 'sha256': '20a9bb06ee6fb8a2b2d0c394b3757a1ece3573606b9da973b7fd0684030c6842'}],
         "source": 'NeqSim master `ChemicalReaction`',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2339,8 +2339,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_phase_equilibrium': {
         "calc_id": 'reactions.reactive_phase_equilibrium',
         "name": 'Reactive equilibrium as an operation on one phase',
-        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': '7d4ec315617cf2566c186360f2790da163d6a475f41119a114084e736b3478a2'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '68437c77b569c7168185616ab50ee666927246cb796f96176ed5df98d55569f9'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': 'f329137da46bef13a630e5b687bb684191a762affa2b69426cf18b8519e8e75a'}],
+        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': '9d786732a2fe6232bbbc7078733f64c3f98ee3956ec626804917d242ce07ec07'},
+        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '68437c77b569c7168185616ab50ee666927246cb796f96176ed5df98d55569f9'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': '879f3a7b9c6ae3902228b80479cddd4840f5e872d0cb55d940e91286970a8c2d'}],
         "source": 'NeqSim master `ChemicalReactionOperations`',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2361,7 +2361,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reference_potentials': {
         "calc_id": 'reactions.reference_potentials',
         "name": 'Reference potentials from an independent reaction basis',
-        "spec": {'path': 'specs/models/reactions/reference_potentials.toml', 'sha256': '2faed226f0c8017bb8fd4efc75811e225bd9f85fa3d95b93ffd2e20f76e8ff0b'},
+        "spec": {'path': 'specs/models/reactions/reference_potentials.toml', 'sha256': 'ad29670f26f8abc283f0ba5121ff1abfa57d72b606a73ef4368d5fae6a64178b'},
         "code": [{'path': 'python/src/azoth/reactions/reference/reference_potentials.py', 'sha256': 'f9fa213cb17931600804b704aba47b60fa59595a9a3dff51ea5b23a68842e5c4'}, {'path': 'crates/azoth-reactions/src/reference_potentials.rs', 'sha256': 'e32d623200a6bccfb3ff32dec35a8b6693ebd246d8cadc7492958a4a9d749e35'}],
         "source": 'NeqSim master `ChemicalReactionList`',
         "verification": 'partially_verified',
