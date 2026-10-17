@@ -204,6 +204,7 @@ jobs:
       - name: the scoped Rust set
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            ${{ inputs.mode == 'full' && '--full' || '' }} \
             --no-gate --job rust-test > "$RUNNER_TEMP/scope.sh"
           cat "$RUNNER_TEMP/scope.sh"
           bash -e "$RUNNER_TEMP/scope.sh"
@@ -284,6 +285,7 @@ jobs:
           PYTHONPATH: ""
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            ${{ inputs.mode == 'full' && '--full' || '' }} \
             --no-gate --job python-test > "$RUNNER_TEMP/scope.sh"
           cat "$RUNNER_TEMP/scope.sh"
           bash -e "$RUNNER_TEMP/scope.sh"
@@ -294,6 +296,7 @@ jobs:
           PYTHONPATH: ""
         run: |
           python tools/test_scope.py --base "${{ needs.scope.outputs.base }}" \
+            ${{ inputs.mode == 'full' && '--full' || '' }} \
             --job python-test --verify-selection
       # **And the tests that ran executed the changed lines.** `--verify-selection` proves the
       # targets collect something; a target can collect forty tests and touch none of the code

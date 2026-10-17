@@ -319,3 +319,46 @@ def test_a_workflow_writes_the_command_list_outside_the_tree() -> None:
         for number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
             if "scope.sh" in line and not line.lstrip().startswith("#"):
                 assert "$RUNNER_TEMP/scope.sh" in line, f"{workflow.name}:{number}: {line}"
+
+
+# ------------------------------------------------- a full run is a property of the commands
+
+
+def test_full_emits_the_whole_surface_and_not_a_diff() -> None:
+    """**`mode: full` used to change only the plan.**
+
+    It marked every job `true`, so every job started - and each one then ran `--job <name>`
+    against the diff. On a schedule `github.event.before` is empty, so the base became `HEAD~1`:
+    the nightly ran four and a half minutes, executed no Python tests, and failed at its coverage
+    step with `No data to report`. A job starting is not a test running, which is the same
+    distinction the whole tool exists to hold.
+    """
+    module = tool()
+    commands = module.full_surface()
+
+    def of(job: str) -> str:
+        return " ".join(entry.command for entry in commands if job in module.jobs_of(entry))
+
+    # A pytest `Command` carries its *target*, and `render` adds the word `pytest`, so this
+    # compares targets rather than rendered lines.
+    python = [entry.command for entry in commands if "python-test" in module.jobs_of(entry)]
+    assert module.TESTS in python, "the whole suite, not the diff's corner"
+    assert "skills" in python
+    assert any(command.endswith("/maturin develop") for command in python), (
+        "the extension both backends need"
+    )
+    rust = of("rust-test")
+    assert "cargo test --workspace --all-targets" in rust
+    assert "cargo test --workspace --doc" in rust
+    assert "cargo clippy --workspace" in rust
+    drift = [entry for entry in commands if "docs-drift" in module.jobs_of(entry)]
+    assert drift, "the generator sweep is what the drift job runs"
+    assert all("gen_" in entry.command and "--check" in entry.command for entry in drift)
+
+
+def test_the_nightly_lane_renders_the_same_list() -> None:
+    """One list, so `--full --job x` and the nightly lane cannot disagree."""
+    module = tool()
+    rendered = module.nightly(gate=False)
+    assert len(rendered) == len(module.full_surface())
+    assert any("pytest python/tests" in line for line in rendered)

@@ -1348,15 +1348,19 @@ def audit() -> int:
     return 0
 
 
-def nightly(gate: bool) -> list[str]:
-    """**The test half of the full surface**, as commands.
+def full_surface() -> list[Command]:
+    """**Every command a full run executes, whatever the diff says.**
 
-    `.github/workflows/nightly.yml` calls `ci.yml` with `mode: full` rather than running a
-    command list, because eleven of those twelve jobs are not commands this tool can express -
-    the Lean build, the front end, the wheel, the docs. So this is what the two *test* jobs run
-    when nothing scopes them, and what a developer types to reproduce them.
+    `mode: full` used to change only the *plan*: every job was marked `true`, and each job then
+    ran `--job <name>` against the diff. On a schedule `github.event.before` is empty, so the
+    base is `HEAD~1` - one commit - and the nightly ran four and a half minutes, executed no
+    Python tests at all, and failed at its coverage step with `No data to report`. **A full run
+    is a property of the commands, not of a flag that decides whether a job starts.**
+
+    The job each command belongs to is read off the command by `jobs_of`, so this list carries no
+    second copy of that mapping - the nightly lane and `--full --job <name>` are the same list.
     """
-    entries: list[Command] = [
+    return [
         Command("the whole Rust workspace", CARGO, "cargo test --workspace --all-targets"),
         Command(
             "its doc tests, which `--all-targets` cannot carry",
@@ -1371,8 +1375,13 @@ def nightly(gate: bool) -> list[str]:
         Command("the extension both backends need", SCRIPT, f"{venv_bin()}/maturin develop"),
         Command("the whole Python suite", PYTEST, TESTS),
         Command("the skills' smoke checks", PYTEST, "skills"),
+        *generator_sweep(),
     ]
-    return [render(entry, "nightly", gate) for entry in entries + generator_sweep()]
+
+
+def nightly(gate: bool) -> list[str]:
+    """The full surface, rendered: what a developer types to reproduce the nightly by hand."""
+    return [render(entry, "nightly", gate) for entry in full_surface()]
 
 
 def main() -> int:
@@ -1412,7 +1421,7 @@ def main() -> int:
     parser.add_argument(
         "--full",
         action="store_true",
-        help="with --plan: every job runs, whatever the diff reaches",
+        help="the whole command set rather than the diff's; with --plan, every job runs",
     )
     args = parser.parse_args()
 
@@ -1424,12 +1433,22 @@ def main() -> int:
             print(line)
         return 0
 
-    paths = changed_paths(args)
-    commands, unclaimed = scope(paths, crate_edges())
+    if args.full:
+        # **`--full` is the command set, not a permission for a job to start.** `--job` then
+        # filters this list, so `--full --job python-test` is the whole Python surface and not
+        # the diff's corner of it.
+        paths: list[str] = []
+        commands, unclaimed = full_surface(), []
+    else:
+        paths = changed_paths(args)
+        commands, unclaimed = scope(paths, crate_edges())
     if args.explain:
-        print(f"# {len(paths)} path(s) changed against {args.base}")
-        for path in sorted(paths):
-            print(f"#   {path}")
+        if args.full:
+            print("# the full surface, not the diff")
+        else:
+            print(f"# {len(paths)} path(s) changed against {args.base}")
+            for path in sorted(paths):
+                print(f"#   {path}")
     if unclaimed:
         # **To stderr, because the caller may be redirecting stdout into a file.** CI writes the
         # command list to one, and the shell creates that file before this runs - so it is an
@@ -1476,8 +1495,11 @@ def main() -> int:
 
     sweeps = marked_sweeps(commands)
     if sweeps:
-        verb = "has deselected" if args.lane == "iterate" else "reaches"
-        print(f"# this diff {verb} {len(sweeps)} marked slow sweep(s):")
+        if args.full:
+            print(f"# the full surface runs {len(sweeps)} marked slow sweep(s):")
+        else:
+            verb = "has deselected" if args.lane == "iterate" else "reaches"
+            print(f"# this diff {verb} {len(sweeps)} marked slow sweep(s):")
         for sweep in sweeps:
             print(f"#   {sweep}")
 
