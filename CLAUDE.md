@@ -24,7 +24,10 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   cannot place is an error rather than a shrug, and so is a path a rule *claims and then
   places nowhere*. `--explain` says why each command is there; `--lane iterate` deselects the
   `slow_sweep`-marked global sweeps, for the inner loop, and both lanes name the ones they
-  reach.
+  reach. **It also runs what CI runs whatever the diff says** — the five unconditional jobs, from
+  `CLOSE_OUT`, so the local run is the push rather than the push's diff-shaped half — and the
+  generator checks run first, because a stale generated file is minutes to find and an hour to be
+  told about by a test.
 - **Three checks say whether the scoped set is worth trusting.** `--audit` walks every
   tracked path through the table, so the day a directory is added and no rule knows it the
   gate says so; `--verify-selection` collects every emitted target and refuses one that

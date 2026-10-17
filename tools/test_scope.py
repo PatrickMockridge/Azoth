@@ -120,6 +120,46 @@ ALWAYS_JOBS = (
 )
 
 
+#: **What CI runs on every push, as commands a local `--run` can execute.**
+#:
+#: `--run` emits only what the diff reaches, but the five `ALWAYS_JOBS` run whatever it says -
+#: and until this table existed they contributed no local command at all. A change could pass
+#: `--run` and fail `python-lint` on the push; three mypy errors shipped through exactly that gap.
+#:
+#: The `gen_*.py --check` lines in `spec-validate` are **not** repeated here - `generator_sweep()`
+#: already reads them out of the workflow. The table is hand-kept because the commands are, and the
+#: test beside it reads `ci.yml` and refuses a step in either direction, the same hand-list-plus-
+#: guard shape `generator_sweep()` and `discovered_namespaces()` use.
+CLOSE_OUT: tuple[Command, ...] = (
+    Command("the schemas and the semantic rules", SCRIPT, "python tools/spec_lint.py"),
+    Command("the prose standard", SCRIPT, "python tools/prose_lint.py"),
+    Command("duplicate JSON keys", SCRIPT, "python tools/check_json_keys.py"),
+    Command("the numerical-safety rule", SCRIPT, "python tools/check_numerics.py"),
+    Command("the front end's wire shapes", SCRIPT, "python tools/check_ui.py"),
+    Command("the vendoring record", SCRIPT, "python tools/check_manifest.py"),
+    Command(
+        "the manifest's unread rows, against the tree",
+        SCRIPT,
+        "python tools/audit_manifest.py --check",
+    ),
+    Command("the two version numbers", SCRIPT, "python tools/check_versions.py"),
+    Command("the vendored MCP schemas", SCRIPT, "python tools/check_mcp_schema.py"),
+    Command("the numbers the normative pages state", SCRIPT, "python tools/check_doc_claims.py"),
+    Command("the porting refusals, in all three places", SCRIPT, "python tools/check_unported.py"),
+    Command("the skill catalog", SCRIPT, "python tools/validate_skills.py"),
+    Command("the guard theorems' ownership", SCRIPT, "python tools/check_guards.py"),
+    Command("the pages against the Lean tree", SCRIPT, "python tools/audit_lean_claims.py --check"),
+    # `.venv/bin/` is rewritten to this box's venv by `render`, so the command reads as CI
+    # writes it.
+    Command("the workspace's formatting", SCRIPT, "cargo fmt --all --check", jobs=("rust-lint",)),
+    Command("ruff", SCRIPT, ".venv/bin/ruff check", jobs=("python-lint",)),
+    Command("ruff's formatting", SCRIPT, ".venv/bin/ruff format --check", jobs=("python-lint",)),
+    Command("the strict type check", SCRIPT, ".venv/bin/mypy", jobs=("python-lint",)),
+    Command("the provenance record", SCRIPT, "python tools/provenance.py --out provenance.json"),
+    Command("every tracked path claims something", SCRIPT, "python tools/test_scope.py --audit"),
+)
+
+
 # ------------------------------------------------------------------------ what a path claims
 #
 # **One table, one dispatch, one answer per path.** The first version classified a path in
@@ -778,6 +818,26 @@ def generator_sweep() -> list[Command]:
     ]
 
 
+def is_generator_check(entry: Command) -> bool:
+    """A `gen_*.py --check`: the cheap half of the sweep, and the half that fails most often."""
+    return "tools/gen_" in entry.command and entry.command.endswith("--check")
+
+
+def cheap_first(commands: list[Command]) -> list[Command]:
+    """**The generator checks before everything else, because they are minutes and the tests are
+    an hour.**
+
+    They catch the most common failure - a generated file that has gone stale - and running them
+    last means that failure is found by whichever test happens to look at the file, after the
+    expensive half has run. Measured twice in one session: a provenance hash carried past a
+    reflow, and the palette fixtures. The order is otherwise unchanged, so the plan still reads
+    in the order it did.
+    """
+    return [e for e in commands if is_generator_check(e)] + [
+        e for e in commands if not is_generator_check(e)
+    ]
+
+
 def rust_scope(crates: set[str], edges: dict[str, set[str]]) -> list[Command]:
     """The cargo commands for a set of changed crates, plus the extension rebuild."""
     touched = sorted({crate for crate in crates} | {n for c in crates for n in reaches(c, edges)})
@@ -1034,6 +1094,12 @@ def script_jobs(command: str) -> set[str]:
         return {"docs-drift"}
     if "check_links" in command:
         return {"docs-build"}
+    if "tools/provenance" in command:
+        return {"provenance"}
+    if "tools/test_scope" in command:
+        # The tool's own audit, which the `scope` job runs on every push. `--plan` is not here:
+        # it is the job's decision, not a check a local run repeats.
+        return {"scope"}
     if command in ("true",):
         return set()
     if command.startswith(("python tools/", "python .claude/")):
@@ -1140,7 +1206,10 @@ def render(entry: Command, lane: str, gate: bool = True) -> str:
         )
     if kind in (CARGO, CLIPPY) or command.endswith("/maturin develop"):
         return f"tools/gated.sh {command}" if gate else command
-    return command
+    # **The venv's own tools.** `CLOSE_OUT` stores `ruff` and `mypy` as `ci.yml` writes them, so
+    # the table can be read straight against the workflow; here the checkout's venv is substituted,
+    # which is what makes them runnable on a box with nothing of theirs on `PATH`.
+    return command.replace(".venv/bin/", f"{venv_bin()}/")
 
 
 def bare_targets(command: str) -> list[str]:
@@ -1376,6 +1445,7 @@ def full_surface() -> list[Command]:
         Command("the whole Python suite", PYTEST, TESTS),
         Command("the skills' smoke checks", PYTEST, "skills"),
         *generator_sweep(),
+        *CLOSE_OUT,
     ]
 
 
@@ -1442,6 +1512,13 @@ def main() -> int:
     else:
         paths = changed_paths(args)
         commands, unclaimed = scope(paths, crate_edges())
+        if args.lane == "push":
+            # **The push also runs what the diff does not reach**, because CI does: the five
+            # `ALWAYS_JOBS` are flat-cost and unconditional. Deduplicated by command, since a
+            # docs change already claims `check_doc_claims` itself.
+            seen = {entry.command for entry in commands}
+            commands += [entry for entry in CLOSE_OUT if entry.command not in seen]
+    commands = cheap_first(commands)
     if args.explain:
         if args.full:
             print("# the full surface, not the diff")

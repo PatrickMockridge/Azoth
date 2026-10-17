@@ -14,6 +14,7 @@ refusal: a path a rule *claims and then places nowhere*, and an id a `-k` can ne
 from __future__ import annotations
 
 import importlib
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -362,3 +363,68 @@ def test_the_nightly_lane_renders_the_same_list() -> None:
     rendered = module.nightly(gate=False)
     assert len(rendered) == len(module.full_surface())
     assert any("pytest python/tests" in line for line in rendered)
+
+
+# ------------------------------------------------- the local gate is the push
+
+
+def test_every_unconditional_ci_step_is_in_the_close_out_table() -> None:
+    """**The gap three mypy errors shipped through.**
+
+    `--run` emitted only what the diff reaches, while `spec-validate`, `rust-lint`, `python-lint`
+    and `provenance` run whatever the diff says. The table is hand-kept because the commands are,
+    and this is the guard that stops it drifting - in both directions, so a step added to `ci.yml`
+    fails here and a command in the table that CI does not run fails too.
+    """
+    module = tool()
+    workflow = (module.ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    declared = {entry.command for entry in module.CLOSE_OUT}
+    expected: set[str] = set()
+    for job in module.ALWAYS_JOBS:
+        block = re.search(rf"^  {re.escape(job)}:\n(.*?)(?=^  [\w-]+:|\Z)", workflow, re.M | re.S)
+        assert block, f"{job} is in ALWAYS_JOBS and not in ci.yml"
+        # `- run:` inline, or a `run:` line under a named step; a `run: |` block is not a
+        # one-line check and is skipped by the `|` test below.
+        for command in re.findall(r"^\s+(?:- )?run: (.+)$", block.group(1), re.M):
+            command = command.strip()
+            if command == "|":
+                continue
+            if not ("tools/" in command or ".venv/bin/" in command or command.startswith("cargo ")):
+                continue
+            if re.search(r"tools/gen_\w+\.py --check", command):
+                # `generator_sweep()` reads these out of the same workflow; a second copy here
+                # would be the list this table exists to avoid.
+                continue
+            expected.add(command)
+    assert declared == expected
+
+
+def test_the_generator_checks_run_before_the_expensive_targets() -> None:
+    """A stale generated file should cost minutes, not the suite.
+
+    Measured twice in one session: the provenance hash carried past a reflow, and the palette
+    fixtures. Both were found by a test at the end of an hour; the `gen_*.py --check` that would
+    have said so in three minutes had not run yet.
+    """
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOLS / "test_scope.py"),
+            "--paths",
+            "tools/test_scope.py",
+            "--no-gate",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    lines = result.stdout.splitlines()
+    assert lines[0].startswith("python tools/gen_") and lines[0].endswith("--check"), lines[0]
+    # And the close-out block is part of the push lane, at the end.
+    assert lines[-1] == "python tools/test_scope.py --audit", lines[-1]
+
+    module = tool()
+    ordered = module.cheap_first(module.full_surface())
+    generators = [entry for entry in ordered if module.is_generator_check(entry)]
+    assert generators, "the sweep is in the full surface"
+    assert ordered[: len(generators)] == generators
