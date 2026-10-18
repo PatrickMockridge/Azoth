@@ -275,6 +275,34 @@ def _is_solvent(solvent_mask: Sequence[float], index: int) -> bool:
     return bool(solvent_mask[index])
 
 
+def _solve_bordered(matrix: list[list[float]], rhs: list[float]) -> list[float]:
+    """Solve the bordered system, falling back to the pseudo-inverse when it is singular.
+
+    NeqSim's ``ChemicalEquilibrium`` wraps ``A_solve.solve(b_solve)`` in a
+    ``try``/``except``, re-solves by ``solveLeastSquares`` when the solve throws **or
+    returns a NaN/Inf**, and falls back to a zero solution when that throws too. The zero
+    solution is declined here: it is a direction the arithmetic did not produce, so a
+    failure of both arms refuses.
+
+    **The bordered system is not rank-tested**, and its Gram block inherits the element
+    matrix's rank deficiency - the carbonate brine's oxygen row is ``2 C + 0.5 H - 0.5
+    charge`` - so the zero pivot is a state this solve really meets.
+    """
+    try:
+        solved = _linalg.solve_lu(matrix, rhs)
+    except InvalidInputError:
+        solved = _linalg.solve_least_squares(matrix, rhs)
+    else:
+        if not all(math.isfinite(value) for value in solved):
+            solved = _linalg.solve_least_squares(matrix, rhs)
+    if not all(math.isfinite(value) for value in solved):
+        raise InvalidInputError(
+            "reaction_matrix",
+            "the bordered system is singular and its pseudo-inverse is not finite",
+        )
+    return solved
+
+
 def _chem_solve(
     a_matrix: list[list[float]],
     b: list[float],
@@ -341,7 +369,7 @@ def _chem_solve(
         larger[n_elements][e] = coupling[e]
     rhs = [amu[e] + correction[e] for e in range(n_elements)] + [nmu]
 
-    solved = _linalg.solve_lu(larger, rhs)
+    solved = _solve_bordered(larger, rhs)
     tau = solved[n_elements]
 
     a_lambda = [0.0] * species

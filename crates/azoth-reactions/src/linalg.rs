@@ -24,6 +24,17 @@
 //! only be *less* reliable than the exact test below. What would overturn this is a
 //! coefficient table that stopped being integral, which is why
 //! [`rank_of_integer_matrix`] refuses one rather than rounding it.
+//!
+//! # The one SVD that is ported
+//!
+//! `chem_solve`'s bordered system is a different matrix and a different question. Its Gram
+//! block inherits the element matrix's rank deficiency, so it can be singular, and NeqSim
+//! does not refuse that state - it solves by SVD pseudo-inverse
+//! (`ChemicalEquilibrium.solveLeastSquares`, `tol = 1e-12 * s[0]`). **Here the generalized
+//! inverse is the answer**: a different one moves the Newton direction by a null-space
+//! component, so [`solve_least_squares`] reproduces the SVD rather than replacing it with
+//! a row-space argument, which is the opposite of the call made for
+//! [`row_space_basis`].
 
 use azoth_core::{AzothError, Result};
 
@@ -116,16 +127,19 @@ pub fn rank_of_integer_matrix(matrix: &[Vec<f64>]) -> Result<usize> {
 
 /// Solve `a x = b` for a square `a`, by LU with partial pivoting.
 ///
-/// The same shape JAMA's `LUDecomposition.solve` takes, and the reason a port of
-/// `Matrix.solve` is not needed either: the matrix it is handed is the independent-
-/// column submatrix, which is square by construction and integer-valued, so the only
-/// floating point is the right-hand side - `-R T ln K` - carried through the
+/// The same shape JAMA's `LUDecomposition.solve` takes. The rank-tested callers hand it
+/// the independent-column submatrix, which is square by construction and integer-valued,
+/// so the only floating point is the right-hand side - `-R T ln K` - carried through the
 /// elimination. There is no tolerance decision in it at all.
+///
+/// **A zero pivot is a real outcome, not an unreachable one.** `chem_solve`'s bordered
+/// Gram system is not rank-tested and can be exactly singular; it treats this error as
+/// the signal to fall back to [`solve_least_squares`], as NeqSim's
+/// `ChemicalEquilibrium` does with its `try`/`catch`.
 ///
 /// # Errors
 /// [`AzothError::InvalidInput`] if `a` is not square or its shape disagrees with `b`, or
-/// if a pivot is zero - which cannot happen for a matrix whose rank was just tested, and
-/// is refused rather than divided by.
+/// if a pivot is zero.
 pub fn solve_lu(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
     let n = a.len();
     if b.len() != n {
@@ -165,14 +179,11 @@ pub fn solve_lu(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
             }
         }
         if best == 0.0 {
-            // Unreachable in this crate: the caller solves with the submatrix its rank
-            // test has just accepted as full rank. Refused rather than divided by.
+            // Refused rather than divided by. The rank-tested callers cannot reach this;
+            // `chem_solve` can, and falls back to the pseudo-inverse.
             return Err(AzothError::InvalidInput {
                 field: "reaction_matrix".to_string(),
-                reason: format!(
-                    "the matrix is singular at column {k}, and a full-rank matrix is the \
-                     only thing the rank test hands to this solve"
-                ),
+                reason: format!("the matrix is singular at column {k}"),
             });
         }
         if pivot != k {
@@ -207,6 +218,158 @@ pub fn solve_lu(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
     }
     Ok(solution)
 }
+
+/// The minimum-norm least-squares solution of `a x = b`, by one-sided Jacobi SVD.
+///
+/// Computes `x = V S+ U^T b` with singular values at or below `1e-12 * s[0]` truncated -
+/// the pseudo-inverse JAMA's `SingularValueDecomposition` gives, and therefore the
+/// direction NeqSim's `solveLeastSquares` takes when the bordered system is singular.
+/// One-sided Jacobi rather than Golub-Reinsch: it is the same decomposition, and the
+/// matrices here are the element count squared, at most a handful of columns.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] if `a` is ragged, `b`'s length disagrees with `a`'s row
+/// count, any entry is not finite, or the decomposition produces a non-finite value.
+pub fn solve_least_squares(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
+    let rows = a.len();
+    if rows == 0 {
+        if b.is_empty() {
+            return Ok(Vec::new());
+        }
+        return Err(AzothError::InvalidInput {
+            field: "reaction_matrix".to_string(),
+            reason: format!("a has no rows and b has {} entries", b.len()),
+        });
+    }
+    let cols = a[0].len();
+    if b.len() != rows {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_matrix".to_string(),
+            reason: format!("a is {rows}x{cols} and b has {} entries", b.len()),
+        });
+    }
+    if cols == 0 {
+        return Ok(Vec::new());
+    }
+    let mut work = Vec::with_capacity(rows);
+    for (i, row) in a.iter().enumerate() {
+        if row.len() != cols {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_matrix".to_string(),
+                reason: format!("row {i} has {} entries against {cols}", row.len()),
+            });
+        }
+        if let Some(bad) = row.iter().position(|value| !value.is_finite()) {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_matrix".to_string(),
+                reason: format!("entry [{i}][{bad}] is {}, not a finite number", row[bad]),
+            });
+        }
+        work.push(row.clone());
+    }
+    if let Some(bad) = b.iter().position(|value| !value.is_finite()) {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_matrix".to_string(),
+            reason: format!("b[{bad}] is {}, not a finite number", b[bad]),
+        });
+    }
+
+    // The right singular vectors, accumulated from the identity by the same rotations
+    // applied to `work`'s columns.
+    let mut right = vec![vec![0.0; cols]; cols];
+    for (i, row) in right.iter_mut().enumerate() {
+        row[i] = 1.0;
+    }
+
+    // One-sided Jacobi: rotate column pairs until every pair is orthogonal. The relative
+    // threshold is at the level of rounding, so a convergence failure can only leave
+    // pairs that are orthogonal to working precision.
+    for _sweep in 0..MAX_SWEEPS {
+        let mut rotated = false;
+        for p in 0..cols {
+            for q in (p + 1)..cols {
+                let mut alpha = 0.0;
+                let mut beta = 0.0;
+                let mut gamma = 0.0;
+                for row in &work {
+                    alpha += row[p] * row[p];
+                    beta += row[q] * row[q];
+                    gamma += row[p] * row[q];
+                }
+                let scale = (alpha * beta).sqrt();
+                if scale == 0.0 || gamma.abs() <= JACOBI_TOLERANCE * scale {
+                    continue;
+                }
+                let tau = (beta - alpha) / (2.0 * gamma);
+                let root = (1.0 + tau * tau).sqrt();
+                // The smaller root, written without the cancellation the quadratic's
+                // direct form would carry.
+                let t = if tau >= 0.0 {
+                    1.0 / (tau + root)
+                } else {
+                    -1.0 / (-tau + root)
+                };
+                let cosine = 1.0 / (1.0 + t * t).sqrt();
+                let sine = cosine * t;
+                for row in &mut work {
+                    let held = row[p];
+                    let turned = row[q];
+                    row[p] = cosine * held - sine * turned;
+                    row[q] = sine * held + cosine * turned;
+                }
+                for row in &mut right {
+                    let held = row[p];
+                    let turned = row[q];
+                    row[p] = cosine * held - sine * turned;
+                    row[q] = sine * held + cosine * turned;
+                }
+                rotated = true;
+            }
+        }
+        if !rotated {
+            break;
+        }
+    }
+
+    let singular: Vec<f64> = (0..cols)
+        .map(|j| work.iter().map(|row| row[j] * row[j]).sum::<f64>().sqrt())
+        .collect();
+    let largest = singular.iter().copied().fold(0.0_f64, f64::max);
+    let cutoff = 1.0e-12 * largest;
+
+    // `y_j = (B_j . b) / sigma_j**2`, and zero for a truncated direction.
+    let mut scaled = vec![0.0; cols];
+    for (j, sigma) in singular.iter().enumerate() {
+        if *sigma > cutoff && *sigma > 0.0 {
+            let mut dot = 0.0;
+            for (row, value) in work.iter().zip(b) {
+                dot += row[j] * value;
+            }
+            scaled[j] = dot / (sigma * sigma);
+        }
+    }
+
+    let mut solution = vec![0.0; cols];
+    for (j, coefficient) in scaled.iter().enumerate() {
+        for (i, value) in solution.iter_mut().enumerate() {
+            *value += right[i][j] * coefficient;
+        }
+    }
+    if let Some(bad) = solution.iter().position(|value| !value.is_finite()) {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_matrix".to_string(),
+            reason: format!("the pseudo-inverse's solution[{bad}] is not finite"),
+        });
+    }
+    Ok(solution)
+}
+
+/// The largest sweep count one-sided Jacobi is given. Each sweep rotates every pair, and
+/// the matrices here are small enough that convergence takes a handful.
+const MAX_SWEEPS: usize = 60;
+
+/// A column pair below this relative coupling is already orthogonal.
+const JACOBI_TOLERANCE: f64 = 1.0e-15;
 
 /// An orthonormal basis of a matrix's **row space**, by modified Gram-Schmidt.
 ///
@@ -355,6 +518,46 @@ mod tests {
             matches!(error, AzothError::InvalidInput { .. }),
             "{error:?}"
         );
+    }
+
+    /// The singular system above, solved by the pseudo-inverse instead of refused.
+    ///
+    /// `A = u v^T` with `u = v = [1, 2]`, so `A+ = v u^T / (|u|^2 |v|^2)` is
+    /// `[[1, 2], [2, 4]] / 25` and `A+ [1, 2]^T = [0.2, 0.4]^T`. That is the minimum-norm
+    /// solution, and the value NeqSim's SVD fallback produces on the same system.
+    #[test]
+    fn the_pseudo_inverse_answers_the_singular_system() {
+        let a = vec![vec![1.0, 2.0], vec![2.0, 4.0]];
+        let x = solve_least_squares(&a, &[1.0, 2.0]).expect("a pseudo-inverse exists");
+        assert!((x[0] - 0.2).abs() < 1e-14, "{x:?}");
+        assert!((x[1] - 0.4).abs() < 1e-14, "{x:?}");
+        // It solves the system it was given, and carries no component outside the row
+        // space - which is what "minimum norm" means here.
+        let residual = a[0][0] * x[0] + a[0][1] * x[1];
+        assert!((residual - 1.0).abs() < 1e-14, "A x = {residual}");
+        let null_space = x[0] * 2.0 - x[1];
+        assert!(
+            null_space.abs() < 1e-14,
+            "x has a null-space part: {null_space}"
+        );
+    }
+
+    /// A consistent singular system whose minimum-norm answer is known analytically.
+    #[test]
+    fn the_pseudo_inverse_keeps_the_minimum_norm_solution() {
+        // Rows 1 and 2 sum to row 3, and b does the same, so the system is consistent.
+        let a = vec![
+            vec![1.0, 0.0, 1.0],
+            vec![0.0, 1.0, 1.0],
+            vec![1.0, 1.0, 2.0],
+        ];
+        let b = [2.0, 3.0, 5.0];
+        let x = solve_least_squares(&a, &b).expect("a pseudo-inverse exists");
+        // The general solution is (2 - t, 3 - t, t); the minimum-norm one is t = 5/3.
+        let expected = [1.0 / 3.0, 4.0 / 3.0, 5.0 / 3.0];
+        for (got, want) in x.iter().zip(expected) {
+            assert!((got - want).abs() < 1e-14, "{x:?}");
+        }
     }
 
     /// **The projection against `A+ A` as Commons Math computes it.**

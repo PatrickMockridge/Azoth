@@ -17,6 +17,13 @@ and in all three cases it finds a full-rank basis and rejects nothing.
 
 So the rank is computed exactly instead. Python's integers are arbitrary precision, so the
 fraction-free elimination below cannot overflow and needs no scaling.
+
+**One SVD is ported.** ``chem_solve``'s bordered system is a different matrix and a
+different question: its Gram block inherits the element matrix's rank deficiency, so it can
+be singular, and NeqSim answers that state with ``solveLeastSquares`` rather than refusing.
+Here the generalized inverse *is* the answer - a different one moves the Newton direction
+by a null-space component - so :func:`solve_least_squares` reproduces JAMA's SVD rather than
+replacing it with the row-space argument used elsewhere.
 """
 
 from __future__ import annotations
@@ -101,11 +108,16 @@ def rank_of_integer_matrix(matrix: list[list[float]]) -> int:
 def solve_lu(a: list[list[float]], b: list[float]) -> list[float]:
     """Solve ``a x = b`` for a square ``a``, by LU with partial pivoting.
 
-    The same shape ``Jama.Matrix.solve`` takes for a square matrix, and the reason a port
-    of it is not needed either: the matrix it is handed is the independent-column
-    submatrix, which is square by construction and integer-valued, so the only floating
-    point is the right-hand side - ``-R T ln K`` - carried through the elimination. There
-    is no tolerance decision in it at all.
+    The same shape ``Jama.Matrix.solve`` takes for a square matrix. The rank-tested
+    callers hand it the independent-column submatrix, which is square by construction and
+    integer-valued, so the only floating point is the right-hand side - ``-R T ln K`` -
+    carried through the elimination. There is no tolerance decision in it at all.
+
+    **A zero pivot is a real outcome, not an unreachable one.** ``_solve_bordered`` in
+    ``chemical_equilibrium`` hands it a bordered Gram system that is not rank-tested and
+    can be exactly singular; it treats this error as the signal to fall back to
+    :func:`solve_least_squares`, as NeqSim's ``ChemicalEquilibrium`` does with its
+    ``try``/``except``.
 
     Raises:
         InvalidInputError: if ``a`` is not square or its shape disagrees with ``b``, or if
@@ -133,13 +145,9 @@ def solve_lu(a: list[list[float]], b: list[float]) -> list[float]:
                 best = abs(lu[i][k])
                 pivot = i
         if best == 0.0:
-            # Unreachable in this library: the caller solves with the submatrix its rank
-            # test has just accepted as full rank.
-            raise InvalidInputError(
-                "reaction_matrix",
-                f"the matrix is singular at column {k}, and a full-rank matrix is the "
-                f"only thing the rank test hands to this solve",
-            )
+            # Refused rather than divided by. The rank-tested callers cannot reach this;
+            # `chemical_equilibrium` can, and falls back to the pseudo-inverse.
+            raise InvalidInputError("reaction_matrix", f"the matrix is singular at column {k}")
         if pivot != k:
             lu[k], lu[pivot] = lu[pivot], lu[k]
             x[k], x[pivot] = x[pivot], x[k]
@@ -158,6 +166,113 @@ def solve_lu(a: list[list[float]], b: list[float]) -> list[float]:
             total -= lu[k][j] * solution[j]
         solution[k] = total / lu[k][k]
     return solution
+
+
+def solve_least_squares(a: list[list[float]], b: list[float]) -> list[float]:
+    """The minimum-norm least-squares solution of ``a x = b``, by one-sided Jacobi SVD.
+
+    Computes ``x = V S+ U^T b`` with singular values at or below ``1e-12 * s[0]``
+    truncated - the pseudo-inverse JAMA's ``SingularValueDecomposition`` gives, and
+    therefore the direction NeqSim's ``solveLeastSquares`` takes when the bordered system
+    is singular.
+
+    Raises:
+        InvalidInputError: if ``a`` is ragged, ``b``'s length disagrees with ``a``'s row
+            count, any entry is not finite, or the decomposition produces a non-finite
+            value.
+    """
+    rows = len(a)
+    if rows == 0:
+        if b:
+            raise InvalidInputError("reaction_matrix", f"a has no rows and b has {len(b)} entries")
+        return []
+    cols = len(a[0])
+    if len(b) != rows:
+        raise InvalidInputError("reaction_matrix", f"a is {rows}x{cols} and b has {len(b)} entries")
+    if cols == 0:
+        return []
+    work: list[list[float]] = []
+    for i, row in enumerate(a):
+        if len(row) != cols:
+            raise InvalidInputError(
+                "reaction_matrix", f"row {i} has {len(row)} entries against {cols}"
+            )
+        for j, value in enumerate(row):
+            if not math.isfinite(value):
+                raise InvalidInputError(
+                    "reaction_matrix", f"entry [{i}][{j}] is {value}, not a finite number"
+                )
+        work.append([float(value) for value in row])
+    for j, value in enumerate(b):
+        if not math.isfinite(value):
+            raise InvalidInputError("reaction_matrix", f"b[{j}] is {value}, not a finite number")
+
+    # The right singular vectors, accumulated from the identity by the same rotations
+    # applied to `work`'s columns.
+    right = [[1.0 if i == j else 0.0 for j in range(cols)] for i in range(cols)]
+
+    # One-sided Jacobi: rotate column pairs until every pair is orthogonal. The relative
+    # threshold is at the level of rounding, so a convergence failure can only leave
+    # pairs that are orthogonal to working precision.
+    for _sweep in range(_MAX_SWEEPS):
+        rotated = False
+        for p in range(cols):
+            for q in range(p + 1, cols):
+                alpha = sum(row[p] * row[p] for row in work)
+                beta = sum(row[q] * row[q] for row in work)
+                gamma = sum(row[p] * row[q] for row in work)
+                scale = math.sqrt(alpha * beta)
+                if scale == 0.0 or abs(gamma) <= _JACOBI_TOLERANCE * scale:
+                    continue
+                tau = (beta - alpha) / (2.0 * gamma)
+                root = math.sqrt(1.0 + tau * tau)
+                # The smaller root, written without the cancellation the quadratic's
+                # direct form would carry.
+                t = 1.0 / (tau + root) if tau >= 0.0 else -1.0 / (-tau + root)
+                cosine = 1.0 / math.sqrt(1.0 + t * t)
+                sine = cosine * t
+                for row in work:
+                    held = row[p]
+                    turned = row[q]
+                    row[p] = cosine * held - sine * turned
+                    row[q] = sine * held + cosine * turned
+                for row in right:
+                    held = row[p]
+                    turned = row[q]
+                    row[p] = cosine * held - sine * turned
+                    row[q] = sine * held + cosine * turned
+                rotated = True
+        if not rotated:
+            break
+
+    singular = [math.sqrt(sum(row[j] * row[j] for row in work)) for j in range(cols)]
+    cutoff = 1.0e-12 * (max(singular) if singular else 0.0)
+
+    # `y_j = (B_j . b) / sigma_j**2`, and zero for a truncated direction.
+    scaled = [0.0] * cols
+    for j, sigma in enumerate(singular):
+        if sigma > cutoff and sigma > 0.0:
+            dot = sum(row[j] * value for row, value in zip(work, b, strict=True))
+            scaled[j] = dot / (sigma * sigma)
+
+    solution = [0.0] * cols
+    for j, coefficient in enumerate(scaled):
+        for i in range(cols):
+            solution[i] += right[i][j] * coefficient
+    for i, value in enumerate(solution):
+        if not math.isfinite(value):
+            raise InvalidInputError(
+                "reaction_matrix", f"the pseudo-inverse's solution[{i}] is not finite"
+            )
+    return solution
+
+
+#: The largest sweep count one-sided Jacobi is given. Each sweep rotates every pair, and
+#: the matrices here are small enough that convergence takes a handful.
+_MAX_SWEEPS = 60
+
+#: A column pair below this relative coupling is already orthogonal.
+_JACOBI_TOLERANCE = 1.0e-15
 
 
 def solve_columns(m: list[list[float]], rhs: list[list[float]]) -> list[list[float]]:

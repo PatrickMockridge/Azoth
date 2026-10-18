@@ -37,7 +37,7 @@
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 use crate::equilibrium_constant::GAS_CONSTANT;
-use crate::linalg::solve_lu;
+use crate::linalg::{solve_least_squares, solve_lu};
 use crate::model_gen;
 
 /// The floor every mole number is raised to before a logarithm, from
@@ -490,7 +490,7 @@ fn chem_solve(
     }
     rhs[n_elements] = nmu;
 
-    let solved = solve_lu(&larger, &rhs)?;
+    let solved = solve_bordered(&larger, &rhs)?;
     let tau = solved[n_elements];
 
     let mut dn = vec![0.0; species];
@@ -601,6 +601,32 @@ fn step_of(
     step
 }
 
+/// Solve the bordered system, falling back to the pseudo-inverse when it is singular.
+///
+/// NeqSim's `ChemicalEquilibrium` wraps `A_solve.solve(b_solve)` in a `try`/`catch`,
+/// re-solves by `solveLeastSquares` when the solve throws **or returns a NaN/Inf**, and
+/// falls back to a zero solution when that throws too. The zero solution is declined here:
+/// it is a direction the arithmetic did not produce, so a failure of both arms refuses.
+///
+/// **The bordered system is not rank-tested**, and its Gram block inherits the element
+/// matrix's rank deficiency - the carbonate brine's oxygen row is `2 C + 0.5 H - 0.5
+/// charge` - so the zero pivot is a state this solve really meets.
+fn solve_bordered(matrix: &[Vec<f64>], rhs: &[f64]) -> Result<Vec<f64>> {
+    if let Ok(solution) = solve_lu(matrix, rhs) {
+        if solution.iter().all(|value| value.is_finite()) {
+            return Ok(solution);
+        }
+    }
+    let solution = solve_least_squares(matrix, rhs)?;
+    if solution.iter().all(|value| value.is_finite()) {
+        return Ok(solution);
+    }
+    Err(AzothError::InvalidInput {
+        field: "reaction_matrix".to_string(),
+        reason: "the bordered system is singular and its pseudo-inverse is not finite".to_string(),
+    })
+}
+
 /// Solve `m x = rhs` for a square `m` and several right-hand sides.
 fn solve_columns(m: &[Vec<f64>], rhs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
     let columns = rhs.first().map_or(0, Vec::len);
@@ -613,4 +639,21 @@ fn solve_columns(m: &[Vec<f64>], rhs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The branch `solve_lu` refuses and this solve used to refuse with it.
+    ///
+    /// `A = u v^T` with `u = v = [1, 2]`: exactly singular, so the LU arm fails and the
+    /// pseudo-inverse answers `[0.2, 0.4]` (see `linalg`'s own test for the derivation).
+    #[test]
+    fn a_singular_bordered_system_answers_by_pseudo_inverse() {
+        let matrix = vec![vec![1.0, 2.0], vec![2.0, 4.0]];
+        let solved = solve_bordered(&matrix, &[1.0, 2.0]).expect("the fallback answers");
+        assert!((solved[0] - 0.2).abs() < 1e-14, "{solved:?}");
+        assert!((solved[1] - 0.4).abs() < 1e-14, "{solved:?}");
+    }
 }
