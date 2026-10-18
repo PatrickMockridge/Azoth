@@ -690,7 +690,12 @@ fn resolve_components(
                  or none of them",
             ));
         }
-        override_.cp = has_all.then(|| cp.map(|value| value.expect("checked present")));
+        override_.cp = has_all.then(|| {
+            cp.map(
+                |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+            )
+        });
 
         // The dielectric polynomial is all five or none, for the reason the heat capacity
         // is: three coefficients of a `T^3` polynomial is not a correlation, and a partial
@@ -703,8 +708,12 @@ fn resolve_components(
                  through `dielectric_5`, or none of them",
             ));
         }
-        override_.dielectric =
-            all_dielectric.then(|| dielectric.map(|value| value.expect("checked present")));
+        override_.dielectric = all_dielectric.then(|| {
+            dielectric.map(
+                |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+            )
+        });
 
         // **Every remaining coefficient set is all-of-it or none**, for the reason the heat
         // capacity is: three coefficients of a `T^3` polynomial is not a correlation, and a
@@ -724,30 +733,45 @@ fn resolve_components(
         complete(&cp_liquid, "the liquid heat-capacity polynomial")?;
         complete(&solid_density_coefs, "the solid-density polynomial")?;
         complete(&liquid_density_coefs, "the liquid-density polynomial")?;
-        override_.liquid_conductivity = liquid_conductivity
-            .iter()
-            .all(Option::is_some)
-            .then(|| liquid_conductivity.map(|value| value.expect("checked present")));
-        override_.liqvisc = liqvisc
-            .iter()
-            .all(Option::is_some)
-            .then(|| liqvisc.map(|value| value.expect("checked present")));
-        override_.cp_solid = cp_solid
-            .iter()
-            .all(Option::is_some)
-            .then(|| cp_solid.map(|value| value.expect("checked present")));
-        override_.cp_liquid = cp_liquid
-            .iter()
-            .all(Option::is_some)
-            .then(|| cp_liquid.map(|value| value.expect("checked present")));
-        override_.solid_density_coefs = solid_density_coefs
-            .iter()
-            .all(Option::is_some)
-            .then(|| solid_density_coefs.map(|value| value.expect("checked present")));
-        override_.liquid_density_coefs = liquid_density_coefs
-            .iter()
-            .all(Option::is_some)
-            .then(|| liquid_density_coefs.map(|value| value.expect("checked present")));
+        override_.liquid_conductivity =
+            liquid_conductivity.iter().all(Option::is_some).then(|| {
+                liquid_conductivity.map(
+                    |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+                )
+            });
+        override_.liqvisc = liqvisc.iter().all(Option::is_some).then(|| {
+            liqvisc.map(
+                |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+            )
+        });
+        override_.cp_solid = cp_solid.iter().all(Option::is_some).then(|| {
+            cp_solid.map(
+                |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+            )
+        });
+        override_.cp_liquid = cp_liquid.iter().all(Option::is_some).then(|| {
+            cp_liquid.map(
+                |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+            )
+        });
+        override_.solid_density_coefs =
+            solid_density_coefs.iter().all(Option::is_some).then(|| {
+                solid_density_coefs.map(
+                    |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+                )
+            });
+        override_.liquid_density_coefs =
+            liquid_density_coefs.iter().all(Option::is_some).then(|| {
+                liquid_density_coefs.map(
+                    |value| // claim-ok: the_baseline_card_resolves_to_the_table_it_was_generated_from
+            value.expect("checked present"),
+                )
+            });
 
         // **`alpha_params` is a contiguous prefix from `_1`, not an all-or-none set.** A
         // petroleum cut states the one exponent it has - `characterization.tbp_cut_properties`

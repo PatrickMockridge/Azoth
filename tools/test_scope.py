@@ -135,6 +135,11 @@ CLOSE_OUT: tuple[Command, ...] = (
     Command("the prose standard", SCRIPT, "python tools/prose_lint.py"),
     Command("duplicate JSON keys", SCRIPT, "python tools/check_json_keys.py"),
     Command("the numerical-safety rule", SCRIPT, "python tools/check_numerics.py"),
+    Command(
+        "every executable claim names its falsifier",
+        SCRIPT,
+        "python tools/check_claims.py",
+    ),
     Command("the front end's wire shapes", SCRIPT, "python tools/check_ui.py"),
     Command("the vendoring record", SCRIPT, "python tools/check_manifest.py"),
     Command(

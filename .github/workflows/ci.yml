@@ -98,6 +98,12 @@ jobs:
       # approximates a rational (`0.3333` for `1/3`, measured to differ by 4.6e-4 at
       # x = 10^6). A line says its decimal is NeqSim's own with a `numerics-ok:` marker.
       - run: python tools/check_numerics.py
+      # Every executable claim - a panic, an unreachable arm, a debug assertion, a
+      # guarantee-worded expect, a Python assert - names the test that would falsify it
+      # with a `claim-ok:` marker, and the marker names a test that exists. Read in both
+      # directions, so a marker left behind by a moved claim is an error too. The named
+      # test is the behavioural half; the checker cannot prove it drives the branch.
+      - run: python tools/check_claims.py
       # The front end's own three shapes, which no other checker reads: a cast on the wire
       # boundary where the decoder belongs, a magnitude with significant digits written in
       # the editor, and a part of the envelope kept in local state beside it. `ui/src` was

@@ -497,6 +497,7 @@ fn set_recycle(recycle: &mut Recycle, field: &str, value: &serde_json::Value) ->
             })?;
             recycle.max_iterations = Some(count);
         }
+        // claim-ok: a_recycle_parameter_is_five_numbers_a_count_and_a_name
         _ => unreachable!("the seven fields are checked before this is called"),
     }
     Ok(())

@@ -91,6 +91,7 @@ pub fn pr_z_factor(a_reduced: f64, b_reduced: f64) -> Result<PrZFactorResult> {
         .copied()
         .filter(|z| *z > b_reduced)
         .collect();
+    // claim-ok: the_admissible_count_is_never_two
     debug_assert!(
         !admissible.is_empty(),
         "no admissible root for B = {b_reduced}, which the bounds should have refused"
@@ -110,6 +111,7 @@ pub fn pr_z_factor(a_reduced: f64, b_reduced: f64) -> Result<PrZFactorResult> {
     // malformed *spec*, which is a programmer's error, rather than for a state
     // that arithmetic is merely expected never to reach. The assertion is in the
     // test build, where the property sweep that establishes the theorem runs.
+    // claim-ok: the_admissible_count_is_never_two
     debug_assert!(
         admissible.len() == 1 || admissible.len() == 3,
         "the admissible root count is 1 or 3, never {}",

@@ -78,6 +78,7 @@ pub fn srk_z_factor(a_reduced: f64, b_reduced: f64) -> Result<SrkZFactorResult> 
         .copied()
         .filter(|z| *z > b_reduced)
         .collect();
+    // claim-ok: the_admissible_count_is_never_two
     debug_assert!(
         !admissible.is_empty(),
         "no admissible root for B = {b_reduced}, which the bounds should have refused"
@@ -89,6 +90,7 @@ pub fn srk_z_factor(a_reduced: f64, b_reduced: f64) -> Result<SrkZFactorResult> 
         .iter()
         .fold((f64::MAX, f64::MIN), |(lo, hi), z| (lo.min(*z), hi.max(*z)));
 
+    // claim-ok: the_admissible_count_is_never_two
     debug_assert!(
         admissible.len() == 1 || admissible.len() == 3,
         "the admissible root count is 1 or 3, never {}",

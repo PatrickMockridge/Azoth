@@ -40,7 +40,7 @@ pub fn parahydrogen_solid_phase(
         &mut warnings,
     )?;
 
-    let state = parahydrogen_solid::properties(t.value, p.value);
+    let state = parahydrogen_solid::properties(t.value, p.value)?;
 
     Ok(ParahydrogenSolidPhaseResult {
         z_factor: p.value * state.v / (parahydrogen_solid::R * t.value),

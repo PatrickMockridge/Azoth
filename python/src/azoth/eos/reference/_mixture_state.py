@@ -1006,7 +1006,10 @@ def _associating_root(
     pressure = reduced.pressure
     covolumes = [b * r_t / pressure for b in reduced.b]
     association = reduced.association
-    assert association is not None  # the caller checked
+    if association is None:
+        raise InvalidInputError(
+            "mixture", "the associating departure was asked of a mixture carrying no association"
+        )
 
     def residual(z: float) -> float:
         v = z * r_t / pressure
@@ -1046,7 +1049,12 @@ def _electrolyte_cpa_root(
     covolumes = [b * r_t / pressure for b in reduced.b]
     association = reduced.association
     furst = reduced.furst
-    assert association is not None and furst is not None  # the caller checked
+    if association is None or furst is None:
+        raise InvalidInputError(
+            "mixture",
+            "the electrolyte-associating departure was asked of a mixture carrying no "
+            "association or no electrolyte terms",
+        )
 
     def residual(z: float) -> float:
         v = z * r_t / pressure
@@ -1218,7 +1226,11 @@ def phase_state_at(
         # the two expressions do not reduce to one another off the pure component - which
         # is the only state at which this library's tests could tell them apart.
         ader = _ge_ader(reduced, x)
-        assert ader is not None  # alpha_mix being set is what put us here
+        if ader is None:
+            raise InvalidInputError(
+                "mixture",
+                "the excess-Gibbs rule's derivative is absent on a mixture whose alpha_mix is set",
+            )
         b_der = list(reduced.b)
         delta1, delta2 = c.delta1, c.delta2
         for i in range(n):

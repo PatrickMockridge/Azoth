@@ -5,6 +5,8 @@
 //! mode, and the reported anharmonic terms. The stated range is temperatures below 200 K
 //! and pressures below 10 GPa.
 
+use azoth_core::{AzothError, Result};
+
 use crate::dual::{Dual, SolidState, state_from_helmholtz};
 
 /// The gas constant of the thesis equation, J/(mol.K).
@@ -69,17 +71,17 @@ pub fn helmholtz_energy(temperature: f64, molar_volume: f64) -> f64 {
 
 /// The solid state at a pressure (Pa) and temperature (K).
 ///
-/// # Panics
-/// If the state is out of the published range or the volume root cannot be bracketed.
-#[must_use]
-pub fn properties(temperature: f64, pressure_pa: f64) -> SolidState {
-    let molar_volume = solve_volume(temperature, pressure_pa);
-    state_from_helmholtz(
+/// # Errors
+/// * [`AzothError::OutOfRange`] if the state is outside the equation's published range.
+/// * [`AzothError::SolverNotConverged`] if the volume root cannot be bracketed or found.
+pub fn properties(temperature: f64, pressure_pa: f64) -> Result<SolidState> {
+    let molar_volume = solve_volume(temperature, pressure_pa)?;
+    Ok(state_from_helmholtz(
         temperature,
         pressure_pa,
         molar_volume,
         helmholtz(temperature, molar_volume),
-    )
+    ))
 }
 
 /// The solid state at a temperature and molar volume, at the implied pressure.
@@ -153,15 +155,21 @@ fn vinet_energy(reduced_volume: Dual) -> Dual {
 
 /// Solve `-a_V = pressure_pa` for the molar volume by bracketing and bisection/Newton in
 /// logarithmic volume.
-fn solve_volume(temperature: f64, pressure_pa: f64) -> f64 {
-    assert!(
-        pressure_pa > 0.0 && pressure_pa <= MAXIMUM_PRESSURE,
-        "pressure out of range"
-    );
-    assert!(
-        temperature > 0.0 && temperature <= MAXIMUM_TEMPERATURE,
-        "temperature out of range"
-    );
+fn solve_volume(temperature: f64, pressure_pa: f64) -> Result<f64> {
+    if !(pressure_pa > 0.0 && pressure_pa <= MAXIMUM_PRESSURE) {
+        return Err(AzothError::out_of_range(
+            "P",
+            pressure_pa,
+            "outside the solid equation's published range, which is above zero and at most 10 GPa",
+        ));
+    }
+    if !(temperature > 0.0 && temperature <= MAXIMUM_TEMPERATURE) {
+        return Err(AzothError::out_of_range(
+            "T",
+            temperature,
+            "outside the solid equation's published range, which is above zero and at most 200 K",
+        ));
+    }
 
     let mut guessed_volume = V0;
     if temperature >= TRIPLE_POINT_TEMPERATURE {
@@ -185,10 +193,13 @@ fn solve_volume(temperature: f64, pressure_pa: f64) -> f64 {
         lower_residual = pressure_residual(temperature, lower, pressure_pa);
         upper_residual = pressure_residual(temperature, upper, pressure_pa);
     }
-    assert!(
-        lower_residual * upper_residual < 0.0,
-        "could not bracket the para-hydrogen volume root"
-    );
+    if lower_residual * upper_residual >= 0.0 {
+        return Err(AzothError::SolverNotConverged {
+            iterations: 160,
+            residual: lower_residual.abs().min(upper_residual.abs()),
+            tolerance: 0.0,
+        });
+    }
 
     let mut current = upper.min(lower.max(guessed_volume.ln()));
     for _ in 0..100 {
@@ -196,7 +207,7 @@ fn solve_volume(temperature: f64, pressure_pa: f64) -> f64 {
         let helmholtz = helmholtz(temperature, volume);
         let residual = -helmholtz.dv - pressure_pa;
         if residual.abs() / pressure_pa.max(1000.0) < 1.0e-10 {
-            return volume;
+            return Ok(volume);
         }
 
         let derivative = -helmholtz.dvv * volume;
@@ -213,7 +224,12 @@ fn solve_volume(temperature: f64, pressure_pa: f64) -> f64 {
         }
         current = candidate;
     }
-    panic!("para-hydrogen volume solver did not converge");
+    let volume = current.exp();
+    Err(AzothError::SolverNotConverged {
+        iterations: 100,
+        residual: (-helmholtz(temperature, volume).dv - pressure_pa).abs(),
+        tolerance: 1.0e-10,
+    })
 }
 
 /// The pressure residual at a logarithmic molar volume.

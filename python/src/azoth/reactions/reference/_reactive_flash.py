@@ -441,7 +441,8 @@ def outer_loop(
             converged = True
             break
 
-    assert outcome is not None
+    if outcome is None:
+        raise InvalidInputError("solution", "the RAND outer loop ended with no solve to report")
     return FlashOutcome(
         phases=phases,
         converged=converged,
@@ -642,7 +643,10 @@ def run(
         phase_ln_phi,
         stability_check,
     )
-    assert looped.solution is not None
+    if looped.solution is None:
+        raise InvalidInputError(
+            "solution", "the fixed-point loop converged with no solution to report"
+        )
     return FlashOutcome(
         phases=looped.phases,
         converged=looped.converged,

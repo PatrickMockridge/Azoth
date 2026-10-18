@@ -189,7 +189,10 @@ def _jacobian(
 ) -> list[list[float]]:
     """The analytic Jacobian alone. The rust kernel carries its derivation."""
     jac = _point(mixture, u, beta, z, last, want_jacobian=True)[1]
-    assert jac is not None  # asked for above
+    if jac is None:
+        raise InvalidInputError(
+            "jacobian", "the analytic Jacobian was requested and the point returned none"
+        )
     return jac
 
 

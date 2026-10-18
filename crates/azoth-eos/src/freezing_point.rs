@@ -92,33 +92,33 @@ pub enum FluidRoot {
 /// constants are measurements of those two models rather than tunables: at the triple point
 /// they come out `-3.122683` J/mol and a positive entropy shift whose size is fixed by the
 /// fusion enthalpy.
-#[must_use]
-pub fn calibration() -> Calibration {
+pub fn calibration() -> Result<Calibration> {
     let t_tp = parahydrogen_solid::TRIPLE_POINT_TEMPERATURE;
     let p_tp = parahydrogen_solid::TRIPLE_POINT_PRESSURE;
 
     let rho = leachman::solve_density_dense(t_tp, p_tp, HydrogenType::Para)
         .expect("the para-hydrogen liquid root exists at the triple point");
     let liquid = leachman::properties(t_tp, rho, HydrogenType::Para);
-    let raw_solid = parahydrogen_solid::properties(t_tp, p_tp);
+    let raw_solid = parahydrogen_solid::properties(t_tp, p_tp)?;
 
-    Calibration {
+    Ok(Calibration {
         gibbs_shift: liquid.g - raw_solid.g,
         entropy_shift: liquid.s
             - raw_solid.s
             - parahydrogen_solid::TRIPLE_POINT_ENTHALPY_OF_FUSION / t_tp,
-    }
+    })
 }
 
 /// The solid's molar Gibbs energy at a state, on the reference the liquid is on.
-#[must_use]
-pub fn calibrated_solid_gibbs(t: f64, p: f64, calibration: &Calibration) -> f64 {
-    let raw = parahydrogen_solid::properties(t, p);
+pub fn calibrated_solid_gibbs(t: f64, p: f64, calibration: &Calibration) -> Result<f64> {
+    let raw = parahydrogen_solid::properties(t, p)?;
     // `g = a + Pv` gains the shift directly, and the entropy shift's own temperature
     // dependence comes with it: a shift of `-S (T - T_tp) + G` in the Helmholtz energy is
     // `-S (T - T_tp) + G` in the Gibbs energy too, since the shift carries no volume.
-    raw.g - calibration.entropy_shift * (t - parahydrogen_solid::TRIPLE_POINT_TEMPERATURE)
-        + calibration.gibbs_shift
+    Ok(
+        raw.g - calibration.entropy_shift * (t - parahydrogen_solid::TRIPLE_POINT_TEMPERATURE)
+            + calibration.gibbs_shift,
+    )
 }
 
 /// The dimensionless residual the solve drives to zero, and the one NeqSim's
@@ -141,7 +141,7 @@ pub fn residual(t: f64, p: f64, root: FluidRoot, calibration: &Calibration) -> R
         }
     };
     let fluid = leachman::properties(t, rho, HydrogenType::Para);
-    let solid = calibrated_solid_gibbs(t, p, calibration);
+    let solid = calibrated_solid_gibbs(t, p, calibration)?;
     Ok((fluid.g - solid) / (R * t))
 }
 
@@ -425,7 +425,7 @@ pub fn freezing_point(
             } else {
                 FluidRoot::Liquid
             };
-            let calibration = calibration();
+            let calibration = calibration()?;
             solve(
                 |t| residual(t, p_pa, root, &calibration),
                 search,

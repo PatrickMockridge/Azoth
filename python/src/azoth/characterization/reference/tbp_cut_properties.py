@@ -23,6 +23,7 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import TbpCutPropertiesResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -234,7 +235,10 @@ def _required(cut: dict[str, float | None], name: str) -> float:
     result field carries or narrow four values that are always present.
     """
     value = cut[name]
-    assert value is not None
+    if value is None:
+        raise InvalidInputError(
+            "cut", f"`{name}` is a value every model produces and this one did not"
+        )
     return value
 
 
@@ -433,8 +437,10 @@ def tbp_cut_properties(
     # and so would make every read of it `float | None`.
     molar_mass_value = values["molar_mass"]
     density_value = values["density"]
-    assert molar_mass_value is not None
-    assert density_value is not None
+    if molar_mass_value is None:
+        raise InvalidInputError("molar_mass", "a cut needs its molar mass to be characterised")
+    if density_value is None:
+        raise InvalidInputError("density", "a cut needs its density to be characterised")
     molar_mass_g = molar_mass_value * 1.0e3
     specific_gravity = density_value / 1.0e3
 

@@ -58,7 +58,7 @@ fn every_case_in_the_spec() {
 /// comparison gives: with them, the solid's Gibbs energy at the triple point is the liquid's.
 #[test]
 fn the_calibration_meets_the_liquid_at_the_triple_point() {
-    let calibration = freezing_point::calibration();
+    let calibration = freezing_point::calibration().expect("the triple point is in range");
     let t_tp = parahydrogen_solid::TRIPLE_POINT_TEMPERATURE;
     let p_tp = parahydrogen_solid::TRIPLE_POINT_PRESSURE;
 
@@ -72,7 +72,7 @@ fn the_calibration_meets_the_liquid_at_the_triple_point() {
 
     // And the raw solid misses it by the amount measured from the capture: `-3.12` J/mol of
     // Gibbs energy, which is `gibbs_shift` to four figures.
-    let raw = parahydrogen_solid::properties(t_tp, p_tp);
+    let raw = parahydrogen_solid::properties(t_tp, p_tp).expect("the triple point is in range");
     let uncalibrated = freezing_point::residual(
         t_tp,
         p_tp,
@@ -154,7 +154,7 @@ fn a_methane_candidate_is_refused() {
 /// The root rule is NeqSim's: a gas below the triple-point pressure, a liquid at and above it.
 #[test]
 fn the_fluid_root_follows_the_triple_point_pressure() {
-    let calibration = freezing_point::calibration();
+    let calibration = freezing_point::calibration().expect("the triple point is in range");
     let t_tp = parahydrogen_solid::TRIPLE_POINT_TEMPERATURE;
     let below = parahydrogen_solid::TRIPLE_POINT_PRESSURE * 0.5;
     let at = parahydrogen_solid::TRIPLE_POINT_PRESSURE;

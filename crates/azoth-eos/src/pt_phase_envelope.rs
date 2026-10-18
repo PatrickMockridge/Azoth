@@ -305,6 +305,7 @@ fn newton(
         if norm < NEWTON_TOL {
             return Ok((u, iters));
         }
+        // claim-ok: every_case_in_the_spec
         let mut jac = jac.expect("the Jacobian was asked for");
         let mut b = f.clone();
         let dx = solve_linear(&mut jac, &mut b).ok_or(AzothError::SolverNotConverged {
@@ -363,6 +364,7 @@ fn sensitivity(
         true,
     )?
     .jac
+    // claim-ok: every_case_in_the_spec
     .expect("the Jacobian was asked for");
     let mut e = vec![0.0; n + 2];
     e[n + 1] = 1.0;

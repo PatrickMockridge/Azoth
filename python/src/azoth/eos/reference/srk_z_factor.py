@@ -14,6 +14,7 @@ discards the middle one, exactly as ``eos.pr_z_factor`` does.
 from __future__ import annotations
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.errors import OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import RootStructure, SrkZFactorResult
 from azoth.core.solver import (
@@ -71,9 +72,11 @@ def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
 
     admissible = [z for z in outcome.roots if z > b_reduced]
     if not admissible:  # pragma: no cover - guarded by the input checks
-        raise AssertionError(
-            f"no admissible root for b_reduced = {b_reduced}; the bounds should have "
-            f"refused this before the solver ran"
+        raise OutOfRangeError(
+            "b_reduced",
+            b_reduced,
+            "no admissible root above the mixture's covolume; the bounds should have "
+            "refused this before the solver ran",
         )
     z_min = min(admissible)
     z_max = max(admissible)

@@ -913,6 +913,7 @@ impl Mixture {
                                 })?,
                                 Vec::new(),
                             ),
+                            // claim-ok: the_fitted_soave_coefficient_is_the_components_own
                             _ => unreachable!("handled above"),
                         };
                         warnings.extend(kappa_warnings);
@@ -2078,6 +2079,7 @@ impl Mixture {
     /// from `r` and `q` and does not move.
     fn umr_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> UmrState {
         let MixingRule::Umr { unifac, .. } = &self.mixing_rule else {
+            // claim-ok: the_umr_rule_reproduces_neqsims_alpha_mix
             unreachable!("umr_ader is only called for the UMR rule");
         };
         let (ln_gamma, t_d_ln_gamma) =
@@ -2112,6 +2114,7 @@ impl Mixture {
             hv_pairs,
         } = &self.mixing_rule
         else {
+            // claim-ok: the_huron_vidal_rule_matches_neqsims_water_ethanol_phase
             unreachable!("hv_ader is only called for the Huron-Vidal rule");
         };
         self.ge_ader(reduced, x, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs)
@@ -2141,6 +2144,7 @@ impl Mixture {
             hv_pairs,
         } = &self.mixing_rule
         else {
+            // claim-ok: the_wong_sandler_rule_matches_neqsims_water_ethanol_phase
             unreachable!("ws_ader is only called for the Wong-Sandler rule");
         };
         self.ge_ader(reduced, x, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs)
@@ -2149,6 +2153,7 @@ impl Mixture {
     /// The Wong-Sandler `b_mix` and its composition derivative `BDER`.
     fn ws_b_mix(&self, reduced: &ReducedParameters, x: &[f64], ader: &[f64]) -> (f64, Vec<f64>) {
         let MixingRule::WongSandler { kij, .. } = &self.mixing_rule else {
+            // claim-ok: the_wong_sandler_rule_matches_neqsims_water_ethanol_phase
             unreachable!("ws_b_mix is only called for the Wong-Sandler rule");
         };
         let n = self.len();
@@ -2192,6 +2197,7 @@ impl Mixture {
                 let state = self.umr_ader(reduced, x);
                 (state.ader, state.alpha_mix, state.b_der)
             }
+            // claim-ok: the_huron_vidal_rule_matches_neqsims_water_ethanol_phase
             _ => unreachable!("ge_state is only called for GE rules"),
         }
     }

@@ -115,7 +115,10 @@ def _is_liquid(reduced: ReducedParameters, kij: Any, x: list[float]) -> bool:
         if gibbs < best_gibbs:
             best_gibbs = gibbs
             best = compressibility
-    assert best is not None  # `candidates` is never empty
+    if best is None:
+        raise InvalidInputError(
+            "phase", "the root candidates are empty, so there is no root to compare"
+        )
     return best == roots.z_min
 
 
@@ -173,14 +176,16 @@ def _wax(coefficients: list[float] | None) -> list[float]:
     """The wax phase's coefficients, which its caller computes once for the whole solve.
 
     Raises:
-        AssertionError: if a wax phase is in the set and no coefficients came with it. That
-            is a wiring mistake rather than a state: the coefficients do not depend on the
-            phase, so there is nothing the solve could compute for itself.
+        InvalidInputError: if a wax phase is in the set and no coefficients came with it.
+            The coefficients do not depend on the phase, so there is nothing the solve could
+            compute for itself.
     """
-    assert coefficients is not None, (
-        "a wax phase is in the set and no coefficients came with it; they are the state's "
-        "and the component's, so the caller that knows the mixture is what computes them"
-    )
+    if coefficients is None:
+        raise InvalidInputError(
+            "phase",
+            "a wax phase is in the set and no coefficients came with it; they are the "
+            "state's and the component's, so the caller that knows the mixture computes them",
+        )
     return coefficients
 
 

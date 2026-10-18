@@ -152,7 +152,9 @@ impl Phases {
                 continue;
             }
             let moved: Vec<f64> = {
-                let source = self.get(from).expect("checked above");
+                let source = self
+                    .get(from) // claim-ok: an_entrainment_moves_moles_between_the_phases
+                    .expect("checked above");
                 source
                     .amounts
                     .iter()
@@ -161,6 +163,7 @@ impl Phases {
             };
             for (amount, change) in self
                 .get_mut(from)
+                // claim-ok: an_entrainment_moves_moles_between_the_phases
                 .expect("checked above")
                 .amounts
                 .iter_mut()
@@ -170,6 +173,7 @@ impl Phases {
             }
             for (amount, change) in self
                 .get_mut(to)
+                // claim-ok: an_entrainment_moves_moles_between_the_phases
                 .expect("checked above")
                 .amounts
                 .iter_mut()

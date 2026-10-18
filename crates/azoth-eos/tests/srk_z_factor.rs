@@ -2,7 +2,7 @@
 
 use azoth_core::AzothError;
 use azoth_eos::spec_gen;
-use azoth_eos::{Cubic, srk_z_factor};
+use azoth_eos::{Cubic, RootStructure, srk_z_factor};
 use azoth_test_support as common;
 
 const CALC_ID: &str = "eos.srk_z_factor";
@@ -68,6 +68,37 @@ fn every_case_in_the_spec() {
     assert!(
         executed >= 2,
         "expected several active cases, ran {executed}"
+    );
+}
+
+/// The admissible root count is one or three, and never two.
+///
+/// The twin of `pr_z_factor`'s sweep. `f(b_reduced)` is exactly `-2*b_reduced**2`, so `B`
+/// lies below all three roots or between the middle and the largest one, and there is no
+/// in-between case; a sign error in the constant term would make a count of two
+/// reachable.
+#[test]
+fn the_admissible_count_is_never_two() {
+    let mut seen_one = 0_u32;
+    let mut seen_three = 0_u32;
+    for a_step in 0..=120 {
+        for b_step in 1..=98 {
+            let a = 0.6 * f64::from(a_step) / 120.0;
+            let b = 0.002 + 0.098 * f64::from(b_step) / 98.0;
+            let r = srk_z_factor(a, b).unwrap();
+            match r.root_structure {
+                RootStructure::One => seen_one += 1,
+                RootStructure::Three => seen_three += 1,
+            }
+            assert!(
+                cubic(a, b, b) < 0.0,
+                "f(B) should be -2*B**2 < 0 for A = {a}, B = {b}"
+            );
+        }
+    }
+    assert!(
+        seen_one > 0 && seen_three > 0,
+        "the sweep should reach both cases"
     );
 }
 

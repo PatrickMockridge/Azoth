@@ -4,6 +4,7 @@
 // the per-state tuple is clearer than a factored type.
 #![allow(clippy::excessive_precision, clippy::type_complexity)]
 
+use azoth_core::AzothError;
 use azoth_eos::argon_solid;
 use azoth_eos::dual;
 
@@ -76,7 +77,7 @@ fn properties_reproduce_neqsim() {
         ),
     ];
     for (t, p, v, a, u, s, h, g, cv, cp, ln_phi) in cases {
-        let state = argon_solid::properties(t, p);
+        let state = argon_solid::properties(t, p).expect("the published case is in range");
         assert_close(state.v, v, 1e-8);
         assert_close(state.a, a, 1e-8);
         assert_close(state.u, u, 1e-8);
@@ -101,7 +102,7 @@ fn debye_function_reproduces_neqsim() {
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {
     for (t, p) in [(70.0, 1.0e6), (20.0, 1.0e3), (300.0, 1.6e10)] {
-        let state = argon_solid::properties(t, p);
+        let state = argon_solid::properties(t, p).expect("the published case is in range");
         assert_close(state.g, state.h - t * state.s, 1e-9);
         assert_close(state.u, state.h - p * state.v, 1e-9);
         assert_close(state.u, state.a + t * state.s, 1e-9);
@@ -117,5 +118,22 @@ fn properties_satisfy_the_thermodynamic_identities() {
             - argon_solid::pressure(t, state.v - dv))
             / (2.0 * dv);
         assert_close(state.cp - state.cv, t * dp_dt * dp_dt / -dp_dv, 1e-5);
+    }
+}
+
+/// A state outside the equation's published range is a typed refusal, not a panic.
+#[test]
+fn a_state_outside_the_published_range_is_refused() {
+    for (t, p) in [
+        (0.0, 1.0e5),
+        (301.0, 1.0e5),
+        (20.0, 0.0),
+        (20.0, 1.6e10 + 1.0),
+    ] {
+        let error = argon_solid::properties(t, p).expect_err("out of range");
+        assert!(
+            matches!(error, AzothError::OutOfRange { .. }),
+            "{t} K and {p} Pa: {error:?}"
+        );
     }
 }

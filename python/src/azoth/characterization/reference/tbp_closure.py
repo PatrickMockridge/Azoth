@@ -63,7 +63,11 @@ def _forward_boiling_point(
         # `_evaluate`'s map carries one optional key - the attraction exponent - and a
         # boiling point is not it; the narrowing says which is which.
         tb = _evaluate(model, molar_mass * 1000.0, density, None)["tb"]
-        assert tb is not None
+        if tb is None:
+            raise InvalidInputError(
+                "molar_mass",
+                "the correlated boiling point is absent at this cut's molar mass and density",
+            )
         return float(tb)
     return soreide_boiling_point(molar_mass, density)
 

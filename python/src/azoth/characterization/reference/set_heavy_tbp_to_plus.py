@@ -130,7 +130,10 @@ def set_heavy_tbp_to_plus(
         if winner is None or best < number:
             best = number
             winner = index
-    assert winner is not None  # the slate is not empty and every name parsed
+    if winner is None:
+        raise InvalidInputError(
+            "names", "the slate is empty, so there is no row to place the plus end at"
+        )
 
     if winner == 0:
         raise InvalidInputError(

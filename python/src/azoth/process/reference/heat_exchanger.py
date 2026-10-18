@@ -290,7 +290,10 @@ def _states(
     if pinned:
         hot_pinned = hot_outlet_temperature is not None
         pinned_t = hot_outlet_temperature if hot_pinned else cold_outlet_temperature
-        assert pinned_t is not None  # `pinned` guarantees exactly one of them
+        if pinned_t is None:
+            raise InvalidInputError(
+                "mode", "a pinned outlet was requested and neither outlet temperature was given"
+            )
         if hot_pinned:
             specified, _ = enthalpy_at(hot_mixture, hot_gas, pinned_t, hot_in_p, hot_in_z)
             duty = hot_in_n * (specified - hot_h)
@@ -300,7 +303,8 @@ def _states(
             duty = cold_in_n * (specified - cold_h)
             cold_out_h, hot_out_h = specified, hot_h - divide(duty, hot_in_n)
     else:
-        assert ua is not None  # the mode check above guarantees it
+        if ua is None:
+            raise InvalidInputError("ua", "the rating mode needs an overall conductance")
         # Each side flashed at the *other's* inlet temperature, which is `run`'s own
         # estimate of its capacity and is what makes the number of passes not matter.
         hot_seeded, _ = enthalpy_at(hot_mixture, hot_gas, cold_in_t, hot_in_p, hot_in_z)

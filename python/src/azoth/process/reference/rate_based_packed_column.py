@@ -1054,7 +1054,10 @@ def _states(
             liquid_in if index + 1 == number_of_segments else liquid_leaving[index + 1]
             for index in range(number_of_segments)
         ]
-    assert solution is not None
+    if solution is None:
+        raise InvalidInputError(
+            "segments", "the profile loop produced no solution at the first pass"
+        )
 
     totals: dict[str, float] = {}
     total_absolute = 0.0

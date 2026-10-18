@@ -207,10 +207,16 @@ def whitson_gamma_split(
     last_carbon = values["last_carbon_number"]
     molar_mass_value = values["molar_mass"]
     density_value = values["density"]
-    assert first_carbon is not None
-    assert last_carbon is not None
-    assert molar_mass_value is not None
-    assert density_value is not None
+    if first_carbon is None:
+        raise InvalidInputError(
+            "cuts", "`first_carbon_number` is required of the slate's first row"
+        )
+    if last_carbon is None:
+        raise InvalidInputError("cuts", "`last_carbon_number` is required of the slate's first row")
+    if molar_mass_value is None:
+        raise InvalidInputError("cuts", "`molar_mass` is required of the slate's first row")
+    if density_value is None:
+        raise InvalidInputError("cuts", "`density` is required of the slate's first row")
 
     first = int(first_carbon)
     last = int(last_carbon)

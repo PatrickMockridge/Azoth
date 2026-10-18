@@ -156,6 +156,7 @@ pub fn shortcut_distillation_column(
         Phase::TwoPhase => 1.0 - flash.vapour_fraction.unwrap_or(0.0),
         Phase::AllVapour => 0.0,
         Phase::AllLiquid => 1.0,
+        // claim-ok: a_shortcut_column_splits_a_four_component_feed
         Phase::Trivial => unreachable!("refused above"),
     };
 

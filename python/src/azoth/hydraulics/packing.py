@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from functools import cache
 
 from azoth._data import find
+from azoth.core.errors import InvalidInputError
 
 #: The compiled table, which is the manifest's `neqsim/Packing.csv` entry.
 PACKING_CSV = "data/packing/packing.csv"
@@ -202,7 +203,11 @@ def packing_or_default(name: str) -> PackingSpecification:
         'Pall-Ring-50'
     """
     found = packing(name) or packing("Pall-Ring-50")
-    assert found is not None, "Pall-Ring-50 is a built-in packing"
+    if found is None:
+        raise InvalidInputError(
+            "packing_type",
+            "`Pall-Ring-50` is the class's built-in default and this table does not carry it",
+        )
     return found
 
 

@@ -98,7 +98,10 @@ def salt_precipitation(
     for position, candidate in enumerate(components):
         if candidate.strip().lower() == "h3o+":
             water_mass = databank.entry("water").molar_mass
-            assert water_mass is not None  # the databank carries it for every row
+            if water_mass is None:
+                raise InvalidInputError(
+                    "components", "water carries no molar mass in the component databank"
+                )
             hydrogen = float(z[position] / (z[water] * float(water_mass.to("kg/mol").magnitude)))
             break
 

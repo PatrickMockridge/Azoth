@@ -96,7 +96,10 @@ def _feed_state(
         if gibbs < best_gibbs:
             best_gibbs = gibbs
             best = compressibility
-    assert best is not None  # `candidates` is never empty
+    if best is None:
+        raise InvalidInputError(
+            "phase", "the root candidates are empty, so there is no root to evaluate"
+        )
     return phase_state_at(reduced, kij, z, best)
 
 

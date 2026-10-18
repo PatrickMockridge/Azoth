@@ -39,7 +39,7 @@ pub fn argon_solid_phase(
         &mut warnings,
     )?;
 
-    let state = argon_solid::properties(t.value, p.value);
+    let state = argon_solid::properties(t.value, p.value)?;
 
     Ok(ArgonSolidPhaseResult {
         z_factor: p.value * state.v / (argon_solid::R * t.value),
