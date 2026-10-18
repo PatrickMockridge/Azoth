@@ -20,10 +20,10 @@ Every derivative is analytic, from
 
 from __future__ import annotations
 
-import math
 from typing import Any, NamedTuple
 
 from azoth.core.errors import SolverNotConvergedError
+from azoth.core.numerics import natural_log
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     ReducedParameters,
@@ -67,8 +67,8 @@ def _gibbs_energy(
     vapour = phase_state(reduced, mixture.kij, y, liquid=False)
     total = 0.0
     for i in range(len(u)):
-        total += u[i] * (vapour.ln_phi[i] + math.log(y[i]))
-        total += (feed[i] - u[i]) * (liquid.ln_phi[i] + math.log(x[i]))
+        total += u[i] * (vapour.ln_phi[i] + natural_log(y[i]))
+        total += (feed[i] - u[i]) * (liquid.ln_phi[i] + natural_log(x[i]))
     return total
 
 
@@ -129,7 +129,8 @@ def step(
     beta = sum(u)
 
     residual = [
-        vapour.ln_phi[i] + math.log(y[i]) - liquid.ln_phi[i] - math.log(x[i]) for i in range(n)
+        vapour.ln_phi[i] + natural_log(y[i]) - liquid.ln_phi[i] - natural_log(x[i])
+        for i in range(n)
     ]
     current = _gibbs_energy(mixture, reduced, feed, u)
 
@@ -178,9 +179,9 @@ def step(
     landed = max(
         abs(
             landed_vapour.ln_phi[i]
-            + math.log(landed_y[i])
+            + natural_log(landed_y[i])
             - landed_liquid.ln_phi[i]
-            - math.log(landed_x[i])
+            - natural_log(landed_x[i])
         )
         for i in range(n)
     )

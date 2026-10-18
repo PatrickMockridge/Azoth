@@ -22,6 +22,7 @@ from dataclasses import dataclass
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.numerics import natural_log
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Co2BrinePhaseEquilibriumResult
 from azoth.core.units import Q, input_to_si
@@ -81,7 +82,7 @@ class _Layer:
             tuple(x),
             tuple(state.ln_phi),
             tuple(
-                math.log(fraction) + ln_phi
+                natural_log(fraction) + ln_phi
                 for fraction, ln_phi in zip(x, state.ln_phi, strict=True)
             ),
         )

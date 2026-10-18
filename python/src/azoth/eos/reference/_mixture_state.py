@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import natural_log
 from azoth.core.result import Phase
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.alpha_term import (
@@ -2044,14 +2045,6 @@ def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[floa
     return x, y
 
 
-def _log(x: float) -> float:
-    """``log``, giving NaN outside its domain as Java and Rust do."""
-    try:
-        return math.log(x)
-    except ValueError:
-        return math.nan
-
-
 def is_trivial(k: list[float], tolerance: float) -> bool:
     """Whether every K-value has collapsed to 1.
 
@@ -2060,7 +2053,7 @@ def is_trivial(k: list[float], tolerance: float) -> bool:
     the comparison is false, and the iteration carries on. Reached in practice by the
     freezing-point search, whose outer bisection walks the flash through cold CO2-rich states.
     """
-    return all(abs(_log(value)) < tolerance for value in k)
+    return all(abs(natural_log(value)) < tolerance for value in k)
 
 
 def normalise(values: list[float]) -> list[float]:

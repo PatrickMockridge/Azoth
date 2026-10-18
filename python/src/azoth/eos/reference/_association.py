@@ -27,6 +27,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import natural_log
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -565,7 +566,7 @@ class Association:
 
         # `A_assoc/(RT) = sum_i n_i sum_{A in i} (ln X_A - X_A/2 + 1/2)`.
         helmholtz_rt = sum(
-            n_i * sum(math.log(x[a]) - x[a] / 2.0 + 0.5 for a in self.sites_of(i))
+            n_i * sum(natural_log(x[a]) - x[a] / 2.0 + 0.5 for a in self.sites_of(i))
             for i, n_i in enumerate(moles)
         )
         # `hCPA = sum_i n_i sum_{A in i} (1 - X_A)`: the number of unbonded sites, weighted
@@ -574,7 +575,8 @@ class Association:
             n_i * sum(1.0 - x[a] for a in self.sites_of(i)) for i, n_i in enumerate(moles)
         )
         ln_phi = tuple(
-            sum(math.log(x[a]) for a in self.sites_of(i)) - 0.5 * unbonded_sites * rdf.d_ln_g_dn[i]
+            sum(natural_log(x[a]) for a in self.sites_of(i))
+            - 0.5 * unbonded_sites * rdf.d_ln_g_dn[i]
             for i in range(n)
         )
         # NeqSim's `dFCPAdV = (hCPA/(2V)) (1 - V d ln g/dV)`.

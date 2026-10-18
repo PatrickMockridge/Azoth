@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from typing import Any, TypedDict
 
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.numerics import natural_log
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactiveHybridEosGeFlashResult
 from azoth.core.units import Q, input_to_si, quantity
@@ -472,12 +473,12 @@ def log_activities(
             "components", "the activity vector is taken against water and this fluid carries none"
         )
 
-    shift = -math.log(x[water]) + math.log(
+    shift = -natural_log(x[water]) + math.log(
         REFERENCE_SOLVENT_MOLES / (REFERENCE_SOLVENT_MOLES + REFERENCE_SOLUTE_MOLES)
     )
     out: list[float] = []
     for index, name in enumerate(components):
-        value = activity.ln_gamma[index] - math.log(activity.gamma_inf[index])
+        value = activity.ln_gamma[index] - natural_log(activity.gamma_inf[index])
         charge = _tables.ionic_charge(name)
         if not (charge is not None and charge != 0.0) and index != water:
             value += shift
@@ -581,7 +582,7 @@ def _log_fugacity_residual(
     feed - the roles were solved at the adjusted one.
     """
     ln_phi = [
-        [math.log(value) for value in row]
+        [natural_log(value) for value in row]
         for row in _hybrid._coefficients(
             reduced, mixture.kij, phases, components, t_si, p_si, AQUEOUS_ROLE
         )
