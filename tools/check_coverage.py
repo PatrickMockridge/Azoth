@@ -55,8 +55,18 @@ def files_with_no_line_run(changed: list[str], executed: set[str]) -> list[str]:
     return sorted(path for path in changed if path not in executed)
 
 
+def executed_only(paths: list[str]) -> list[str]:
+    """The paths coverage can measure.
+
+    **`.py` only.** Coverage measures executable lines, and a changed `_core.pyi` is a type stub
+    with none - so demanding that "a line of it ran" is a check no diff can satisfy. Measured on
+    the first push that regenerated one: the gate failed on the stub and not on any code.
+    """
+    return [path for path in paths if path.endswith(".py")]
+
+
 def changed_python(base: str) -> list[str]:
-    """The `python/src/azoth` files this diff changed and that still exist."""
+    """The executed `python/src/azoth` files this diff changed and that still exist."""
     result = subprocess.run(
         ["git", "diff", "--name-only", "--diff-filter=d", f"{base}...HEAD", "--", PREFIX],
         cwd=ROOT,
@@ -64,7 +74,7 @@ def changed_python(base: str) -> list[str]:
         text=True,
         check=True,
     )
-    return sorted(line for line in result.stdout.split("\n") if line.strip())
+    return sorted(executed_only([line for line in result.stdout.split("\n") if line.strip()]))
 
 
 def main() -> int:

@@ -92,3 +92,14 @@ def test_a_written_document_with_a_missing_file_is_one(
         sys, "stdin", type("S", (), {"__iter__": staticmethod(lambda: iter(["a.py\n"]))})()
     )
     assert module.main() == 1
+
+
+def test_a_type_stub_is_not_demanded() -> None:
+    """**A `.pyi` has no executable line, so "a line of it ran" is unsatisfiable.**
+
+    Measured on the first push that regenerated `_core.pyi`: the diff-coverage step failed on the
+    stub and on no code at all. The filter is a pure function here so the rule has a test.
+    """
+    assert tool().executed_only(
+        ["python/src/azoth/eos/flash.py", "python/src/azoth/_core.pyi"]
+    ) == ["python/src/azoth/eos/flash.py"]
