@@ -52,6 +52,18 @@ count of the moment, so the other order throws `Index 4 out of bounds for length
 java -cp .:neqsim-f0c7436.jar BrineProbe > captures/brine_probe.tsv
 ```
 
+**`ReactiveBrineProbe` carries what that capture does not: the nine species and the residuals.**
+`BrineProbe`'s reactive block prints the component *count* and never the names - and a
+`removeJunkReactions` reconstruction from the reaction tables gives eight, where
+`chemicalReactionInit()` grows the brine to nine. It prints the residuals the coupling is
+accepted on as well, because `ReactiveCO2BrinePhaseEquilibrium.run` reads its reaction residual
+from the pass *before*, and on the first pass that accessor answers `NaN` - which is why a pass
+that has solved nothing cannot be accepted.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ReactiveBrineProbe > captures/reactive_brine_probe.tsv
+```
+
 ```bash
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 300 100 propane 1 > captures/pcsaft_probe_propane_300_100.tsv
