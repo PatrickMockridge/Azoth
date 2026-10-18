@@ -27,6 +27,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ManifoldResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.reference.pt_flash import check_composition
 from azoth.process.reference.mixer import _route as mix_route
 from azoth.process.reference.splitter import _route as split_route
 
@@ -90,6 +91,18 @@ def manifold(
         }.get,
         warnings,
     )
+
+    for name, got in (("feed_z", len(feed_z)), ("feed_p", len(p)), ("feed_t", len(t))):
+        if got != len(feed_n):
+            raise InvalidInputError(
+                name,
+                f"a manifold's feeds are one port, so every field has one entry per feed: "
+                f"`feed_n` has {len(feed_n)} and `{name}` has {got}",
+            )
+    # Every feed is a state before the low-flow filter drops any of them, which is the
+    # order the Rust model builds its streams in.
+    for row in feed_z:
+        check_composition(list(row), len(components))
 
     # The low-flow filter, in kg/s against a threshold NeqSim states in kg/hr.
     keep = [

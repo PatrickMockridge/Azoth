@@ -27,6 +27,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ComponentSplitterResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.reference.pt_flash import check_composition
 from azoth.process.reference.splitter import _route as split_route
 
 
@@ -83,6 +84,7 @@ def component_splitter(
         warnings,
     )
 
+    check_composition(list(feed_z), len(components))
     if len(split_factors) != len(feed_z):
         raise InvalidInputError(
             "split_factors",

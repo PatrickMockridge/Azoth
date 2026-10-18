@@ -86,7 +86,7 @@ def water_dew_point_temperature(
     for index, name in enumerate(lowered):
         if name not in TARGETS:
             continue
-        if not z[index] > 0.0:
+        if not math.isfinite(z[index]) or z[index] <= 0.0:
             raise InvalidInputError(
                 "z",
                 f"{components[index]!r} is the phase this model seeds from and its mole "

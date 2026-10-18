@@ -683,8 +683,11 @@ def coerce(expression: str, rust_type: str | None, parameter: str) -> str:
                 f"{parameter}: an optional count whose expression is `{expression}`, which this "
                 f"file cannot put the conversion inside"
             )
-        return f"None if {parameter} is None else int({guarded.group(1)})"
-    return f"int({expression})"
+        return f'None if {parameter} is None else _count("{parameter}", {guarded.group(1)})'
+    # **A checked conversion, not `int()`.** PyO3 raises a raw `ValueError`/`OverflowError`
+    # for a NaN, an infinity or a negative in an unsigned parameter; `_count` names the input
+    # and raises this library's `OutOfRangeError` instead, which is what the reference does.
+    return f'_count("{parameter}", {expression})'
 
 
 # --- the whole function -----------------------------------------------------
@@ -936,6 +939,8 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
             used.add(row)
     if any("_si(" in expression for expression, _ in arguments):
         used.add("_si")
+    if any("_count(" in expression for expression, _ in arguments):
+        used.add("_count")
     if "mixture" in params:
         used.add("_association_spec")
     if "warnings" in fields:
@@ -994,7 +999,9 @@ def emit() -> str:
     # and isort wants them named in the block they come from.
     # The helpers the adapters call that are not adapters, from `azoth.core.bridge_support`.
     support = sorted(
-        name for name in used if name in ("_association_spec", "_molar_masses", "_si", "_warnings")
+        name
+        for name in used
+        if name in ("_association_spec", "_count", "_molar_masses", "_si", "_warnings")
     )
     # The unit converters, from `azoth.core.units`. Three are on every adapter; the record
     # reader is not, and importing it unconditionally would be an unused name until the first

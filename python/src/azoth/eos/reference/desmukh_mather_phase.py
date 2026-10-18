@@ -93,6 +93,8 @@ def desmukh_mather_phase(
     n = len(components)
     if len(x) != n:
         raise InvalidInputError("x", f"a mixture of {n} components has {len(x)} mole fractions")
+    if any(not math.isfinite(value) for value in x):
+        raise InvalidInputError("x", "a mole fraction must be finite")
     bad = next((i for i, value in enumerate(x) if value < 0.0), None)
     if bad is not None:
         raise InvalidInputError("x", f"x[{bad}] is {x[bad]} but a mole fraction cannot be negative")

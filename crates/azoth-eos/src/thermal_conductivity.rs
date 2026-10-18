@@ -201,6 +201,14 @@ pub fn thermal_conductivity(
             ),
         ));
     }
+    // **The Python reference's own composition rule**, mirrored here: a negative or
+    // unnormalised `z` is refused before the mixing rule reads it.
+    if z.iter().any(|&value| value < 0.0) || (z.iter().sum::<f64>() - 1.0).abs() > 1.0e-09 {
+        return Err(AzothError::invalid_input(
+            "z",
+            "mole fractions must be non-negative and sum to one",
+        ));
+    }
     let molar_mass: Vec<f64> = components
         .iter()
         .map(|c| {

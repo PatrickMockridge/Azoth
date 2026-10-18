@@ -86,6 +86,19 @@ pub fn hybrid_eos_ge_flash(
     p: f64,
     moles: &[f64],
 ) -> Result<HybridEosGeFlashResult> {
+    // **The declared input's name.** An empty `moles` against five components is a length
+    // disagreement, and the Python reference names `moles`; the ion-flag check below is an
+    // internal one and reports a state the caller cannot see.
+    if names.len() != moles.len() {
+        return Err(AzothError::invalid_input(
+            "moles",
+            format!(
+                "a feed for {} components has {} entries",
+                names.len(),
+                moles.len()
+            ),
+        ));
+    }
     let (mixture, _) = crate::databank::mixture_of_with_ions(names, cubic, None)?;
     let spec = &crate::model_gen::HYBRID_EOS_GE_FLASH_SPEC;
     let mut warnings = Vec::new();

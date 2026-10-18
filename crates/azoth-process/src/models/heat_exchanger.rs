@@ -116,6 +116,17 @@ pub fn heat_exchanger(
         &mut warnings,
     )?;
 
+    // **A zero flow is not a state**, and every duty-per-flow divides by one.
+    for (field, n) in [("hot_in_n", hot_in_n), ("cold_in_n", cold_in_n)] {
+        if n <= 0.0 {
+            return Err(azoth_core::AzothError::out_of_range(
+                field,
+                n,
+                "an exchanger side needs a positive molar flow",
+            ));
+        }
+    }
+
     let hot = Stream::from_pt(
         hot_components.to_vec(),
         hot_in_z.to_vec(),

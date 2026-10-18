@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import divide, powf, square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ChungConductivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -97,18 +98,22 @@ def chung_conductivity(
     )
 
     eta0 = (
-        40.785 * fc * math.sqrt(m_g * values["T"]) / (math.pow(vc_cm3, 2.0 / 3.0) * omega_v)
-    ) * 1.0e-7
+        divide(
+            40.785 * fc * square_root(m_g * values["T"]),
+            powf(vc_cm3, 2.0 / 3.0) * omega_v,
+        )
+        * 1.0e-7
+    )
 
     alpha = values["Cv0"] / _R - 1.5
     beta = 0.7862 - 0.7109 * omega + 1.3168 * omega * omega
     z = 2.0 + 10.5 * (values["T"] / values["Tc"]) ** 2
-    psi = 1.0 + alpha * (
-        (0.215 + 0.28288 * alpha - 1.061 * beta + 0.26665 * z)
-        / (0.6366 + beta * z + 1.061 * alpha * beta)
+    psi = 1.0 + alpha * divide(
+        0.215 + 0.28288 * alpha - 1.061 * beta + 0.26665 * z,
+        0.6366 + beta * z + 1.061 * alpha * beta,
     )
 
-    k = 3.75 * _R * psi * eta0 / values["M"]
+    k = divide(3.75 * _R * psi * eta0, values["M"])
 
     apply_checks(checks.derived, lambda name: k if name == "k" else None, warnings)
 

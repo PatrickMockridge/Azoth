@@ -205,7 +205,7 @@ def _tabulated_residual(
     exponentiating: the terms are ratios of fugacity coefficients spanning twenty orders of
     magnitude and a direct sum underflows.
     """
-    if not z[index] > 0.0:
+    if not math.isfinite(z[index]) or z[index] <= 0.0:
         raise InvalidInputError(
             "solid",
             f"`{solid}` has no overall mole fraction, and a solid cannot appear from a "

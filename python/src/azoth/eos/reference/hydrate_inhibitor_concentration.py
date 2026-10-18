@@ -15,7 +15,7 @@ aqueous phase's own composition: this only asks for a hydrate temperature.
 from __future__ import annotations
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HydrateInhibitorConcentrationResult
 from azoth.core.units import Q, from_si, input_to_si, to_si
@@ -106,8 +106,17 @@ def hydrate_inhibitor_concentration(
 
         step = error * 0.01 if iterations < MINIMUM_STEPS + 1 else -_ratio(error, derivative) * 0.5
         walk[index] += step
-
+        # **The secant's own bound, and the same one the Rust loop applies.**
+        if walk[index] < 0.0:
+            raise OutOfRangeError(
+                "moles",
+                walk[index],
+                "the secant stepped the inhibitor's moles below zero, which is not a feed",
+            )
         total = sum(walk)
+        if total <= 0.0:
+            raise OutOfRangeError("moles", total, "the feed has no moles left to flash")
+
         fractions = [value / total for value in walk]
         solved = hydrate_formation_temperature(
             components, P=from_si(p_si, "Pa"), z=fractions, eos=eos, hydrate_model=hydrate_model

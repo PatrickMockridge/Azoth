@@ -30,6 +30,7 @@ import math
 from collections.abc import Sequence
 
 from azoth.core.errors import InvalidInputError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactivePhaseEquilibriumResult
 from azoth.core.units import Q, from_si, input_to_si, quantity
@@ -371,7 +372,7 @@ def _certify(
                     f"carry, so its log residual cannot be evaluated here",
                 )
             index = components.index(name)
-            x = max(answer_magnitudes[index] / phase_moles, MIN_MOLES)
+            x = max(divide(answer_magnitudes[index], phase_moles), MIN_MOLES)
             quotient += coefficient * (math.log(x) + log_activity[index])
         worst_reaction = max(worst_reaction, abs(quotient - ln_k))
 

@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
-from azoth.core.numerics import natural_log
+from azoth.core.numerics import divide, natural_log
 from azoth.core.result import Phase
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.alpha_term import (
@@ -1974,7 +1974,9 @@ def rachford_rice(
     lo, hi = bounds
 
     def g(beta: float) -> float:
-        return sum(zi * (ki - 1.0) / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True))
+        return sum(
+            divide(zi * (ki - 1.0), 1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True)
+        )
 
     for _ in range(max_iterations):
         if hi - lo <= tolerance:
@@ -2040,7 +2042,7 @@ def negative_flash_warning(phase: Phase, beta: float) -> Warning:
 
 def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[float], list[float]]:
     """The two phases' compositions at a vapour fraction."""
-    x = [zi / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True)]
+    x = [divide(zi, 1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True)]
     y = [ki * xi for ki, xi in zip(k, x, strict=True)]
     return x, y
 

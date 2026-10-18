@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import SaturateWithWaterResult
 from azoth.core.units import Q, input_to_si, ureg
@@ -115,13 +115,14 @@ def saturate_with_water(
             "moles",
             f"{len(components)} components but {len(feed)} mole numbers; the two must match",
         )
+    # **A bound on the input, so it is the class the spec's other bounds use** - which is
+    # what the Rust entry raises for the same state.
     if any(not math.isfinite(m) or m < 0.0 for m in feed):
-        raise InvalidInputError("moles", "every mole number must be finite and not negative")
+        first = next(m for m in feed if not math.isfinite(m) or m < 0.0)
+        raise OutOfRangeError("moles", first, "every mole number must be finite and not negative")
     total = sum(feed)
     if not total > 0.0 or not math.isfinite(total):
-        raise InvalidInputError(
-            "moles", f"the feed's mole numbers total {total}, which is not a feed"
-        )
+        raise OutOfRangeError("moles", total, "the feed's mole numbers do not describe a feed")
 
     # **The associating fluid is refused, and the reason is measured.** The operation is a
     # *multiphase* flash, and `eos.tp_multiflash` has no associating case anywhere in this

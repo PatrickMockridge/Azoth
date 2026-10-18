@@ -38,12 +38,13 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::warning::Warning;
-use azoth_core::{AzothError, CalcResult, Result};
+use azoth_core::{AzothError, CalcResult, Result, apply_checks};
 use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, RootSide};
 
 use crate::databank::{formation_properties, ionic_charge};
 use crate::formula_matrix::FormulaMatrix;
+use crate::model_gen;
 use crate::rand_solver::{PhaseFeed, ThermoData, solve_single_phase, standard_potentials};
 use crate::reactive_flash::{DriverState, run};
 use crate::reactive_stability::CriticalConstants;
@@ -144,6 +145,21 @@ pub fn reactive_tp_flash(
     moles: &[f64],
     max_phases: usize,
 ) -> Result<ReactiveTpFlashResult> {
+    // **The spec's own bounds, which the Python reference has always applied.** Without
+    // this a zero temperature reaches the alpha term and is refused there as `Tr`, so the
+    // same input names `T` on one backend and `Tr` on the other.
+    let mut warnings = Vec::new();
+    apply_checks(
+        model_gen::REACTIVE_TP_FLASH_SPEC.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(temperature),
+            "P" => Some(pressure),
+            "max_phases" => Some(max_phases as f64),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
     if components.len() != moles.len() {
         return Err(AzothError::InvalidInput {
             field: "moles".to_string(),
@@ -351,6 +367,6 @@ pub fn reactive_tp_flash(
         gibbs_energy: outcome.gibbs_energy,
         residual,
         element_residual,
-        warnings: Vec::new(),
+        warnings,
     })
 }

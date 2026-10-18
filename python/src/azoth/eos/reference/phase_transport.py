@@ -113,6 +113,11 @@ def phase_transport(
         raise InvalidInputError(
             "z", f"a mixture of {count} component(s) needs {count} mole fractions, got {len(z)}"
         )
+    # **The composition rule the Rust entry applies, before any correlation reads `z`.**
+    # Without it an infinity or a negative fraction reached a property calculation and was
+    # reported as that calculation's range failure rather than as the composition it is not.
+    if any(value < 0.0 for value in z) or abs(sum(z) - 1.0) > 1.0e-09:
+        raise InvalidInputError("z", "mole fractions must be non-negative and sum to one")
     if count < 2:
         raise InvalidInputError(
             "components",

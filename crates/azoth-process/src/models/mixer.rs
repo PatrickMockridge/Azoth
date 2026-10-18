@@ -61,6 +61,24 @@ pub fn mixer(
         &mut warnings,
     )?;
 
+    // **The declared input's name, not the kernel's.** A zero total is the kernel's own
+    // refusal, but the caller wrote `feed_n`, and the two backends raise the same field.
+    if feed_n.is_empty() {
+        return Err(AzothError::invalid_input(
+            "feed_n",
+            "a mixer needs at least one feed",
+        ));
+    }
+    let n_total: f64 = feed_n.iter().sum();
+    if n_total <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "feed_n",
+            format!(
+                "a mixer's feeds carry {n_total} mol/s in total, so there is no mixture to report"
+            ),
+        ));
+    }
+
     // The feeds are one fluid, so the component list is declared once and every feed
     // carries a composition over it. A short feed is a caller error rather than something
     // to zip past, because a mixer that silently dropped an inlet would answer a smaller

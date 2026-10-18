@@ -13,7 +13,7 @@ from typing import Any
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import LiquidViscosityPureResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, to_count
 from azoth.core.warnings import Warning
 
 CALC_ID = "eos.liquid_viscosity_pure"
@@ -106,6 +106,8 @@ def liquid_viscosity_pure(
             "form",
             f"`{form}` is not one of the two ladders: {', '.join(LADDERS)}",
         )
+    # The Rust signature's `u32`, refused as a number rather than converted by `int()`.
+    model = to_count(model, "model")
 
     from azoth._registry_gen import spec as _spec_for
 

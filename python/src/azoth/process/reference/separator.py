@@ -28,7 +28,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Phase, SeparatorResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -158,11 +159,18 @@ def _route(
     two answers. The kernel-level refusals are here rather than in the model because
     ``kernels/separator.rs`` is where Rust puts them.
     """
+    # **A zero flow is not a state**, and the heat-per-mole divides by it.
+    if feed_n <= 0.0:
+        raise OutOfRangeError("feed_n", feed_n, "a unit operation needs a positive molar flow")
     if not 0.0 <= gas_in_liquid <= 1.0:
         raise InvalidInputError(
             "gas_in_liquid",
             f"an entrainment fraction is a fraction, and {gas_in_liquid} is not in [0, 1]",
         )
+    if feed_p <= 0.0:
+        # The inlet is flashed before the vessel's arithmetic in Rust, so this is where the
+        # two backends meet: the same refusal the flash's own pressure bound makes.
+        raise OutOfRangeError("P", feed_p, "an absolute pressure; zero and below are not states")
     p_out = feed_p - pressure_drop
     if p_out <= 0.0:
         raise InvalidInputError(
@@ -187,7 +195,7 @@ def _route(
             mixture,
             ideal_gas,
             from_si(p_out, "Pa"),
-            from_si(h_in + heat_input / feed_n, "J/mol"),
+            from_si(h_in + divide(heat_input, feed_n), "J/mol"),
             feed_z,
         )
         temperature = moved.T

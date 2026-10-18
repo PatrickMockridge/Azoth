@@ -106,6 +106,14 @@ pub fn phase_transport(
             ),
         ));
     }
+    // **The Python reference's own composition rule**, mirrored here: a negative or
+    // unnormalised `z` is refused before a correlation reads it.
+    if z.iter().any(|&value| value < 0.0) || (z.iter().sum::<f64>() - 1.0).abs() > 1.0e-09 {
+        return Err(AzothError::invalid_input(
+            "z",
+            "mole fractions must be non-negative and sum to one",
+        ));
+    }
     if count < 2 {
         return Err(AzothError::invalid_input(
             "components",

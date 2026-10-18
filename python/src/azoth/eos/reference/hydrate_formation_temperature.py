@@ -20,6 +20,7 @@ from __future__ import annotations
 import math
 
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import (
     HydrateFormationTemperatureResult,
@@ -118,7 +119,7 @@ def hydrate_formation_temperature(
         _structure, coefficient = _hydrate.stable_structure(
             hydration.guests, fugacities, hydrate_model, t, p_si, reference
         )
-        return coefficient * p_si / fugacities[water_index] - 1.0
+        return divide(coefficient * p_si, fugacities[water_index]) - 1.0
 
     iterations = 0
     previous: tuple[float, float] | None = None

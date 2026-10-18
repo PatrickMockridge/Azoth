@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import FilterResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -134,9 +134,9 @@ def _route(
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
 
     if not inlet_p > 0.0:
-        raise InvalidInputError(
-            "inlet_p", f"a filter needs an inlet pressure to drop from, and {inlet_p} is not one"
-        )
+        # The flash the outlet passes through names the absolute pressure `P`, and the Rust
+        # entry reaches that refusal rather than a model-level one; the two are one error.
+        raise OutOfRangeError("P", inlet_p, "an absolute pressure; zero and below are not states")
     # `Math.max(0.0, inletPressure - 1.0e-6)` in the class's bara, which is 0.1 Pa.
     ceiling = max(0.0, inlet_p - 0.1)
     applied = min(max(0.0, pressure_drop), ceiling)

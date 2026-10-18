@@ -52,8 +52,10 @@ from collections.abc import Sequence
 from typing import Any
 
 from azoth.core.errors import InvalidInputError
+from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReferencePotentialsResult
 from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.warnings import Warning
 from azoth.reactions.reference import _linalg, _tables
 from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
 
@@ -119,7 +121,11 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
         >>> r.rank
         3
     """
-    t = input_to_si(_spec(), "T", T)
+    spec = _spec()
+    checks = checks_for(spec)
+    warnings: list[Warning] = []
+    t = input_to_si(spec, "T", T)
+    apply_checks(checks.on_input, {"T": t}.get, warnings)
 
     # Refused before the table is read, so an unknown source is reported as one.
     _tables.source_path(source)
@@ -200,7 +206,7 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
             independent=(0.0,) * width,
             survivors=tuple(survivor_mask),
             rank=0,
-            warnings=(),
+            warnings=tuple(warnings),
         )
 
     # The greedy column selection: a column is independent when adding it raises the
@@ -289,7 +295,7 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
         independent=tuple(independent_mask),
         survivors=tuple(survivor_mask),
         rank=rank,
-        warnings=(),
+        warnings=tuple(warnings),
     )
 
 

@@ -220,6 +220,12 @@ fn check_composition(values: &[f64], n: usize) -> Result<()> {
             ),
         ));
     }
+    if values.iter().any(|value| !value.is_finite()) {
+        return Err(AzothError::invalid_input(
+            "z",
+            "a mole fraction must be finite",
+        ));
+    }
     if let Some(bad) = values.iter().position(|&value| value < 0.0) {
         return Err(AzothError::invalid_input(
             "z",

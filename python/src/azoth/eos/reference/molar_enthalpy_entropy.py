@@ -217,6 +217,8 @@ def _check_composition(values: list[float], n: int) -> None:
         raise InvalidInputError(
             "z", f"a mixture of {n} components needs {n} mole fractions, but z has {len(values)}"
         )
+    if any(not math.isfinite(value) for value in values):
+        raise InvalidInputError("z", "a mole fraction must be finite")
     for i, value in enumerate(values):
         if value < 0.0:
             raise InvalidInputError(

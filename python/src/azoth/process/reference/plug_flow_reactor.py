@@ -48,6 +48,7 @@ from azoth.core.warnings import Warning
 from azoth.eos import components as _databank
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
+from azoth.eos.reference.pt_flash import check_composition
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.eos.reference.viscosity import viscosity as viscosity_solve
 from azoth.reactions.reference import _tables
@@ -292,6 +293,7 @@ def plug_flow_reactor(
     warnings: list[Warning] = []
     spec = _spec()
     checks = checks_for(spec)
+    check_composition(list(feed_z), len(components))
     # **A unit-carrying input arrives as a quantity and a dimensionless one as a bare float**,
     # which is the split `input_to_si` refuses to guess across - so the two are read apart and
     # everything below this line is SI magnitudes.

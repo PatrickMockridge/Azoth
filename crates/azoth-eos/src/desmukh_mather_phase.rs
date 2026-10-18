@@ -108,6 +108,12 @@ pub fn desmukh_mather_phase(
             format!("a mixture of {n} components has {} mole fractions", x.len()),
         ));
     }
+    if x.iter().any(|value| !value.is_finite()) {
+        return Err(AzothError::invalid_input(
+            "x",
+            "a mole fraction must be finite",
+        ));
+    }
     if let Some(bad) = x.iter().position(|&value| value < 0.0) {
         return Err(AzothError::invalid_input(
             "x",

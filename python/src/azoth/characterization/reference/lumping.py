@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import LumpingResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -141,13 +142,13 @@ def lumping(
         remaining = lumps - opened
         # A division by zero here is the Java one: an infinity the class never reads, because the
         # loop ends on the same cut.
-        target = (weight_total - accumulated) / remaining if remaining else float("inf")
-        fraction_of_heavy_end.append(lump_z / mole_fraction_total)
+        target = divide(weight_total - accumulated, remaining) if remaining else float("inf")
+        fraction_of_heavy_end.append(divide(lump_z, mole_fraction_total))
         lump_mole_fraction.append(lump_z)
-        lump_molar_mass.append(lump_weight / lump_z)
+        lump_molar_mass.append(divide(lump_weight, lump_z))
         # The gravity is the mass-weighted harmonic mean in the same scale the table uses: a pure
         # rescaling leaves the ratio unchanged, so no unit boundary is crossed here.
-        lump_density.append(lump_weight / denominator)
+        lump_density.append(divide(lump_weight, denominator))
         running = 0.0
         lump_z = 0.0
         lump_weight = 0.0

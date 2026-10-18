@@ -41,11 +41,12 @@ import math
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import DistillationColumnResult
 from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
+from azoth.eos.reference.pt_flash import check_composition
 from azoth.process.kernels import Stream
 from azoth.process.reference import _column_stage as _stage
 from azoth.process.reference import _unported
@@ -411,10 +412,16 @@ def _distillation_column_states(
     spec = _spec()
     checks = checks_for(spec)
     warnings: list[Warning] = []
+    check_composition(list(feed_z), len(components))
 
     n = input_to_si(spec, "feed_n", feed_n)
     p = input_to_si(spec, "feed_p", feed_p)
+    if p <= 0.0:
+        raise OutOfRangeError("P", p, "an absolute pressure; zero and below are not states")
     t = input_to_si(spec, "feed_t", feed_t)
+    # **The Rust model builds the feed stream before the tear**, so an input its flash refuses
+    # is raised at the boundary rather than swallowed by the side-draw candidate search.
+    _feed(components, n, list(feed_z), t, p)
     top = input_to_si(spec, "top_pressure", top_pressure)
     bottom = input_to_si(spec, "bottom_pressure", bottom_pressure)
     # **Absent means no pin**, which is what `setCondenserTemperature` not having been called

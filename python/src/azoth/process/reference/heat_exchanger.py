@@ -40,7 +40,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HeatExchangerResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -140,6 +141,10 @@ def heat_exchanger(
 
     hot_n = input_to_si(spec, "hot_in_n", hot_in_n)
     cold_n = input_to_si(spec, "cold_in_n", cold_in_n)
+    # A zero flow is not a state, and every duty-per-flow divides by one.
+    for field, flow in (("hot_in_n", hot_n), ("cold_in_n", cold_n)):
+        if flow <= 0.0:
+            raise OutOfRangeError(field, flow, "an exchanger side needs a positive molar flow")
 
     states = _states(
         hot_components,
@@ -289,11 +294,11 @@ def _states(
         if hot_pinned:
             specified, _ = enthalpy_at(hot_mixture, hot_gas, pinned_t, hot_in_p, hot_in_z)
             duty = hot_in_n * (specified - hot_h)
-            hot_out_h, cold_out_h = specified, cold_h - duty / cold_in_n
+            hot_out_h, cold_out_h = specified, cold_h - divide(duty, cold_in_n)
         else:
             specified, _ = enthalpy_at(cold_mixture, cold_gas, pinned_t, cold_in_p, cold_in_z)
             duty = cold_in_n * (specified - cold_h)
-            cold_out_h, hot_out_h = specified, hot_h - duty / hot_in_n
+            cold_out_h, hot_out_h = specified, hot_h - divide(duty, hot_in_n)
     else:
         assert ua is not None  # the mode check above guarantees it
         # Each side flashed at the *other's* inlet temperature, which is `run`'s own
@@ -302,12 +307,12 @@ def _states(
         cold_seeded, _ = enthalpy_at(cold_mixture, cold_gas, hot_in_t, cold_in_p, cold_in_z)
         hot_swing = hot_in_n * (hot_seeded - hot_h)
         cold_swing = cold_in_n * (cold_seeded - cold_h)
-        hot_capacity = abs(hot_swing) / span
-        cold_capacity = abs(cold_swing) / span
+        hot_capacity = divide(abs(hot_swing), span)
+        cold_capacity = divide(abs(cold_swing), span)
         c_min = min(hot_capacity, cold_capacity)
         c_max = max(hot_capacity, cold_capacity)
-        capacity_ratio = c_min / c_max
-        ntu = ua / c_min
+        capacity_ratio = divide(c_min, c_max)
+        ntu = divide(ua, c_min)
         effectiveness = _effectiveness(ntu, capacity_ratio, flow_arrangement)
         rating = Rating(
             hot_capacity=hot_capacity,
@@ -322,10 +327,16 @@ def _states(
         # is energy-balanced against it.
         if abs(cold_swing) > abs(hot_swing):
             duty = effectiveness * hot_swing
-            hot_out_h, cold_out_h = hot_h + duty / hot_in_n, cold_h - duty / cold_in_n
+            hot_out_h, cold_out_h = (
+                hot_h + divide(duty, hot_in_n),
+                cold_h - divide(duty, cold_in_n),
+            )
         else:
             duty = effectiveness * cold_swing
-            cold_out_h, hot_out_h = cold_h + duty / cold_in_n, hot_h - duty / hot_in_n
+            cold_out_h, hot_out_h = (
+                cold_h + divide(duty, cold_in_n),
+                hot_h - divide(duty, hot_in_n),
+            )
 
     return ExchangerStates(
         hot_in_h=hot_h,

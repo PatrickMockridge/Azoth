@@ -128,7 +128,11 @@ def vu_flash_single_comp(
             f"{len(mixture)}. A mixture's two-phase split is `eos.vu_flash`",
         )
     p_si = input_to_si(spec, "P", P)
-    apply_checks(checks.on_input, {"P": p_si}.get, warnings)
+    # **`V` is declared and read by the boundary even where the arithmetic does not use
+    # it.** The Rust path converts it, so a non-finite volume is refused there; skipping
+    # the conversion here answered where the other backend refused.
+    v_si = input_to_si(spec, "V", V)
+    apply_checks(checks.on_input, {"P": p_si, "V": v_si}.get, warnings)
 
     algorithm = spec["algorithm"]
     temperature = _saturation_temperature(mixture, p_si, algorithm)

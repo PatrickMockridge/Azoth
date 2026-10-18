@@ -8,6 +8,7 @@ correlation, the diffusion-volume ladder and the two ways the class states its p
 from __future__ import annotations
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import cube_root, divide, powf, square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import FullerSchettlerGiddingsDiffusivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -75,12 +76,10 @@ def fuller_schettler_giddings_diffusivity(
     vb_cm3 = values["VB"] * 1.0e6
     p_bar = values["P"] * 1.0e-5
 
-    sigma_v = va_cm3 ** (1.0 / 3.0) + vb_cm3 ** (1.0 / 3.0)
-    d_cm2s = (
-        1.013e-3
-        * values["T"] ** 1.75
-        * (1.0 / ma_g + 1.0 / mb_g) ** 0.5
-        / (p_bar * sigma_v * sigma_v)
+    sigma_v = cube_root(va_cm3) + cube_root(vb_cm3)
+    d_cm2s = divide(
+        1.013e-3 * powf(values["T"], 1.75) * square_root(divide(1.0, ma_g) + divide(1.0, mb_g)),
+        p_bar * sigma_v * sigma_v,
     )
     d = d_cm2s * 1.0e-4
 

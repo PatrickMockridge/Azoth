@@ -52,7 +52,8 @@ from functools import cache
 from typing import Any, Final
 
 from azoth._data import find
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import divide, natural_log
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import GibbsReactorResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -63,6 +64,7 @@ from azoth.eos.reference._mixture_state import (
     phase_state,
     reduced_parameters,
 )
+from azoth.eos.reference.pt_flash import check_composition
 
 #: ``GibbsReactor.java``'s own ``elementNames``, which has **seven** entries for an eight-column
 #: table. Index 5 is named ``Ar`` and reads the file's ``Na`` column; index 6 is named ``Z`` and
@@ -343,7 +345,7 @@ def solve(
     for iteration in range(1, max_iterations + 1):
         iterations = iteration
         total = sum(moles)
-        x = [value / total for value in moles]
+        x = [divide(value, total) for value in moles]
         reduced = reduced_parameters(mixture, temperature_value, pressure_bara * 1.0e5)
         state = phase_state(reduced, mixture.kij, x, liquid=False)
         derivatives = phase_derivatives(
@@ -436,13 +438,13 @@ def _objective(
     for i, entry in enumerate(species):
         if entry is None:
             continue
-        y = moles[i] / total
+        y = divide(moles[i], total)
         lagrange = sum(lambdas[j] * value for j, value in enumerate(entry.balance_elements()))
         values[i] = (
             entry.gibbs_energy(temperature, cp[i])
             + rt * derivatives.ln_phi[i]
-            + rt * math.log(y)
-            + rt * math.log(pressure_bara)
+            + rt * natural_log(y)
+            + rt * natural_log(pressure_bara)
             - lagrange
         )
     return values
@@ -591,6 +593,11 @@ def gibbs_reactor(
     temperature_k = input_to_si(spec, "feed_t", feed_t)
     if total_flow <= 0.0:
         raise InvalidInputError("feed_n", "a reactor needs a positive molar flow")
+    if pressure_pa <= 0.0:
+        raise OutOfRangeError(
+            "P", pressure_pa, "an absolute pressure; zero and below are not states"
+        )
+    check_composition(list(feed_z), len(components))
 
     inlet_moles = [value * total_flow for value in feed_z]
     state = solve(

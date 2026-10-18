@@ -141,10 +141,15 @@ def scale_saturation_ratio(
     m2 = x2 / (x_water * molar_mass_water)
 
     # **A ratio too far below saturation to matter is a zero**, and the guard is before the
-    # logarithm rather than after it.
+    # logarithm rather than after it. The polarity is the Rust kernel's - a NaN fails the
+    # `<` test and takes the arithmetic branch, where it stays NaN in both languages.
+    def _positive(value: float) -> bool:
+        return math.isfinite(value) and value > 0.0
+
     saturation_ratio = 0.0
     iap = 0.0
-    if m1 >= MIN_MOLALITY and m2 >= MIN_MOLALITY and gamma1 > 0.0 and gamma2 > 0.0:
+    below_range = m1 < MIN_MOLALITY or m2 < MIN_MOLALITY
+    if not (below_range or not _positive(gamma1) or not _positive(gamma2)):
         ln_iap = record.cation_stoichiometry * math.log(
             gamma1 * m1
         ) + record.anion_stoichiometry * math.log(gamma2 * m2)

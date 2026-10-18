@@ -60,7 +60,7 @@ from azoth.characterization.reference.delumping import (
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import CharacterizeToReferenceResult
-from azoth.core.units import from_si, input_records_to_si
+from azoth.core.units import from_si, input_records_to_si, to_count
 from azoth.core.warnings import Warning
 
 MODEL_ID = "characterization.characterize_to_reference"
@@ -137,7 +137,11 @@ def characterize_to_reference(
     inherit = bool(inherit_reference_properties)
     delump = bool(delump_before_recharacterization)
     shared = bool(shared_imaginary_boundaries)
-    resolution = DELUMP_RESOLUTION if delump_resolution is None else int(delump_resolution)
+    resolution = (
+        DELUMP_RESOLUTION
+        if delump_resolution is None
+        else to_count(delump_resolution, "delump_resolution")
+    )
 
     # **The class's own delumping stage**: the source table expanded before the walk bins it. The
     # rows carry no name, so the sub-fractions are named nothing - see the spec's assumption.

@@ -57,6 +57,29 @@ MODEL_ID = "eos.pt_flash"
 TRIVIAL_TOLERANCE = 1.0e-06
 
 
+def check_composition(z: list[float], n: int, field: str = "z") -> None:
+    """Refuse a vector that is not a mole-fraction composition.
+
+    Mirrors ``crates/azoth-eos/src/pt_flash.rs``: length, then a negative entry, then the
+    sum. A process model that floors or renormalises its feed before it reaches the flash
+    calls this first, so the two backends refuse the same input on the same field.
+    """
+    if len(z) != n:
+        raise InvalidInputError(field, f"a feed for {n} components has {len(z)} entries")
+    for i, value in enumerate(z):
+        if value < 0.0:
+            raise InvalidInputError(
+                field, f"z[{i}] is {value} but a mole fraction cannot be negative"
+            )
+    if abs(sum(z) - 1.0) > 1.0e-09:
+        raise InvalidInputError(
+            field,
+            f"the feed's mole fractions sum to {sum(z)}, not to one. Renormalising it "
+            f"here would make a composition error invisible in every number "
+            f"downstream, so it is refused instead",
+        )
+
+
 def settled_tolerance(algorithm: dict[str, Any], from_newton: bool) -> float:
     """The tolerance the loop settled against, which depends on which scheme finished it.
 
@@ -119,20 +142,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     apply_checks(checks.on_input, {"T": t_si, "P": p_si}.get, warnings)
 
     n = len(mixture)
-    if len(z) != n:
-        raise InvalidInputError("z", f"a feed for {n} components has {len(z)} entries")
-    for i, value in enumerate(z):
-        if value < 0.0:
-            raise InvalidInputError(
-                "z", f"z[{i}] is {value} but a mole fraction cannot be negative"
-            )
-    if abs(sum(z) - 1.0) > 1.0e-09:
-        raise InvalidInputError(
-            "z",
-            f"the feed's mole fractions sum to {sum(z)}, not to one. Renormalising it "
-            f"here would make a composition error invisible in every number "
-            f"downstream, so it is refused instead",
-        )
+    check_composition(z, n)
 
     min_t_over_tc = min(t_si / tc for tc in temperatures)
     apply_checks(

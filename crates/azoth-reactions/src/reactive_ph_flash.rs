@@ -24,11 +24,12 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::warning::Warning;
-use azoth_core::{AzothError, CalcResult, Result};
+use azoth_core::{AzothError, CalcResult, Result, apply_checks};
 use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, IdealGasModel, Mixture, RootSide, molar_enthalpy_entropy};
 
 use crate::databank::formation_properties;
+use crate::model_gen;
 use crate::ph_flash_loop::{PhState, solve_enthalpy_spec};
 use crate::reactive_tp_flash::{ReactiveTpFlashResult, reactive_tp_flash};
 
@@ -51,8 +52,7 @@ pub struct ReactivePhFlashResult {
     pub outer_iterations: u32,
     /// `getTotalInnerIterations`: every inner flash's passes, summed.
     pub total_inner_iterations: u32,
-    /// Caveats. This model has no range check of its own, so it is empty wherever the
-    /// caller's state was accepted.
+    /// Caveats: the spec's skipped input bounds, where an input the model resolves is absent.
     pub warnings: Vec<Warning>,
 }
 
@@ -91,6 +91,18 @@ pub fn reactive_ph_flash(
     thermochemical_enthalpy: f64,
     max_phases: usize,
 ) -> Result<ReactivePhFlashResult> {
+    let mut warnings = Vec::new();
+    apply_checks(
+        model_gen::REACTIVE_PH_FLASH_SPEC.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(initial_temperature),
+            "P" => Some(pressure),
+            "max_phases" => Some(max_phases as f64),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
     if components.len() != moles.len() {
         return Err(AzothError::InvalidInput {
             field: "moles".to_string(),
@@ -150,7 +162,7 @@ pub fn reactive_ph_flash(
         converged: outcome.converged,
         outer_iterations: outcome.outer_iterations,
         total_inner_iterations: outcome.total_inner_iterations,
-        warnings: Vec::new(),
+        warnings,
     })
 }
 

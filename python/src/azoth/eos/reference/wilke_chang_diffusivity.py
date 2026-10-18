@@ -8,6 +8,7 @@ correlation, the association parameter and the clamps.
 from __future__ import annotations
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import powf
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import WilkeChangDiffusivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -64,7 +65,9 @@ def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChang
     va_cm3 = min(600.0, max(20.0, values["VA"] * 1.0e6))
     eta_cp = min(500.0, max(0.01, values["eta"] * 1000.0))
 
-    d_cm2s = 7.4e-8 * (phi * m_g) ** 0.5 * values["T"] / (eta_cp * va_cm3**0.6)
+    # **`powf`, not `**`**: a negative base with a fractional exponent is a complex number
+    # in Python and `NaN` in Rust, and the two backends have to carry the same one.
+    d_cm2s = 7.4e-8 * powf(phi * m_g, 0.5) * values["T"] / (eta_cp * powf(va_cm3, 0.6))
     d = d_cm2s * 1.0e-4
 
     apply_checks(checks.derived, lambda name: d if name == "d" else None, warnings)

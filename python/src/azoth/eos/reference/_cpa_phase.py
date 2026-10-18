@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
@@ -89,9 +89,10 @@ def cpa_phase(
         )
     total = sum(z)
     if abs(total - 1.0) > 1.0e-9:
-        raise OutOfRangeError(
+        # A composition that is not one is a caller error, which is the class the Rust
+        # phase kernel raises for it - and what this function's own docstring says.
+        raise InvalidInputError(
             "z",
-            total,
             f"the mole fractions sum to {total}, not to one. Renormalising them here would "
             f"make a composition error invisible in every number downstream, so it is "
             f"refused instead",

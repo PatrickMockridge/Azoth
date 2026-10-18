@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import divide, powf, square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ChapmanEnskogDiffusivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -82,15 +83,17 @@ def chapman_enskog_diffusivity(
     apply_checks(checks.on_input, values.get, warnings)
 
     # The published constants are tuned to g/mol, angstrom, bar and cm**2/s.
-    pair_mass_g = 2.0 / (1.0 / (values["MA"] * 1000.0) + 1.0 / (values["MB"] * 1000.0))
+    pair_mass_g = divide(
+        2.0,
+        divide(1.0, values["MA"] * 1000.0) + divide(1.0, values["MB"] * 1000.0),
+    )
     sigma_angstrom = values["sigma"] * 1.0e10
     p_bar = values["P"] * 1.0e-5
 
-    omega = collision_integral(values["T"] / values["eps"])
-    d_cm2s = (
-        0.00266
-        * values["T"] ** 1.5
-        / (p_bar * pair_mass_g**0.5 * sigma_angstrom * sigma_angstrom * omega)
+    omega = collision_integral(divide(values["T"], values["eps"]))
+    d_cm2s = divide(
+        0.00266 * powf(values["T"], 1.5),
+        p_bar * square_root(pair_mass_g) * sigma_angstrom * sigma_angstrom * omega,
     )
     d = d_cm2s * 1.0e-4
 

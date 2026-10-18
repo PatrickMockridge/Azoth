@@ -32,7 +32,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import StirredTankReactorResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -40,7 +41,7 @@ from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
-from azoth.eos.reference.pt_flash import pt_flash
+from azoth.eos.reference.pt_flash import check_composition, pt_flash
 from azoth.reactions.reference import _tables
 
 
@@ -102,6 +103,7 @@ def stirred_tank_reactor(
     spec = _spec()
     checks = checks_for(spec)
     warnings: list[Warning] = []
+    check_composition(list(feed_z), len(components))
 
     n = input_to_si(spec, "feed_n", feed_n)
     p = input_to_si(spec, "feed_p", feed_p)
@@ -211,7 +213,7 @@ def _route(
 
     # `moles(limiting) * conversion`, then every coefficient scaled by the limiting one's.
     reacted = feed_n * feed_z[indices[limiting[0].lower()]] * conversion
-    scale = reacted / abs(limiting[1])
+    scale = divide(reacted, abs(limiting[1]))
     amounts = [fraction * feed_n for fraction in feed_z]
     for name, coefficient in rows:
         index = indices.get(name.lower())
@@ -233,6 +235,8 @@ def _route(
         )
     composition = [amount / total for amount in amounts]
 
+    if feed_p <= 0.0:
+        raise OutOfRangeError("P", feed_p, "an absolute pressure; zero and below are not states")
     p_out = feed_p - pressure_drop if reactor_pressure is None else reactor_pressure
     if p_out <= 0.0:
         raise InvalidInputError(

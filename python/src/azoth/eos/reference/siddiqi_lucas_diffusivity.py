@@ -7,9 +7,8 @@ solvent correlations and the viscosity floor.
 
 from __future__ import annotations
 
-import math
-
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import powf
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import SiddiqiLucasDiffusivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -66,14 +65,10 @@ def siddiqi_lucas_diffusivity(
     eta_cp = max(0.01, values["eta"] * 1000.0)
 
     if form == "aqueous":
-        d_cm2s = 2.98e-7 * math.pow(eta_cp, -1.026) * math.pow(va_cm3, -0.5473) * values["T"]
+        d_cm2s = 2.98e-7 * powf(eta_cp, -1.026) * powf(va_cm3, -0.5473) * values["T"]
     else:
         d_cm2s = (
-            9.89e-8
-            * math.pow(eta_cp, -0.907)
-            * math.pow(va_cm3, -0.45)
-            * math.pow(vb_cm3, 0.265)
-            * values["T"]
+            9.89e-8 * powf(eta_cp, -0.907) * powf(va_cm3, -0.45) * powf(vb_cm3, 0.265) * values["T"]
         )
     d = d_cm2s * 1.0e-4
 

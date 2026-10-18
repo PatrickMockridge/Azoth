@@ -17,10 +17,15 @@ from typing import Any
 
 from azoth import _core
 from azoth.core.errors import PropertyUnavailableError
-from azoth.core.units import Q, input_to_si
+from azoth.core.units import Q, input_to_si, to_count
 from azoth.core.warnings import Warning, WarningCode
 
-__all__ = ["_association_spec", "_molar_masses", "_si", "_warnings"]
+__all__ = ["_association_spec", "_count", "_molar_masses", "_si", "_warnings"]
+
+
+def _count(name: str, value: float) -> int:
+    """A count argument, through the crate's own typed refusal."""
+    return to_count(value, name)
 
 
 def _warnings(raw: Sequence[_core.Warning]) -> tuple[Warning, ...]:

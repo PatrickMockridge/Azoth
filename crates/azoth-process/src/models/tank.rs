@@ -64,6 +64,18 @@ pub fn tank(
         &mut warnings,
     )?;
 
+    // **The declared input's name, not the kernel's.** The mixer's zero-total refusal is
+    // raised on `inlets`; a caller wrote `feed_n`, and the Python reference names it.
+    let n_total: f64 = feed_n.iter().sum();
+    if n_total <= 0.0 {
+        return Err(azoth_core::AzothError::invalid_input(
+            "feed_n",
+            format!(
+                "a mixer's feeds carry {n_total} mol/s in total, so there is no mixture to report"
+            ),
+        ));
+    }
+
     let feeds: Vec<Stream> = feed_n
         .iter()
         .zip(feed_z)

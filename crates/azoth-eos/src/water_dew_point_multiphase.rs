@@ -132,7 +132,7 @@ pub fn water_dew_point_multiphase(
                     .to_string(),
             )
         })?;
-    if z[water] <= 0.0 {
+    if !z[water].is_finite() || z[water] <= 0.0 {
         return Err(AzothError::invalid_input(
             "z",
             format!(

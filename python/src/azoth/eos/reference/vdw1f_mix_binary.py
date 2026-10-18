@@ -12,6 +12,7 @@ the registry's scalar inputs stop at two components.
 from __future__ import annotations
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Vdw1fMixBinaryResult
 from azoth.core.warnings import Warning
@@ -64,7 +65,7 @@ def vdw1f_mix_binary(
     z2 = 1.0 - z1
     # The double sum written out longhand: the two pure terms and the cross term
     # carrying `k12`.
-    a_mix = z1 * z1 * a1 + 2.0 * z1 * z2 * (1.0 - k12) * (a1 * a2) ** 0.5 + z2 * z2 * a2
+    a_mix = z1 * z1 * a1 + 2.0 * z1 * z2 * (1.0 - k12) * square_root(a1 * a2) + z2 * z2 * a2
     b_mix = z1 * b1 + z2 * b2
 
     apply_checks(checks.derived, lambda name: a_mix if name == "a_mix" else None, warnings)

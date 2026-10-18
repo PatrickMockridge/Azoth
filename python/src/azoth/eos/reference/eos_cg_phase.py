@@ -13,6 +13,7 @@ from __future__ import annotations
 import math
 
 from azoth.core.errors import InvalidInputError
+from azoth.core.numerics import divide, natural_log
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import EosCgPhaseResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -87,12 +88,12 @@ def _reducing_parameters(x: list[float]) -> tuple[float, float]:
 
 
 def _alpha0(t: float, d: float, x: list[float]) -> list[float]:
-    log_d = math.log(d) if d > _EPSILON else math.log(_EPSILON)
-    log_t = math.log(t)
+    log_d = natural_log(d) if d > _EPSILON else natural_log(_EPSILON)
+    log_t = natural_log(t)
     a0 = [0.0, 0.0, 0.0]
     for i in range(1, NCOMP + 1):
         if x[i] > _EPSILON:
-            log_xd = log_d + math.log(x[i])
+            log_xd = log_d + natural_log(x[i])
             sum_hyp0 = 0.0
             sum_hyp1 = 0.0
             sum_hyp2 = 0.0
@@ -109,12 +110,12 @@ def _alpha0(t: float, d: float, x: list[float]) -> list[float]:
                     hsn = (ep - em) / 2.0
                     hcn = (ep + em) / 2.0
                     if j == 4 or j == 6:
-                        log_hyp = math.log(abs(hsn))
+                        log_hyp = natural_log(abs(hsn))
                         sum_hyp0 += data.N0I[i][j] * log_hyp
                         sum_hyp1 += data.N0I[i][j] * th0t * hcn / hsn
                         sum_hyp2 += data.N0I[i][j] * (th0t / hsn) * (th0t / hsn)
                     else:
-                        log_hyp = math.log(abs(hcn))
+                        log_hyp = natural_log(abs(hcn))
                         sum_hyp0 -= data.N0I[i][j] * log_hyp
                         sum_hyp1 -= data.N0I[i][j] * th0t * hsn / hcn
                         sum_hyp2 += data.N0I[i][j] * (th0t / hcn) * (th0t / hcn)
@@ -129,9 +130,9 @@ def _alpha0(t: float, d: float, x: list[float]) -> list[float]:
 def _alphar(itau: bool, t: float, d: float, x: list[float]) -> list[list[float]]:
     ar = [[0.0] * 4 for _ in range(4)]
     tr, dr = _reducing_parameters(x)
-    del_ = d / dr
+    del_ = divide(d, dr)
     tau = tr / t
-    lntau = math.log(tau)
+    lntau = natural_log(tau)
 
     delp = [0.0] * 8
     expd = [0.0] * 8
@@ -318,8 +319,8 @@ def _pseudo_critical(x: list[float]) -> tuple[float, float]:
 def _solve_density(t: float, pressure_kpa: float, x: list[float]) -> float:
     _, dcx = _pseudo_critical(x)
     d = pressure_kpa / R / t
-    plog = math.log(pressure_kpa)
-    vlog = -math.log(d)
+    plog = natural_log(pressure_kpa)
+    vlog = -natural_log(d)
     n_fail = 0
     i_fail = 0
 
@@ -330,7 +331,7 @@ def _solve_density(t: float, pressure_kpa: float, x: list[float]) -> float:
                 return pressure_kpa / R / t
             n_fail += 1
             d = {1: dcx * 3.0, 2: dcx * 2.5}.get(n_fail, dcx * 2.0)
-            vlog = -math.log(d)
+            vlog = -natural_log(d)
         d = math.exp(-vlog)
         p2, dpdd = _pressure(t, d, x)
         if dpdd < _EPSILON or p2 < _EPSILON:
@@ -342,7 +343,7 @@ def _solve_density(t: float, pressure_kpa: float, x: list[float]) -> float:
             vlog += vinc
         else:
             dpdlv = -d * dpdd
-            vdiff = (math.log(p2) - plog) * p2 / dpdlv
+            vdiff = (natural_log(p2) - plog) * p2 / dpdlv
             vlog += -vdiff
             if abs(vdiff) < 1.0e-7:
                 if dpdd < 0.0:
@@ -380,6 +381,13 @@ def eos_cg_phase(T: Q, P: Q, components: list[str], z: list[float]) -> EosCgPhas
             "z", f"{len(components)} components but {len(z)} fractions; the two must match"
         )
     x = _composition(components, z)
+    total = sum(x[1:])
+    if abs(total - 1.0) > 1.0e-9:
+        raise InvalidInputError(
+            "z",
+            f"the composition sums to {total}, not to one; renormalising here would hide "
+            f"a caller's error",
+        )
     molar_density = _solve_density(t_si, p_si / 1000.0, x)
     props = _properties(t_si, molar_density, x)
 

@@ -210,12 +210,20 @@ def all_tests(spec_: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [worked, *others]
 
 
-def assert_close(actual: float, expected_value: float, tolerance: float, context: str) -> None:
+def assert_close(
+    actual: float,
+    expected_value: float,
+    tolerance: float,
+    context: str,
+    absolute_floor: float | None = None,
+) -> None:
     """Relative comparison with a readable failure message.
 
     Relative rather than absolute, because the quantities here span nine orders of
     magnitude (Re ~ 1e5, f ~ 1e-2) and a single absolute tolerance would be
-    meaningless at both ends.
+    meaningless at both ends. ``absolute_floor`` is the exception: a value the solver
+    only knows to the gate it converged at is compared there instead, so a near-zero
+    answer is not held to a relative accuracy the iteration never promised.
     """
     assert actual == actual, f"{context}: got NaN, expected {expected_value}"
     # **Two infinities of the same sign are equal, and only that is allowed through.** The
@@ -231,10 +239,18 @@ def assert_close(actual: float, expected_value: float, tolerance: float, context
         )
         return
     scale = max(abs(expected_value), float.fromhex("0x0.0000000000001p-1022"))
-    relative = abs(actual - expected_value) / scale
-    assert relative <= tolerance, (
+    difference = abs(actual - expected_value)
+    relative = difference / scale
+    within_floor = absolute_floor is not None and difference <= absolute_floor
+    assert relative <= tolerance or within_floor, (
         f"{context}: got {actual}, expected {expected_value}\n"
         f"  relative error {relative:.3e} exceeds tolerance {tolerance:.3e}"
+        + (
+            f" and the absolute difference {difference:.3e} exceeds the solver's "
+            f"declared bound {absolute_floor:.3e}"
+            if absolute_floor is not None
+            else ""
+        )
     )
 
 
@@ -359,6 +375,9 @@ def assert_results_equal(
     tolerance: float,
     context: str,
     diagnostic_bound: float | None = None,
+    *,
+    nan_agrees: bool = False,
+    absolute_floor: float | None = None,
 ) -> None:
     """Assert two results agree, field by field, within a tolerance.
 
@@ -377,6 +396,11 @@ def assert_results_equal(
     not the case's answer tolerance: a residual is meaningful only to the precision
     at which the solver declared it converged, and comparing it relatively is not a
     stricter test but an impossible one.
+
+    ``nan_agrees`` admits two NaNs on any field, and it is for the degenerate-input
+    sweep rather than for a case: a NaN the caller put into an input propagates through
+    both kernels, and two results that agree on carrying it are an agreement. A case
+    keeps the default, where a NaN is a failure unless the field declares otherwise.
     """
     assert type(left).__name__ == type(right).__name__, (
         f"{context}: different result types: {type(left).__name__} vs {type(right).__name__}"
@@ -393,7 +417,7 @@ def assert_results_equal(
             # One side has to have produced *something*; that the loop ran is the claim.
             assert a is not None and b is not None, f"{context}.{field}: absent on one side"
             continue
-        if field in _MAY_AGREE_ON_NAN and _both_nan(a, b):
+        if (field in _MAY_AGREE_ON_NAN or nan_agrees) and _both_nan(a, b):
             # NeqSim's own readers return NaN where there is nothing to read, and the two
             # kernels agreeing on that is the claim rather than a failure to make one.
             continue
@@ -411,16 +435,22 @@ def assert_results_equal(
                 )
                 a = a.to_base_units().magnitude
                 b = b.to_base_units().magnitude
-            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}")
+            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}", tolerance)
         elif isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
             assert isinstance(a, pint.Quantity) and isinstance(b, pint.Quantity), (
                 f"{context}.{field}: one side is a bare number and the other a quantity"
             )
             a_base = a.to_base_units().magnitude
             b_base = b.to_base_units().magnitude
-            assert_close(float(a_base), float(b_base), tolerance, f"{context}.{field}")
+            assert_close(
+                float(a_base),
+                float(b_base),
+                tolerance,
+                f"{context}.{field}",
+                absolute_floor,
+            )
         elif field in _DIAGNOSTIC_FIELDS and diagnostic_bound is not None:
-            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}")
+            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}", tolerance)
         elif isinstance(a, tuple) and a and isinstance(a[0], Warning):
             assert _warnings_equal(a, b), (
                 f"{context}.{field}: warnings differ\n  python: {a}\n  rust:   {b}"
@@ -448,9 +478,10 @@ def assert_results_equal(
                             float(vb.to_base_units().magnitude),
                             tolerance,
                             at,
+                            absolute_floor,
                         )
                     elif isinstance(va, float):
-                        assert_close(va, float(vb), tolerance, at)
+                        assert_close(va, float(vb), tolerance, at, absolute_floor)
                     else:
                         assert va == vb, f"{at}: {va!r} against {vb!r}"
         elif isinstance(a, (tuple, list)) and a and isinstance(a[0], pint.Quantity):
@@ -464,11 +495,16 @@ def assert_results_equal(
                     f"{context}.{field}[{index}]: one side is a bare number and the other "
                     f"a quantity"
                 )
+                a_magnitude = float(qa.to_base_units().magnitude)
+                b_magnitude = float(qb.to_base_units().magnitude)
+                if nan_agrees and a_magnitude != a_magnitude and b_magnitude != b_magnitude:
+                    continue
                 assert_close(
-                    float(qa.to_base_units().magnitude),
-                    float(qb.to_base_units().magnitude),
+                    a_magnitude,
+                    b_magnitude,
                     tolerance,
                     f"{context}.{field}[{index}]",
+                    absolute_floor,
                 )
         elif isinstance(a, (tuple, list)) and _is_numeric_nested(a):
             # A vector or matrix output - a composition, a set of K-values, the stationary
@@ -476,7 +512,7 @@ def assert_results_equal(
             # tolerance, at any nesting depth. Two implementations agree to the last bit
             # only by luck, so exact equality here reports a rounding difference as a
             # divergence in the physics.
-            _assert_nested(a, b, tolerance, f"{context}.{field}")
+            _assert_nested(a, b, tolerance, f"{context}.{field}", absolute_floor, nan_agrees)
         elif isinstance(a, (tuple, list)) and _is_quantity_nested(a):
             # A **matrix of quantities** - `reactions.reactive_tp_flash`'s per-phase mole
             # numbers are the first - which is neither of the two branches above: the
@@ -497,14 +533,19 @@ def assert_results_equal(
                         f"{context}.{field}[{index}][{column}]: one side is a bare number "
                         f"and the other a quantity"
                     )
+                    a_magnitude = float(qa.to_base_units().magnitude)
+                    b_magnitude = float(qb.to_base_units().magnitude)
+                    if nan_agrees and a_magnitude != a_magnitude and b_magnitude != b_magnitude:
+                        continue
                     assert_close(
-                        float(qa.to_base_units().magnitude),
-                        float(qb.to_base_units().magnitude),
+                        a_magnitude,
+                        b_magnitude,
                         tolerance,
                         f"{context}.{field}[{index}][{column}]",
+                        absolute_floor,
                     )
         elif isinstance(a, (int, float)) and isinstance(b, (int, float)):
-            assert_close(float(a), float(b), tolerance, f"{context}.{field}")
+            assert_close(float(a), float(b), tolerance, f"{context}.{field}", absolute_floor)
         else:
             assert a == b, f"{context}.{field}: {a!r} != {b!r}"
 
@@ -569,17 +610,34 @@ def _is_numeric_nested(value: Any) -> bool:
     return isinstance(value, (int, float))
 
 
-def _assert_nested(a: Any, b: Any, tolerance: float, context: str) -> None:
+def _assert_nested(
+    a: Any,
+    b: Any,
+    tolerance: float,
+    context: str,
+    absolute_floor: float | None = None,
+    nan_agrees: bool = False,
+) -> None:
     """Compare two nested numeric sequences entry by entry."""
     assert len(a) == len(b), f"{context}: {len(a)} entries against {len(b)}"
     for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
         if _is_numeric_nested(ca) and isinstance(ca, (tuple, list)):
-            _assert_nested(ca, cb, tolerance, f"{context}[{index}]")
+            _assert_nested(ca, cb, tolerance, f"{context}[{index}]", absolute_floor, nan_agrees)
+        elif nan_agrees and float(ca) != float(ca) and float(cb) != float(cb):
+            # A NaN the caller put into an input, carried by both vectors at the same
+            # entry: the two kernels agree on where the arithmetic does not answer.
+            continue
         else:
-            assert_close(float(ca), float(cb), tolerance, f"{context}[{index}]")
+            assert_close(float(ca), float(cb), tolerance, f"{context}[{index}]", absolute_floor)
 
 
-def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
+def _assert_diagnostic(
+    a: Any,
+    b: Any,
+    bound: float,
+    context: str,
+    relative_tolerance: float | None = None,
+) -> None:
     """Compare a solver diagnostic on an absolute bound.
 
     A residual is not a result, it is the solver's evidence that it converged, and it
@@ -601,7 +659,7 @@ def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
             f"{context}: {len(a)} diagnostic(s) against {len(b)} ({a!r} against {b!r})"
         )
         for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
-            _assert_diagnostic(ca, cb, bound, f"{context}[{index}]")
+            _assert_diagnostic(ca, cb, bound, f"{context}[{index}]", relative_tolerance)
         return
     a_nan = a != a
     b_nan = b != b
@@ -623,7 +681,13 @@ def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
         )
         return
     difference = abs(float(a) - float(b))
-    assert difference <= bound, (
+    # **A failed certificate's residual is not near zero**, and an absolute gate is then
+    # the wrong measure: `max_reaction_log_residual` is a difference of logarithms of order
+    # `100`, so a relative agreement at the case's tolerance is the meaningful one, while
+    # the absolute bound still governs a converged solve's near-zero residual.
+    scale = max(abs(float(a)), abs(float(b)))
+    relative = relative_tolerance is not None and difference <= relative_tolerance * scale
+    assert difference <= bound or relative, (
         f"{context}: residuals differ by {difference:.3e}, beyond the model's own "
         f"declared convergence tolerance {bound:.3e} ({a!r} against {b!r})"
     )

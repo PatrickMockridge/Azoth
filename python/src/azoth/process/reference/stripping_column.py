@@ -12,8 +12,9 @@ stage 0 and the rich liquid the top stage, exactly where an absorber's gas and s
 
 from __future__ import annotations
 
+from azoth import _models_gen
 from azoth.core.result import StrippingColumnResult
-from azoth.core.units import Q
+from azoth.core.units import Q, input_to_si
 from azoth.process.reference.absorption_column import absorption_column as absorber
 
 
@@ -99,6 +100,14 @@ def stripping_column(
 
     See :func:`azoth.process.reference.absorption_column.absorption_column`.
     """
+    # **The boundary names this id's inputs, not the absorber's.** The Rust path converts
+    # through `input_to_si` under `stripping_gas_n`/`_p`/`_t` before it delegates, so a
+    # non-finite magnitude is refused under this model's own input name.
+    spec = _models_gen.model("process.stripping_column")
+    input_to_si(spec, "stripping_gas_n", stripping_gas_n)
+    input_to_si(spec, "stripping_gas_p", stripping_gas_p)
+    input_to_si(spec, "stripping_gas_t", stripping_gas_t)
+
     out = absorber(
         stripping_gas_components,
         stripping_gas_n,

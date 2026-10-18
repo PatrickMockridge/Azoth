@@ -13,7 +13,7 @@ carries.
 from __future__ import annotations
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HydrateInhibitorWtResult, Phase, PtFlashResult
 from azoth.core.units import Q, from_si, input_to_si, to_si
@@ -195,8 +195,18 @@ def hydrate_inhibitor_wt(
 
         step = error * 0.01 if iterations < MINIMUM_STEPS + 1 else -_ratio(error, derivative) * 0.5
         walk[index] += step
-
+        # **The secant's own bound, and the same one the Rust loop applies.** A step that
+        # overshoots through zero would flash a feed that cannot exist.
+        if walk[index] < 0.0:
+            raise OutOfRangeError(
+                "moles",
+                walk[index],
+                "the secant stepped the inhibitor's moles below zero, which is not a feed",
+            )
         total = sum(walk)
+        if total <= 0.0:
+            raise OutOfRangeError("moles", total, "the feed has no moles left to flash")
+
         fractions = [value / total for value in walk]
         flash = pt_flash(mixture, quantity(t_si, "K"), quantity(p_si, "Pa"), fractions)
         reduced = reduced_parameters(mixture, t_si, p_si)

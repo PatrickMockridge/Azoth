@@ -21,6 +21,7 @@ import math
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PtPhaseEnvelopeResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -349,13 +350,13 @@ def _wilson_temperature(mixture: Mixture, pressure: float, z: list[float], beta:
                 s += z[i] * kwil[i]
                 dsdt += z[i] * kwil[i] * dlnkdt
             else:
-                s += z[i] / kwil[i]
-                dsdt -= z[i] / kwil[i] * dlnkdt
+                s += divide(z[i], kwil[i])
+                dsdt -= divide(z[i], kwil[i]) * dlnkdt
         s -= 1.0
-        if abs(s / dsdt) > 0.1 * t:
-            t -= 0.001 * s / dsdt
+        if abs(divide(s, dsdt)) > 0.1 * t:
+            t -= 0.001 * divide(s, dsdt)
         else:
-            t -= s / dsdt
+            t -= divide(s, dsdt)
         if abs(t - told) < 1e-5:
             break
         told = t
@@ -502,6 +503,19 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
         )
     if len(z) != n:
         raise InvalidInputError("z", f"a composition for {n} components has {len(z)} entries")
+    # **Before the continuation reads it**, as `phase_boundary::check_composition` does on
+    # the Rust side: a zero vector otherwise reaches a ratio and is reported as a division
+    # rather than as the composition it is not.
+    if any(value < 0.0 for value in z):
+        bad = next(index for index, value in enumerate(z) if value < 0.0)
+        raise InvalidInputError("z", f"z[{bad}] is {z[bad]} but a mole fraction cannot be negative")
+    if abs(sum(z) - 1.0) > 1.0e-09:
+        raise InvalidInputError(
+            "z",
+            f"the composition sums to {sum(z)}, not to one. Renormalising it here would "
+            f"make a caller's error invisible in every number downstream, so it is "
+            f"refused instead",
+        )
 
     bubble = _trace_branch(mixture, pressure, list(z), BUBBLE_BETA)
     dew = _trace_branch(mixture, pressure, list(z), DEW_BETA)

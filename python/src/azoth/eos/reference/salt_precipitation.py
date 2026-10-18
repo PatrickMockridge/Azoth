@@ -21,7 +21,8 @@ from __future__ import annotations
 import math
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import SaltPrecipitationResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -109,7 +110,7 @@ def salt_precipitation(
         moles[first] -= extent * record.cation_stoichiometry
         moles[second] -= extent * record.anion_stoichiometry
         total = sum(moles)
-        x = [value / total for value in moles]
+        x = [divide(value, total) for value in moles]
         # **The coefficients are the brine's own**, re-solved at the composition the extent
         # leaves: `eos.pitzer_phase` over the same names and the same state.
         coefficients = pitzer_phase(components, T, P, x)
@@ -143,6 +144,14 @@ def salt_precipitation(
     )
     if record.water_stoichiometry > 0.0:
         maximum = min(maximum, z[water] / record.water_stoichiometry)
+    # **The bracket has to be somewhere.** A negative composition leaves no positive extent,
+    # which the Rust entry refuses with this field rather than bracketing from a negative.
+    if not math.isfinite(maximum) or maximum <= 0.0:
+        raise OutOfRangeError(
+            "extent",
+            maximum,
+            f"no finite positive precipitation extent is available for {salt}",
+        )
 
     upper = maximum * (1.0 - BRACKET_INSET)
     at_upper = ratio(upper)

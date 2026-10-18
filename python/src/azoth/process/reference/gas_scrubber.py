@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import math
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import GasScrubberResult, Phase
 from azoth.core.units import Q, from_si, input_to_si, quantity
@@ -159,6 +159,8 @@ def gas_scrubber(
             f"metric needs both - a vessel with a size but no design basis, or the reverse, "
             f"has nothing to check",
         )
+    if p <= 0.0:
+        raise OutOfRangeError("P", p, "an absolute pressure; zero and below are not states")
     p_out = p - drop
     if p_out <= 0.0:
         raise InvalidInputError(

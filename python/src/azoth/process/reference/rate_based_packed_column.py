@@ -34,9 +34,10 @@ import math
 from collections.abc import Sequence
 from typing import Any
 
+from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
 from azoth.core.result import RateBasedPackedColumnResult
-from azoth.core.units import Q, from_si, quantity
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos import components as _components
 from azoth.eos.reference._mixture_state import reduced_parameters
@@ -1171,17 +1172,33 @@ def rate_based_packed_column(
         if convergence_tolerance is not None
         else _default("convergence_tolerance", "mol/s")
     )
+    # **The boundary's own conversion, with the Bridge's field names.** The Rust path
+    # reaches `input_to_si` on the model's inputs, so a non-finite magnitude is refused
+    # here under `gas_n` rather than surfacing later as the segment's `vapor_mass_flow`.
+    spec = _models_gen.model("process.rate_based_packed_column")
+    if len(gas_z) != len(gas_components):
+        raise InvalidInputError(
+            "gas_z",
+            f"{len(gas_components)} component(s) and {len(gas_z)} fraction(s): "
+            f"a composition is one entry per component",
+        )
+    if len(liquid_z) != len(liquid_components):
+        raise InvalidInputError(
+            "liquid_z",
+            f"{len(liquid_components)} component(s) and {len(liquid_z)} fraction(s): "
+            f"a composition is one entry per component",
+        )
     states = _states(
         list(gas_components),
-        float(gas_n.to("mol/s").magnitude),
+        input_to_si(spec, "gas_n", gas_n),
         list(gas_z),
-        float(gas_p.to("Pa").magnitude),
-        float(gas_t.to("K").magnitude),
+        input_to_si(spec, "gas_p", gas_p),
+        input_to_si(spec, "gas_t", gas_t),
         list(liquid_components),
-        float(liquid_n.to("mol/s").magnitude),
+        input_to_si(spec, "liquid_n", liquid_n),
         list(liquid_z),
-        float(liquid_p.to("Pa").magnitude),
-        float(liquid_t.to("K").magnitude),
+        input_to_si(spec, "liquid_p", liquid_p),
+        input_to_si(spec, "liquid_t", liquid_t),
         list(transfer_components) if transfer_components else None,
         float(diameter.to("m").magnitude),
         float(height.to("m").magnitude),

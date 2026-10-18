@@ -185,6 +185,15 @@ pub fn viscosity(
             ),
         ));
     }
+    // **The Python reference's own composition rule.** It has always refused a negative or
+    // unnormalised `z`; this side checked only the length, so a zero vector reached the
+    // mixing rule and answered where the reference refused.
+    if z.iter().any(|&value| value < 0.0) || (z.iter().sum::<f64>() - 1.0).abs() > 1.0e-09 {
+        return Err(AzothError::invalid_input(
+            "z",
+            "mole fractions must be non-negative and sum to one",
+        ));
+    }
     let molar_mass: Vec<f64> = components
         .iter()
         .map(|c| {

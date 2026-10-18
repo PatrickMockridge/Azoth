@@ -140,6 +140,14 @@ def ejector(
         warnings,
     )
 
+    for name in ("motive", "suction"):
+        components = motive_components if name == "motive" else suction_components
+        values = motive_z if name == "motive" else suction_z
+        if len(values) != len(components):
+            raise InvalidInputError(
+                "z", f"a feed for {len(components)} components has {len(values)} entries"
+            )
+
     states = _route(
         motive_components,
         input_to_si(spec, "motive_n", motive_n),
@@ -437,7 +445,7 @@ def _corrected_density(mixture: Any, temperature: Q, p_si: float, z: list[float]
     # that reason; the same refusal is here rather than a choice between the roots.
     if flash.phase is _Phase.TWO_PHASE:
         raise InvalidInputError(
-            "state", f"a two-phase state at {t_si} K has no one density for the estimates"
+            "stream", f"a two-phase state at {t_si} K has no one density for the estimates"
         )
     root = flash.z_vapour if flash.phase is _Phase.ALL_VAPOUR else flash.z_liquid
     volume = pr_molar_volume(root, from_si(t_si, "K"), from_si(p_si, "Pa")).v

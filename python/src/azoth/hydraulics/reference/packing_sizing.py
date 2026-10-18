@@ -34,6 +34,7 @@ import math
 from typing import Final
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.numerics import ceil, square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PackingSizingResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -96,7 +97,7 @@ def round_to_standard_diameter(diameter: float) -> float:
     for size in STANDARD_DIAMETERS_M:
         if size >= diameter:
             return size
-    return math.ceil(diameter * 2.0) / 2.0
+    return ceil(diameter * 2.0) / 2.0
 
 
 def packing_sizing(
@@ -189,7 +190,7 @@ def packing_sizing(
             values["vapor_density"], MIN_VAPOR_DENSITY
         )
         required_area = vapor_volumetric_flow / design_velocity
-        required_diameter = math.sqrt(4.0 * required_area / math.pi)
+        required_diameter = square_root(4.0 * required_area / math.pi)
         column_diameter = round_to_standard_diameter(required_diameter)
 
     return PackingSizingResult(

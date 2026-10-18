@@ -181,10 +181,12 @@ impl RangeCheck {
         self
     }
 
-    /// Whether `value` violates this check. `NaN` violates everything.
+    /// Whether `value` violates this check. A non-finite value violates everything.
     #[must_use]
     pub fn violated(&self, value: f64) -> bool {
-        if value.is_nan() {
+        // Every comparison with `NaN` is false and an infinity passes an unbounded
+        // side, so neither may satisfy a bound the arithmetic cannot carry.
+        if !value.is_finite() {
             return true;
         }
         // An exclusion rather than an interval. Checked first and returned
@@ -395,15 +397,17 @@ mod tests {
     }
 
     #[test]
-    fn nan_violates_everything() {
-        // NaN comparisons are all false, so without an explicit check a NaN
-        // would sail through every bound. It must not.
+    fn a_non_finite_value_violates_everything() {
+        // NaN comparisons are all false and an infinity passes an unbounded side, so
+        // without an explicit check either would sail through every bound. Neither may.
         for check in checks() {
-            assert!(
-                check.violated(f64::NAN),
-                "{} let NaN through",
-                check.quantity
-            );
+            for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                assert!(
+                    check.violated(value),
+                    "{} let {value} through",
+                    check.quantity
+                );
+            }
         }
     }
 

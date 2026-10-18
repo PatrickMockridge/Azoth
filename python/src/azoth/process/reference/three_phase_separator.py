@@ -45,7 +45,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ThreePhaseSeparatorResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -204,11 +205,16 @@ def _route(
     drift into two answers. The kernel-level refusals are here rather than in the model
     because Rust puts them in the kernel.
     """
+    # A zero flow is not a state, and the heat-per-mole divides by it.
+    if feed_n <= 0.0:
+        raise OutOfRangeError("feed_n", feed_n, "a unit operation needs a positive molar flow")
     for name, fraction in fractions.items():
         if not 0.0 <= fraction <= 1.0:
             raise InvalidInputError(
                 name, f"an entrainment fraction is a fraction, and {fraction} is not in [0, 1]"
             )
+    if feed_p <= 0.0:
+        raise OutOfRangeError("P", feed_p, "an absolute pressure; zero and below are not states")
     p_out = feed_p - pressure_drop
     if p_out <= 0.0:
         raise InvalidInputError(
@@ -226,7 +232,9 @@ def _route(
     else:
         # W over (mol/s) is J/mol, for the reason `Heater.run` gives.
         h_in, _ = enthalpy_at(mixture, ideal_gas, feed_t.to("K").magnitude, feed_p, feed_z)
-        t_si = _solve_temperature(mixture, ideal_gas, p_out, h_in + heat_input / feed_n, feed_z)
+        t_si = _solve_temperature(
+            mixture, ideal_gas, p_out, h_in + divide(heat_input, feed_n), feed_z
+        )
         temperature = from_si(t_si, "K")
 
     phases = _split(mixture, t_si, p_out, feed_z)

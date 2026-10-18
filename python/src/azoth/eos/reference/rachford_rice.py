@@ -23,7 +23,8 @@ import math
 from collections.abc import Sequence
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import RachfordRiceResult
 from azoth.core.warnings import Warning
@@ -85,12 +86,12 @@ def _nielsen_2023(z: list[float], K: list[float], tolerance: float, max_iteratio
     if not found:
         return _PHASE_FRACTION_MINIMUM_LIMIT
 
-    alpha_min = 1.0 / (1.0 - Kmax)
-    alpha_max = 1.0 / (1.0 - Kmin)
+    alpha_min = divide(1.0, 1.0 - Kmax)
+    alpha_max = divide(1.0, 1.0 - Kmin)
 
     alpha = 0.5
-    a = (alpha - alpha_min) / (alpha_max - alpha)
-    b = 1.0 / (alpha - alpha_min)
+    a = divide(alpha - alpha_min, alpha_max - alpha)
+    b = divide(1.0, alpha - alpha_min)
 
     # The per-component constants of the rescaled form. A component with `K` exactly one
     # has no distance to rescale, and the denominator floor sends its term to zero in
@@ -104,15 +105,20 @@ def _nielsen_2023(z: list[float], K: list[float], tolerance: float, max_iteratio
         denom = 1.0 - value
         if abs(denom) < 1.0e-25:
             denom = -1.0e-25 if denom < 0.0 else 1.0e-25
-        c[i] = 1.0 / denom
-        d[i] = (alpha_min - c[i]) / (alpha_max - alpha_min)
+        c[i] = divide(1.0, denom)
+        d[i] = divide(alpha_min - c[i], alpha_max - alpha_min)
 
     a_max = alpha
     b_max = 1.0e20
     a_min = 0.0
-    b_min = 1.0 / (alpha_max - alpha_min)
+    b_min = divide(1.0, alpha_max - alpha_min)
 
-    for _ in range(max_iterations):
+    iterations = 0
+    converged = False
+    funk = 0.0
+    hb = 0.0
+    while True:
+        iterations += 1
         funk = 0.0
         funk_deriv = 0.0
         hb = 0.0
@@ -120,14 +126,16 @@ def _nielsen_2023(z: list[float], K: list[float], tolerance: float, max_iteratio
         for i, value in enumerate(work_K):
             if value < _ION_THRESHOLD:
                 continue
-            funk -= z[i] * a * (1.0 + a) / (d[i] + a * (1.0 + d[i]))
-            funk_deriv -= (
-                z[i] * (a * a + (1.0 + a) * (1.0 + a) * d[i]) / (d[i] + a * (1.0 + d[i])) ** 2
+            funk -= divide(z[i] * a * (1.0 + a), d[i] + a * (1.0 + d[i]))
+            funk_deriv -= divide(
+                z[i] * (a * a + (1.0 + a) * (1.0 + a) * d[i]),
+                (d[i] + a * (1.0 + d[i])) ** 2,
             )
-            hb += z[i] * b / (1.0 + b * (alpha_min - c[i]))
-            hb_deriv += z[i] / (1.0 + b * (alpha_min - c[i])) ** 2
+            hb += divide(z[i] * b, 1.0 + b * (alpha_min - c[i]))
+            hb_deriv += divide(z[i], (1.0 + b * (alpha_min - c[i])) ** 2)
 
-        if abs(funk) < tolerance and abs(hb) < tolerance:
+        if (abs(funk) < tolerance and abs(hb) < tolerance) or iterations >= max_iterations:
+            converged = abs(funk) < tolerance and abs(hb) < tolerance
             break
 
         if funk > 0.0:
@@ -139,14 +147,19 @@ def _nielsen_2023(z: list[float], K: list[float], tolerance: float, max_iteratio
         else:
             b_min = b
 
-        a -= funk / funk_deriv
+        a -= divide(funk, funk_deriv)
         if a > a_max or a < a_min:
             a = 0.5 * (a_max + a_min)
-        b -= hb / hb_deriv
+        b -= divide(hb, hb_deriv)
         if b > b_max or b < b_min:
             b = 0.5 * (b_max + b_min)
 
-    beta = -((1.0 / b) / a - alpha_max)
+    if not converged:
+        # The Rust kernel's own refusal: an iteration that never met the gate has no root
+        # to report, and the two implementations have to refuse it the same way.
+        raise SolverNotConvergedError(iterations, max(abs(funk), abs(hb)), tolerance)
+
+    beta = -(divide(divide(1.0, b), a) - alpha_max)
     if h > 0.0:
         beta = 1.0 - beta
     return beta

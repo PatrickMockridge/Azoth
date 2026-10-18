@@ -8,11 +8,11 @@ is a *direct* model: no iteration, so no algorithm block.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
+from azoth.core.numerics import divide, powf, square_root
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import MasonSaxenaConductivityResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -122,9 +122,10 @@ def mason_saxena_conductivity(
     for i in range(n):
         denominator = 0.0
         for j in range(n):
-            ratio = math.sqrt(pure_k[i] / pure_k[j]) * math.pow(m[i] / m[j], 0.25)
-            aij = (1.0 + ratio) ** 2 / math.sqrt(8.0 * (1.0 + m[i] / m[j]))
+            mass_ratio = divide(m[i], m[j])
+            ratio = square_root(divide(pure_k[i], pure_k[j])) * powf(mass_ratio, 0.25)
+            aij = divide((1.0 + ratio) ** 2, square_root(8.0 * (1.0 + mass_ratio)))
             denominator += z[j] * aij
-        k += z[i] * pure_k[i] / denominator
+        k += divide(z[i] * pure_k[i], denominator)
 
     return MasonSaxenaConductivityResult(k=from_si(k, "W/(m*K)"), warnings=tuple(warnings))

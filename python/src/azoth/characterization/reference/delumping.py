@@ -34,7 +34,7 @@ from typing import Any
 from azoth import _models_gen
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import DelumpingResult, SubFraction
-from azoth.core.units import from_si, input_records_to_si
+from azoth.core.units import from_si, input_records_to_si, to_count
 from azoth.core.warnings import Warning
 
 MODEL_ID = "characterization.delumping"
@@ -234,7 +234,7 @@ def delumping(
                 None if row["boiling_point"] is None else from_si(row["boiling_point"], "K")
             ),
         )
-        for row in split(rows, int(resolution))
+        for row in split(rows, to_count(resolution, "resolution"))
     ]
 
     apply_checks(checks.derived, lambda _name: None, warnings)

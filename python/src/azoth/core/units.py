@@ -65,13 +65,14 @@ throughout the package, which confines the problem to this module.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 from typing import Any, Final, cast
 
 import pint
 
 from azoth.core._units_gen import CANONICAL_UNITS as CANONICAL_UNITS
-from azoth.core.errors import UnitMismatchError
+from azoth.core.errors import OutOfRangeError, UnitMismatchError
 
 #: The one registry. A second one would have its own unit cache and its own
 #: definition overrides, which is a subtle way for two parts of a program to
@@ -191,7 +192,15 @@ def to_si(value: Any, spec_unit: str, field: str, *, interval: bool = False) -> 
     except pint.errors.DimensionalityError as exc:
         raise UnitMismatchError(field, spec_unit, str(value.units)) from exc
     base: Q = converted.to_base_units()
-    return float(base.magnitude)
+    magnitude = float(base.magnitude)
+    if not math.isfinite(magnitude):
+        # **The boundary is where a non-finite magnitude stops.** Both backends convert
+        # their inputs here, so a NaN or an infinity is refused with one error on both
+        # sides rather than reaching arithmetic that cannot carry it.
+        raise OutOfRangeError(
+            field, magnitude, "an input magnitude must be finite; this one is not"
+        )
+    return magnitude
 
 
 def to_si_shaped(value: Any, spec_unit: str, field: str, *, interval: bool = False) -> SiValue:
@@ -256,6 +265,23 @@ def input_to_si(spec: Mapping[str, Any], field: str, value: Any) -> float:
         field,
         interval=bool(declaration.get("interval", False)),
     )
+
+
+def to_count(value: Any, field: str) -> int:
+    """A declared count, as the extension's unsigned parameter type can hold it.
+
+    A count is a dimensionless number the spec describes as a quantity and the Rust
+    signature declares `usize`. Passing a float through ``int()`` raises a bare
+    ``ValueError``/``OverflowError`` for NaN, an infinity or a negative, which is a missing
+    check rather than a refusal; this names the input and raises `OutOfRangeError` instead.
+    Both implementations call it, so the same input is refused on the same field.
+    """
+    number = float(value)
+    if not math.isfinite(number) or not number.is_integer():
+        raise OutOfRangeError(field, number, "a count must be a finite integer")
+    if number < 0.0:
+        raise OutOfRangeError(field, number, "a count cannot be negative")
+    return int(number)
 
 
 def input_records_to_si[Row: Mapping[str, object]](

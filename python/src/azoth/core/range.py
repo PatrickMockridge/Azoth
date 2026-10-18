@@ -113,14 +113,14 @@ class RangeCheck:
         )
 
     def violated(self, value: float) -> bool:
-        """Whether `value` violates this bound. ``NaN`` violates everything.
+        """Whether `value` violates this bound. A non-finite value violates everything.
 
-        The ``NaN`` case is not defensive padding. Every comparison with ``NaN``
-        is false, so without an explicit check a ``NaN`` input would satisfy
-        every bound and produce a confident-looking wrong answer - exactly the
-        failure this library exists to prevent.
+        The non-finite case is not defensive padding. Every comparison with ``NaN``
+        is false, and an infinity passes an unbounded side, so without an explicit
+        check either would satisfy this bound and reach arithmetic that cannot carry
+        it - exactly the failure this library exists to prevent.
         """
-        if math.isnan(value):
+        if not math.isfinite(value):
             return True
         # An exclusion rather than an interval. Checked first and returned
         # unconditionally: `band` describes which side of an interval violates, and

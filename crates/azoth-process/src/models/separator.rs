@@ -75,6 +75,16 @@ pub fn separator(
         &mut warnings,
     )?;
 
+    // **A zero flow is not a state**, and the heat-per-mole is a division by it: refused
+    // here with the input's own name rather than surfacing as a non-finite enthalpy.
+    if feed_n <= 0.0 {
+        return Err(azoth_core::AzothError::out_of_range(
+            "feed_n",
+            feed_n,
+            "a unit operation needs a positive molar flow",
+        ));
+    }
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let (vapour, liquid) = kernel(&feed, pressure_drop, gas_in_liquid, heat_input)?;
 
