@@ -159,7 +159,14 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
         "AssociationSpec",
         "One mixture's association, as every model whose Python side takes a"
         " `Mixture` requires it.",
-        (("associating", "bool"), ("schemes", "list[str]"), ("values", "list[list[float]]")),
+        (
+            ("associating", "bool"),
+            ("schemes", "list[str]"),
+            ("values", "list[list[float]]"),
+            ("rdf_form", "str"),
+            ("cross", "list[tuple[str, float, float]]"),
+            ("kij_t", "list[float]"),
+        ),
     ),
     ("DataFile", None, (("name", "str"), ("path", "str"), ("text", "str"))),
     (
@@ -825,8 +832,10 @@ def render_vocabulary() -> str:
             out.append("    def __init__(self, magnitude_si: float, unit: str) -> None: ...")
         if name == "AssociationSpec":
             out.append(
-                "    def __init__(self, associating: bool, schemes: list[str],"
-                " values: list[list[float]]) -> None: ..."
+                "    def __init__(self, associating: bool, rdf_form: str,"
+                " schemes: list[str], values: list[list[float]],"
+                " cross: list[tuple[str, float, float]], kij_t: list[float])"
+                " -> None: ..."
             )
         if name == "Session":
             # **A handle, not a record.** Its state is a document and its methods are what a

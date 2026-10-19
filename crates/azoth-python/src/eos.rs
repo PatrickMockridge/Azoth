@@ -344,21 +344,81 @@ pub struct PyAssociationSpec {
     /// `b_pr`, `m_pr`, `racket_z`, `volume_correction`.
     #[pyo3(get)]
     pub values: Vec<Vec<f64>>,
+    /// The radial distribution function the phase model runs: `carnahan_starling` for
+    /// `PhaseCPAInterface`'s default, `chapman` for `PhaseSrkCPAs` and the electrolyte
+    /// phase. **A phase model chooses this, not the components**, so a boundary that
+    /// dropped it would run a different association than the caller's fluid.
+    #[pyo3(get)]
+    pub rdf_form: String,
+    /// The cross-association rule per pair, flattened row-major over the components:
+    /// `(kind, energy, volume)` with `kind` `elliott` or `cr1`, and NaN for a value the
+    /// combining rule supplies. Empty is the Elliott rule for every pair, which is
+    /// NeqSim's zero initialisation.
+    #[pyo3(get)]
+    pub cross: Vec<(String, f64, f64)>,
+    /// The CPA rule's temperature coefficient, flattened row-major; empty for a mixture
+    /// whose interaction matrix is constant. **Rule 10 is temperature-dependent**, and a
+    /// boundary that carried the constant part alone would rebuild a different fluid: on
+    /// `CO2`/`water` the coefficient is `0.001121` against a constant of `-0.27686`.
+    #[pyo3(get)]
+    pub kij_t: Vec<f64>,
 }
 
 #[pymethods]
 impl PyAssociationSpec {
     #[new]
-    fn new(associating: bool, schemes: Vec<String>, values: Vec<Vec<f64>>) -> Self {
+    fn new(
+        associating: bool,
+        rdf_form: String,
+        schemes: Vec<String>,
+        values: Vec<Vec<f64>>,
+        cross: Vec<(String, f64, f64)>,
+        kij_t: Vec<f64>,
+    ) -> Self {
         Self {
             associating,
+            rdf_form,
             schemes,
             values,
+            cross,
+            kij_t,
         }
     }
 }
 
 impl PyAssociationSpec {
+    /// The radial distribution function the association runs.
+    fn rdf(&self) -> PyResult<azoth_eos::association::RdfForm> {
+        match self.rdf_form.as_str() {
+            "carnahan_starling" => Ok(azoth_eos::association::RdfForm::CarnahanStarling),
+            "chapman" => Ok(azoth_eos::association::RdfForm::Chapman),
+            other => Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "unknown radial distribution function `{other}`; expected \
+                 `carnahan_starling` or `chapman`"
+            ))),
+        }
+    }
+
+    /// The cross rules, with NaN read as the combining-rule fallback.
+    fn cross_rules(&self) -> PyResult<Vec<azoth_eos::association::CrossRule>> {
+        self.cross
+            .iter()
+            .map(|(kind, energy, volume)| {
+                let value = |value: f64| value.is_finite().then_some(value);
+                match kind.as_str() {
+                    "elliott" => Ok(azoth_eos::association::CrossRule::Elliott),
+                    "cr1" => Ok(azoth_eos::association::CrossRule::Cr1 {
+                        energy: value(*energy),
+                        volume: value(*volume),
+                    }),
+                    other => Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "unknown cross-association rule `{other}`; expected `elliott` or `cr1`"
+                    ))),
+                }
+            })
+            .collect()
+    }
+
     /// Component `i`'s record, or `None` when its scheme is empty.
     fn record(&self, i: usize) -> PyResult<Option<azoth_eos::association::AssociationRecord>> {
         let Some(name) = self.schemes.get(i).filter(|name| !name.is_empty()) else {
@@ -459,10 +519,38 @@ pub(crate) fn build_mixture_with_mass(
     let alpha: azoth_eos::Alpha = alpha
         .parse()
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    // **The two things the components do not carry.** The RDF is the phase model's choice
+    // and the cross rules are the pairs'; a boundary that skipped either rebuilt a fluid
+    // the caller does not have, silently - Carnahan-Starling where the caller said Chapman,
+    // and the Elliott geometric mean where the pair table says CR-1.
+    let rdf = association.rdf()?;
+    let cross = association.cross_rules()?;
+    let kij_t = association.kij_t.clone();
+    if !kij_t.is_empty() && kij_t.len() != n * n {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "`kij_t` carries one entry per interaction: expected {}, got {}",
+            n * n,
+            kij_t.len()
+        )));
+    }
+    let constant = kij.clone();
     azoth_eos::Mixture::new(components, kij)
+        .map(|m| {
+            if kij_t.iter().any(|value| *value != 0.0) {
+                m.with_mixing_rule(azoth_eos::MixingRule::ClassicT2 {
+                    kij: constant,
+                    kij_t,
+                    inverse_temperature: vec![false; n * n],
+                })
+            } else {
+                m
+            }
+        })
         .and_then(|m| {
             if association.associating {
                 m.with_association()
+                    .map(|m| m.with_rdf_form(rdf))
+                    .map(|m| m.with_cross(cross))
             } else {
                 Ok(m)
             }
@@ -778,10 +866,38 @@ pub(crate) fn build_mixture(
     let alpha: azoth_eos::Alpha = alpha
         .parse()
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    // **The two things the components do not carry.** The RDF is the phase model's choice
+    // and the cross rules are the pairs'; a boundary that skipped either rebuilt a fluid
+    // the caller does not have, silently - Carnahan-Starling where the caller said Chapman,
+    // and the Elliott geometric mean where the pair table says CR-1.
+    let rdf = association.rdf()?;
+    let cross = association.cross_rules()?;
+    let kij_t = association.kij_t.clone();
+    if !kij_t.is_empty() && kij_t.len() != n * n {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "`kij_t` carries one entry per interaction: expected {}, got {}",
+            n * n,
+            kij_t.len()
+        )));
+    }
+    let constant = kij.clone();
     azoth_eos::Mixture::new(components, kij)
+        .map(|m| {
+            if kij_t.iter().any(|value| *value != 0.0) {
+                m.with_mixing_rule(azoth_eos::MixingRule::ClassicT2 {
+                    kij: constant,
+                    kij_t,
+                    inverse_temperature: vec![false; n * n],
+                })
+            } else {
+                m
+            }
+        })
         .and_then(|m| {
             if association.associating {
                 m.with_association()
+                    .map(|m| m.with_rdf_form(rdf))
+                    .map(|m| m.with_cross(cross))
             } else {
                 Ok(m)
             }

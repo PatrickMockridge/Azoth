@@ -3414,6 +3414,13 @@ def _assemble(
             cubic=_cubic(eos),
             alpha=_alpha_name(eos, alpha),
             associating=associating,
+            # **The same two fields `from_names` sets.** The cross-association rule is what
+            # the CPA mixing rule reads per pair - `CO2`/`water` is CR-1, and a mixture that
+            # leaves it empty bonds the pair by the Elliott geometric mean instead; and the
+            # names travel because a `Component` carries no name, so a reader that resolves
+            # one has nowhere else to read it.
+            cross=cpa_cross_for(tuple(resolved)) if associating else (),
+            names=resolved,
         ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]

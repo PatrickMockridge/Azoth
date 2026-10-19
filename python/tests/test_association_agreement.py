@@ -17,14 +17,20 @@ rather than leaving the reader to assume the stronger check.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import pytest
 
+from azoth import use_backend
+from azoth._dispatch import Backend, resolve
+from azoth.core.units import quantity
 from azoth.eos import components
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._association import (
     ELLIOTT,
+    RDF_CARNAHAN_STARLING,
+    RDF_CHAPMAN,
     Association,
     AssociationComponent,
     R,
@@ -432,3 +438,68 @@ def test_the_associating_derivative_surface_matches_the_phase_state() -> None:
         assert surface.d_ln_phi_dp[i] == pytest.approx(
             (up[i] - down[i]) / (2.0 * step), rel=1.0e-6
         ), f"d ln phi_{i}/dP"
+
+
+def _bridge_ln_phi(
+    backend: Backend, mixture: Mixture, z: list[float], t: float, p: float
+) -> tuple[float, ...]:
+    """The multiflash's ``ln phi`` through the selected backend's boundary."""
+    with use_backend(backend):
+        result = resolve("eos.tp_multiflash")(
+            mixture=mixture,
+            T=quantity(t, "K"),
+            P=quantity(p, "Pa"),
+            z=z,
+        )
+        return tuple(round(value, 9) for value in result.ln_phi[0])
+
+
+def test_the_bridge_carries_the_cpa_fluids_fields() -> None:
+    """The mixture's RDF, its CPA ``kij`` temperature coefficient and its cross rules.
+
+    **All three live outside the component parameters,** so a boundary that rebuilt the
+    fluid from those alone would run a different one: Carnahan-Starling where the caller
+    said Chapman, the constant ``kij`` where rule 10 adds ``kijT * T``, and the Elliott
+    geometric mean where the pair table says CR-1. Each is measured here as agreement
+    between the two backends on a fluid where the field is not zero:
+
+    * methane/water carries ``cpakijT_SRK`` (and no CR-1 pair), and each RDF gives a
+      different ``ln phi`` - so the equality below fails if either field is dropped;
+    * benzene/water carries the CR-1 cross rule, which moves water's ``ln phi`` by more
+      than a unit against the Elliott rule.
+    """
+    gas, _ = components.mixture_of(["methane", "water"], eos="srk", associating=True)
+    assert gas.kij_t, "the fluid must carry the temperature coefficient"
+    for form in (RDF_CARNAHAN_STARLING, RDF_CHAPMAN):
+        fluid = dataclasses.replace(gas, rdf_form=form)
+        python = _bridge_ln_phi("python", fluid, [0.97, 0.03], 343.15, 150.0e5)
+        rust = _bridge_ln_phi("rust", fluid, [0.97, 0.03], 343.15, 150.0e5)
+        assert all(abs(a - b) < 1.0e-6 for a, b in zip(python, rust, strict=True)), (
+            f"{form}: {python} against {rust}"
+        )
+
+    starling = _bridge_ln_phi(
+        "python",
+        dataclasses.replace(gas, rdf_form=RDF_CARNAHAN_STARLING),
+        [0.97, 0.03],
+        343.15,
+        150.0e5,
+    )
+    chapman = _bridge_ln_phi(
+        "python", dataclasses.replace(gas, rdf_form=RDF_CHAPMAN), [0.97, 0.03], 343.15, 150.0e5
+    )
+    assert abs(chapman[1] - starling[1]) > 1.0e-3, (
+        f"the RDF is a no-op on this fluid, so the test would not see it dropped: "
+        f"{chapman} against {starling}"
+    )
+
+    benzene, _ = components.mixture_of(["benzene", "water"], eos="srk", associating=True)
+    assert any(rule.kind == "cr1" for rule in benzene.cross)
+    with_cross = _bridge_ln_phi("python", benzene, [0.01, 0.99], 298.15, 1.0e5)
+    without = dataclasses.replace(benzene, cross=())
+    py_plain = _bridge_ln_phi("python", without, [0.01, 0.99], 298.15, 1.0e5)
+    assert abs(with_cross[1] - py_plain[1]) > 1.0e-4
+    rust = _bridge_ln_phi("rust", benzene, [0.01, 0.99], 298.15, 1.0e5)
+    assert all(abs(a - b) < 1.0e-6 for a, b in zip(with_cross, rust, strict=True)), (
+        f"the cross rule did not cross: {with_cross} against {rust}"
+    )

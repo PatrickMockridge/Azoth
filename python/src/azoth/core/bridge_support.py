@@ -12,6 +12,7 @@ this file exists to break.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -92,7 +93,21 @@ def _association_spec(mixture: Any) -> Any:
                 record.volume_correction,
             ]
         )
-    return _core.AssociationSpec(bool(mixture.associating), schemes, values)
+    # **The two things that are not the components' parameters.** The radial distribution
+    # function is the phase model's choice - `PhaseCPAInterface`'s Carnahan-Starling or
+    # `PhaseSrkCPAs`/the electrolyte phase's Chapman - and the cross rule is the pair's, so
+    # a boundary that carried only the components would rebuild a different fluid on the
+    # Rust side. `None` crosses as NaN, which is how a combining-rule fallback is stated.
+    cross = [(rule.kind, _or_nan(rule.energy), _or_nan(rule.volume)) for rule in mixture.cross]
+    kij_t = [value for row in mixture.kij_t for value in row]
+    return _core.AssociationSpec(
+        bool(mixture.associating), str(mixture.rdf_form), schemes, values, cross, kij_t
+    )
+
+
+def _or_nan(value: float | None) -> float:
+    """An absent cross-rule value as the NaN the Rust side reads as `None`."""
+    return math.nan if value is None else float(value)
 
 
 def _molar_masses(mixture: Any, reason: str) -> list[float]:
