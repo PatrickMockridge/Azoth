@@ -33,7 +33,7 @@
 //!
 //! **The other ways a phase can enter.** Upstream's 3,816 lines are mostly rescues for systems
 //! this crate does not have: the ionic rules (P8), the CPA rules (P7) and the hydrate coupling
-//! (P9). Beside those it has four further seeding constructs, three of them ported here:
+//! (P9). Beside those it has four further seeding constructs, all four ported here:
 //!
 //! 1. **`stabilityAnalysisEnhanced()`** - upstream's second public analysis, run **after** the
 //!    fraction solve on a two-phase result. It tries Wilson `K`, `1/K` and an
@@ -45,8 +45,8 @@
 //! 3. **`seedHydrocarbonLiquidFromFeed()`** - seeds an **OIL**, also requiring an aqueous
 //!    phase, with `waterZ >= 1e-6` and heavy hydrocarbons (molar mass above `0.045` kg/mol)
 //!    totalling at least `5e-3` and outweighing the water.
-//! 4. The **aqueous** seed, inline in `run()` rather than a method, is owed; it is the only
-//!    one that can fire on a feed with no aqueous phase already.
+//! 4. The **aqueous** seed, inline in `run()` rather than a method: it is the only one that can
+//!    fire on a feed with no aqueous phase already, and it does not re-solve.
 //!
 //! The phase-type gates are `hydrate_inhibitor_wt::label`'s, which is NeqSim's `PhaseEos.init`
 //! rule. **Measured at every state the probe scans: neither named seed's addition survives the
@@ -445,6 +445,51 @@ pub fn tp_multiflash(
         }
     }
 
+    // **The inline aqueous seed.** `run()` adds an AQUEOUS phase where none exists, the water
+    // fraction is above `1e-6` and fewer than three phases are present, after the fraction
+    // solve and the enhanced check - and **does not re-solve**: the other phases keep the
+    // fractions they converged to, rescaled by `1 - beta`. Measured in the probe's ablation at
+    // C1/nC4 + 1e-4 water, 370 K / 40 bar: aqueous beta `9.99990000099999e-6`, its
+    // composition the feed's water over `1e-16` traces. In the default chain of that state the
+    // enhanced check's addition is what suppresses this seed.
+    if seeded && phases.len() < 3 {
+        let labels = phase_labels(mixture, &reduced, &phases)?;
+        if !labels
+            .iter()
+            .any(|label| *label == Some(PhaseLabel::Aqueous))
+            && let Some(water) = water_index(mixture)
+            && z[water] > 1.0e-6
+        {
+            let mut composition: Vec<f64> = Vec::with_capacity(phases.len());
+            for (index, component) in mixture.components().iter().enumerate() {
+                let value = if index == water {
+                    z[index].max(1.0e-12)
+                } else if matches!(component.class.as_str(), "hc" | "inert") {
+                    1.0e-16
+                } else {
+                    (z[index] * 1.0e-2).min(1.0e-8)
+                };
+                composition.push(value);
+            }
+            let sum: f64 = composition.iter().sum();
+            if sum > 0.0 {
+                for value in &mut composition {
+                    *value /= sum;
+                }
+            }
+            phases.push(MultiphasePhase {
+                fraction: 1.0e-5,
+                composition,
+                kind: PhaseKind::Cubic(RootSide::Liquid),
+            });
+            provenance.push(TpMultiflashSeed::AqueousSeeded);
+            let total: f64 = phases.iter().map(|phase| phase.fraction).sum();
+            for phase in &mut phases {
+                phase.fraction /= total;
+            }
+        }
+    }
+
     // The merge. A phase the solve pinned at the floor is a phase that is not there.
     let mut kept: Vec<MultiphasePhase> = Vec::with_capacity(phases.len());
     let mut kept_provenance: Vec<TpMultiflashSeed> = Vec::with_capacity(phases.len());
@@ -531,9 +576,13 @@ pub fn tp_multiflash(
                     .map_or_else(Vec::new, |state| state.ln_phi.clone())
             })
             .collect(),
+        // The **last** construct whose addition survived: when the basic analysis and the
+        // inline aqueous seed both contributed, the answer's distinguishing phase is the later
+        // one, and that is the construct a case is pinning.
         seeded: if grew {
             kept_provenance
                 .iter()
+                .rev()
                 .copied()
                 .find(|path| *path != TpMultiflashSeed::TwoPhaseFlash)
                 .unwrap_or(TpMultiflashSeed::TwoPhaseFlash)

@@ -658,6 +658,34 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
                 reduced, kij, feed, phases, tolerance, cap
             )
 
+    # **The inline aqueous seed.** `run()` adds an AQUEOUS phase where none exists, the water
+    # fraction is above `1e-6` and fewer than three phases are present, after the fraction
+    # solve and the enhanced check - and **does not re-solve**: the other phases keep the
+    # fractions they converged to, rescaled by `1 - beta`. Measured in the probe's ablation at
+    # C1/nC4 + 1e-4 water, 370 K / 40 bar: aqueous beta `9.99990000099999e-6`. In the default
+    # chain of that state the enhanced check's addition is what suppresses this seed.
+    if seeded and len(phases) < 3:
+        labels = _phase_labels(mixture, reduced, kij, phases)
+        water = _water_index(mixture)
+        if AQUEOUS not in labels and water is not None and feed[water] > 1.0e-6:
+            composition: list[float] = []
+            for index, component in enumerate(mixture.components):
+                if index == water:
+                    value = max(feed[index], 1.0e-12)
+                elif component.component_class in ("hc", "inert"):
+                    value = 1.0e-16
+                else:
+                    value = min(feed[index] * 1.0e-2, 1.0e-8)
+                composition.append(value)
+            total = sum(composition)
+            composition = [value / total for value in composition]
+            phases.append(_Phase(1.0e-5, composition, liquid=True))
+            provenance.append(TpMultiflashSeed.AQUEOUS_SEEDED)
+            total = sum(phase.fraction for phase in phases)
+            phases = [
+                _Phase(phase.fraction / total, phase.composition, phase.liquid) for phase in phases
+            ]
+
     # The merge. A phase the solve pinned at the floor is a phase that is not there, and two
     # phases at the same composition are one phase however their roots were labelled. The side
     # is deliberately not part of that second test - see the Rust kernel for the measurement.
