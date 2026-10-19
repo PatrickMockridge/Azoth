@@ -56,7 +56,7 @@ not an equation, and both implementations read it from here.
 
 - **the flood is one feed's worth of water, and the water dissolved in the non-aqueous phases is the answer.** A fluid coexisting with a free aqueous phase is water-saturated by definition, so no iteration is needed.
 - **the trace of water is added when the feed has none, and it is carried.** NeqSim adds `totalMoles / 100` of water and re-applies the mixing rule before the flood; that 1% sits in the total the saturation is reported against, which is why the measured values reproduce.
-- **an associating fluid is refused.** The operation is a multiphase flash, `eos.tp_multiflash` has no associating case, and the source's two CPA states come out 15-19% apart in opposite directions - refused, not answered.
+- **an associating fluid is the Statoil CPA**: the generic CPA mixture plus `PhaseSrkCPAs.calc_g`'s Chapman distribution and rule 10's temperature-dependent `cpakijT_SRK`. The Carnahan-Starling fluid moves the dissolved water by 15% in both source states.
 - **each recovery path returns the feed rather than a flooded fluid.** The class restores the caller's composition when the flood flash diverges or no aqueous phase forms; that state comes back with the reason in `warnings`, not as a refused call.
 - **a residual incipient aqueous phase is dropped, not flashed away.** The class calls `removePhase` and re-flashes; a flash here is a function of the composition alone, so the re-flash is the same answer and the removal is the part that shows.
 - the phase label is `PhaseEos.init`'s, read through the same `label` the hydrate-inhibitor operation uses: volume over covolume past 1.75 is a gas, and below it the hydrocarbon sum decides between an oil and an aqueous phase.
@@ -67,11 +67,13 @@ not an equation, and both implementations read it from here.
 | Case | Inputs | Expected |
 |---|---|---|
 | `the_methane_heptane_pr_oil_at_20_c` | components = ['methane', 'n-heptane'], T = 293.15, P = 15000000.0, moles = [2.0, 75.0], eos = pr, associating = False | water_mole_fraction = 0.00024301370485671443 |
+| `the_methane_ethane_propane_cpa_gas_at_70_c` | components = ['methane', 'ethane', 'propane'], T = 343.15, P = 15000000.0, moles = [75.0, 7.5, 4.0], eos = srk, associating = True | water_mole_fraction = 0.00289174827700766 |
+| `the_methane_heptane_cpa_oil_at_20_c` | components = ['methane', 'n-heptane'], T = 293.15, P = 15000000.0, moles = [2.0, 75.0], eos = srk, associating = True | water_mole_fraction = 0.00028465024974919816 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 1 declared, every one run
+- Tests: 3 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

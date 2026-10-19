@@ -307,7 +307,7 @@ fn log_activity_coefficients(
                 &[1.0],
                 "liquid",
             )?
-                .ln_phi[0]
+            .ln_phi[0]
         } else {
             let fraction =
                 REFERENCE_SOLUTE_MOLES / (REFERENCE_SOLUTE_MOLES + REFERENCE_WATER_MOLES);

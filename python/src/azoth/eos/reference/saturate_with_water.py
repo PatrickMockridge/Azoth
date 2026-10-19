@@ -16,6 +16,7 @@ with the reason in the result's warnings.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 from azoth import _models_gen
@@ -25,6 +26,7 @@ from azoth.core.result import SaturateWithWaterResult
 from azoth.core.units import Q, input_to_si, ureg
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.components import mixture_of
+from azoth.eos.reference._association import RDF_CHAPMAN
 from azoth.eos.reference._mixture_state import reduced_parameters
 from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, phase_label
 from azoth.eos.reference.tp_multiflash import tp_multiflash
@@ -124,19 +126,6 @@ def saturate_with_water(
     if not total > 0.0 or not math.isfinite(total):
         raise OutOfRangeError("moles", total, "the feed's mole numbers do not describe a feed")
 
-    # **The associating fluid is refused, and the reason is measured.** The operation is a
-    # *multiphase* flash, and `eos.tp_multiflash` has no associating case anywhere in this
-    # tree. Measured against the source's own two CPA states, it is 19% high on one and 15%
-    # low on the other, in opposite directions: a plausible number and a wrong one.
-    if associating:
-        raise InvalidInputError(
-            "associating",
-            "this operation floods and flashes multiphase, and the multiphase flash has no "
-            "associating case in this tree; the two source states it was measured on disagree "
-            "by 15-19% in opposite directions, so an associating fluid is refused rather than "
-            "answered",
-        )
-
     # **The trace of water, and it is not an optimisation to skip.** The class adds it before
     # the flood, so the saturation is reported against a total that includes it.
     names = [name.strip().lower() for name in components]
@@ -147,6 +136,14 @@ def saturate_with_water(
     input_moles = list(feed)
 
     mixture, _ = mixture_of(names, eos=eos, associating=associating)
+    if associating:
+        # **The Statoil phase, which is the generic CPA fluid plus its radial distribution
+        # function.** The source's CPA cases are `SystemSrkCPAstatoil`, whose
+        # `PhaseSrkCPAs.calc_g` replaces `PhaseCPAInterface`'s Carnahan-Starling with
+        # `1/(1 - 1.9 eta)`. Building the Carnahan-Starling fluid instead moves the
+        # dissolved water by 15% in both source states, in opposite directions; with this
+        # and the temperature-dependent CPA `kij` the two reproduce to 0.2-0.3%.
+        mixture = dataclasses.replace(mixture, rdf_form=RDF_CHAPMAN)
     water = names.index("water")
 
     # The flood: one feed's worth of water.

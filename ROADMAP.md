@@ -196,12 +196,12 @@ reaches equilibrium through.
   bullet below lists as not ported is the reason. The first is not a flash - it holds one aqueous phase and runs its own two trials
   and its own ion-confined split - and the second solves nothing at all: it reads a phase and
   reports molalities and activity coefficients at `Phase`'s two reference states. The third
-  floods a feed with water and reads the water dissolved in the non-aqueous phases; **it
-  refuses an associating fluid**, because the operation is a multiphase flash and
-  `eos.tp_multiflash` carries no associating case - measured against the source's own two CPA
-  states, the port is 19% high on one and 15% low on the other, in opposite directions.
-  That gap is the owed part: `PhaseSrkCPA` into a multiphase flash with an associating case
-  behind it. The coupling's gate was once recorded here as the EoS/GE hybrid seam, and that
+  floods a feed with water and reads the water dissolved in the non-aqueous phases; **an
+  associating fluid is the Statoil CPA**, the generic CPA mixture plus `PhaseSrkCPAs.calc_g`'s
+  Chapman distribution and rule 10's temperature-dependent `cpakijT_SRK`. The two source CPA
+  states reproduce to 0.2-0.3% once both are in; the multiphase flash's own one-phase answer
+  carried a negative flash's extrapolated composition, which is fixed in both kernels. The
+  coupling's gate was once recorded here as the EoS/GE hybrid seam, and that
   was wrong: it is `fluid instanceof SystemElectrolyteCPAstatoil`, which extends
   `SystemFurstElectrolyteEos` extends `SystemSrkEos`, so the hybrid route is not in its chain
   at all — that route is ported (`eos.hybrid_eos_ge_flash`,

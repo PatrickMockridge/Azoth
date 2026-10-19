@@ -124,7 +124,14 @@ def _is_liquid(reduced: ReducedParameters, kij: Any, x: list[float]) -> bool:
 
 def _phases_of(flash: Any, reduced: ReducedParameters, kij: Any, z: list[float]) -> list[_Phase]:
     """The phases a two-phase flash reported, as a starting set for the fraction solve."""
-    if flash.vapour_fraction is not None:
+    # **A two-phase flash's pair, and only its pair.** A *negative* flash - `phase` is
+    # `all_liquid` or `all_vapour`, `vapour_fraction` outside `[0, 1]` - reports an
+    # extrapolated composition that is not a state: it is the amount of the absent phase that
+    # would bring the feed to saturation. Seeding the multiflash from it starts a one-phase
+    # answer at a composition that does not match the feed, and the merge then publishes that
+    # composition with a fraction of one: measured, methane/n-heptane at 293.15 K and 150
+    # bara came back as one phase at `x_methane = 0.547` against a feed of `0.0265`.
+    if flash.phase is Phase.TWO_PHASE and flash.vapour_fraction is not None:
         return [
             _Phase(1.0 - flash.vapour_fraction, list(flash.x), liquid=True),
             _Phase(flash.vapour_fraction, list(flash.y), liquid=False),
@@ -340,7 +347,10 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
 
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    kij = mixture.kij
+    # **`effective_kij`, not `kij`**: rule 10 adds `cpakijT_SRK * T`, and the Rust kernel
+    # reads the reduced parameters' effective matrix. This side read the base one, so a CPA
+    # flash's water-hydrocarbon interaction was the T-independent constant alone.
+    kij = mixture.effective_kij(t_si)
     feed = list(z)
 
     # **A stalled two-phase flash is warned about rather than propagated.** Upstream's flash is

@@ -74,10 +74,14 @@ fn the_trace_of_water_is_added_when_the_feed_has_none() {
     assert!(relative < 2.0e-2, "{without:?} against {with:?}");
 }
 
-/// The refusal that stands in for the three source states this operation cannot reach.
+/// The CPA state, which the source's own `SystemSrkCPAstatoil` asserts.
+///
+/// The fluid is the generic CPA mixture plus `PhaseSrkCPAs.calc_g`'s Chapman distribution;
+/// the Carnahan-Starling one moves this answer by 15%, and the case file carries the same
+/// bound on the source's own number.
 #[test]
-fn an_associating_fluid_is_refused_with_its_reason() {
-    let error = saturate_with_water(
+fn an_associating_fluid_is_the_statoil_cpa() {
+    let result = saturate_with_water(
         &names(&["methane", "n-heptane"]),
         &[2.0, 75.0],
         kelvins(293.15),
@@ -85,8 +89,10 @@ fn an_associating_fluid_is_refused_with_its_reason() {
         "srk",
         true,
     )
-    .expect_err("the multiphase flash has no associating case");
-    assert!(error.to_string().contains("associating"), "{error}");
+    .expect("the Statoil CPA is built");
+    let expected = 2.846_502_497_491_981_6e-4;
+    let relative = (result.water_mole_fraction - expected).abs() / expected;
+    assert!(relative < 5.0e-3, "{relative}");
 }
 
 #[test]

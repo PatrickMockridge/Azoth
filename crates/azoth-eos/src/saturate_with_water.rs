@@ -12,8 +12,9 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 
+use crate::association::RdfForm;
 use crate::cubic::Cubic;
-use crate::databank::mixture_of;
+use crate::databank::{associating_mixture_of, mixture_of};
 use crate::hydrate_inhibitor_wt::{PhaseLabel, label};
 use crate::mixture::Mixture;
 use crate::model_gen;
@@ -58,21 +59,6 @@ pub fn saturate_with_water(
             ),
         ));
     }
-    // **The associating fluid is refused, and the reason is measured.** The operation is a
-    // *multiphase* flash, and `eos.tp_multiflash` has no associating case anywhere in this
-    // tree - so an associating fluid's answer here would rest on the one combination no case
-    // covers. Measured against the source's own two CPA states, it is 19% high on one and
-    // 15% low on the other, in opposite directions: a plausible number and a wrong one.
-    if associating {
-        return Err(AzothError::invalid_input(
-            "associating",
-            "this operation floods and flashes multiphase, and the multiphase flash has no \
-             associating case in this tree; the two source states it was measured on disagree \
-             by 15-19% in opposite directions, so an associating fluid is refused rather than \
-             answered"
-                .to_string(),
-        ));
-    }
     let cubic: Cubic = eos.parse().map_err(|_| {
         AzothError::invalid_input(
             "eos",
@@ -104,9 +90,17 @@ pub fn saturate_with_water(
     let input_total = total;
 
     let refs: Vec<&str> = names.iter().map(String::as_str).collect();
-    // A classical fluid only: `associating` is refused above, and the branch that built a CPA
-    // mixture comes back when the multiphase flash has an associating case behind it.
-    let (mixture, _) = mixture_of(&refs, cubic, None)?;
+    // **The Statoil phase for an associating fluid**, which is the generic CPA mixture plus
+    // `PhaseSrkCPAs.calc_g`'s radial distribution function in place of
+    // `PhaseCPAInterface`'s Carnahan-Starling. The two source states are
+    // `SystemSrkCPAstatoil`, and building the Carnahan-Starling fluid moves the dissolved
+    // water by 15% in both, in opposite directions.
+    let (mixture, _) = if associating {
+        let (fluid, ideal) = associating_mixture_of(&refs, cubic, None)?;
+        (fluid.with_rdf_form(RdfForm::Chapman), ideal)
+    } else {
+        mixture_of(&refs, cubic, None)?
+    };
     let water = mixture.index_of("water").ok_or_else(|| {
         AzothError::invalid_input(
             "components",

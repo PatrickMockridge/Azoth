@@ -159,7 +159,10 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
 
     algorithm = spec["algorithm"]
     inner = algorithm["inner"]
-    kij = mixture.kij
+    # **`effective_kij`, not `kij`**: rule 10 adds `cpakijT_SRK * T`, and the Rust kernel
+    # reads the reduced parameters' effective matrix. This side read the base one, so a CPA
+    # flash's water-hydrocarbon interaction was the T-independent constant alone.
+    kij = mixture.effective_kij(t_si)
 
     k = wilson_k(mixture, t_si, p_si)
     iterations = 0

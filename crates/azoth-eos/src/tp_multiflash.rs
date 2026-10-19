@@ -106,8 +106,13 @@ fn phases_of(
     reduced: &ReducedParameters,
     z: &[f64],
 ) -> Result<Vec<MultiphasePhase>> {
-    match flash.vapour_fraction {
-        Some(beta) => Ok(vec![
+    // **A two-phase flash's pair, and only its pair.** A *negative* flash reports an
+    // extrapolated composition rather than a state - the amount of the absent phase that
+    // would bring the feed to saturation - so seeding from it starts a one-phase answer at a
+    // composition the feed does not have. Measured, methane/n-heptane at 293.15 K and 150
+    // bara came back as one phase at `x_methane = 0.547` against a feed of `0.0265`.
+    match (flash.phase, flash.vapour_fraction) {
+        (Phase::TwoPhase, Some(beta)) => Ok(vec![
             MultiphasePhase {
                 fraction: 1.0 - beta,
                 composition: flash.x.clone(),
@@ -119,11 +124,12 @@ fn phases_of(
                 kind: PhaseKind::Cubic(RootSide::Vapour),
             },
         ]),
-        // No fraction: either every K-value was on one side, or the iteration reached
-        // `x = y = z`. The first names the phase; the second does not, so the feed is placed
-        // on whichever root of the cubic has the lower Gibbs energy - the same rule
-        // `stability_test` uses for the state the tangent plane is measured from.
-        None => {
+        // No two-phase split: either every K-value was on one side, the iteration reached
+        // `x = y = z`, or the flash is negative. The first names the phase; the rest do not,
+        // so the feed is placed on whichever root of the cubic has the lower Gibbs energy -
+        // the same rule `stability_test` uses for the state the tangent plane is measured
+        // from.
+        _ => {
             let side = match flash.phase {
                 Phase::AllLiquid => RootSide::Liquid,
                 Phase::AllVapour => RootSide::Vapour,

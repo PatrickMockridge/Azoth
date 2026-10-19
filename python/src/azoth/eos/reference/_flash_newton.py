@@ -63,8 +63,8 @@ def _gibbs_energy(
 ) -> float:
     """Michelsen's reduced Gibbs energy at a set of vapour mole numbers."""
     x, y = split_at(feed, u)
-    liquid = phase_state(reduced, mixture.kij, x, liquid=True)
-    vapour = phase_state(reduced, mixture.kij, y, liquid=False)
+    liquid = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=True)
+    vapour = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), y, liquid=False)
     total = 0.0
     for i in range(len(u)):
         total += u[i] * (vapour.ln_phi[i] + natural_log(y[i]))
@@ -118,13 +118,23 @@ def step(
     """One Newton step, from an iterate the caller's own scheme produced."""
     n = len(feed)
     x, y = split_at(feed, u)
-    liquid = phase_state(reduced, mixture.kij, x, liquid=True)
-    vapour = phase_state(reduced, mixture.kij, y, liquid=False)
+    liquid = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=True)
+    vapour = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), y, liquid=False)
     d_vapour = phase_derivatives(
-        reduced, mixture.kij, y, vapour.z, temperature=temperature, pressure=pressure
+        reduced,
+        mixture.effective_kij(reduced.t_kelvin),
+        y,
+        vapour.z,
+        temperature=temperature,
+        pressure=pressure,
     )
     d_liquid = phase_derivatives(
-        reduced, mixture.kij, x, liquid.z, temperature=temperature, pressure=pressure
+        reduced,
+        mixture.effective_kij(reduced.t_kelvin),
+        x,
+        liquid.z,
+        temperature=temperature,
+        pressure=pressure,
     )
     beta = sum(u)
 
@@ -174,8 +184,12 @@ def step(
 
     # The residual at the iterate the step landed on, which is what the solve stops on.
     landed_x, landed_y = split_at(feed, stepped)
-    landed_liquid = phase_state(reduced, mixture.kij, landed_x, liquid=True)
-    landed_vapour = phase_state(reduced, mixture.kij, landed_y, liquid=False)
+    landed_liquid = phase_state(
+        reduced, mixture.effective_kij(reduced.t_kelvin), landed_x, liquid=True
+    )
+    landed_vapour = phase_state(
+        reduced, mixture.effective_kij(reduced.t_kelvin), landed_y, liquid=False
+    )
     landed = max(
         abs(
             landed_vapour.ln_phi[i]

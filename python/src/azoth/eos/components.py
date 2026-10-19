@@ -3202,6 +3202,11 @@ def from_names(
     return mixture(
         components,
         kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
+        # **The CPA rule is temperature-dependent.** NeqSim's rule 10 adds
+        # `cpakijT_SRK` beside `cpakij_SRK`, and on `water`/`methane` the coefficient
+        # crosses the constant's sign inside a produced-water range. The classical rule
+        # has no companion column and gets nothing.
+        kij_t=(cpa_kij_t_for(tuple(resolved), family_of(eos)) if associating else None),
         cubic=cubic,
         alpha=alpha_name,
         associating=associating,
@@ -3403,6 +3408,9 @@ def _assemble(
         mixture(
             tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
             kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
+            # **The CPA rule is temperature-dependent**, exactly as in `from_names`
+            # above: rule 10 adds `cpakijT_SRK * T` and a classical rule has no column.
+            kij_t=(cpa_kij_t_for(tuple(resolved), family_of(eos)) if associating else None),
             cubic=_cubic(eos),
             alpha=_alpha_name(eos, alpha),
             associating=associating,
