@@ -12,9 +12,13 @@
 //! trial finds unstable (`C1/nC4 50/50` at 370 K / 40 bar, one state in 207); a state that
 //! splits **three** ways where the plain flash splits two (`CO2/C1/nc10 40/30/30`, 12 states;
 //! `N2/CO2/n-octane 10/40/50`, 9 states, both CO2-rich, cold and at low pressure); and a
-//! water-bearing feed, where the seeding adds a hydrocarbon liquid to an aqueous one (139 of
-//! 207 for water/n-hexane). Every other mixture is identical to the last bit or differs by
-//! under `3e-9`.
+//! water-bearing feed, where the flag's difference is common (139 of 207 for water/n-hexane).
+//! Every other mixture is identical to the last bit or differs by under `3e-9`.
+//!
+//! `validation/neqsim/TpMultiflashSeedProbe.java` attributes the water-bearing difference: at
+//! water/n-hexane 350 K / 20 bar the **basic analysis** adds the aqueous phase, and neither
+//! named feed seed survives the merge anywhere in the probe's grid. Their direct invocation is
+//! compared against NeqSim's composition by this module's unit tests.
 //!
 //! So this is three steps, in the order upstream runs them:
 //!
@@ -27,35 +31,28 @@
 //!    trial's largest component.
 //! 3. **The fraction solve**, [`crate::multiphase::solve_phase_fractions`], then the merge.
 //!
-//! **What is not here.** Upstream's 3,816 lines are mostly rescues for systems this crate
-//! does not have: the ionic rules (P8), the CPA rules (P7) and the hydrate coupling (P9). What
-//! it also has, and what a water-bearing cubic feed needs, is **four** further ways a phase can
-//! enter the set. This paragraph used to name two of them as "the aqueous seeds" and to say
-//! they were "gated on a water component and on nothing else"; both halves were wrong, so each
-//! is written out here:
+//! **The other ways a phase can enter.** Upstream's 3,816 lines are mostly rescues for systems
+//! this crate does not have: the ionic rules (P8), the CPA rules (P7) and the hydrate coupling
+//! (P9). Beside those it has four further seeding constructs, three of them ported here:
 //!
-//! 1. **`stabilityAnalysisEnhanced()`** - upstream's **second public stability analysis**,
-//!    which `run()` calls where the basic one found nothing. It adds Wilson-K, `1/K` and an
-//!    acentric-perturbation "LLE-specific" trial, does not skip non-hydrocarbon components, and
-//!    tests against every existing phase rather than phase 0. **Not ported, and named nowhere in
-//!    this tree until now.**
-//! 2. **`seedAdditionalPhaseFromFeed()`** - seeds a **GAS** phase. It fires only where an
-//!    **AQUEOUS** phase already exists, no gas phase sits above `beta = 1e-6`, water's feed
-//!    fraction is at least `1e-4` and some hydrocarbon's is at least `1e-4`.
-//! 3. **`seedHydrocarbonLiquidFromFeed()`** - seeds an **OIL** phase, and it too requires an
-//!    existing **AQUEOUS** one, along with `waterZ >= 1e-6` and heavy hydrocarbons - molar mass
-//!    above `0.045` kg/mol - totalling at least `5e-3`.
-//! 4. The **aqueous** seed, which is inline in `run()` rather than a method: it fires where no
-//!    aqueous phase exists at all and `waterZ > 1e-6`, prescribing one from the feed - `1e-16`
-//!    by default, water at `max(waterZ, 1e-12)`, other non-hydrocarbon non-inert components at
-//!    `min(z * 1e-2, 1e-8)` - at `beta = 1e-5`.
+//! 1. **`stabilityAnalysisEnhanced()`** - upstream's second public analysis, run **after** the
+//!    fraction solve on a two-phase result. It tries Wilson `K`, `1/K` and an
+//!    acentric-perturbation trial per existing phase and re-solves when one is admitted. Its
+//!    opt-in pre-solve call needs `setEnhancedMultiPhaseCheck(true)`, a system switch this
+//!    model has no input for.
+//! 2. **`seedAdditionalPhaseFromFeed()`** - seeds a **GAS** where an aqueous phase exists, no
+//!    gas sits above `beta = 1e-6`, water is at least `1e-4` of the feed and a hydrocarbon is.
+//! 3. **`seedHydrocarbonLiquidFromFeed()`** - seeds an **OIL**, also requiring an aqueous
+//!    phase, with `waterZ >= 1e-6` and heavy hydrocarbons (molar mass above `0.045` kg/mol)
+//!    totalling at least `5e-3` and outweighing the water.
+//! 4. The **aqueous** seed, inline in `run()` rather than a method, is owed; it is the only
+//!    one that can fire on a feed with no aqueous phase already.
 //!
-//! **2 and 3 cannot fire in the state that matters here** - a gas carrying ppm water, with one
-//! phase - because both require an aqueous phase to be there already. 4 can, but only once
-//! `multiPhaseTest` is true, and only 1 or the basic analysis can set that. So a feed carrying
-//! water comes back with the phases the tangent-plane trial finds, and the measured 139-of-207
-//! divergence for water/n-hexane is upstream's seeding reaching states this does not; the spec
-//! says so.
+//! The phase-type gates are `hydrate_inhibitor_wt::label`'s, which is NeqSim's `PhaseEos.init`
+//! rule. **Measured at every state the probe scans: neither named seed's addition survives the
+//! merge**, so their end-to-end effect is the full-chain answers the cases already pin; their
+//! arithmetic is compared to NeqSim's own compositions by the unit tests at the end of this
+//! file.
 //!
 //! **And that is what the multiphase water dew point was waiting on - which is not one of the
 //! four above.** Measured on the gas NeqSim's own `WaterDewPointTest` builds, at 70 bara, this
@@ -79,7 +76,9 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 
 use crate::algorithm_of;
-use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
+use crate::databank::ION;
+use crate::hydrate_inhibitor_wt::{PhaseLabel, label};
+use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide, wilson_k};
 use crate::model_gen;
 use crate::multiflash_stability_test::{enhanced_against_phases, seeding_against_reference};
 use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
@@ -317,6 +316,9 @@ pub fn tp_multiflash(
     // seeded would say the model found something it did not keep.
     let base_count = phases.len();
     let mut seeded = false;
+    // Which construct added each phase. The report names the first surviving addition, so a
+    // phase that was added and merged away does not claim the answer.
+    let mut provenance: Vec<TpMultiflashSeed> = vec![TpMultiflashSeed::TwoPhaseFlash; phases.len()];
     if seeding.path != MultiflashSeedPath::Stable {
         let (_, side) = feed_state(mixture, &reduced, &seeding.seed_composition)?;
         phases.push(MultiphasePhase {
@@ -324,7 +326,32 @@ pub fn tp_multiflash(
             composition: seeding.seed_composition.clone(),
             kind: PhaseKind::Cubic(side),
         });
+        provenance.push(TpMultiflashSeed::StabilitySeeded);
         seeded = true;
+    }
+
+    // **The two named feed seeds.** Both require an **aqueous** phase to exist already; the
+    // gas seed runs only when the stability analysis added nothing (upstream's
+    // `!multiPhaseTest`), the oil seed unconditionally. Measured by
+    // `TpMultiflashSeedProbe.java`: the gas seed fires across water/n-hexane, the oil seed on
+    // the eight-component water-bearing gas.
+    //
+    // The set before them is kept, because these are the seeds a failed solve reverts.
+    let before_feed_seeds = phases.clone();
+    let mut feed_seeded = false;
+    if !seeded
+        && let Some(phase) = seed_gas_from_feed(mixture, T, P, z, &phases, &reduced)?
+    {
+        phases.push(phase);
+        provenance.push(TpMultiflashSeed::GasSeeded);
+        seeded = true;
+        feed_seeded = true;
+    }
+    if let Some(phase) = seed_oil_from_feed(mixture, T, P, z, &phases, &reduced)? {
+        phases.push(phase);
+        provenance.push(TpMultiflashSeed::OilSeeded);
+        seeded = true;
+        feed_seeded = true;
     }
 
     // **Nothing seeded, nothing to solve.** When the trial added no phase the answer is the
@@ -352,6 +379,42 @@ pub fn tp_multiflash(
         }
     };
 
+    // **A feed seed whose solve leaves by its cap is not evidence of a phase.** The fraction
+    // solve floors and renormalises each step, so a seed it cannot settle drives the whole set
+    // to the floors rather than leaving the set before it alone - measured on the 1 bara water
+    // dew point's marginal gas (224.2 K, 35 ppm water), where the oil seed's addition took the
+    // aqueous phase to the floor with it and the answer became one phase where the two-phase
+    // flash had two. The set *before* the feed seeds is restored and solved again; the basic
+    // and enhanced additions are not reverted, because they are not what failed.
+    if feed_seeded && !split.converged {
+        phases = before_feed_seeds;
+        provenance.truncate(phases.len());
+        seeded = phases.len() > base_count;
+        split = if seeded {
+            let total: f64 = phases.iter().map(|phase| phase.fraction).sum();
+            for phase in &mut phases {
+                phase.fraction /= total;
+            }
+            solve_phase_fractions(mixture, &reduced, z, &mut phases, algorithm)?
+        } else {
+            MultiphaseSplit {
+                fractions: phases.iter().map(|phase| phase.fraction).collect(),
+                compositions: phases
+                    .iter()
+                    .map(|phase| phase.composition.clone())
+                    .collect(),
+                iterations: 0,
+                residual: 0.0,
+                converged: true,
+            }
+        };
+        warnings.push(Warning::new(
+            WarningCode::FallbackToInput,
+            "a feed seed's fraction solve left by its cap, so the seed was removed and the set \
+             before it is the answer: a seed the solve cannot settle is not a phase",
+        ));
+    }
+
     // **Upstream's post-flash enhanced check.** `run()` runs `stabilityAnalysisEnhanced` once
     // on a two-phase multiphase result, after the fraction solve, and a phase it adds triggers
     // a bounded rerun of the whole flash. This is that call; the rerun is the re-solve below,
@@ -373,6 +436,7 @@ pub fn tp_multiflash(
                 composition: seed.composition,
                 kind: PhaseKind::Cubic(seed.side),
             });
+            provenance.push(TpMultiflashSeed::EnhancedSeeded);
             let total: f64 = phases.iter().map(|phase| phase.fraction).sum();
             for phase in &mut phases {
                 phase.fraction /= total;
@@ -383,7 +447,8 @@ pub fn tp_multiflash(
 
     // The merge. A phase the solve pinned at the floor is a phase that is not there.
     let mut kept: Vec<MultiphasePhase> = Vec::with_capacity(phases.len());
-    for phase in phases.iter() {
+    let mut kept_provenance: Vec<TpMultiflashSeed> = Vec::with_capacity(phases.len());
+    for (index, phase) in phases.iter().enumerate() {
         if phase.fraction < FRACTION_DROP {
             continue;
         }
@@ -409,6 +474,7 @@ pub fn tp_multiflash(
             continue;
         }
         kept.push(phase.clone());
+        kept_provenance.push(provenance[index]);
     }
 
     // A dropped phase's share returns to the others, which is upstream's
@@ -466,7 +532,11 @@ pub fn tp_multiflash(
             })
             .collect(),
         seeded: if grew {
-            TpMultiflashSeed::StabilitySeeded
+            kept_provenance
+                .iter()
+                .copied()
+                .find(|path| *path != TpMultiflashSeed::TwoPhaseFlash)
+                .unwrap_or(TpMultiflashSeed::TwoPhaseFlash)
         } else {
             TpMultiflashSeed::TwoPhaseFlash
         },
@@ -476,6 +546,196 @@ pub fn tp_multiflash(
         min_t_over_tc: flash_min_t_over_tc.min(seeding.min_t_over_tc),
         warnings,
     })
+}
+
+/// NeqSim's `PhaseEos.init` label for every phase, or `None` where the cubic cannot evaluate
+/// one. The seeds gate on these labels; an unlabelled phase is neither a gas, an oil nor an
+/// aqueous phase.
+fn phase_labels(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    phases: &[MultiphasePhase],
+) -> Result<Vec<Option<PhaseLabel>>> {
+    let mut out = Vec::with_capacity(phases.len());
+    for phase in phases {
+        match state_of(mixture, reduced, phase)? {
+            Some(state) => out.push(Some(label(mixture, reduced, &phase.composition, state.z)?)),
+            None => out.push(None),
+        }
+    }
+    Ok(out)
+}
+
+/// The feed index of `water`, by name.
+fn water_index(mixture: &Mixture) -> Option<usize> {
+    mixture
+        .names()?
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("water"))
+}
+
+/// Molar mass above which upstream's oil seed counts a hydrocarbon as heavy, in kg/mol.
+const HEAVY_HYDROCARBON: f64 = 0.045;
+
+/// `seedAdditionalPhaseFromFeed`: a **GAS** added to a set that has an aqueous phase and no
+/// gas above a trace.
+///
+/// The composition is the feed weighted by Wilson `K` in log space - `ln z + ln K`, clipped to
+/// `[-50, 50]`, normalised by its largest entry and floored at `1e-16` - and the fraction is
+/// `1e-3`. The gates are upstream's: an aqueous phase exists, no gas sits above `1e-6`, water
+/// is at least `1e-4` of the feed, a hydrocarbon is at least `1e-4`, and fewer than three
+/// phases are present.
+fn seed_gas_from_feed(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    phases: &[MultiphasePhase],
+    reduced: &ReducedParameters,
+) -> Result<Option<MultiphasePhase>> {
+    if phases.len() >= 3 {
+        return Ok(None);
+    }
+    let labels = phase_labels(mixture, reduced, phases)?;
+    if phases
+        .iter()
+        .zip(&labels)
+        .any(|(phase, label)| *label == Some(PhaseLabel::Gas) && phase.fraction > 1.0e-6)
+    {
+        return Ok(None);
+    }
+    if !labels
+        .iter()
+        .any(|label| *label == Some(PhaseLabel::Aqueous))
+    {
+        return Ok(None);
+    }
+    let Some(water) = water_index(mixture) else {
+        return Ok(None);
+    };
+    if z[water] < 1.0e-4 {
+        return Ok(None);
+    }
+    if !mixture
+        .components()
+        .iter()
+        .enumerate()
+        .any(|(index, component)| component.class == "hc" && z[index] > 1.0e-4)
+    {
+        return Ok(None);
+    }
+
+    let k = wilson_k(mixture, t, p);
+    let mut logs: Vec<f64> = Vec::with_capacity(z.len());
+    for (index, component) in mixture.components().iter().enumerate() {
+        let mut value = z[index].max(1.0e-100).ln();
+        if z[index] > 0.0 && component.tc.value > 0.0 && component.pc.value > 0.0 {
+            let log_k = k[index].max(1.0e-20).ln();
+            if log_k.is_finite() {
+                value += log_k.clamp(-50.0, 50.0);
+            }
+        }
+        logs.push(value);
+    }
+    let maximum = logs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let mut composition: Vec<f64> = logs
+        .iter()
+        .map(|value| (value - maximum).exp().max(1.0e-16))
+        .collect();
+    let total: f64 = composition.iter().sum();
+    for fraction in &mut composition {
+        *fraction /= total;
+    }
+    Ok(Some(MultiphasePhase {
+        fraction: 1.0e-3,
+        composition,
+        kind: PhaseKind::Cubic(RootSide::Vapour),
+    }))
+}
+
+/// `seedHydrocarbonLiquidFromFeed`: an **OIL** phase added to a water-bearing set.
+///
+/// Heavy hydrocarbons keep their feed fraction, light hydrocarbons and water are damped to
+/// `min(z * 1e-2, 1e-8)`, ions and every other component sit at `1e-16`, and the fraction is
+/// `1e-5`. The gates are upstream's: an aqueous phase exists, no oil does, water is at least
+/// `1e-6` of the feed, and the heavy hydrocarbons total at least `5e-3` and outweigh the water.
+fn seed_oil_from_feed(
+    mixture: &Mixture,
+    _t: ThermodynamicTemperature,
+    _p: Pressure,
+    z: &[f64],
+    phases: &[MultiphasePhase],
+    reduced: &ReducedParameters,
+) -> Result<Option<MultiphasePhase>> {
+    if phases.len() >= 3 {
+        return Ok(None);
+    }
+    let labels = phase_labels(mixture, reduced, phases)?;
+    if labels
+        .iter()
+        .any(|label| *label == Some(PhaseLabel::Oil))
+    {
+        return Ok(None);
+    }
+    if !labels
+        .iter()
+        .any(|label| *label == Some(PhaseLabel::Aqueous))
+    {
+        return Ok(None);
+    }
+    let Some(water) = water_index(mixture) else {
+        return Ok(None);
+    };
+    if z[water] < 1.0e-6 {
+        return Ok(None);
+    }
+    let heavy: f64 = mixture
+        .components()
+        .iter()
+        .enumerate()
+        .filter(|(index, component)| {
+            component.class == "hc"
+                && z[*index] > 1.0e-6
+                && component.molar_mass.is_some_and(|mass| mass > HEAVY_HYDROCARBON)
+        })
+        .map(|(index, _)| z[index])
+        .sum();
+    if heavy < 5.0e-3 || heavy <= z[water] {
+        return Ok(None);
+    }
+
+    let mut composition: Vec<f64> = Vec::with_capacity(z.len());
+    for (index, component) in mixture.components().iter().enumerate() {
+        let value = if component.class == ION {
+            1.0e-16
+        } else if component.class == "hc" {
+            if component.molar_mass.is_some_and(|mass| mass > HEAVY_HYDROCARBON) {
+                z[index].max(1.0e-12)
+            } else {
+                (z[index] * 1.0e-2).min(1.0e-8)
+            }
+        } else if mixture
+            .names()
+            .and_then(|names| names.get(index))
+            .is_some_and(|name| name.eq_ignore_ascii_case("water"))
+        {
+            (z[index] * 1.0e-2).min(1.0e-8)
+        } else {
+            1.0e-16
+        };
+        composition.push(value);
+    }
+    let total: f64 = composition.iter().sum();
+    if total > 0.0 {
+        for fraction in &mut composition {
+            *fraction /= total;
+        }
+    }
+    Ok(Some(MultiphasePhase {
+        fraction: 1.0e-5,
+        composition,
+        kind: PhaseKind::Cubic(RootSide::Liquid),
+    }))
 }
 
 /// The state of a phase, or `None` if its composition is degenerate.
@@ -499,5 +759,112 @@ fn state_of(
         Ok(state) => Ok(Some(state)),
         Err(AzothError::OutOfRange { .. }) => Ok(None),
         Err(other) => Err(other),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use azoth_core::units::{kelvins, pascals};
+
+    use super::*;
+    use crate::Cubic;
+    use crate::databank::mixture_of;
+
+    /// The gas seed's composition on the state `TpMultiflashSeedProbe` measures it at:
+    /// water/n-hexane 50/50, 350 K, 20 bar, after the basic analysis has added the aqueous
+    /// phase (two phases, both aqueous-labelled, no gas).
+    #[test]
+    fn the_gas_seed_reproduces_neqsims_composition() {
+        let (mixture, _) =
+            mixture_of(&["water", "n-hexane"], Cubic::Pr, None).expect("the databank resolves");
+        let reduced = mixture
+            .reduced_parameters(kelvins(350.0), pascals(20.0e5))
+            .expect("the state is in range");
+        let phases = [
+            MultiphasePhase {
+                fraction: 2.0 / 3.0,
+                composition: vec![0.5, 0.5],
+                kind: PhaseKind::Cubic(RootSide::Liquid),
+            },
+            MultiphasePhase {
+                fraction: 1.0 / 3.0,
+                composition: vec![1.0, 0.0],
+                kind: PhaseKind::Cubic(RootSide::Liquid),
+            },
+        ];
+        let seed = seed_gas_from_feed(
+            &mixture,
+            kelvins(350.0),
+            pascals(20.0e5),
+            &[0.5, 0.5],
+            &phases,
+            &reduced,
+        )
+        .expect("the label arithmetic is available")
+        .expect("the seed fires: an aqueous phase exists and no gas does");
+        assert_eq!(seed.kind, PhaseKind::Cubic(RootSide::Vapour));
+        assert!((seed.fraction - 1.0e-3).abs() < 1.0e-15);
+        // NeqSim: water 0.26943831469243495, n-hexane 0.73056168530756500.
+        assert!((seed.composition[0] - 0.269_438_314_692_434_95).abs() < 1.0e-9);
+        assert!((seed.composition[1] - 0.730_561_685_307_565).abs() < 1.0e-9);
+    }
+
+    /// The oil seed on the state the probe attributes it at: the eight-component water-bearing
+    /// gas at 230 K / 80 bar, with the aqueous phase the basic analysis added.
+    #[test]
+    fn the_oil_seed_reproduces_neqsims_composition() {
+        let names = [
+            "CO2",
+            "nitrogen",
+            "methane",
+            "ethane",
+            "propane",
+            "i-butane",
+            "n-butane",
+            "water",
+        ];
+        let (mixture, _) = mixture_of(&names, Cubic::Srk, None).expect("the databank resolves");
+        let x = 35.0e-6;
+        let z = [0.02, 0.01, 0.9 - x, 0.05, 0.01, 0.005, 0.005, x];
+        let reduced = mixture
+            .reduced_parameters(kelvins(230.0), pascals(80.0e5))
+            .expect("the state is in range");
+        let phases = [
+            MultiphasePhase {
+                fraction: 1.0,
+                composition: z.to_vec(),
+                kind: PhaseKind::Cubic(RootSide::Vapour),
+            },
+            MultiphasePhase {
+                fraction: 3.0e-5,
+                composition: vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                kind: PhaseKind::Cubic(RootSide::Liquid),
+            },
+        ];
+        let seed = seed_oil_from_feed(
+            &mixture,
+            kelvins(230.0),
+            pascals(80.0e5),
+            &z,
+            &phases,
+            &reduced,
+        )
+        .expect("the label arithmetic is available")
+        .expect("the seed fires: an aqueous phase exists, no oil does, heavy ends are present");
+        assert_eq!(seed.kind, PhaseKind::Cubic(RootSide::Liquid));
+        assert!((seed.fraction - 1.0e-5).abs() < 1.0e-15);
+        let expected = [
+            9.999960000159797e-15,
+            9.999960000159797e-15,
+            9.999960000159798e-7,
+            9.999960000159798e-7,
+            9.999960000159798e-7,
+            0.49999800000798994,
+            0.49999800000798994,
+            9.999960000159798e-7,
+        ];
+        for (got, want) in seed.composition.iter().zip(expected) {
+            assert!((got - want).abs() < 1.0e-12, "{:?}", seed.composition);
+        }
     }
 }

@@ -40,7 +40,9 @@ from azoth.eos.reference._mixture_state import (
     mixture_parameters,
     phase_state,
     reduced_parameters,
+    wilson_k,
 )
+from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, GAS, OIL, phase_label
 from azoth.eos.reference.multiflash_stability_test import (
     enhanced_against_phases,
     seeding_against_reference,
@@ -149,6 +151,140 @@ def _phases_of(flash: Any, reduced: ReducedParameters, kij: Any, z: list[float])
     else:
         liquid = _is_liquid(reduced, kij, list(z))
     return [_Phase(1.0, list(z), liquid=liquid)]
+
+
+#: Molar mass above which upstream's oil seed counts a hydrocarbon as heavy, in kg/mol.
+HEAVY_HYDROCARBON = 0.045
+
+
+def _water_index(mixture: Mixture) -> int | None:
+    """The feed index of ``water``, by name."""
+    if mixture.names is None:
+        return None
+    for index, name in enumerate(mixture.names):
+        if name.lower() == "water":
+            return index
+    return None
+
+
+def _molar_mass(component: Any) -> float | None:
+    if component.molar_mass is None:
+        return None
+    return float(component.molar_mass.to("kg/mol").magnitude)
+
+
+def _phase_labels(
+    mixture: Mixture, reduced: ReducedParameters, kij: Any, phases: list[_Phase]
+) -> list[str | None]:
+    """NeqSim's ``PhaseEos.init`` label for every phase, or ``None`` where it cannot be read."""
+    out: list[str | None] = []
+    for phase in phases:
+        try:
+            state = phase_state(reduced, kij, phase.composition, liquid=phase.liquid)
+        except Exception:
+            out.append(None)
+            continue
+        out.append(phase_label(mixture, reduced, phase.composition, state.z))
+    return out
+
+
+def _seed_gas_from_feed(
+    mixture: Mixture,
+    t_si: float,
+    p_si: float,
+    z: list[float],
+    phases: list[_Phase],
+    reduced: ReducedParameters,
+    kij: Any,
+) -> _Phase | None:
+    """``seedAdditionalPhaseFromFeed``: a **GAS** added to a set with an aqueous phase and no gas.
+
+    The composition is the feed weighted by Wilson ``K`` in log space - ``ln z + ln K``, clipped
+    to ``[-50, 50]``, normalised by its largest entry and floored at ``1e-16`` - and the
+    fraction is ``1e-3``. Every gate is upstream's.
+    """
+    if len(phases) >= 3:
+        return None
+    labels = _phase_labels(mixture, reduced, kij, phases)
+    if any(
+        label == GAS and phase.fraction > 1.0e-6
+        for phase, label in zip(phases, labels, strict=True)
+    ):
+        return None
+    if AQUEOUS not in labels:
+        return None
+    water = _water_index(mixture)
+    if water is None or z[water] < 1.0e-4:
+        return None
+    if not any(
+        component.component_class == "hc" and z[index] > 1.0e-4
+        for index, component in enumerate(mixture.components)
+    ):
+        return None
+
+    k = wilson_k(mixture, t_si, p_si)
+    logs: list[float] = []
+    for index, component in enumerate(mixture.components):
+        value = math.log(max(z[index], 1.0e-100))
+        if (
+            z[index] > 0.0
+            and component.Tc.to("K").magnitude > 0.0
+            and component.Pc.to("Pa").magnitude > 0.0
+        ):
+            log_k = math.log(max(k[index], 1.0e-20))
+            if math.isfinite(log_k):
+                value += max(-50.0, min(50.0, log_k))
+        logs.append(value)
+    maximum = max(logs)
+    composition = [max(math.exp(value - maximum), 1.0e-16) for value in logs]
+    total = sum(composition)
+    return _Phase(1.0e-3, [value / total for value in composition], liquid=False)
+
+
+def _seed_oil_from_feed(
+    mixture: Mixture,
+    z: list[float],
+    phases: list[_Phase],
+    reduced: ReducedParameters,
+    kij: Any,
+) -> _Phase | None:
+    """``seedHydrocarbonLiquidFromFeed``: an **OIL** added to a water-bearing set."""
+    if len(phases) >= 3:
+        return None
+    labels = _phase_labels(mixture, reduced, kij, phases)
+    if OIL in labels:
+        return None
+    if AQUEOUS not in labels:
+        return None
+    water = _water_index(mixture)
+    if water is None or z[water] < 1.0e-6:
+        return None
+    heavy = sum(
+        z[index]
+        for index, component in enumerate(mixture.components)
+        if component.component_class == "hc"
+        and z[index] > 1.0e-6
+        and (_molar_mass(component) or 0.0) > HEAVY_HYDROCARBON
+    )
+    if heavy < 5.0e-3 or heavy <= z[water]:
+        return None
+
+    composition: list[float] = []
+    for index, component in enumerate(mixture.components):
+        if component.component_class == "ion":
+            value = 1.0e-16
+        elif component.component_class == "hc":
+            if (_molar_mass(component) or 0.0) > HEAVY_HYDROCARBON:
+                value = max(z[index], 1.0e-12)
+            else:
+                value = min(z[index] * 1.0e-2, 1.0e-8)
+        elif mixture.names is not None and mixture.names[index].lower() == "water":
+            value = min(z[index] * 1.0e-2, 1.0e-8)
+        else:
+            value = 1.0e-16
+        composition.append(value)
+    total = sum(composition)
+    return _Phase(1.0e-5, [value / total for value in composition], liquid=True)
 
 
 def _solve(hessian: list[list[float]], gradient: list[float]) -> list[float] | None:
@@ -420,6 +556,8 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     warnings.extend(seeding.warnings)
 
     base_count = len(phases)
+    # Which construct added each phase; the report names the first surviving addition.
+    provenance = [TpMultiflashSeed.TWO_PHASE_FLASH] * len(phases)
     if seeding.path is not MultiflashSeedPath.STABLE:
         seed_row = list(seeding.seed_composition)
         phases.append(
@@ -429,13 +567,35 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
                 liquid=_is_liquid(reduced, kij, seed_row),
             )
         )
+        provenance.append(TpMultiflashSeed.STABILITY_SEEDED)
+
+    # **The two named feed seeds.** Both require an aqueous phase already; the gas seed runs
+    # only when the stability analysis added nothing (upstream's `!multiPhaseTest`), the oil
+    # seed unconditionally. The set before them is kept, because these are the seeds a failed
+    # solve reverts.
+    before_feed_seeds = list(phases)
+    seeded = len(phases) > base_count
+    feed_seeded = False
+    if not seeded:
+        gas_seed = _seed_gas_from_feed(mixture, t_si, p_si, feed, phases, reduced, kij)
+        if gas_seed is not None:
+            phases.append(gas_seed)
+            provenance.append(TpMultiflashSeed.GAS_SEEDED)
+            seeded = True
+            feed_seeded = True
+    oil_seed = _seed_oil_from_feed(mixture, feed, phases, reduced, kij)
+    if oil_seed is not None:
+        phases.append(oil_seed)
+        provenance.append(TpMultiflashSeed.OIL_SEEDED)
+        seeded = True
+        feed_seeded = True
 
     # **Nothing seeded, nothing to solve.** When the trial added no phase the answer is the
     # two-phase flash's, and re-solving the fractions it already converged would replace a
     # converged split with an iterate of the same equations. Upstream's numbers say the same:
     # with the flag on and off, every state the sweep found no seeding at reports identical
     # betas to all seventeen digits.
-    if len(phases) > base_count:
+    if seeded:
         total = sum(phase.fraction for phase in phases)
         phases = [
             _Phase(phase.fraction / total, phase.composition, phase.liquid) for phase in phases
@@ -446,17 +606,19 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     else:
         iterations, residual, converged = 0, 0.0, True
 
-    # **Upstream's post-flash enhanced check.** `run()` runs `stabilityAnalysisEnhanced` once
-    # on a two-phase multiphase result, after the fraction solve, and a phase it adds triggers
-    # a bounded rerun of the whole flash. This is that call; the rerun is the re-solve below,
-    # which is the observable part. Measured: C1/nC4 + 1e-4 water at 370 K / 40 bar, where the
-    # addition is removed again by the merge but decides whether the inline aqueous seed fires.
-    seeded = len(phases) > base_count
-    if seeded and len(phases) == 2:
-        enhanced_existing = [(list(phase.composition), phase.liquid) for phase in phases]
-        enhanced = enhanced_against_phases(mixture, t_si, p_si, feed, enhanced_existing)
-        if enhanced is not None:
-            phases.append(_Phase(enhanced.fraction, enhanced.composition, enhanced.liquid))
+    # **A feed seed whose solve leaves by its cap is not evidence of a phase.** The solve floors
+    # and renormalises each step, so a seed it cannot settle drives the whole set to the floors
+    # rather than leaving the set before it alone - measured on the 1 bara water dew point's
+    # marginal gas, where the oil seed's addition took the aqueous phase to the floor with it.
+    # The set before the feed seeds is restored and solved again.
+    if feed_seeded and not converged:
+        phases = [
+            _Phase(phase.fraction, list(phase.composition), phase.liquid, phase.wax)
+            for phase in before_feed_seeds
+        ]
+        provenance = provenance[: len(phases)]
+        seeded = len(phases) > base_count
+        if seeded:
             total = sum(phase.fraction for phase in phases)
             phases = [
                 _Phase(phase.fraction / total, phase.composition, phase.liquid) for phase in phases
@@ -464,11 +626,44 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
             phases, iterations, residual, converged = _solve_phase_fractions(
                 reduced, kij, feed, phases, tolerance, cap
             )
+        else:
+            iterations, residual, converged = 0, 0.0, True
+        warnings.append(
+            Warning(
+                code=WarningCode.FALLBACK_TO_INPUT,
+                message=(
+                    "a feed seed's fraction solve left by its cap, so the seed was removed and "
+                    "the set before it is the answer: a seed the solve cannot settle is not a "
+                    "phase"
+                ),
+            )
+        )
+
+    # **Upstream's post-flash enhanced check.** `run()` runs `stabilityAnalysisEnhanced` once
+    # on a two-phase multiphase result, after the fraction solve, and a phase it adds triggers
+    # a bounded rerun of the whole flash. This is that call; the rerun is the re-solve below,
+    # which is the observable part. Measured: C1/nC4 + 1e-4 water at 370 K / 40 bar, where the
+    # addition is removed again by the merge but decides whether the inline aqueous seed fires.
+    if seeded and len(phases) == 2:
+        enhanced_existing = [(list(phase.composition), phase.liquid) for phase in phases]
+        enhanced = enhanced_against_phases(mixture, t_si, p_si, feed, enhanced_existing)
+        if enhanced is not None:
+            phases.append(_Phase(enhanced.fraction, enhanced.composition, enhanced.liquid))
+            provenance.append(TpMultiflashSeed.ENHANCED_SEEDED)
+            total = sum(phase.fraction for phase in phases)
+            phases = [
+                _Phase(phase.fraction / total, phase.composition, phase.liquid) for phase in phases
+            ]
+            phases, iterations, residual, converged = _solve_phase_fractions(
+                reduced, kij, feed, phases, tolerance, cap
+            )
+
     # The merge. A phase the solve pinned at the floor is a phase that is not there, and two
     # phases at the same composition are one phase however their roots were labelled. The side
     # is deliberately not part of that second test - see the Rust kernel for the measurement.
     kept: list[_Phase] = []
-    for phase in phases:
+    kept_provenance: list[TpMultiflashSeed] = []
+    for index, phase in enumerate(phases):
         if phase.fraction < FRACTION_DROP:
             continue
         match = next(
@@ -486,6 +681,7 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
             )
             continue
         kept.append(phase)
+        kept_provenance.append(provenance[index])
 
     # A dropped phase's share returns to the others, which is upstream's
     # `removePhaseTotalComposition`: removing a phase says it is not there, not that part of
@@ -525,7 +721,14 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
         x=tuple(tuple(phase.composition) for phase in kept),
         z_factor=tuple(state.z for state in geometry),
         ln_phi=tuple(tuple(state.ln_phi) for state in geometry),
-        seeded=(TpMultiflashSeed.STABILITY_SEEDED if grew else TpMultiflashSeed.TWO_PHASE_FLASH),
+        seeded=(
+            next(
+                (path for path in kept_provenance if path is not TpMultiflashSeed.TWO_PHASE_FLASH),
+                TpMultiflashSeed.TWO_PHASE_FLASH,
+            )
+            if grew
+            else TpMultiflashSeed.TWO_PHASE_FLASH
+        ),
         tm=tuple(seeding.tm),
         iterations=iterations,
         residual=residual,

@@ -100,8 +100,12 @@ def _association_spec(mixture: Any) -> Any:
     # Rust side. `None` crosses as NaN, which is how a combining-rule fallback is stated.
     cross = [(rule.kind, _or_nan(rule.energy), _or_nan(rule.volume)) for rule in mixture.cross]
     kij_t = [value for row in mixture.kij_t for value in row]
+    # **The names cross too.** A `Component` carries critical constants and no name, and the
+    # seeding's phase-type gates look `water` up by name; without them the bridged kernel runs
+    # a different seeding than the native one.
+    names = list(mixture.names) if mixture.names is not None else []
     return _core.AssociationSpec(
-        bool(mixture.associating), str(mixture.rdf_form), schemes, values, cross, kij_t
+        bool(mixture.associating), str(mixture.rdf_form), schemes, values, cross, kij_t, names
     )
 
 

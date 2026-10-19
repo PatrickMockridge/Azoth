@@ -404,13 +404,27 @@ def function_ids() -> dict[str, str]:
 
 
 @cache
-def _reference_scan(path: Path) -> tuple[frozenset[str], frozenset[str]]:
-    """A reference file's `(called names, molar-mass sentences)`, from one parse."""
+def _reference_scan(path: Path) -> tuple[frozenset[str], frozenset[str], dict[str, Path]]:
+    """A reference file's `(called names, molar-mass sentences, reference imports)`, one parse.
+
+    **The imports matter because a guard can be delegated to a sibling.** `tp_multiflash` reads
+    its stability analysis through `seeding_against_reference`, whose molar-mass guard is in
+    `multiflash_stability_test.py`; a scan that followed only registered wrappers would report
+    no sentence and leave a bridgeable id hand-written.
+    """
     calls: set[str] = set()
     sentences: set[str] = set()
+    imports: dict[str, Path] = {}
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             calls.add(node.func.id)
+        if isinstance(node, ast.ImportFrom) and node.module:
+            parts = node.module.split(".")
+            if len(parts) == 4 and parts[0] == "azoth" and parts[2] == "reference":
+                target = PY_SRC / parts[1] / "reference" / f"{parts[3]}.py"
+                if target.exists():
+                    for alias in node.names:
+                        imports[alias.asname or alias.name] = target
         if not isinstance(node, ast.Raise) or not isinstance(node.exc, ast.Call):
             continue
         arguments = node.exc.args
@@ -419,7 +433,7 @@ def _reference_scan(path: Path) -> tuple[frozenset[str], frozenset[str]]:
         first, second, third = (ast.literal_eval(a) for a in arguments)
         if (first, second) == ("component", "molar mass") and isinstance(third, str):
             sentences.add(third)
-    return frozenset(calls), frozenset(sentences)
+    return frozenset(calls), frozenset(sentences), imports
 
 
 def _molar_mass_reason(calc_id: str, seen: set[str]) -> str | None:
@@ -431,11 +445,18 @@ def _molar_mass_reason(calc_id: str, seen: set[str]) -> str | None:
     """
     if calc_id in seen:
         return None
-    seen = seen | {calc_id}
     path = _reference_path(calc_id)
     if path is None:
         return None
-    calls, sentences = _reference_scan(path)
+    return _reason_in_file(path, seen | {calc_id}, set())
+
+
+def _reason_in_file(path: Path, seen: set[str], seen_files: set[Path]) -> str | None:
+    """The guard sentence in one reference file, following its calls and imports."""
+    if path in seen_files:
+        return None
+    seen_files = seen_files | {path}
+    calls, sentences, imports = _reference_scan(path)
     if sentences:
         return next(iter(sentences)) if len(sentences) == 1 else None
     delegations = function_ids()
@@ -443,6 +464,11 @@ def _molar_mass_reason(calc_id: str, seen: set[str]) -> str | None:
         reason
         for name in sorted(calls & set(delegations))
         if (reason := _molar_mass_reason(delegations[name], seen)) is not None
+    }
+    below |= {
+        reason
+        for name in sorted(set(calls) & set(imports))
+        if (reason := _reason_in_file(imports[name], seen, seen_files)) is not None
     }
     return next(iter(below)) if len(below) == 1 else None
 

@@ -43,7 +43,7 @@ not an equation, and both implementations read it from here.
 | `x` | dimensionless | The composition of each phase. Every row sums to one; rows are in the solve's order and no order is promised. |
 | `z_factor` | dimensionless | The root of the cubic each phase sits on, as `Z = PV/RT`. This is what tells two liquid phases apart: they share the lower branch and differ in composition, so a type alone would call them one phase. |
 | `ln_phi` | dimensionless | `ln phi_i` in each phase. A row is empty where the cubic cannot evaluate that phase's composition, which the merge can leave behind; `z_factor` is `NaN` there for the same reason. |
-| `seeded` | two_phase_flash / stability_seeded | Whether the tangent-plane trial added a phase: `two_phase_flash` means the answer is `eos.pt_flash`'s own split, `stability_seeded` that a trial was below the plane at a composition that was not already a phase. |
+| `seeded` | two_phase_flash / stability_seeded / enhanced_seeded / gas_seeded / oil_seeded / aqueous_seeded | Which construct added a phase that survived the merge: `two_phase_flash` means the answer is `eos.pt_flash`'s own split, the others name the basic analysis, the enhanced analysis, the gas seed, the oil seed or the inline aqueous seed. |
 | `tm` | dimensionless | The tangent-plane distance at each trial's stationary point, in the order `eos.multiflash_stability_test` reports them; negative means the trial lies below the tangent plane through phase 0. |
 | `iterations` | dimensionless | Fraction-solve steps taken. |
 | `residual` | dimensionless | The Euclidean norm of the last fraction correction, in mole fractions of the feed. |
@@ -64,10 +64,11 @@ not an equation, and both implementations read it from here.
 - `phase_count` is decided by the seeding and the merge, not by the solve. A Newton on the fractions cannot create a phase: one that should not exist converges to a fraction at the floor, and one that should is unreachable from a set that does not contain it.
 - the merge drops a phase below `1.1e-12` of the feed and folds a pair within `1e-6` of each other into one, **whatever roots were labelled**: a seeded phase can land on a composition sitting on one root only, where the labels differ but the phases do not. Upstream compares densities.
 - the phases are reported in the solve's own order and **no order is promised**; upstream sorts by density and this does not. `z_factor` identifies a phase physically.
-- **the further ways a phase can enter are owed, and the list this field used to carry was wrong.** `seedAdditionalPhaseFromFeed` seeds a **GAS** and `seedHydrocarbonLiquidFromFeed` an **OIL**, and **both require an aqueous phase already** - so neither fires on a gas carrying ppm water.
+- **the two named feed seeds are ported**: `seedAdditionalPhaseFromFeed` adds a **GAS** and `seedHydrocarbonLiquidFromFeed` an **OIL**; both require an aqueous phase already, and neither addition survived the merge at any state the probe scans.
 - **and the one that can is the aqueous seed, inline in `run()` rather than a method**: no aqueous phase, `waterZ > 1e-6`, water at `max(waterZ, 1e-12)`, the rest at `1e-16`, at `beta = 1e-5`. It runs only once a stability analysis has set `multiPhaseTest`.
 - **the second analysis is ported at its default call site**: `stabilityAnalysisEnhanced` tries Wilson `K`, `1/K` and a hydrocarbon-dependent perturbation against every existing phase, after the fraction solve; its Wegstein step is not carried.
 - the opt-in pre-solve call needs `setEnhancedMultiPhaseCheck(true)`, a system switch this model has no input for; measured by `TpMultiflashSeedProbe.java`.
+- **a feed seed whose solve leaves by its cap is removed**: an unsettled seed drives the whole set to the floors, so the set before the feed seeds is restored and re-solved (measured on the 1 bara water dew point's marginal gas).
 - **the seeding measured**: at 70 bara and 35 ppm water this flash answers one gas phase at `260.545` K, the temperature NeqSim's multiphase water dew point puts an aqueous phase at - so that class is not built on this.
 - **the ionic rules are gated on a chemical system and not on the seam.** `solveReactiveAqueousEquilibrium` and `solveLegacyAqueousEquilibrium` run where `isChemicalSystem()` and an aqueous phase hold - and this model's feed is a `Mixture`, which `mixture_of` refuses to build over an `ION`.
 - **and the coupled half of them is hydrate-gated.** `isCoupledReactiveHydrateFlash()` is `isChemicalSystem() && getHydrateCheck()`, so the inventory-propagating coupling is P9's; the legacy path solves the brine each outer pass and propagates nothing. Neither is here.
@@ -91,7 +92,7 @@ not an equation, and both implementations read it from here.
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 7 declared, every one run
+- Tests: 8 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

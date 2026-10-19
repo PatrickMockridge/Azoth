@@ -362,6 +362,11 @@ pub struct PyAssociationSpec {
     /// `CO2`/`water` the coefficient is `0.001121` against a constant of `-0.27686`.
     #[pyo3(get)]
     pub kij_t: Vec<f64>,
+    /// The component names, in the mixture's order. **A `Component` carries no name**, and
+    /// the seeding's phase-type gates look `water` up by name, so a bridge that rebuilt the
+    /// fluid without them would run a different seeding than the native kernel.
+    #[pyo3(get)]
+    pub names: Vec<String>,
 }
 
 #[pymethods]
@@ -374,6 +379,7 @@ impl PyAssociationSpec {
         values: Vec<Vec<f64>>,
         cross: Vec<(String, f64, f64)>,
         kij_t: Vec<f64>,
+        names: Vec<String>,
     ) -> Self {
         Self {
             associating,
@@ -382,6 +388,7 @@ impl PyAssociationSpec {
             values,
             cross,
             kij_t,
+            names,
         }
     }
 }
@@ -535,6 +542,13 @@ pub(crate) fn build_mixture_with_mass(
     }
     let constant = kij.clone();
     azoth_eos::Mixture::new(components, kij)
+        .map(|m| {
+            if association.names.is_empty() {
+                m
+            } else {
+                m.with_names(association.names.clone())
+            }
+        })
         .map(|m| {
             if kij_t.iter().any(|value| *value != 0.0) {
                 m.with_mixing_rule(azoth_eos::MixingRule::ClassicT2 {
@@ -882,6 +896,13 @@ pub(crate) fn build_mixture(
     }
     let constant = kij.clone();
     azoth_eos::Mixture::new(components, kij)
+        .map(|m| {
+            if association.names.is_empty() {
+                m
+            } else {
+                m.with_names(association.names.clone())
+            }
+        })
         .map(|m| {
             if kij_t.iter().any(|value| *value != 0.0) {
                 m.with_mixing_rule(azoth_eos::MixingRule::ClassicT2 {

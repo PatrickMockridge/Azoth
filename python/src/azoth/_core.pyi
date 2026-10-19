@@ -59,7 +59,8 @@ class AssociationSpec:
     rdf_form: str
     cross: list[tuple[str, float, float]]
     kij_t: list[float]
-    def __init__(self, associating: bool, rdf_form: str, schemes: list[str], values: list[list[float]], cross: list[tuple[str, float, float]], kij_t: list[float]) -> None: ...
+    names: list[str]
+    def __init__(self, associating: bool, rdf_form: str, schemes: list[str], values: list[list[float]], cross: list[tuple[str, float, float]], kij_t: list[float], names: list[str]) -> None: ...
 
 @final
 class DataFile:

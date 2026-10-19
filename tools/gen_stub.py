@@ -166,6 +166,7 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("rdf_form", "str"),
             ("cross", "list[tuple[str, float, float]]"),
             ("kij_t", "list[float]"),
+            ("names", "list[str]"),
         ),
     ),
     ("DataFile", None, (("name", "str"), ("path", "str"), ("text", "str"))),
@@ -834,7 +835,8 @@ def render_vocabulary() -> str:
             out.append(
                 "    def __init__(self, associating: bool, rdf_form: str,"
                 " schemes: list[str], values: list[list[float]],"
-                " cross: list[tuple[str, float, float]], kij_t: list[float])"
+                " cross: list[tuple[str, float, float]], kij_t: list[float],"
+                " names: list[str])"
                 " -> None: ..."
             )
         if name == "Session":

@@ -239,15 +239,19 @@ class StabilityVerdict(StrEnum):
 
 
 class TpMultiflashSeed(StrEnum):
-    """Which of the two things decided the phase count.
+    """Which construct decided the phase count.
 
-    A boolean would say a phase was added; this says whether the answer *is* the two-phase
-    flash's or is something the tangent-plane trial found, which is the distinction between
-    "this model is `eos.pt_flash`" and "this model found a third phase".
+    A boolean would say a phase was added; this names the seeding that added a phase which
+    survived the merge, which is the distinction between "this model is `eos.pt_flash`" and
+    "this model found a phase by a named mechanism".
     """
 
     TWO_PHASE_FLASH = "two_phase_flash"
     STABILITY_SEEDED = "stability_seeded"
+    ENHANCED_SEEDED = "enhanced_seeded"
+    GAS_SEEDED = "gas_seeded"
+    OIL_SEEDED = "oil_seeded"
+    AQUEOUS_SEEDED = "aqueous_seeded"
 
 
 class MultiflashSeedPath(StrEnum):

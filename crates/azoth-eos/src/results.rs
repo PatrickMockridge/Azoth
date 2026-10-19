@@ -2200,18 +2200,25 @@ impl CalcResult for StabilityTestResult {
     }
 }
 
-/// Which of the two things decided the phase count.
+/// Which construct decided the phase count.
 ///
-/// A boolean would say a phase was added; this says whether the answer *is* the two-phase
-/// flash's or is something the tangent-plane trial found, which is the distinction between
-/// "this model is [`crate::pt_flash`]" and "this model found a third phase".
+/// A boolean would say a phase was added; this names the seeding that added a phase which
+/// survived the merge, which is the distinction between "this model is [`crate::pt_flash`]"
+/// and "this model found a phase by a named mechanism".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TpMultiflashSeed {
-    /// The two-phase flash's own split survived: no trial was below the tangent plane at a
-    /// composition that was not already a phase.
+    /// The two-phase flash's own split survived: no seeding added a phase that was kept.
     TwoPhaseFlash,
-    /// A trial was below the plane at a new composition, and its phase was added.
+    /// The basic `stabilityAnalysis` added the phase.
     StabilitySeeded,
+    /// `stabilityAnalysisEnhanced` added the phase.
+    EnhancedSeeded,
+    /// `seedAdditionalPhaseFromFeed` added the gas.
+    GasSeeded,
+    /// `seedHydrocarbonLiquidFromFeed` added the oil.
+    OilSeeded,
+    /// The inline aqueous seed added the phase.
+    AqueousSeeded,
 }
 
 impl TpMultiflashSeed {
@@ -2221,6 +2228,10 @@ impl TpMultiflashSeed {
         match self {
             Self::TwoPhaseFlash => "two_phase_flash",
             Self::StabilitySeeded => "stability_seeded",
+            Self::EnhancedSeeded => "enhanced_seeded",
+            Self::GasSeeded => "gas_seeded",
+            Self::OilSeeded => "oil_seeded",
+            Self::AqueousSeeded => "aqueous_seeded",
         }
     }
 }

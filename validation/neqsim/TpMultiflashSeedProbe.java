@@ -209,6 +209,8 @@ public class TpMultiflashSeedProbe {
       for (double pressure : pressures) {
         StringBuilder fired = new StringBuilder();
         int phases = -1;
+        int fullPhases = -1;
+        String fullTypes = "";
         try {
           SystemInterface initial = fresh(kind, names, moles, temperature, pressure, ppmWater);
           new ThermodynamicOperations(initial).TPflash();
@@ -251,6 +253,12 @@ public class TpMultiflashSeedProbe {
           SystemInterface normal = twoPhase(kind, names, moles, temperature, pressure, ppmWater);
           TPmultiflash normalFlash = flash(normal);
           normalFlash.run();
+          fullPhases = normal.getNumberOfPhases();
+          StringBuilder types = new StringBuilder();
+          for (int phase = 0; phase < fullPhases; phase++) {
+            types.append(phase == 0 ? "" : ",").append(normal.getPhase(phase).getType());
+          }
+          fullTypes = types.toString();
 
           SystemInterface noInline = twoPhase(kind, names, moles, temperature, pressure, ppmWater);
           TPmultiflash noInlineFlash = flash(noInline);
@@ -271,8 +279,9 @@ public class TpMultiflashSeedProbe {
           continue;
         }
         if (fired.length() > 0) {
-          System.out.printf("<state> %s T=%.0f P=%.0f plain_phases=%d fired=%s%n", label,
-              temperature, pressure, phases, fired.toString().trim());
+          System.out.printf(
+              "<state> %s T=%.0f P=%.0f plain_phases=%d full_phases=%d full_types=%s fired=%s%n",
+              label, temperature, pressure, phases, fullPhases, fullTypes, fired.toString().trim());
         }
       }
     }
@@ -294,6 +303,10 @@ public class TpMultiflashSeedProbe {
         0.0);
     attribute("8-component gas 35 ppm water 260.545 K 70 bar", "water", new String[] {"water"},
         new double[] {35.0}, 260.545463562012, 70.0, 35.0);
+    attribute("8-component gas 35 ppm water 230 K 80 bar", "water", new String[] {"water"},
+        new double[] {35.0}, 230.0, 80.0, 35.0);
+    attribute("8-component gas 35 ppm water 224.2 K 1 bar", "water", new String[] {"water"},
+        new double[] {35.0}, 224.2, 1.0, 35.0);
 
     String[] c1c4 = {"methane", "n-butane"};
     double[] c1c4moles = {0.5, 0.5};

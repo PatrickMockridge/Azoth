@@ -258,6 +258,35 @@ fn the_post_flash_enhanced_check_decides_a_water_bearing_state() {
     );
 }
 
+/// A water-bearing feed where the two feed seeds are measured.
+///
+/// The probe shows `seedAdditionalPhaseFromFeed` **fires** at this state when invoked on the
+/// post-stability set and `seedHydrocarbonLiquidFromFeed` does not; in the full chain the
+/// stability analysis has already added the aqueous phase, so the gas seed is not called, and
+/// the answer is the basic analysis' two phases. Their additions do not survive the merge at
+/// any state in the probe's grid, which is why the expected values are the same two phases a
+/// no-seed chain gives.
+#[test]
+fn a_water_bearing_feed_matches_the_full_chain() {
+    let got = state(&["water", "n-hexane"], 350.0, 20.0e5, &[0.5, 0.5]);
+    check(
+        &got,
+        &[
+            Expected {
+                phase_fractions: 0.5016355787068313,
+                z_factor: 0.09574652317619849,
+                x: &[0.003260491831452756, 0.9967395081685473],
+            },
+            Expected {
+                phase_fractions: 0.4983644212931687,
+                z_factor: 0.015138822792583061,
+                x: &[1.0000000000000000, 4.870623096784514e-17],
+            },
+        ],
+        "water/nC6 350 K 20 bar",
+    );
+}
+
 #[test]
 fn n2_co2_octane_stays_two_phase_at_190_k_1_bar() {
     // The state that shows the count is not the whole answer: at 190 K and 1 bar NeqSim
