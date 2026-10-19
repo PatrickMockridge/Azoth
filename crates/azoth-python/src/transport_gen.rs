@@ -7588,10 +7588,10 @@ pub struct PyTpMultiflashResult {
     /// `ln phi_i` in each phase. A row is empty where the cubic cannot evaluate that phase's composition, which the merge can leave behind; `z_factor` is `NaN` there for the same reason.
     #[pyo3(get)]
     pub ln_phi: Vec<Vec<f64>>,
-    /// Whether the tangent-plane trial added a phase: `two_phase_flash` means the answer is `eos.pt_flash`'s own split, `stability_seeded` that a trial was below the plane at a composition that was not already a phase.
+    /// Which construct added a phase that survived the merge: `two_phase_flash` means the answer is `eos.pt_flash`'s own split, the others name the basic analysis, the enhanced analysis, the gas seed, the oil seed or the inline aqueous seed.
     #[pyo3(get)]
     pub seeded: String,
-    /// The tangent-plane distance at each trial's stationary point, in the order `eos.stability_test` reports them; negative means the trial lies below the tangent plane through the feed.
+    /// The tangent-plane distance at each trial's stationary point, in the order `eos.multiflash_stability_test` reports them; negative means the trial lies below the tangent plane through phase 0.
     #[pyo3(get)]
     pub tm: Vec<f64>,
     /// Fraction-solve steps taken.

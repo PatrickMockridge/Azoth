@@ -667,10 +667,11 @@ a claim nothing holds.
   NeqSim's `ThrottlingValve` and `Compressor` select and which `eos.ph_flash` and `eos.ps_flash`
   decline on a measured two-phase `(dH/dT)_P` factor of two; **`PHflashSingleComp`** and
   **`PSflashSingleComp`**; **`VHflashQfunc`**'s coupled 2×2 with a cross term, and `VHflash`,
-  which has no construction site; `eos.tp_multiflash`'s **pure-component fallback**, upstream's
-  second stability analysis `stabilityAnalysisEnhanced`, and the three seeding constructs beside
-  it - `seedAdditionalPhaseFromFeed` (a **GAS**), `seedHydrocarbonLiquidFromFeed` (an **OIL**)
-  and the inline **aqueous** seed in `run()`; and
+  which has no construction site; **`eos.tp_multiflash`'s seeding is complete** - the
+  pure-component fallback, `stabilityAnalysisEnhanced` at its default post-flash call site,
+  `seedAdditionalPhaseFromFeed` (a **GAS**), `seedHydrocarbonLiquidFromFeed` (an **OIL**) and
+  the inline **aqueous** seed are all ported, and the one piece left is the opt-in pre-solve
+  enhanced call, which needs `setEnhancedMultiPhaseCheck(true)` and has no model input; and
   `eos.soreide_whitson_phase`'s two newer parameterisations, **Chabab 2019** and
   **Burgoyne-Nielsen 2026**. The CPA rules and the hydrate coupling are P7's and P9's, each
   gated on a component family or a system type this crate does not carry.

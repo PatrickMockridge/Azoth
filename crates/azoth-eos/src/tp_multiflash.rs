@@ -339,9 +339,7 @@ pub fn tp_multiflash(
     // The set before them is kept, because these are the seeds a failed solve reverts.
     let before_feed_seeds = phases.clone();
     let mut feed_seeded = false;
-    if !seeded
-        && let Some(phase) = seed_gas_from_feed(mixture, T, P, z, &phases, &reduced)?
-    {
+    if !seeded && let Some(phase) = seed_gas_from_feed(mixture, T, P, z, &phases, &reduced)? {
         phases.push(phase);
         provenance.push(TpMultiflashSeed::GasSeeded);
         seeded = true;
@@ -454,9 +452,7 @@ pub fn tp_multiflash(
     // enhanced check's addition is what suppresses this seed.
     if seeded && phases.len() < 3 {
         let labels = phase_labels(mixture, &reduced, &phases)?;
-        if !labels
-            .iter()
-            .any(|label| *label == Some(PhaseLabel::Aqueous))
+        if !labels.contains(&Some(PhaseLabel::Aqueous))
             && let Some(water) = water_index(mixture)
             && z[water] > 1.0e-6
         {
@@ -653,10 +649,7 @@ fn seed_gas_from_feed(
     {
         return Ok(None);
     }
-    if !labels
-        .iter()
-        .any(|label| *label == Some(PhaseLabel::Aqueous))
-    {
+    if !labels.contains(&Some(PhaseLabel::Aqueous)) {
         return Ok(None);
     }
     let Some(water) = water_index(mixture) else {
@@ -720,16 +713,10 @@ fn seed_oil_from_feed(
         return Ok(None);
     }
     let labels = phase_labels(mixture, reduced, phases)?;
-    if labels
-        .iter()
-        .any(|label| *label == Some(PhaseLabel::Oil))
-    {
+    if labels.contains(&Some(PhaseLabel::Oil)) {
         return Ok(None);
     }
-    if !labels
-        .iter()
-        .any(|label| *label == Some(PhaseLabel::Aqueous))
-    {
+    if !labels.contains(&Some(PhaseLabel::Aqueous)) {
         return Ok(None);
     }
     let Some(water) = water_index(mixture) else {
@@ -745,7 +732,9 @@ fn seed_oil_from_feed(
         .filter(|(index, component)| {
             component.class == "hc"
                 && z[*index] > 1.0e-6
-                && component.molar_mass.is_some_and(|mass| mass > HEAVY_HYDROCARBON)
+                && component
+                    .molar_mass
+                    .is_some_and(|mass| mass > HEAVY_HYDROCARBON)
         })
         .map(|(index, _)| z[index])
         .sum();
@@ -758,7 +747,10 @@ fn seed_oil_from_feed(
         let value = if component.class == ION {
             1.0e-16
         } else if component.class == "hc" {
-            if component.molar_mass.is_some_and(|mass| mass > HEAVY_HYDROCARBON) {
+            if component
+                .molar_mass
+                .is_some_and(|mass| mass > HEAVY_HYDROCARBON)
+            {
                 z[index].max(1.0e-12)
             } else {
                 (z[index] * 1.0e-2).min(1.0e-8)
@@ -863,14 +855,7 @@ mod tests {
     #[test]
     fn the_oil_seed_reproduces_neqsims_composition() {
         let names = [
-            "CO2",
-            "nitrogen",
-            "methane",
-            "ethane",
-            "propane",
-            "i-butane",
-            "n-butane",
-            "water",
+            "CO2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
         ];
         let (mixture, _) = mixture_of(&names, Cubic::Srk, None).expect("the databank resolves");
         let x = 35.0e-6;

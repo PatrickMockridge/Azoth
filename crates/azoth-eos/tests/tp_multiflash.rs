@@ -487,7 +487,7 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
 /// classes downstream, `eos.water_dew_point_multiphase` and `eos.water_dew_point_line`, are
 /// portable now.
 #[test]
-fn the_aqueous_phase_appears_far_colder_than_neqsim_calls_the_dew_point() {
+fn the_aqueous_phase_appears_at_neqsims_own_dew_point() {
     use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
 
     const NAMES: [&str; 8] = [

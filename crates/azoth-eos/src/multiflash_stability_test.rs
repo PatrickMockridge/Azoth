@@ -32,7 +32,7 @@
 //! and [`seeding_against_reference`] is what [`crate::tp_multiflash`] calls with the flashed
 //! set.
 //!
-//! That distinction is measured, not argued. `validation/neqsim/TpMultiFlashSeedProbe.java`
+//! That distinction is measured, not argued. `validation/neqsim/TpMultiflashSeedProbe.java`
 //! attributes every phase addition at each state: at N2/CO2/n-octane 180 K / 10 bar the
 //! **basic** analysis adds the CO2-rich third phase, and until the reference was fixed this
 //! kernel's pure-CO2 trial converged somewhere else and the solve folded it away.
@@ -347,6 +347,7 @@ pub fn multiflash_stability_test(
 ///
 /// # Errors
 /// Propagates the reduced parameters' and the phase state's range checks.
+#[allow(clippy::too_many_arguments)] // the reference pair and the phase set are the inputs
 pub(crate) fn seeding_against_reference(
     mixture: &Mixture,
     t: ThermodynamicTemperature,
