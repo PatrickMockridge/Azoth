@@ -1,0 +1,903 @@
+
+=== N2/CO2/nC8 10/40/50 180 K 10 bar
+initial.phases = 2.0000000000000000
+    initial.phase_0_type = GAS
+    initial.phase_0_beta = 0.083430866353693460
+    initial.phase_0_water_x = NaN
+    initial.phase_0_x =  nitrogen=0.89457849268137690  CO2=0.10542148400286804  n-octane=2.3315755061764716e-08
+    initial.phase_1_type = OIL
+    initial.phase_1_beta = 0.91656913364630650
+    initial.phase_1_water_x = NaN
+    initial.phase_1_x =  nitrogen=0.027673353163985530  CO2=0.42681406115096726  n-octane=0.54551258568504720
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 3.0000000000000000
+    basic.phase_0_type = GAS
+    basic.phase_0_beta = 0.059593475966923900
+    basic.phase_0_water_x = NaN
+    basic.phase_0_x =  nitrogen=0.89457849268137690  CO2=0.10542148400286804  n-octane=2.3315755061764716e-08
+    basic.phase_1_type = OIL
+    basic.phase_1_beta = 0.65469223831879040
+    basic.phase_1_water_x = NaN
+    basic.phase_1_x =  nitrogen=0.027673353163985530  CO2=0.42681406115096726  n-octane=0.54551258568504720
+    basic.phase_2_type = OIL
+    basic.phase_2_beta = 0.28571428571428575
+    basic.phase_2_water_x = NaN
+    basic.phase_2_x =  nitrogen=0.0098498845137447670  CO2=0.98992526351017930  n-octane=0.00022485197607600524
+enhanced.added = 1.0000000000000000
+enhanced.multiPhaseTest = 1.0000000000000000
+enhanced.phases = 3.0000000000000000
+    enhanced.phase_0_type = GAS
+    enhanced.phase_0_beta = 0.059593475966923900
+    enhanced.phase_0_water_x = NaN
+    enhanced.phase_0_x =  nitrogen=0.89457849268137690  CO2=0.10542148400286804  n-octane=2.3315755061764716e-08
+    enhanced.phase_1_type = OIL
+    enhanced.phase_1_beta = 0.65469223831879040
+    enhanced.phase_1_water_x = NaN
+    enhanced.phase_1_x =  nitrogen=0.027673353163985530  CO2=0.42681406115096726  n-octane=0.54551258568504720
+    enhanced.phase_2_type = OIL
+    enhanced.phase_2_beta = 0.28571428571428575
+    enhanced.phase_2_water_x = NaN
+    enhanced.phase_2_x =  nitrogen=0.0098498845137590820  CO2=0.98992526351016410  n-octane=0.00022485197607681226
+gas_seed.fired = 0.0000000000000000
+gas_seed.phases = 3.0000000000000000
+    gas_seed.phase_0_type = GAS
+    gas_seed.phase_0_beta = 0.059593475966923900
+    gas_seed.phase_0_water_x = NaN
+    gas_seed.phase_0_x =  nitrogen=0.89457849268137690  CO2=0.10542148400286804  n-octane=2.3315755061764716e-08
+    gas_seed.phase_1_type = OIL
+    gas_seed.phase_1_beta = 0.65469223831879040
+    gas_seed.phase_1_water_x = NaN
+    gas_seed.phase_1_x =  nitrogen=0.027673353163985530  CO2=0.42681406115096726  n-octane=0.54551258568504720
+    gas_seed.phase_2_type = OIL
+    gas_seed.phase_2_beta = 0.28571428571428575
+    gas_seed.phase_2_water_x = NaN
+    gas_seed.phase_2_x =  nitrogen=0.0098498845137447670  CO2=0.98992526351017930  n-octane=0.00022485197607600524
+oil_seed.fired = 0.0000000000000000
+oil_seed.phases = 3.0000000000000000
+    oil_seed.phase_0_type = GAS
+    oil_seed.phase_0_beta = 0.059593475966923900
+    oil_seed.phase_0_water_x = NaN
+    oil_seed.phase_0_x =  nitrogen=0.89457849268137690  CO2=0.10542148400286804  n-octane=2.3315755061764716e-08
+    oil_seed.phase_1_type = OIL
+    oil_seed.phase_1_beta = 0.65469223831879040
+    oil_seed.phase_1_water_x = NaN
+    oil_seed.phase_1_x =  nitrogen=0.027673353163985530  CO2=0.42681406115096726  n-octane=0.54551258568504720
+    oil_seed.phase_2_type = OIL
+    oil_seed.phase_2_beta = 0.28571428571428575
+    oil_seed.phase_2_water_x = NaN
+    oil_seed.phase_2_x =  nitrogen=0.0098498845137447670  CO2=0.98992526351017930  n-octane=0.00022485197607600524
+full.phases = 3.0000000000000000
+    full.phase_0_type = GAS
+    full.phase_0_beta = 0.084379400654075340
+    full.phase_0_water_x = NaN
+    full.phase_0_x =  nitrogen=0.91327707692090180  CO2=0.086722897332096930  n-octane=2.5747001368319998e-08
+    full.phase_1_type = OIL
+    full.phase_1_beta = 0.75636970150445880
+    full.phase_1_water_x = NaN
+    full.phase_1_x =  nitrogen=0.027122440852458020  CO2=0.31195737408395324  n-octane=0.66092018506358870
+    full.phase_2_type = OIL
+    full.phase_2_beta = 0.15925089784146580
+    full.phase_2_water_x = NaN
+    full.phase_2_x =  nitrogen=0.015218973076522303  CO2=0.98415312005431520  n-octane=0.00062790686916251600
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 3.0000000000000000
+    full_no_inline_aqueous.phase_0_type = GAS
+    full_no_inline_aqueous.phase_0_beta = 0.084379400654075340
+    full_no_inline_aqueous.phase_0_water_x = NaN
+    full_no_inline_aqueous.phase_0_x =  nitrogen=0.91327707692090180  CO2=0.086722897332096930  n-octane=2.5747001368319998e-08
+    full_no_inline_aqueous.phase_1_type = OIL
+    full_no_inline_aqueous.phase_1_beta = 0.75636970150445880
+    full_no_inline_aqueous.phase_1_water_x = NaN
+    full_no_inline_aqueous.phase_1_x =  nitrogen=0.027122440852458020  CO2=0.31195737408395324  n-octane=0.66092018506358870
+    full_no_inline_aqueous.phase_2_type = OIL
+    full_no_inline_aqueous.phase_2_beta = 0.15925089784146580
+    full_no_inline_aqueous.phase_2_water_x = NaN
+    full_no_inline_aqueous.phase_2_x =  nitrogen=0.015218973076522303  CO2=0.98415312005431520  n-octane=0.00062790686916251600
+full_no_post_enhanced.phases = 3.0000000000000000
+    full_no_post_enhanced.phase_0_type = GAS
+    full_no_post_enhanced.phase_0_beta = 0.084379400654075340
+    full_no_post_enhanced.phase_0_water_x = NaN
+    full_no_post_enhanced.phase_0_x =  nitrogen=0.91327707692090180  CO2=0.086722897332096930  n-octane=2.5747001368319998e-08
+    full_no_post_enhanced.phase_1_type = OIL
+    full_no_post_enhanced.phase_1_beta = 0.75636970150445880
+    full_no_post_enhanced.phase_1_water_x = NaN
+    full_no_post_enhanced.phase_1_x =  nitrogen=0.027122440852458020  CO2=0.31195737408395324  n-octane=0.66092018506358870
+    full_no_post_enhanced.phase_2_type = OIL
+    full_no_post_enhanced.phase_2_beta = 0.15925089784146580
+    full_no_post_enhanced.phase_2_water_x = NaN
+    full_no_post_enhanced.phase_2_x =  nitrogen=0.015218973076522303  CO2=0.98415312005431520  n-octane=0.00062790686916251600
+
+=== CO2/C1/nC10 40/30/30 180 K 2 bar
+initial.phases = 2.0000000000000000
+    initial.phase_0_type = GAS
+    initial.phase_0_beta = 0.56804433765112420
+    initial.phase_0_water_x = NaN
+    initial.phase_0_x =  CO2=0.49055601059935494  methane=0.50944398879089920  nC10=6.0974587912611920e-10
+    initial.phase_1_type = OIL
+    initial.phase_1_beta = 0.43195566234887584
+    initial.phase_1_water_x = NaN
+    initial.phase_1_x =  CO2=0.28091409942048057  methane=0.024570176390823620  nC10=0.69451572418869580
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 3.0000000000000000
+    basic.phase_0_type = GAS
+    basic.phase_0_beta = 0.40574595546508874
+    basic.phase_0_water_x = NaN
+    basic.phase_0_x =  CO2=0.49055601059935494  methane=0.50944398879089920  nC10=6.0974587912611920e-10
+    basic.phase_1_type = OIL
+    basic.phase_1_beta = 0.30853975882062560
+    basic.phase_1_water_x = NaN
+    basic.phase_1_x =  CO2=0.28091409942048057  methane=0.024570176390823620  nC10=0.69451572418869580
+    basic.phase_2_type = OIL
+    basic.phase_2_beta = 0.28571428571428575
+    basic.phase_2_water_x = NaN
+    basic.phase_2_x =  CO2=0.99641094759016400  methane=0.0035873223026177425  nC10=1.7301072182569295e-06
+enhanced.added = 1.0000000000000000
+enhanced.multiPhaseTest = 1.0000000000000000
+enhanced.phases = 3.0000000000000000
+    enhanced.phase_0_type = GAS
+    enhanced.phase_0_beta = 0.40574595546508874
+    enhanced.phase_0_water_x = NaN
+    enhanced.phase_0_x =  CO2=0.49055601059935494  methane=0.50944398879089920  nC10=6.0974587912611920e-10
+    enhanced.phase_1_type = OIL
+    enhanced.phase_1_beta = 0.30853975882062560
+    enhanced.phase_1_water_x = NaN
+    enhanced.phase_1_x =  CO2=0.28091409942048057  methane=0.024570176390823620  nC10=0.69451572418869580
+    enhanced.phase_2_type = OIL
+    enhanced.phase_2_beta = 0.28571428571428575
+    enhanced.phase_2_water_x = NaN
+    enhanced.phase_2_x =  CO2=0.99641094759016390  methane=0.0035873223026177420  nC10=1.7301072182569662e-06
+gas_seed.fired = 0.0000000000000000
+gas_seed.phases = 3.0000000000000000
+    gas_seed.phase_0_type = GAS
+    gas_seed.phase_0_beta = 0.40574595546508874
+    gas_seed.phase_0_water_x = NaN
+    gas_seed.phase_0_x =  CO2=0.49055601059935494  methane=0.50944398879089920  nC10=6.0974587912611920e-10
+    gas_seed.phase_1_type = OIL
+    gas_seed.phase_1_beta = 0.30853975882062560
+    gas_seed.phase_1_water_x = NaN
+    gas_seed.phase_1_x =  CO2=0.28091409942048057  methane=0.024570176390823620  nC10=0.69451572418869580
+    gas_seed.phase_2_type = OIL
+    gas_seed.phase_2_beta = 0.28571428571428575
+    gas_seed.phase_2_water_x = NaN
+    gas_seed.phase_2_x =  CO2=0.99641094759016400  methane=0.0035873223026177425  nC10=1.7301072182569295e-06
+oil_seed.fired = 0.0000000000000000
+oil_seed.phases = 3.0000000000000000
+    oil_seed.phase_0_type = GAS
+    oil_seed.phase_0_beta = 0.40574595546508874
+    oil_seed.phase_0_water_x = NaN
+    oil_seed.phase_0_x =  CO2=0.49055601059935494  methane=0.50944398879089920  nC10=6.0974587912611920e-10
+    oil_seed.phase_1_type = OIL
+    oil_seed.phase_1_beta = 0.30853975882062560
+    oil_seed.phase_1_water_x = NaN
+    oil_seed.phase_1_x =  CO2=0.28091409942048057  methane=0.024570176390823620  nC10=0.69451572418869580
+    oil_seed.phase_2_type = OIL
+    oil_seed.phase_2_beta = 0.28571428571428575
+    oil_seed.phase_2_water_x = NaN
+    oil_seed.phase_2_x =  CO2=0.99641094759016400  methane=0.0035873223026177425  nC10=1.7301072182569295e-06
+full.phases = 3.0000000000000000
+    full.phase_0_type = GAS
+    full.phase_0_beta = 0.45978707915172495
+    full.phase_0_water_x = NaN
+    full.phase_0_x =  CO2=0.37523965788038316  methane=0.62476034146589100  nC10=6.5372579902992830e-10
+    full.phase_1_type = OIL
+    full.phase_1_beta = 0.39004930226638107
+    full.phase_1_water_x = NaN
+    full.phase_1_x =  CO2=0.20104204002401013  methane=0.029827981897943685  nC10=0.76912997807804610
+    full.phase_2_type = OIL
+    full.phase_2_beta = 0.15016361858189392
+    full.phase_2_water_x = NaN
+    full.phase_2_x =  CO2=0.99260624971180690  methane=0.0073845043875446320  nC10=9.2459006484357570e-06
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 3.0000000000000000
+    full_no_inline_aqueous.phase_0_type = GAS
+    full_no_inline_aqueous.phase_0_beta = 0.45978707915172495
+    full_no_inline_aqueous.phase_0_water_x = NaN
+    full_no_inline_aqueous.phase_0_x =  CO2=0.37523965788038316  methane=0.62476034146589100  nC10=6.5372579902992830e-10
+    full_no_inline_aqueous.phase_1_type = OIL
+    full_no_inline_aqueous.phase_1_beta = 0.39004930226638107
+    full_no_inline_aqueous.phase_1_water_x = NaN
+    full_no_inline_aqueous.phase_1_x =  CO2=0.20104204002401013  methane=0.029827981897943685  nC10=0.76912997807804610
+    full_no_inline_aqueous.phase_2_type = OIL
+    full_no_inline_aqueous.phase_2_beta = 0.15016361858189392
+    full_no_inline_aqueous.phase_2_water_x = NaN
+    full_no_inline_aqueous.phase_2_x =  CO2=0.99260624971180690  methane=0.0073845043875446320  nC10=9.2459006484357570e-06
+full_no_post_enhanced.phases = 3.0000000000000000
+    full_no_post_enhanced.phase_0_type = GAS
+    full_no_post_enhanced.phase_0_beta = 0.45978707915172495
+    full_no_post_enhanced.phase_0_water_x = NaN
+    full_no_post_enhanced.phase_0_x =  CO2=0.37523965788038316  methane=0.62476034146589100  nC10=6.5372579902992830e-10
+    full_no_post_enhanced.phase_1_type = OIL
+    full_no_post_enhanced.phase_1_beta = 0.39004930226638107
+    full_no_post_enhanced.phase_1_water_x = NaN
+    full_no_post_enhanced.phase_1_x =  CO2=0.20104204002401013  methane=0.029827981897943685  nC10=0.76912997807804610
+    full_no_post_enhanced.phase_2_type = OIL
+    full_no_post_enhanced.phase_2_beta = 0.15016361858189392
+    full_no_post_enhanced.phase_2_water_x = NaN
+    full_no_post_enhanced.phase_2_x =  CO2=0.99260624971180690  methane=0.0073845043875446320  nC10=9.2459006484357570e-06
+
+=== water/nC6 50/50 350 K 20 bar
+initial.phases = 1.0000000000000000
+    initial.phase_0_type = AQUEOUS
+    initial.phase_0_beta = 1.0000000000000000
+    initial.phase_0_water_x = 0.50000000000000000
+    initial.phase_0_x =  water=0.50000000000000000  n-hexane=0.50000000000000000
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 2.0000000000000000
+    basic.phase_0_type = AQUEOUS
+    basic.phase_0_beta = 0.66666666666666660
+    basic.phase_0_water_x = 0.50000000000000000
+    basic.phase_0_x =  water=0.50000000000000000  n-hexane=0.50000000000000000
+    basic.phase_1_type = AQUEOUS
+    basic.phase_1_beta = 0.33333333333333330
+    basic.phase_1_water_x = 1.0000000000000000
+    basic.phase_1_x =  water=1.0000000000000000  n-hexane=2.1627340919843124e-21
+enhanced.added = 1.0000000000000000
+enhanced.multiPhaseTest = 1.0000000000000000
+enhanced.phases = 2.0000000000000000
+    enhanced.phase_0_type = AQUEOUS
+    enhanced.phase_0_beta = 0.66666666666666660
+    enhanced.phase_0_water_x = 0.50000000000000000
+    enhanced.phase_0_x =  water=0.50000000000000000  n-hexane=0.50000000000000000
+    enhanced.phase_1_type = AQUEOUS
+    enhanced.phase_1_beta = 0.33333333333333330
+    enhanced.phase_1_water_x = 1.0000000000000000
+    enhanced.phase_1_x =  water=1.0000000000000000  n-hexane=2.1627340919843124e-21
+gas_seed.fired = 1.0000000000000000
+gas_seed.phases = 3.0000000000000000
+    gas_seed.phase_0_type = AQUEOUS
+    gas_seed.phase_0_beta = 0.66600066600066600
+    gas_seed.phase_0_water_x = 0.50000000000000000
+    gas_seed.phase_0_x =  water=0.50000000000000000  n-hexane=0.50000000000000000
+    gas_seed.phase_1_type = AQUEOUS
+    gas_seed.phase_1_beta = 0.33300033300033300
+    gas_seed.phase_1_water_x = 1.0000000000000000
+    gas_seed.phase_1_x =  water=1.0000000000000000  n-hexane=2.1627340919843124e-21
+    gas_seed.phase_2_type = OIL
+    gas_seed.phase_2_beta = 0.00099900099900099920
+    gas_seed.phase_2_water_x = 0.26943831469243495
+    gas_seed.phase_2_x =  water=0.26943831469243495  n-hexane=0.73056168530756500
+oil_seed.fired = 0.0000000000000000
+oil_seed.phases = 2.0000000000000000
+    oil_seed.phase_0_type = AQUEOUS
+    oil_seed.phase_0_beta = 0.66666666666666660
+    oil_seed.phase_0_water_x = 0.50000000000000000
+    oil_seed.phase_0_x =  water=0.50000000000000000  n-hexane=0.50000000000000000
+    oil_seed.phase_1_type = AQUEOUS
+    oil_seed.phase_1_beta = 0.33333333333333330
+    oil_seed.phase_1_water_x = 1.0000000000000000
+    oil_seed.phase_1_x =  water=1.0000000000000000  n-hexane=2.1627340919843124e-21
+full.phases = 2.0000000000000000
+    full.phase_0_type = OIL
+    full.phase_0_beta = 0.50163557870683130
+    full.phase_0_water_x = 0.0032604918314527560
+    full.phase_0_x =  water=0.0032604918314527560  n-hexane=0.99673950816854730
+    full.phase_1_type = AQUEOUS
+    full.phase_1_beta = 0.49836442129316870
+    full.phase_1_water_x = 1.0000000000000000
+    full.phase_1_x =  water=1.0000000000000000  n-hexane=4.8706230967845140e-17
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 2.0000000000000000
+    full_no_inline_aqueous.phase_0_type = OIL
+    full_no_inline_aqueous.phase_0_beta = 0.50163557870683130
+    full_no_inline_aqueous.phase_0_water_x = 0.0032604918314527560
+    full_no_inline_aqueous.phase_0_x =  water=0.0032604918314527560  n-hexane=0.99673950816854730
+    full_no_inline_aqueous.phase_1_type = AQUEOUS
+    full_no_inline_aqueous.phase_1_beta = 0.49836442129316870
+    full_no_inline_aqueous.phase_1_water_x = 1.0000000000000000
+    full_no_inline_aqueous.phase_1_x =  water=1.0000000000000000  n-hexane=4.8706230967845140e-17
+full_no_post_enhanced.phases = 2.0000000000000000
+    full_no_post_enhanced.phase_0_type = OIL
+    full_no_post_enhanced.phase_0_beta = 0.50163557870683130
+    full_no_post_enhanced.phase_0_water_x = 0.0032604918314527560
+    full_no_post_enhanced.phase_0_x =  water=0.0032604918314527560  n-hexane=0.99673950816854730
+    full_no_post_enhanced.phase_1_type = AQUEOUS
+    full_no_post_enhanced.phase_1_beta = 0.49836442129316870
+    full_no_post_enhanced.phase_1_water_x = 1.0000000000000000
+    full_no_post_enhanced.phase_1_x =  water=1.0000000000000000  n-hexane=4.8706230967845140e-17
+
+=== 8-component gas 35 ppm water 260.545 K 70 bar
+initial.phases = 1.0000000000000000
+    initial.phase_0_type = GAS
+    initial.phase_0_beta = 1.0000000000000000
+    initial.phase_0_water_x = 3.5000000000000000e-05
+    initial.phase_0_x =  CO2=0.020000000000000000  nitrogen=0.010000000000000000  methane=0.89996500000000000  ethane=0.050000000000000000  propane=0.010000000000000000  i-butane=0.0050000000000000000  n-butane=0.0050000000000000000  water=3.5000000000000000e-05
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 2.0000000000000000
+    basic.phase_0_type = GAS
+    basic.phase_0_beta = 0.99996500122495710
+    basic.phase_0_water_x = 3.5000000000000000e-05
+    basic.phase_0_x =  CO2=0.020000000000000000  nitrogen=0.010000000000000000  methane=0.89996500000000000  ethane=0.050000000000000000  propane=0.010000000000000000  i-butane=0.0050000000000000000  n-butane=0.0050000000000000000  water=3.5000000000000000e-05
+    basic.phase_1_type = AQUEOUS
+    basic.phase_1_beta = 3.4998775042873494e-05
+    basic.phase_1_water_x = 0.99999387816048800
+    basic.phase_1_x =  CO2=6.1038081957407080e-06  nitrogen=1.2471920878936980e-10  methane=1.7900237655653795e-08  ethane=6.3592152636100810e-12  propane=7.7411391971894630e-17  i-butane=9.8983346355668770e-21  n-butane=1.7567645740680460e-20  water=0.99999387816048800
+enhanced.added = 0.0000000000000000
+enhanced.multiPhaseTest = 0.0000000000000000
+enhanced.phases = 1.0000000000000000
+    enhanced.phase_0_type = GAS
+    enhanced.phase_0_beta = 1.0000000000000000
+    enhanced.phase_0_water_x = 3.5000000000000000e-05
+    enhanced.phase_0_x =  CO2=0.020000000000000000  nitrogen=0.010000000000000000  methane=0.89996500000000000  ethane=0.050000000000000000  propane=0.010000000000000000  i-butane=0.0050000000000000000  n-butane=0.0050000000000000000  water=3.5000000000000000e-05
+gas_seed.fired = 0.0000000000000000
+gas_seed.phases = 2.0000000000000000
+    gas_seed.phase_0_type = GAS
+    gas_seed.phase_0_beta = 0.99996500122495710
+    gas_seed.phase_0_water_x = 3.5000000000000000e-05
+    gas_seed.phase_0_x =  CO2=0.020000000000000000  nitrogen=0.010000000000000000  methane=0.89996500000000000  ethane=0.050000000000000000  propane=0.010000000000000000  i-butane=0.0050000000000000000  n-butane=0.0050000000000000000  water=3.5000000000000000e-05
+    gas_seed.phase_1_type = AQUEOUS
+    gas_seed.phase_1_beta = 3.4998775042873494e-05
+    gas_seed.phase_1_water_x = 0.99999387816048800
+    gas_seed.phase_1_x =  CO2=6.1038081957407080e-06  nitrogen=1.2471920878936980e-10  methane=1.7900237655653795e-08  ethane=6.3592152636100810e-12  propane=7.7411391971894630e-17  i-butane=9.8983346355668770e-21  n-butane=1.7567645740680460e-20  water=0.99999387816048800
+oil_seed.fired = 1.0000000000000000
+oil_seed.phases = 3.0000000000000000
+    oil_seed.phase_0_type = GAS
+    oil_seed.phase_0_beta = 0.99995500167494030
+    oil_seed.phase_0_water_x = 3.5000000000000000e-05
+    oil_seed.phase_0_x =  CO2=0.020000000000000000  nitrogen=0.010000000000000000  methane=0.89996500000000000  ethane=0.050000000000000000  propane=0.010000000000000000  i-butane=0.0050000000000000000  n-butane=0.0050000000000000000  water=3.5000000000000000e-05
+    oil_seed.phase_1_type = AQUEOUS
+    oil_seed.phase_1_beta = 3.4998425058622910e-05
+    oil_seed.phase_1_water_x = 0.99999387816048800
+    oil_seed.phase_1_x =  CO2=6.1038081957407080e-06  nitrogen=1.2471920878936980e-10  methane=1.7900237655653795e-08  ethane=6.3592152636100810e-12  propane=7.7411391971894630e-17  i-butane=9.8983346355668770e-21  n-butane=1.7567645740680460e-20  water=0.99999387816048800
+    oil_seed.phase_2_type = OIL
+    oil_seed.phase_2_beta = 9.9999000009999900e-06
+    oil_seed.phase_2_water_x = 9.9999600001597980e-07
+    oil_seed.phase_2_x =  CO2=9.9999600001597970e-15  nitrogen=9.9999600001597970e-15  methane=9.9999600001597980e-07  ethane=9.9999600001597980e-07  propane=9.9999600001597980e-07  i-butane=0.49999800000798994  n-butane=0.49999800000798994  water=9.9999600001597980e-07
+full.phases = 2.0000000000000000
+    full.phase_0_type = GAS
+    full.phase_0_beta = 0.99999999996791360
+    full.phase_0_water_x = 3.4999967914886410e-05
+    full.phase_0_x =  CO2=0.020000000000641536  nitrogen=0.010000000000320863  methane=0.89996500002887680  ethane=0.050000000001604330  propane=0.010000000000320865  i-butane=0.0050000000001604330  n-butane=0.0050000000001604325  water=3.4999967914886410e-05
+    full.phase_1_type = AQUEOUS
+    full.phase_1_beta = 3.2086433038851554e-11
+    full.phase_1_water_x = 0.99999387814439630
+    full.phase_1_x =  CO2=6.1038242273370340e-06  nitrogen=1.2471961425299495e-10  methane=1.7900297454472683e-08  ethane=6.3592430658195190e-12  propane=7.7411844680338260e-17  i-butane=9.8984063285532360e-21  n-butane=1.7567772213537604e-20  water=0.99999387814439630
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 2.0000000000000000
+    full_no_inline_aqueous.phase_0_type = GAS
+    full_no_inline_aqueous.phase_0_beta = 0.99999999996791360
+    full_no_inline_aqueous.phase_0_water_x = 3.4999967914886410e-05
+    full_no_inline_aqueous.phase_0_x =  CO2=0.020000000000641536  nitrogen=0.010000000000320863  methane=0.89996500002887680  ethane=0.050000000001604330  propane=0.010000000000320865  i-butane=0.0050000000001604330  n-butane=0.0050000000001604325  water=3.4999967914886410e-05
+    full_no_inline_aqueous.phase_1_type = AQUEOUS
+    full_no_inline_aqueous.phase_1_beta = 3.2086433038851554e-11
+    full_no_inline_aqueous.phase_1_water_x = 0.99999387814439630
+    full_no_inline_aqueous.phase_1_x =  CO2=6.1038242273370340e-06  nitrogen=1.2471961425299495e-10  methane=1.7900297454472683e-08  ethane=6.3592430658195190e-12  propane=7.7411844680338260e-17  i-butane=9.8984063285532360e-21  n-butane=1.7567772213537604e-20  water=0.99999387814439630
+full_no_post_enhanced.phases = 2.0000000000000000
+    full_no_post_enhanced.phase_0_type = GAS
+    full_no_post_enhanced.phase_0_beta = 0.99999999996791360
+    full_no_post_enhanced.phase_0_water_x = 3.4999967914886410e-05
+    full_no_post_enhanced.phase_0_x =  CO2=0.020000000000641536  nitrogen=0.010000000000320863  methane=0.89996500002887680  ethane=0.050000000001604330  propane=0.010000000000320865  i-butane=0.0050000000001604330  n-butane=0.0050000000001604325  water=3.4999967914886410e-05
+    full_no_post_enhanced.phase_1_type = AQUEOUS
+    full_no_post_enhanced.phase_1_beta = 3.2086433038851554e-11
+    full_no_post_enhanced.phase_1_water_x = 0.99999387814439630
+    full_no_post_enhanced.phase_1_x =  CO2=6.1038242273370340e-06  nitrogen=1.2471961425299495e-10  methane=1.7900297454472683e-08  ethane=6.3592430658195190e-12  propane=7.7411844680338260e-17  i-butane=9.8984063285532360e-21  n-butane=1.7567772213537604e-20  water=0.99999387814439630
+
+=== C1/nC4 50/50 370 K 40 bar
+initial.phases = 1.0000000000000000
+    initial.phase_0_type = GAS
+    initial.phase_0_beta = 1.0000000000000000
+    initial.phase_0_water_x = NaN
+    initial.phase_0_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 2.0000000000000000
+    basic.phase_0_type = GAS
+    basic.phase_0_beta = 0.66666666666666660
+    basic.phase_0_water_x = NaN
+    basic.phase_0_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+    basic.phase_1_type = OIL
+    basic.phase_1_beta = 0.33333333333333330
+    basic.phase_1_water_x = NaN
+    basic.phase_1_x =  methane=0.12061735764365666  n-butane=0.87938264235634340
+enhanced.added = 1.0000000000000000
+enhanced.multiPhaseTest = 1.0000000000000000
+enhanced.phases = 2.0000000000000000
+    enhanced.phase_0_type = GAS
+    enhanced.phase_0_beta = 0.66666666666666660
+    enhanced.phase_0_water_x = NaN
+    enhanced.phase_0_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+    enhanced.phase_1_type = OIL
+    enhanced.phase_1_beta = 0.33333333333333330
+    enhanced.phase_1_water_x = NaN
+    enhanced.phase_1_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+gas_seed.fired = 0.0000000000000000
+gas_seed.phases = 2.0000000000000000
+    gas_seed.phase_0_type = GAS
+    gas_seed.phase_0_beta = 0.66666666666666660
+    gas_seed.phase_0_water_x = NaN
+    gas_seed.phase_0_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+    gas_seed.phase_1_type = OIL
+    gas_seed.phase_1_beta = 0.33333333333333330
+    gas_seed.phase_1_water_x = NaN
+    gas_seed.phase_1_x =  methane=0.12061735764365666  n-butane=0.87938264235634340
+oil_seed.fired = 0.0000000000000000
+oil_seed.phases = 2.0000000000000000
+    oil_seed.phase_0_type = GAS
+    oil_seed.phase_0_beta = 0.66666666666666660
+    oil_seed.phase_0_water_x = NaN
+    oil_seed.phase_0_x =  methane=0.50000000000000000  n-butane=0.50000000000000000
+    oil_seed.phase_1_type = OIL
+    oil_seed.phase_1_beta = 0.33333333333333330
+    oil_seed.phase_1_water_x = NaN
+    oil_seed.phase_1_x =  methane=0.12061735764365666  n-butane=0.87938264235634340
+full.phases = 2.0000000000000000
+    full.phase_0_type = GAS
+    full.phase_0_beta = 0.99014376199230310
+    full.phase_0_water_x = NaN
+    full.phase_0_x =  methane=0.50375260983327240  n-butane=0.49624739016672753
+    full.phase_1_type = OIL
+    full.phase_1_beta = 0.0098562380076969070
+    full.phase_1_water_x = NaN
+    full.phase_1_x =  methane=0.12301811150419444  n-butane=0.87698188849580550
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 2.0000000000000000
+    full_no_inline_aqueous.phase_0_type = GAS
+    full_no_inline_aqueous.phase_0_beta = 0.99014376199230310
+    full_no_inline_aqueous.phase_0_water_x = NaN
+    full_no_inline_aqueous.phase_0_x =  methane=0.50375260983327240  n-butane=0.49624739016672753
+    full_no_inline_aqueous.phase_1_type = OIL
+    full_no_inline_aqueous.phase_1_beta = 0.0098562380076969070
+    full_no_inline_aqueous.phase_1_water_x = NaN
+    full_no_inline_aqueous.phase_1_x =  methane=0.12301811150419444  n-butane=0.87698188849580550
+full_no_post_enhanced.phases = 2.0000000000000000
+    full_no_post_enhanced.phase_0_type = GAS
+    full_no_post_enhanced.phase_0_beta = 0.99014376199219710
+    full_no_post_enhanced.phase_0_water_x = NaN
+    full_no_post_enhanced.phase_0_x =  methane=0.50375260983331300  n-butane=0.49624739016668695
+    full_no_post_enhanced.phase_1_type = OIL
+    full_no_post_enhanced.phase_1_beta = 0.0098562380078028540
+    full_no_post_enhanced.phase_1_water_x = NaN
+    full_no_post_enhanced.phase_1_x =  methane=0.12301811150419914  n-butane=0.87698188849580080
+
+=== C1/nC4 50/50 + 1e-4 water 370 K 40 bar
+initial.phases = 1.0000000000000000
+    initial.phase_0_type = GAS
+    initial.phase_0_beta = 1.0000000000000000
+    initial.phase_0_water_x = 9.9990000999900020e-05
+    initial.phase_0_x =  methane=0.49995000499950004  n-butane=0.49995000499950004  water=9.9990000999900020e-05
+basic.added = 1.0000000000000000
+basic.multiPhaseTest = 1.0000000000000000
+basic.phases = 2.0000000000000000
+    basic.phase_0_type = GAS
+    basic.phase_0_beta = 0.66668888740750620
+    basic.phase_0_water_x = 9.9990000999900020e-05
+    basic.phase_0_x =  methane=0.49995000499950004  n-butane=0.49995000499950004  water=9.9990000999900020e-05
+    basic.phase_1_type = OIL
+    basic.phase_1_beta = 0.33331111259249385
+    basic.phase_1_water_x = 3.3096827740734045e-05
+    basic.phase_1_x =  methane=0.12062226260400376  n-butane=0.87934464056825560  water=3.3096827740734045e-05
+enhanced.added = 1.0000000000000000
+enhanced.multiPhaseTest = 1.0000000000000000
+enhanced.phases = 2.0000000000000000
+    enhanced.phase_0_type = GAS
+    enhanced.phase_0_beta = 0.66668888740750620
+    enhanced.phase_0_water_x = 9.9990000999900020e-05
+    enhanced.phase_0_x =  methane=0.49995000499950004  n-butane=0.49995000499950004  water=9.9990000999900020e-05
+    enhanced.phase_1_type = OIL
+    enhanced.phase_1_beta = 0.33331111259249385
+    enhanced.phase_1_water_x = 0.00063816206261631130
+    enhanced.phase_1_x =  methane=0.49968091896869190  n-butane=0.49968091896869190  water=0.00063816206261631130
+gas_seed.fired = 0.0000000000000000
+gas_seed.phases = 2.0000000000000000
+    gas_seed.phase_0_type = GAS
+    gas_seed.phase_0_beta = 0.66668888740750620
+    gas_seed.phase_0_water_x = 9.9990000999900020e-05
+    gas_seed.phase_0_x =  methane=0.49995000499950004  n-butane=0.49995000499950004  water=9.9990000999900020e-05
+    gas_seed.phase_1_type = OIL
+    gas_seed.phase_1_beta = 0.33331111259249385
+    gas_seed.phase_1_water_x = 3.3096827740734045e-05
+    gas_seed.phase_1_x =  methane=0.12062226260400376  n-butane=0.87934464056825560  water=3.3096827740734045e-05
+oil_seed.fired = 0.0000000000000000
+oil_seed.phases = 2.0000000000000000
+    oil_seed.phase_0_type = GAS
+    oil_seed.phase_0_beta = 0.66668888740750620
+    oil_seed.phase_0_water_x = 9.9990000999900020e-05
+    oil_seed.phase_0_x =  methane=0.49995000499950004  n-butane=0.49995000499950004  water=9.9990000999900020e-05
+    oil_seed.phase_1_type = OIL
+    oil_seed.phase_1_beta = 0.33331111259249385
+    oil_seed.phase_1_water_x = 3.3096827740734045e-05
+    oil_seed.phase_1_x =  methane=0.12062226260400376  n-butane=0.87934464056825560  water=3.3096827740734045e-05
+full.phases = 2.0000000000000000
+    full.phase_0_type = GAS
+    full.phase_0_beta = 0.99026398340916160
+    full.phase_0_water_x = 0.00010064280307448483
+    full.phase_0_x =  methane=0.50365613701772960  n-butane=0.49624322017919587  water=0.00010064280307448483
+    full.phase_1_type = OIL
+    full.phase_1_beta = 0.0097360165908384250
+    full.phase_1_water_x = 3.3592580995045070e-05
+    full.phase_1_x =  methane=0.12299408866860612  n-butane=0.87697231875039890  water=3.3592580995045070e-05
+full.multiPhaseTest = 1.0000000000000000
+full_no_inline_aqueous.phases = 2.0000000000000000
+    full_no_inline_aqueous.phase_0_type = GAS
+    full_no_inline_aqueous.phase_0_beta = 0.99026398340916160
+    full_no_inline_aqueous.phase_0_water_x = 0.00010064280307448483
+    full_no_inline_aqueous.phase_0_x =  methane=0.50365613701772960  n-butane=0.49624322017919587  water=0.00010064280307448483
+    full_no_inline_aqueous.phase_1_type = OIL
+    full_no_inline_aqueous.phase_1_beta = 0.0097360165908384250
+    full_no_inline_aqueous.phase_1_water_x = 3.3592580995045070e-05
+    full_no_inline_aqueous.phase_1_x =  methane=0.12299408866860612  n-butane=0.87697231875039890  water=3.3592580995045070e-05
+full_no_post_enhanced.phases = 3.0000000000000000
+    full_no_post_enhanced.phase_0_type = GAS
+    full_no_post_enhanced.phase_0_beta = 0.99025408086824270
+    full_no_post_enhanced.phase_0_water_x = 0.00010064280307449227
+    full_no_post_enhanced.phase_0_x =  methane=0.50365613701777180  n-butane=0.49624322017915373  water=0.00010064280307449227
+    full_no_post_enhanced.phase_1_type = OIL
+    full_no_post_enhanced.phase_1_beta = 0.0097359192317561810
+    full_no_post_enhanced.phase_1_water_x = 3.3592580995046230e-05
+    full_no_post_enhanced.phase_1_x =  methane=0.12299408866861113  n-butane=0.87697231875039390  water=3.3592580995046230e-05
+    full_no_post_enhanced.phase_2_type = AQUEOUS
+    full_no_post_enhanced.phase_2_beta = 9.9999000009999900e-06
+    full_no_post_enhanced.phase_2_water_x = 0.99999999999799980
+    full_no_post_enhanced.phase_2_x =  methane=1.0000999999979997e-12  n-butane=1.0000999999979997e-12  water=0.99999999999799980
+
+# scan
+<state> C1/nC4 T=300 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=300 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=300 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=310 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=310 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=310 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=320 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=330 P=20 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=330 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=330 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=330 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=340 P=20 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=340 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=340 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=350 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 T=350 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=350 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=350 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=360 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 T=360 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 T=370 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 T=370 P=40 plain_phases=1 fired=basic enhanced
+<state> C1/nC4 T=390 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 T=390 P=40 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=300 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=300 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=300 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=310 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=310 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=310 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=320 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=320 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=330 P=20 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=330 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=330 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=330 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=340 P=20 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=340 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=350 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=350 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=350 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=350 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=360 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=370 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=370 P=40 plain_phases=1 fired=basic enhanced post_enhanced
+<state> C1/nC4 + 1e-4 water T=370 P=100 plain_phases=2 fired=basic
+<state> C1/nC4 + 1e-4 water T=380 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=380 P=40 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=390 P=20 plain_phases=1 fired=enhanced
+<state> C1/nC4 + 1e-4 water T=390 P=40 plain_phases=1 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=300 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=300 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=300 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=300 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=310 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=310 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=310 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=310 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=320 P=40 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=320 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=320 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=320 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=330 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=330 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=330 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=340 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=340 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=340 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=350 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=350 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=350 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=360 P=1 plain_phases=1 fired=basic
+<state> C1/nC7 + 1e-4 water T=360 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=360 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=370 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=370 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=370 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=380 P=60 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=380 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=380 P=100 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=390 P=80 plain_phases=2 fired=enhanced
+<state> C1/nC7 + 1e-4 water T=390 P=100 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=260 P=1 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=260 P=2 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=260 P=5 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=270 P=1 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=270 P=2 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=280 P=2 plain_phases=2 fired=basic
+<state> CO2/nC6 + 1e-4 water T=310 P=20 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=310 P=40 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=310 P=60 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=320 P=1 plain_phases=1 fired=basic
+<state> CO2/nC6 + 1e-4 water T=320 P=20 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=320 P=40 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=320 P=60 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=320 P=80 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=320 P=100 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=330 P=20 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=330 P=60 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=330 P=80 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=330 P=100 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=340 P=20 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=340 P=40 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=340 P=60 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=340 P=80 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=340 P=100 plain_phases=1 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=350 P=20 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=350 P=40 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=350 P=60 plain_phases=2 fired=enhanced
+<state> CO2/nC6 + 1e-4 water T=350 P=100 plain_phases=1 fired=enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=1 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=2 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=5 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=10 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=40 plain_phases=1 fired=basic enhanced post_enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=80 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=180 P=100 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=5 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=10 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=80 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=190 P=100 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=20 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=200 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=20 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=210 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=20 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=220 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=20 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=230 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=20 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=240 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=250 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=250 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=250 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=250 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=250 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=260 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=260 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=260 P=60 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=260 P=100 plain_phases=1 fired=basic
+<state> N2/CO2/nC8 + 1e-4 water T=270 P=20 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 + 1e-4 water T=270 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=180 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=180 P=5 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 T=180 P=10 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 T=180 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 T=180 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=180 P=80 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=190 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=190 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=190 P=10 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=190 P=20 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 T=190 P=40 plain_phases=2 fired=basic enhanced
+<state> N2/CO2/nC8 T=190 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=200 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=200 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=200 P=60 plain_phases=1 fired=enhanced
+<state> N2/CO2/nC8 T=210 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=210 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=210 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=220 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=220 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=220 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=220 P=60 plain_phases=1 fired=enhanced
+<state> N2/CO2/nC8 T=230 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=230 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=230 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=240 P=1 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=240 P=2 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=240 P=5 plain_phases=2 fired=basic
+<state> N2/CO2/nC8 T=240 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=240 P=60 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=250 P=40 plain_phases=2 fired=enhanced
+<state> N2/CO2/nC8 T=250 P=60 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=180 P=2 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=180 P=5 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=180 P=10 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=190 P=1 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=190 P=2 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=190 P=5 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=190 P=10 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=200 P=1 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=200 P=2 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=200 P=5 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=200 P=10 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=200 P=20 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=210 P=1 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=210 P=2 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=210 P=10 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=210 P=20 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=210 P=40 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=220 P=1 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=220 P=2 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=220 P=5 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=220 P=10 plain_phases=2 fired=basic
+<state> CO2/C1/nC10 T=220 P=20 plain_phases=2 fired=basic enhanced
+<state> CO2/C1/nC10 T=230 P=20 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=230 P=40 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=230 P=60 plain_phases=1 fired=enhanced
+<state> CO2/C1/nC10 T=230 P=100 plain_phases=1 fired=enhanced
+<state> CO2/C1/nC10 T=240 P=20 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=240 P=40 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=240 P=60 plain_phases=1 fired=enhanced
+<state> CO2/C1/nC10 T=240 P=100 plain_phases=1 fired=enhanced
+<state> CO2/C1/nC10 T=250 P=20 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=250 P=40 plain_phases=2 fired=enhanced
+<state> CO2/C1/nC10 T=250 P=60 plain_phases=2 fired=enhanced
+<state> water/nC6 T=260 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=260 P=2 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=260 P=5 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=260 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=260 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=260 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=260 P=60 plain_phases=2 fired=gas
+<state> water/nC6 T=260 P=80 plain_phases=2 fired=gas
+<state> water/nC6 T=260 P=100 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=5 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=270 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=270 P=20 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=270 P=60 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=80 plain_phases=2 fired=gas
+<state> water/nC6 T=270 P=100 plain_phases=2 fired=gas
+<state> water/nC6 T=280 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=280 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=280 P=5 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=280 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=280 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=280 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=280 P=60 plain_phases=2 fired=gas
+<state> water/nC6 T=280 P=80 plain_phases=2 fired=gas
+<state> water/nC6 T=280 P=100 plain_phases=2 fired=gas
+<state> water/nC6 T=290 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=290 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=290 P=5 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=60 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=80 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=290 P=100 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=300 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=300 P=5 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=60 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=80 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=300 P=100 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=310 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=310 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=310 P=5 plain_phases=2 fired=gas
+<state> water/nC6 T=310 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=310 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=310 P=40 plain_phases=2 fired=gas
+<state> water/nC6 T=310 P=60 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=310 P=80 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=310 P=100 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=320 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=320 P=5 plain_phases=2 fired=gas
+<state> water/nC6 T=320 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=60 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=80 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=320 P=100 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=1 plain_phases=2 fired=gas
+<state> water/nC6 T=330 P=2 plain_phases=2 fired=gas
+<state> water/nC6 T=330 P=5 plain_phases=2 fired=gas
+<state> water/nC6 T=330 P=10 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=20 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=40 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=60 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=80 plain_phases=1 fired=basic enhanced gas
+<state> water/nC6 T=330 P=100 plain_phases=1 fired=basic enhanced gas
+<state> water/methane 40/60 T=280 P=40 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=280 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=280 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=280 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=290 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=290 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=290 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=300 P=40 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=300 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=300 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=300 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=310 P=40 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=310 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=310 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=310 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=320 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=320 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=320 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=330 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=330 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=340 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=340 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=340 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=350 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=350 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=360 P=60 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=360 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=360 P=100 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=370 P=80 plain_phases=2 fired=enhanced
+<state> water/methane 40/60 T=370 P=100 plain_phases=2 fired=enhanced
+<state> 8-component gas 35 ppm T=230 P=2 plain_phases=1 fired=basic oil
+<state> 8-component gas 35 ppm T=230 P=5 plain_phases=1 fired=basic oil
+<state> 8-component gas 35 ppm T=230 P=10 plain_phases=1 fired=basic oil
+<state> 8-component gas 35 ppm T=230 P=20 plain_phases=2 fired=basic enhanced
+<state> 8-component gas 35 ppm T=230 P=40 plain_phases=2 fired=basic enhanced
+<state> 8-component gas 35 ppm T=230 P=60 plain_phases=2 fired=basic enhanced
+<state> 8-component gas 35 ppm T=230 P=80 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=230 P=100 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=240 P=10 plain_phases=1 fired=basic oil
+<state> 8-component gas 35 ppm T=240 P=20 plain_phases=1 fired=basic enhanced oil
+<state> 8-component gas 35 ppm T=240 P=40 plain_phases=1 fired=basic enhanced oil
+<state> 8-component gas 35 ppm T=240 P=60 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=240 P=80 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=240 P=100 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=250 P=20 plain_phases=1 fired=basic enhanced oil
+<state> 8-component gas 35 ppm T=250 P=40 plain_phases=1 fired=basic enhanced oil
+<state> 8-component gas 35 ppm T=250 P=60 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=250 P=80 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=250 P=100 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=260 P=20 plain_phases=1 fired=enhanced
+<state> 8-component gas 35 ppm T=260 P=40 plain_phases=1 fired=enhanced
+<state> 8-component gas 35 ppm T=260 P=80 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=260 P=100 plain_phases=2 fired=oil
+<state> 8-component gas 35 ppm T=270 P=40 plain_phases=1 fired=enhanced
+<state> 8-component gas 35 ppm T=280 P=40 plain_phases=1 fired=enhanced
+<state> 8-component gas 35 ppm T=290 P=40 plain_phases=1 fired=enhanced
+<state> 8-component gas 35 ppm T=300 P=40 plain_phases=1 fired=enhanced

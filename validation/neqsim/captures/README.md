@@ -22,6 +22,21 @@ java -cp .:neqsim-f0c7436.jar neqsim.thermo.component.PcsaftCompositionProbe \
   > captures/pcsaft_composition_probe.tsv
 ```
 
+**`TpMultiflashSeedProbe` attributes every phase addition in the multiphase flash.** It
+declares NeqSim's package because `multiPhaseTest` and the two ablation flags are
+package-private and the gas/oil seeds are private methods, so a probe outside would have to
+read the chain rather than measure it. Each construct runs on its own fresh fluid, and the
+full chain is run twice more with the post-flash enhanced check and the inline aqueous seed
+ablated: a construct whose ablation changes the phase inventory fired. **Every measurement
+builds a new fluid**, because `setMultiPhaseCheck(true)` is a system flag and a reused fluid
+makes the next `TPflash` a multiflash rather than the two-phase seed the probe starts from.
+
+```bash
+javac -proc:none -cp neqsim-f0c7436.jar -d . TpMultiflashSeedProbe.java
+java -cp .:neqsim-f0c7436.jar neqsim.thermodynamicoperations.flashops.TpMultiflashSeedProbe \
+  > captures/tp_multiflash_seed_probe.tsv
+```
+
 **A state is passed as `T_K P_bara name z name z ...`** - the name and its mole fraction are
 two arguments, not one `name:z` token. Seven probes take that form, and each refuses an odd
 argument count rather than silently dropping a name whose fraction is missing. The other
