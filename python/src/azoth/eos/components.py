@@ -2808,58 +2808,6 @@ def unifac_umrpru_parameters(names: Sequence[str], parameters: str) -> UnifacUmr
     )
 
 
-class _PhaseAntoine(NamedTuple):
-    """The per-component vapour-pressure columns every GE phase carries, in parallel."""
-
-    kinds: tuple[str, ...]
-    coefficients: tuple[float, ...]
-    tcs: tuple[float, ...]
-    pcs: tuple[float, ...]
-
-
-def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _PhaseAntoine:
-    """The vapour-pressure records a phase reads, or a refusal.
-
-    Shared by every activity-coefficient phase, because the two things it checks are the
-    same for all of them: a component tagged anything but ``SOLVENT`` takes a Henry's-law
-    coefficient in ``ComponentGE.fugcoef``, which this library does not implement, and a
-    component with no correlation has no ``P0`` to compose.
-    """
-    kinds: list[str] = []
-    coefficients: list[float] = []
-    tcs: list[float] = []
-    pcs: list[float] = []
-    for name in names:
-        record = entry(name, card=card)
-        if record.reference_state != SOLVENT:
-            raise InvalidInputError(
-                "components",
-                f"`{record.name}` is tagged `referenceStateType = "
-                f"{record.reference_state}` in NeqSim's component database, so "
-                f"`ComponentGE.fugcoef` gives it a Henry's-law fugacity coefficient "
-                f"rather than `gamma_i P0_i / P`. That branch is the Henry's-law one, and "
-                f"this phase is the Raoult one. The substances the databank tags `solvent` - "
-                f"water, the alcohols, the glycols - are the ones it describes.",
-            )
-        if record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):
-            raise PropertyUnavailableError(
-                name,
-                "Antoine vapour-pressure coefficients",
-                "the phase's fugacity coefficient is `gamma_i P0_i / P`, so every "
-                "component needs a correlation; a keycard supplies the parameters a "
-                "cubic reads and not these",
-            )
-        # **The raw label, not the cleaned form.** `saturation` maps it through
-        # `form_from_type` at the point of use, exactly as the rust kernel does; storing the
-        # mapped form here instead would put a different quantity in the field the two
-        # languages share, and only a row the mapping refuses would show it.
-        kinds.append(record.antoine_type)
-        coefficients.extend(record.antoine)
-        tcs.append(record.Tc.to_base_units().magnitude)
-        pcs.append(record.Pc.to_base_units().magnitude)
-    return _PhaseAntoine(tuple(kinds), tuple(coefficients), tuple(tcs), tuple(pcs))
-
-
 class _PhaseReferences(NamedTuple):
     """Each activity-phase component's reference state, flattened.
 
@@ -3116,13 +3064,19 @@ def ge_uniquac_phase_parameters(
 class GeWilsonPhaseParameters:
     """The parameters of a Wilson activity-coefficient *phase*.
 
-    Only the vapour-pressure columns. The Wilson correlation reads each component's molar
-    mass and critical temperature, which are what :class:`~azoth.eos.mixture.Mixture`
-    carries and :func:`mixture_of` already resolves, so the phase takes that mixture
-    beside this record rather than a second copy of the same two vectors.
+    The component names and each component's reference state. The Wilson correlation
+    itself reads each component's molar mass and critical temperature, which is what
+    :class:`~azoth.eos.mixture.Mixture` carries and :func:`mixture_of` already resolves,
+    so the phase takes that mixture beside this record rather than a second copy of the
+    same two vectors.
     """
 
-    #: NeqSim's Antoine label for each component, in order.
+    #: The component names, in the order every vector here is indexed by.
+    names: tuple[str, ...]
+    #: The arm each component takes: ``solvent``, ``henry_iapws``, ``henry_database`` or
+    #: ``henry_database_ion``.
+    reference_kind: tuple[str, ...]
+    #: NeqSim's Antoine label for each component, in order. Read only on the solvent arm.
     antoine_type: tuple[str, ...]
     #: The five coefficients ``A``-``E`` of each component, component-major.
     antoine_coefficients: tuple[float, ...]
@@ -3130,6 +3084,12 @@ class GeWilsonPhaseParameters:
     antoine_tc: tuple[float, ...]
     #: Critical pressure of each component, in Pa.
     antoine_pc: tuple[float, ...]
+    #: The databank's four Henry correlation coefficients, one column each. Read only on
+    #: the ``henry_database`` arms.
+    henry_h0: tuple[float, ...]
+    henry_h1: tuple[float, ...]
+    henry_h2: tuple[float, ...]
+    henry_h3: tuple[float, ...]
 
 
 def ge_wilson_phase_parameters(
@@ -3139,16 +3099,20 @@ def ge_wilson_phase_parameters(
 
     Raises:
         PropertyUnavailableError: if a name is in neither the databank nor the keycard, or
-            if the databank carries it without an Antoine correlation.
-        InvalidInputError: if a name is a Henry's-law solute, which this phase does not
-            implement.
+            as :func:`_phase_references` refuses.
     """
-    antoine = _phase_antoine(names, card)
+    references = _phase_references(names, card)
     return GeWilsonPhaseParameters(
-        antoine_type=antoine.kinds,
-        antoine_coefficients=antoine.coefficients,
-        antoine_tc=antoine.tcs,
-        antoine_pc=antoine.pcs,
+        names=references.names,
+        reference_kind=references.kinds,
+        antoine_type=references.antoine_type,
+        antoine_coefficients=references.antoine_coefficients,
+        antoine_tc=references.antoine_tc,
+        antoine_pc=references.antoine_pc,
+        henry_h0=references.henry_h0,
+        henry_h1=references.henry_h1,
+        henry_h2=references.henry_h2,
+        henry_h3=references.henry_h3,
     )
 
 

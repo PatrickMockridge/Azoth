@@ -3415,29 +3415,30 @@ pub fn ge_uniquac_phase_parameters(
 
 /// The resolved parameters of a Wilson activity-coefficient *phase*.
 ///
-/// Only the vapour-pressure columns: the Wilson correlation reads the component's molar
-/// mass and critical temperature, which are what a [`Mixture`] carries and
-/// [`databank::mixture_of`] already resolves, so the phase takes that mixture beside this
-/// record rather than a second copy of the same two vectors.
+/// The component names and each component's reference state. The Wilson correlation
+/// itself reads the component's molar mass and critical temperature, which are what a
+/// [`Mixture`] carries and [`databank::mixture_of`] already resolves, so the phase takes
+/// that mixture beside this record rather than a second copy of the same two vectors.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeWilsonPhaseParameters {
-    /// One vapour-pressure correlation per component, in order.
-    pub antoine: Vec<AntoineRecord>,
+    /// The component names, in the order every vector here is indexed by.
+    pub names: Vec<String>,
+    /// Each component's reference state, in order.
+    pub references: Vec<ReferenceState>,
 }
 
 /// The Wilson phase parameters for a list of names.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
-///   overlay, or if it carries no Antoine correlation.
-/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
-///   this phase does not implement.
+///   overlay, or as [`phase_references`] refuses.
 pub fn ge_wilson_phase_parameters(
     names: &[&str],
     overlay: Option<&Overlay>,
 ) -> Result<GeWilsonPhaseParameters> {
     Ok(GeWilsonPhaseParameters {
-        antoine: phase_antoine(names, overlay)?,
+        names: names.iter().map(|name| (*name).to_string()).collect(),
+        references: phase_references(names, overlay)?,
     })
 }
 
@@ -3484,50 +3485,6 @@ pub fn ge_unifac_phase_parameters(
         names: names.iter().map(|name| (*name).to_string()).collect(),
         references: phase_references(names, overlay)?,
     })
-}
-
-/// The per-component vapour-pressure records a phase reads, or a refusal.
-///
-/// Shared by every activity-coefficient phase, because the two things it checks are the
-/// same for all of them: a component tagged anything but `solvent` takes a Henry's-law
-/// coefficient in `ComponentGE.fugcoef`, which this library does not implement, and a
-/// component with no correlation has no `P0` to compose.
-fn phase_antoine(names: &[&str], overlay: Option<&Overlay>) -> Result<Vec<AntoineRecord>> {
-    let mut antoine = Vec::with_capacity(names.len());
-    for name in names {
-        let entry = entry(name, overlay)?;
-        if entry.reference_state != SOLVENT {
-            return Err(AzothError::invalid_input(
-                "components",
-                format!(
-                    "`{}` is tagged `referenceStateType = {}` in NeqSim's component \
-                     database, so `ComponentGE.fugcoef` gives it a Henry's-law fugacity \
-                     coefficient rather than `gamma_i P0_i / P`. That branch is the \
-                     Henry's-law one, and this phase is the Raoult one. The substances \
-                     the databank tags `solvent` - water, the alcohols, the glycols - are \
-                     the ones it describes.",
-                    entry.name, entry.reference_state
-                ),
-            ));
-        }
-        let Some((coefficients, antoine_type)) = entry.antoine else {
-            return Err(AzothError::property_unavailable(
-                entry.name,
-                "Antoine vapour-pressure coefficients".to_string(),
-                "the phase's fugacity coefficient is `gamma_i P0_i / P`, so every \
-                 component needs a correlation; a keycard supplies the parameters a \
-                 cubic reads and not these"
-                    .to_string(),
-            ));
-        };
-        antoine.push(AntoineRecord {
-            antoine_type,
-            coefficients,
-            tc: entry.tc,
-            pc: entry.pc,
-        });
-    }
-    Ok(antoine)
 }
 
 /// The NRTL phase parameters for a list of names.

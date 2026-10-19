@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
@@ -20,7 +21,10 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.components import GeWilsonPhaseParameters
 from azoth.eos.mixture import Mixture
-from azoth.eos.reference._ge_phase import ge_fugacities
+from azoth.eos.reference._ge_phase import (
+    ReferenceComposition,
+    ge_fugacities_with_references,
+)
 from azoth.eos.reference.wilson_activity_coefficients import wilson_activity_coefficients
 
 MODEL_ID = "eos.ge_wilson_phase"
@@ -35,10 +39,10 @@ def ge_wilson_phase(
 ) -> GeWilsonPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is Wilson's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``ComponentGE.fugcoef`` for this
-    phase. ``gamma_i`` comes from the Wilson correlation on ``mixture`` at ``T`` and
-    ``x``; ``P0_i`` is Antoine's correlation on the component's own coefficients at
-    ``T``. ``params`` is resolved by name through
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. ``gamma_i`` comes from the Wilson
+    correlation on ``mixture`` at ``T`` and ``x``; the reference ``gamma_i^inf`` is the same
+    correlation on the pair or subset the arm names. ``params`` is resolved by name through
     :func:`azoth.eos.components.ge_wilson_phase_parameters` and ``mixture`` through
     :func:`azoth.eos.components.mixture_of`, from the same names.
 
@@ -106,15 +110,36 @@ def ge_wilson_phase(
     warnings.extend(activity.warnings)
     gamma = list(activity.gamma)
 
-    saturated = ge_fugacities(gamma, params, t_si, p_si)
-    warnings.extend(saturated.warnings)
+    # The reference states and the composition. The Wilson correlation reads only each
+    # component's molar mass and critical temperature, so the reference pair is a
+    # `Mixture` over the two cloned components.
+    water = next(
+        (i for i, name in enumerate(params.names) if name.strip().lower() == "water"),
+        None,
+    )
+
+    def reference_gamma(_solute: int, composition: ReferenceComposition) -> float:
+        indices = composition.indices
+        subset = replace(
+            mixture,
+            components=tuple(mixture.components[i] for i in indices),
+            kij=tuple(tuple(0.0 for _ in indices) for _ in indices),
+            names=tuple(mixture.names[i] for i in indices) if mixture.names else None,
+        )
+        evaluated = wilson_activity_coefficients(subset, T, list(composition.x))
+        return evaluated.gamma[0]
+
+    fugacities = ge_fugacities_with_references(gamma, params, x, water, t_si, p_si, reference_gamma)
+    warnings.extend(fugacities.warnings)
 
     ln_gamma = [math.log(value) for value in gamma]
 
     return GeWilsonPhaseResult(
         gamma=tuple(gamma),
         ln_gamma=tuple(ln_gamma),
-        ln_phi=tuple(saturated.ln_phi),
-        p_sat=tuple(from_si(value, "Pa") for value in saturated.p_sat),
+        ln_phi=tuple(fugacities.ln_phi),
+        p_sat=tuple(from_si(value, "Pa") for value in fugacities.p_sat),
+        henry=tuple(from_si(value, "Pa") for value in fugacities.henry),
+        gamma_inf=tuple(fugacities.gamma_inf),
         warnings=tuple(warnings),
     )

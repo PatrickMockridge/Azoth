@@ -379,7 +379,8 @@ pub fn ge_unifac_phase(
 
 /// The fugacity coefficients of a Wilson activity-coefficient liquid. A *model* rather
 /// than a calculation: the mixture crosses flattened with each component's molar mass,
-/// which is what the Wilson correlation reads, and the vapour-pressure columns with it.
+/// which is what the Wilson correlation reads, and each component's reference columns
+/// with it.
 #[pyfunction]
 #[pyo3(signature = (
     Tc,
@@ -389,10 +390,16 @@ pub fn ge_unifac_phase(
     kij,
     association,
     molar_mass,
+    names,
+    reference_kind,
     antoine_type,
     antoine_coefficients,
     antoine_tc,
     antoine_pc,
+    henry_h0,
+    henry_h1,
+    henry_h2,
+    henry_h3,
     T,
     P,
     x,
@@ -401,8 +408,9 @@ pub fn ge_unifac_phase(
     alpha_params = None
 ))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, antoine_type, antoine_coefficients, \
-                         antoine_tc, antoine_pc, T, P, x)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, names, reference_kind, \
+                         antoine_type, antoine_coefficients, antoine_tc, antoine_pc, henry_h0, \
+                         henry_h1, henry_h2, henry_h3, T, P, x)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `x` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
@@ -415,10 +423,16 @@ pub fn ge_wilson_phase(
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
+    names: Vec<String>,
+    reference_kind: Vec<String>,
     antoine_type: Vec<String>,
     antoine_coefficients: Vec<f64>,
     antoine_tc: Vec<f64>,
     antoine_pc: Vec<f64>,
+    henry_h0: Vec<f64>,
+    henry_h1: Vec<f64>,
+    henry_h2: Vec<f64>,
+    henry_h3: Vec<f64>,
     T: f64,
     P: f64,
     x: Vec<f64>,
@@ -439,14 +453,17 @@ pub fn ge_wilson_phase(
         alpha,
         alpha_params.as_deref(),
     )?;
-    let params = azoth_eos::databank::GeWilsonPhaseParameters {
-        antoine: antoine_records(
-            antoine_type,
-            &antoine_coefficients,
-            &antoine_tc,
-            &antoine_pc,
-        ),
-    };
+    let references = ge_references(
+        &names,
+        &reference_kind,
+        antoine_type,
+        &antoine_coefficients,
+        &antoine_tc,
+        &antoine_pc,
+        &[henry_h0, henry_h1, henry_h2, henry_h3],
+    )
+    .map_err(|e| to_pyerr(py, e))?;
+    let params = azoth_eos::databank::GeWilsonPhaseParameters { names, references };
     azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
         .map(|r| PyGeWilsonPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))

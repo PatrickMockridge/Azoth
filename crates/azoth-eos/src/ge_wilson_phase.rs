@@ -5,26 +5,25 @@
 //! `algorithm` block.
 //!
 //! NeqSim's `PhaseGEWilson` is the port source. Its liquid is `ComponentGE.fugcoef`'s
-//! `phi_i = gamma_i P0_i / P`, the same composition `eos.ge_nrtl_phase` and
-//! `eos.ge_unifac_phase` make, with `gamma_i` from the paraffin-wax Wilson correlation.
-//! Every GE phase inherits that method and none overrides it, so this is a composition of
-//! two already-ported pieces rather than a third piece of physics.
+//! two reference arms, the same composition `eos.ge_nrtl_phase` and `eos.ge_unifac_phase`
+//! make, with `gamma_i` from the paraffin-wax Wilson correlation. Every GE phase inherits
+//! that method and none overrides it.
 
 use azoth_core::units::pascals;
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::databank::GeWilsonPhaseParameters;
-use crate::ge_phase::ge_fugacities;
 use crate::mixture::Mixture;
 use crate::model_gen;
 use crate::results::GeWilsonPhaseResult;
 
 /// The fugacity coefficients of a liquid whose non-ideality is Wilson's.
 ///
-/// `phi_i = gamma_i P0_i / P`, which is NeqSim's `ComponentGE.fugcoef` for this phase.
-/// `gamma_i` comes from the Wilson correlation on `mixture` at `T` and `x`; `P0_i` is
-/// Antoine's correlation on the component's own coefficients at `T`. `params` is resolved
-/// by name through [`crate::databank::ge_wilson_phase_parameters`] and `mixture` through
+/// `ComponentGE.fugcoef` for this phase: `gamma_i P0_i / P` on the solvent arm and
+/// `(gamma_i / gamma_i^inf) H_i / P` on the Henry arm. `gamma_i` comes from the Wilson
+/// correlation on `mixture` at `T` and `x`; the reference `gamma_i^inf` is the same
+/// correlation on the pair or subset the arm names. `params` is resolved by name through
+/// [`crate::databank::ge_wilson_phase_parameters`] and `mixture` through
 /// [`crate::databank::mixture_of`], from the same names; `x` is checked rather than
 /// renormalised.
 ///
@@ -68,12 +67,12 @@ pub fn ge_wilson_phase(
     )?;
 
     let n = mixture.len();
-    if params.antoine.len() != n {
+    if params.references.len() != n {
         return Err(AzothError::invalid_input(
             "components",
             format!(
                 "the phase has {} component(s) but the mixture has {n}",
-                params.antoine.len()
+                params.references.len()
             ),
         ));
     }
@@ -112,17 +111,46 @@ pub fn ge_wilson_phase(
     warnings.extend(activity.warnings);
     let gamma = activity.gamma;
 
-    // The saturation pressures and the composition, in the one place every GE phase
-    // shares them.
-    let saturated = ge_fugacities(&gamma, &params.antoine, T, P)?;
-    warnings.extend(saturated.warnings);
+    // The reference states and the composition. The Wilson correlation reads only each
+    // component's molar mass and critical temperature, so the reference pair is a
+    // `Mixture` over the two cloned components.
+    let water = params
+        .names
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("water"));
+    let fugacities = crate::ge_phase::ge_fugacities_with_references(
+        &gamma,
+        &params.references,
+        x,
+        water,
+        T,
+        P,
+        |_, reference| {
+            let components: Vec<crate::mixture::Component> = reference
+                .indices
+                .iter()
+                .map(|&i| mixture.components()[i].clone())
+                .collect();
+            let m = components.len();
+            let subset = Mixture::new(components, vec![0.0; m * m])?;
+            let evaluated = crate::wilson_activity_coefficients::wilson_activity_coefficients(
+                &subset,
+                T,
+                &reference.x,
+            )?;
+            Ok(evaluated.gamma[0])
+        },
+    )?;
+    warnings.extend(fugacities.warnings);
 
     let ln_gamma: Vec<f64> = gamma.iter().map(|g| g.ln()).collect();
     Ok(GeWilsonPhaseResult {
         gamma,
         ln_gamma,
-        ln_phi: saturated.ln_phi,
-        p_sat: saturated.p_sat.into_iter().map(pascals).collect(),
+        ln_phi: fugacities.ln_phi,
+        p_sat: fugacities.p_sat.into_iter().map(pascals).collect(),
+        henry: fugacities.henry.into_iter().map(pascals).collect(),
+        gamma_inf: fugacities.gamma_inf,
         warnings,
     })
 }

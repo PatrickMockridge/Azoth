@@ -60,6 +60,26 @@ fn every_case_in_the_spec() {
                 &format!("{context} (p_sat[{i}])"),
             );
         }
+        if let Some(expected) = case.expected_vector("henry") {
+            for (i, (&got, &want)) in result.henry.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got.value,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (henry[{i}])"),
+                );
+            }
+        }
+        if let Some(expected) = case.expected_vector("gamma_inf") {
+            for (i, (&got, &want)) in result.gamma_inf.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (gamma_inf[{i}])"),
+                );
+            }
+        }
         common::assert_consistent(&result, context);
     }
 }
@@ -142,19 +162,39 @@ fn three_ge_phases_share_the_vapour_pressure_and_not_the_activity() {
     assert_ne!(nrtl.gamma, wilson.gamma);
 }
 
-/// A component NeqSim's database tags a Henry's-law solute is refused.
+/// The Henry arms follow the same rules as the other phases, and a dry CO2 resolves.
 ///
-/// `n-butane` is one, which is why the pair the Wilson *activity* model is validated on -
-/// `n-butane`/`nc12` - is not a pair this *phase* can be stated against.
+/// The pair the Wilson *activity* model is validated on - `n-butane`/`nc12` - is still
+/// not a pair this *phase* can be stated against: `n-butane`'s Henry row is the four
+/// zeros, which the resolver refuses.
 #[test]
-fn a_henrys_law_component_is_refused_rather_than_computed() {
-    for name in ["n-butane", "CO2", "methane", "n-hexane"] {
+fn the_henry_arms_follow_the_same_rules_as_the_other_phases() {
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    for name in ["n-butane", "n-hexane"] {
         let err = ge_wilson_phase_parameters(&[name, "n-octane"], None).unwrap_err();
         assert!(
-            matches!(err, AzothError::InvalidInput { .. }),
+            matches!(err, AzothError::PropertyUnavailable { .. }),
             "{name}: {err:?}"
         );
     }
+
+    let dry = ge_wilson_phase_parameters(&["CO2", "n-octane"], None).unwrap();
+    assert!(matches!(
+        dry.references[0],
+        ReferenceState::Henry(HenryState::Database { ion: false, .. })
+    ));
+
+    let names = ["CO2", "n-octane"];
+    let (mixture, _) = mixture_of(&names, Cubic::Pr, None).unwrap();
+    let r = ge_wilson_phase(&dry, &mixture, 298.15, 1_000_000.0, &[0.02, 0.98]).unwrap();
+    assert!((r.henry[0].value - 5_165_450.928_785_165).abs() < 1e-6);
+
+    let err = ge_wilson_phase_parameters(&["argon", "water"], None).unwrap_err();
+    assert!(
+        matches!(err, AzothError::PropertyUnavailable { .. }),
+        "{err:?}"
+    );
 }
 
 #[test]

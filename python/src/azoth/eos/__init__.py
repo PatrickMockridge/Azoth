@@ -2844,13 +2844,13 @@ def ge_wilson_phase(
 ) -> GeWilsonPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is Wilson's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEWilson`` liquid: there is no
-    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
-    standard state is the pure liquid at the state's temperature.
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. There is no cubic, because an
+    activity-coefficient phase's non-ideality is ``gamma``.
 
     ``mixture`` is the caller's - the Wilson correlation reads each component's molar mass
     and critical temperature, which is what :func:`azoth.eos.components.mixture_of`
-    resolves - and ``params`` carries the vapour-pressure columns, from
+    resolves - and ``params`` carries each component's reference state, from
     :func:`azoth.eos.components.ge_wilson_phase_parameters` on the same names.
 
     Raises:

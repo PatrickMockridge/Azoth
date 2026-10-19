@@ -691,6 +691,8 @@ class GeWilsonPhaseResult:
     ln_gamma: list[float]
     ln_phi: list[float]
     p_sat: list[Qty]
+    henry: list[Qty]
+    gamma_inf: list[float]
     warnings: list[Warning]
 
 @final
@@ -2797,10 +2799,16 @@ def ge_wilson_phase(
     kij: list[float],
     association: AssociationSpec,
     molar_mass: list[float],
+    names: list[str],
+    reference_kind: list[str],
     antoine_type: list[str],
     antoine_coefficients: list[float],
     antoine_tc: list[float],
     antoine_pc: list[float],
+    henry_h0: list[float],
+    henry_h1: list[float],
+    henry_h2: list[float],
+    henry_h3: list[float],
     T: float,
     P: float,
     x: list[float],
