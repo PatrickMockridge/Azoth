@@ -663,6 +663,8 @@ class GeUnifacPhaseResult:
     ln_gamma: list[float]
     ln_phi: list[float]
     p_sat: list[Qty]
+    henry: list[Qty]
+    gamma_inf: list[float]
     warnings: list[Warning]
 
 @final
@@ -671,6 +673,8 @@ class GeUniquacPhaseResult:
     ln_gamma: list[float]
     ln_phi: list[float]
     p_sat: list[Qty]
+    henry: list[Qty]
+    gamma_inf: list[float]
     warnings: list[Warning]
 
 @final
@@ -2743,10 +2747,16 @@ def ge_unifac_phase(
     group_r: list[float],
     group_q: list[float],
     aij: list[float],
+    names: list[str],
+    reference_kind: list[str],
     antoine_type: list[str],
     antoine_coefficients: list[float],
     antoine_tc: list[float],
     antoine_pc: list[float],
+    henry_h0: list[float],
+    henry_h1: list[float],
+    henry_h2: list[float],
+    henry_h3: list[float],
     T: float,
     P: float,
     x: list[float],
@@ -2754,10 +2764,16 @@ def ge_unifac_phase(
 def ge_uniquac_phase(
     r: list[float],
     q: list[float],
+    names: list[str],
+    reference_kind: list[str],
     antoine_type: list[str],
     antoine_coefficients: list[float],
     antoine_tc: list[float],
     antoine_pc: list[float],
+    henry_h0: list[float],
+    henry_h1: list[float],
+    henry_h2: list[float],
+    henry_h3: list[float],
     T: float,
     P: float,
     x: list[float],

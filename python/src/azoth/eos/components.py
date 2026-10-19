@@ -3047,9 +3047,9 @@ def ge_van_laar_acid_phase_parameters(
 class GeUniquacPhaseParameters:
     """The parameters of a UNIQUAC activity-coefficient *phase*.
 
-    The volume and surface parameters :class:`UniquacParameters` carries, beside what a
-    phase needs and an activity coefficient does not: each component's pure-liquid vapour
-    pressure, because the phase's fugacity coefficient is ``gamma_i P0_i / P``.
+    The volume and surface parameters :class:`UniquacParameters` carries, beside each
+    component's reference state: ``ComponentGE.fugcoef`` is ``gamma_i P0_i / P`` on the
+    solvent arm and ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm.
 
     ``aij`` is **not** here. It is the caller's - no upstream table carries a UNIQUAC
     interaction matrix - and it arrives as its own argument, the way it does for
@@ -3060,7 +3060,12 @@ class GeUniquacPhaseParameters:
     r: tuple[float, ...]
     #: The van der Waals surface-area parameter ``q_i`` of each component.
     q: tuple[float, ...]
-    #: NeqSim's Antoine label for each component, in order.
+    #: The component names, in the order every vector here is indexed by.
+    names: tuple[str, ...]
+    #: The arm each component takes: ``solvent``, ``henry_iapws``, ``henry_database`` or
+    #: ``henry_database_ion``.
+    reference_kind: tuple[str, ...]
+    #: NeqSim's Antoine label for each component, in order. Read only on the solvent arm.
     antoine_type: tuple[str, ...]
     #: The five coefficients ``A``-``E`` of each component, component-major.
     antoine_coefficients: tuple[float, ...]
@@ -3068,6 +3073,12 @@ class GeUniquacPhaseParameters:
     antoine_tc: tuple[float, ...]
     #: Critical pressure of each component, in Pa.
     antoine_pc: tuple[float, ...]
+    #: The databank's four Henry correlation coefficients, one column each. Read only on
+    #: the ``henry_database`` arms.
+    henry_h0: tuple[float, ...]
+    henry_h1: tuple[float, ...]
+    henry_h2: tuple[float, ...]
+    henry_h3: tuple[float, ...]
 
 
 def ge_uniquac_phase_parameters(
@@ -3077,23 +3088,27 @@ def ge_uniquac_phase_parameters(
 
     ``r`` and ``q`` come from :func:`uniquac_parameters`, so the phase and
     ``eos.uniquac_activity_coefficients`` cannot disagree about them; this adds each
-    component's Antoine vapour-pressure correlation beside them.
+    component's reference state beside them.
 
     Raises:
-        PropertyUnavailableError: if a name has no UNIFAC group assignment, or if the
-            databank carries it without an Antoine correlation.
-        InvalidInputError: if a name is a Henry's-law solute, which this phase does not
-            implement.
+        PropertyUnavailableError: if a name has no UNIFAC group assignment, or as
+            :func:`_phase_references` refuses.
     """
     uniquac = uniquac_parameters(names)
-    antoine = _phase_antoine(names, card)
+    references = _phase_references(names, card)
     return GeUniquacPhaseParameters(
         r=uniquac.r,
         q=uniquac.q,
-        antoine_type=antoine.kinds,
-        antoine_coefficients=antoine.coefficients,
-        antoine_tc=antoine.tcs,
-        antoine_pc=antoine.pcs,
+        names=references.names,
+        reference_kind=references.kinds,
+        antoine_type=references.antoine_type,
+        antoine_coefficients=references.antoine_coefficients,
+        antoine_tc=references.antoine_tc,
+        antoine_pc=references.antoine_pc,
+        henry_h0=references.henry_h0,
+        henry_h1=references.henry_h1,
+        henry_h2=references.henry_h2,
+        henry_h3=references.henry_h3,
     )
 
 
@@ -3141,9 +3156,9 @@ def ge_wilson_phase_parameters(
 class GeUnifacPhaseParameters:
     """The parameters of a UNIFAC activity-coefficient *phase*.
 
-    The group tables :class:`UnifacParameters` carries, beside what a phase needs and an
-    activity coefficient does not: each component's pure-liquid vapour pressure, because
-    the phase's fugacity coefficient is ``gamma_i P0_i / P``.
+    The group tables :class:`UnifacParameters` carries, beside each component's reference
+    state: ``ComponentGE.fugcoef`` is ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm.
     """
 
     #: Per-component group counts, ``N x G`` row-major.
@@ -3154,7 +3169,12 @@ class GeUnifacPhaseParameters:
     group_q: tuple[float, ...]
     #: The main-group interaction matrix, ``G x G`` row-major, in kelvin.
     aij: tuple[float, ...]
-    #: NeqSim's Antoine label for each component, in order.
+    #: The component names, in the order every vector here is indexed by.
+    names: tuple[str, ...]
+    #: The arm each component takes: ``solvent``, ``henry_iapws``, ``henry_database`` or
+    #: ``henry_database_ion``.
+    reference_kind: tuple[str, ...]
+    #: NeqSim's Antoine label for each component, in order. Read only on the solvent arm.
     antoine_type: tuple[str, ...]
     #: The five coefficients ``A``-``E`` of each component, component-major.
     antoine_coefficients: tuple[float, ...]
@@ -3162,6 +3182,12 @@ class GeUnifacPhaseParameters:
     antoine_tc: tuple[float, ...]
     #: Critical pressure of each component, in Pa.
     antoine_pc: tuple[float, ...]
+    #: The databank's four Henry correlation coefficients, one column each. Read only on
+    #: the ``henry_database`` arms.
+    henry_h0: tuple[float, ...]
+    henry_h1: tuple[float, ...]
+    henry_h2: tuple[float, ...]
+    henry_h3: tuple[float, ...]
 
 
 def ge_unifac_phase_parameters(
@@ -3171,25 +3197,29 @@ def ge_unifac_phase_parameters(
 
     The group tables come from :func:`unifac_parameters`, so the phase and
     ``eos.unifac_activity_coefficients`` cannot disagree about them; this adds each
-    component's Antoine vapour-pressure correlation beside them.
+    component's reference state beside them.
 
     Raises:
-        PropertyUnavailableError: if a name has no UNIFAC group assignment, or if the
-            databank carries it without an Antoine correlation.
-        InvalidInputError: if a name is a Henry's-law solute, which this phase does not
-            implement.
+        PropertyUnavailableError: if a name has no UNIFAC group assignment, or as
+            :func:`_phase_references` refuses.
     """
     unifac = unifac_parameters(names)
-    antoine = _phase_antoine(names, card)
+    references = _phase_references(names, card)
     return GeUnifacPhaseParameters(
         groups=unifac.groups,
         group_r=unifac.group_r,
         group_q=unifac.group_q,
         aij=unifac.aij,
-        antoine_type=antoine.kinds,
-        antoine_coefficients=antoine.coefficients,
-        antoine_tc=antoine.tcs,
-        antoine_pc=antoine.pcs,
+        names=references.names,
+        reference_kind=references.kinds,
+        antoine_type=references.antoine_type,
+        antoine_coefficients=references.antoine_coefficients,
+        antoine_tc=references.antoine_tc,
+        antoine_pc=references.antoine_pc,
+        henry_h0=references.henry_h0,
+        henry_h1=references.henry_h1,
+        henry_h2=references.henry_h2,
+        henry_h3=references.henry_h3,
     )
 
 

@@ -53,7 +53,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - **three states are refused rather than given a number**: a non-ion Henry row with the four zeros the table uses for no correlation (NeqSim evaluates 1.802 bar), a solvent-tagged IAPWS species in water (NeqSim builds a one-component reference phase and throws), and a solvent with no Antoine row.
 
-- an ion is `1e12 bar` whatever its row says; the registered model id builds its mixture with `mixture_of`, which refuses an ion, so an ion-bearing fluid reaches this phase only through the direct API.
+- an ion is `1e12 bar` whatever its row says. This phase takes no mixture, so it reaches the cap; `eos.ge_flash` and `eos.ge_nrtl_flash` build a cubic with `mixture_of`, which refuses an ion, so the flashes do not.
 
 - `gamma_i` comes from `eos.nrtl_activity_coefficients` on the same resolved matrices, and `P0_i` from `eos.antoine_vapor_pressure` on the component's own coefficients and form. Neither is recomputed here, so the phase cannot disagree with them.
 

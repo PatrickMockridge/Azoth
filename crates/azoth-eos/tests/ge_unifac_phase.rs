@@ -56,6 +56,26 @@ fn every_case_in_the_spec() {
                 &format!("{context} (p_sat[{i}])"),
             );
         }
+        if let Some(expected) = case.expected_vector("henry") {
+            for (i, (&got, &want)) in result.henry.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got.value,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (henry[{i}])"),
+                );
+            }
+        }
+        if let Some(expected) = case.expected_vector("gamma_inf") {
+            for (i, (&got, &want)) in result.gamma_inf.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (gamma_inf[{i}])"),
+                );
+            }
+        }
         common::assert_consistent(&result, context);
     }
 }
@@ -121,16 +141,24 @@ fn two_ge_phases_share_the_vapour_pressure_and_not_the_activity() {
     assert_ne!(unifac.gamma, nrtl.gamma);
 }
 
-/// A component NeqSim's database tags a Henry's-law solute is refused, as for NRTL.
+/// A solute in water takes the IAPWS arm; an unfitted, non-ion row is refused.
 #[test]
-fn a_henrys_law_component_is_refused_rather_than_computed() {
-    for name in ["CO2", "methane", "n-hexane"] {
-        let err = ge_unifac_phase_parameters(&[name, "water"], None).unwrap_err();
-        assert!(
-            matches!(err, AzothError::InvalidInput { .. }),
-            "{name}: {err:?}"
-        );
-    }
+fn the_henry_arms_follow_the_same_rules_as_nrtl() {
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    let aqueous = ge_unifac_phase_parameters(&["water", "CO2"], None).unwrap();
+    assert!(matches!(
+        aqueous.references[1],
+        ReferenceState::Henry(HenryState::Iapws(_))
+    ));
+
+    // n-butane has UNIFAC groups, so this is the Henry-row refusal and not the
+    // group-coverage one.
+    let err = ge_unifac_phase_parameters(&["water", "n-butane"], None).unwrap_err();
+    assert!(
+        matches!(err, AzothError::PropertyUnavailable { .. }),
+        "{err:?}"
+    );
 }
 
 /// A component with no UNIFAC group assignment is refused rather than given `r = q = 0`.

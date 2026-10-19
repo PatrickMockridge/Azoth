@@ -2997,9 +2997,9 @@ def ge_uniquac_phase(
 ) -> GeUniquacPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is UNIQUAC's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEUniquac`` liquid: there is no
-    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
-    standard state is the pure liquid at the state's temperature.
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. There is no cubic, because an
+    activity-coefficient phase's non-ideality is ``gamma``.
 
     ``params`` is the caller's, from
     :func:`azoth.eos.components.ge_uniquac_phase_parameters`. ``aij`` is the interaction
@@ -3031,13 +3031,13 @@ def ge_unifac_phase(
 ) -> GeUnifacPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is UNIFAC's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEUnifac`` liquid: there is no
-    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
-    standard state is the pure liquid at the state's temperature.
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. There is no cubic, because an
+    activity-coefficient phase's non-ideality is ``gamma``.
 
     ``params`` is the caller's: resolve it from the mixture's components with
     :func:`azoth.eos.components.ge_unifac_phase_parameters`, which carries the group
-    tables *and* each component's vapour-pressure correlation.
+    tables and each component's reference state.
 
     Raises:
         InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a

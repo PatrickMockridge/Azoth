@@ -5,26 +5,25 @@
 //! `algorithm` block.
 //!
 //! NeqSim's `PhaseGEUnifac` is the port source. Its liquid is `ComponentGE.fugcoef`'s
-//! `phi_i = gamma_i P0_i / P`, the same composition `eos.ge_nrtl_phase` makes - every GE
-//! phase inherits that method and none overrides it - with `gamma_i` from UNIFAC's group
-//! tables instead of NRTL's matrices. Both halves are already ported and this is their
-//! composition rather than a third piece of physics.
+//! two reference arms, the composition `eos.ge_nrtl_phase` makes - every GE phase
+//! inherits that method and none overrides it - with `gamma_i` from UNIFAC's group tables
+//! instead of NRTL's matrices.
 
 use azoth_core::units::pascals;
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::databank::{GeUnifacPhaseParameters, UnifacParameters};
-use crate::ge_phase::ge_fugacities;
 use crate::model_gen;
 use crate::results::GeUnifacPhaseResult;
 
 /// The fugacity coefficients of a liquid whose non-ideality is UNIFAC's.
 ///
-/// `phi_i = gamma_i P0_i / P`, which is NeqSim's `ComponentGE.fugcoef` for this phase.
-/// `gamma_i` comes from UNIFAC on `params`' group tables at `T` and `x`; `P0_i` is
-/// Antoine's correlation on the component's own coefficients at `T`. `params` is resolved
-/// by name through [`crate::databank::ge_unifac_phase_parameters`]; `x` is checked rather
-/// than renormalised.
+/// `ComponentGE.fugcoef` for this phase: `gamma_i P0_i / P` on the solvent arm and
+/// `(gamma_i / gamma_i^inf) H_i / P` on the Henry arm. `gamma_i` comes from UNIFAC on
+/// `params`' group tables at `T` and `x`; the reference `gamma_i^inf` is the same model on
+/// the pair or subset the arm names. `params` is resolved by name through
+/// [`crate::databank::ge_unifac_phase_parameters`]; `x` is checked rather than
+/// renormalised.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if `params` and `x` disagree in length, or if `x` is not
@@ -68,12 +67,12 @@ pub fn ge_unifac_phase(
             "a mixture of zero components has no fugacity coefficient",
         ));
     }
-    if params.antoine.len() != n {
+    if params.references.len() != n {
         return Err(AzothError::invalid_input(
             "components",
             format!(
                 "the phase has {} component(s) but `x` has {n} entries",
-                params.antoine.len()
+                params.references.len()
             ),
         ));
     }
@@ -112,17 +111,52 @@ pub fn ge_unifac_phase(
     warnings.extend(activity.warnings);
     let gamma = activity.gamma;
 
-    // The saturation pressures and the composition, in the one place every GE phase
-    // shares them.
-    let saturated = ge_fugacities(&gamma, &params.antoine, T, P)?;
-    warnings.extend(saturated.warnings);
+    // The reference states and the composition. UNIFAC divides by `x_i` in its
+    // combinatorial term, so the reference is evaluated on the subset the arm names,
+    // never on the full list with the other components zeroed.
+    let water = params
+        .names
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("water"));
+    let groups_per_component = params.group_r.len();
+    let fugacities = crate::ge_phase::ge_fugacities_with_references(
+        &gamma,
+        &params.references,
+        x,
+        water,
+        T,
+        P,
+        |_, reference| {
+            let mut groups = Vec::with_capacity(reference.indices.len() * groups_per_component);
+            for &i in &reference.indices {
+                groups.extend_from_slice(
+                    &params.groups[i * groups_per_component..(i + 1) * groups_per_component],
+                );
+            }
+            let subset = UnifacParameters {
+                groups,
+                group_r: params.group_r.clone(),
+                group_q: params.group_q.clone(),
+                aij: params.aij.clone(),
+            };
+            let evaluated = crate::unifac_activity_coefficients::unifac_activity_coefficients(
+                &subset,
+                T,
+                &reference.x,
+            )?;
+            Ok(evaluated.gamma[0])
+        },
+    )?;
+    warnings.extend(fugacities.warnings);
 
     let ln_gamma: Vec<f64> = gamma.iter().map(|g| g.ln()).collect();
     Ok(GeUnifacPhaseResult {
         gamma,
         ln_gamma,
-        ln_phi: saturated.ln_phi,
-        p_sat: saturated.p_sat.into_iter().map(pascals).collect(),
+        ln_phi: fugacities.ln_phi,
+        p_sat: fugacities.p_sat.into_iter().map(pascals).collect(),
+        henry: fugacities.henry.into_iter().map(pascals).collect(),
+        gamma_inf: fugacities.gamma_inf,
         warnings,
     })
 }

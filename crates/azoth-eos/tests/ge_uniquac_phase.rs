@@ -67,6 +67,26 @@ fn every_case_in_the_spec() {
                 &format!("{context} (p_sat[{i}])"),
             );
         }
+        if let Some(expected) = case.expected_vector("henry") {
+            for (i, (&got, &want)) in result.henry.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got.value,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (henry[{i}])"),
+                );
+            }
+        }
+        if let Some(expected) = case.expected_vector("gamma_inf") {
+            for (i, (&got, &want)) in result.gamma_inf.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (gamma_inf[{i}])"),
+                );
+            }
+        }
         common::assert_consistent(&result, context);
     }
 }

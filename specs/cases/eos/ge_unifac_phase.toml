@@ -41,3 +41,51 @@ gamma = [2.33400089129135, 11.554897951262657]
 ln_gamma = [0.8475839157371919, 2.4471094121220194]
 ln_phi = [-0.45549541840173835, 1.1230427732916306]
 p_sat = [27169.38673684547, 26605.116506459886]
+[[cases]]
+id = "water_co2_at_298_15_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim master `PhaseGEUnifac` via `ComponentGE.fugcoef`, run from validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The aqueous Henry arm.** CO2 is tagged `solute`, so it takes `(gamma/gamma^inf) H / P`; the phase carries water, so `H` is the IAPWS G7-04 value (`1656.4458917920526` bar) and shadows the databank row's `51.65`. `gamma_inf` is UNIFAC on the solute-water pair at `[1e-11, 1 - 1e-11]`; the probe's raw and synchronised reference phases agree to the last bit."
+[cases.inputs]
+components = ["water", "CO2"]
+T = 298.15
+P = 100000.0
+x = [0.98, 0.02]
+[cases.expected]
+gamma = [1.0001006735757736, 0.0495879551008823]
+ln_gamma = [0.0001006685085292504, -3.0040073154498526]
+ln_phi = [-3.448580576858823, 7.402232439064949]
+p_sat = [3178.7528699883306, 0.0]
+henry = [0.0, 165644589.17920527]
+gamma_inf = [1.0, 0.05009619622208332]
+[[cases]]
+id = "methanol_co2_at_298_15_k_10_bar"
+tolerance = 1e-09
+source = "NeqSim master `PhaseGEUnifac`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The no-water arm.** With no water component there is no IAPWS reference and no pair, so `H` is the databank's CO2 row (`51.654509287851646` bar) and `gamma^inf` is the full composition cloned with CO2 at `x = 1e-10` and the rest renormalised."
+[cases.inputs]
+components = ["methanol", "CO2"]
+T = 298.15
+P = 1000000.0
+x = [0.98, 0.02]
+[cases.expected]
+gamma = [1.000114520860398, 1.8754338464820117]
+ln_gamma = [0.00011451430338496486, 0.6288400174474484]
+ln_phi = [-4.077918946656115, 1.6307163587830213]
+p_sat = [16940.747558344778, 0.0]
+henry = [0.0, 5165450.928785165]
+gamma_inf = [1.0, 1.8967010016834327]
+[[cases]]
+id = "water_methane_at_298_15_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim master `PhaseGEUnifac`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. Methane's databank row is the `900` sentinel, which would cap to `1e12`; in a water-bearing phase the IAPWS table shadows it and answers `39479.65646000571` bar instead."
+[cases.inputs]
+components = ["water", "methane"]
+T = 298.15
+P = 100000.0
+x = [0.99, 0.01]
+[cases.expected]
+gamma = [0.9999860293733269, 0.027349933988265535]
+ln_gamma = [-1.397072426319033e-05, -3.5990411637088133]
+ln_phi = [-3.4486952160916156, 10.58626714031278]
+p_sat = [3178.7528699883305, 0.0]
+henry = [0.0, 3947965646.000571]
+gamma_inf = [1.0, 0.027275470092222833]

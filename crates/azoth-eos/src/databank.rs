@@ -3385,21 +3385,21 @@ pub struct GeUniquacPhaseParameters {
     pub r: Vec<f64>,
     /// The van der Waals surface-area parameter `q_i` of each component.
     pub q: Vec<f64>,
-    /// One vapour-pressure correlation per component, in order.
-    pub antoine: Vec<AntoineRecord>,
+    /// The component names, in the order every vector here is indexed by.
+    pub names: Vec<String>,
+    /// Each component's reference state, in order.
+    pub references: Vec<ReferenceState>,
 }
 
 /// The UNIQUAC phase parameters for a list of names.
 ///
 /// The `r` and `q` resolve through [`uniquac_parameters`], so the phase and
-/// `eos.uniquac_activity_coefficients` cannot disagree about them; this adds the
-/// per-component vapour pressure beside them.
+/// `eos.uniquac_activity_coefficients` cannot disagree about them; this adds each
+/// component's reference state beside them.
 ///
 /// # Errors
-/// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment or no
-///   Antoine correlation.
-/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
-///   this phase does not implement.
+/// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment, or as
+///   [`phase_references`] refuses.
 pub fn ge_uniquac_phase_parameters(
     names: &[&str],
     overlay: Option<&Overlay>,
@@ -3408,7 +3408,8 @@ pub fn ge_uniquac_phase_parameters(
     Ok(GeUniquacPhaseParameters {
         r: uniquac.r,
         q: uniquac.q,
-        antoine: phase_antoine(names, overlay)?,
+        names: names.iter().map(|name| (*name).to_string()).collect(),
+        references: phase_references(names, overlay)?,
     })
 }
 
@@ -3455,22 +3456,21 @@ pub struct GeUnifacPhaseParameters {
     pub group_q: Vec<f64>,
     /// The main-group interaction matrix, `G x G` row-major, in Kelvin.
     pub aij: Vec<f64>,
-    /// One vapour-pressure correlation per component, in order.
-    pub antoine: Vec<AntoineRecord>,
+    /// The component names, in the order every vector here is indexed by.
+    pub names: Vec<String>,
+    /// Each component's reference state, in order.
+    pub references: Vec<ReferenceState>,
 }
 
 /// The UNIFAC phase parameters for a list of names.
 ///
 /// The group tables resolve through [`unifac_parameters`], so the phase and
-/// `eos.unifac_activity_coefficients` cannot disagree about them; this adds the
-/// per-component vapour pressure beside them.
+/// `eos.unifac_activity_coefficients` cannot disagree about them; this adds each
+/// component's reference state beside them.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
-///   overlay, if it has no UNIFAC group assignment, or if it carries no Antoine
-///   correlation.
-/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
-///   this phase does not implement.
+///   overlay, if it has no UNIFAC group assignment, or as [`phase_references`] refuses.
 pub fn ge_unifac_phase_parameters(
     names: &[&str],
     overlay: Option<&Overlay>,
@@ -3481,7 +3481,8 @@ pub fn ge_unifac_phase_parameters(
         group_r: unifac.group_r,
         group_q: unifac.group_q,
         aij: unifac.aij,
-        antoine: phase_antoine(names, overlay)?,
+        names: names.iter().map(|name| (*name).to_string()).collect(),
+        references: phase_references(names, overlay)?,
     })
 }
 

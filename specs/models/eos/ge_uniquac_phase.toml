@@ -2,14 +2,17 @@ id = "eos.ge_uniquac_phase"
 name = "Fugacity coefficients of a UNIQUAC activity-coefficient liquid"
 kind = "direct"
 assumptions = [
-    "this is NeqSim's `PhaseGEUniquac` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets and what no GE phase overrides. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.",
-    "this is the *solvent* branch of `ComponentGE.fugcoef`: the branch the substances the database tags `solvent` select, which is water, the alcohols and the glycols. Any other `REFERENCESTATETYPE` selects that method's Henry's-law coefficient instead, and `ROADMAP.md` names what would close it.",
+    "this is NeqSim's `PhaseGEUniquac` liquid: `phi_i = gamma_i P0_i / P` on the solvent arm. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.",
+    "**both reference states are here.** `ComponentGE.fugcoef` gives a `solvent` component `gamma_i P0_i/P` and every other `(gamma_i/gamma_i^inf) H_i/P`; `gamma_i^inf` is this phase's UNIQUAC on the solute-water pair `[1e-11, 1 - 1e-11]`, or on the diluted composition when the phase carries no water.",
+    "`H_i` prefers the IAPWS G7-04 table for its 14 gases in a water-bearing phase, inside the row's fitted window, and fails closed to `1e12 bar` outside it; otherwise it is the databank's `HenryCoef1..4` correlation capped to `1e12 bar`, with the cap asked before any fittedness check.",
+    "**three states are refused rather than given a number**: a non-ion Henry row with the four zeros the table uses for no correlation (NeqSim evaluates 1.802 bar), a solvent-tagged IAPWS species in water (NeqSim builds a one-component reference phase and throws), and a solvent with no Antoine row.",
+    "an ion is `1e12 bar` whatever its row says. This phase takes no mixture, so it reaches the cap; no flash carries this liquid model.",
     "`gamma_i` is `eos.uniquac_activity_coefficients`', and `P0_i` is `eos.antoine_vapor_pressure`'s on the component's own coefficients. Neither is recomputed here.",
     "`aij` is the caller's, as it is for the activity model: no upstream table carries a UNIQUAC interaction matrix, so it arrives as an argument or from a keycard entry at `coefficients.\"eos.ge_uniquac_phase\".aij`. It is in Kelvin and directional, with a zero diagonal.",
     "`r` and `q` are the UNIFAC group sums, not NeqSim's `rUNIQUAQ`/`qUNIQUAQ` columns - which are 0.0 for 109 of `UNIFACcomp.csv`'s 112 rows and which `ComponentGEUniquac`'s own constructor reads - one of the incomplete implementations `c5ec5fb` cites for withdrawing the phase.",
     "there is no differential oracle: upstream `c5ec5fb` (PR #3774, closing #3770) makes `ComponentGEUniquac.getGamma` and both standalone constructors throw, so NeqSim has withdrawn the phase this library runs. The `r`/`q` half *is* checked, against `ComponentGEUnifac.getR`/`getQ`.",
     "the cases' `aij` is a representative UNIQUAC pair, the same one the activity model's case uses, and their expected values are this library's own output recorded so a change cannot pass unnoticed.",
-    "`P0_i` is reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; a wrong `P0` and a wrong `gamma` produce the same kind of wrong answer.",
+    "`P0_i`, `H_i` and `gamma_i^inf` are reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; either a wrong reference quantity and a wrong `gamma` produce the same kind of wrong answer.",
     "this is a *liquid* phase. A vapour over it is a cubic, and combining the two is a gamma-phi flash, which is a separate model.",
     "`x` is checked (non-negative, sums to one) rather than renormalised.",
 ]
@@ -57,12 +60,22 @@ description = "the natural logarithm of each activity coefficient"
 type = "vector"
 unit = "dimensionless"
 length = "one per component"
-description = "the natural logarithm of each component's fugacity coefficient, `ln(gamma_i P0_i / P)`"
+description = "the natural logarithm of each component's fugacity coefficient: `ln(gamma_i P0_i / P)` on the solvent arm and `ln(gamma_i / gamma_i^inf) + ln(H_i / P)` on the Henry arm"
 [outputs.p_sat]
 type = "vector"
 unit = "Pa"
 length = "one per component"
-description = "the pure-component saturation pressure of each component at `T`"
+description = "the pure-component saturation pressure of each component at `T`, and **zero where the arm reads a Henry coefficient instead**"
+[outputs.henry]
+type = "vector"
+unit = "Pa"
+length = "one per component"
+description = "the Henry coefficient each component's arm read, in pascals, and **zero where the arm reads none** - which is the solvent arm, whose reference is its own Antoine row"
+[outputs.gamma_inf]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the infinite-dilution activity coefficient each component's Henry arm divided by, and **one where the arm does not divide by one**"
 [implementations]
 python = "azoth.eos.ge_uniquac_phase"
 rust = "azoth_eos::ge_uniquac_phase"

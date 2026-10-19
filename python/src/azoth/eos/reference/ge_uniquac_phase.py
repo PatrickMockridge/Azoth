@@ -19,7 +19,10 @@ from azoth.core.result import GeUniquacPhaseResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.components import GeUniquacPhaseParameters
-from azoth.eos.reference._ge_phase import ge_fugacities
+from azoth.eos.reference._ge_phase import (
+    ReferenceComposition,
+    ge_fugacities_with_references,
+)
 from azoth.eos.reference.uniquac_activity_coefficients import uniquac_activity_coefficients
 
 MODEL_ID = "eos.ge_uniquac_phase"
@@ -34,9 +37,10 @@ def ge_uniquac_phase(
 ) -> GeUniquacPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is UNIQUAC's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``ComponentGE.fugcoef`` for this
-    phase. ``gamma_i`` comes from UNIQUAC on ``params``' ``r`` and ``q`` with ``aij``;
-    ``P0_i`` is Antoine's correlation on the component's own coefficients at ``T``.
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. ``gamma_i`` comes from UNIQUAC on
+    ``params``' ``r`` and ``q`` with ``aij``; the reference ``gamma_i^inf`` is the same
+    model on the pair or subset the arm names.
 
     ``aij`` is the caller's - no upstream table carries a UNIQUAC interaction matrix. The
     public wrapper resolves it from a keycard when it is omitted; this reference is handed
@@ -115,15 +119,37 @@ def ge_uniquac_phase(
     warnings.extend(activity.warnings)
     gamma = list(activity.gamma)
 
-    saturated = ge_fugacities(gamma, params, t_si, p_si)
-    warnings.extend(saturated.warnings)
+    # The reference states and the composition. UNIQUAC's combinatorial term divides by
+    # `x_i`, so the reference is evaluated on the subset the arm names.
+    water = next(
+        (i for i, name in enumerate(params.names) if name.strip().lower() == "water"),
+        None,
+    )
+
+    def reference_gamma(_solute: int, composition: ReferenceComposition) -> float:
+        indices = composition.indices
+        evaluated = uniquac_activity_coefficients(
+            UniquacParameters(
+                r=tuple(params.r[i] for i in indices),
+                q=tuple(params.q[i] for i in indices),
+            ),
+            T,
+            list(composition.x),
+            aij=[list(aij[i][j] for j in indices) for i in indices],
+        )
+        return evaluated.gamma[0]
+
+    fugacities = ge_fugacities_with_references(gamma, params, x, water, t_si, p_si, reference_gamma)
+    warnings.extend(fugacities.warnings)
 
     ln_gamma = [math.log(value) for value in gamma]
 
     return GeUniquacPhaseResult(
         gamma=tuple(gamma),
         ln_gamma=tuple(ln_gamma),
-        ln_phi=tuple(saturated.ln_phi),
-        p_sat=tuple(from_si(value, "Pa") for value in saturated.p_sat),
+        ln_phi=tuple(fugacities.ln_phi),
+        p_sat=tuple(from_si(value, "Pa") for value in fugacities.p_sat),
+        henry=tuple(from_si(value, "Pa") for value in fugacities.henry),
+        gamma_inf=tuple(fugacities.gamma_inf),
         warnings=tuple(warnings),
     )
