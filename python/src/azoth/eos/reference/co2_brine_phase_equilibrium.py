@@ -121,7 +121,7 @@ def co2_brine_phase_equilibrium(
     components: Sequence[str],
     T: Q,
     P: Q,
-    moles: Sequence[float],
+    moles: Sequence[Q],
 ) -> Co2BrinePhaseEquilibriumResult:
     """The constrained equilibrium of a CO2/water/ion feed with the electrolyte-CPA EoS.
 
@@ -152,20 +152,20 @@ def co2_brine_phase_equilibrium(
     p_si = input_to_si(spec, "P", P)
     apply_checks(checks.on_input, {"T": t_si, "P": p_si}.get, warnings)
 
-    moles = [input_to_si(spec, "moles", value) for value in moles]
-    if len(components) != len(moles):
+    amounts = [input_to_si(spec, "moles", value) for value in moles]
+    if len(components) != len(amounts):
         raise InvalidInputError(
             "moles",
-            f"{len(components)} components but {len(moles)} mole numbers; the two must match",
+            f"{len(components)} components but {len(amounts)} mole numbers; the two must match",
         )
-    if any(not math.isfinite(m) or m < 0.0 for m in moles):
+    if any(not math.isfinite(m) or m < 0.0 for m in amounts):
         raise InvalidInputError("moles", "every mole number must be finite and not negative")
-    total = sum(moles)
+    total = sum(amounts)
     if not total > 0.0 or not math.isfinite(total):
         raise InvalidInputError(
             "moles", f"the feed's mole numbers total {total}, which is not a feed"
         )
-    z = [m / total for m in moles]
+    z = [m / total for m in amounts]
 
     resolved = [name.strip().lower() for name in components]
     entries = [entry(name) for name in resolved]
@@ -179,11 +179,11 @@ def co2_brine_phase_equilibrium(
     except StopIteration:
         raise _unsupported("it has no water") from None
     if any(
-        not is_ion[i] and name not in ("co2", "water") and moles[i] > 0.0
+        not is_ion[i] and name not in ("co2", "water") and amounts[i] > 0.0
         for i, name in enumerate(resolved)
     ):
         raise _unsupported("it carries a substance that is neither CO2, water nor an ion")
-    if not moles[co2] > 0.0 or not moles[water] > moles[co2]:
+    if not amounts[co2] > 0.0 or not amounts[water] > amounts[co2]:
         raise _unsupported("its water is not in excess of its CO2")
 
     fluid, _ = electrolyte_cpa_statoil_mixture_of(list(components))

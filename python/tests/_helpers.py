@@ -73,6 +73,17 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # diagnostics and are compared against the bound the solver declared, which is what
         # makes the comparison a measurement rather than an impossible strictness.
         "max_reaction_log_residual",
+        # `reactions.reactive_co2_brine_phase_equilibrium`'s, and the same quantity one level
+        # out: `ln Q - ln K` summed over reactions, of order `4e-8` on the accepted states. A
+        # relative comparison there divides by the thing that is vanishing.
+        "reaction_log_residual",
+        # And the accepted inventory's net charge: zero by conservation, so what crosses is
+        # the rounding of `sum(z_i n_i)` over two different inventories, of order `1e-12`,
+        # whose sign is the last term's. The accept gate holds it to `1e-8`.
+        "charge_moles",
+        # Its element balance: `A n - b` over the accepted inventory, of order `1e-11` and
+        # therefore compared at the model's own tolerance rather than relatively.
+        "element_balance_residual",
         "net_charge_moles",
         # `reactive_hybrid_eos_ge_flash`'s, and the same quantity one level out: a net charge
         # left over after the reactions have conserved it exactly. Measured, the two kernels

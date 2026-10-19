@@ -15,7 +15,8 @@ use azoth_reactions::databank::ReactionDataSource;
 
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
-    PyEquilibriumConstantResult, PyReactivePhFlashResult, PyReactiveTpFlashResult,
+    PyEquilibriumConstantResult, PyReactiveCo2BrinePhaseEquilibriumResult, PyReactivePhFlashResult,
+    PyReactiveTpFlashResult,
 };
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
@@ -96,6 +97,28 @@ pub fn reactive_tp_flash(
         max_phases as usize,
     )
     .map(|r| PyReactiveTpFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The phase/reaction coupling: the simultaneous CO2/brine equilibrium.
+#[pyfunction]
+#[pyo3(signature = (components, moles, T, P))]
+#[pyo3(text_signature = "(components, moles, T, P)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the phase selection's own name
+pub fn reactive_co2_brine_phase_equilibrium(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    T: f64,
+    P: f64,
+) -> PyResult<PyReactiveCo2BrinePhaseEquilibriumResult> {
+    azoth_reactions::reactive_co2_brine_phase_equilibrium::reactive_co2_brine_phase_equilibrium(
+        &components,
+        &moles,
+        azoth_core::units::kelvins(T),
+        azoth_core::units::pascals(P),
+    )
+    .map(|r| PyReactiveCo2BrinePhaseEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

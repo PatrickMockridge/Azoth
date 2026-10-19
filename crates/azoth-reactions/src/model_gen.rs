@@ -4,6 +4,7 @@
 //!   - specs/models/reactions/chemical_equilibrium.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
 //!   - specs/models/reactions/kinetics.toml
+//!   - specs/models/reactions/reactive_co2_brine_phase_equilibrium.toml
 //!   - specs/models/reactions/reactive_hybrid_eos_ge_flash.toml
 //!   - specs/models/reactions/reactive_ph_flash.toml
 //!   - specs/models/reactions/reactive_phase_equilibrium.toml
@@ -628,6 +629,155 @@ pub static KINETICS_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: KINETICS_CHECKS,
     cases: KINETICS_CASES,
+};
+
+static REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_50_bara_brine_at_rest",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 5e-07,
+        numbers: &[("T", 283.15), ("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "CO2", "water", "Na+", "K+", "Cl-", "OH-", "H3O+", "HCO3-", "CO3--",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.540339675351135,
+                0.28239120684612296,
+                0.822730882197258,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("phase_count", 2.0),
+            ("minimum_trial_distance", -0.793097484269184),
+        ],
+        expected_vectors: &[("phase_fractions", &[0.119700156811226, 0.880299843188774])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_40_bara_brine_at_ninety_percent_salt",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 5e-07,
+        numbers: &[("T", 283.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "CO2", "water", "Na+", "K+", "Cl-", "OH-", "H3O+", "HCO3-", "CO3--",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.4863057078160215,
+                0.2541520861615107,
+                0.7404577939775322,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("phase_count", 2.0),
+            ("minimum_trial_distance", -0.880785051453328),
+        ],
+        expected_vectors: &[("phase_fractions", &[0.123229841485858, 0.876770158514142])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "phase_reaction_balance",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "bounded_phase_reaction_coupling",
+    convergence: "absolute",
+    tolerance: 2e-06,
+    max_iterations: 30,
+    bracket: None,
+    initialisation: Some("flashed_aqueous_phase"),
+    initial_temperature: None,
+    inner: Some(&REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `reactions.reactive_co2_brine_phase_equilibrium`.
+pub static REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_SPEC: ModelSpec = ModelSpec {
+    id: "reactions.reactive_co2_brine_phase_equilibrium",
+    kind: "procedure",
+    algorithm: Some(&REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_ALGORITHM),
+    checks: REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_CHECKS,
+    cases: REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_CASES,
 };
 
 static REACTIVE_HYBRID_EOS_GE_FLASH_CHECKS: &[SpecCheck] = &[
@@ -1599,6 +1749,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CHEMICAL_EQUILIBRIUM_SPEC,
     &KINETIC_RATE_LAW_SPEC,
     &KINETICS_SPEC,
+    &REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM_SPEC,
     &REACTIVE_HYBRID_EOS_GE_FLASH_SPEC,
     &REACTIVE_PH_FLASH_SPEC,
     &REACTIVE_PHASE_EQUILIBRIUM_SPEC,

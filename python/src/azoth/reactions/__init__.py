@@ -23,6 +23,7 @@ from azoth.core.result import (
     EquilibriumConstantResult,
     KineticRateLawResult,
     KineticsResult,
+    ReactiveCo2BrinePhaseEquilibriumResult,
     ReactiveHybridEosGeFlashResult,
     ReactivePhaseEquilibriumResult,
     ReactivePhFlashResult,
@@ -36,6 +37,7 @@ __all__ = [
     "equilibrium_constant",
     "kinetic_rate_law",
     "kinetics",
+    "reactive_co2_brine_phase_equilibrium",
     "reactive_hybrid_eos_ge_flash",
     "reactive_ph_flash",
     "reactive_phase_equilibrium",
@@ -44,6 +46,7 @@ __all__ = [
 ]
 
 _CHEMICAL_EQUILIBRIUM = "reactions.chemical_equilibrium"
+_REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM = "reactions.reactive_co2_brine_phase_equilibrium"
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
 _REACTIVE_HYBRID_EOS_GE_FLASH = "reactions.reactive_hybrid_eos_ge_flash"
 _REACTIVE_PHASE_EQUILIBRIUM = "reactions.reactive_phase_equilibrium"
@@ -335,6 +338,34 @@ def kinetics(
         inter_fractions=inter_fractions,
         inter_density=inter_density,
         diffusion=diffusion,
+    )
+
+
+def reactive_co2_brine_phase_equilibrium(
+    components: list[str],
+    moles: list[Q],
+    T: Q,
+    P: Q,
+) -> ReactiveCo2BrinePhaseEquilibriumResult:
+    """The simultaneous phase and chemical equilibrium of a water-rich CO2/brine feed.
+
+    The phase selection runs with the species inventory fixed; chemistry is then solved on a
+    copy of the aqueous phase and only its conservative changes are written back, bounded at
+    thirty passes. ``components`` is the whole nine-species set the class's
+    ``chemicalReactionInit`` produces, so ``CO3--`` is the caller's entry and not a product
+    this derives.
+
+    Raises:
+        SolverNotConvergedError: if a chemistry solve or the coupling does not settle, or the
+            element balance moves.
+
+    See :func:`azoth.reactions.reference.reactive_co2_brine_phase_equilibrium`.
+    """
+    return resolve(_REACTIVE_CO2_BRINE_PHASE_EQUILIBRIUM)(  # type: ignore[no-any-return]
+        components=components,
+        moles=moles,
+        T=T,
+        P=P,
     )
 
 

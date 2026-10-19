@@ -205,7 +205,7 @@ impl CalcResult for ReactivePhaseEquilibriumResult {
 /// machinery added, and a caller's shorter list would silently drop the reaction and report
 /// a smaller residual than the one that exists.
 #[allow(clippy::too_many_arguments)] // the reaction set, the phase, and the answer
-fn certify(
+pub(crate) fn certify(
     components: &[String],
     source: ReactionDataSource,
     temperature: f64,

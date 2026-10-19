@@ -14460,6 +14460,87 @@ impl From<&azoth_reactions::kinetics::KineticsResult> for PyKineticsResult {
         }
     }
 }
+/// Result of `reactions.reactive_co2_brine_phase_equilibrium`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReactiveCo2BrinePhaseEquilibriumResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReactiveCo2BrinePhaseEquilibriumResult {
+    /// how many phases the accepted state has: one aqueous phase, or that and a CO2-rich one.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// the label of each row: the root the CO2-rich phase was solved on (`gas` or `oil`), then `aqueous`. These are this library's two words for a root, not NeqSim's density-based display labels.
+    #[pyo3(get)]
+    pub phase_type: Vec<String>,
+    /// the mole fraction of the feed in each phase, summing to one.
+    #[pyo3(get)]
+    pub phase_fractions: Vec<f64>,
+    /// the composition of each phase at the accepted state, each row summing to one. An ion is at `1e-50` outside the aqueous phase.
+    #[pyo3(get)]
+    pub phase_composition: Vec<Vec<f64>>,
+    /// which root the CO2-rich phase was solved on: `gas` or `oil`, and `aqueous` where the feed settles into one phase.
+    #[pyo3(get)]
+    pub accepted_root: String,
+    /// the tangent-plane distance the phase selection decided on. Negative means the single-aqueous feed lies inside the tangent plane and is unstable.
+    #[pyo3(get)]
+    pub minimum_trial_distance: f64,
+    /// the coupling's passes. **Path-decided**: see the assumptions; the accepted state is what the case pins.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// the worst `|ln Q - ln K|` over the reaction set at the accepted state, on the flashed aqueous phase.
+    #[pyo3(get)]
+    pub reaction_log_residual: f64,
+    /// the accepted inventory's net charge, in moles of elementary charge. The accept gate holds it to `1e-8`.
+    #[pyo3(get)]
+    pub charge_moles: PyQty,
+    /// the worst `|A n - b|` over the element rows at the accepted state, the feed's `b` being the reference.
+    #[pyo3(get)]
+    pub element_balance_residual: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyReactiveCo2BrinePhaseEquilibriumResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReactiveCo2BrinePhaseEquilibriumResult(phase_count={:?}, phase_type={:?}, phase_fractions={:?}, phase_composition={:?}, accepted_root={:?}, minimum_trial_distance={:?}, iterations={:?}, reaction_log_residual={:?}, charge_moles={:?}, element_balance_residual={:?}, {} warning(s))",
+            self.phase_count,
+            self.phase_type,
+            self.phase_fractions,
+            self.phase_composition,
+            self.accepted_root,
+            self.minimum_trial_distance,
+            self.iterations,
+            self.reaction_log_residual,
+            self.charge_moles,
+            self.element_balance_residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_reactions::reactive_co2_brine_phase_equilibrium::ReactiveCo2BrinePhaseEquilibriumResult> for PyReactiveCo2BrinePhaseEquilibriumResult {
+    fn from(r: &azoth_reactions::reactive_co2_brine_phase_equilibrium::ReactiveCo2BrinePhaseEquilibriumResult) -> Self {
+        Self {
+            phase_count: r.phase_count,
+            phase_type: r.phase_type.clone(),
+            phase_fractions: r.phase_fractions.clone(),
+            phase_composition: r.phase_composition.clone(),
+            accepted_root: r.accepted_root.clone(),
+            minimum_trial_distance: r.minimum_trial_distance,
+            iterations: r.iterations,
+            reaction_log_residual: r.reaction_log_residual,
+            charge_moles: PyQty { magnitude_si: r.charge_moles, unit: "mol".to_string() },
+            element_balance_residual: PyQty { magnitude_si: r.element_balance_residual, unit: "mol".to_string() },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `reactions.reactive_hybrid_eos_ge_flash`, transported.
 #[pyclass(
     frozen,

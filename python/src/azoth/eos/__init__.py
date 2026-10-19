@@ -3749,7 +3749,7 @@ def co2_brine_phase_equilibrium(
     components: list[str],
     T: Q,
     P: Q,
-    moles: list[float],
+    moles: list[Q],
 ) -> Co2BrinePhaseEquilibriumResult:
     """The fluid phases a CO2/water/ion feed settles into, at a temperature and pressure.
 

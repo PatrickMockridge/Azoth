@@ -1,0 +1,98 @@
+id = "reactions.reactive_co2_brine_phase_equilibrium"
+name = "Reactive CO2/brine phase equilibrium"
+kind = "procedure"
+assumptions = [
+    "NeqSim's `ReactiveCO2BrinePhaseEquilibrium`: the phase selection of `eos.co2_brine_phase_equilibrium` and the chemistry of `reactions.chemical_equilibrium`, coupled by a bounded loop. The supported feed is water-rich CO2/water/ions alone, and anything else is refused by the phase selection.",
+    "**the loop alternates and never solves both at once.** The phase selection holds the inventory; chemistry runs on an isolated aqueous copy and only its conservative changes are written back, inside a 30-pass cap.",
+    "**the accept test reads the flashed state, not the isolated solve.** `getMaximumAbsoluteReactionLogResidual` walks the reaction list against the current phase when read, so an accepted state's residual is `2e-7` while the solve's own is `1e-12`.",
+    "**the activity coefficient is the unsymmetric one.** `ln phi_k` less the pure-component reference for a solvent and the binary `k`+water reference at `x_k = 1e-11` for a solute. Omitting it moves `H3O+` by a third.",
+    "**the chemistry solve holds the activity coefficients it was handed.** NeqSim re-reads them each iterate; the accepted state reproduces the capture to `1e-8` either way.",
+    "**a chemistry solve that does not converge contributes its last iterate.** NeqSim's `solveChemEq` throws there; this solver fails from the floored post-flash composition, so the loop's element check and flashed-state gate decide the answer, and the accepted state still reproduces the capture.",
+    "**the pass count and residual are path-decided.** The port's chemistry fails where NeqSim's converges, so the loop settles on a later pass; the accepted inventory matches and the case asserts neither count nor residual.",
+    "**an aqueous phase's ions are confined by the phase selection.** An ion's `K` is zero in the CO2-rich split, so its composition there is the class's `1e-50` floor.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ReactiveCO2BrinePhaseEquilibrium` is the port source, through its `run` and the two solves it alternates.",
+    "`validation/neqsim/ReactiveBrineProbe.java` and `captures/reactive_brine_probe.tsv` - the oracle: the nine species `chemicalReactionInit` produces, the phase inventory, `minimum_trial_distance`, and the three residuals for two states.",
+]
+[source]
+standard = "NeqSim master `ReactiveCO2BrinePhaseEquilibrium`"
+edition = "Its `run`: the phase selection, the reaction residual read on the flashed state, the element and charge gates, the isolated aqueous chemistry solve, the conservative delta written back, and the 30-pass cap."
+[algorithm]
+scheme = "bounded_phase_reaction_coupling"
+convergence = "absolute"
+tolerance = 2e-06
+max_iterations = 30
+initialisation = "flashed_aqueous_phase"
+[algorithm.inner]
+scheme = "phase_reaction_balance"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the fluid's substances, by name: CO2, water and its ions. **The nine the class's `chemicalReactionInit` produces are the caller's list**, because `CO3--` is created by the initialisation and by no surviving reaction of the raw feed."
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the overall component amounts. Not a composition and not renormalised: the element vector the loop conserves is built from them."
+[inputs.T]
+unit = "K"
+description = "absolute temperature."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure."
+[outputs]
+[outputs.phase_count]
+unit = "dimensionless"
+description = "how many phases the accepted state has: one aqueous phase, or that and a CO2-rich one."
+[outputs.phase_type]
+type = "vector_string"
+length = "one per phase, in the same order as `phase_fractions`"
+description = "the label of each row: the root the CO2-rich phase was solved on (`gas` or `oil`), then `aqueous`. These are this library's two words for a root, not NeqSim's density-based display labels."
+[outputs.phase_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per phase"
+description = "the mole fraction of the feed in each phase, summing to one."
+[outputs.phase_composition]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per phase, one column per component"
+description = "the composition of each phase at the accepted state, each row summing to one. An ion is at `1e-50` outside the aqueous phase."
+[outputs.accepted_root]
+type = "string"
+description = "which root the CO2-rich phase was solved on: `gas` or `oil`, and `aqueous` where the feed settles into one phase."
+[outputs.minimum_trial_distance]
+unit = "dimensionless"
+description = "the tangent-plane distance the phase selection decided on. Negative means the single-aqueous feed lies inside the tangent plane and is unstable."
+[outputs.iterations]
+unit = "dimensionless"
+description = "the coupling's passes. **Path-decided**: see the assumptions; the accepted state is what the case pins."
+[outputs.reaction_log_residual]
+unit = "dimensionless"
+description = "the worst `|ln Q - ln K|` over the reaction set at the accepted state, on the flashed aqueous phase."
+[outputs.charge_moles]
+unit = "mol"
+description = "the accepted inventory's net charge, in moles of elementary charge. The accept gate holds it to `1e-8`."
+[outputs.element_balance_residual]
+unit = "mol"
+description = "the worst `|A n - b|` over the element rows at the accepted state, the feed's `b` being the reference."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.reactions.reactive_co2_brine_phase_equilibrium"
+rust = "azoth_reactions::reactive_co2_brine_phase_equilibrium"

@@ -156,6 +156,7 @@ from azoth.core.result import (
     RachfordRiceResult,
     RackettMolarVolumeResult,
     RateBasedPackedColumnResult,
+    ReactiveCo2BrinePhaseEquilibriumResult,
     ReactiveHybridEosGeFlashResult,
     ReactivePhaseEquilibriumResult,
     ReactivePhFlashResult,
@@ -412,6 +413,7 @@ __all__ = [
     "rachford_rice_binary",
     "rackett_molar_volume",
     "rate_based_packed_column",
+    "reactive_co2_brine_phase_equilibrium",
     "reactive_hybrid_eos_ge_flash",
     "reactive_ph_flash",
     "reactive_phase_equilibrium",
@@ -1016,14 +1018,14 @@ def chung_viscosity(omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: floa
     )
 
 
-def co2_brine_phase_equilibrium(components: list[str], T: Q, P: Q, moles: list[float]) -> Co2BrinePhaseEquilibriumResult:
+def co2_brine_phase_equilibrium(components: list[str], T: Q, P: Q, moles: list[Q]) -> Co2BrinePhaseEquilibriumResult:
     """``eos.co2_brine_phase_equilibrium``, computed in Rust."""
     spec = _models_gen.model("eos.co2_brine_phase_equilibrium")
     result = _core.co2_brine_phase_equilibrium(
         list(components),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
-        [_si(spec, "moles", v) for v in moles],
+        [input_to_si(spec, "moles", v) for v in moles],
     )
     return Co2BrinePhaseEquilibriumResult(
         phase_count=result.phase_count,
@@ -5315,6 +5317,30 @@ def kinetics(components: Sequence[str], reaction_components: Sequence[str], reac
         coefficient=tuple(result.coefficient),
         phi_infinite=tuple(result.phi_infinite),
         irreversible=tuple(result.irreversible),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_co2_brine_phase_equilibrium(components: list[str], moles: list[Q], T: Q, P: Q) -> ReactiveCo2BrinePhaseEquilibriumResult:
+    """``reactions.reactive_co2_brine_phase_equilibrium``, computed in Rust."""
+    spec = _models_gen.model("reactions.reactive_co2_brine_phase_equilibrium")
+    result = _core.reactive_co2_brine_phase_equilibrium(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return ReactiveCo2BrinePhaseEquilibriumResult(
+        phase_count=result.phase_count,
+        phase_type=tuple(result.phase_type),
+        phase_fractions=tuple(result.phase_fractions),
+        phase_composition=tuple(tuple(row) for row in result.phase_composition),
+        accepted_root=result.accepted_root,
+        minimum_trial_distance=result.minimum_trial_distance,
+        iterations=result.iterations,
+        reaction_log_residual=result.reaction_log_residual,
+        charge_moles=from_si(result.charge_moles.magnitude_si, result.charge_moles.unit),
+        element_balance_residual=from_si(result.element_balance_residual.magnitude_si, result.element_balance_residual.unit),
         warnings=_warnings(result.warnings),
     )
 

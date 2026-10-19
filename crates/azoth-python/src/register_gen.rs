@@ -229,6 +229,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyEquilibriumConstantResult>()?;
     m.add_class::<crate::transport_gen::PyKineticRateLawResult>()?;
     m.add_class::<crate::transport_gen::PyKineticsResult>()?;
+    m.add_class::<crate::transport_gen::PyReactiveCo2BrinePhaseEquilibriumResult>()?;
     m.add_class::<crate::transport_gen::PyReactiveHybridEosGeFlashResult>()?;
     m.add_class::<crate::transport_gen::PyReactivePhFlashResult>()?;
     m.add_class::<crate::transport_gen::PyReactivePhaseEquilibriumResult>()?;
@@ -690,6 +691,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::reactions::equilibrium_constant, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::kinetic_rate_law, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::kinetics, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::reactions::reactive_co2_brine_phase_equilibrium,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::reactive_hybrid_eos_ge_flash,
         m

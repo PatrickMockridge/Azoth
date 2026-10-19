@@ -2292,6 +2292,20 @@ class KineticsResult:
     warnings: list[Warning]
 
 @final
+class ReactiveCo2BrinePhaseEquilibriumResult:
+    phase_count: int
+    phase_type: list[str]
+    phase_fractions: list[float]
+    phase_composition: list[list[float]]
+    accepted_root: str
+    minimum_trial_distance: float
+    iterations: int
+    reaction_log_residual: float
+    charge_moles: Qty
+    element_balance_residual: Qty
+    warnings: list[Warning]
+
+@final
 class ReactiveHybridEosGeFlashResult:
     phase_fractions: list[float]
     x: list[list[float]]
@@ -4241,6 +4255,12 @@ def kinetics(
     inter_density: float,
     diffusion: list[float],
 ) -> KineticsResult: ...
+def reactive_co2_brine_phase_equilibrium(
+    components: list[str],
+    moles: list[float],
+    T: float,
+    P: float,
+) -> ReactiveCo2BrinePhaseEquilibriumResult: ...
 def reactive_hybrid_eos_ge_flash(
     components: list[str],
     cubic: str,

@@ -1,0 +1,27 @@
+model = "reactions.reactive_co2_brine_phase_equilibrium"
+[[cases]]
+id = "the_50_bara_brine_at_rest"
+tolerance = 5e-07
+source = "NeqSim master, from `validation/neqsim/captures/reactive_brine_probe.tsv`: the five-component brine `BrineProbe` builds - CO2 `10` mol, water `1/0.01801528`, Na+ and K+ from the salt scale, Cl- their sum - grown to nine species by `chemicalReactionInit`, at 283.15 K and 50 bara. The expected values are the capture's phase rows. **Its `iterations = 4` and `final_reaction_log_residual = 2.1e-7` are not asserted**: the spec's assumptions record why the port's path differs, and the accepted phase inventory is what the capture and the port agree on."
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Cl-", "OH-", "H3O+", "HCO3-", "CO3--"]
+moles = [10.0, 55.508435061791985, 0.540339675351135, 0.28239120684612296, 0.822730882197258, 0.0, 0.0, 0.0, 0.0]
+T = 283.15
+P = 5000000.0
+[cases.expected]
+phase_count = 2.0
+phase_fractions = [0.119700156811226, 0.880299843188774]
+minimum_trial_distance = -0.793097484269184
+[[cases]]
+id = "the_40_bara_brine_at_ninety_percent_salt"
+tolerance = 5e-07
+source = "The same capture's second state: salt scale 0.9 at 40 bara. Its phase rows, with `iterations` and the residual withheld for the reason the first case gives."
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Cl-", "OH-", "H3O+", "HCO3-", "CO3--"]
+moles = [10.0, 55.508435061791985, 0.4863057078160215, 0.2541520861615107, 0.7404577939775322, 0.0, 0.0, 0.0, 0.0]
+T = 283.15
+P = 4000000.0
+[cases.expected]
+phase_count = 2.0
+phase_fractions = [0.123229841485858, 0.876770158514142]
+minimum_trial_distance = -0.880785051453328

@@ -5670,6 +5670,46 @@ class KineticsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ReactiveCo2BrinePhaseEquilibriumResult(_HasWarnings):
+    """Result of ``reactions.reactive_co2_brine_phase_equilibrium``."""
+
+    CALC_ID: ClassVar[str] = "reactions.reactive_co2_brine_phase_equilibrium"
+
+    #: how many phases the accepted state has: one aqueous phase, or that and a CO2-rich one.
+    phase_count: int
+
+    #: the label of each row: the root the CO2-rich phase was solved on (`gas` or `oil`), then `aqueous`. These are this library's two words for a root, not NeqSim's density-based display labels.
+    phase_type: tuple[str, ...]
+
+    #: the mole fraction of the feed in each phase, summing to one.
+    phase_fractions: tuple[float, ...]
+
+    #: the composition of each phase at the accepted state, each row summing to one. An ion is at `1e-50` outside the aqueous phase.
+    phase_composition: tuple[tuple[float, ...], ...]
+
+    #: which root the CO2-rich phase was solved on: `gas` or `oil`, and `aqueous` where the feed settles into one phase.
+    accepted_root: str
+
+    #: the tangent-plane distance the phase selection decided on. Negative means the single-aqueous feed lies inside the tangent plane and is unstable.
+    minimum_trial_distance: float
+
+    #: the coupling's passes. **Path-decided**: see the assumptions; the accepted state is what the case pins.
+    iterations: int
+
+    #: the worst `|ln Q - ln K|` over the reaction set at the accepted state, on the flashed aqueous phase.
+    reaction_log_residual: float
+
+    #: the accepted inventory's net charge, in moles of elementary charge. The accept gate holds it to `1e-8`.
+    charge_moles: Q
+
+    #: the worst `|A n - b|` over the element rows at the accepted state, the feed's `b` being the reference.
+    element_balance_residual: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ReactiveHybridEosGeFlashResult(_HasWarnings):
     """Result of ``reactions.reactive_hybrid_eos_ge_flash``."""
 

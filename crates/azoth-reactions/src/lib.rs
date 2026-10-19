@@ -33,6 +33,7 @@ pub mod lp_seed;
 pub mod model_gen;
 pub mod ph_flash_loop;
 pub mod rand_solver;
+pub mod reactive_co2_brine_phase_equilibrium;
 pub mod reactive_flash;
 pub mod reactive_hybrid_eos_ge_flash;
 pub mod reactive_ph_flash;

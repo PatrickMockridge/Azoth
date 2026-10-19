@@ -211,6 +211,7 @@
 //!   - specs/calcs/reactions/equilibrium_constant.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
 //!   - specs/models/reactions/kinetics.toml
+//!   - specs/models/reactions/reactive_co2_brine_phase_equilibrium.toml
 //!   - specs/models/reactions/reactive_hybrid_eos_ge_flash.toml
 //!   - specs/models/reactions/reactive_ph_flash.toml
 //!   - specs/models/reactions/reactive_phase_equilibrium.toml
@@ -2502,6 +2503,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("reactions.kinetics", "inter_fractions", "dimensionless"),
     ("reactions.kinetics", "inter_density", "mass_density"),
     ("reactions.kinetics", "diffusion", "diffusion_coefficient"),
+    (
+        "reactions.reactive_co2_brine_phase_equilibrium",
+        "moles",
+        "amount",
+    ),
+    (
+        "reactions.reactive_co2_brine_phase_equilibrium",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    (
+        "reactions.reactive_co2_brine_phase_equilibrium",
+        "P",
+        "pressure",
+    ),
     (
         "reactions.reactive_hybrid_eos_ge_flash",
         "T",

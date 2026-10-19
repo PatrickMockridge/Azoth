@@ -230,6 +230,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "reactions.equilibrium_constant" => azoth_reactions::equilibrium_constant::EquilibriumConstantResult::FIELDS.to_vec(),
         "reactions.kinetic_rate_law" => azoth_reactions::kinetic_rate_law::KineticRateLawResult::FIELDS.to_vec(),
         "reactions.kinetics" => azoth_reactions::kinetics::KineticsResult::FIELDS.to_vec(),
+        "reactions.reactive_co2_brine_phase_equilibrium" => azoth_reactions::reactive_co2_brine_phase_equilibrium::ReactiveCo2BrinePhaseEquilibriumResult::FIELDS.to_vec(),
         "reactions.reactive_hybrid_eos_ge_flash" => azoth_reactions::reactive_hybrid_eos_ge_flash::ReactiveHybridEosGeFlashResult::FIELDS.to_vec(),
         "reactions.reactive_ph_flash" => azoth_reactions::reactive_ph_flash::ReactivePhFlashResult::FIELDS.to_vec(),
         "reactions.reactive_phase_equilibrium" => azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

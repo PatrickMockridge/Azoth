@@ -360,8 +360,11 @@ impl MixingRule {
                                     + 0.44338 * (1.0 + 0.08126 * s.powf(0.75)) * tr)
                         }
                         SoreideWhitsonRole::CarbonDioxide => {
-                            // NeqSim's ladder has a 0.8 branch above 3.5 mol/kg, but the
-                            // 0.9 branch above 2.0 fires first, so it is unreachable.
+                            // **The pinned `getkijWhitsonSoreideAqueous` tests `> 2.0`
+                            // before `> 3.5`**, so its 0.8 branch is dead and this ports
+                            // the two live branches. `calcWij` writes the same two tests
+                            // in the other order, where 0.8 is reached; this is not that
+                            // copy.
                             let multip_k = if s > 2.0 { 0.9 } else { 1.0 };
                             multip_k
                                 * 0.989

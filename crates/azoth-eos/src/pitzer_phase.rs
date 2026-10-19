@@ -401,11 +401,24 @@ mod parameter_tests {
 
         // **And the one charge where the two alpha1 definitions part.** A 3-valent pair
         // gets 1.4 from the sites that compute the activity coefficient and 2.0 from the
-        // getter. Nothing vendored carries a charge above 2, so this is unreachable
-        // rather than wrong.
+        // getter. No vendored component carries a charge above 2 - held by
+        // `no_vendored_component_carries_a_charge_above_two` - so no fluid reaches it.
         assert_eq!(alpha1_as_used(3.0, -3.0), 1.4);
         assert_eq!(alpha1(3.0, -3.0), 2.0);
         assert_ne!(alpha1_as_used(3.0, -3.0), alpha1(3.0, -3.0));
+    }
+
+    /// The claim above, swept: no vendored species carries a charge above two.
+    #[test]
+    fn no_vendored_component_carries_a_charge_above_two() {
+        for entry in crate::databank::all_entries() {
+            assert!(
+                entry.ionic_charge.abs() <= 2.0,
+                "{} carries a charge of {}",
+                entry.name,
+                entry.ionic_charge
+            );
+        }
     }
 }
 

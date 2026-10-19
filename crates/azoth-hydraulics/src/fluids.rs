@@ -288,6 +288,15 @@ mod tests {
                 table.name
             );
             assert_eq!(table.temperature_range_c(), (0.0, 100.0), "{}", table.name);
+            // **Gap-free, and the step is the table's own.** Sorted rows with both ends
+            // asserted do not exclude a hole in the middle; this does.
+            assert!(
+                temperatures
+                    .windows(2)
+                    .all(|window| (window[1] - window[0] - 20.0).abs() < 1.0e-12),
+                "{} has a gap in its temperature grid",
+                table.name
+            );
         }
     }
 

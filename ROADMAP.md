@@ -183,10 +183,17 @@ reaches equilibrium through.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
-  **Of the four brine operations, three are ported.** `CO2BrinePhaseEquilibrium` is
+  **All four brine operations are ported.** `CO2BrinePhaseEquilibrium` is
   `eos.co2_brine_phase_equilibrium`, `CalcIonicComposition` is `eos.calc_ionic_composition`,
   and `SaturateWithWater` is `eos.saturate_with_water`, all on the electrolyte-CPA route
-  above. The first is not a flash - it holds one aqueous phase and runs its own two trials
+  above. `ReactiveCO2BrinePhaseEquilibrium` is
+  `reactions.reactive_co2_brine_phase_equilibrium`: that phase selection and the chemistry
+  of `reactions.reactive_phase_equilibrium`, alternated in a bounded loop, with the
+  unsymmetric activity coefficients `Phase.initRefPhases` builds. **Both captured states
+  reproduce the phase inventory to `1e-9`; the pass count and the accepted residual are
+  path-decided**, because this port's chemistry solve fails from the floored post-flash
+  composition where NeqSim's converges - the adaptive-derivative refinement the reactions
+  bullet below lists as not ported is the reason. The first is not a flash - it holds one aqueous phase and runs its own two trials
   and its own ion-confined split - and the second solves nothing at all: it reads a phase and
   reports molalities and activity coefficients at `Phase`'s two reference states. The third
   floods a feed with water and reads the water dissolved in the non-aqueous phases; **it
@@ -194,12 +201,11 @@ reaches equilibrium through.
   `eos.tp_multiflash` carries no associating case - measured against the source's own two CPA
   states, the port is 19% high on one and 15% low on the other, in opposite directions.
   That gap is the owed part: `PhaseSrkCPA` into a multiphase flash with an associating case
-  behind it. **Owed: `ReactiveCO2BrinePhaseEquilibrium`.** Its gate was once recorded here as
-  the EoS/GE hybrid seam, and that was wrong: it is `fluid instanceof
-  SystemElectrolyteCPAstatoil`, which extends `SystemFurstElectrolyteEos` extends
-  `SystemSrkEos`, so the hybrid route is not in its chain at all — that route is ported
-  (`eos.hybrid_eos_ge_flash`, `reactions.reactive_hybrid_eos_ge_flash`) and was never the
-  blocker.
+  behind it. The coupling's gate was once recorded here as the EoS/GE hybrid seam, and that
+  was wrong: it is `fluid instanceof SystemElectrolyteCPAstatoil`, which extends
+  `SystemFurstElectrolyteEos` extends `SystemSrkEos`, so the hybrid route is not in its chain
+  at all — that route is ported (`eos.hybrid_eos_ge_flash`,
+  `reactions.reactive_hybrid_eos_ge_flash`) and was never the blocker.
 - **Electrolytes.** Ported, each with the id that carries it: `ComponentGePitzer`,
   `PhasePitzer` (`eos.pitzer_phase`) and `SystemPitzer`, with the `Pitzer*` machinery
   (`PitzerNeutralInteraction`, `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`,
