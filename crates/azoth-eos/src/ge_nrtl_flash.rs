@@ -83,12 +83,12 @@ pub fn ge_nrtl_flash(
     )?;
 
     let n = mixture.len();
-    if params.antoine.len() != n {
+    if params.references.len() != n {
         return Err(AzothError::invalid_input(
             "components",
             format!(
                 "the phase has {} component(s) but the cubic has {n}",
-                params.antoine.len()
+                params.references.len()
             ),
         ));
     }

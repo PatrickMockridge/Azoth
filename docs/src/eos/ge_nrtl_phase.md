@@ -33,8 +33,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `gamma` | dimensionless | the NRTL activity coefficient of each component |
 | `ln_gamma` | dimensionless | the natural logarithm of each activity coefficient |
-| `ln_phi` | dimensionless | the natural logarithm of each component's fugacity coefficient, `ln(gamma_i P0_i / P)` |
-| `p_sat` | Pa | the pure-component saturation pressure of each component at `T` |
+| `ln_phi` | dimensionless | the natural logarithm of each component's fugacity coefficient: `ln(gamma_i P0_i / P)` on the solvent arm and `ln(gamma_i / gamma_i^inf) + ln(H_i / P)` on the Henry arm |
+| `p_sat` | Pa | the pure-component saturation pressure of each component at `T`, and **zero where the arm reads a Henry coefficient instead** |
+| `henry` | Pa | the Henry coefficient each component's arm read, in pascals, and **zero where the arm reads none** - which is the solvent arm, whose reference is its own Antoine row |
+| `gamma_inf` | dimensionless | the infinite-dilution activity coefficient each component's Henry arm divided by, and **one where the arm does not divide by one** |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -43,15 +45,21 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- this is NeqSim's `PhaseGENRTL` liquid: `phi_i = gamma_i P0_i / P`. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
+- this is NeqSim's `PhaseGENRTL` liquid: `phi_i = gamma_i P0_i / P` on the solvent arm. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
 
-- this is the *solvent* branch of `ComponentGE.fugcoef`: the branch the substances the database tags `solvent` select, which is water, the alcohols and the glycols. Any other `REFERENCESTATETYPE` selects that method's Henry's-law coefficient instead, and `ROADMAP.md` names what would close it.
+- **both reference states are here.** `ComponentGE.fugcoef` gives a `solvent` component `gamma_i P0_i/P` and every other `(gamma_i/gamma_i^inf) H_i/P`; `gamma_i^inf` is this phase's NRTL on the solute-water pair `[1e-11, 1 - 1e-11]`, or on the diluted composition when the phase carries no water.
+
+- `H_i` prefers the IAPWS G7-04 table for its 14 gases in a water-bearing phase, inside the row's fitted window, and fails closed to `1e12 bar` outside it; otherwise it is the databank's `HenryCoef1..4` correlation capped to `1e12 bar`, with the cap asked before any fittedness check.
+
+- **three states are refused rather than given a number**: a non-ion Henry row with the four zeros the table uses for no correlation (NeqSim evaluates 1.802 bar), a solvent-tagged IAPWS species in water (NeqSim builds a one-component reference phase and throws), and a solvent with no Antoine row.
+
+- an ion is `1e12 bar` whatever its row says; the registered model id builds its mixture with `mixture_of`, which refuses an ion, so an ion-bearing fluid reaches this phase only through the direct API.
 
 - `gamma_i` comes from `eos.nrtl_activity_coefficients` on the same resolved matrices, and `P0_i` from `eos.antoine_vapor_pressure` on the component's own coefficients and form. Neither is recomputed here, so the phase cannot disagree with them.
 
 - an Antoine label that names no form falls through to Wagner, which is NeqSim's own dispatch and the same fall-through `eos.antoine_vapor_pressure` documents. It is reproduced rather than refused.
 
-- `P0_i` is reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; a wrong `P0` and a wrong `gamma` produce the same kind of wrong answer.
+- `P0_i`, `H_i` and `gamma_i^inf` are reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; either a wrong reference quantity and a wrong `gamma` produce the same kind of wrong answer.
 
 - this is a *liquid* phase. A vapour over it is a cubic, and combining the two is a gamma-phi flash, which is a separate model.
 
@@ -64,11 +72,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `methanol_water_equimolar_at_298_15_k_1_bar` | components = ['methanol', 'water'], T = 298.15, P = 100000.0, x = [0.5, 0.5] | gamma = [1.2331788561677834, 1.5262904213232393], ln_gamma = [0.2095952713815616, 0.42284023016955086], ln_phi = [-1.5658530965838922, -3.0258410151978015], p_sat = [16940.747558344778, 3178.7528699883305] |
 | `ethanol_water_equimolar_at_350_k_1_bar` | components = ['ethanol', 'water'], T = 350.0, P = 100000.0, x = [0.5, 0.5] | gamma = [1.0061354062518342, 1.2908387491361855], ln_gamma = [0.006116661279835519, 0.2552922002184329], ln_phi = [-0.0368209604820562, -0.6216821329673664], p_sat = [95797.11447554835, 41603.98070870418] |
+| `water_co2_at_298_15_k_1_bar` | components = ['water', 'CO2'], T = 298.15, P = 100000.0, x = [0.98, 0.02] | gamma = [0.9983842583634958, 0.015169264206336313], ln_gamma = [-0.0016170483547579514, -4.1884839900059045], ln_phi = [-3.4502982937221103, 7.572826565660515], p_sat = [3178.7528699883305, 0.0], henry = [0.0, 165644589.17920527], gamma_inf = [1.0, 0.01292126340509809] |
+| `methanol_co2_at_298_15_k_10_bar` | components = ['methanol', 'CO2'], T = 298.15, P = 1000000.0, x = [0.98, 0.02] | gamma = [1.0549706965727317, 9.265615100322021], ln_gamma = [0.05351299078183234, 2.2263102472068073], ln_phi = [-4.024520470177667, -7.865632584786245], p_sat = [16940.747558344778, 0.0], henry = [0.0, 5165450.928785165], gamma_inf = [1.0, 124733.5617579047] |
+| `water_methane_at_298_15_k_1_bar` | components = ['water', 'methane'], T = 298.15, P = 100000.0, x = [0.99, 0.01] | gamma = [0.999961228321656, 0.6838555374106062], ln_gamma = [-3.8772429984934215e-05, -0.38000858628207274], ln_phi = [-3.448720017797337, 10.591256505447872], p_sat = [3178.7528699883305, 0.0], henry = [0.0, 3947965646.000571], gamma_inf = [1.0, 0.6785994074404227] |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 5 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

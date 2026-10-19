@@ -1071,11 +1071,17 @@ class GeNrtlPhaseResult(_HasWarnings):
     #: the natural logarithm of each activity coefficient
     ln_gamma: tuple[float, ...]
 
-    #: the natural logarithm of each component's fugacity coefficient, `ln(gamma_i P0_i / P)`
+    #: the natural logarithm of each component's fugacity coefficient: `ln(gamma_i P0_i / P)` on the solvent arm and `ln(gamma_i / gamma_i^inf) + ln(H_i / P)` on the Henry arm
     ln_phi: tuple[float, ...]
 
-    #: the pure-component saturation pressure of each component at `T`
+    #: the pure-component saturation pressure of each component at `T`, and **zero where the arm reads a Henry coefficient instead**
     p_sat: tuple[Q, ...]
+
+    #: the Henry coefficient each component's arm read, in pascals, and **zero where the arm reads none** - which is the solvent arm, whose reference is its own Antoine row
+    henry: tuple[Q, ...]
+
+    #: the infinite-dilution activity coefficient each component's Henry arm divided by, and **one where the arm does not divide by one**
+    gamma_inf: tuple[float, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

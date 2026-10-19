@@ -42,11 +42,29 @@ pub fn nrtl_activity_coefficients(
 
 /// The fugacity coefficients of an NRTL activity-coefficient liquid. A *model* rather
 /// than a calculation: the resolved phase parameters cross flattened, one list per
-/// field of `GeNrtlPhaseParameters`, and the Antoine record's own fields with them.
+/// field of `GeNrtlPhaseParameters`, with each component's reference state beside the
+/// matrices as a kind, its Antoine columns and its Henry row.
 #[pyfunction]
-#[pyo3(signature = (alpha, dij, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x))]
+#[pyo3(signature = (
+    alpha,
+    dij,
+    names,
+    reference_kind,
+    antoine_type,
+    antoine_coefficients,
+    antoine_tc,
+    antoine_pc,
+    henry_h0,
+    henry_h1,
+    henry_h2,
+    henry_h3,
+    T,
+    P,
+    x
+))]
 #[pyo3(
-    text_signature = "(alpha, dij, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x)"
+    text_signature = "(alpha, dij, names, reference_kind, antoine_type, antoine_coefficients, \
+                         antoine_tc, antoine_pc, henry_h0, henry_h1, henry_h2, henry_h3, T, P, x)"
 )]
 #[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
@@ -54,27 +72,113 @@ pub fn ge_nrtl_phase(
     py: Python<'_>,
     alpha: Vec<f64>,
     dij: Vec<f64>,
+    names: Vec<String>,
+    reference_kind: Vec<String>,
     antoine_type: Vec<String>,
     antoine_coefficients: Vec<f64>,
     antoine_tc: Vec<f64>,
     antoine_pc: Vec<f64>,
+    henry_h0: Vec<f64>,
+    henry_h1: Vec<f64>,
+    henry_h2: Vec<f64>,
+    henry_h3: Vec<f64>,
     T: f64,
     P: f64,
     x: Vec<f64>,
 ) -> PyResult<PyGeNrtlPhaseResult> {
+    let references = ge_references(
+        &names,
+        &reference_kind,
+        antoine_type,
+        &antoine_coefficients,
+        &antoine_tc,
+        &antoine_pc,
+        &[henry_h0, henry_h1, henry_h2, henry_h3],
+    )
+    .map_err(|e| to_pyerr(py, e))?;
     let params = azoth_eos::databank::GeNrtlPhaseParameters {
         alpha,
         dij,
-        antoine: antoine_records(
-            antoine_type,
-            &antoine_coefficients,
-            &antoine_tc,
-            &antoine_pc,
-        ),
+        names,
+        references,
     };
     azoth_eos::ge_nrtl_phase(&params, T, P, &x)
         .map(|r| PyGeNrtlPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// One [`azoth_eos::ge_phase::ReferenceState`] per component, from the transport's
+/// flattened columns.
+///
+/// `reference_kind` names the arm the resolver chose: `solvent`, `henry_iapws`,
+/// `henry_database` or `henry_database_ion`. The kind encodes the ion flag because a
+/// separate boolean column would cross the stub generator as a float.
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+fn ge_references(
+    names: &[String],
+    reference_kind: &[String],
+    antoine_type: Vec<String>,
+    antoine_coefficients: &[f64],
+    antoine_tc: &[f64],
+    antoine_pc: &[f64],
+    henry: &[Vec<f64>; 4],
+) -> azoth_core::Result<Vec<azoth_eos::ge_phase::ReferenceState>> {
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    let n = names.len();
+    if reference_kind.len() != n
+        || antoine_type.len() != n
+        || antoine_tc.len() != n
+        || antoine_pc.len() != n
+        || antoine_coefficients.len() != n * 5
+        || henry.iter().any(|column| column.len() != n)
+    {
+        return Err(azoth_core::AzothError::invalid_input(
+            "components",
+            "the reference-state columns disagree in length".to_string(),
+        ));
+    }
+    let mut references = Vec::with_capacity(n);
+    for i in 0..n {
+        let record = azoth_eos::henry::HenryRecord {
+            h0: henry[0][i],
+            h1: henry[1][i],
+            h2: henry[2][i],
+            h3: henry[3][i],
+        };
+        let state = match reference_kind[i].as_str() {
+            "solvent" => ReferenceState::Solvent(azoth_eos::databank::AntoineRecord {
+                antoine_type: antoine_type[i].clone(),
+                coefficients: antoine_coefficients[i * 5..i * 5 + 5]
+                    .try_into()
+                    .expect("5 coefficients per component"),
+                tc: antoine_tc[i],
+                pc: antoine_pc[i],
+            }),
+            "henry_iapws" => {
+                let gas =
+                    azoth_eos::iapws_henry_law::gas_from_name(&names[i]).ok_or_else(|| {
+                        azoth_core::AzothError::invalid_input(
+                            "components",
+                            format!("`{}` is not an IAPWS Henry's-law species", names[i]),
+                        )
+                    })?;
+                ReferenceState::Henry(HenryState::Iapws(gas))
+            }
+            "henry_database" => ReferenceState::Henry(HenryState::Database { record, ion: false }),
+            "henry_database_ion" => {
+                ReferenceState::Henry(HenryState::Database { record, ion: true })
+            }
+            other => {
+                return Err(azoth_core::AzothError::invalid_input(
+                    "components",
+                    format!("`{other}` is not a reference state this phase carries"),
+                ));
+            }
+        };
+        references.push(state);
+    }
+    Ok(references)
 }
 
 /// One [`azoth_eos::databank::AntoineRecord`] per component, from the transport's four
@@ -116,10 +220,16 @@ fn antoine_records(
     association,
     alpha,
     dij,
+    names,
+    reference_kind,
     antoine_type,
     antoine_coefficients,
     antoine_tc,
     antoine_pc,
+    henry_h0,
+    henry_h1,
+    henry_h2,
+    henry_h3,
     T,
     P,
     z,
@@ -128,8 +238,9 @@ fn antoine_records(
     alpha_params = None
 ))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, classes, kij, association, alpha, dij, antoine_type, antoine_coefficients, \
-                         antoine_tc, antoine_pc, T, P, z, eos = \"pr\", cubic_alpha = \"pr\")"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, alpha, dij, names, reference_kind, \
+                         antoine_type, antoine_coefficients, antoine_tc, antoine_pc, henry_h0, \
+                         henry_h1, henry_h2, henry_h3, T, P, z, eos = \"pr\", cubic_alpha = \"pr\")"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `z` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
@@ -143,10 +254,16 @@ pub fn ge_nrtl_flash(
     association: PyRef<'_, PyAssociationSpec>,
     alpha: Vec<f64>,
     dij: Vec<f64>,
+    names: Vec<String>,
+    reference_kind: Vec<String>,
     antoine_type: Vec<String>,
     antoine_coefficients: Vec<f64>,
     antoine_tc: Vec<f64>,
     antoine_pc: Vec<f64>,
+    henry_h0: Vec<f64>,
+    henry_h1: Vec<f64>,
+    henry_h2: Vec<f64>,
+    henry_h3: Vec<f64>,
     T: f64,
     P: f64,
     z: Vec<f64>,
@@ -166,15 +283,21 @@ pub fn ge_nrtl_flash(
         cubic_alpha,
         alpha_params.as_deref(),
     )?;
+    let references = ge_references(
+        &names,
+        &reference_kind,
+        antoine_type,
+        &antoine_coefficients,
+        &antoine_tc,
+        &antoine_pc,
+        &[henry_h0, henry_h1, henry_h2, henry_h3],
+    )
+    .map_err(|e| to_pyerr(py, e))?;
     let params = azoth_eos::databank::GeNrtlPhaseParameters {
         alpha,
         dij,
-        antoine: antoine_records(
-            antoine_type,
-            &antoine_coefficients,
-            &antoine_tc,
-            &antoine_pc,
-        ),
+        names,
+        references,
     };
     azoth_eos::ge_nrtl_flash::ge_nrtl_flash(&params, &mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyGeNrtlFlashResult::from(&r))

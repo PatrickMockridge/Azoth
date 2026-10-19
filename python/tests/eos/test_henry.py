@@ -65,6 +65,17 @@ def test_an_unfitted_substance_is_refused() -> None:
     assert henry.coefficient(ethane.henry, 298.15) == pytest.approx(1.802, abs=1.0e-12)
 
 
+def test_the_ion_clause_is_asked_before_the_fittedness_check() -> None:
+    """`ComponentGE` caps an ion before it asks whether the row was fitted.
+
+    An ion's four zeros would otherwise reach the unfitted refusal, and NeqSim never
+    refuses there: the cap decides first, so the ion is `1e12 bar` whatever its row says.
+    """
+    assert henry.is_capped_value(1.802, ion=True)
+    assert not henry.is_capped_value(1.802, ion=False)
+    assert henry.is_capped_value(math.inf, ion=False)
+
+
 @pytest.mark.parametrize("temperature", [273.15, 298.15, 323.15, 373.15])
 def test_the_temperature_derivative_matches_a_finite_difference(temperature: float) -> None:
     """`getHenryCoefdT` is `H` times the logarithmic derivative, so a dropped factor shows."""

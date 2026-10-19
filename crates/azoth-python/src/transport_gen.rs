@@ -2676,12 +2676,18 @@ pub struct PyGeNrtlPhaseResult {
     /// the natural logarithm of each activity coefficient
     #[pyo3(get)]
     pub ln_gamma: Vec<f64>,
-    /// the natural logarithm of each component's fugacity coefficient, `ln(gamma_i P0_i / P)`
+    /// the natural logarithm of each component's fugacity coefficient: `ln(gamma_i P0_i / P)` on the solvent arm and `ln(gamma_i / gamma_i^inf) + ln(H_i / P)` on the Henry arm
     #[pyo3(get)]
     pub ln_phi: Vec<f64>,
-    /// the pure-component saturation pressure of each component at `T`
+    /// the pure-component saturation pressure of each component at `T`, and **zero where the arm reads a Henry coefficient instead**
     #[pyo3(get)]
     pub p_sat: Vec<PyQty>,
+    /// the Henry coefficient each component's arm read, in pascals, and **zero where the arm reads none** - which is the solvent arm, whose reference is its own Antoine row
+    #[pyo3(get)]
+    pub henry: Vec<PyQty>,
+    /// the infinite-dilution activity coefficient each component's Henry arm divided by, and **one where the arm does not divide by one**
+    #[pyo3(get)]
+    pub gamma_inf: Vec<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -2691,11 +2697,13 @@ pub struct PyGeNrtlPhaseResult {
 impl PyGeNrtlPhaseResult {
     fn __repr__(&self) -> String {
         format!(
-            "GeNrtlPhaseResult(gamma={:?}, ln_gamma={:?}, ln_phi={:?}, p_sat={:?}, {} warning(s))",
+            "GeNrtlPhaseResult(gamma={:?}, ln_gamma={:?}, ln_phi={:?}, p_sat={:?}, henry={:?}, gamma_inf={:?}, {} warning(s))",
             self.gamma,
             self.ln_gamma,
             self.ln_phi,
             self.p_sat,
+            self.henry,
+            self.gamma_inf,
             self.warnings.len()
         )
     }
@@ -2715,6 +2723,15 @@ impl From<&azoth_eos::results::GeNrtlPhaseResult> for PyGeNrtlPhaseResult {
                     unit: "Pa".to_string(),
                 })
                 .collect(),
+            henry: r
+                .henry
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            gamma_inf: r.gamma_inf.clone(),
             warnings: transport(&r.warnings),
         }
     }

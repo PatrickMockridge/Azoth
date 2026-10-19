@@ -22,6 +22,7 @@ use azoth_core::{AzothError, Result};
 use crate::association::{AssociationCubic, AssociationRecord, SiteScheme, UmrCpaRecord};
 use crate::bwrs::BwrsCoefficients;
 use crate::cubic::Cubic;
+use crate::ge_phase::{HenryState, ReferenceState};
 use crate::mixing_rule::MixingRule;
 use crate::mixture::{Component, Mixture};
 use crate::molar_enthalpy_entropy::IdealGasModel;
@@ -3278,17 +3279,20 @@ pub struct AntoineRecord {
 
 /// The resolved parameters of an NRTL activity-coefficient *phase*.
 ///
-/// The NRTL matrices [`NrtlParameters`] carries, beside what a phase needs and an
-/// activity coefficient does not: each component's pure-liquid vapour pressure, because
-/// the phase's fugacity coefficient is `gamma_i P0_i / P`.
+/// The NRTL matrices [`NrtlParameters`] carries, beside each component's reference state:
+/// [`crate::ge_phase::ReferenceState`] resolves `ComponentGE.fugcoef`'s branch per
+/// component, and the names are carried because the reference `gamma^inf` needs the water
+/// index even though the matrices and the composition do not.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeNrtlPhaseParameters {
     /// `alpha[i][j]`, `N x N` row-major. Symmetric with a zero diagonal.
     pub alpha: Vec<f64>,
     /// `dij[i][j] = g_ij` in kelvin, `N x N` row-major. Directional.
     pub dij: Vec<f64>,
-    /// One vapour-pressure correlation per component, in order.
-    pub antoine: Vec<AntoineRecord>,
+    /// The component names, in the order every vector here is indexed by.
+    pub names: Vec<String>,
+    /// Each component's reference state, in order.
+    pub references: Vec<ReferenceState>,
 }
 
 /// The resolved parameters of a Van Laar acid activity-coefficient *phase*.
@@ -3528,14 +3532,15 @@ fn phase_antoine(names: &[&str], overlay: Option<&Overlay>) -> Result<Vec<Antoin
 /// The NRTL phase parameters for a list of names.
 ///
 /// The activity-coefficient matrices resolve through [`nrtl_parameters`], so the phase
-/// and `eos.nrtl_activity_coefficients` cannot disagree about them; this adds the
-/// per-component vapour pressure beside them.
+/// and `eos.nrtl_activity_coefficients` cannot disagree about them; this adds each
+/// component's reference state beside them.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
-///   overlay, or if the databank carries it without an Antoine correlation - which is
-///   what an overlay-added substance is, since a card states the parameters a cubic
-///   reads.
+///   overlay, if a solvent component carries no Antoine correlation, if a non-ion Henry
+///   component's row carries the four zeros the table uses for "no correlation", or if a
+///   solvent-tagged IAPWS species sits in a water-bearing phase (upstream builds a
+///   one-component reference phase for it and throws).
 pub fn ge_nrtl_phase_parameters(
     names: &[&str],
     overlay: Option<&Overlay>,
@@ -3544,8 +3549,103 @@ pub fn ge_nrtl_phase_parameters(
     Ok(GeNrtlPhaseParameters {
         alpha: nrtl.alpha,
         dij: nrtl.dij,
-        antoine: phase_antoine(names, overlay)?,
+        names: names.iter().map(|name| (*name).to_string()).collect(),
+        references: phase_references(names, overlay)?,
     })
+}
+
+/// Each activity-phase component's reference state, or a refusal.
+///
+/// `ComponentGE.fugcoef` takes the Raoult arm when the component is tagged `solvent`
+/// **and** the IAPWS aqueous override does not apply; the override is a non-ionic,
+/// non-water component the G7-04 table supports in a phase that carries water, and it
+/// moves solvent-tagged species such as argon and hydrogen onto the Henry arm.
+///
+/// The refusals are measurements, not choices:
+/// * a **solvent-tagged** IAPWS species in water: `Phase.initRefPhases` gives a solvent
+///   tag a one-component reference phase and `getActivityCoefficientInfDilWater` then
+///   reads two components from it, which throws (`GeHenryProbe` records the
+///   `NullPointerException`);
+/// * a **non-ion Henry row with the four zeros**: NeqSim evaluates them to `1.802 bar`,
+///   which is the table's marker for a correlation it does not carry. `henry.rs` and
+///   `eos.pitzer_phase` refuse the same state;
+/// * a **solvent component with no Antoine correlation**: its `P0` has no source.
+///
+/// The ion cap is asked before the fittedness check, as `ComponentGE` asks it: an ion is
+/// `1e12 bar` whatever its row says.
+pub(crate) fn phase_references(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<Vec<ReferenceState>> {
+    let has_water = names.iter().any(|name| name.eq_ignore_ascii_case("water"));
+    let mut references = Vec::with_capacity(names.len());
+    for name in names {
+        let record = entry(name, overlay)?;
+        let water = record.name.eq_ignore_ascii_case("water");
+        let ion = record.class == ION;
+        let iapws = has_water
+            && !water
+            && !ion
+            && crate::iapws_henry_law::gas_from_name(&record.name).is_some();
+        let solvent_arm = record.reference_state == SOLVENT && !iapws;
+        if solvent_arm {
+            let Some((coefficients, antoine_type)) = record.antoine else {
+                return Err(AzothError::property_unavailable(
+                    record.name,
+                    "Antoine vapour-pressure coefficients".to_string(),
+                    "the phase's solvent arm is `gamma_i P0_i / P`, so every solvent \
+                     component needs a correlation; a keycard supplies the parameters a \
+                     cubic reads and not these"
+                        .to_string(),
+                ));
+            };
+            references.push(ReferenceState::Solvent(AntoineRecord {
+                antoine_type,
+                coefficients,
+                tc: record.tc,
+                pc: record.pc,
+            }));
+            continue;
+        }
+        if record.reference_state == SOLVENT {
+            return Err(AzothError::property_unavailable(
+                record.name.clone(),
+                "an infinite-dilution reference state".to_string(),
+                "its reference state is `solvent`, so `initRefPhases` builds a \
+                 one-component reference phase for it, and `getActivityCoefficientInfDilWater` \
+                 reads a two-component one. NeqSim throws where this refuses"
+                    .to_string(),
+            ));
+        }
+        let state = if ion {
+            HenryState::Database {
+                record: record.henry,
+                ion: true,
+            }
+        } else if iapws {
+            let gas = crate::iapws_henry_law::gas_from_name(&record.name)
+                .expect("the gas name resolved above");
+            HenryState::Iapws(gas)
+        } else {
+            if !record.henry.is_fitted() {
+                return Err(AzothError::property_unavailable(
+                    record.name.clone(),
+                    "a Henry coefficient".to_string(),
+                    "the compiled table carries `HenryCoef1..4` as zeros for it, which is \
+                     the table's marker for a substance it fits no correlation for. \
+                     Evaluating the zeros as a polynomial gives 1.802 bar for every such \
+                     substance, which is a number rather than an absence"
+                        .to_string(),
+                ));
+            }
+            HenryState::Database {
+                record: record.henry,
+                ion: false,
+            }
+        };
+        references.push(ReferenceState::Henry(state));
+    }
+    Ok(references)
 }
 
 /// The resolved NRTL parameters for a mixture, both matrices flattened row-major.

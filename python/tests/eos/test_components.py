@@ -224,20 +224,33 @@ def test_the_reference_state_column_is_carried_and_never_blank() -> None:
     assert databank.entry("CO2").reference_state == "solute"
 
 
-def test_the_activity_phase_refuses_a_henrys_law_component() -> None:
-    """The Henry branch is a different arithmetic and is not ported.
+def test_the_activity_phase_resolves_each_component_reference_state() -> None:
+    """`REFERENCESTATETYPE` chooses the arithmetic, and both arms now resolve.
 
-    `ComponentGE.fugcoef` returns `gamma_i P0_i / P` for a `solvent` component and a
-    Henry's-law coefficient for any other tag. Computing the first for a component the
-    database tags the second way would be a wrong number with no symptom, so the phase's
-    parameter resolver refuses rather than approximates.
+    `ComponentGE.fugcoef` returns `gamma_i P0_i / P` for a `solvent` component and
+    `(gamma_i / gamma_i^inf) H_i / P` for every other. The kinds record the arm; the
+    IAPWS table takes a gas in water, and the database row answers without water.
     """
-    assert databank.ge_nrtl_phase_parameters(["methanol", "water"]).antoine_type
+    control = databank.ge_nrtl_phase_parameters(["methanol", "water"])
+    assert control.reference_kind == ("solvent", "solvent")
 
-    for name in ("CO2", "methane", "n-hexane", "nitric acid"):
-        with pytest.raises(InvalidInputError) as raised:
+    aqueous = databank.ge_nrtl_phase_parameters(["water", "CO2"])
+    assert aqueous.reference_kind == ("solvent", "henry_iapws")
+
+    dry = databank.ge_nrtl_phase_parameters(["methanol", "CO2"])
+    assert dry.reference_kind == ("solvent", "henry_database")
+
+    ions = databank.ge_nrtl_phase_parameters(["water", "Na+", "Cl-"])
+    assert ions.reference_kind == ("solvent", "henry_database_ion", "henry_database_ion")
+
+    with pytest.raises(PropertyUnavailableError) as raised:
+        databank.ge_nrtl_phase_parameters(["water", "n-butane"])
+    assert "n-butane" in str(raised.value)
+
+    for name in ("argon", "hydrogen", "helium"):
+        with pytest.raises(PropertyUnavailableError) as raised:
             databank.ge_nrtl_phase_parameters([name, "water"])
-        assert name.lower() in str(raised.value)
+        assert name in str(raised.value)
 
 
 def test_uniquac_r_and_q_are_the_group_sums_neqsim_computes() -> None:

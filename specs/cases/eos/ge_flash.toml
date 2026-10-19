@@ -35,3 +35,20 @@ z = [0.9090909090909091, 0.06363636363636363, 0.013636363636363636, 0.0136363636
 [cases.expected]
 y = [0.9988236839943918, 7.08114595836434e-4, 4.682014097692246e-4, 2.570656866497064e-15]
 k = [1.0065493354718438e12, 0.0010099069157407177, 0.0031840859178384282, 1.6935881371747747e-14]
+[[cases]]
+id = "water_methanol_co2_at_350_k_1_bar"
+tolerance = 1e-06
+source = "NeqSim master, the direct gamma-phi loop transcribed from `TPflash.sucsSubsGammaPhi` in validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv (`SystemNRTL` does not opt into the direct route). **The first solute-bearing gamma-phi flash in these cases**: CO2 takes the liquid's aqueous Henry arm at `x_CO2 = 1.57e-5`, so its K-value is `(gamma/gamma^inf) H / P` over the cubic rather than `gamma P0 / P`."
+[cases.inputs]
+components = ["water", "methanol", "CO2"]
+liquid_model = "nrtl"
+cubic = "srk"
+T = 350.0
+P = 100000.0
+z = [0.55, 0.4, 0.05]
+[cases.expected]
+vapour_fraction = 0.6696057391942166
+x = [0.8859828228036695, 0.11400148521308928, 1.569198324125851e-05]
+k = [0.43366603932472586, 4.7465721553078675, 4758.038662465487]
+ln_phi_liquid = [-0.8459090026307653, 1.5416855200372517, 8.468627959334642]
+phase = "two_phase"

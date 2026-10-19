@@ -2285,21 +2285,28 @@ def _hv_rows(names: tuple[str, ...]) -> dict[tuple[str, str], dict[str, Any]]:
 class GeNrtlPhaseParameters:
     """The parameters of an NRTL activity-coefficient *phase*.
 
-    The NRTL matrices :class:`NrtlParameters` carries, beside what a phase needs and an
-    activity coefficient does not: each component's pure-liquid vapour pressure, because
-    the phase's fugacity coefficient is ``gamma_i P0_i / P``.
+    The NRTL matrices :class:`NrtlParameters` carries, beside each component's reference
+    state: ``ComponentGE.fugcoef`` is ``gamma_i P0_i / P`` for a ``solvent`` component and
+    ``(gamma_i / gamma_i^inf) H_i / P`` for every other one.
 
     **Flat rather than a nested record per component.** The transport carries a record's
     own fields flattened, one list per field, so a list of records would have nothing to
-    cross in. The vapour-pressure columns are therefore parallel to the NRTL matrices
-    and to each other, five coefficients per component in ``antoine_coefficients``.
+    cross in. The vapour-pressure and Henry columns are therefore parallel to the NRTL
+    matrices and to each other, five coefficients per component in
+    ``antoine_coefficients``.
     """
 
     #: ``alpha[i][j]``, ``N x N`` row-major. Symmetric with a zero diagonal.
     alpha: tuple[float, ...]
     #: ``dij[i][j] = g_ij`` in kelvin, ``N x N`` row-major. Directional.
     dij: tuple[float, ...]
-    #: NeqSim's Antoine label for each component, in order.
+    #: The component names, in the order every vector here is indexed by.
+    names: tuple[str, ...]
+    #: The arm each component takes: ``solvent``, ``henry_iapws``, ``henry_database`` or
+    #: ``henry_database_ion``. The ion flag travels in the kind because a boolean column
+    #: would cross the stub generator as a float.
+    reference_kind: tuple[str, ...]
+    #: NeqSim's Antoine label for each component, in order. Read only on the solvent arm.
     antoine_type: tuple[str, ...]
     #: The five coefficients ``A``-``E`` of each component, component-major.
     antoine_coefficients: tuple[float, ...]
@@ -2307,6 +2314,12 @@ class GeNrtlPhaseParameters:
     antoine_tc: tuple[float, ...]
     #: Critical pressure of each component, in Pa.
     antoine_pc: tuple[float, ...]
+    #: The databank's four Henry correlation coefficients, one column each. Read only on
+    #: the ``henry_database`` arms.
+    henry_h0: tuple[float, ...]
+    henry_h1: tuple[float, ...]
+    henry_h2: tuple[float, ...]
+    henry_h3: tuple[float, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -2847,6 +2860,114 @@ def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _Phase
     return _PhaseAntoine(tuple(kinds), tuple(coefficients), tuple(tcs), tuple(pcs))
 
 
+class _PhaseReferences(NamedTuple):
+    """Each activity-phase component's reference state, flattened.
+
+    The kinds are ``solvent``, ``henry_iapws``, ``henry_database`` and
+    ``henry_database_ion``; the columns beside them are the databank's own, carried for
+    every component and read only on the arm that names them.
+    """
+
+    names: tuple[str, ...]
+    kinds: tuple[str, ...]
+    antoine_type: tuple[str, ...]
+    antoine_coefficients: tuple[float, ...]
+    antoine_tc: tuple[float, ...]
+    antoine_pc: tuple[float, ...]
+    henry_h0: tuple[float, ...]
+    henry_h1: tuple[float, ...]
+    henry_h2: tuple[float, ...]
+    henry_h3: tuple[float, ...]
+
+
+def _phase_references(names: Sequence[str], card: keycard.Keycard | None) -> _PhaseReferences:
+    """Each component's ``ComponentGE.fugcoef`` reference state, or a refusal.
+
+    The arm is ``solvent`` when the component is tagged ``solvent`` and the IAPWS aqueous
+    override does not apply; the override is a non-ionic, non-water species the G7-04
+    table supports in a phase that carries water, and it moves solvent-tagged species such
+    as argon onto the Henry arm.
+
+    Raises:
+        PropertyUnavailableError: for a solvent component with no Antoine correlation, for
+            a non-ion Henry row carrying the four zeros the table uses for "no
+            correlation", or for a solvent-tagged IAPWS species in a water-bearing phase -
+            upstream builds a one-component reference phase for it and throws.
+    """
+    from azoth.eos.reference.iapws_henry_law import gas_from_name
+
+    has_water = any(name.strip().lower() == "water" for name in names)
+    kinds: list[str] = []
+    antoine_type: list[str] = []
+    coefficients: list[float] = []
+    tcs: list[float] = []
+    pcs: list[float] = []
+    h0: list[float] = []
+    h1: list[float] = []
+    h2: list[float] = []
+    h3: list[float] = []
+    for name in names:
+        record = entry(name, card=card)
+        is_water = record.name.strip().lower() == "water"
+        ion = record.component_type == ION
+        iapws = has_water and not is_water and not ion and gas_from_name(record.name) is not None
+        solvent_arm = record.reference_state == SOLVENT and not iapws
+        if solvent_arm and record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):
+            raise PropertyUnavailableError(
+                name,
+                "Antoine vapour-pressure coefficients",
+                "the phase's solvent arm is `gamma_i P0_i / P`, so every solvent "
+                "component needs a correlation; a keycard supplies the parameters a "
+                "cubic reads and not these",
+            )
+        if not solvent_arm and record.reference_state == SOLVENT:
+            raise PropertyUnavailableError(
+                record.name,
+                "an infinite-dilution reference state",
+                "its reference state is `solvent`, so `initRefPhases` builds a "
+                "one-component reference phase for it, and "
+                "`getActivityCoefficientInfDilWater` reads a two-component one. NeqSim "
+                "throws where this refuses",
+            )
+        if solvent_arm:
+            kinds.append("solvent")
+        elif ion:
+            kinds.append("henry_database_ion")
+        elif iapws:
+            kinds.append("henry_iapws")
+        else:
+            if not record.henry.is_fitted():
+                raise PropertyUnavailableError(
+                    record.name,
+                    "a Henry coefficient",
+                    "the compiled table carries `HenryCoef1..4` as zeros for it, which is "
+                    "the table's marker for a substance it fits no correlation for. "
+                    "Evaluating the zeros as a polynomial gives 1.802 bar for every such "
+                    "substance, which is a number rather than an absence",
+                )
+            kinds.append("henry_database")
+        antoine_type.append(record.antoine_type)
+        coefficients.extend(record.antoine)
+        tcs.append(record.Tc.to_base_units().magnitude)
+        pcs.append(record.Pc.to_base_units().magnitude)
+        h0.append(record.henry.h0)
+        h1.append(record.henry.h1)
+        h2.append(record.henry.h2)
+        h3.append(record.henry.h3)
+    return _PhaseReferences(
+        names=tuple(str(name) for name in names),
+        kinds=tuple(kinds),
+        antoine_type=tuple(antoine_type),
+        antoine_coefficients=tuple(coefficients),
+        antoine_tc=tuple(tcs),
+        antoine_pc=tuple(pcs),
+        henry_h0=tuple(h0),
+        henry_h1=tuple(h1),
+        henry_h2=tuple(h2),
+        henry_h3=tuple(h3),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class GeVanLaarAcidPhaseParameters:
     """The parameters of a Van Laar acid activity-coefficient *phase*.
@@ -3079,24 +3200,27 @@ def ge_nrtl_phase_parameters(
 
     The NRTL matrices come from :func:`nrtl_parameters`, so the phase and
     ``eos.nrtl_activity_coefficients`` cannot disagree about them; this adds each
-    component's Antoine vapour-pressure correlation beside them.
+    component's reference state beside them.
 
     Raises:
-        PropertyUnavailableError: if a name is in neither the databank nor the keycard,
-            or if the databank carries it without an Antoine correlation - which is what
-            a keycard-added substance is, since a card states the parameters a cubic
-            reads and not these.
+        PropertyUnavailableError: as :func:`_phase_references` refuses.
     """
     nrtl = nrtl_parameters(names)
-    antoine = _phase_antoine(names, card)
+    references = _phase_references(names, card)
 
     return GeNrtlPhaseParameters(
         alpha=nrtl.alpha,
         dij=nrtl.dij,
-        antoine_type=antoine.kinds,
-        antoine_coefficients=antoine.coefficients,
-        antoine_tc=antoine.tcs,
-        antoine_pc=antoine.pcs,
+        names=references.names,
+        reference_kind=references.kinds,
+        antoine_type=references.antoine_type,
+        antoine_coefficients=references.antoine_coefficients,
+        antoine_tc=references.antoine_tc,
+        antoine_pc=references.antoine_pc,
+        henry_h0=references.henry_h0,
+        henry_h1=references.henry_h1,
+        henry_h2=references.henry_h2,
+        henry_h3=references.henry_h3,
     )
 
 

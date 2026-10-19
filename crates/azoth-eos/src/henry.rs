@@ -127,7 +127,16 @@ impl HenryRecord {
 /// [`Insoluble::HenryCoefficient`], and refusing it would refuse 40 rows NeqSim evaluates.
 #[must_use]
 pub fn coefficient(entry: &Entry, t: f64) -> f64 {
-    let HenryRecord { h0, h1, h2, h3 } = entry.henry;
+    coefficient_from_record(&entry.henry, t)
+}
+
+/// [`coefficient`] from the four numbers alone.
+///
+/// The GE phases carry a `HenryRecord` in their resolved parameters and no [`Entry`], so
+/// the correlation is expressed over the record and the entry form delegates to it.
+#[must_use]
+pub fn coefficient_from_record(record: &HenryRecord, t: f64) -> f64 {
+    let HenryRecord { h0, h1, h2, h3 } = *record;
     (h0 + h1 / t + h2 * t.ln() + h3 * t).exp() * 0.01802 * 100.0
 }
 
@@ -151,18 +160,22 @@ pub fn coefficient_dt(entry: &Entry, t: f64) -> f64 {
 /// sentinel, and 62 more through their class.
 #[must_use]
 pub fn is_capped(entry: &Entry, value: f64) -> bool {
-    !value.is_finite()
-        || value <= 0.0
-        || value > Insoluble::HenryCoefficient.value()
-        || entry.class == ION
+    is_capped_value(value, entry.class == ION)
+}
+
+/// [`is_capped`] from the value and the one component fact it reads.
+///
+/// A GE phase's resolved parameters carry the ion flag rather than the entry.
+#[must_use]
+pub fn is_capped_value(value: f64, ion: bool) -> bool {
+    !value.is_finite() || value <= 0.0 || value > Insoluble::HenryCoefficient.value() || ion
 }
 
 /// The Henry coefficient a model takes: `ComponentGE.getEffectiveHenryCoefficient`.
 ///
-/// The database arm of NeqSim's two, and the only one this library ports. The other
-/// selects the IAPWS pure-water table for a supported neutral solute in a water-bearing
-/// phase, which is a second correlation over a second table and is refused by name in
-/// [`effective_coefficient`]'s caller rather than approximated here.
+/// The database arm of NeqSim's two. The other is the IAPWS pure-water table, which
+/// `eos.iapws_henry_law` carries; the GE phases select it through
+/// [`crate::ge_phase::HenryState`], and this function is the database arm alone.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if the table fits the substance no correlation -

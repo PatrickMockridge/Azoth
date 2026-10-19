@@ -104,10 +104,10 @@ def ge_nrtl_flash(
     apply_checks(checks.on_input, {"T": t_si, "P": p_si}.get, warnings)
 
     n = len(mixture.components)
-    if len(params.antoine_type) != n:
+    if len(params.names) != n:
         raise InvalidInputError(
             "components",
-            f"the phase has {len(params.antoine_type)} component(s) but the cubic has {n}",
+            f"the phase has {len(params.names)} component(s) but the cubic has {n}",
         )
     z = list(z)
     if len(z) != n:

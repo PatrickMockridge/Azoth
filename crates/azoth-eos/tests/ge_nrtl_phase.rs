@@ -56,6 +56,26 @@ fn every_case_in_the_spec() {
                 &format!("{context} (p_sat[{i}])"),
             );
         }
+        if let Some(expected) = case.expected_vector("henry") {
+            for (i, (&got, &want)) in result.henry.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got.value,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (henry[{i}])"),
+                );
+            }
+        }
+        if let Some(expected) = case.expected_vector("gamma_inf") {
+            for (i, (&got, &want)) in result.gamma_inf.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got,
+                    want,
+                    case.tolerance,
+                    &format!("{context} (gamma_inf[{i}])"),
+                );
+            }
+        }
         common::assert_consistent(&result, context);
     }
 }
@@ -134,38 +154,109 @@ fn a_component_without_a_vapour_pressure_correlation_is_refused() {
     );
 }
 
-/// A component NeqSim's database tags as a Henry's-law solute is refused.
-///
-/// `ComponentGE.fugcoef` takes one of two branches on the component's
-/// `REFERENCESTATETYPE`: `gamma_i P0_i / P` for `solvent`, and a Henry's-law coefficient
-/// for anything else. Only the first is ported, so computing the second's expression for
-/// a solute would be a wrong number with nothing to show that it is wrong. 113 of the
-/// databank's 348 substances are tagged this way, and the two acids carry the literal
-/// `0.0`.
+/// A solute in water takes the IAPWS aqueous arm, and the table shadows its databank row.
 #[test]
-fn a_henrys_law_component_is_refused_rather_than_computed() {
-    for name in ["CO2", "methane", "n-hexane", "nitric acid"] {
-        let err = ge_nrtl_phase_parameters(&[name, "water"], None).unwrap_err();
-        assert!(
-            matches!(err, AzothError::InvalidInput { .. }),
-            "{name}: {err:?}"
+fn the_aqueous_arm_reads_the_iapws_table() {
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    let params = ge_nrtl_phase_parameters(&["water", "CO2"], None).unwrap();
+    let ReferenceState::Henry(HenryState::Iapws(_)) = params.references[1] else {
+        panic!(
+            "CO2 in water should take the IAPWS arm: {:?}",
+            params.references[1]
         );
-        assert_eq!(err.field(), Some("components"), "{name}");
+    };
+    let r = ge_nrtl_phase(&params, 298.15, 100_000.0, &[0.98, 0.02]).unwrap();
+    // IAPWS G7-04 at 298.15 K; the databank row would give 51.65 bar.
+    assert!((r.henry[1].value - 165_644_589.179_205_27).abs() < 1e-3);
+    assert!((r.gamma_inf[1] - 0.012_921_263_405_098_09).abs() < 1e-15);
+    assert_eq!(
+        r.henry[0].value, 0.0,
+        "the solvent arm reads no Henry coefficient"
+    );
+    assert_eq!(
+        r.gamma_inf[0], 1.0,
+        "the solvent arm does not divide by gamma_inf"
+    );
+    assert_eq!(r.p_sat[1].value, 0.0, "the Henry arm reads no P0");
+}
+
+/// Without water the database row answers, and `gamma^inf` is the diluted full composition.
+#[test]
+fn the_dry_arm_reads_the_database_row() {
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    let params = ge_nrtl_phase_parameters(&["methanol", "CO2"], None).unwrap();
+    let ReferenceState::Henry(HenryState::Database { ion: false, .. }) = params.references[1]
+    else {
+        panic!(
+            "CO2 without water should take the database arm: {:?}",
+            params.references[1]
+        );
+    };
+    let r = ge_nrtl_phase(&params, 298.15, 1_000_000.0, &[0.98, 0.02]).unwrap();
+    assert!((r.henry[1].value - 5_165_450.928_785_165).abs() < 1e-6);
+    assert!((r.gamma_inf[1] - 124_733.561_757_904_7).abs() < 1e-9);
+}
+
+/// The four-zero rows are refused where NeqSim evaluates 1.802 bar.
+#[test]
+fn an_unfitted_henry_row_is_refused() {
+    for (a, b) in [("water", "n-butane"), ("methanol", "n-hexane")] {
+        let err = ge_nrtl_phase_parameters(&[a, b], None).unwrap_err();
+        assert!(
+            matches!(err, AzothError::PropertyUnavailable { .. }),
+            "{a}/{b}: {err:?}"
+        );
     }
 }
 
-/// The substances the phase does describe are the ones the database calls `solvent`.
-///
-/// Stated as a test rather than left to the case files, because it is what makes those
-/// cases legitimate: a case whose components were not solvent-tagged would be exercising
-/// a branch the model does not implement.
+/// The `900` sentinel caps to the insoluble limit where no IAPWS row shadows it.
 #[test]
-fn the_solvent_tagged_substances_are_the_ones_that_resolve() {
+fn a_sentinel_row_is_capped() {
+    let params = ge_nrtl_phase_parameters(&["methanol", "methane"], None).unwrap();
+    let r = ge_nrtl_phase(&params, 298.15, 1_000_000.0, &[0.98, 0.02]).unwrap();
+    assert_eq!(r.henry[1].value, 1.0e17, "1e12 bar in pascals");
+}
+
+/// An ion is capped whatever its row says.
+#[test]
+fn an_ion_is_capped() {
+    let params = ge_nrtl_phase_parameters(&["water", "Na+", "Cl-"], None).unwrap();
+    let r = ge_nrtl_phase(&params, 298.15, 100_000.0, &[0.96, 0.02, 0.02]).unwrap();
+    assert_eq!(r.henry[1].value, 1.0e17);
+    assert_eq!(r.henry[2].value, 1.0e17);
+    assert!(r.ln_phi.iter().all(|value| value.is_finite()));
+}
+
+/// A solvent-tagged IAPWS species in water is refused, because upstream throws.
+#[test]
+fn a_solvent_tagged_iapws_species_is_refused_in_water() {
+    for name in ["argon", "hydrogen", "helium"] {
+        let err = ge_nrtl_phase_parameters(&[name, "water"], None).unwrap_err();
+        assert!(
+            matches!(err, AzothError::PropertyUnavailable { .. }),
+            "{name}: {err:?}"
+        );
+    }
+    // The same species without water takes the Raoult arm, as any solvent does.
+    ge_nrtl_phase_parameters(&["argon", "methanol"], None).unwrap();
+}
+
+/// The substances the database calls `solvent` take the Raoult arm.
+#[test]
+fn the_solvent_tagged_substances_take_the_raoult_arm() {
+    use azoth_eos::ge_phase::ReferenceState;
+
     for name in ["water", "methanol", "ethanol", "MEG", "acetone"] {
         let params = ge_nrtl_phase_parameters(&[name, "water"], None).unwrap_or_else(|e| {
             panic!("{name} is tagged solvent, so the phase should resolve it: {e}")
         });
-        assert_eq!(params.antoine.len(), 2, "{name}");
+        assert!(
+            matches!(params.references[0], ReferenceState::Solvent(_)),
+            "{name}"
+        );
+        assert_eq!(params.references.len(), 2, "{name}");
     }
 }
 

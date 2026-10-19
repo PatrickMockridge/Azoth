@@ -20,14 +20,13 @@ from azoth.core.result import GeNrtlPhaseResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.components import GeNrtlPhaseParameters
-from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
+from azoth.eos.reference._ge_phase import (
+    ReferenceComposition,
+    ge_fugacities_with_references,
+)
 from azoth.eos.reference.nrtl_activity_coefficients import nrtl_activity_coefficients
 
 MODEL_ID = "eos.ge_nrtl_phase"
-
-#: How many Antoine coefficients each component carries. Named because both the
-#: resolver and this reader slice the flat vector by it.
-ANTOINE_COEFFICIENTS = 5
 
 
 def ge_nrtl_phase(
@@ -38,10 +37,10 @@ def ge_nrtl_phase(
 ) -> GeNrtlPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is NRTL's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``ComponentGE.fugcoef`` for this
-    phase. ``gamma_i`` comes from NRTL on ``params`` at ``T`` and ``x``; ``P0_i`` is
-    Antoine's correlation on the component's own coefficients at ``T``. ``params`` is
-    resolved by name through
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. ``gamma_i`` comes from NRTL on
+    ``params`` at ``T`` and ``x``; the reference ``gamma_i^inf`` is the same model on the
+    pair the Henry arm constructs. ``params`` is resolved by name through
     :func:`azoth.eos.components.ge_nrtl_phase_parameters`; ``x`` is checked rather than
     renormalised.
 
@@ -107,32 +106,34 @@ def ge_nrtl_phase(
         nrtl_activity_coefficients(NrtlParameters(alpha=params.alpha, dij=params.dij), T, x).gamma
     )
 
-    # The pure-component saturation pressures, one Antoine evaluation each.
-    p_sat: list[float] = []
-    for i in range(n):
-        start = i * ANTOINE_COEFFICIENTS
-        [a, b, c, d, e] = params.antoine_coefficients[start : start + ANTOINE_COEFFICIENTS]
-        saturated = antoine_vapor_pressure(
-            a,
-            b,
-            c,
-            d,
-            e,
-            params.antoine_type[i],
-            from_si(params.antoine_tc[i], "K"),
-            from_si(params.antoine_pc[i], "Pa"),
-            T,
+    # The reference states and the composition, in the one place every GE phase shares
+    # them. The reference `gamma^inf` is this phase's own NRTL over the 2 x 2 submatrix of
+    # the pair - or, without water, over the diluted full composition.
+    water = next(
+        (i for i, name in enumerate(params.names) if name.strip().lower() == "water"),
+        None,
+    )
+
+    def reference_gamma(_solute: int, composition: ReferenceComposition) -> float:
+        indices = composition.indices
+        alpha = [params.alpha[i * n + j] for i in indices for j in indices]
+        dij = [params.dij[i * n + j] for i in indices for j in indices]
+        evaluated = nrtl_activity_coefficients(
+            NrtlParameters(alpha=tuple(alpha), dij=tuple(dij)), T, list(composition.x)
         )
-        warnings.extend(saturated.warnings)
-        p_sat.append(saturated.p_sat.to_base_units().magnitude)
+        return evaluated.gamma[0]
+
+    fugacities = ge_fugacities_with_references(gamma, params, x, water, t_si, p_si, reference_gamma)
+    warnings.extend(fugacities.warnings)
 
     ln_gamma = [math.log(value) for value in gamma]
-    ln_phi = [lg + math.log(p0 / p_si) for lg, p0 in zip(ln_gamma, p_sat, strict=True)]
 
     return GeNrtlPhaseResult(
         gamma=tuple(gamma),
         ln_gamma=tuple(ln_gamma),
-        ln_phi=tuple(ln_phi),
-        p_sat=tuple(from_si(value, "Pa") for value in p_sat),
+        ln_phi=tuple(fugacities.ln_phi),
+        p_sat=tuple(from_si(value, "Pa") for value in fugacities.p_sat),
+        henry=tuple(from_si(value, "Pa") for value in fugacities.henry),
+        gamma_inf=tuple(fugacities.gamma_inf),
         warnings=tuple(warnings),
     )

@@ -84,10 +84,9 @@ fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
 /// `ComponentGEVanLaarAcid.fugcoef` overrides the branch that reads `referenceStateType`,
 /// and it has to: both acids are tagged `solute` in NeqSim's database, so the inherited
 /// method would give them a Henry's-law coefficient instead of the Raoult one the model is
-/// written for. A resolver that applied the shared guard here would refuse the model's own
-/// subject - which is what this test says, by resolving the pair that guard rejects.
+/// written for. This test says so by resolving the pair beside the branch the siblings take.
 #[test]
-fn the_henrys_law_refusal_does_not_apply_here() {
+fn the_henrys_law_branch_does_not_apply_here() {
     let params = ge_van_laar_acid_phase_parameters(&["water", "nitric acid"], None).unwrap();
     assert_eq!(
         params.acid_index,
@@ -95,12 +94,20 @@ fn the_henrys_law_refusal_does_not_apply_here() {
         "water and nitric acid resolve"
     );
 
-    // The same two names are refused by every other GE phase, because there the tag *is*
-    // read. Stated here so the inconsistency is a decision rather than an oversight.
-    let refused = azoth_eos::databank::ge_nrtl_phase_parameters(&["water", "nitric acid"], None);
+    // Every other GE phase reads the tag, so nitric acid takes its Henry arm there - the
+    // 900 sentinel, capped. Stated here so the inconsistency is a decision rather than an
+    // oversight.
+    use azoth_eos::ge_phase::{HenryState, ReferenceState};
+
+    let siblings = azoth_eos::databank::ge_nrtl_phase_parameters(&["water", "nitric acid"], None)
+        .expect("the sibling phases resolve the acid and give it the Henry arm");
     assert!(
-        matches!(refused, Err(AzothError::InvalidInput { .. })),
-        "the shared guard should refuse this pair: {refused:?}"
+        matches!(
+            siblings.references[1],
+            ReferenceState::Henry(HenryState::Database { ion: false, .. })
+        ),
+        "the sibling phases should read the tag: {:?}",
+        siblings.references[1]
     );
 }
 

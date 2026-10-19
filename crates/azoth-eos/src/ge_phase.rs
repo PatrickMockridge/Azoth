@@ -7,16 +7,202 @@
 //! `gamma_i` and which correlation supplies `P0_i`; the composition is one line and is
 //! here rather than written once per phase.
 //!
-//! What is *not* here is the reference-state branch. A component tagged otherwise takes a
-//! Henry's-law coefficient in NeqSim, which this library does not implement, so the
-//! resolvers that build the parameters refuse such a component before a phase is
-//! evaluated - see [`crate::databank::SOLVENT`].
+//! What is here is the reference-state branch: [`ReferenceState`] carries each component's
+//! arm and [`ge_fugacities_with_references`] composes the two. A phase whose resolver has
+//! not moved to it yet still refuses a solute before it is evaluated.
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result, Warning};
 
 use crate::antoine_vapor_pressure::{antoine_vapor_pressure, form_from_type};
 use crate::databank::AntoineRecord;
+use crate::henry::{HenryRecord, Insoluble};
+use crate::iapws_henry_law::{Gas, iapws_henry_law};
+
+/// One bar in pascals: the databank's Henry correlation is in bar, the phase's pressure in
+/// pascals, and the ratio `H / P` is dimensionless in either.
+const BAR_TO_PA: f64 = 1.0e5;
+
+/// One component's reference state in an activity-coefficient phase.
+///
+/// `ComponentGE.fugcoef` branches on `REFERENCESTATETYPE`: a `solvent` component (and one the
+/// IAPWS aqueous override does not take) is `gamma_i P0_i / P`; every other is
+/// `(gamma_i / gamma_i^inf) H_i / P`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ReferenceState {
+    /// `phi_i = gamma_i P0_i / P`, with the component's Antoine correlation.
+    Solvent(AntoineRecord),
+    /// `phi_i = (gamma_i / gamma_i^inf) H_i / P`.
+    Henry(HenryState),
+}
+
+/// Where a Henry-arm component's `H` comes from.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HenryState {
+    /// The IAPWS G7-04 pure-water table, which overrides the databank row for its 14 gases
+    /// in a phase that carries water.
+    Iapws(Gas),
+    /// The databank's `HenryCoef1..4` correlation, capped to [`Insoluble::HenryCoefficient`].
+    Database {
+        /// The four coefficients, uncapped.
+        record: HenryRecord,
+        /// Whether the component is an ion, which the cap takes whatever the row says.
+        ion: bool,
+    },
+}
+
+impl HenryState {
+    /// `H(T)` in pascals, with the cap applied.
+    ///
+    /// The IAPWS arm fails closed to the insoluble limit outside its fitted window, which is
+    /// `IapwsHenryLaw.isUsable`'s false; the database arm caps a non-finite, non-positive or
+    /// over-limit value and every ion.
+    ///
+    /// # Errors
+    /// * [`AzothError::PropertyUnavailable`] if a non-ion database row carries the four
+    ///   zeros the table uses for a substance it fits no correlation for. The resolver
+    ///   refuses that state before a phase is evaluated; this is the guard behind it.
+    pub fn coefficient(&self, t: f64) -> Result<f64> {
+        match *self {
+            Self::Iapws(gas) => {
+                // `IapwsHenryLaw.isUsable` is the row's own fitted window, and both of its
+                // false cases fail closed to the insoluble limit rather than extrapolate.
+                // The window also keeps the call inside liquid water, which is the
+                // correlation's domain.
+                let row = gas.row();
+                if t < row.minimum_temperature || t > row.maximum_temperature {
+                    return Ok(Insoluble::HenryCoefficient.value() * BAR_TO_PA);
+                }
+                Ok(iapws_henry_law(gas, kelvins(t))?.henry.value)
+            }
+            Self::Database { record, ion } => {
+                let raw = crate::henry::coefficient_from_record(&record, t);
+                if crate::henry::is_capped_value(raw, ion) {
+                    Ok(Insoluble::HenryCoefficient.value() * BAR_TO_PA)
+                } else if record.is_fitted() {
+                    Ok(raw * BAR_TO_PA)
+                } else {
+                    Err(AzothError::property_unavailable(
+                        "a component".to_string(),
+                        "a Henry coefficient".to_string(),
+                        "the compiled table carries `HenryCoef1..4` as zeros for it, which is \
+                         the table's marker for a substance it fits no correlation for"
+                            .to_string(),
+                    ))
+                }
+            }
+        }
+    }
+}
+
+/// The composition a Henry arm's `gamma^inf` is evaluated at.
+///
+/// The first index is always the solute, and `x` runs over `indices` only.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReferenceComposition {
+    /// The full-list indices, solute first.
+    pub indices: Vec<usize>,
+    /// The composition over `indices`.
+    pub x: Vec<f64>,
+}
+
+/// `PhaseGE.getActivityCoefficientInfDilWater` and `getActivityCoefficientInfDil`.
+///
+/// With water, the reference is the two-component phase `Phase.initRefPhases` builds: the
+/// solute at `1e-10` mol and water at `10.0`, so `x = [1e-11, 1 - 1e-11]`. Without water,
+/// the phase's own composition is cloned with the solute at `x_k = 1e-10` and the rest
+/// renormalised: `x'_k = 1e-10 / denom` and `x'_j = x_j / denom`, where
+/// `denom = sum_{j != k} x_j + 1e-10`.
+///
+/// The no-water form drops components at zero: they contribute nothing to any of the
+/// activity models, and UNIFAC divides by `x_i`.
+#[must_use]
+pub fn reference_composition(k: usize, x: &[f64], water: Option<usize>) -> ReferenceComposition {
+    if let Some(w) = water {
+        return ReferenceComposition {
+            indices: vec![k, w],
+            x: vec![1.0e-11, 1.0 - 1.0e-11],
+        };
+    }
+    let others: f64 = x
+        .iter()
+        .enumerate()
+        .filter(|(j, _)| *j != k)
+        .map(|(_, value)| value)
+        .sum();
+    let denominator = others + 1.0e-10;
+    let mut indices = vec![k];
+    let mut values = vec![1.0e-10 / denominator];
+    for (j, &value) in x.iter().enumerate() {
+        if j != k && value > 0.0 {
+            indices.push(j);
+            values.push(value / denominator);
+        }
+    }
+    ReferenceComposition { indices, x: values }
+}
+
+/// The fugacity coefficients of a GE phase, from the reference state the resolver chose.
+///
+/// `reference_gamma(solute, composition)` evaluates the phase's own activity model on the
+/// reference composition and returns the solute's `gamma^inf`. A model that divides by
+/// `x_i` (UNIFAC, UNIQUAC) must evaluate on the pair or subset, not the full list with the
+/// other components zeroed.
+///
+/// `p_sat` and `henry` are zero where the component's arm reads none, and `gamma_inf` is one
+/// where it does not divide by one - the convention `eos.pitzer_phase` already uses for the
+/// two Henry quantities.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] if a solvent component's Antoine correlation is evaluated
+///   outside its form's range.
+/// * Propagates [`HenryState::coefficient`] and the reference evaluation.
+pub fn ge_fugacities_with_references(
+    gamma: &[f64],
+    references: &[ReferenceState],
+    x: &[f64],
+    water: Option<usize>,
+    t: f64,
+    p: f64,
+    mut reference_gamma: impl FnMut(usize, &ReferenceComposition) -> Result<f64>,
+) -> Result<GeFugacities> {
+    let n = references.len();
+    let mut ln_phi = Vec::with_capacity(n);
+    let mut p_sat = Vec::with_capacity(n);
+    let mut henry = Vec::with_capacity(n);
+    let mut gamma_inf = Vec::with_capacity(n);
+    let mut warnings = Vec::new();
+
+    for (i, reference) in references.iter().enumerate() {
+        match reference {
+            ReferenceState::Solvent(record) => {
+                let (value, caveats) = saturation(std::slice::from_ref(record), t)?;
+                warnings.extend(caveats);
+                ln_phi.push(gamma[i].ln() + (value[0] / p).ln());
+                p_sat.push(value[0]);
+                henry.push(0.0);
+                gamma_inf.push(1.0);
+            }
+            ReferenceState::Henry(state) => {
+                let coefficient = state.coefficient(t)?;
+                let composition = reference_composition(i, x, water);
+                let infinite = reference_gamma(i, &composition)?;
+                ln_phi.push((gamma[i] / infinite).ln() + (coefficient / p).ln());
+                p_sat.push(0.0);
+                henry.push(coefficient);
+                gamma_inf.push(infinite);
+            }
+        }
+    }
+
+    Ok(GeFugacities {
+        ln_phi,
+        p_sat,
+        henry,
+        gamma_inf,
+        warnings,
+    })
+}
 
 /// The fugacity coefficients of an activity-coefficient phase, and the parts they are
 /// made of.
@@ -27,10 +213,18 @@ use crate::databank::AntoineRecord;
 /// them apart.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeFugacities {
-    /// `ln(gamma_i P0_i / P)` per component.
+    /// `ln(gamma_i P0_i / P)` per component on the solvent arm and
+    /// `ln(gamma_i / gamma_i^inf) + ln(H_i / P)` on the Henry arm.
     pub ln_phi: Vec<f64>,
-    /// The pure-component saturation pressure at the state's temperature, in Pa.
+    /// The pure-component saturation pressure at the state's temperature, in Pa, and **zero
+    /// where the component's arm reads a Henry coefficient instead**.
     pub p_sat: Vec<f64>,
+    /// The Henry coefficient each component's arm read, in Pa, and **zero where the arm
+    /// reads none**.
+    pub henry: Vec<f64>,
+    /// The infinite-dilution activity coefficient each Henry arm divided by, and **one
+    /// where the arm does not divide by one**.
+    pub gamma_inf: Vec<f64>,
     /// Caveats from the correlations.
     pub warnings: Vec<Warning>,
 }
@@ -122,9 +316,12 @@ pub fn ge_fugacities(
     p: f64,
 ) -> Result<GeFugacities> {
     let (p_sat, warnings) = saturation(antoine, t)?;
+    let n = gamma.len();
     Ok(GeFugacities {
         ln_phi: combine(gamma, &p_sat, p),
         p_sat,
+        henry: vec![0.0; n],
+        gamma_inf: vec![1.0; n],
         warnings,
     })
 }

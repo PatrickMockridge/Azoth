@@ -146,21 +146,25 @@ def is_capped(entry: DatabankEntry, value: float) -> bool:
     """
     from azoth.eos.components import ION
 
+    return is_capped_value(value, entry.component_type == ION)
+
+
+def is_capped_value(value: float, ion: bool) -> bool:
+    """:func:`is_capped` from the value and the one component fact it reads.
+
+    A GE phase's resolved parameters carry the ion flag rather than the entry.
+    """
     return (
-        not math.isfinite(value)
-        or value <= 0.0
-        or value > Insoluble.HENRY_COEFFICIENT.value
-        or entry.component_type == ION
+        not math.isfinite(value) or value <= 0.0 or value > Insoluble.HENRY_COEFFICIENT.value or ion
     )
 
 
 def effective_coefficient(entry: DatabankEntry, temperature_k: float) -> float:
     """The Henry coefficient a model takes: ``ComponentGE.getEffectiveHenryCoefficient``.
 
-    The database arm of NeqSim's two, and the only one this library ports. The other
-    selects the IAPWS pure-water table for a supported neutral solute in a water-bearing
-    phase, which is a second correlation over a second table and is refused by name rather
-    than approximated here.
+    The database arm of NeqSim's two. The other is the IAPWS pure-water table, which
+    :mod:`azoth.eos.reference.iapws_henry_law` carries; the GE phases select it through
+    ``_ge_phase.henry_coefficient``, and this function is the database arm alone.
 
     Raises:
         PropertyUnavailableError: if the table fits the substance no correlation - the

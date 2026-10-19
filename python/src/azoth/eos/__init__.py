@@ -2815,13 +2815,13 @@ def ge_nrtl_phase(
 ) -> GeNrtlPhaseResult:
     """The fugacity coefficients of a liquid whose non-ideality is NRTL's.
 
-    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGENRTL`` liquid: there is no
-    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and
-    its standard state is the pure liquid at the state's temperature.
+    ``ComponentGE.fugcoef`` for this phase: ``gamma_i P0_i / P`` on the solvent arm and
+    ``(gamma_i / gamma_i^inf) H_i / P`` on the Henry arm. There is no cubic, because an
+    activity-coefficient phase's non-ideality is ``gamma``.
 
     ``params`` is the caller's: resolve it from the mixture's components with
     :func:`azoth.eos.components.ge_nrtl_phase_parameters`, which carries the NRTL
-    matrices *and* each component's vapour-pressure correlation.
+    matrices and each component's reference state.
 
     Raises:
         InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a

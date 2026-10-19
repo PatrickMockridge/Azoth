@@ -5,11 +5,11 @@
 //! `algorithm` block.
 //!
 //! NeqSim's `PhaseGENRTL` is the port source. Its liquid does not use a cubic at all:
-//! `ComponentGE.fugcoef` sets `phi_i = gamma_i P0_i / P`, where `gamma_i` is the NRTL
-//! activity coefficient and `P0_i` the pure-component saturation pressure. Both halves
-//! are already ported - [`crate::nrtl_activity_coefficients`] and
-//! [`crate::antoine_vapor_pressure`] - and this is their composition rather than a third
-//! piece of physics.
+//! `ComponentGE.fugcoef` sets `phi_i = gamma_i P0_i / P` for a `solvent` component and
+//! `phi_i = (gamma_i / gamma_i^inf) H_i / P` for every other one. `gamma_i` is the NRTL
+//! activity coefficient; `P0_i` is the pure-component saturation pressure and `H_i` the
+//! Henry coefficient. The activity model, Antoine and the Henry reference state are all
+//! ported, and this is their composition rather than a third piece of physics.
 
 use azoth_core::units::pascals;
 use azoth_core::{AzothError, Result, apply_checks};
@@ -20,9 +20,10 @@ use crate::results::GeNrtlPhaseResult;
 
 /// The fugacity coefficients of a liquid whose non-ideality is NRTL's.
 ///
-/// `phi_i = gamma_i P0_i / P`, which is NeqSim's `ComponentGE.fugcoef` for this phase.
-/// `gamma_i` comes from NRTL on `params` at `T` and `x`; `P0_i` is Antoine's correlation
-/// on the component's own coefficients at `T`. `params` is resolved by name through
+/// `ComponentGE.fugcoef` for this phase: `gamma_i P0_i / P` on the solvent arm and
+/// `(gamma_i / gamma_i^inf) H_i / P` on the Henry arm. `gamma_i` comes from NRTL on
+/// `params` at `T` and `x`; the reference `gamma_i^inf` is the same model on the pair the
+/// Henry arm constructs. `params` is resolved by name through
 /// [`crate::databank::ge_nrtl_phase_parameters`]; `x` is checked rather than
 /// renormalised.
 ///
@@ -68,12 +69,12 @@ pub fn ge_nrtl_phase(
             "a mixture of zero components has no fugacity coefficient",
         ));
     }
-    if params.antoine.len() != n {
+    if params.references.len() != n {
         return Err(AzothError::invalid_input(
             "components",
             format!(
                 "the phase has {} component(s) but `x` has {n} entries",
-                params.antoine.len()
+                params.references.len()
             ),
         ));
     }
@@ -106,17 +107,49 @@ pub fn ge_nrtl_phase(
     };
     let gamma = crate::nrtl_activity_coefficients::nrtl_activity_coefficients(&nrtl, T, x)?.gamma;
 
-    // The saturation pressures and the composition, in the one place every GE phase
-    // shares them.
-    let saturated = crate::ge_phase::ge_fugacities(&gamma, &params.antoine, T, P)?;
-    warnings.extend(saturated.warnings);
+    // The reference states and the composition, in the one place every GE phase shares
+    // them. The reference `gamma^inf` is the phase's own NRTL over the 2 x 2 submatrix of
+    // the pair - or, without water, over the diluted full composition.
+    let water = params
+        .names
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("water"));
+    let fugacities = crate::ge_phase::ge_fugacities_with_references(
+        &gamma,
+        &params.references,
+        x,
+        water,
+        T,
+        P,
+        |_, reference| {
+            let m = reference.indices.len();
+            let mut alpha = Vec::with_capacity(m * m);
+            let mut dij = Vec::with_capacity(m * m);
+            for &i in &reference.indices {
+                for &j in &reference.indices {
+                    alpha.push(params.alpha[i * n + j]);
+                    dij.push(params.dij[i * n + j]);
+                }
+            }
+            let subset = crate::databank::NrtlParameters { alpha, dij };
+            let evaluated = crate::nrtl_activity_coefficients::nrtl_activity_coefficients(
+                &subset,
+                T,
+                &reference.x,
+            )?;
+            Ok(evaluated.gamma[0])
+        },
+    )?;
+    warnings.extend(fugacities.warnings);
 
     let ln_gamma: Vec<f64> = gamma.iter().map(|g| g.ln()).collect();
     Ok(GeNrtlPhaseResult {
         gamma,
         ln_gamma,
-        ln_phi: saturated.ln_phi,
-        p_sat: saturated.p_sat.into_iter().map(pascals).collect(),
+        ln_phi: fugacities.ln_phi,
+        p_sat: fugacities.p_sat.into_iter().map(pascals).collect(),
+        henry: fugacities.henry.into_iter().map(pascals).collect(),
+        gamma_inf: fugacities.gamma_inf,
         warnings,
     })
 }
