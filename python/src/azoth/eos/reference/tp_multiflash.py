@@ -6,11 +6,11 @@ Spec: ``specs/models/eos/tp_multiflash.toml``. NeqSim's ``TPmultiflash``, reache
 out, and the two agree everywhere the seeding has nothing to add.
 
 Three steps, in the order upstream runs them: the two-phase flash; the tangent-plane trial
-from :func:`azoth.eos.reference.multiflash_stability_test.multiflash_stability_test`, **which
+from :func:`azoth.eos.reference.multiflash_stability_test.seeding_against_reference`, **which
 is ``TPmultiflash``'s own override of ``stabilityAnalysis`` and not the base method
 :func:`azoth.eos.reference.stability_test.stability_test` ports** - it runs the same Wilson
-pair and then a pure-component trial per eligible component, which is what finds a water-rich
-phase in a gas carrying ppm water; and the fraction solve below, which is ``multiphase.rs``'s
+pair and then a pure-component trial per eligible component, measured from phase 0 of the
+flashed set as upstream is; and the fraction solve below, which is ``multiphase.rs``'s
 ``solve_phase_fractions`` in Python.
 
 The Rust kernel carries the reasoning; this is the same arithmetic. The two are compared case
@@ -41,7 +41,7 @@ from azoth.eos.reference._mixture_state import (
     phase_state,
     reduced_parameters,
 )
-from azoth.eos.reference.multiflash_stability_test import multiflash_stability_test
+from azoth.eos.reference.multiflash_stability_test import seeding_against_reference
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.srk_z_factor import srk_z_factor
@@ -386,8 +386,33 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     # `eos.stability_test` ports** - the two share a name and nothing else - and the difference
     # is the whole of what this model was missing: the override adds a pure-component trial per
     # eligible component, which is what finds a water-rich phase in a gas carrying ppm water.
-    seeding = multiflash_stability_test(
-        mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed
+    #
+    # **Measured from the least-dense existing phase, as upstream is.** `TPflash` orders phases
+    # by density and the analysis reads its reference potentials from phase 0; the set here is
+    # ordered liquid first, so the reference is chosen by the largest compressibility. A trial
+    # that reproduces **any** existing phase is trivial, upstream's `xTrivialCheck0` and
+    # `xTrivialCheck1`.
+    reference_index: int | None = None
+    reference_z = -math.inf
+    for index, phase in enumerate(phases):
+        try:
+            state = phase_state(reduced, kij, phase.composition, liquid=phase.liquid)
+        except Exception:
+            continue
+        if math.isfinite(state.z) and state.z > reference_z:
+            reference_z = state.z
+            reference_index = index
+    existing_phases = [list(phase.composition) for phase in phases]
+    reference = phases[reference_index] if reference_index is not None else None
+    seeding = seeding_against_reference(
+        mixture,
+        t_si,
+        p_si,
+        feed,
+        reference=list(reference.composition) if reference is not None else list(feed),
+        reference_liquid=reference.liquid if reference is not None else None,
+        existing=existing_phases,
+        warnings=list(warnings),
     )
     warnings.extend(seeding.warnings)
 

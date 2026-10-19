@@ -8978,7 +8978,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         expected_records: &[],
     },
     TestCase {
-        id: "n2_co2_octane_three_phase_at_180_k_10_bar_diverges",
+        id: "n2_co2_octane_three_phase_at_180_k_10_bar",
         kind: "case",
         property: None,
         status: "active",

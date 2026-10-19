@@ -166,64 +166,50 @@ fn co2_methane_decane_splits_three_ways_at_180_k_2_bar() {
     );
 }
 
-/// **A known divergence, characterised rather than matched.**
+/// **The state that was a recorded divergence until the reference phase was fixed.**
 ///
-/// NeqSim reports **three** phases at this state, the third a CO2-rich liquid at `x_CO2`
-/// 0.98415312005431520 and Z of 0.02175230239149613. This library reports two: its stability
-/// trial converges to `x = [0.9696, 0.0304, 6.5e-9]`, a *nitrogen*-rich vapour, and the solve
-/// drives that onto the gas the two-phase flash already found.
-///
-/// The cause is a seeding mechanism that is not ported. `stabilityAnalysis` runs the two
-/// Wilson-K trials and then a **pure-component fallback**: one trial per component, started
-/// from that component, scanning from the last downwards, adding a phase when its tangent-plane
-/// distance is below `-1e-8`. The CO2 trial is the one that reaches the CO2-rich phase, and
-/// Wilson K-values do not start anywhere near it.
-///
-/// So this test asserts the *current* count, not NeqSim's, and it is written to fail loudly if
-/// the gap closes - at which point the missing seeding exists and the assertions below become
-/// the three-phase `check` the other cases use.
+/// NeqSim reports three phases here, the third a CO2-rich liquid at `x_CO2` 0.98415312005431520
+/// and Z of 0.02175230239149613, and this library used to report the two-phase flash's own
+/// answer. The pure-component fallback was already ported; what was wrong was where it was
+/// measured from. `stabilityAnalysis` reads its reference potentials from **phase 0 of the
+/// flashed system** - the least-dense phase, because `TPflash` orders by density - and marks a
+/// trial trivial when it reproduces **any** existing phase. This kernel derived both from the
+/// feed, which is phase 0 only for a single-phase feed. With the reference fixed the CO2 trial
+/// reaches the CO2-rich phase and the answer is NeqSim's.
 #[test]
-fn n2_co2_octane_third_phase_is_not_reached_without_the_pure_component_trials() {
+fn n2_co2_octane_splits_three_ways_at_180_k_10_bar() {
     let got = state(
         &["nitrogen", "CO2", "n-octane"],
         180.0,
         1.0e6,
         &[0.1, 0.4, 0.5],
     );
-    assert_eq!(
-        got.phase_count, 2,
-        "NeqSim reports 3 here and this library reported {}. If this now passes with 3, the \
-         pure-component seeding has been ported and this test should become the three-phase \
-         check beside it. Betas {:?}",
-        got.phase_count, got.phase_fractions
-    );
-    // The two phases it does report are the two-phase flash's, and they are right: NeqSim
-    // reports the same pair with the multiphase flag *off*.
     check(
         &got,
         &[
             Expected {
-                phase_fractions: 0.9165691336463065,
-                z_factor: 0.06779885045276167,
-                x: &[0.02767335316398553, 0.42681406115096726, 0.5455125856850472],
+                phase_fractions: 0.08437940065407534,
+                z_factor: 0.9495405616635599,
+                x: &[0.9132770769209018, 0.08672289733209693, 2.574700136832e-8],
             },
             Expected {
-                phase_fractions: 0.08343086635369346,
-                z_factor: 0.9468497822815427,
+                phase_fractions: 0.7563697015044588,
+                z_factor: 0.07716944734261964,
+                x: &[0.02712244085245802, 0.31195737408395324, 0.6609201850635887],
+            },
+            Expected {
+                phase_fractions: 0.1592508978414658,
+                z_factor: 0.02175230239149613,
                 x: &[
-                    0.8945784926813769,
-                    0.10542148400286804,
-                    2.3315755061764716e-8,
+                    0.015218973076522303,
+                    0.9841531200543152,
+                    0.000627906869162516,
                 ],
             },
         ],
-        "N2/CO2/nC8 180 K 10 bar (two-phase part)",
+        "N2/CO2/nC8 180 K 10 bar",
     );
-    assert_eq!(
-        got.seeded,
-        TpMultiflashSeed::TwoPhaseFlash,
-        "the seeding fired and did not survive the merge; if it now does, see above"
-    );
+    assert_eq!(got.seeded, TpMultiflashSeed::StabilitySeeded);
 }
 
 #[test]

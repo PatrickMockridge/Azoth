@@ -2,7 +2,7 @@ id = "eos.tp_multiflash"
 name = "Multiphase flash at fixed temperature and pressure"
 kind = "procedure"
 assumptions = [
-    "the tangent-plane trial is `eos.stability_test`'s: two starts from Wilson K-values, measured from the feed. Upstream then runs a **pure-component fallback**, one trial per component, which `ROADMAP.md` names - so a phase only such a start finds is missed, and the N2/CO2/n-octane case records it.",
+    "the tangent-plane trial is `eos.multiflash_stability_test`, the `stabilityAnalysis` override: two Wilson starts then a pure-component fallback. Measured from **phase 0 of the flashed set** - the least-dense phase - and trivial against **any existing phase**, as `TpMultiflashSeedProbe.java` measures.",
     "**up to three phases, and never four.** Upstream's `setMultiPhaseCheck(true)` raises the system's phase ceiling to three before the flash runs, so three is the model's own bound rather than a convergence result. A feed needing a fourth phase is reported three-phase.",
     "the added phase's starting fraction is the feed's mole fraction of the trial's largest component, which is upstream's rule and a share of the feed rather than a guess at the answer. The fraction solve is what moves it.",
     "`phase_count` is decided by the seeding and the merge, not by the solve. A Newton on the fractions cannot create a phase: one that should not exist converges to a fraction at the floor, and one that should is unreachable from a set that does not contain it.",
@@ -99,7 +99,7 @@ description = """\
 type = "vector"
 unit = "dimensionless"
 length = "one per trial"
-description = "The tangent-plane distance at each trial's stationary point, in the order `eos.stability_test` reports them; negative means the trial lies below the tangent plane through the feed."
+description = "The tangent-plane distance at each trial's stationary point, in the order `eos.multiflash_stability_test` reports them; negative means the trial lies below the tangent plane through phase 0."
 [outputs.iterations]
 unit = "dimensionless"
 description = "Fraction-solve steps taken."

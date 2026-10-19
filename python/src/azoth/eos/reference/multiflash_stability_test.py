@@ -173,12 +173,20 @@ def _pure_trials(mixture: Mixture, z: list[float]) -> list[int]:
     return out
 
 
-def _seed_of(settled: _Settled, z: list[float]) -> float:
-    """The distance a trial reports, or ``FAILED_TM`` where it failed or went trivial."""
-    distance = sum(abs(a - b) for a, b in zip(settled.composition, z, strict=True))
-    if settled.failed or distance < TRIVIAL:
+def _seed_of(settled: _Settled, existing: list[list[float]]) -> float:
+    """The distance a trial reports, or ``FAILED_TM`` where it failed or went trivial.
+
+    Upstream's ``xTrivialCheck`` is the sum-absolute distance from **each existing phase**,
+    and a trial that reproduces any of them is the plane through that phase rather than a
+    new one. The single-phase model is the case with one entry.
+    """
+    if settled.failed:
         return FAILED_TM
-    return 1.0 - settled.totals
+    trivial = any(
+        sum(abs(a - b) for a, b in zip(settled.composition, phase, strict=True)) < TRIVIAL
+        for phase in existing
+    )
+    return FAILED_TM if trivial else 1.0 - settled.totals
 
 
 def _dominant(values: list[float]) -> int:
@@ -217,16 +225,52 @@ def multiflash_stability_test(
     if abs(sum(z) - 1.0) > 1.0e-9:
         raise InvalidInputError("z", f"the mole fractions sum to {sum(z)}, not to one")
 
+    return seeding_against_reference(
+        mixture,
+        t_si,
+        p_si,
+        z,
+        reference=list(z),
+        reference_liquid=None,
+        existing=[list(z)],
+        warnings=warnings,
+    )
+
+
+def seeding_against_reference(
+    mixture: Mixture,
+    t_si: float,
+    p_si: float,
+    z: list[float],
+    *,
+    reference: list[float],
+    reference_liquid: bool | None,
+    existing: list[list[float]],
+    warnings: list[Warning],
+) -> MultiflashStabilityTestResult:
+    """The analysis measured against a reference phase rather than the feed.
+
+    NeqSim's ``TPmultiflash.stabilityAnalysis`` takes its reference potentials from **phase 0
+    of the flashed system** - the least-dense existing phase, because ``TPflash`` orders by
+    density - and marks a trial trivial when it reproduces **any** existing phase. The public
+    model above is the single-phase case, where phase 0 is the feed; ``eos.tp_multiflash``
+    calls this with the two-phase set and the reference the density order names.
+    """
+    spec = _models_gen.model(MODEL_ID)
     algorithm = spec["algorithm"]
+    count = len(mixture.components)
     reduced = reduced_parameters(mixture, t_si, p_si)
     kij = mixture.effective_kij(reduced.t_kelvin)
 
     valid = [value > PRESENT for value in z]
-    present = [value if value > PRESENT else 1.0 for value in z]
-    feed = _feed_state(reduced, kij, list(z))
+    state = (
+        _feed_state(reduced, kij, list(reference))
+        if reference_liquid is None
+        else phase_state(reduced, kij, list(reference), liquid=reference_liquid)
+    )
     d = [
-        _ln(held) + lp if zi > PRESENT else 0.0
-        for zi, lp, held in zip(z, feed.ln_phi, present, strict=True)
+        _ln(fraction) + lp if fraction > PRESENT else 0.0
+        for fraction, lp in zip(reference, state.ln_phi, strict=True)
     ]
 
     tm: list[float] = []
@@ -255,7 +299,7 @@ def multiflash_stability_test(
         for seed, liquid, path in pair:
             settled = _trial(reduced, kij, d, valid, seed, liquid=liquid, cap=cap)
             iterations += settled.iterations
-            distance = _seed_of(settled, z)
+            distance = _seed_of(settled, existing)
             tm.append(distance)
             if distance < TM_LIMIT:
                 return MultiflashStabilityTestResult(
@@ -276,7 +320,7 @@ def multiflash_stability_test(
         ]
         settled = _trial(reduced, kij, d, valid, seed, liquid=True, cap=PURE_CAP)
         iterations += settled.iterations
-        distance = _seed_of(settled, z)
+        distance = _seed_of(settled, existing)
         tm.append(distance)
         if distance < TM_LIMIT:
             return MultiflashStabilityTestResult(

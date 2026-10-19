@@ -44,7 +44,7 @@ not an equation, and both implementations read it from here.
 | `z_factor` | dimensionless | The root of the cubic each phase sits on, as `Z = PV/RT`. This is what tells two liquid phases apart: they share the lower branch and differ in composition, so a type alone would call them one phase. |
 | `ln_phi` | dimensionless | `ln phi_i` in each phase. A row is empty where the cubic cannot evaluate that phase's composition, which the merge can leave behind; `z_factor` is `NaN` there for the same reason. |
 | `seeded` | two_phase_flash / stability_seeded | Whether the tangent-plane trial added a phase: `two_phase_flash` means the answer is `eos.pt_flash`'s own split, `stability_seeded` that a trial was below the plane at a composition that was not already a phase. |
-| `tm` | dimensionless | The tangent-plane distance at each trial's stationary point, in the order `eos.stability_test` reports them; negative means the trial lies below the tangent plane through the feed. |
+| `tm` | dimensionless | The tangent-plane distance at each trial's stationary point, in the order `eos.multiflash_stability_test` reports them; negative means the trial lies below the tangent plane through phase 0. |
 | `iterations` | dimensionless | Fraction-solve steps taken. |
 | `residual` | dimensionless | The Euclidean norm of the last fraction correction, in mole fractions of the feed. |
 | `min_t_over_tc` | dimensionless | The smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point. |
@@ -58,7 +58,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- the tangent-plane trial is `eos.stability_test`'s: two starts from Wilson K-values, measured from the feed. Upstream then runs a **pure-component fallback**, one trial per component, which `ROADMAP.md` names - so a phase only such a start finds is missed, and the N2/CO2/n-octane case records it.
+- the tangent-plane trial is `eos.multiflash_stability_test`, the `stabilityAnalysis` override: two Wilson starts then a pure-component fallback. Measured from **phase 0 of the flashed set** - the least-dense phase - and trivial against **any existing phase**, as `TpMultiflashSeedProbe.java` measures.
 - **up to three phases, and never four.** Upstream's `setMultiPhaseCheck(true)` raises the system's phase ceiling to three before the flash runs, so three is the model's own bound rather than a convergence result. A feed needing a fourth phase is reported three-phase.
 - the added phase's starting fraction is the feed's mole fraction of the trial's largest component, which is upstream's rule and a share of the feed rather than a guess at the answer. The fraction solve is what moves it.
 - `phase_count` is decided by the seeding and the merge, not by the solve. A Newton on the fractions cannot create a phase: one that should not exist converges to a fraction at the floor, and one that should is unreachable from a set that does not contain it.
@@ -80,7 +80,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `co2_methane_decane_three_phase_at_200_k_10_bar` | components = ['CO2', 'methane', 'nc10'], T = 200.0, P = 1000000.0, z = [0.4, 0.3, 0.3] | phase_count = 3, seeded = stability_seeded, phase_fractions = [0.31913160557766135, 0.4986239551745936, 0.18224443924774514], z_factor = [0.9060977631578389, 0.08159861613379736, 0.02068639206922768] |
 | `co2_methane_decane_three_phase_at_180_k_2_bar` | components = ['CO2', 'methane', 'nc10'], T = 180.0, P = 200000.0, z = [0.4, 0.3, 0.3] | phase_count = 3, seeded = stability_seeded, phase_fractions = [0.45978707915172495, 0.39004930226638107, 0.15016361858189392], z_factor = [0.9734657991299046, 0.021530403096495943, 0.004339193940160941] |
-| `n2_co2_octane_three_phase_at_180_k_10_bar_diverges` | components = ['nitrogen', 'CO2', 'n-octane'], T = 180.0, P = 1000000.0, z = [0.1, 0.4, 0.5] | phase_count = 3, seeded = stability_seeded, phase_fractions = [0.08437940065407534, 0.7563697015044588, 0.1592508978414658], z_factor = [0.9495405616635599, 0.07716944734261964, 0.02175230239149613] |
+| `n2_co2_octane_three_phase_at_180_k_10_bar` | components = ['nitrogen', 'CO2', 'n-octane'], T = 180.0, P = 1000000.0, z = [0.1, 0.4, 0.5] | phase_count = 3, seeded = stability_seeded, phase_fractions = [0.08437940065407534, 0.7563697015044588, 0.1592508978414658], z_factor = [0.9495405616635599, 0.07716944734261964, 0.02175230239149613] |
 | `n2_co2_octane_two_phase_at_190_k_1_bar` | components = ['nitrogen', 'CO2', 'n-octane'], T = 190.0, P = 100000.0, z = [0.1, 0.4, 0.5] | phase_count = 2, seeded = two_phase_flash, phase_fractions = [0.39215551375730107, 0.6078444862426989], z_factor = [0.9856288252087966, 0.00860682835745079] |
 | `methane_butane_dense_liquid_at_370_k_40_bar` | components = ['methane', 'n-butane'], T = 370.0, P = 4000000.0, z = [0.5, 0.5] | phase_count = 2, seeded = two_phase_flash, phase_fractions = [0.9901437619923031, 0.009856238007696907], z_factor = [0.7452177737328194, 0.1588137538319941] |
 | `methane_butane_two_phase_at_360_k_40_bar` | components = ['methane', 'n-butane'], T = 360.0, P = 4000000.0, z = [0.5, 0.5] | phase_count = 2, seeded = two_phase_flash, phase_fractions = [0.8139457129518551, 0.18605428704814486], z_factor = [0.7784548921212494, 0.15404179516968172] |

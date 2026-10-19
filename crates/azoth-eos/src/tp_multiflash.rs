@@ -19,10 +19,12 @@
 //! So this is three steps, in the order upstream runs them:
 //!
 //! 1. **The two-phase flash**, [`crate::pt_flash`], for the phases and a starting split.
-//! 2. **The stability trial**, [`crate::stability_test`]: the stationary points of the
-//!    tangent-plane distance. A trial below the plane whose composition is *not* one of the
-//!    existing phases is a phase the flash has not found, and it is added at upstream's
-//!    starting fraction - the feed's mole fraction of the trial's largest component.
+//! 2. **The stability trial**, [`crate::multiflash_stability_test`]: the stationary points of
+//!    the tangent-plane distance, measured from **phase 0 of the flashed set** - the
+//!    least-dense phase, as upstream orders phases by density - with a trial trivial when it
+//!    reproduces **any** existing phase. A trial below the plane is a phase the flash has not
+//!    found, and it is added at upstream's starting fraction - the feed's mole fraction of the
+//!    trial's largest component.
 //! 3. **The fraction solve**, [`crate::multiphase::solve_phase_fractions`], then the merge.
 //!
 //! **What is not here.** Upstream's 3,816 lines are mostly rescues for systems this crate
@@ -79,7 +81,7 @@ use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 use crate::algorithm_of;
 use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
 use crate::model_gen;
-use crate::multiflash_stability_test::multiflash_stability_test;
+use crate::multiflash_stability_test::seeding_against_reference;
 use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
 use crate::pt_flash::pt_flash;
 use crate::results::{MultiflashSeedPath, Phase, TpMultiflashResult, TpMultiflashSeed};
@@ -270,7 +272,44 @@ pub fn tp_multiflash(
     // difference is the whole of what this model was missing: the override adds a
     // pure-component trial per eligible component, which is what finds a water-rich phase
     // in a gas carrying ppm water and a CO2-rich one in the N2/CO2/n-octane case.
-    let seeding = multiflash_stability_test(mixture, T, P, z)?;
+    //
+    // **Measured from the least-dense existing phase, as upstream is.** `TPflash` orders
+    // phases by density and the analysis reads its reference potentials from phase 0; the
+    // two-phase set here is ordered liquid first, so the reference is chosen by the largest
+    // compressibility. A trial that reproduces **any** existing phase is trivial, which is
+    // upstream's `xTrivialCheck0`/`xTrivialCheck1` pair. On a single-phase feed the reference
+    // is the feed and this is the model's own single-phase case.
+    let mut reference: Option<(usize, RootSide)> = None;
+    let mut reference_z = f64::NEG_INFINITY;
+    for (index, phase) in phases.iter().enumerate() {
+        if let PhaseKind::Cubic(side) = phase.kind
+            && let Some(state) = state_of(mixture, &reduced, phase)?
+            && state.z.is_finite()
+            && state.z > reference_z
+        {
+            reference_z = state.z;
+            reference = Some((index, side));
+        }
+    }
+    let existing: Vec<Vec<f64>> = phases
+        .iter()
+        .map(|phase| phase.composition.clone())
+        .collect();
+    let seeding = if let Some((index, side)) = reference {
+        seeding_against_reference(
+            mixture,
+            T,
+            P,
+            z,
+            &phases[index].composition,
+            side,
+            &existing,
+            Vec::new(),
+        )?
+    } else {
+        let (_, side) = feed_state(mixture, &reduced, z)?;
+        seeding_against_reference(mixture, T, P, z, z, side, &existing, Vec::new())?
+    };
     warnings.extend(seeding.warnings.iter().cloned());
 
     // The phase count the two-phase flash reached, which is what `seeded` is measured against:

@@ -28,9 +28,9 @@ seeded = "stability_seeded"
 phase_fractions = [0.45978707915172495, 0.39004930226638107, 0.15016361858189392]
 z_factor = [0.9734657991299046, 0.021530403096495943, 0.004339193940160941]
 [[cases]]
-id = "n2_co2_octane_three_phase_at_180_k_10_bar_diverges"
+id = "n2_co2_octane_three_phase_at_180_k_10_bar"
 tolerance = 1e-08
-source = "NeqSim master, as the first case: validation/neqsim/TpMultiFlashCases.java. **This case diverges, and the expected values below are NeqSim's, not this library's.** NeqSim reports three phases here; this library reports **two** - the two-phase flash's own - because its stability trial alone does not reach the CO2-rich phase. The trial converges to `x = [0.9696, 0.0304, 6.5e-9]`, a nitrogen-rich vapour, and the solve then drives that onto the gas. Upstream reaches the CO2-rich phase through a second seeding mechanism this model does not port: `stabilityAnalysis`'s pure-component fallback, which starts one trial per component (scanning from the last downwards) and adds a phase when that trial's tangent-plane distance is below `-1e-8`. The CO2 trial is the one that finds it. Recorded rather than matched, and it is the only case here that diverges."
+source = "NeqSim master, as the first case: validation/neqsim/TpMultiFlashCases.java, attributed by `validation/neqsim/TpMultiFlashSeedProbe.java` and its capture. **This state was a recorded divergence and is now matched.** It reported the two-phase flash's own answer because the pure-component fallback was measured from the feed: NeqSim's `stabilityAnalysis` reads its reference potentials from **phase 0 of the flashed system** (the least-dense phase, `TPflash` ordering by density) and marks a trial trivial when it reproduces **any** existing phase. With the reference fixed the CO2 trial reaches the CO2-rich phase at `x_CO2` 0.98415312005431520 and Z of 0.02175230239149613, which the capture shows is added by the basic analysis before any enhanced or feed seed runs."
 [cases.inputs]
 components = ["nitrogen", "CO2", "n-octane"]
 T = 180.0
@@ -44,7 +44,7 @@ z_factor = [0.9495405616635599, 0.07716944734261964, 0.02175230239149613]
 [[cases]]
 id = "n2_co2_octane_two_phase_at_190_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim master, as the first case: validation/neqsim/TpMultiFlashCases.java. The same mixture at a state where the flag does nothing - NeqSim reports two phases with it on exactly as with it off, identical to all seventeen digits. So the three-phase divergence above is a gap in *which* states split three ways, not a model that never finds a third phase."
+source = "NeqSim master, as the first case: validation/neqsim/TpMultiFlashCases.java. The same mixture at a state where the flag does nothing - NeqSim reports two phases with it on exactly as with it off, identical to all seventeen digits. So the three-phase state above is a matter of *which* states split three ways, not a model that never finds a third phase."
 [cases.inputs]
 components = ["nitrogen", "CO2", "n-octane"]
 T = 190.0

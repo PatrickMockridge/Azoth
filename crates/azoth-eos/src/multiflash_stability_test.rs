@@ -22,22 +22,24 @@
 //! 3. **a selection** that takes the first trial below the plane in that same descending
 //!    order, and starts the new phase at the *trial component's own* feed fraction.
 //!
-//! # That fallback is the whole of two recorded divergences, measured
+//! # Where the analysis is measured from
 //!
-//! `eos.tp_multiflash` seeds from [`crate::stability_test`], the base method, so it misses
-//! everything only the fallback finds. Two places in this tree record the loss and neither
-//! knew what it was losing: the `n2/CO2/n-octane` case, whose own spec text says a third
-//! phase is reached upstream "through a second seeding mechanism this model does not port",
-//! and the multiphase water dew point, which is single-phase here at the temperature
-//! NeqSim calls the water dew point.
+//! **NeqSim's reference is phase 0 of the flashed system, not the overall feed.** `d[k]` is
+//! `ln x_k + ln phi_k` of `system.getPhase(0)`, and `TPflash` orders phases by density, so
+//! phase 0 is the least-dense existing phase. Its trivial test is against **every existing
+//! phase** (`xTrivialCheck0`, `xTrivialCheck1`), not only the feed. The public entry below is
+//! the single-phase case - where phase 0 *is* the feed, which is what its own cases measure -
+//! and [`seeding_against_reference`] is what [`crate::tp_multiflash`] calls with the flashed
+//! set.
 //!
-//! `validation/neqsim/WaterDewPointSeedProbe.java` attributes it: on NeqSim's own
-//! `WaterDewPointTest` gas at 70 bara the **base** method is what adds an aqueous phase at
-//! `260.545` K (beta `1.75e-5`, water at `x = 0.9999939`), and the class's *enhanced*
-//! analysis adds nothing at any state probed. Iterating that gas's pure-water trial here
-//! reaches `x = 0.999994` with `tm = -9.2e-7` - inside the `-1e-8` the selection needs, and
-//! barely, which is why the dew point sits where it does and why a shallow instability is
-//! the one that has to survive the arithmetic.
+//! That distinction is measured, not argued. `validation/neqsim/TpMultiFlashSeedProbe.java`
+//! attributes every phase addition at each state: at N2/CO2/n-octane 180 K / 10 bar the
+//! **basic** analysis adds the CO2-rich third phase, and until the reference was fixed this
+//! kernel's pure-CO2 trial converged somewhere else and the solve folded it away.
+//! `validation/neqsim/WaterDewPointSeedProbe.java` is the single-phase counterpart: on
+//! NeqSim's own `WaterDewPointTest` gas at 70 bara the basic method adds an aqueous phase at
+//! `260.545` K (beta `1.75e-5`, water at `x = 0.9999939`), and the enhanced analysis adds
+//! nothing at any state probed.
 //!
 //! # What is not carried
 //!
@@ -50,7 +52,7 @@
 //! measured states converge in a single step, so nothing here rests on it.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
-use azoth_core::{AzothError, Result, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::algorithm_of;
 use crate::mixture::{Mixture, ReducedParameters, RootSide, normalise, wilson_k};
@@ -329,23 +331,53 @@ pub fn multiflash_stability_test(
         ));
     }
 
+    let reduced = mixture.reduced_parameters(t, p)?;
+    let (_, side) = feed_state(mixture, &reduced, z)?;
+    seeding_against_reference(mixture, t, p, z, z, side, &[z.to_vec()], warnings)
+}
+
+/// The same analysis measured against a reference phase rather than the feed.
+///
+/// NeqSim's `TPmultiflash.stabilityAnalysis` takes its reference potentials from **phase 0
+/// of the flashed system**, and `TPflash` orders phases by density - so phase 0 is the
+/// least-dense existing phase, which is the gas in a gas/liquid split. It also marks a trial
+/// trivial when it reproduces **any existing phase**, not only the feed. The public model
+/// above is the single-phase case, where phase 0 is the feed; [`crate::tp_multiflash`] calls
+/// this with the two-phase set and the reference the density order names.
+///
+/// # Errors
+/// Propagates the reduced parameters' and the phase state's range checks.
+pub(crate) fn seeding_against_reference(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    reference: &[f64],
+    reference_side: RootSide,
+    existing: &[Vec<f64>],
+    mut warnings: Vec<Warning>,
+) -> Result<MultiflashStabilityTestResult> {
+    let spec = &model_gen::MULTIFLASH_STABILITY_TEST_SPEC;
     let algorithm = algorithm_of(spec)?;
     let reduced = mixture.reduced_parameters(t, p)?;
     warnings.extend(reduced.warnings.iter().cloned());
 
+    let count = mixture.len();
     let valid: Vec<bool> = z.iter().map(|&value| value > PRESENT).collect();
-    let present: Vec<f64> = z
-        .iter()
-        .map(|&value| if value > PRESENT { value } else { 1.0 })
-        .collect();
 
-    // The reference potentials, from the feed on its lower-Gibbs root.
-    let (feed, _) = feed_state(mixture, &reduced, z)?;
-    let d: Vec<f64> = z
+    // The reference potentials: `ln x_k + ln phi_k` of the reference phase, and only for
+    // the components that phase carries. Upstream reads `x`, not the feed's `z`.
+    let state = mixture.phase_state(&reduced, reference, reference_side)?;
+    let d: Vec<f64> = reference
         .iter()
-        .zip(&feed.ln_phi)
-        .zip(&present)
-        .map(|((&zi, &lp), &held)| if zi > PRESENT { ln(held) + lp } else { 0.0 })
+        .zip(&state.ln_phi)
+        .map(|(&fraction, &lp)| {
+            if fraction > PRESENT {
+                ln(fraction) + lp
+            } else {
+                0.0
+            }
+        })
         .collect();
 
     let mut tm: Vec<f64> = Vec::new();
@@ -395,7 +427,7 @@ pub fn multiflash_stability_test(
                 WILSON_CAP.min(algorithm.max_iterations),
             )?;
             iterations += settled.iterations;
-            let distance = seed_of(&settled, z);
+            let distance = seed_of(&settled, existing);
             tm.push(distance);
             if distance < TM_LIMIT {
                 return Ok(MultiflashStabilityTestResult {
@@ -439,7 +471,7 @@ pub fn multiflash_stability_test(
             PURE_CAP,
         )?;
         iterations += settled.iterations;
-        let distance = seed_of(&settled, z);
+        let distance = seed_of(&settled, existing);
         tm.push(distance);
         if distance < TM_LIMIT {
             return Ok(MultiflashStabilityTestResult {
@@ -470,16 +502,23 @@ pub fn multiflash_stability_test(
 /// The distance a trial reports: `1 - sum(W)`, or `FAILED_TM` where it failed or went
 /// trivial.
 ///
-/// Upstream's `xTrivialCheck` on a single-phase fluid - the sum-absolute distance from the
-/// feed - is the whole of the trivial test here.
-fn seed_of(settled: &Settled, z: &[f64]) -> f64 {
-    let distance: f64 = settled
-        .composition
-        .iter()
-        .zip(z)
-        .map(|(&a, &b)| (a - b).abs())
-        .sum();
-    if settled.failed || distance < TRIVIAL {
+/// Upstream's `xTrivialCheck` is the sum-absolute distance from **each existing phase**, and
+/// a trial that reproduces any of them is the plane through that phase rather than a new one.
+/// The single-phase model is the case with one entry.
+fn seed_of(settled: &Settled, existing: &[Vec<f64>]) -> f64 {
+    if settled.failed {
+        return FAILED_TM;
+    }
+    let trivial = existing.iter().any(|phase| {
+        let distance: f64 = settled
+            .composition
+            .iter()
+            .zip(phase)
+            .map(|(&a, &b)| (a - b).abs())
+            .sum();
+        distance < TRIVIAL
+    });
+    if trivial {
         FAILED_TM
     } else {
         1.0 - settled.totals
