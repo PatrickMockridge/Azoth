@@ -106,7 +106,9 @@ def cpa_phase(
     mixture = databank.from_names(list(components), eos=eos, associating=True)
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    state = phase_state(reduced, mixture.kij, list(z), liquid=_PHASES[compressed_phase])
+    state = phase_state(
+        reduced, mixture.effective_kij(reduced.t_kelvin), list(z), liquid=_PHASES[compressed_phase]
+    )
 
     r_t = R * t_si
     return CpaPhaseState(
@@ -131,7 +133,7 @@ def phase_state_of(
     what a test uses to pin the two paths apart.
     """
     reduced = reduced_parameters(mixture, t_si, p_si)
-    state = phase_state(reduced, mixture.kij, list(z), liquid=liquid)
+    state = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), list(z), liquid=liquid)
     r_t = R * t_si
     return CpaPhaseState(
         z_factor=state.z,

@@ -87,7 +87,9 @@ def furst_electrolyte_mod2004_phase(
     fluid, _ = furst_mixture_of(list(components), mod2004=True)
     reduced = reduced_parameters(fluid, t_si, p_si)
     warnings.extend(reduced.warnings)
-    state = phase_state(reduced, fluid.kij, list(x), liquid=_PHASES[compressed_phase])
+    state = phase_state(
+        reduced, fluid.effective_kij(reduced.t_kelvin), list(x), liquid=_PHASES[compressed_phase]
+    )
 
     return FurstElectrolyteMod2004PhaseResult(
         z_factor=state.z,

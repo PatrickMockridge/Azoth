@@ -49,10 +49,10 @@ def _dfugdt(
     derivative's accuracy.
     """
     reduced = reduced_parameters(mixture, temperature, pressure)
-    state = phase_state(reduced, mixture.kij, list(x), liquid=liquid)
+    state = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), list(x), liquid=liquid)
     return phase_derivatives(
         reduced,
-        mixture.kij,
+        mixture.effective_kij(reduced.t_kelvin),
         list(x),
         state.z,
         temperature=temperature,
@@ -122,8 +122,12 @@ def phase_boundary_temperature(
             liquid, vapour = held, other
         else:
             liquid, vapour = other, held
-        liquid_state = phase_state(reduced, mixture.kij, list(liquid), liquid=True)
-        vapour_state = phase_state(reduced, mixture.kij, list(vapour), liquid=False)
+        liquid_state = phase_state(
+            reduced, mixture.effective_kij(reduced.t_kelvin), list(liquid), liquid=True
+        )
+        vapour_state = phase_state(
+            reduced, mixture.effective_kij(reduced.t_kelvin), list(vapour), liquid=False
+        )
 
         k = [
             math.exp(lp - lv)

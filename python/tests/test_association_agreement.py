@@ -503,3 +503,39 @@ def test_the_bridge_carries_the_cpa_fluids_fields() -> None:
     assert all(abs(a - b) < 1.0e-6 for a, b in zip(with_cross, rust, strict=True)), (
         f"the cross rule did not cross: {with_cross} against {rust}"
     )
+
+
+def test_the_multiflash_reads_the_temperature_dependent_matrix() -> None:
+    """A CO2/water feed at 283 K and 50 bar splits, and both backends split it the same.
+
+    **This is the kernel, not the boundary.** Rust's ``ReducedParameters.kij`` is the
+    rule's effective matrix; the Python stability test and multiflash used to pass
+    ``mixture.kij`` - the constant term alone - into their trials. On this feed that
+    difference is the whole answer: with the base matrix Python returned one liquid phase,
+    while Rust and NeqSim split it into a gas at ``y = 0.28047`` and an aqueous phase.
+    The measured state is NeqSim's own ``SystemSrkCPA`` multiphase TP flash
+    (rule 10, 283.15 K, 50 bara, ``z = [0.3, 0.7]``).
+    """
+    fluid, _ = components.mixture_of(["CO2", "water"], eos="srk", associating=True)
+    assert fluid.kij_t, "the fluid must carry the temperature coefficient"
+
+    results = {}
+    for backend in ("python", "rust"):
+        with use_backend(backend):
+            results[backend] = resolve("eos.tp_multiflash")(
+                mixture=fluid,
+                T=quantity(283.15, "K"),
+                P=quantity(50.0, "bar"),
+                z=[0.3, 0.7],
+            )
+
+    python, rust = results["python"], results["rust"]
+    assert python.phase_count == rust.phase_count == 2
+    expected = (0.28047159530188764, 0.7195284046981124)
+    for got, wanted in zip(python.phase_fractions, expected, strict=True):
+        assert got == pytest.approx(wanted, rel=1.0e-9)
+    for got, wanted in zip(rust.phase_fractions, expected, strict=True):
+        assert got == pytest.approx(wanted, rel=1.0e-9)
+    for a, b in zip(python.x, rust.x, strict=True):
+        for left, right in zip(a, b, strict=True):
+            assert left == pytest.approx(right, abs=1.0e-9)

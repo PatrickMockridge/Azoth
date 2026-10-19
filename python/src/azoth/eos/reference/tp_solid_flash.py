@@ -292,7 +292,7 @@ def tp_solid_flash(
 
     # The candidate screen: how much of the solid component the fluid phases do not account
     # for at the solid's own fugacity.
-    start = _coefficients(reduced, mixture.kij, phases)
+    start = _coefficients(reduced, mixture.effective_kij(reduced.t_kelvin), phases)
     candidate = z[index]
     for k, phase in enumerate(phases):
         candidate -= phase.fraction * phi_solid / start[k][index]
@@ -311,7 +311,7 @@ def tp_solid_flash(
         left = math.nan
         for step in range(1, cap + 1):
             steps = step
-            phi = _coefficients(reduced, mixture.kij, phases)
+            phi = _coefficients(reduced, mixture.effective_kij(reduced.t_kelvin), phases)
             e = _denominators(z, phi, phases, index, phi_solid)
 
             count = len(phases)
@@ -341,7 +341,7 @@ def tp_solid_flash(
                     value = 1.0 - FRACTION_FLOOR
                 phases[k] = _FluidPhase(value, phase.composition, phase.liquid)
 
-            phi = _coefficients(reduced, mixture.kij, phases)
+            phi = _coefficients(reduced, mixture.effective_kij(reduced.t_kelvin), phases)
             solid_fraction = z[index] - sum(
                 phase.fraction * phi_solid / phi[k][index] for k, phase in enumerate(phases)
             )
@@ -361,7 +361,7 @@ def tp_solid_flash(
         return steps, left, False, False
 
     def set_compositions() -> None:
-        phi = _coefficients(reduced, mixture.kij, phases)
+        phi = _coefficients(reduced, mixture.effective_kij(reduced.t_kelvin), phases)
         e = _denominators(z, phi, phases, index, phi_solid)
         for k, phase in enumerate(phases):
             row = [z[i] / (e[i] * phi[k][i]) for i in range(n)]
@@ -382,7 +382,7 @@ def tp_solid_flash(
                 restarts += 1
                 break
             set_compositions()
-            phi = _coefficients(reduced, mixture.kij, phases)
+            phi = _coefficients(reduced, mixture.effective_kij(reduced.t_kelvin), phases)
             solid_fraction = z[index] - sum(
                 phase.fraction * phi_solid / phi[k][index] for k, phase in enumerate(phases)
             )

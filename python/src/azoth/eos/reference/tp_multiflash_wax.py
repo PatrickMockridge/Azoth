@@ -147,13 +147,19 @@ def tp_multiflash_wax(
 
     coefficients = _wax_coefficients(mixture, T, P)
     phases = [
-        *_phases_of(flash, reduced, mixture.kij, z),
+        *_phases_of(flash, reduced, mixture.effective_kij(reduced.t_kelvin), z),
         # The wax's starting share is the floor: there is no trial composition to make,
         # because the phase's coefficients do not depend on one.
         _Phase(WAX_FLOOR, list(z), liquid=True, wax=True),
     ]
     solved, iterations, residual, converged = _solve_phase_fractions(
-        reduced, mixture.kij, z, phases, tolerance, cap, wax_coefficients=coefficients
+        reduced,
+        mixture.effective_kij(reduced.t_kelvin),
+        z,
+        phases,
+        tolerance,
+        cap,
+        wax_coefficients=coefficients,
     )
     wax = solved[2].fraction
     if not converged or wax <= WAX_FLOOR:

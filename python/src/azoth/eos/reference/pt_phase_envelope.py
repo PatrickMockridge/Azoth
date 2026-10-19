@@ -124,8 +124,8 @@ def _point(
     x = _normalised(x_raw)
     y = _normalised(y_raw)
     reduced = reduced_parameters(mixture, t, p)
-    liquid = phase_state(reduced, mixture.kij, x, liquid=True)
-    vapour = phase_state(reduced, mixture.kij, y, liquid=False)
+    liquid = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=True)
+    vapour = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), y, liquid=False)
     f = [0.0] * (n + 2)
     for i in range(n):
         f[i] = u[i] - liquid.ln_phi[i] + vapour.ln_phi[i]
@@ -148,10 +148,10 @@ def _point(
     ]
 
     liquid_derivatives = phase_derivatives(
-        reduced, mixture.kij, x, liquid.z, temperature=t, pressure=p
+        reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid.z, temperature=t, pressure=p
     )
     vapour_derivatives = phase_derivatives(
-        reduced, mixture.kij, y, vapour.z, temperature=t, pressure=p
+        reduced, mixture.effective_kij(reduced.t_kelvin), y, vapour.z, temperature=t, pressure=p
     )
 
     m_dim = n + 2

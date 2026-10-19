@@ -418,7 +418,7 @@ def hybrid_eos_ge_flash(
     mixture, _ = _components.mixture_of_with_ions(components, eos=cubic)
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    kij = mixture.kij
+    kij = mixture.effective_kij(reduced.t_kelvin)
 
     algorithm = spec["algorithm"]
     tolerance = float(algorithm["tolerance"])

@@ -136,7 +136,9 @@ def _evaluate(
         # where the flash reports a negative flash its phase composition is not a state,
         # and its cubic root is a different number from the feed's.
         reduced = reduced_parameters(mixture, t_si, p_si)
-        root = phase_state(reduced, mixture.kij, z, liquid=(phase == ALL_LIQUID)).z
+        root = phase_state(
+            reduced, mixture.effective_kij(reduced.t_kelvin), z, liquid=(phase == ALL_LIQUID)
+        ).z
         state, volume = _phase_state(mixture, ideal_gas, t_si, p_si, z, root)
         value = _property_of(state, volume, which, p_si)
         cp = float(state.cp.to_base_units().magnitude)

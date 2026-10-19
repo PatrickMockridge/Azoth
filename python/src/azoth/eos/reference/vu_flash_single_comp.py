@@ -44,8 +44,8 @@ def _saturated(
     """
     reduced = reduced_parameters(mixture, t, p)
     x = [1.0]
-    liquid = phase_state(reduced, mixture.kij, x, liquid=True)
-    vapour = phase_state(reduced, mixture.kij, x, liquid=False)
+    liquid = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=True)
+    vapour = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=False)
     out = []
     for z in (liquid.z, vapour.z):
         state = molar_enthalpy_entropy(mixture, ideal_gas, from_si(t, "K"), from_si(p, "Pa"), x, z)

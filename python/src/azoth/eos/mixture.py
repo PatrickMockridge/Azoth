@@ -376,17 +376,18 @@ class Mixture:
         the gate would agree with the oracle on a gas and be wrong on every brine.
         """
         parameters = self.soreide_whitson
+        base = self.effective_kij(reduced.t_kelvin)
         if self.mixing_rule != "soreide_whitson" or parameters is None:
-            return self.kij
+            return base
         roles = parameters.roles
         if not any(
             role == "water" and fraction > 0.8 for role, fraction in zip(roles, x, strict=True)
         ):
-            return self.kij
+            return base
         salinity = parameters.salinity
         return tuple(
             tuple(
-                self.kij[i][j]
+                base[i][j]
                 if roles[j] != "water"
                 else self._aqueous_kij(i, roles[i], reduced.reduced_temperatures[i], salinity)
                 for j in range(len(roles))

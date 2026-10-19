@@ -134,7 +134,7 @@ def ge_nrtl_flash(
 
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    kij = mixture.kij
+    kij = mixture.effective_kij(reduced.t_kelvin)
 
     k = wilson_k(mixture, t_si, p_si)
     iterations = 0

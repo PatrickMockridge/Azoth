@@ -98,7 +98,9 @@ def umr_cpa_phase(
     fluid, _ = umr_cpa_mixture_of(list(components))
     reduced = reduced_parameters(fluid, t_si, p_si)
     warnings.extend(reduced.warnings)
-    state = phase_state(reduced, fluid.kij, list(z), liquid=_PHASES[compressed_phase])
+    state = phase_state(
+        reduced, fluid.effective_kij(reduced.t_kelvin), list(z), liquid=_PHASES[compressed_phase]
+    )
 
     r_t = R * t_si
     return UmrCpaPhaseResult(

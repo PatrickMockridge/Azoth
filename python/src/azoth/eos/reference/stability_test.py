@@ -223,7 +223,7 @@ def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTes
 
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    kij = mixture.kij
+    kij = mixture.effective_kij(reduced.t_kelvin)
 
     feed = _feed_state(reduced, kij, list(z))
     d = [_ln(zi) + lp for zi, lp in zip(z, feed.ln_phi, strict=True)]

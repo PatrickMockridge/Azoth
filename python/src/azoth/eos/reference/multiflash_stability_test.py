@@ -219,7 +219,7 @@ def multiflash_stability_test(
 
     algorithm = spec["algorithm"]
     reduced = reduced_parameters(mixture, t_si, p_si)
-    kij = mixture.kij
+    kij = mixture.effective_kij(reduced.t_kelvin)
 
     valid = [value > PRESENT for value in z]
     present = [value if value > PRESENT else 1.0 for value in z]

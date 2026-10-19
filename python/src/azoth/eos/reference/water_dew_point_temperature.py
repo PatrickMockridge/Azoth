@@ -79,7 +79,6 @@ def water_dew_point_temperature(
     from azoth.eos import components as databank
 
     mixture, _ = databank.mixture_of(components, eos=eos)
-    kij = mixture.kij
     lowered = [name.strip().lower() for name in components]
 
     best: tuple[float, float, int, bool] | None = None
@@ -109,6 +108,7 @@ def water_dew_point_temperature(
         while iterations < MAXIMUM_ITERATIONS:
             iterations += 1
             reduced = reduced_parameters(mixture, temperature, p_si)
+            kij = mixture.effective_kij(temperature)
             vapour = phase_state(reduced, kij, list(z), liquid=False)
             aqueous = phase_state(reduced, kij, x, liquid=True)
             # `beta_0` is one: the incipient phase carries no moles, so phase 0 is the whole

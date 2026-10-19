@@ -70,8 +70,18 @@ def _volume_fraction(mixture: Mixture, t: float, p: float, feed: list[float]) ->
     reduced = reduced_parameters(mixture, t, p)
     x = list(flash.x)
     y = list(flash.y)
-    v_liquid = phase_state(reduced, mixture.kij, x, liquid=True).z * MOLAR_GAS_CONSTANT * t / p
-    v_vapour = phase_state(reduced, mixture.kij, y, liquid=False).z * MOLAR_GAS_CONSTANT * t / p
+    v_liquid = (
+        phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=True).z
+        * MOLAR_GAS_CONSTANT
+        * t
+        / p
+    )
+    v_vapour = (
+        phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), y, liquid=False).z
+        * MOLAR_GAS_CONSTANT
+        * t
+        / p
+    )
     total = (1.0 - flash.vapour_fraction) * v_liquid + flash.vapour_fraction * v_vapour
     return flash.vapour_fraction * v_vapour / total, flash
 

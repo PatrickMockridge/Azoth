@@ -68,9 +68,14 @@ def _dfugdp(
     classes replace with exactly this derivative.
     """
     reduced = reduced_parameters(mixture, temperature, pressure)
-    state = phase_state(reduced, mixture.kij, x, liquid=liquid)
+    state = phase_state(reduced, mixture.effective_kij(reduced.t_kelvin), x, liquid=liquid)
     return phase_derivatives(
-        reduced, mixture.kij, x, state.z, temperature=temperature, pressure=pressure
+        reduced,
+        mixture.effective_kij(reduced.t_kelvin),
+        x,
+        state.z,
+        temperature=temperature,
+        pressure=pressure,
     ).d_ln_phi_dp
 
 
@@ -155,8 +160,12 @@ def phase_boundary_pressure(
             liquid, vapour = held, other
         else:
             liquid, vapour = other, held
-        liquid_state = phase_state(reduced, mixture.kij, list(liquid), liquid=True)
-        vapour_state = phase_state(reduced, mixture.kij, list(vapour), liquid=False)
+        liquid_state = phase_state(
+            reduced, mixture.effective_kij(reduced.t_kelvin), list(liquid), liquid=True
+        )
+        vapour_state = phase_state(
+            reduced, mixture.effective_kij(reduced.t_kelvin), list(vapour), liquid=False
+        )
 
         k = [
             math.exp(lp - lv)

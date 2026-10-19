@@ -144,7 +144,9 @@ def molar_enthalpy_entropy(
 
     reduced = reduced_parameters(mixture, t_si, p_si)
     warnings.extend(reduced.warnings)
-    state = phase_state_at(reduced, mixture.kij, list(z), compressibility)
+    state = phase_state_at(
+        reduced, mixture.effective_kij(reduced.t_kelvin), list(z), compressibility
+    )
 
     # The ideal-gas part, which is NeqSim's `getHID` and `getIdEntropy`: each
     # component's polynomial integrated exactly from the fixed reference temperature to
