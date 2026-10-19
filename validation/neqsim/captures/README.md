@@ -53,6 +53,21 @@ writes - `IapwsIf97Probe` prints its whole state grid and reads nothing.
 java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
 ```
 
+**`GeHenryProbe` measures `ComponentGE.fugcoef`'s two reference states.** It reads nothing and
+prints its whole grid, so it needs the recipe for the same reason. The states cover the IAPWS
+arm in water, the databank arm with and without water, the `900` sentinel, the four-zero rows
+(which NeqSim evaluates to 1.802 bar), the three solvent-tagged IAPWS species whose
+one-component reference phase throws, the ions' 1e12 cap, and the UNIFAC group refusals; the
+last block is a solute-bearing gamma-phi flash transcribed from `NrtlGammaPhiFlash.java`.
+`gamma_inf_water_synced` is the UNIFAC reference phase rebuilt with its groups and `calcaij`,
+so the raw path can be checked against the intended one.
+
+```bash
+cd validation/neqsim
+javac -proc:none -cp neqsim-f0c7436.jar GeHenryProbe.java
+java -cp .:neqsim-f0c7436.jar GeHenryProbe > captures/ge_henry_probe.tsv
+```
+
 **`BrineProbe` prints the electrolyte-CPA phase's layers and then runs the four brine
 operations.** It reads nothing and covers its whole grid, so it needs the recipe for the same
 reason. Two things in it are measured rather than assumed: the two halves of
