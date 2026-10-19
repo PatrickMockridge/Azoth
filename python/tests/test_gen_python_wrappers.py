@@ -68,7 +68,10 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: which the spec declares optional and the kernel takes as a `bool`. An optional flag crosses
 #: the boundary as its default rather than as an absence, and no emitted signature can say
 #: which; the wrapper spells the default once and the spec states the input.
-KNOWN_HAND_WRITTEN = 54
+#: 54 -> 55 when `reactions.reactive_co2_brine_phase_equilibrium` landed: the kernel names the
+#: two state variables `temperature` and `pressure` where the spec declares `T` and `P`, the
+#: same name mismatch the first two carry.
+KNOWN_HAND_WRITTEN = 55
 
 
 def _tools_module(name: str) -> ModuleType:

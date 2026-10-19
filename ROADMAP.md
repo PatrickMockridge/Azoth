@@ -85,7 +85,11 @@ process model needs.
   `ComponentGEWilson`, `ComponentGEUnifac`, `ComponentGEUnifacPSRK`,
   `ComponentGEUnifacUMRPRU`, `ComponentGEVanLaarAcid`, with `PhaseGENRTL`,
   `PhaseGEUniquac`, `PhaseGEWilson`, `PhaseGEUnifac`, `SystemNRTL`, `SystemUNIFAC`,
-  `SystemUNIFACpsrk`, `SystemGEWilson`.
+  `SystemUNIFACpsrk`, `SystemGEWilson`. The four `eos.ge_*_phase` ids carry
+  `ComponentGE.fugcoef`'s two reference states: `gamma_i P0_i / P` for a `solvent`
+  component and `(gamma_i / gamma_i^inf) H_i / P` for every other, with the IAPWS table
+  preferred for its gases in water. The refusals, and the measurement behind each, are in
+  the eos-family bullet below.
 - **Component correlations** read from `thermo/component/` (normal boiling point,
   Antoine vapour pressure) and `physicalproperties/` (standard liquid density, heat of
   vaporisation, liquid heat capacity) — the columns the manifest lists under those
@@ -661,9 +665,13 @@ a claim nothing holds.
   `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod`. `valve_opening` is not a
   parameter here and the `isCalcPressure` branch is absent, for the same reason: it is the
   mechanical-design tree.
-- **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch**, which 51 of the
-  databank's 286 substances select through their `REFERENCESTATETYPE`, so the four
-  `eos.ge_*_phase` ids are the solvent branch alone; **`SysNewtonRhapsonPHflash`**, which
+- **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch is complete** - the
+  four `eos.ge_*_phase` ids resolve both reference states, which the vendored table's
+  `REFERENCESTATETYPE` selects on 115 of its 348 rows (113 `solute` and the two literal
+  `0.0`). **Three states are refused rather than given a number**: a non-ion row carrying
+  the four zeros NeqSim evaluates to `1.802 bar`, a solvent-tagged IAPWS species in water
+  (upstream's one-component reference phase throws), and a solvent component with no
+  Antoine row. **`SysNewtonRhapsonPHflash`**, which
   NeqSim's `ThrottlingValve` and `Compressor` select and which `eos.ph_flash` and `eos.ps_flash`
   decline on a measured two-phase `(dH/dT)_P` factor of two; **`PHflashSingleComp`** and
   **`PSflashSingleComp`**; **`VHflashQfunc`**'s coupled 2×2 with a cross term, and `VHflash`,

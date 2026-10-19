@@ -465,8 +465,10 @@ def test_the_bridge_carries_the_cpa_fluids_fields() -> None:
 
     * methane/water carries ``cpakijT_SRK`` (and no CR-1 pair), and each RDF gives a
       different ``ln phi`` - so the equality below fails if either field is dropped;
-    * benzene/water carries the CR-1 cross rule, which moves water's ``ln phi`` by more
-      than a unit against the Elliott rule.
+    * benzene/water carries the CR-1 cross rule, which moves **benzene's** ``ln phi`` by
+      ``0.9`` against the Elliott rule. The flash splits this feed, so phase 0 is the
+      water-rich one: the dilute benzene is where the rule acts, and water's coefficient
+      in that phase moves only in the sixth decimal.
     """
     gas, _ = components.mixture_of(["methane", "water"], eos="srk", associating=True)
     assert gas.kij_t, "the fluid must carry the temperature coefficient"
@@ -498,7 +500,7 @@ def test_the_bridge_carries_the_cpa_fluids_fields() -> None:
     with_cross = _bridge_ln_phi("python", benzene, [0.01, 0.99], 298.15, 1.0e5)
     without = dataclasses.replace(benzene, cross=())
     py_plain = _bridge_ln_phi("python", without, [0.01, 0.99], 298.15, 1.0e5)
-    assert abs(with_cross[1] - py_plain[1]) > 1.0e-4
+    assert abs(with_cross[0] - py_plain[0]) > 1.0e-4
     rust = _bridge_ln_phi("rust", benzene, [0.01, 0.99], 298.15, 1.0e5)
     assert all(abs(a - b) < 1.0e-6 for a, b in zip(with_cross, rust, strict=True)), (
         f"the cross rule did not cross: {with_cross} against {rust}"

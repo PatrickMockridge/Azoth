@@ -524,7 +524,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_van_laar_acid_phase': {
         "calc_id": 'eos.ge_van_laar_acid_phase',
         "name": 'Fugacity coefficients of the water-nitric-sulfuric acid liquid',
-        "spec": {'path': 'specs/models/eos/ge_van_laar_acid_phase.toml', 'sha256': '162e81f25311472902eccf9fc7ccf041f9342cf80b0530d12780cd5d50bc9e0a'},
+        "spec": {'path': 'specs/models/eos/ge_van_laar_acid_phase.toml', 'sha256': 'aa7335c255eea42ee6a8f2f8d3d0376f0086dfc290d1c33dda5b1f2d58b9f3fc'},
         "code": [{'path': 'python/src/azoth/eos/reference/ge_van_laar_acid_phase.py', 'sha256': 'f930cb51bab877752c013c3071c7cc68bbe13f6dfae0b0c9cdc74edadc8b98ce'}, {'path': 'crates/azoth-eos/src/ge_van_laar_acid_phase.rs', 'sha256': '11492565ca8c93e444848f432a8b20b04ca120e1e6f14df93dff5ff72c3e4554'}],
         "source": 'NeqSim master `PhaseGEVanLaarAcid`',
         "verification": 'partially_verified',
@@ -535,8 +535,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_wilson_phase': {
         "calc_id": 'eos.ge_wilson_phase',
         "name": 'Fugacity coefficients of a Wilson activity-coefficient liquid',
-        "spec": {'path': 'specs/models/eos/ge_wilson_phase.toml', 'sha256': '8dc9cbbae6b9202d68513d43023e06348f7ee2a053823fa7ac1a9a0d489c7146'},
-        "code": [{'path': 'python/src/azoth/eos/reference/ge_wilson_phase.py', 'sha256': 'ccc5db640b3118971d27f02b6f587ac4efa92a09f2955034c2d0b73eb5fc8096'}, {'path': 'crates/azoth-eos/src/ge_wilson_phase.rs', 'sha256': '64d47b4eef5ba78a0924244482f9e140a24b0a2099cf89e29ad40f6384e937c6'}],
+        "spec": {'path': 'specs/models/eos/ge_wilson_phase.toml', 'sha256': '00ab6619875ffb8b8024dcd58f68a1d6b741d60db5a397976a3576f286ec74fa'},
+        "code": [{'path': 'python/src/azoth/eos/reference/ge_wilson_phase.py', 'sha256': '419242012d1bcfde4e5b539d7f1c5c6972377d6e4a4e7fa8d0dd75bf2586aca3'}, {'path': 'crates/azoth-eos/src/ge_wilson_phase.rs', 'sha256': '64d47b4eef5ba78a0924244482f9e140a24b0a2099cf89e29ad40f6384e937c6'}],
         "source": 'NeqSim master `PhaseGEWilson`',
         "verification": 'partially_verified',
         "validation_cases": 0,

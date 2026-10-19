@@ -3314,12 +3314,12 @@ pub struct GeVanLaarAcidPhaseParameters {
 
 /// The Van Laar acid phase parameters for a list of names.
 ///
-/// **This resolver does not refuse a Henry's-law solute, and its four siblings do.** The
-/// refusal there exists because `ComponentGE.fugcoef` branches on `referenceStateType`, so
-/// computing the Raoult expression for a `solute` component would be the wrong branch with
-/// no symptom. `ComponentGEVanLaarAcid` *overrides* `fugcoef` precisely to ignore the tag -
-/// and it has to, because both acids are tagged `solute` and carry an all-zero Antoine row.
-/// Refusing them here would refuse the model's own subject.
+/// **This resolver ignores a Henry's-law solute's tag, and its four siblings read it.**
+/// They resolve each component's arm through [`phase_references`] because
+/// `ComponentGE.fugcoef` branches on `referenceStateType`. `ComponentGEVanLaarAcid`
+/// *overrides* `fugcoef` precisely to ignore the tag - and it has to, because both acids
+/// are tagged `solute` and carry an all-zero Antoine row. Applying the branch here would
+/// give the model's own subject a Henry coefficient it never reads.
 ///
 /// What it does refuse is a component the model does not cover (`acid_index == 0`) that
 /// also has no Antoine correlation, because then its `P0` has no source at all.

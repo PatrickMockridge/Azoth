@@ -2946,13 +2946,12 @@ def ge_van_laar_acid_phase_parameters(
 ) -> GeVanLaarAcidPhaseParameters:
     """The parameters of a Van Laar acid phase for a list of components, by name.
 
-    **This resolver does not refuse a Henry's-law solute, and its four siblings do.** The
-    refusal there exists because ``ComponentGE.fugcoef`` branches on ``referenceStateType``,
-    so computing the Raoult expression for a ``solute`` component would be the wrong branch
-    with no symptom. ``ComponentGEVanLaarAcid`` *overrides* ``fugcoef`` to ignore the tag -
-    and it has to, because both acids are tagged ``solute``. What this refuses is a
-    component the model does not cover that also has no Antoine correlation, because then
-    its ``P0`` has no source.
+    **This resolver ignores a Henry's-law solute's tag, and its four siblings read it.**
+    They resolve each component's arm through :func:`_phase_references` because
+    ``ComponentGE.fugcoef`` branches on ``referenceStateType``. ``ComponentGEVanLaarAcid``
+    *overrides* ``fugcoef`` to ignore the tag - and it has to, because both acids are tagged
+    ``solute``. What this refuses is a component the model does not cover that also has no
+    Antoine correlation, because then its ``P0`` has no source.
 
     Raises:
         PropertyUnavailableError: if a name is in neither the databank nor the keycard, or

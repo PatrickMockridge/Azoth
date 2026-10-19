@@ -46,7 +46,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## Assumptions
 
 - this is NeqSim's `PhaseGEWilson` liquid: `phi_i = gamma_i P0_i / P` on the solvent arm. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
-- **both reference states are here.** `ComponentGE.fugcoef` gives a `solvent` component `gamma_i P0_i/P` and every other `(gamma_i/gamma_i^inf) H_i/P`; `gamma_i^inf` is this phase's Wilson correlation on the solute-water pair `[1e-11, 1 - 1e-11]`, or on the diluted composition when the phase carries no water.
+- **both arms are here.** `ComponentGE.fugcoef` gives a `solvent` component `gamma_i P0_i/P` and every other `(gamma_i/gamma_i^inf) H_i/P`; `gamma_i^inf` is this phase's Wilson correlation on the solute-water pair `[1e-11, 1 - 1e-11]`, or the diluted composition without water.
 - `H_i` prefers the IAPWS G7-04 table for its 14 gases in a water-bearing phase, inside the row's fitted window, and fails closed to `1e12 bar` outside it; otherwise it is the databank's `HenryCoef1..4` correlation capped to `1e12 bar`, with the cap asked before any fittedness check.
 - **three states are refused rather than given a number**: a non-ion Henry row with the four zeros the table uses for no correlation (NeqSim evaluates 1.802 bar), a solvent-tagged IAPWS species in water (NeqSim builds a one-component reference phase and throws), and a solvent with no Antoine row.
 - an ion is `1e12 bar` whatever its row says. This phase takes a `Mixture` whose builder refuses an ion, so an ion-bearing fluid does not reach it.
