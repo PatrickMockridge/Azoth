@@ -41,7 +41,10 @@ from azoth.eos.reference._mixture_state import (
     phase_state,
     reduced_parameters,
 )
-from azoth.eos.reference.multiflash_stability_test import seeding_against_reference
+from azoth.eos.reference.multiflash_stability_test import (
+    enhanced_against_phases,
+    seeding_against_reference,
+)
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.srk_z_factor import srk_z_factor
@@ -442,6 +445,25 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
         )
     else:
         iterations, residual, converged = 0, 0.0, True
+
+    # **Upstream's post-flash enhanced check.** `run()` runs `stabilityAnalysisEnhanced` once
+    # on a two-phase multiphase result, after the fraction solve, and a phase it adds triggers
+    # a bounded rerun of the whole flash. This is that call; the rerun is the re-solve below,
+    # which is the observable part. Measured: C1/nC4 + 1e-4 water at 370 K / 40 bar, where the
+    # addition is removed again by the merge but decides whether the inline aqueous seed fires.
+    seeded = len(phases) > base_count
+    if seeded and len(phases) == 2:
+        enhanced_existing = [(list(phase.composition), phase.liquid) for phase in phases]
+        enhanced = enhanced_against_phases(mixture, t_si, p_si, feed, enhanced_existing)
+        if enhanced is not None:
+            phases.append(_Phase(enhanced.fraction, enhanced.composition, enhanced.liquid))
+            total = sum(phase.fraction for phase in phases)
+            phases = [
+                _Phase(phase.fraction / total, phase.composition, phase.liquid) for phase in phases
+            ]
+            phases, iterations, residual, converged = _solve_phase_fractions(
+                reduced, kij, feed, phases, tolerance, cap
+            )
     # The merge. A phase the solve pinned at the floor is a phase that is not there, and two
     # phases at the same composition are one phase however their roots were labelled. The side
     # is deliberately not part of that second test - see the Rust kernel for the measurement.

@@ -81,7 +81,7 @@ use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 use crate::algorithm_of;
 use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
 use crate::model_gen;
-use crate::multiflash_stability_test::seeding_against_reference;
+use crate::multiflash_stability_test::{enhanced_against_phases, seeding_against_reference};
 use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
 use crate::pt_flash::pt_flash;
 use crate::results::{MultiflashSeedPath, Phase, TpMultiflashResult, TpMultiflashSeed};
@@ -333,7 +333,7 @@ pub fn tp_multiflash(
     // n-butane's 250 K betas in the tenth digit and took 41 steps to do it. Upstream's own
     // numbers say the same: with the flag on and off, every state the sweep found no seeding
     // at reports identical betas to all seventeen digits.
-    let split = if seeded {
+    let mut split = if seeded {
         let total: f64 = phases.iter().map(|phase| phase.fraction).sum();
         for phase in &mut phases {
             phase.fraction /= total;
@@ -351,6 +351,35 @@ pub fn tp_multiflash(
             converged: true,
         }
     };
+
+    // **Upstream's post-flash enhanced check.** `run()` runs `stabilityAnalysisEnhanced` once
+    // on a two-phase multiphase result, after the fraction solve, and a phase it adds triggers
+    // a bounded rerun of the whole flash. This is that call; the rerun is the re-solve below,
+    // which is the observable part - the recursive `run()` also re-runs the basic analysis,
+    // and on the captured state that finds nothing. Measured: C1/nC4 + 1e-4 water at 370 K /
+    // 40 bar, where this check's addition is removed again by the merge, and its presence is
+    // what decides whether the inline aqueous seed (not yet ported) can fire.
+    if seeded && phases.len() == 2 {
+        let existing: Vec<(Vec<f64>, RootSide)> = phases
+            .iter()
+            .filter_map(|phase| match phase.kind {
+                PhaseKind::Cubic(side) => Some((phase.composition.clone(), side)),
+                _ => None,
+            })
+            .collect();
+        if let Some(seed) = enhanced_against_phases(mixture, T, P, z, &existing)? {
+            phases.push(MultiphasePhase {
+                fraction: seed.fraction,
+                composition: seed.composition,
+                kind: PhaseKind::Cubic(seed.side),
+            });
+            let total: f64 = phases.iter().map(|phase| phase.fraction).sum();
+            for phase in &mut phases {
+                phase.fraction /= total;
+            }
+            split = solve_phase_fractions(mixture, &reduced, z, &mut phases, algorithm)?;
+        }
+    }
 
     // The merge. A phase the solve pinned at the floor is a phase that is not there.
     let mut kept: Vec<MultiphasePhase> = Vec::with_capacity(phases.len());

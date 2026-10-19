@@ -42,6 +42,20 @@ seeded = "stability_seeded"
 phase_fractions = [0.08437940065407534, 0.7563697015044588, 0.1592508978414658]
 z_factor = [0.9495405616635599, 0.07716944734261964, 0.02175230239149613]
 [[cases]]
+id = "methane_butane_water_enhanced_check_at_370_k_40_bar"
+tolerance = 1e-08
+source = "NeqSim master, attributed by `validation/neqsim/TpMultiflashSeedProbe.java` and its capture. **The state where the post-flash `stabilityAnalysisEnhanced` decides the answer.** The feed is one gas phase; the basic analysis adds the oil, and after the fraction solve the enhanced check adds a phase that the rerun's merge removes again. Ablating the enhanced check leaves an **aqueous** phase at beta `9.99990000099999e-6` from the inline seed instead, so the two answers differ in which phase is present and in the gas fraction by `1e-5`. The expected values are the default chain's."
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+T = 370.0
+P = 4000000.0
+z = [0.49995000499950004, 0.49995000499950004, 9.999000099990002e-05]
+[cases.expected]
+phase_count = 2
+seeded = "stability_seeded"
+phase_fractions = [0.9902639834091616, 0.009736016590838425]
+z_factor = [0.7452175536344108, 0.15881276682734707]
+[[cases]]
 id = "n2_co2_octane_two_phase_at_190_k_1_bar"
 tolerance = 1e-08
 source = "NeqSim master, as the first case: validation/neqsim/TpMultiFlashCases.java. The same mixture at a state where the flag does nothing - NeqSim reports two phases with it on exactly as with it off, identical to all seventeen digits. So the three-phase state above is a matter of *which* states split three ways, not a model that never finds a third phase."

@@ -499,6 +499,154 @@ pub(crate) fn seeding_against_reference(
     })
 }
 
+/// The phase an enhanced trial admits: its composition, its cubic root and the fraction the
+/// dominant component starts it at.
+pub(crate) struct EnhancedSeed {
+    /// The trial's converged composition.
+    pub composition: Vec<f64>,
+    /// The root the trial was iterated on.
+    pub side: RootSide,
+    /// The feed's mole fraction of the composition's largest entry.
+    pub fraction: f64,
+}
+
+/// Steps an enhanced trial may take, upstream's `maxiter`.
+const ENHANCED_CAP: u32 = 150;
+
+/// `stabilityAnalysisEnhanced`, upstream's second analysis.
+///
+/// For **each existing phase as the reference**, three trials are started - Wilson `K` on the
+/// vapour root, `z * (hydrocarbon ? 0.5 : 2.0)` on the liquid root, and `1 / K` on the liquid
+/// root, in that order - and the first whose tangent-plane distance is below `-1e-8` and whose
+/// composition is not one of the existing phases is admitted. The starting fraction is the
+/// feed's mole fraction of the admitted composition's dominant component.
+///
+/// **The Wegstein step every seventh iteration is not carried**, for the same reason the basic
+/// analysis' acceleration is not: it changes the path, not the fixed point, and the spec names
+/// the omission. Upstream's `init` failure removes the trial; here a trial the cubic cannot
+/// evaluate is skipped.
+///
+/// Returns `None` where no trial is below the plane.
+///
+/// # Errors
+/// Propagates the reduced parameters' and the phase states' range checks.
+pub(crate) fn enhanced_against_phases(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    phases: &[(Vec<f64>, RootSide)],
+) -> Result<Option<EnhancedSeed>> {
+    let reduced = mixture.reduced_parameters(t, p)?;
+    let count = mixture.len();
+    let valid: Vec<bool> = z.iter().map(|&value| value > PRESENT).collect();
+    let k = wilson_k(mixture, t, p);
+    let existing: Vec<Vec<f64>> = phases
+        .iter()
+        .map(|(composition, _)| composition.clone())
+        .collect();
+
+    for (reference, side) in phases {
+        let Ok(state) = mixture.phase_state(&reduced, reference, *side) else {
+            // Upstream skips a trial whose init fails; a reference phase the cubic cannot
+            // evaluate contributes no reference potentials at all.
+            continue;
+        };
+        let d: Vec<f64> = reference
+            .iter()
+            .zip(&state.ln_phi)
+            .map(|(&fraction, &lp)| {
+                if fraction > PRESENT {
+                    ln(fraction) + lp
+                } else {
+                    0.0
+                }
+            })
+            .collect();
+
+        let seeds: [(Vec<f64>, RootSide); 3] = [
+            (
+                (0..count)
+                    .map(|index| {
+                        if valid[index] {
+                            k[index].max(WILSON_FLOOR)
+                        } else {
+                            0.0
+                        }
+                    })
+                    .collect(),
+                RootSide::Vapour,
+            ),
+            (
+                (0..count)
+                    .map(|index| {
+                        if valid[index] {
+                            z[index]
+                                * if is_hydrocarbon(mixture, index) {
+                                    0.5
+                                } else {
+                                    2.0
+                                }
+                        } else {
+                            0.0
+                        }
+                    })
+                    .collect(),
+                RootSide::Liquid,
+            ),
+            (
+                (0..count)
+                    .map(|index| {
+                        if valid[index] {
+                            1.0 / k[index].max(WILSON_FLOOR)
+                        } else {
+                            0.0
+                        }
+                    })
+                    .collect(),
+                RootSide::Liquid,
+            ),
+        ];
+
+        for (composition, trial_side) in seeds {
+            let settled = trial(
+                mixture,
+                &reduced,
+                &d,
+                &valid,
+                &composition,
+                trial_side,
+                ENHANCED_CAP,
+            )?;
+            if settled.failed {
+                continue;
+            }
+            let trivial = existing.iter().any(|phase| {
+                let distance: f64 = settled
+                    .composition
+                    .iter()
+                    .zip(phase)
+                    .map(|(&a, &b)| (a - b).abs())
+                    .sum();
+                distance < TRIVIAL
+            });
+            if trivial {
+                continue;
+            }
+            if 1.0 - settled.totals < TM_LIMIT {
+                let fraction = z[dominant(&settled.composition)];
+                return Ok(Some(EnhancedSeed {
+                    composition: settled.composition,
+                    side: trial_side,
+                    fraction,
+                }));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
 /// The distance a trial reports: `1 - sum(W)`, or `FAILED_TM` where it failed or went
 /// trivial.
 ///

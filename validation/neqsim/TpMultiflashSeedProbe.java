@@ -113,6 +113,7 @@ public class TpMultiflashSeedProbe {
         System.out.printf("    %s.phase_%d_type = %s%n", label, phase,
             fluid.getPhase(phase).getType());
         row(String.format("    %s.phase_%d_beta", label, phase), fluid.getBeta(phase));
+        row(String.format("    %s.phase_%d_z", label, phase), fluid.getPhase(phase).getZ());
         row(String.format("    %s.phase_%d_water_x", label, phase), waterX(fluid, phase));
         StringBuilder x = new StringBuilder();
         for (int comp = 0; comp < fluid.getPhase(phase).getNumberOfComponents(); comp++) {

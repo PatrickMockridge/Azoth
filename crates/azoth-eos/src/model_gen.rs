@@ -9006,6 +9006,38 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         expected_records: &[],
     },
     TestCase {
+        id: "methane_butane_water_enhanced_check_at_370_k_40_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 370.0), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane", "water"])],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[
+                0.49995000499950004,
+                0.49995000499950004,
+                9.999000099990002e-05,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("phase_count", 2.0)],
+        expected_vectors: &[
+            (
+                "phase_fractions",
+                &[0.9902639834091616, 0.009736016590838425],
+            ),
+            ("z_factor", &[0.7452175536344108, 0.15881276682734707]),
+        ],
+        expected_strings: &[("seeded", "stability_seeded")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
         id: "n2_co2_octane_two_phase_at_190_k_1_bar",
         kind: "case",
         property: None,

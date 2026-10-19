@@ -15,6 +15,7 @@ composition NeqSim's own seeding reports.
 from __future__ import annotations
 
 import math
+from typing import NamedTuple
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
@@ -187,6 +188,90 @@ def _seed_of(settled: _Settled, existing: list[list[float]]) -> float:
         for phase in existing
     )
     return FAILED_TM if trivial else 1.0 - settled.totals
+
+
+class _EnhancedSeed(NamedTuple):
+    """The phase an enhanced trial admits."""
+
+    composition: list[float]
+    liquid: bool
+    fraction: float
+
+
+#: Steps an enhanced trial may take, upstream's ``maxiter``.
+ENHANCED_CAP = 150
+
+
+def enhanced_against_phases(
+    mixture: Mixture,
+    t_si: float,
+    p_si: float,
+    z: list[float],
+    phases: list[tuple[list[float], bool]],
+) -> _EnhancedSeed | None:
+    """``stabilityAnalysisEnhanced``, upstream's second analysis.
+
+    For **each existing phase as the reference**, three trials are started - Wilson ``K`` on
+    the vapour root, ``z * (hydrocarbon ? 0.5 : 2.0)`` on the liquid root, and ``1 / K`` on the
+    liquid root, in that order - and the first whose tangent-plane distance is below ``-1e-8``
+    and whose composition is not one of the existing phases is admitted. The starting fraction
+    is the feed's mole fraction of the admitted composition's dominant component.
+
+    **The Wegstein step every seventh iteration is not carried**, for the same reason the basic
+    analysis' acceleration is not: it changes the path, not the fixed point, and the spec names
+    the omission.
+    """
+    count = len(mixture.components)
+    reduced = reduced_parameters(mixture, t_si, p_si)
+    kij = mixture.effective_kij(reduced.t_kelvin)
+    valid = [value > PRESENT for value in z]
+    k = wilson_k(mixture, t_si, p_si)
+    existing = [list(composition) for composition, _ in phases]
+
+    for reference, liquid in phases:
+        try:
+            state = phase_state(reduced, kij, list(reference), liquid=liquid)
+        except Exception:
+            continue
+        d = [
+            _ln(fraction) + lp if fraction > PRESENT else 0.0
+            for fraction, lp in zip(reference, state.ln_phi, strict=True)
+        ]
+        seeds = (
+            (
+                [max(k[i], WILSON_FLOOR) if valid[i] else 0.0 for i in range(count)],
+                False,
+            ),
+            (
+                [
+                    z[i] * (0.5 if _is_hydrocarbon(mixture, i) else 2.0) if valid[i] else 0.0
+                    for i in range(count)
+                ],
+                True,
+            ),
+            (
+                [1.0 / max(k[i], WILSON_FLOOR) if valid[i] else 0.0 for i in range(count)],
+                True,
+            ),
+        )
+        for composition, trial_liquid in seeds:
+            settled = _trial(
+                reduced, kij, d, valid, composition, liquid=trial_liquid, cap=ENHANCED_CAP
+            )
+            if settled.failed:
+                continue
+            if any(
+                sum(abs(a - b) for a, b in zip(settled.composition, phase, strict=True)) < TRIVIAL
+                for phase in existing
+            ):
+                continue
+            if 1.0 - settled.totals < TM_LIMIT:
+                return _EnhancedSeed(
+                    list(settled.composition),
+                    trial_liquid,
+                    z[_dominant(settled.composition)],
+                )
+    return None
 
 
 def _dominant(values: list[float]) -> int:

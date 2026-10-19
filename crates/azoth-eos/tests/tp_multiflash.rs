@@ -212,6 +212,52 @@ fn n2_co2_octane_splits_three_ways_at_180_k_10_bar() {
     assert_eq!(got.seeded, TpMultiflashSeed::StabilitySeeded);
 }
 
+/// The state where upstream's **enhanced** analysis is what decides the answer.
+///
+/// Ablating `stabilityAnalysisEnhanced` from `run()` leaves an aqueous phase at beta `1e-5`
+/// (the inline seed); with it, the enhanced analysis adds a phase, the bounded rerun solves
+/// three, and the merge removes the addition again - two phases. Both chains are in
+/// `captures/tp_multiflash_seed_probe.tsv`; the expected values below are the default one.
+#[test]
+fn the_post_flash_enhanced_check_decides_a_water_bearing_state() {
+    // NeqSim's `getz` is the mole numbers over their total; the probe's feed is
+    // 0.5 / 0.5 / 1e-4 mol.
+    let got = state(
+        &["methane", "n-butane", "water"],
+        370.0,
+        40.0e5,
+        &[
+            0.49995000499950004,
+            0.49995000499950004,
+            9.999000099990002e-5,
+        ],
+    );
+    check(
+        &got,
+        &[
+            Expected {
+                phase_fractions: 0.9902639834091616,
+                z_factor: 0.7452175536344108,
+                x: &[
+                    0.5036561370177296,
+                    0.49624322017919587,
+                    0.00010064280307448483,
+                ],
+            },
+            Expected {
+                phase_fractions: 0.009736016590838425,
+                z_factor: 0.15881276682734707,
+                x: &[
+                    0.12299408866860612,
+                    0.8769723187503989,
+                    3.359258099504507e-5,
+                ],
+            },
+        ],
+        "C1/nC4/water 370 K 40 bar",
+    );
+}
+
 #[test]
 fn n2_co2_octane_stays_two_phase_at_190_k_1_bar() {
     // The state that shows the count is not the whole answer: at 190 K and 1 bar NeqSim
