@@ -1279,6 +1279,19 @@ class Gerg2008PhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class GtSurfaceTensionSimpleResult(_HasWarnings):
+    """Result of ``eos.gt_surface_tension_simple``."""
+
+    CALC_ID: ClassVar[str] = "eos.gt_surface_tension_simple"
+
+    #: the interface tension.
+    sigma: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HaydukMinhasDiffusivityResult(_HasWarnings):
     """Result of ``eos.hayduk_minhas_diffusivity``."""
 

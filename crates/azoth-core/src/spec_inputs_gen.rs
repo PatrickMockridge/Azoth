@@ -53,6 +53,7 @@
 //!   - specs/models/eos/ge_van_laar_acid_phase.toml
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
+//!   - specs/models/eos/gt_surface_tension_simple.toml
 //!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
 //!   - specs/models/eos/helium_phase.toml
@@ -677,6 +678,28 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.gerg2008_phase", "T", "thermodynamic_temperature"),
     ("eos.gerg2008_phase", "P", "pressure"),
     ("eos.gerg2008_phase", "z", "dimensionless"),
+    (
+        "eos.gt_surface_tension_simple",
+        "influence_parameters",
+        "dimensionless",
+    ),
+    (
+        "eos.gt_surface_tension_simple",
+        "reference_component",
+        "dimensionless",
+    ),
+    (
+        "eos.gt_surface_tension_simple",
+        "pair_interactions",
+        "dimensionless",
+    ),
+    (
+        "eos.gt_surface_tension_simple",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.gt_surface_tension_simple", "P", "pressure"),
+    ("eos.gt_surface_tension_simple", "z", "dimensionless"),
     ("eos.hayduk_minhas_diffusivity", "VA", "molar_volume"),
     (
         "eos.hayduk_minhas_diffusivity",

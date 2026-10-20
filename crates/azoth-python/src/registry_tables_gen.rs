@@ -72,6 +72,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.ge_van_laar_acid_phase" => azoth_eos::results::GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
         "eos.ge_wilson_phase" => azoth_eos::results::GeWilsonPhaseResult::FIELDS.to_vec(),
         "eos.gerg2008_phase" => azoth_eos::results::Gerg2008PhaseResult::FIELDS.to_vec(),
+        "eos.gt_surface_tension_simple" => azoth_eos::results::GtSurfaceTensionSimpleResult::FIELDS.to_vec(),
         "eos.hayduk_minhas_diffusivity" => azoth_eos::results::HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
         "eos.heat_of_vaporization" => azoth_eos::results::HeatOfVaporizationResult::FIELDS.to_vec(),
         "eos.helium_phase" => azoth_eos::results::HeliumPhaseResult::FIELDS.to_vec(),

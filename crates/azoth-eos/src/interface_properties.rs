@@ -88,9 +88,11 @@ pub fn interface_properties(
         "parachor" => false,
         "firozabadi_ramley" => true,
         "model_1" => {
-            return Err(refused(
-                selection,
-                "`GTSurfaceTension` / `GTSurfaceTensionSimple`",
+            return Err(AzothError::invalid_input(
+                "selection",
+                "`model_1` installs `GTSurfaceTension` in the gas-oil slot, which this tree \
+                 does not carry; its other two slots are `eos.gt_surface_tension_simple`, and \
+                 this dispatch does not carry the arrays that calculator takes",
             ));
         }
         "model_2" => {
@@ -103,9 +105,13 @@ pub fn interface_properties(
             ));
         }
         "model_4" => {
-            return Err(refused(
-                selection,
-                "`GTSurfaceTensionSimple` / `LGTSurfaceTension`",
+            return Err(AzothError::invalid_input(
+                "selection",
+                "`model_4` installs `GTSurfaceTensionSimple` \
+                 (`eos.gt_surface_tension_simple`), `LGTSurfaceTension` \
+                 (`eos.lgt_surface_tension`) and Parachor in its three slots; all three are \
+                 ported, and this dispatch does not carry the influence parameters, reference \
+                 component and interaction matrix the two profile calculators take",
             ));
         }
         other => {
@@ -179,16 +185,4 @@ pub fn interface_properties(
         selected_model: selected_model.to_string(),
         warnings,
     })
-}
-
-/// The refusal for a model arm the tree cannot run.
-fn refused(selection: &str, class: &str) -> AzothError {
-    AzothError::invalid_input(
-        "selection",
-        format!(
-            "`{selection}` needs {class}, a density-profile solver that requires a mutable \
-             mixture at arbitrary densities and its chemical-potential derivatives; this tree \
-             does not carry that profile object, so the arm is refused rather than approximated"
-        ),
-    )
 }

@@ -31,6 +31,7 @@
 //!   - specs/models/eos/ge_van_laar_acid_phase.toml
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
+//!   - specs/models/eos/gt_surface_tension_simple.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hybrid_eos_ge_flash.toml
 //!   - specs/models/eos/hydrate_equilibrium_line.toml
@@ -4655,6 +4656,128 @@ pub static GERG2008_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&GERG2008_PHASE_ALGORITHM),
     checks: GERG2008_PHASE_CHECKS,
     cases: GERG2008_PHASE_CASES,
+};
+
+static GT_SURFACE_TENSION_SIMPLE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The flash runs at it, and a non-positive pressure is not a state.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "influence_parameters",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The sum takes their square roots.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A mole fraction cannot be negative.",
+        },
+    },
+];
+
+static GT_SURFACE_TENSION_SIMPLE_CASES: &[TestCase] = &[TestCase {
+    id: "methane_nbutane_at_300_k_and_20_bar",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-06,
+    numbers: &[("reference_component", 1.0), ("T", 300.0), ("P", 2000000.0)],
+    flags: &[],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[("eos", "srk")],
+    vectors: &[
+        (
+            "influence_parameters",
+            &[9.634812734820117e-21, 2.7571945977326497e-19],
+        ),
+        ("z", &[0.5, 0.5]),
+    ],
+    matrices: &[("pair_interactions", &[0.0, 0.0, 0.0, 0.0])],
+    expected: &[("sigma", 0.00951973185903182)],
+    expected_vectors: &[],
+    expected_strings: &[],
+    records: &[],
+    expected_records: &[],
+}];
+
+static GT_SURFACE_TENSION_SIMPLE_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "gt_simple_mu_equalisation",
+    convergence: "absolute",
+    tolerance: 1e-15,
+    max_iterations: 1200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static GT_SURFACE_TENSION_SIMPLE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "gt_simple_density_newton",
+    convergence: "absolute",
+    tolerance: 1e-15,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("linear_density_between_phases"),
+    initial_temperature: None,
+    inner: Some(&GT_SURFACE_TENSION_SIMPLE_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.gt_surface_tension_simple`.
+pub static GT_SURFACE_TENSION_SIMPLE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.gt_surface_tension_simple",
+    kind: "procedure",
+    algorithm: Some(&GT_SURFACE_TENSION_SIMPLE_ALGORITHM),
+    checks: GT_SURFACE_TENSION_SIMPLE_CHECKS,
+    cases: GT_SURFACE_TENSION_SIMPLE_CASES,
 };
 
 static HELIUM_PHASE_CHECKS: &[SpecCheck] = &[
@@ -12721,6 +12844,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_VAN_LAAR_ACID_PHASE_SPEC,
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
+    &GT_SURFACE_TENSION_SIMPLE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYBRID_EOS_GE_FLASH_SPEC,
     &HYDRATE_EQUILIBRIUM_LINE_SPEC,

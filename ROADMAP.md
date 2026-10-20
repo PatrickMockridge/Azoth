@@ -119,16 +119,21 @@ process model needs.
   default, installs Parachor for gas-oil and gas-aqueous and Firozabadi-Ramley for
   liquid-liquid, models 3 and 5 are its aliases, and the string selector's two
   calculators are selectable. `LGTSurfaceTension` is `eos.lgt_surface_tension`, model 2's
-  calculator, whose 200-step profile runs on `Mixture::helmholtz_gradient`.
-  **Owed**: `GTSurfaceTension`, `GTSurfaceTensionSimple` and `CDFTSurfaceTension` are
-  density-profile solvers, need a mutable profile object this tree does not carry, and are
-  the tranche after. `eos.interface_properties` refuses models 1, 2 and 4: model 2's
-  calculator is ported, but the dispatch does not carry the influence parameters, reference
-  component and interaction matrix it takes. `GTSurfaceTensionODE` is unreachable upstream
-  (`useFullGT = 1` with no setter) and is not a port target. The captures
-  `surface_tension_probe.tsv`, `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`
-  and `lgt_local_probe.tsv` record the default pairs, models 1, 2 and 4, and the profile's
-  negative-pressure segment respectively.
+  calculator, whose 200-step profile runs on `Mixture::helmholtz_gradient`, and
+  `GTSurfaceTensionSimple` is `eos.gt_surface_tension_simple`, model 4's gas-oil and
+  model 1's gas-aqueous and liquid-liquid slot, which adds the `dmu/dn` inner Newton.
+  **Owed**: `GTSurfaceTension` (model 1's gas-oil slot, the FullGT branch; `GTSurfaceTensionODE`
+  is unreachable upstream - `useFullGT = 1` has no setter) and `CDFTSurfaceTension`.
+  `eos.interface_properties` refuses models 1, 2 and 4: model 1's gas-oil slot lacks its
+  class, and the other arms lack the influence parameters, reference component and
+  interaction matrix the two profile calculators take.
+  **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
+  CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
+  `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`
+  is the reproduction. The captures `surface_tension_probe.tsv`,
+  `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`, `lgt_local_probe.tsv`,
+  `gt_simple_profile_probe.tsv` and `gt_simple_initial_probe.tsv` record the default pairs,
+  models 1, 2 and 4, the profiles' negative-pressure segments, and the GT-simple profile.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,

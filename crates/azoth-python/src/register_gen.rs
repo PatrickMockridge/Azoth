@@ -71,6 +71,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyGeVanLaarAcidPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyGeWilsonPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyGerg2008PhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyGtSurfaceTensionSimpleResult>()?;
     m.add_class::<crate::transport_gen::PyHaydukMinhasDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyHeatOfVaporizationResult>()?;
     m.add_class::<crate::transport_gen::PyHeliumPhaseResult>()?;
@@ -379,6 +380,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::eos::ge_van_laar_acid_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::ge_wilson_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::gerg2008_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::gt_surface_tension_simple, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::hayduk_minhas_diffusivity,
         m

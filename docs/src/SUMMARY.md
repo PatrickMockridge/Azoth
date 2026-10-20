@@ -128,6 +128,7 @@
   - [Fugacity coefficients of the water-nitric-sulfuric acid liquid](./eos/ge_van_laar_acid_phase.md)
   - [Fugacity coefficients of a Wilson activity-coefficient liquid](./eos/ge_wilson_phase.md)
   - [GERG-2008 phase state](./eos/gerg2008_phase.md)
+  - [Surface tension from the simplified gradient theory](./eos/gt_surface_tension_simple.md)
   - [Helium reference phase state](./eos/helium_phase.md)
   - [Isothermal flash of a fixed gas-oil-brine topology](./eos/hybrid_eos_ge_flash.md)
   - [Hydrate equilibrium line](./eos/hydrate_equilibrium_line.md)

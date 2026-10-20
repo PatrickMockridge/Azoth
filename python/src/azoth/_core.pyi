@@ -727,6 +727,11 @@ class Gerg2008PhaseResult:
     warnings: list[Warning]
 
 @final
+class GtSurfaceTensionSimpleResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class HaydukMinhasDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -2885,6 +2890,16 @@ def gerg2008_phase(
     P: float,
     z: list[float],
 ) -> Gerg2008PhaseResult: ...
+def gt_surface_tension_simple(
+    components: list[str],
+    eos: str,
+    influence_parameters: list[float],
+    reference_component: float,
+    pair_interactions: list[list[float]],
+    T: float,
+    P: float,
+    z: list[float],
+) -> GtSurfaceTensionSimpleResult: ...
 def hayduk_minhas_diffusivity(
     form: str,
     VA: float,

@@ -75,7 +75,9 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: `components` names and a `Vec<Vec<f64>>` interaction matrix. The first is the record/mixture
 #: shape the generator refuses by design; the second is a matrix whose row length is a
 #: per-component quantity the spec states in prose, not in a column count.
-KNOWN_HAND_WRITTEN = 56
+#: 56 -> 57 when `eos.gt_surface_tension_simple` landed, the same shape as LGT and for the
+#: same two reasons.
+KNOWN_HAND_WRITTEN = 57
 
 
 def _tools_module(name: str) -> ModuleType:

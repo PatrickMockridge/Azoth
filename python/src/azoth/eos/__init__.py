@@ -108,6 +108,7 @@ from azoth.core.result import (
     GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
+    GtSurfaceTensionSimpleResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
@@ -456,6 +457,7 @@ _GE_VAN_LAAR_ACID_PHASE = "eos.ge_van_laar_acid_phase"
 _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
+_GT_SURFACE_TENSION_SIMPLE = "eos.gt_surface_tension_simple"
 _VISCOSITY = "eos.viscosity"
 _AQUEOUS_VISCOSITY = "eos.aqueous_viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
@@ -3293,6 +3295,41 @@ def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg200
     See :func:`azoth.eos.reference.gerg2008_phase`.
     """
     return resolve(_GERG2008_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def gt_surface_tension_simple(
+    components: list[str],
+    eos: str,
+    influence_parameters: Sequence[float],
+    reference_component: float,
+    pair_interactions: Sequence[Sequence[float]],
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> GtSurfaceTensionSimpleResult:
+    """The simplified gradient theory's interface tension of a flashed fluid.
+
+    The density path is linear; each step solves for the composition gradients that
+    equalise the chemical potentials. The class's own water interaction branch writes
+    zero in both arms, so the supplied matrix is the caller's.
+
+    Raises:
+        InvalidInputError: for a single-phase feed, a singular inner system, or a profile
+            state that is not a state.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.gt_surface_tension_simple`.
+    """
+    return resolve(_GT_SURFACE_TENSION_SIMPLE)(  # type: ignore[no-any-return]
+        components=components,
+        eos=eos,
+        influence_parameters=influence_parameters,
+        reference_component=reference_component,
+        pair_interactions=pair_interactions,
+        T=T,
+        P=P,
+        z=z,
+    )
 
 
 def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousViscosityResult:

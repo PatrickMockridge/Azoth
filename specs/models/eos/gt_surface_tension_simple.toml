@@ -1,0 +1,95 @@
+id = "eos.gt_surface_tension_simple"
+name = "Surface tension from the simplified gradient theory"
+kind = "procedure"
+assumptions = [
+    "the density path is LGT's straight line in molar density over 200 steps; what this solver adds is an **inner Newton** that solves for the non-reference components' gradients so the chemical potentials equal the first phase's at every step.\n",
+    "the chemical potential is the T,V form `mu_i/(RT) = ln(rho_i R T) + dA_R/dn_i`, and the Jacobian is `RT(delta_ik/rho_i + d2A_R/dn_i dn_k)` at fixed T,V; both stay finite through the cubic's negative-pressure loop.\n",
+    "**this class's water interaction condition assigns `interact = 0.0` in both of its arms**, so its own calls carry a zero matrix; the caller supplies the matrix so the branch, should upstream change it, is an input rather than a hidden constant.\n",
+    "the influence parameters and the reference component are the class's own name-keyed data, supplied as arrays; the reference is the highest-boiling component.\n",
+    "phase 1 is the vapour and phase 2 the liquid, as the class's `calcSurfaceTension(0, 1)` on these flashes.\n",
+    "a single-phase feed, a singular inner system, and a step whose density vector is not a state are refused; a non-converged inner loop is carried with a warning, as the class carries it.\n",
+    "**on CO2/water 0.02/0.98 at 313.15 K and 50 bar the class's own profile collapses** - its densities are zero from step 3 - and it returns the two-step partial `0.0145737553`; this port refuses that state.\n",
+    "the class's inner update adds one Newton step after its stopping test, so its stored density and its integration variable differ by that step; this port uses the post-update value for both, and the difference is below the case tolerance.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/GTSurfaceTensionSimple.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/gt_simple_profile_probe.tsv` - the 200-step path, its pressures and `z`, and the last step's `dmudn` matrix.\n",
+]
+[source]
+standard = "NeqSim master `GTSurfaceTensionSimple`"
+edition = "`calcSurfaceTension`, ported: the linear density interpolation, the initial gradient solve, the inner Newton on `mu_equi - mu`, and the `sqrt(2 kappa mu_times_rho)` accumulation."
+[algorithm]
+scheme = "gt_simple_density_newton"
+initialisation = "linear_density_between_phases"
+convergence = "absolute"
+tolerance = 1e-15
+max_iterations = 200
+[algorithm.inner]
+scheme = "gt_simple_mu_equalisation"
+convergence = "absolute"
+tolerance = 1e-15
+max_iterations = 1200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs.\n"
+[inputs.influence_parameters]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's gradient-theory influence parameter, in NeqSim's unit.\n"
+[inputs.reference_component]
+unit = "dimensionless"
+description = "the 0-based index of the highest-boiling component, the profile's integration variable.\n"
+[inputs.pair_interactions]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per component, one column per component"
+description = "the class's `interact` values; its own branch writes zero for every pair.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the fluid is flashed.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the interface tension.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The flash runs at it, and a non-positive pressure is not a state.\n"
+[[valid_range]]
+quantity = "influence_parameters"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The sum takes their square roots.\n"
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[implementations]
+python = "azoth.eos.gt_surface_tension_simple"
+rust = "azoth_eos::gt_surface_tension_simple"

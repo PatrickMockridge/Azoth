@@ -30,15 +30,6 @@ PARACHOR = "ParachorSurfaceTension"
 FIROZABADI = "FirozabadiRamleyInterfaceTension"
 
 
-def _refused(selection: str, klass: str) -> InvalidInputError:
-    return InvalidInputError(
-        "selection",
-        f"`{selection}` needs {klass}, a density-profile solver that requires a mutable "
-        f"mixture at arbitrary densities and its chemical-potential derivatives; this tree "
-        f"does not carry that profile object, so the arm is refused rather than approximated",
-    )
-
-
 def interface_properties(
     interface: str,
     selection: str,
@@ -112,7 +103,12 @@ def interface_properties(
     elif selection == "firozabadi_ramley":
         use_firozabadi = True
     elif selection == "model_1":
-        raise _refused(selection, "`GTSurfaceTension` / `GTSurfaceTensionSimple`")
+        raise InvalidInputError(
+            "selection",
+            "`model_1` installs `GTSurfaceTension` in the gas-oil slot, which this tree does "
+            "not carry; its other two slots are `eos.gt_surface_tension_simple`, and this "
+            "dispatch does not carry the arrays that calculator takes",
+        )
     elif selection == "model_2":
         raise InvalidInputError(
             "selection",
@@ -122,7 +118,13 @@ def interface_properties(
             "refused here rather than assumed",
         )
     elif selection == "model_4":
-        raise _refused(selection, "`GTSurfaceTensionSimple` / `LGTSurfaceTension`")
+        raise InvalidInputError(
+            "selection",
+            "`model_4` installs `GTSurfaceTensionSimple` (`eos.gt_surface_tension_simple`), "
+            "`LGTSurfaceTension` (`eos.lgt_surface_tension`) and Parachor in its three slots; "
+            "all three are ported, and this dispatch does not carry the influence parameters, "
+            "reference component and interaction matrix the two profile calculators take",
+        )
     else:
         raise InvalidInputError(
             "selection",

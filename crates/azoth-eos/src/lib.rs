@@ -103,6 +103,7 @@ pub mod ge_wilson_phase;
 pub mod gerg2008;
 mod gerg2008_data;
 pub mod gerg2008_phase;
+pub mod gt_surface_tension_simple;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
@@ -285,6 +286,7 @@ pub use ge_uniquac_phase::ge_uniquac_phase;
 pub use ge_van_laar_acid_phase::ge_van_laar_acid_phase;
 pub use ge_wilson_phase::ge_wilson_phase;
 pub use gerg2008_phase::gerg2008_phase;
+pub use gt_surface_tension_simple::gt_surface_tension_simple;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
@@ -361,14 +363,15 @@ pub use results::{
     FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
     GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
-    HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult,
-    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
-    LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    GtSurfaceTensionSimpleResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
+    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
+    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
+    IapwsSaturationPressureResult, IdealGasCpResult, InterfacePropertiesResult,
+    KentEisenbergPhaseResult, LgtSurfaceTensionResult, LiquidConductivityPolynomResult,
+    LiquidHeatCapacityResult, LiquidViscosityPureResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PitzerDataset, PitzerPhaseResult,
     Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,

@@ -1,0 +1,16 @@
+model = "eos.gt_surface_tension_simple"
+[[cases]]
+id = "methane_nbutane_at_300_k_and_20_bar"
+tolerance = 1e-06
+source = "NeqSim master `GTSurfaceTensionSimple` on methane/n-butane 0.5/0.5 at 300 K and 20 bar, from `validation/neqsim/captures/gt_simple_profile_probe.tsv`. This is the class's own answer, not a model-4 dispatch of it; the last step's `dmudn` matrix is in the same capture. The interaction matrix is zero because the class's water branch writes zero in both arms and neither component is water.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+eos = "srk"
+influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19]
+reference_component = 1.0
+pair_interactions = [[0.0, 0.0], [0.0, 0.0]]
+T = 300.0
+P = 2000000.0
+z = [0.5, 0.5]
+[cases.expected]
+sigma = 0.00951973185903182

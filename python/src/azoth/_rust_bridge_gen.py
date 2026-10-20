@@ -77,6 +77,7 @@ from azoth.core.result import (
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
     GibbsReactorResult,
+    GtSurfaceTensionSimpleResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeaterResult,
@@ -343,6 +344,7 @@ __all__ = [
     "ge_wilson_phase",
     "gerg2008_phase",
     "gibbs_reactor",
+    "gt_surface_tension_simple",
     "hayduk_minhas_diffusivity",
     "heat_exchanger",
     "heat_of_vaporization",
@@ -1632,6 +1634,25 @@ def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg200
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def gt_surface_tension_simple(components: list[str], eos: str, influence_parameters: Sequence[float], reference_component: float, pair_interactions: Sequence[Sequence[float]], T: Q, P: Q, z: Sequence[float]) -> GtSurfaceTensionSimpleResult:
+    """``eos.gt_surface_tension_simple``, computed in Rust."""
+    spec = _models_gen.model("eos.gt_surface_tension_simple")
+    result = _core.gt_surface_tension_simple(
+        list(components),
+        eos,
+        list(influence_parameters),
+        reference_component,
+        [list(row) for row in pair_interactions],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return GtSurfaceTensionSimpleResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 
