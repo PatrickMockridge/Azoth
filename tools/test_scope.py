@@ -1559,8 +1559,16 @@ def render(
 
 
 @cache
-def file_has_marked_tests(path: str) -> bool:
-    """True when a *file* carries the marker anywhere - module-level or on a function."""
+def file_has_selected_marked_tests(path: str, terms: tuple[str, ...]) -> bool:
+    """True when a file carries the marker on a test the selection can reach.
+
+    A narrowed sweep is emitted only where pytest would collect something: a marked test
+    whose *name* carries a term, or a parametrized marked test, whose collected node ids
+    carry the parametrize ids the terms are drawn from. **The batch sweep is why this
+    exists**: its marked tests are unparametrized and name no spec id, so
+    `-m slow_sweep -k "eos."` collected nothing and pytest exited 5 - a red lane over an
+    optimisation that had nothing to optimise.
+    """
     file = ROOT / path
     if file.suffix != ".py" or not file.is_file():
         return False
@@ -1568,7 +1576,33 @@ def file_has_marked_tests(path: str) -> bool:
         tree = ast.parse(file.read_text(encoding="utf-8"))
     except SyntaxError:
         return False
-    return MARKER in ast.dump(tree)
+    module_marked = any(
+        isinstance(node, ast.Assign) and MARKER in ast.dump(node) for node in tree.body
+    )
+    # A module-level `pytest_generate_tests` gives its tests ids at collection time, so a
+    # marked test there can be selected by a term its own name does not carry - which is
+    # exactly how the registry sweeps are parametrized.
+    generates = any(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == "pytest_generate_tests"
+        for node in ast.walk(tree)
+    )
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not node.name.startswith("test_"):
+            continue
+        decorated = node.decorator_list
+        marked = module_marked or any(MARKER in ast.dump(decorator) for decorator in decorated)
+        if not marked:
+            continue
+        if generates:
+            return True
+        if any("parametrize" in ast.dump(decorator) for decorator in decorated):
+            return True
+        if any(term in node.name for term in terms):
+            return True
+    return False
 
 
 def sweep_line(
@@ -1589,7 +1623,8 @@ def sweep_line(
             files.extend(str(p.relative_to(ROOT)) for p in path.rglob("test_*.py"))
         else:
             files.append(target)
-    if not any(file_has_marked_tests(path) for path in files):
+    terms = tuple(term for term in selection.split(" or ") if term)
+    if not any(file_has_selected_marked_tests(path, terms) for path in files):
         return None
     return pytest_line(f'{entry.command} -m {MARKER} -k "{selection}"', gate, budget_seconds)
 

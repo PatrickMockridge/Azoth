@@ -217,8 +217,8 @@ def test_the_tranche_narrows_a_reached_sweep_to_the_selected_ids() -> None:
     """The close-out runs the reached ids inside a sweep, not the sweep.
 
     A diff that reaches both a spec and core has real terms (`eos.`, `eos.pt_flash`) and a
-    marked file (`test_units_contract`); a core-only diff has neither, so its sweeps are the
-    nightly's.
+    marked file whose tests are parametrized over ids (`test_registration_completeness`); a
+    core-only diff has neither, so its sweeps are the nightly's.
     """
     module = tool()
     edges = module.crate_edges()
@@ -231,7 +231,7 @@ def test_the_tranche_narrows_a_reached_sweep_to_the_selected_ids() -> None:
         entry
         for entry in mixed
         if entry.kind == module.PYTEST
-        and entry.command.startswith(f"{module.TESTS}/test_units_contract.py")
+        and entry.command.startswith(f"{module.TESTS}/test_registration_completeness.py")
     )
     line = module.sweep_line(entry, selection, gate=False, budget_seconds=None)
     assert line is not None and f"-m {module.MARKER}" in line and '-k "' in line
@@ -241,12 +241,53 @@ def test_the_tranche_narrows_a_reached_sweep_to_the_selected_ids() -> None:
         entry
         for entry in core
         if entry.kind == module.PYTEST
-        and entry.command.startswith(f"{module.TESTS}/test_units_contract.py")
+        and entry.command.startswith(f"{module.TESTS}/test_registration_completeness.py")
     )
     assert (
         module.sweep_line(core_entry, module.selection_terms(core), gate=False, budget_seconds=None)
         is None
     )
+
+
+def test_a_narrowed_sweep_is_emitted_only_where_it_collects(tmp_path: Path) -> None:
+    """A marked file whose tests cannot match the selection must not emit a `-k` line.
+
+    `test_batch.py` carries slow-sweep tests that are unparametrized and name no spec id,
+    so the tranche lane's `-m slow_sweep -k "eos."` collected nothing and pytest exited 5
+    - the lane went red over an optimisation with nothing to optimise. A parametrized test
+    is still emitted, because its collected ids carry the parametrize ids the selection
+    terms are drawn from.
+    """
+    module = tool()
+    unrelated = tmp_path / "test_unrelated.py"
+    unrelated.write_text(
+        "import pytest\n\n"
+        "pytestmark = pytest.mark.slow_sweep\n\n\n"
+        "def test_nothing_to_do():\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    assert not module.file_has_selected_marked_tests(str(unrelated), ("eos.",))
+    parametrized = tmp_path / "test_parametrized.py"
+    parametrized.write_text(
+        "import pytest\n\n"
+        "@pytest.mark.slow_sweep\n"
+        "@pytest.mark.parametrize('x', [1])\n"
+        "def test_case(x):\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    assert module.file_has_selected_marked_tests(str(parametrized), ("eos.",))
+    named = tmp_path / "test_named.py"
+    named.write_text(
+        "import pytest\n\n@pytest.mark.slow_sweep\ndef test_the_case():\n    pass\n",
+        encoding="utf-8",
+    )
+    # A term is matched against the *identifier*, and a spec id's dot cannot appear in
+    # one: the parametrized path is how a dotted term reaches a test, which is the case
+    # above. A plain word matches the name.
+    assert module.file_has_selected_marked_tests(str(named), ("case",))
+    assert not module.file_has_selected_marked_tests(str(named), ("eos.",))
 
 
 def test_the_smoke_ids_do_not_open_a_registry_sweep() -> None:
