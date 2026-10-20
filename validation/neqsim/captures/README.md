@@ -71,6 +71,23 @@ java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe solvers > captures/surface_ten
 java -cp .:neqsim-f0c7436.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
 ```
 
+**`LgtProfileProbe` records the gradient-theory profile behind model 2, not only its final
+number.** It prints the influence parameter, aT and b of every component, then the 200-step
+molar-density path, the pressure at each step (negative from step 53 to 198, where the cubic's
+homogeneous path crosses its loop) and the accumulated `z`. `LgtLocalProbe` rebuilds the
+class's one-phase local system outside the class: at the negative-pressure steps
+`getGibbsEnergy(T, P)` is NaN while `getChemicalPotential(phase)` is finite, because
+`ComponentEos` overrides the potential with the T,V form
+`H_id - T S_id + R T ln(n R T/V / P_ref) + R T dF/dN`. That is the primitive a port needs, and
+it is why the profile does not stop at the loop.
+
+```bash
+cd validation/neqsim
+javac -proc:none -cp neqsim-f0c7436.jar LgtProfileProbe.java LgtLocalProbe.java
+java -cp .:neqsim-f0c7436.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
+java -cp .:neqsim-f0c7436.jar LgtLocalProbe > captures/lgt_local_probe.tsv
+```
+
 **`GeHenryProbe` measures `ComponentGE.fugcoef`'s two reference states.** It reads nothing and
 prints its whole grid, so it needs the recipe for the same reason. The states cover the IAPWS
 arm in water, the databank arm with and without water, the `900` sentinel, the four-zero rows
