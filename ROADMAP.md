@@ -110,18 +110,22 @@ process model needs.
   `eos.fuller_schettler_giddings_diffusivity`, `eos.hayduk_minhas_diffusivity`,
   `eos.siddiqi_lucas_diffusivity`, `eos.tyn_calus_diffusivity`,
   `eos.wilke_chang_diffusivity`), `ParachorSurfaceTension` (the pure and mixture forms,
-  `eos.parachor_surface_tension` / `eos.parachor_mixture_surface_tension`), and the
-  phase-type dispatch that assigns them (`eos.phase_transport`).
-  **Owed**: `FilippovConductivityMethod`, `FrictionTheoryViscosityMethod` and
-  `FirozabadiRamleyInterfaceTension` are direct calculations and are P1's close-out, with
-  `InterfaceProperties` as their dispatch (model 0, the default, installs Parachor for
-  gas-oil and gas-aqueous and Firozabadi-Ramley for liquid-liquid; models 3 and 5 are its
-  aliases). `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and
+  `eos.parachor_surface_tension` / `eos.parachor_mixture_surface_tension`),
+  `FirozabadiRamleyInterfaceTension` (`eos.firozabadi_ramley_interface_tension`),
+  `FilippovConductivityMethod` (`eos.filippov_conductivity`) and
+  `FrictionTheoryViscosityMethod` (`eos.friction_theory_viscosity`), the phase-type
+  dispatch that assigns the transport correlations (`eos.phase_transport`), and
+  `InterfaceProperties`' tension dispatch (`eos.interface_properties`): model 0, the
+  default, installs Parachor for gas-oil and gas-aqueous and Firozabadi-Ramley for
+  liquid-liquid, models 3 and 5 are its aliases, and the string selector's two
+  calculators are selectable.
+  **Owed**: `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and
   `CDFTSurfaceTension` are density-profile solvers, need a mutable profile object this tree
-  does not carry, and are the tranche after; `GTSurfaceTensionODE` is unreachable upstream
-  (`useFullGT = 1` with no setter) and is not a port target. The captures
-  `surface_tension_probe.tsv` and `surface_tension_solvers_probe.tsv` record the default
-  pairs and models 1, 2 and 4 respectively.
+  does not carry, and are the tranche after; `eos.interface_properties` refuses their model
+  arms (1, 2 and 4) by class. `GTSurfaceTensionODE` is unreachable upstream (`useFullGT = 1`
+  with no setter) and is not a port target. The captures `surface_tension_probe.tsv` and
+  `surface_tension_solvers_probe.tsv` record the default pairs and models 1, 2 and 4
+  respectively.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
