@@ -8,8 +8,9 @@ The box has 47 GiB RAM, 2 GiB swap and no OOM guard, so a runaway thrashes the
 desktop instead of failing one process. Two rules keep that from happening:
 
   - every heavy command runs through tools/gated.sh, which puts it in a
-    memory-capped cgroup scope (and caps the JVM heap);
-  - the repo-wide sweep is close-out only, and needs the literal token
+    memory-capped cgroup scope (and caps the JVM heap); **but the wrapper is
+    not a license to run the whole suite** - its inner command is checked too;
+  - the whole-tree sweep is nightly-only and needs the literal token
     AZOTH_FULL_GATE=1, which is visible in the transcript.
 
 **A shape matcher has to resolve, not just match.** The first version read the program
@@ -79,7 +80,7 @@ JVM_PROGRAMS = {"java", "javac"}
 #: Programs that run whatever they are told to. Stripped before the real program is read:
 #: `uv run pytest python/tests` is pytest, and it was the spelling that walked straight
 #: through the first version of this guard.
-LAUNCHERS = {"env", "nice", "nohup", "time", "stdbuf", "command", "exec", "sudo"}
+LAUNCHERS = {"env", "nice", "nohup", "time", "timeout", "stdbuf", "command", "exec", "sudo"}
 RUNNERS = {"uv", "uvx", "poetry", "pipenv", "pdm", "hatch", "rye"}
 #: Runners whose next word is the subcommand to drop (`uv run`, `poetry run`).
 RUNNER_VERBS = {"run", "tool", "exec"}
@@ -93,6 +94,10 @@ LAUNCHER_VALUE_FLAGS = {
     "-g",
     "-C",
     "-S",
+    "-s",
+    "-k",
+    "--signal",
+    "--kill-after",
     "--adjustment",
     "--user",
     "--group",
@@ -167,6 +172,11 @@ def strip_launchers(tokens: list[str]) -> list[str]:
             tokens = tokens[1:]
             while tokens and (tokens[0].startswith("-") or tokens[0] in RUNNER_VERBS):
                 tokens = tokens[2:] if tokens[0] in LAUNCHER_VALUE_FLAGS else tokens[1:]
+            # **`timeout` takes a DURATION before its command.** Without this the program
+            # token would be `300s`, and `timeout 300 pytest python/tests` would be a word
+            # no rule has an opinion about - the same hole as `nice -n 5`.
+            if name == "timeout" and tokens:
+                tokens = tokens[1:]
             continue
         if name in RUNNERS:
             tokens = tokens[1:]
@@ -177,27 +187,112 @@ def strip_launchers(tokens: list[str]) -> list[str]:
     return tokens
 
 
-def candidates(cmd: str) -> list[list[str]]:
-    """Every token list worth checking: each segment, resolved, and what its shell passes on."""
-    out: list[list[str]] = []
+#: systemd-run options that consume the following word, for unwrapping a scope.
+SYSTEMD_VALUE_FLAGS = {
+    "-p",
+    "--property",
+    "-u",
+    "--unit",
+    "--slice",
+    "--description",
+    "-E",
+    "--setenv",
+    "--working-directory",
+    "--uid",
+    "--gid",
+    "--nice",
+    "-M",
+    "--machine",
+}
+
+
+def wrapper_inner(tokens: list[str]) -> list[str] | None:
+    """The command a wrapper segment runs, or None when the segment is not a wrapper.
+
+    **This is what the wide check was skipping.** A wrapper was treated as a segment to
+    ignore, so `tools/gated.sh pytest python/tests` - the spelling the guard's own message
+    recommends - ran the whole suite unchecked. A wrapper satisfies the *wrap* rule; it does
+    not satisfy the *wide* rule.
+    """
+    name = Path(tokens[0]).name
+    if name in ("gated.sh", WRAPPER):
+        return strip_launchers(tokens[1:])
+    if "systemd-run" in tokens and "--scope" in tokens:
+        rest = tokens[tokens.index("systemd-run") + 1 :]
+        i = 0
+        while i < len(rest):
+            if rest[i].startswith("-"):
+                i += 2 if rest[i] in SYSTEMD_VALUE_FLAGS else 1
+                continue
+            break
+        return strip_launchers(rest[i:])
+    return None
+
+
+def expand(
+    tokens: list[str], wrapped_so_far: bool, gate: bool
+) -> list[tuple[list[str], bool, bool]]:
+    """One resolved command and everything it passes on, with its wrap and gate flags."""
+    is_wrapped = wrapped_so_far or wrapped(tokens)
+    out: list[tuple[list[str], bool, bool]] = [(tokens, is_wrapped, gate)]
+    name = Path(tokens[0]).name
+    rest = tokens[1:]
+    if name in FORWARDERS:
+        if name in ("bash", "sh", "zsh", "dash", "ksh") and "-c" in rest:
+            out.extend(candidates(" ".join(rest[rest.index("-c") + 1 :]), is_wrapped, gate))
+        elif name == "xargs":
+            out.extend(candidates(" ".join(rest), is_wrapped, gate))
+    elif name in BUILD_TOOLS:
+        # **A recipe this guard cannot read is the sweep until proven otherwise.** There is
+        # no Makefile in this tree, so an unreadable target is a command nobody can check.
+        out.append(([name, "the sweep"], is_wrapped, gate))
+    inner = wrapper_inner(tokens)
+    if inner:
+        out.extend(expand(inner, True, gate))
+    return out
+
+
+def candidates(
+    cmd: str, inherited_wrapped: bool = False, inherited_gate: bool = False
+) -> list[tuple[list[str], bool, bool]]:
+    """Every token list worth checking: each segment, resolved, and what its shell passes on.
+
+    Each entry is `(tokens, wrapped, gate)`: whether a memory-capped wrapper encloses it, and
+    whether the full-gate token was in its own segment. The gate is read **before** the
+    leading assignments are stripped, or `AZOTH_FULL_GATE=1 tools/gated.sh ...` would be
+    checked without the token it carries.
+    """
+    out: list[tuple[list[str], bool, bool]] = []
     for raw in segments(cmd):
+        gate = inherited_gate or FULL_GATE_TOKEN in raw
         tokens = strip_launchers(raw)
         if not tokens:
             continue
-        out.append(tokens)
-        name = Path(tokens[0]).name
-        rest = tokens[1:]
-        if name in FORWARDERS:
-            if name in ("bash", "sh", "zsh", "dash", "ksh") and "-c" in rest:
-                script = rest[rest.index("-c") + 1 :]
-                out.extend(candidates(" ".join(script)))
-            elif name == "xargs":
-                out.extend(candidates(" ".join(rest)))
-        elif name in BUILD_TOOLS:
-            # **A recipe this guard cannot read is the sweep until proven otherwise.** There is
-            # no Makefile in this tree, so an unreadable target is a command nobody can check.
-            out.append([name, "the sweep"])
+        out.extend(expand(tokens, inherited_wrapped, gate))
     return out
+
+
+def test_scope_refusal(cmd: str) -> str | None:
+    """Refuse a local run of the whole tree through the scoped runner."""
+    for tokens, _, gate in candidates(cmd):
+        if not any(t.endswith("test_scope.py") for t in tokens):
+            continue
+        if gate or "--run" not in tokens:
+            continue
+        lane = ""
+        if "--lane" in tokens:
+            i = tokens.index("--lane")
+            if i + 1 < len(tokens):
+                lane = tokens[i + 1]
+        lane = lane or next((t.split("=", 1)[1] for t in tokens if t.startswith("--lane=")), "")
+        if "--full" in tokens or lane == "nightly":
+            return (
+                "`test_scope.py --run` with `--full` or `--lane nightly` is the whole tree. "
+                "It runs nightly in .github/workflows/nightly.yml (budget 45 min). Run the "
+                "edit lane (budget 5 min) or `--lane tranche --run` at close-out; for the "
+                f"whole tree, prefix `{FULL_GATE_TOKEN}`."
+            )
+    return None
 
 
 def program(tokens: list[str]) -> str:
@@ -301,21 +396,22 @@ def decide(cmd: str) -> tuple[bool, str]:
             "checkout. Format only your own files: "
             "`rustfmt --edition 2024 <files>`."
         )
-    for tokens in candidates(cmd):
-        if wrapped(tokens):
-            continue
+    refusal = test_scope_refusal(cmd)
+    if refusal:
+        return False, refusal
+    for tokens, is_wrapped, full_gate in candidates(cmd):
         # **The token has to be in the same segment as the command it attests to.** Read off
         # the whole line, `echo AZOTH_FULL_GATE=1; cargo test --workspace` attested for a
         # command it had nothing to do with, and so did `echo tools/gated.sh && cargo test`.
-        full_gate = FULL_GATE_TOKEN in tokens
         if is_wide(tokens) and not full_gate:
             return False, (
-                "That is the whole suite (1,549 Rust tests / 1,165 Python tests). It runs "
-                "nightly, in .github/workflows/nightly.yml, and is not what a push needs: run "
-                "`python tools/test_scope.py --run` for the set this change reaches, or if you "
-                f"do want everything, prefix it: {FULL_GATE_TOKEN} {WRAPPER} <cmd>"
+                "That is the whole suite. The lanes are iterate (an edit, budget 5 min) and "
+                "tranche (close-out, 20 min); push CI is scoped (15 min) and the whole tree "
+                "runs nightly (45 min). Run `python tools/test_scope.py --run` for the set "
+                "this change reaches, `--lane tranche --run` at close-out, or for the whole "
+                f"tree prefix: {FULL_GATE_TOKEN} {WRAPPER} <cmd>"
             )
-        if is_heavy(tokens):
+        if is_heavy(tokens) and not is_wrapped:
             return False, (
                 "Heavy command: it must run inside the memory-capped scope. "
                 f"Wrap it: `{WRAPPER} <cmd>` "
@@ -340,9 +436,10 @@ def emit_deny(reason: str) -> None:
 
 
 SELFTEST: list[tuple[str, bool]] = [
-    # wrapped -> allowed
-    ("tools/gated.sh cargo test --workspace -j 10", True),
+    # **the wrapper satisfies the wrap rule, not the wide rule.** These were the bypass.
+    ("tools/gated.sh cargo test --workspace -j 10", False),
     ("systemd-run --user --scope -q cargo build -j 10", True),
+    ("systemd-run --user --scope -q pytest python/tests", False),
     # wide -> denied
     ("cargo test --workspace --all-targets", False),
     ("cargo test", False),
@@ -401,9 +498,11 @@ SELFTEST: list[tuple[str, bool]] = [
     ("bash -c 'cargo test --workspace'", False),
     ("echo x | xargs cargo test -p azoth-eos", False),
     ("make test", False),
-    # ...and the wrapped forms of the same
-    ("tools/gated.sh uv run pytest python/tests", True),
-    ("tools/gated.sh bash -c 'cargo test --workspace'", True),
+    # ...and the wrapped forms of the same are still wide
+    ("tools/gated.sh uv run pytest python/tests", False),
+    ("tools/gated.sh bash -c 'cargo test --workspace'", False),
+    ("tools/gated.sh env PYTHONPATH=/x python -m pytest python/tests -q", False),
+    ("tools/gated.sh timeout 300 pytest python/tests", False),
     ("uv run ruff check", True),
     # **reading a file named oracle_sweep is not running it**
     ("grep -n oracle_sweep tools/", True),
@@ -414,6 +513,23 @@ SELFTEST: list[tuple[str, bool]] = [
     # a token that attests for a different segment does not count
     ("echo AZOTH_FULL_GATE=1; cargo test --workspace", False),
     ("echo tools/gated.sh; cargo test --workspace", False),
+    # **the gate token is read before its assignment is stripped**, so the documented
+    # whole-tree escape still works on the wrapped forms
+    ("AZOTH_FULL_GATE=1 tools/gated.sh cargo test --workspace -j 10", True),
+    ("AZOTH_FULL_GATE=1 tools/gated.sh pytest python/tests", True),
+    ("AZOTH_FULL_GATE=1 systemd-run --user --scope -q cargo test --workspace", True),
+    # `timeout` is resolved past its duration, wrapped or not
+    ("timeout 300 pytest python/tests", False),
+    (
+        "timeout 300 tools/gated.sh python -m pytest "
+        "python/tests/models/test_model_cases.py -k flash",
+        True,
+    ),
+    # the scoped runner's whole-tree modes
+    ("python tools/test_scope.py --lane nightly --run", False),
+    ("python tools/test_scope.py --full --run", False),
+    ("python tools/test_scope.py --lane tranche --run", True),
+    ("AZOTH_FULL_GATE=1 python tools/test_scope.py --full --run", True),
 ]
 
 
