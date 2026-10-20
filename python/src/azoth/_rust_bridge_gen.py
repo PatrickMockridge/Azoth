@@ -1922,13 +1922,13 @@ def lgt_surface_tension(components: list[str], eos: str, influence_parameters: S
     spec = _models_gen.model("eos.lgt_surface_tension")
     result = _core.lgt_surface_tension(
         list(components),
+        eos,
         list(influence_parameters),
         reference_component,
         [list(row) for row in pair_interactions],
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
-        eos,
     )
     return LgtSurfaceTensionResult(
         sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),

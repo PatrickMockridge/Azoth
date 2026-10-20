@@ -1329,19 +1329,19 @@ pub fn hydrate_formation_temperature(
 /// profile integrates over is built here, and the influence parameters and interaction
 /// matrix are the class's name-keyed data the caller supplies.
 #[pyfunction]
-#[pyo3(signature = (components, influence_parameters, reference_component, pair_interactions, T, P, z, eos = "srk"))]
+#[pyo3(signature = (components, eos, influence_parameters, reference_component, pair_interactions, T, P, z))]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn lgt_surface_tension(
     py: Python<'_>,
     components: Vec<String>,
+    eos: &str,
     influence_parameters: Vec<f64>,
     reference_component: f64,
     pair_interactions: Vec<Vec<f64>>,
     T: f64,
     P: f64,
     z: Vec<f64>,
-    eos: &str,
 ) -> PyResult<crate::transport_gen::PyLgtSurfaceTensionResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) =
