@@ -4286,6 +4286,33 @@ impl CalcResult for FirozabadiRamleyInterfaceTensionResult {
     }
 }
 
+/// Result of `eos.filippov_conductivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FilippovConductivityResult {
+    /// The mixture's thermal conductivity.
+    pub k: ThermalConductivity,
+    /// The Missenard factor actually applied; `1.0` where the correction is off.
+    pub pressure_correction: f64,
+    /// Each component's polynomial at the state, after the floor.
+    pub pure_component_conductivity: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FilippovConductivityResult {
+    const CALC_ID: &'static str = "eos.filippov_conductivity";
+    const FIELDS: &'static [&'static str] = &[
+        "k",
+        "pressure_correction",
+        "pure_component_conductivity",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

@@ -907,6 +907,25 @@ class EosCgPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FilippovConductivityResult(_HasWarnings):
+    """Result of ``eos.filippov_conductivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.filippov_conductivity"
+
+    #: the mixture's thermal conductivity.
+    k: Q
+
+    #: the Missenard factor actually applied - `1.0` where the correction is off or outside its window.
+    pressure_correction: float
+
+    #: each component's polynomial at `T`, after the `1e-10` floor.
+    pure_component_conductivity: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FirozabadiRamleyInterfaceTensionResult(_HasWarnings):
     """Result of ``eos.firozabadi_ramley_interface_tension``."""
 

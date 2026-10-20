@@ -422,6 +422,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.filippov_conductivity': {
+        "calc_id": 'eos.filippov_conductivity',
+        "name": 'Liquid thermal conductivity from the Filippov mixing rule',
+        "spec": {'path': 'specs/models/eos/filippov_conductivity.toml', 'sha256': '88941832a08163b2dcf6b4a90b995ae36b8a3acfdc492ad190b04be5c1de1862'},
+        "code": [{'path': 'python/src/azoth/eos/reference/filippov_conductivity.py', 'sha256': 'faa2c37075a16f9ee8c2db4d54f7752eb0b209e1974c7d9b0d4faa0984fc33b0'}, {'path': 'crates/azoth-eos/src/filippov_conductivity.rs', 'sha256': 'a9dc9fad4ecacfc5698192cabc71d6e049c5097a9b28a06410b463678c435649'}],
+        "source": 'NeqSim master `FilippovConductivityMethod`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'eos.firozabadi_ramley_interface_tension': {
         "calc_id": 'eos.firozabadi_ramley_interface_tension',
         "name": 'Interface tension from the Firoozabadi-Ramey correlation',

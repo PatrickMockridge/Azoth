@@ -57,7 +57,7 @@ Two consequences are worth naming, because both are deliberate.
 
 **The status is derived, not declared.** A spec refuses a verification-status field, and this
 does not add one back: the status is measured from the tests a spec ships and the external
-cases under `validation/`. 197 of the 219 ids read `partially_verified` — exercised against
+cases under `validation/`. 198 of the 220 ids read `partially_verified` — exercised against
 expectations pinned in their own tree, with no independent oracle recorded — and that is the
 honest answer rather than a hedge. A declared status is a status that can be wrong.
 

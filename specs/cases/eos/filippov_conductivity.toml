@@ -1,0 +1,61 @@
+model = "eos.filippov_conductivity"
+[[cases]]
+id = "co2_water_aqueous_phase"
+tolerance = 1e-12
+source = "NeqSim master, the aqueous phase of a CO2-water fluid at 313.15 K and 50 bar, from `validation/neqsim/captures/transport_methods_probe.tsv`. Its `conductivityCalc` is `FilippovConductivityMethod`.\n\n  k_CO2 = 0.251502 + 5.238919e-4*313.15 - 3.82111e-6*313.15^2 = 0.040849534691025036\n  k_H2O = -0.384 + 0.00525*313.15 - 6.37e-6*313.15^2 = 0.6353766836750003\n  linear = 0.0016331965447123674*0.040849534691025036 + 0.9983668034552876*0.6353766836750003 = 0.634405703989542\n  correction = 0.72*0.0016331965447123674*0.9983668034552876*|0.040849534691025036 - 0.6353766836750003| = 0.0006979635970495538\n  k = 0.6337077403924924 W/(m K)\n  Tr = 0.4839504333842043, Pr = 0.22645791019121186, q = 1.0 (the formula is below one and the clamp holds it there)\n"
+[cases.inputs]
+liquid_conductivity = [
+    [0.251502, 5.238919e-4, -3.82111e-6],
+    [-0.384, 0.00525, -6.37e-6],
+]
+molar_mass = [0.04401, 0.018015]
+z = [6.691762234084198e-4, 0.9993308237765915]
+tc = [304.19, 647.3]
+pc = [7381500.0, 22089000.0]
+T = 313.15
+P = 5000000.0
+filippov_coefficient = 0.72
+use_pressure_correction = true
+[cases.expected]
+k = 0.6337077403924924
+pressure_correction = 1.0
+pure_component_conductivity = [0.040849534691025036, 0.6353766836750003]
+[[cases]]
+id = "methane_nbutane_oil_phase"
+tolerance = 1e-12
+source = "The capture's `oil_methane_nbutane_300K_20bara` row. **Methane's polynomial is negative at 300 K**, so it takes the `1e-10` floor; the mixture is almost all n-butane.\n\n  methane: 0.290304 - 4.720407e-4*300 - 4.320339e-6*300^2 = -0.24014 -> 1e-10\n  n-butane: 0.24688 - 4.719916e-4*300 - 6.249512e-8*300^2 = 0.0996579592\n  linear = 0.028292397484294855*1e-10 + 0.9717076025157052*0.0996579592 = 0.09683839660866919\n  correction = 0.72*0.028292397484294855*0.9717076025157052*0.0996579592 = 0.0019726490921508147\n  k = 0.09486574751651838 W/(m K), q = 1.0\n"
+[cases.inputs]
+liquid_conductivity = [
+    [0.290304, -4.720407e-4, -4.320339e-6],
+    [0.24688, -4.719916e-4, -6.249512e-8],
+]
+molar_mass = [0.016043, 0.058123]
+z = [0.09542082642782022, 0.9045791735721797]
+tc = [190.55999999999997, 425.12]
+pc = [4599000.0, 3796000.0]
+T = 300.0
+P = 2000000.0
+filippov_coefficient = 0.72
+use_pressure_correction = true
+[cases.expected]
+k = 0.09486574751651838
+pressure_correction = 1.0
+pure_component_conductivity = [1.0e-10, 0.0996579592]
+[[cases]]
+id = "water_300k_1000bara"
+tolerance = 1e-12
+source = "The capture's `water_300K_1000bara` row, where the Missenard correction is above one. The same state with the correction switched off answers `0.6177` W/(m K).\n\n  q = 0.98 + 0.0079*4.527140205532166*sqrt(0.4634636181059787) = 1.004347751464848\n  k = 0.6177000000000002*1.004347751464848 = 0.6203856060798368 W/(m K)\n"
+[cases.inputs]
+liquid_conductivity = [[-0.384, 0.00525, -6.37e-6]]
+molar_mass = [0.018015]
+z = [1.0]
+tc = [647.3]
+pc = [22089000.0]
+T = 300.0
+P = 100000000.0
+filippov_coefficient = 0.72
+use_pressure_correction = true
+[cases.expected]
+k = 0.6203856060798368
+pressure_correction = 1.004347751464848
+pure_component_conductivity = [0.6177000000000002]

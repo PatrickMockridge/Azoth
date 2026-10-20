@@ -2310,6 +2310,62 @@ impl From<&azoth_eos::results::EosCgPhaseResult> for PyEosCgPhaseResult {
         }
     }
 }
+/// Result of `eos.filippov_conductivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FilippovConductivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFilippovConductivityResult {
+    /// the mixture's thermal conductivity.
+    #[pyo3(get)]
+    pub k: PyQty,
+    /// the Missenard factor actually applied - `1.0` where the correction is off or outside its window.
+    #[pyo3(get)]
+    pub pressure_correction: f64,
+    /// each component's polynomial at `T`, after the `1e-10` floor.
+    #[pyo3(get)]
+    pub pure_component_conductivity: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFilippovConductivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FilippovConductivityResult(k={:?}, pressure_correction={:?}, pure_component_conductivity={:?}, {} warning(s))",
+            self.k,
+            self.pressure_correction,
+            self.pure_component_conductivity,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FilippovConductivityResult> for PyFilippovConductivityResult {
+    fn from(r: &azoth_eos::results::FilippovConductivityResult) -> Self {
+        Self {
+            k: PyQty {
+                magnitude_si: r.k.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            pressure_correction: r.pressure_correction,
+            pure_component_conductivity: r
+                .pure_component_conductivity
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "W/(m*K)".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.firozabadi_ramley_interface_tension`, transported.
 #[pyclass(
     frozen,

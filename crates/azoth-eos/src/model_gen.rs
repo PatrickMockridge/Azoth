@@ -18,6 +18,7 @@
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
 //!   - specs/models/eos/furst_electrolyte_phase.toml
@@ -2411,6 +2412,221 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static FILIPPOV_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute pressure; a negative one is not a state, and zero simply takes `Pr < 0.01` and no correction.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A mole fraction cannot be negative, and the class reads one without checking.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "molar_mass",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The mass fractions divide by the masses' sum; a non-positive molar mass is not a substance.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "It is the denominator of `Tr`.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "It is the denominator of `Pr`.",
+        },
+    },
+];
+
+static FILIPPOV_CONDUCTIVITY_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_aqueous_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 313.15),
+            ("P", 5000000.0),
+            ("filippov_coefficient", 0.72),
+        ],
+        flags: &[("use_pressure_correction", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.04401, 0.018015]),
+            ("z", &[0.0006691762234084198, 0.9993308237765915]),
+            ("tc", &[304.19, 647.3]),
+            ("pc", &[7381500.0, 22089000.0]),
+        ],
+        matrices: &[(
+            "liquid_conductivity",
+            &[
+                0.251502,
+                0.0005238919,
+                -3.82111e-06,
+                -0.384,
+                0.00525,
+                -6.37e-06,
+            ],
+        )],
+        expected: &[("k", 0.6337077403924924), ("pressure_correction", 1.0)],
+        expected_vectors: &[(
+            "pure_component_conductivity",
+            &[0.040849534691025036, 0.6353766836750003],
+        )],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "methane_nbutane_oil_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 300.0),
+            ("P", 2000000.0),
+            ("filippov_coefficient", 0.72),
+        ],
+        flags: &[("use_pressure_correction", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.016043, 0.058123]),
+            ("z", &[0.09542082642782022, 0.9045791735721797]),
+            ("tc", &[190.55999999999997, 425.12]),
+            ("pc", &[4599000.0, 3796000.0]),
+        ],
+        matrices: &[(
+            "liquid_conductivity",
+            &[
+                0.290304,
+                -0.0004720407,
+                -4.320339e-06,
+                0.24688,
+                -0.0004719916,
+                -6.249512e-08,
+            ],
+        )],
+        expected: &[("k", 0.09486574751651838), ("pressure_correction", 1.0)],
+        expected_vectors: &[("pure_component_conductivity", &[1e-10, 0.0996579592])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "water_300k_1000bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 300.0),
+            ("P", 100000000.0),
+            ("filippov_coefficient", 0.72),
+        ],
+        flags: &[("use_pressure_correction", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.018015]),
+            ("z", &[1.0]),
+            ("tc", &[647.3]),
+            ("pc", &[22089000.0]),
+        ],
+        matrices: &[("liquid_conductivity", &[-0.384, 0.00525, -6.37e-06])],
+        expected: &[
+            ("k", 0.6203856060798368),
+            ("pressure_correction", 1.004347751464848),
+        ],
+        expected_vectors: &[("pure_component_conductivity", &[0.6177000000000002])],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.filippov_conductivity`.
+pub static FILIPPOV_CONDUCTIVITY_SPEC: ModelSpec = ModelSpec {
+    id: "eos.filippov_conductivity",
+    kind: "direct",
+    algorithm: None,
+    checks: FILIPPOV_CONDUCTIVITY_CHECKS,
+    cases: FILIPPOV_CONDUCTIVITY_CASES,
 };
 
 static FREEZING_POINT_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -11826,6 +12042,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &EFFECTIVE_DIFFUSION_SPEC,
     &ELECTROLYTE_CPA_STATOIL_PHASE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &FILIPPOV_CONDUCTIVITY_SPEC,
     &FREEZING_POINT_SPEC,
     &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,
     &FURST_ELECTROLYTE_PHASE_SPEC,

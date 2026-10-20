@@ -90,6 +90,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.effective_diffusion`](./effective_diffusion.md) | `direct composition` | NeqSim master `Diffusivity` |
 | [`eos.electrolyte_cpa_statoil_phase`](./electrolyte_cpa_statoil_phase.md) | `direct composition` | NeqSim master `SystemElectrolyteCPAstatoil` |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
+| [`eos.filippov_conductivity`](./filippov_conductivity.md) | `direct composition` | NeqSim master `FilippovConductivityMethod` |
 | [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim master `FreezingPointTemperatureFlash` |
 | [`eos.furst_electrolyte_mod2004_phase`](./furst_electrolyte_mod2004_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEosMod2004` |
 | [`eos.furst_electrolyte_phase`](./furst_electrolyte_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEos` |

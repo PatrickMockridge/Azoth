@@ -115,6 +115,7 @@
   - [Effective diffusion coefficients from a binary matrix](./eos/effective_diffusion.md)
   - [Phase state of an electrolyte-CPA fluid](./eos/electrolyte_cpa_statoil_phase.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
+  - [Liquid thermal conductivity from the Filippov mixing rule](./eos/filippov_conductivity.md)
   - [Freezing-point temperature](./eos/freezing_point.md)
   - [Phase state of a Furst electrolyte fluid, 2004 revision](./eos/furst_electrolyte_mod2004_phase.md)
   - [Phase state of a Furst electrolyte fluid](./eos/furst_electrolyte_phase.md)

@@ -593,6 +593,13 @@ class EosCgPhaseResult:
     warnings: list[Warning]
 
 @final
+class FilippovConductivityResult:
+    k: Qty
+    pressure_correction: float
+    pure_component_conductivity: list[Qty]
+    warnings: list[Warning]
+
+@final
 class FirozabadiRamleyInterfaceTensionResult:
     sigma: Qty
     warnings: list[Warning]
@@ -2670,6 +2677,17 @@ def electrolyte_cpa_statoil_phase(
     compressed_phase: str,
 ) -> ElectrolyteCpaStatoilPhaseResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def filippov_conductivity(
+    liquid_conductivity: list[list[float]],
+    molar_mass: list[float],
+    z: list[float],
+    tc: list[float],
+    pc: list[float],
+    T: float,
+    P: float,
+    filippov_coefficient: float,
+    use_pressure_correction: bool,
+) -> FilippovConductivityResult: ...
 def firozabadi_ramley_interface_tension(
     T: float,
     pseudo_critical_temperature: float,

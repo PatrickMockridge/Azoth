@@ -1,0 +1,109 @@
+id = "eos.filippov_conductivity"
+name = "Liquid thermal conductivity from the Filippov mixing rule"
+kind = "direct"
+assumptions = [
+    "each pure component's conductivity is the LIQCOND polynomial `c0 + c1 T + c2 T^2`, floored at `1e-10` W/(m K) where it would go negative - NeqSim's own floor, and reachable: methane's polynomial crosses zero near 290 K.\n",
+    "**the mixing rule weights by mass fraction**, NeqSim's `getWtFrac(i)` formed from `z` and the pure molar masses: `k = sum_i w_i k_i - c sum_{i<j} w_i w_j |k_i - k_j|`, with `c = 0.72` in the class.\n",
+    "the Missenard correction is `q = 0.98 + 0.0079 Pr sqrt(Tr)`, with `Tc` and `Pc` the **mole-fraction** means, `Tr = T/Tc_mix`, `Pr = P/Pc_mix`; it is `1.0` at `Tr >= 0.95` or `Pr < 0.01`, is never allowed below `1.0`, and is applied only where `use_pressure_correction` is set.\n",
+    "**the correction uses the absolute pressure, not `P - Psat`.** The class's javadoc says the latter; its code reads `getPressure()`, and the port carries the code.\n",
+    "`Pc` and `P` must be in the same unit for the ratio; this id takes both in Pa, and the capture's bar values are converted at the boundary.\n",
+    "the final conductivity is floored at `1e-10` W/(m K) as well, so a mixture of negative polynomials cannot answer a negative conductivity.\n",
+]
+references = [
+    "Filippov, L. P. (1955). \"Teploprovodnost' zhidkikh smesey.\" Vestnik Moskovskogo Universiteta, Seriya Fiziko-Matematicheskikh i Estestvennykh Nauk 8, 67-69.",
+    "Missenard, F. A. (1965). Comptes Rendus 260, 5521. The pressure correction.",
+    "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \"The Properties of Gases and Liquids\", 5th edition, Chapter 10.",
+    "NeqSim master, `physicalproperties/methods/liquidphysicalproperties/conductivity/FilippovConductivityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+]
+[source]
+standard = "NeqSim master `FilippovConductivityMethod`"
+edition = "`calcConductivity`, `calcPureComponentConductivity` and `getMissenardPressureCorrection`, ported verbatim."
+[inputs]
+[inputs.liquid_conductivity]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per component, three columns: LIQCOND1, LIQCOND2 and LIQCOND3"
+description = "each component's liquid-conductivity polynomial coefficients. The unit follows the column - W/(m K), W/(m K)/K and W/(m K)/K**2 - so the matrix is declared dimensionless.\n"
+[inputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per component"
+description = "the pure molar masses the mass fractions are formed from, with `z`.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions.\n"
+[inputs.tc]
+type = "vector"
+unit = "K"
+length = "one per component"
+description = "each component's critical temperature, for the Missenard mixture critical temperature.\n"
+[inputs.pc]
+type = "vector"
+unit = "Pa"
+length = "one per component"
+description = "each component's critical pressure, for the Missenard mixture critical pressure.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.filippov_coefficient]
+unit = "dimensionless"
+description = "the Filippov interaction coefficient; the class's default is `0.72`, and `0.0` gives a weight-fraction linear mean.\n"
+[inputs.use_pressure_correction]
+type = "boolean"
+description = "whether the Missenard pressure correction is applied; the class's default is true.\n"
+[outputs]
+[outputs.k]
+unit = "W/(m*K)"
+description = "the mixture's thermal conductivity.\n"
+[outputs.pressure_correction]
+unit = "dimensionless"
+description = "the Missenard factor actually applied - `1.0` where the correction is off or outside its window.\n"
+[outputs.pure_component_conductivity]
+type = "vector"
+unit = "W/(m*K)"
+length = "one per component"
+description = "each component's polynomial at `T`, after the `1e-10` floor.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "An absolute pressure; a negative one is not a state, and zero simply takes `Pr < 0.01` and no correction.\n"
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative, and the class reads one without checking.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The mass fractions divide by the masses' sum; a non-positive molar mass is not a substance.\n"
+[[valid_range]]
+quantity = "tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "It is the denominator of `Tr`.\n"
+[[valid_range]]
+quantity = "pc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "It is the denominator of `Pr`.\n"
+[implementations]
+python = "azoth.eos.filippov_conductivity"
+rust = "azoth_eos::filippov_conductivity"

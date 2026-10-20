@@ -182,6 +182,7 @@ Five sections, and the difference between them is the point:
 - [`eos.effective_diffusion`](./eos/effective_diffusion.md) — Effective diffusion coefficients from a binary matrix
 - [`eos.electrolyte_cpa_statoil_phase`](./eos/electrolyte_cpa_statoil_phase.md) — Phase state of an electrolyte-CPA fluid
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
+- [`eos.filippov_conductivity`](./eos/filippov_conductivity.md) — Liquid thermal conductivity from the Filippov mixing rule
 - [`eos.freezing_point`](./eos/freezing_point.md) — Freezing-point temperature
 - [`eos.furst_electrolyte_mod2004_phase`](./eos/furst_electrolyte_mod2004_phase.md) — Phase state of a Furst electrolyte fluid, 2004 revision
 - [`eos.furst_electrolyte_phase`](./eos/furst_electrolyte_phase.md) — Phase state of a Furst electrolyte fluid

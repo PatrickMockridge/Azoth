@@ -38,6 +38,7 @@
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/calcs/eos/fuller_schettler_giddings_diffusivity.toml
@@ -526,6 +527,30 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),
+    (
+        "eos.filippov_conductivity",
+        "liquid_conductivity",
+        "dimensionless",
+    ),
+    ("eos.filippov_conductivity", "molar_mass", "molar_mass"),
+    ("eos.filippov_conductivity", "z", "dimensionless"),
+    (
+        "eos.filippov_conductivity",
+        "tc",
+        "thermodynamic_temperature",
+    ),
+    ("eos.filippov_conductivity", "pc", "pressure"),
+    (
+        "eos.filippov_conductivity",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.filippov_conductivity", "P", "pressure"),
+    (
+        "eos.filippov_conductivity",
+        "filippov_coefficient",
+        "dimensionless",
+    ),
     (
         "eos.firozabadi_ramley_interface_tension",
         "T",

@@ -908,6 +908,46 @@ pub fn eos_cg_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Liquid thermal conductivity from the Filippov mixing rule.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (liquid_conductivity, molar_mass, z, tc, pc, T, P, filippov_coefficient, use_pressure_correction))]
+#[pyo3(
+    text_signature = "(liquid_conductivity, molar_mass, z, tc, pc, T, P, filippov_coefficient, use_pressure_correction)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn filippov_conductivity(
+    py: Python<'_>,
+    liquid_conductivity: Vec<[f64; 3]>,
+    molar_mass: Vec<f64>,
+    z: Vec<f64>,
+    tc: Vec<f64>,
+    pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    filippov_coefficient: f64,
+    use_pressure_correction: bool,
+) -> PyResult<crate::transport_gen::PyFilippovConductivityResult> {
+    azoth_eos::filippov_conductivity::filippov_conductivity(
+        &liquid_conductivity,
+        &molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &z,
+        &tc.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+        &pc.iter().map(|v| pascals(*v)).collect::<Vec<_>>(),
+        kelvins(T),
+        pascals(P),
+        filippov_coefficient,
+        use_pressure_correction,
+    )
+    .map(|r| crate::transport_gen::PyFilippovConductivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Interface tension from the Firoozabadi-Ramey correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

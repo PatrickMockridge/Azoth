@@ -57,6 +57,7 @@ from azoth.core.result import (
     EosCgPhaseResult,
     EquilibriumConstantResult,
     ExpanderResult,
+    FilippovConductivityResult,
     FilterResult,
     FirozabadiRamleyInterfaceTensionResult,
     FlareResult,
@@ -317,6 +318,7 @@ __all__ = [
     "eos_cg_phase",
     "equilibrium_constant",
     "expander",
+    "filippov_conductivity",
     "filter",
     "firozabadi_ramley_interface_tension",
     "flare",
@@ -1241,6 +1243,28 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def filippov_conductivity(liquid_conductivity: Sequence[Sequence[float]], molar_mass: Sequence[Q], z: Sequence[float], tc: Sequence[Q], pc: Sequence[Q], T: Q, P: Q, filippov_coefficient: float, use_pressure_correction: bool) -> FilippovConductivityResult:
+    """``eos.filippov_conductivity``, computed in Rust."""
+    spec = _models_gen.model("eos.filippov_conductivity")
+    result = _core.filippov_conductivity(
+        [list(row) for row in liquid_conductivity],
+        [input_to_si(spec, "molar_mass", v) for v in molar_mass],
+        list(z),
+        [input_to_si(spec, "tc", v) for v in tc],
+        [input_to_si(spec, "pc", v) for v in pc],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        filippov_coefficient,
+        use_pressure_correction,
+    )
+    return FilippovConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        pressure_correction=result.pressure_correction,
+        pure_component_conductivity=tuple(from_si(q.magnitude_si, q.unit) for q in result.pure_component_conductivity),
         warnings=_warnings(result.warnings),
     )
 

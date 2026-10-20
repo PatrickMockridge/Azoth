@@ -93,6 +93,7 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     ElectrolyteCpaStatoilPhaseResult,
     EosCgPhaseResult,
+    FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
     FreezingPointResult,
     FullerSchettlerGiddingsDiffusivityResult,
@@ -517,6 +518,7 @@ _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_MIXTURE_SURFACE_TENSION = "eos.parachor_mixture_surface_tension"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _FIROZABADI_RAMLEY_INTERFACE_TENSION = "eos.firozabadi_ramley_interface_tension"
+_FILIPPOV_CONDUCTIVITY = "eos.filippov_conductivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
 _VS_FLASH = "eos.vs_flash"
@@ -1410,6 +1412,42 @@ def firozabadi_ramley_interface_tension(
         pseudo_critical_temperature=pseudo_critical_temperature,
         rho_1=rho_1,
         rho_2=rho_2,
+    )
+
+
+def filippov_conductivity(
+    liquid_conductivity: Sequence[Sequence[float]],
+    molar_mass: Sequence[Q],
+    z: Sequence[float],
+    tc: Sequence[Q],
+    pc: Sequence[Q],
+    T: Q,
+    P: Q,
+    filippov_coefficient: float,
+    use_pressure_correction: bool,
+) -> FilippovConductivityResult:
+    """Liquid thermal conductivity from the Filippov mixing rule.
+
+    The pure conductivities are the LIQCOND polynomials at ``T``, each floored at
+    ``1e-10`` W/(m K), mixed by mass fraction; the Missenard pressure correction is
+    applied where it is asked for and the state is inside its window.
+
+    Raises:
+        InvalidInputError: if the vectors differ in length.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.filippov_conductivity`.
+    """
+    return resolve(_FILIPPOV_CONDUCTIVITY)(  # type: ignore[no-any-return]
+        liquid_conductivity=liquid_conductivity,
+        molar_mass=molar_mass,
+        z=z,
+        tc=tc,
+        pc=pc,
+        T=T,
+        P=P,
+        filippov_coefficient=filippov_coefficient,
+        use_pressure_correction=use_pressure_correction,
     )
 
 
