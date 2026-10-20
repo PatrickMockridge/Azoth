@@ -122,6 +122,7 @@ from azoth.core.result import (
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
     IdealGasCpResult,
+    InterfacePropertiesResult,
     KentEisenbergPhaseResult,
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
@@ -407,6 +408,7 @@ _MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
 _MATCOP_PRUMR_NEW_ALPHA = "eos.matcop_prumr_new_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
+_INTERFACE_PROPERTIES = "eos.interface_properties"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
@@ -2153,6 +2155,46 @@ def ideal_gas_cp(
     """
     return resolve(_IDEAL_GAS_CP)(  # type: ignore[no-any-return]
         cp_a=cp_a, cp_b=cp_b, cp_c=cp_c, cp_d=cp_d, cp_e=cp_e, T=T
+    )
+
+
+def interface_properties(
+    interface: str,
+    selection: str,
+    parachors: Sequence[float],
+    tc: Sequence[Q],
+    rho_1: Q,
+    rho_2: Q,
+    molar_mass_1: Q,
+    molar_mass_2: Q,
+    x_1: Sequence[float],
+    x_2: Sequence[float],
+    T: Q,
+) -> InterfacePropertiesResult:
+    """The interface tension of a phase pair by NeqSim's dispatch.
+
+    The pair decides the slot: ``gas_oil`` and ``gas_aqueous`` take Parachor in model 0,
+    and every other pair takes Firozabadi-Ramley. Models 3 and 5 are aliases of 0; models
+    1, 2 and 4 are refused.
+
+    Raises:
+        InvalidInputError: for an unknown pair or selection, or a refused model.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.interface_properties`.
+    """
+    return resolve(_INTERFACE_PROPERTIES)(  # type: ignore[no-any-return]
+        interface=interface,
+        selection=selection,
+        parachors=parachors,
+        tc=tc,
+        rho_1=rho_1,
+        rho_2=rho_2,
+        molar_mass_1=molar_mass_1,
+        molar_mass_2=molar_mass_2,
+        x_1=x_1,
+        x_2=x_2,
+        T=T,
     )
 
 

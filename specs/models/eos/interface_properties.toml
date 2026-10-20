@@ -1,0 +1,123 @@
+id = "eos.interface_properties"
+name = "Interface tension by NeqSim's phase-pair dispatch"
+kind = "direct"
+assumptions = [
+    "**the pair decides the calculator slot, not the argument order**: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the gas-aqueous slot, and every other pair - including a reversed oil/gas pair - the liquid-liquid slot (`InterfaceProperties.getSurfaceTension`).\n",
+    "**model 0 is the default and the one this id carries**: Parachor for the gas-liquid and gas-aqueous slots and Firozabadi-Ramley for the liquid-liquid slot. Models 3 and 5 install the same three calculators, so they are aliases of 0 and accepted as such.\n",
+    "the string selector's `parachor` and `firozabadi_ramley` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `interface`.\n",
+    "the two phases share one component list, as NeqSim's system does, so `parachors` and `tc` are one vector each and `x_1`/`x_2` are the two phases' compositions over it.\n",
+    "the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.\n",
+    "**models 1, 2 and 4 are refused rather than computed**: `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and `CDFTSurfaceTension` are density-profile solvers; they need a mutable mixture and its chemical-potential derivatives, which this tree does not carry.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/interfaceproperties/InterfaceProperties.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7. The dispatch, its six integer arms and the string selector.",
+    "`validation/neqsim/captures/surface_tension_probe.tsv` - model 0 on a gas-oil, a gas-aqueous and an oil-water pair, and the two calculators called directly. `surface_tension_solvers_probe.tsv` records the refused models' answers for the next tranche.\n",
+]
+[source]
+standard = "NeqSim master `InterfaceProperties`"
+edition = "`setInterfacialTensionModel(int)`'s model-0 arm, its 3 and 5 aliases, the string `parachor` and `Firozabadi Ramley` arms, and `getSurfaceTension`'s phase-type dispatch, ported verbatim. The other arms are refused."
+[inputs]
+[inputs.interface]
+type = "enum"
+values = ["gas_oil", "gas_aqueous", "liquid_liquid"]
+description = "which pair the tension is between, which selects the calculator slot.\n"
+[inputs.selection]
+type = "enum"
+values = [
+    "model_0",
+    "model_3",
+    "model_5",
+    "parachor",
+    "firozabadi_ramley",
+    "model_1",
+    "model_2",
+    "model_4",
+]
+description = "the class's `interfacialTensionModel`: `model_0` is the default, `model_3` and `model_5` are its aliases, `parachor` and `firozabadi_ramley` are the string selector's two calculators applied to the named pair. `model_1`, `model_2` and `model_4` are refused.\n"
+[inputs.parachors]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's parachor, in `(mN/m)**(1/4) * cm**3/mol`.\n"
+[inputs.tc]
+type = "vector"
+unit = "K"
+length = "one per component"
+description = "each component's critical temperature, for the Firozabadi slot's pseudo-critical temperature.\n"
+[inputs.rho_1]
+unit = "kg/m**3"
+description = "the first phase's mass density.\n"
+[inputs.rho_2]
+unit = "kg/m**3"
+description = "the second phase's mass density.\n"
+[inputs.molar_mass_1]
+unit = "kg/mol"
+description = "the first phase's molar mass.\n"
+[inputs.molar_mass_2]
+unit = "kg/mol"
+description = "the second phase's molar mass.\n"
+[inputs.x_1]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the first phase's mole fractions.\n"
+[inputs.x_2]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the second phase's mole fractions.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature at the interface.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the pair's interfacial tension.\n"
+[outputs.selected_model]
+type = "string"
+description = "the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "rho_1"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A phase with no mass density has no interface.\n"
+[[valid_range]]
+quantity = "rho_2"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A phase with no mass density has no interface.\n"
+[[valid_range]]
+quantity = "molar_mass_1"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The parachor sum divides by it.\n"
+[[valid_range]]
+quantity = "molar_mass_2"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The parachor sum divides by it.\n"
+[[valid_range]]
+quantity = "x_1"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[[valid_range]]
+quantity = "x_2"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[implementations]
+python = "azoth.eos.interface_properties"
+rust = "azoth_eos::interface_properties"

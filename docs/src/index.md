@@ -204,6 +204,7 @@ Five sections, and the difference between them is the point:
 - [`eos.hydrate_inhibitor_concentration`](./eos/hydrate_inhibitor_concentration.md) — Hydrate inhibitor concentration
 - [`eos.hydrate_inhibitor_wt`](./eos/hydrate_inhibitor_wt.md) — Hydrate inhibitor weight fraction
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
+- [`eos.interface_properties`](./eos/interface_properties.md) — Interface tension by NeqSim's phase-pair dispatch
 - [`eos.kent_eisenberg_phase`](./eos/kent_eisenberg_phase.md) — Fugacity coefficients of a Kent-Eisenberg phase
 - [`eos.liquid_conductivity_polynom`](./eos/liquid_conductivity_polynom.md) — Liquid thermal conductivity from the LIQCOND polynomial
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities

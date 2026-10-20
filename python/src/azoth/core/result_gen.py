@@ -1587,6 +1587,22 @@ class IdealGasCpResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class InterfacePropertiesResult(_HasWarnings):
+    """Result of ``eos.interface_properties``."""
+
+    CALC_ID: ClassVar[str] = "eos.interface_properties"
+
+    #: the pair's interfacial tension.
+    sigma: Q
+
+    #: the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.
+    selected_model: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KentEisenbergPhaseResult(_HasWarnings):
     """Result of ``eos.kent_eisenberg_phase``."""
 

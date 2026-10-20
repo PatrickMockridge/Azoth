@@ -4343,6 +4343,26 @@ impl CalcResult for FrictionTheoryViscosityResult {
     }
 }
 
+/// Result of `eos.interface_properties`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfacePropertiesResult {
+    /// The pair's interfacial tension.
+    pub sigma: SurfaceTension,
+    /// The class the selected slot installed.
+    pub selected_model: String,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for InterfacePropertiesResult {
+    const CALC_ID: &'static str = "eos.interface_properties";
+    const FIELDS: &'static [&'static str] = &["sigma", "selected_model", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

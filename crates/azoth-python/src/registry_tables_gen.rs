@@ -86,6 +86,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.iapws_henry_law" => azoth_eos::results::IapwsHenryLawResult::FIELDS.to_vec(),
         "eos.iapws_saturation_pressure" => azoth_eos::results::IapwsSaturationPressureResult::FIELDS.to_vec(),
         "eos.ideal_gas_cp" => azoth_eos::results::IdealGasCpResult::FIELDS.to_vec(),
+        "eos.interface_properties" => azoth_eos::results::InterfacePropertiesResult::FIELDS.to_vec(),
         "eos.kent_eisenberg_phase" => azoth_eos::results::KentEisenbergPhaseResult::FIELDS.to_vec(),
         "eos.liquid_conductivity_polynom" => azoth_eos::results::LiquidConductivityPolynomResult::FIELDS.to_vec(),
         "eos.liquid_heat_capacity" => azoth_eos::results::LiquidHeatCapacityResult::FIELDS.to_vec(),

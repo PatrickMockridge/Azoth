@@ -741,6 +741,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 1,
     },
+    'eos.interface_properties': {
+        "calc_id": 'eos.interface_properties',
+        "name": "Interface tension by NeqSim's phase-pair dispatch",
+        "spec": {'path': 'specs/models/eos/interface_properties.toml', 'sha256': 'a3892013ca3695b248d441a3dfd88450091b89efdb2a2f3023b1dbc96ea14c23'},
+        "code": [{'path': 'python/src/azoth/eos/reference/interface_properties.py', 'sha256': 'af1d9ba91c3e5b5f261c7126a64a7ae66cd2282b4ff466848f4edffcd30a5adf'}, {'path': 'crates/azoth-eos/src/interface_properties.rs', 'sha256': 'ec40c00b61d6d9094132dc8e2b346ef1fde6fa4c4474c17e6d2ad5e46472ec7d'}],
+        "source": 'NeqSim master `InterfaceProperties`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'eos.kent_eisenberg_phase': {
         "calc_id": 'eos.kent_eisenberg_phase',
         "name": 'Fugacity coefficients of a Kent-Eisenberg phase',

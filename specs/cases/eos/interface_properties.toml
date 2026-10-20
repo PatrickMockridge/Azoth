@@ -1,0 +1,96 @@
+model = "eos.interface_properties"
+[[cases]]
+id = "model_0_on_a_gas_oil_pair"
+tolerance = 1e-12
+source = "The capture's `methane_nbutane_300K_20bara` row. The pair is GAS/OIL, so model 0 installs the gas-liquid slot's Parachor - the same number `eos.parachor_mixture_surface_tension` answers.\n\n  sigma = 0.009424889197268286 N/m, selected_model = ParachorSurfaceTension\n"
+[cases.inputs]
+interface = "gas_oil"
+selection = "model_0"
+parachors = [77.3, 191.7]
+tc = [190.55999999999997, 425.12]
+rho_1 = 19.938328330315997
+rho_2 = 549.3851668858096
+molar_mass_1 = 0.022959902730870334
+molar_mass_2 = 0.054107691623917306
+x_1 = [0.8356249351028912, 0.1643750648971088]
+x_2 = [0.09542082642782022, 0.9045791735721797]
+T = 300.0
+[cases.expected]
+sigma = 0.009424889197268286
+selected_model = "ParachorSurfaceTension"
+[[cases]]
+id = "model_0_on_a_gas_aqueous_pair"
+tolerance = 1e-12
+source = "The capture's `co2_water_313K_50bara` row, the gas-aqueous slot, which model 0 also fills with Parachor.\n\n  sigma = 0.053145026912194734 N/m, selected_model = ParachorSurfaceTension\n"
+[cases.inputs]
+interface = "gas_aqueous"
+selection = "model_0"
+parachors = [78.0, 52.8786226]
+tc = [304.19, 647.3]
+rho_1 = 113.27066791939949
+rho_2 = 988.9287133030801
+molar_mass_1 = 0.04395427203887297
+molar_mass_2 = 0.018032395235927503
+x_1 = [0.9978562046113857, 0.002143795388614308]
+x_2 = [6.691762234084198e-4, 0.9993308237765915]
+T = 313.15
+[cases.expected]
+sigma = 0.053145026912194734
+selected_model = "ParachorSurfaceTension"
+[[cases]]
+id = "model_0_on_a_liquid_liquid_pair"
+tolerance = 1e-12
+source = "The capture's `nheptane_water_300K_1bara` row, an OIL/AQUEOUS pair. **Every other pair takes the liquid-liquid slot**, which model 0 fills with Firozabadi-Ramley - the same number `eos.firozabadi_ramley_interface_tension` answers, whose `Tr` is this first phase's pseudo-critical temperature.\n\n  sigma = 0.05083361859364053 N/m, selected_model = FirozabadiRamleyInterfaceTension\n"
+[cases.inputs]
+interface = "liquid_liquid"
+selection = "model_0"
+parachors = [311.0, 52.8786226]
+tc = [540.2, 647.3]
+rho_1 = 690.6031246582897
+rho_2 = 1000.0024520207028
+molar_mass_1 = 0.10017182404110607
+molar_mass_2 = 0.018015
+x_1 = [0.9995963504210497, 4.0364957895032145e-4]
+x_2 = [9.208893557276302e-26, 1.0]
+T = 300.0
+[cases.expected]
+sigma = 0.05083361859364053
+selected_model = "FirozabadiRamleyInterfaceTension"
+[[cases]]
+id = "the_parachor_string_arm_on_the_liquid_liquid_pair"
+tolerance = 1e-12
+source = "The capture's direct `parachor_direct_sigma` on the same oil-water state: 3.932397216657965e-4 N/m. The string selector's `ParachorSurfaceTension` arm replaces the slot's Firozabadi calculator, so this is the branch that proves the selection is read rather than the pair alone.\n"
+[cases.inputs]
+interface = "liquid_liquid"
+selection = "parachor"
+parachors = [311.0, 52.8786226]
+tc = [540.2, 647.3]
+rho_1 = 690.6031246582897
+rho_2 = 1000.0024520207028
+molar_mass_1 = 0.10017182404110607
+molar_mass_2 = 0.018015
+x_1 = [0.9995963504210497, 4.0364957895032145e-4]
+x_2 = [9.208893557276302e-26, 1.0]
+T = 300.0
+[cases.expected]
+sigma = 3.932397216657965e-4
+selected_model = "ParachorSurfaceTension"
+[[cases]]
+id = "the_firozabadi_string_arm_on_the_gas_oil_pair"
+tolerance = 1e-12
+source = "The capture's direct `firozabadi_direct_sigma` on the methane/n-butane state: 0.03622765708367235 N/m. The same branch the other way round.\n"
+[cases.inputs]
+interface = "gas_oil"
+selection = "firozabadi_ramley"
+parachors = [77.3, 191.7]
+tc = [190.55999999999997, 425.12]
+rho_1 = 19.938328330315997
+rho_2 = 549.3851668858096
+molar_mass_1 = 0.022959902730870334
+molar_mass_2 = 0.054107691623917306
+x_1 = [0.8356249351028912, 0.1643750648971088]
+x_2 = [0.09542082642782022, 0.9045791735721797]
+T = 300.0
+[cases.expected]
+sigma = 0.03622765708367235
+selected_model = "FirozabadiRamleyInterfaceTension"

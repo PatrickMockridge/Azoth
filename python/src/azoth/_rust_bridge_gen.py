@@ -94,6 +94,7 @@ from azoth.core.result import (
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
     IdealGasCpResult,
+    InterfacePropertiesResult,
     Iso6976Result,
     KComponent,
     KentEisenbergPhaseResult,
@@ -356,6 +357,7 @@ __all__ = [
     "iapws_henry_law",
     "iapws_saturation_pressure",
     "ideal_gas_cp",
+    "interface_properties",
     "iso6976",
     "kent_eisenberg_phase",
     "kinetic_rate_law",
@@ -1869,6 +1871,29 @@ def ideal_gas_cp(cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float
     )
     return IdealGasCpResult(
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def interface_properties(interface: str, selection: str, parachors: Sequence[float], tc: Sequence[Q], rho_1: Q, rho_2: Q, molar_mass_1: Q, molar_mass_2: Q, x_1: Sequence[float], x_2: Sequence[float], T: Q) -> InterfacePropertiesResult:
+    """``eos.interface_properties``, computed in Rust."""
+    spec = _models_gen.model("eos.interface_properties")
+    result = _core.interface_properties(
+        interface,
+        selection,
+        list(parachors),
+        [input_to_si(spec, "tc", v) for v in tc],
+        input_to_si(spec, "rho_1", rho_1),
+        input_to_si(spec, "rho_2", rho_2),
+        input_to_si(spec, "molar_mass_1", molar_mass_1),
+        input_to_si(spec, "molar_mass_2", molar_mass_2),
+        list(x_1),
+        list(x_2),
+        input_to_si(spec, "T", T),
+    )
+    return InterfacePropertiesResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
+        selected_model=result.selected_model,
         warnings=_warnings(result.warnings),
     )
 

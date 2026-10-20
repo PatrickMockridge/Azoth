@@ -4073,6 +4073,50 @@ impl From<&azoth_eos::results::IdealGasCpResult> for PyIdealGasCpResult {
         }
     }
 }
+/// Result of `eos.interface_properties`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "InterfacePropertiesResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyInterfacePropertiesResult {
+    /// the pair's interfacial tension.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.
+    #[pyo3(get)]
+    pub selected_model: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyInterfacePropertiesResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "InterfacePropertiesResult(sigma={:?}, selected_model={:?}, {} warning(s))",
+            self.sigma,
+            self.selected_model,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::InterfacePropertiesResult> for PyInterfacePropertiesResult {
+    fn from(r: &azoth_eos::results::InterfacePropertiesResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
+            },
+            selected_model: r.selected_model.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.kent_eisenberg_phase`, transported.
 #[pyclass(
     frozen,

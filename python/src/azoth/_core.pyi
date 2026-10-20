@@ -839,6 +839,12 @@ class IdealGasCpResult:
     warnings: list[Warning]
 
 @final
+class InterfacePropertiesResult:
+    sigma: Qty
+    selected_model: str
+    warnings: list[Warning]
+
+@final
 class KentEisenbergPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -2960,6 +2966,19 @@ def ideal_gas_cp(
     cp_e: float,
     T: float,
 ) -> IdealGasCpResult: ...
+def interface_properties(
+    interface: str,
+    selection: str,
+    parachors: list[float],
+    tc: list[float],
+    rho_1: float,
+    rho_2: float,
+    molar_mass_1: float,
+    molar_mass_2: float,
+    x_1: list[float],
+    x_2: list[float],
+    T: float,
+) -> InterfacePropertiesResult: ...
 def kent_eisenberg_phase(
     components: list[str],
     T: float,

@@ -67,6 +67,7 @@
 //!   - specs/calcs/eos/iapws_henry_law.toml
 //!   - specs/calcs/eos/iapws_saturation_pressure.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
+//!   - specs/models/eos/interface_properties.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
 //!   - specs/models/eos/liquid_conductivity_polynom.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
@@ -752,6 +753,19 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "molar_heat_capacity_coefficient_5",
     ),
     ("eos.ideal_gas_cp", "T", "thermodynamic_temperature"),
+    ("eos.interface_properties", "parachors", "dimensionless"),
+    (
+        "eos.interface_properties",
+        "tc",
+        "thermodynamic_temperature",
+    ),
+    ("eos.interface_properties", "rho_1", "mass_density"),
+    ("eos.interface_properties", "rho_2", "mass_density"),
+    ("eos.interface_properties", "molar_mass_1", "molar_mass"),
+    ("eos.interface_properties", "molar_mass_2", "molar_mass"),
+    ("eos.interface_properties", "x_1", "dimensionless"),
+    ("eos.interface_properties", "x_2", "dimensionless"),
+    ("eos.interface_properties", "T", "thermodynamic_temperature"),
     ("eos.kent_eisenberg_phase", "T", "thermodynamic_temperature"),
     ("eos.kent_eisenberg_phase", "P", "pressure"),
     ("eos.kent_eisenberg_phase", "x", "dimensionless"),
