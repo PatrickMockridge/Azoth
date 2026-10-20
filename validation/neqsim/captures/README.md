@@ -88,6 +88,19 @@ java -cp .:neqsim-f0c7436.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
 java -cp .:neqsim-f0c7436.jar LgtLocalProbe > captures/lgt_local_probe.tsv
 ```
 
+**`GtSimpleProfileProbe` records the profile `GTSurfaceTensionSimple`'s inner Newton
+produces**, and `GtSimpleInitialProbe` the step-0 chemical potentials and `dmu/dn` it starts
+from. The CO2/water block is the one to read twice: the class's densities are **zero from
+step 3** and it returns the two-step partial integral `0.0145737553`, which is why the port
+refuses that state.
+
+```bash
+cd validation/neqsim
+javac -proc:none -cp neqsim-f0c7436.jar GtSimpleProfileProbe.java GtSimpleInitialProbe.java
+java -cp .:neqsim-f0c7436.jar GtSimpleProfileProbe > captures/gt_simple_profile_probe.tsv
+java -cp .:neqsim-f0c7436.jar GtSimpleInitialProbe > captures/gt_simple_initial_probe.tsv
+```
+
 **`GeHenryProbe` measures `ComponentGE.fugcoef`'s two reference states.** It reads nothing and
 prints its whole grid, so it needs the recipe for the same reason. The states cover the IAPWS
 arm in water, the databank arm with and without water, the `900` sentinel, the four-zero rows
