@@ -297,10 +297,67 @@ def test_a_crate_with_no_namespace_says_what_it_reaches() -> None:
     """Five members name no namespace; each has to say, or a change reaches nothing in silence."""
     module = tool()
     assert module.crate_claim("azoth-wasm").jobs == ("ui",)
-    assert f"{module.TESTS}" in module.crate_claim("azoth-python").files
-    assert len(module.crate_claim("azoth-core").namespaces) == len(module.crate_namespaces())
+    extension = module.crate_claim("azoth-python")
+    assert extension.files == module.EXTENSION_TESTS
+    assert extension.ids == module.SMOKE_IDS
+    core = module.crate_claim("azoth-core")
+    assert core.files == module.CORE_TESTS
+    assert core.ids == module.SMOKE_IDS
+    assert not core.namespaces, "the core suites and the smoke, not every namespace"
     assert module.crate_claim("azoth-test-support").empty(), "its users' tests carry it"
     assert module.table_problems() == []
+
+
+def test_a_generated_file_at_any_depth_is_its_generators_output() -> None:
+    """**The hour this tranche exists for.**
+
+    `core/result_gen.py` is generated, but the old short-circuit fired only for a module
+    directly under `python/src/azoth/`; a nested one fell through to `NAMESPACE_TESTS["core"]`,
+    which named the whole suite. The scope now asks for the generator's `--check` alone.
+    """
+    module = tool()
+    claim = module.claims("python/src/azoth/core/result_gen.py")
+    assert claim.generated
+    assert not claim.namespaces and not claim.files
+    commands = commands_for(["python/src/azoth/core/result_gen.py"])
+    assert module.TESTS not in commands, "the whole suite is not a generator check"
+    assert any("gen_python_result.py --check" in command for command in commands)
+
+
+def test_a_core_source_change_runs_the_core_suites_and_the_smoke() -> None:
+    """The narrowed core claim: its own suites plus one id per namespace, never the suite."""
+    module = tool()
+    commands = commands_for(["python/src/azoth/core/result.py"])
+    joined = " ".join(commands)
+    for target in module.CORE_TESTS:
+        assert target in joined, target
+    assert "test_cross_impl.py" in joined
+    for smoke in module.SMOKE_IDS:
+        assert smoke in joined, smoke
+    assert module.TESTS not in commands, "the whole suite is what this replaced"
+    assert "test_degenerate_sweep" not in joined
+
+
+def test_the_public_surface_change_runs_the_surface_set() -> None:
+    module = tool()
+    commands = commands_for(["python/src/azoth/__init__.py"])
+    joined = " ".join(commands)
+    for target in module.SURFACE_TESTS:
+        assert target in joined, target
+    assert module.TESTS not in commands
+    assert "test_degenerate_sweep" not in joined
+
+
+def test_a_binding_change_runs_the_binding_suites() -> None:
+    module = tool()
+    commands = commands_for(["crates/azoth-python/src/eos.rs"])
+    joined = " ".join(commands)
+    for target in module.EXTENSION_TESTS:
+        assert target in joined, target
+    assert "eos.pt_flash" in joined, (
+        "the smoke, because the binding is every namespace's front door"
+    )
+    assert module.TESTS not in commands
 
 
 # ------------------------------------------------- the tool is not defeated by its own caller

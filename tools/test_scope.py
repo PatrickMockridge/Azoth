@@ -215,6 +215,68 @@ class Claim:
         )
 
 
+#: **The wide claims, narrowed.** `core`, `__init__`, `azoth-core` and `azoth-python` used to
+#: name `python/tests` or every namespace, which made an ordinary diff run the whole suite
+#: (81-116 minutes). These are the tests that actually name the changed surface; the smoke
+#: command below keeps one cross-implementation case per namespace, and the whole tree still
+#: runs nightly.
+CORE_TESTS: tuple[str, ...] = (
+    f"{TESTS}/test_units_contract.py",
+    f"{TESTS}/test_units_conversion.py",
+    f"{TESTS}/test_units_cross_library.py",
+    f"{TESTS}/test_dispatch.py",
+    f"{TESTS}/test_solver_contract.py",
+    f"{TESTS}/test_solver.py",
+    f"{TESTS}/test_range.py",
+    f"{TESTS}/test_core_numerics.py",
+    f"{TESTS}/test_result_json.py",
+    f"{TESTS}/test_provenance.py",
+    f"{TESTS}/test_registration_completeness.py",
+    f"{TESTS}/test_gen_python_result.py",
+    f"{TESTS}/test_gen_python_record_outputs.py",
+    f"{TESTS}/test_extension.py",
+)
+
+#: `python/src/azoth/__init__.py` is the public surface: registration, dispatch, the units
+#: gate and the extension.
+SURFACE_TESTS: tuple[str, ...] = (
+    f"{TESTS}/test_extension.py",
+    f"{TESTS}/test_dispatch.py",
+    f"{TESTS}/test_registration_completeness.py",
+    f"{TESTS}/test_registry_contract.py",
+    f"{TESTS}/test_units_contract.py",
+)
+
+#: The binding crate's own tests: the extension, the generated wrappers and the registries.
+EXTENSION_TESTS: tuple[str, ...] = (
+    f"{TESTS}/test_extension.py",
+    f"{TESTS}/test_dispatch.py",
+    f"{TESTS}/test_registration_completeness.py",
+    f"{TESTS}/test_batch.py",
+    f"{TESTS}/test_units_contract.py",
+    f"{TESTS}/test_solver_contract.py",
+    f"{TESTS}/test_gen_python_bridge.py",
+    f"{TESTS}/test_gen_python_register.py",
+    f"{TESTS}/test_gen_python_registry.py",
+    f"{TESTS}/test_gen_python_transport.py",
+    f"{TESTS}/test_gen_python_wrappers.py",
+)
+
+#: **One registered id per namespace**, the smoke that a core or binding change has not broken
+#: a namespace end to end. `-k` over these names the cases and the cross-implementation
+#: comparison, in one command each, without opening the namespace's directory.
+SMOKE_IDS: tuple[str, ...] = (
+    "eos.pt_flash",
+    "eos.bubble_pressure",
+    "hydraulics.darcy_weisbach",
+    "hydraulics.control_valve_cv",
+    "process.compressor",
+    "thermal.conduction_plane_wall",
+    "reactions.chemical_equilibrium",
+    "characterization.delumping",
+    "standards.iso6976",
+)
+
 #: namespace -> the tests a change **in that namespace** runs. Every entry names files that
 #: exist, checked by [`namespace_targets`]; an entry that is empty (`standards`) is one whose
 #: coverage is its registered ids, which is stated here rather than discovered later.
@@ -240,14 +302,14 @@ NAMESPACE_TESTS: dict[str, tuple[str, ...]] = {
     "batch": (f"{TESTS}/test_batch.py",),
     "properties": (f"{TESTS}/test_properties.py", f"{TESTS}/test_data_agreement.py"),
     # `azoth.core` is the Python mirror of `azoth-core`: units, dispatch and the record
-    # machinery that every other namespace imports. A change there is as wide as it gets, so
-    # it says so instead of picking a directory that would look narrower than it is.
-    "core": (TESTS,),
+    # machinery that every other namespace imports. The tests that name it are the unit,
+    # dispatch, solver and record suites; the namespaces are covered by the smoke ids.
+    "core": CORE_TESTS,
 }
 
 #: module directly under `python/src/azoth/` (not a namespace) -> the tests that name it.
 MODULE_TESTS: dict[str, tuple[str, ...]] = {
-    "__init__": (TESTS,),
+    "__init__": SURFACE_TESTS,
     "keycard": (
         f"{TESTS}/test_keycard_loader.py",
         f"{TESTS}/test_keycard_writer.py",
@@ -438,12 +500,13 @@ def crate_claim(crate: str) -> Claim:
     if namespace is not None:
         return Claim(namespaces=(namespace,))
     if crate == "azoth-core":
-        # Units, the shared types and the databank: every namespace is a wrapper over it, so a
-        # change here is as wide as the Python side gets - and it says so rather than picking one.
-        return Claim(namespaces=tuple(sorted(crate_namespaces().values())))
+        # Units, the shared types and the databank: the core suites, plus one registered id per
+        # namespace so a break in a namespace path is not silent. It used to name every
+        # namespace, which ran the whole Python suite for a change to a shared helper.
+        return Claim(files=CORE_TESTS, ids=SMOKE_IDS)
     if crate == "azoth-python":
-        # The extension itself: the whole Python surface is what it is.
-        return Claim(files=(TESTS,))
+        # The extension itself: its own suites and the smoke ids, not the whole surface.
+        return Claim(files=EXTENSION_TESTS, ids=SMOKE_IDS)
     if crate == "azoth-cli":
         return Claim(files=(f"{TESTS}/validation/test_mcp_conformance.py",))
     if crate == "azoth-wasm":
@@ -528,6 +591,20 @@ def table_problems() -> list[str]:
         for target in targets:
             if not (ROOT / target).exists():
                 problems.append(f"MODULE_TESTS[{module!r}] names {target}, which is absent")
+    for label, targets in (
+        ("CORE_TESTS", CORE_TESTS),
+        ("SURFACE_TESTS", SURFACE_TESTS),
+        ("EXTENSION_TESTS", EXTENSION_TESTS),
+    ):
+        for target in targets:
+            if not (ROOT / target).exists():
+                problems.append(f"{label} names {target}, which is absent")
+    unknown_smoke = sorted(set(SMOKE_IDS) - registered_ids())
+    if unknown_smoke:
+        problems.append(
+            f"SMOKE_IDS names {unknown_smoke}, which are not registered ids - a `-k` on one "
+            "selects nothing, and that looks like a pass"
+        )
     for crate in members():
         if crate not in crate_namespaces() and crate not in NAMELESS_CRATES:
             problems.append(
@@ -623,6 +700,31 @@ def nearest_test_dir(path: str) -> str | None:
         parent = parent.parent
 
 
+#: The header a generated file carries; the Python generators write one of these two.
+GENERATED_MARK = re.compile(r"GENERATED FILE|Generated by [`\"']?tools/")
+
+
+def generated_file(path: str) -> bool:
+    """Whether a path is generated - by its name or by its own header, **at any depth**.
+
+    The old check fired only for a module directly under `python/src/azoth/`
+    (`len(parts) == 4`), so `core/result_gen.py` - a generated file if there ever was one -
+    fell through to the `core` namespace and selected the whole suite. A generated file's
+    proof is its generator's `--check`: it is not asked to have run a line under coverage.
+    """
+    name = Path(path).name
+    if name.endswith(".pyi") or name.removesuffix(".py").endswith("_gen"):
+        return True
+    if not name.endswith(".py"):
+        return False
+    try:
+        with (ROOT / path).open(encoding="utf-8", errors="replace") as handle:
+            head = "".join(handle.readline() for _ in range(5))
+    except OSError:
+        return False
+    return bool(GENERATED_MARK.search(head))
+
+
 def python_claim(path: str, parts: list[str]) -> Claim:
     """A path under `python/`: a test file, a fixture, a module, or a namespace package."""
     if path.startswith(f"{TESTS}/"):
@@ -649,12 +751,12 @@ def python_claim(path: str, parts: list[str]) -> Claim:
         )
     if len(parts) < 4:
         raise SystemExit(f"test_scope: {path} names no module under python/src/azoth/")
+    if generated_file(path):
+        return Claim(generated=True)
     if len(parts) == 4:
         if parts[3] in INERT_MODULES:
             return Claim(inert=INERT_MODULES[parts[3]])
         stem = parts[3].removesuffix(".py").removesuffix(".pyi")
-        if parts[3].endswith(".pyi") or stem.endswith("_gen"):
-            return Claim(generated=True)
         targets = MODULE_TESTS.get(stem)
         if targets is None:
             raise SystemExit(
@@ -916,6 +1018,11 @@ def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> lis
     covered: list[str] = []
     named: set[str] = set()
     for namespace in sorted(namespaces):
+        # **The core namespace reaches the smoke, not every directory.** Its own table names
+        # the unit/dispatch/solver/record suites; one cross-implementation id per namespace is
+        # what keeps a shared-code break from being invisible in a namespace nobody opened.
+        if namespace == "core":
+            terms |= set(SMOKE_IDS)
         for target in namespace_targets(namespace):
             out.append(Command(f"the {namespace} namespace's own tests", PYTEST, target))
             if (ROOT / target).is_dir():
@@ -1005,6 +1112,7 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
         crate_side = crate_claim(crate)
         namespaces |= set(crate_side.namespaces)
         files |= set(crate_side.files)
+        ids |= set(crate_side.ids)
         jobs |= set(crate_side.jobs)
 
     commands = rust_scope(crates, edges) + commands

@@ -30,6 +30,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+#: The generated-file rule is `test_scope`'s, imported rather than copied: a file this check
+#: excludes from the executed-line demand and a file the scope treats as generator output must
+#: be the same set. The scripts live beside each other, so the import needs no package.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_scope import generated_file  # noqa: E402
+
 #: What the instrumented run covers. The Python half only: `cargo-llvm-cov` builds the whole
 #: workspace with instrumentation, which is minutes per push for a signal the Rust side already
 #: has from its own per-crate tests - every crate the diff reaches is emitted by name, and
@@ -61,8 +67,13 @@ def executed_only(paths: list[str]) -> list[str]:
     **`.py` only.** Coverage measures executable lines, and a changed `_core.pyi` is a type stub
     with none - so demanding that "a line of it ran" is a check no diff can satisfy. Measured on
     the first push that regenerated one: the gate failed on the stub and not on any code.
+
+    **And not generated.** A generated file's proof is its generator's `--check`, which the
+    sweep runs; asking a `*_gen.py` to have executed a line under pytest is asking the wrong
+    tool. The rule is `test_scope.generated_file`'s, so the two cannot disagree about which
+    files are generated.
     """
-    return [path for path in paths if path.endswith(".py")]
+    return [path for path in paths if path.endswith(".py") and not generated_file(path)]
 
 
 def changed_python(base: str) -> list[str]:

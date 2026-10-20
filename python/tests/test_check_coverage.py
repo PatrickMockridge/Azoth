@@ -103,3 +103,16 @@ def test_a_type_stub_is_not_demanded() -> None:
     assert tool().executed_only(
         ["python/src/azoth/eos/flash.py", "python/src/azoth/_core.pyi"]
     ) == ["python/src/azoth/eos/flash.py"]
+
+
+def test_a_generated_file_is_not_demanded() -> None:
+    """A generated file's proof is its generator's `--check`, not an executed line.
+
+    The scope now sends `core/result_gen.py` to the generator sweep rather than to a
+    namespace's tests, so demanding that a line of it ran would fail every diff that
+    regenerates it. The rule is `test_scope.generated_file`'s, imported rather than copied.
+    """
+    module = tool()
+    assert module.executed_only(
+        ["python/src/azoth/core/result_gen.py", "python/src/azoth/core/result.py"]
+    ) == ["python/src/azoth/core/result.py"]
