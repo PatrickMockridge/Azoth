@@ -139,6 +139,23 @@ pip install .
 The distribution name is `azoth-engine` because `azoth` is taken on PyPI; `import azoth`
 is what the package has always been and is unchanged by it.
 
+## Running the tests
+
+One gate, scoped to what the diff reaches, with a wall-clock budget per lane:
+
+| lane | command | budget | what it runs |
+|---|---|---|---|
+| edit | `python tools/test_scope.py --run` | 5 min | the scoped set, the marked sweeps deselected |
+| push | `python tools/test_scope.py --lane push --run` | 15 min | as CI runs it, with the five unconditional jobs |
+| close-out | `python tools/test_scope.py --lane tranche --run` | 20 min | the push set, each reached sweep narrowed to the selected ids |
+| nightly | CI only (`--lane nightly` prints it) | 45 min | the whole tree |
+
+`--estimate` prints the minutes before they are spent and `--max-minutes` overrides the
+budget. The Rust extension is built with `maturin develop`; `AZOTH_REQUIRE_RUST=1` makes a
+run without it an error rather than a silent Python-only pass. **Do not run
+`pytest python/tests`**: it is the nightly's, and the guard refuses it. Heavy commands run
+under `tools/gated.sh` (12 GiB, no swap).
+
 ## Quick start
 
 ```python

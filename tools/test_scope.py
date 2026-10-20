@@ -4,8 +4,10 @@
     python tools/test_scope.py                     # against origin/main...HEAD
     python tools/test_scope.py --staged            # against the index
     python tools/test_scope.py --explain           # and say why each command is there
-    python tools/test_scope.py --run               # run them, in order
-    python tools/test_scope.py --lane nightly      # the whole thing, either language
+    python tools/test_scope.py --estimate          # the minutes, before they are spent
+    python tools/test_scope.py --run               # the edit lane, in order (budget 5 min)
+    python tools/test_scope.py --lane tranche --run  # the close-out lane (budget 20 min)
+    python tools/test_scope.py --lane nightly      # the whole thing, printed (CI runs it)
     python tools/test_scope.py --audit             # every tracked path, through the table
 
 **Why this exists.** The rule "test what the change touches" has been written down three
@@ -48,7 +50,8 @@ namespace, not a reached set, so it skips the sweeps and leaves them to the nigh
     gen_python_registry            0m01s - 0m04s each
     the whole generator sweep      ~2m40s
 
-So the sweep runs whenever a generated file could have moved, which is exact and is minutes.
+So the sweep's *subset* runs when a generated file could have moved - the diff's generators,
+which is exact and is seconds to minutes - and the whole sweep is the nightly's.
 """
 
 from __future__ import annotations

@@ -17,17 +17,24 @@ heat transfer) with an agentic layer on top.
 This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inactive,
 `earlyoom` absent), so a runaway thrashes the desktop instead of failing one process.
 
-- **`python tools/test_scope.py --run` is the gate.** It reads the diff and runs what it
-  reaches: the crates whose sources changed *and every crate that depends on them*, and the
-  Python mirror of each of those crates — a kernel change runs `test_cross_impl.py`, because
-  that agreement test is the whole reason every calculation is written twice. A path it
-  cannot place is an error rather than a shrug, and so is a path a rule *claims and then
-  places nowhere*. `--explain` says why each command is there; `--lane iterate` deselects the
-  `slow_sweep`-marked global sweeps, for the inner loop, and both lanes name the ones they
-  reach. **It also runs what CI runs whatever the diff says** — the five unconditional jobs, from
-  `CLOSE_OUT`, so the local run is the push rather than the push's diff-shaped half — and the
-  generator checks run first, because a stale generated file is minutes to find and an hour to be
-  told about by a test.
+- **`python tools/test_scope.py --run` is the gate, and it is the edit lane by default.** It
+  reads the diff and runs what it reaches: the crates whose sources changed *and every crate
+  that depends on them*, and the Python mirror of each of those crates — a kernel change runs
+  `test_cross_impl.py`, because that agreement test is the whole reason every calculation is
+  written twice. A path it cannot place is an error rather than a shrug, and so is a path a
+  rule *claims and then places nowhere*. `--explain` says why each command is there; the
+  generator subset is the diff's (a test or docs change asks none, a generated file asks its
+  own), and the checks run first, because a stale generated file is minutes to find and an
+  hour to be told about by a test.
+- **Four lanes, each with a wall-clock budget.** `iterate` is the default for `--run`: the
+  scoped set, no close-out, the `slow_sweep`-marked sweeps deselected, 5 minutes. `push` is
+  CI's scoped lane and also deselects them, 15 minutes. `tranche` is the close-out: the push
+  set with each reached sweep narrowed to the ids the scope selected, 20 minutes. `nightly`
+  is the whole tree, 45 minutes, and it is CI's — `--lane nightly --run` is refused and
+  `--full` forces that render. `--estimate` prints the minutes before they are spent;
+  `--max-minutes` overrides; a local run that spends its budget kills the whole process
+  group. **Never run `pytest python/tests`; it is nightly-only and the guard refuses it.**
+  `AZOTH_PYTEST_WORKERS` (`0` disables) sets the xdist worker count.
 - **Three checks say whether the scoped set is worth trusting.** `--audit` walks every
   tracked path through the table, so the day a directory is added and no rule knows it the
   gate says so; `--verify-selection` collects every emitted target and refuses one that
@@ -40,12 +47,13 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   an independent second implementation, which catches the class a mutation score proxies for —
   a wrong operator in one language — at the cost of one comparison rather than N mutant
   builds. That is a stated limit, not an oversight.
-- **On a push, four jobs run whatever the diff says** — `spec-validate`, `rust-lint`
-  (`cargo fmt` only; the workspace clippy is in the nightly), `python-lint` and
-  `provenance`, all flat-cost and build-free — and **the other eight run only if the diff
+- **On a push, five jobs run whatever the diff says** — `spec-validate`, `rust-lint`
+  (`cargo fmt` only; the workspace clippy is in the nightly), `python-lint`, `provenance` and
+  `scope` itself, all flat-cost and build-free — and **the other eight run only if the diff
   reaches them**. `tools/test_scope.py --plan` makes that decision once, in the `scope` job,
   and every job reads its own line, so a job that does not run is a job the summary said
-  `false` about rather than an absence nobody explained.
+  `false` about rather than an absence nobody explained. Every job has a
+  `timeout-minutes`, so a hung run fails rather than spending the afternoon.
 - **The whole suite runs nightly**, 04:17 UTC, in `.github/workflows/nightly.yml` — which
   *calls* `ci.yml` with `mode: full` rather than repeating it, so "the nightly runs
   everything" is a fact about one list. It is the only thing that runs the tests no diff
@@ -63,6 +71,8 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
 - `-j 10` on cargo; `--test-threads 10` after `--` on tests.
 - Never run two heavy commands at once.
 - `.claude/hooks/guard_bash.py` (a PreToolUse hook) enforces the wrapper and refuses a
-  repo-wide test run. `AZOTH_FULL_GATE=1`, visible in the transcript, is the only way past
+  repo-wide test run. **It resolves the command inside the wrapper**, because the wrapper
+  satisfies the memory cap and not the width rule; `timeout` is resolved past its duration
+  for the same reason. `AZOTH_FULL_GATE=1`, visible in the transcript, is the only way past
   that refusal — for the rare local full run, not for a push.
 

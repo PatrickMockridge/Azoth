@@ -48,8 +48,8 @@ None, or:
 
 ## Checklist
 
-- [ ] `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --all --check`
-- [ ] `pytest` (with the extension built: `maturin develop && AZOTH_REQUIRE_RUST=1 pytest`)
+- [ ] `python tools/test_scope.py --lane push --run` (the extension is built by the gate;
+      `AZOTH_REQUIRE_RUST=1` makes a missing one an error)
 - [ ] `ruff check && ruff format --check && mypy`
 - [ ] `python tools/spec_lint.py`
 - [ ] `mdbook build docs` and `python tools/check_links.py`
