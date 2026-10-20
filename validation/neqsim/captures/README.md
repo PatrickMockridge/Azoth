@@ -53,6 +53,24 @@ writes - `IapwsIf97Probe` prints its whole state grid and reads nothing.
 java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
 ```
 
+**`SurfaceTensionProbe` records model 0 and the two calculators it installs.** With no
+argument it prints the default pair - Parachor for gas/oil and gas/aqueous, Firozabadi-Ramley
+for liquid/liquid - and calls both calculators directly on the same states. The `solvers`
+invocation adds models 1, 2 and 4, which build the GT and LGT density-profile solvers; those
+rows are the next tranche's expected values and are kept out of the bare run so the weekly
+sweep does not pay for a solver no test asserts yet. `TransportMethodsProbe` selects
+`Filippov` conductivity and `friction theory` viscosity on the densest phase and prints every
+intermediate, because both correlations carry bar/Pa/micropoise conversions that a final
+number alone would hide.
+
+```bash
+cd validation/neqsim
+javac -proc:none -cp neqsim-f0c7436.jar SurfaceTensionProbe.java TransportMethodsProbe.java
+java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe > captures/surface_tension_probe.tsv
+java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe solvers > captures/surface_tension_solvers_probe.tsv
+java -cp .:neqsim-f0c7436.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
+```
+
 **`GeHenryProbe` measures `ComponentGE.fugcoef`'s two reference states.** It reads nothing and
 prints its whole grid, so it needs the recipe for the same reason. The states cover the IAPWS
 arm in water, the databank arm with and without water, the `900` sentinel, the four-zero rows

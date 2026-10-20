@@ -99,14 +99,29 @@ process model needs.
   `PedersenPlusModelSolver`, `LumpingModel`, `LumpingConfigBuilder`,
   `PseudoComponentCombiner`, `Recombine`, `OilAssayCharacterisation`, `TbpClosure`,
   `RefineryAssayBlend`, `BioFeedstock`, `BiomassCharacterization`.
-- **Transport properties.** `physicalproperties/methods/`: gas and liquid viscosity
-  (`ChungViscosityMethod`, `Viscosity`), conductivity (`ChungConductivityMethod`,
-  `FilippovConductivityMethod`, `Conductivity`), density (`Rackett`, `Costald`,
-  `Density`), diffusivity (`WilkeChangDiffusivity`, `HaydukMinhasDiffusivity`,
-  `SiddiqiLucasMethod`, `TynCalusDiffusivity`, `WilkeLeeDiffusivity`,
-  `FullerSchettlerGiddingsDiffusivity`), and surface tension (`ParachorSurfaceTension`,
-  `GTSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `LGTSurfaceTension`,
-  `CDFTSurfaceTension`).
+- **Transport properties.** `physicalproperties/methods/` and `interfaceproperties/`.
+  Ported, each with the id that carries it: `ChungViscosityMethod` and the liquid polynom
+  `Viscosity` (`eos.chung_viscosity`, `eos.liquid_viscosity_pure`, `eos.aqueous_viscosity`),
+  Wilke's mixing rule (`eos.wilke_viscosity`), `ChungConductivityMethod`,
+  `MasonSaxenaConductivityMethod` and the polynom `Conductivity` (`eos.chung_conductivity`,
+  `eos.mason_saxena_conductivity`, `eos.liquid_conductivity_polynom`), `Rackett` and
+  `Costald` (`eos.rackett_molar_volume`, `eos.costald_molar_volume`), the seven diffusivity
+  methods (`eos.chapman_enskog_diffusivity`, `eos.co2_water_diffusivity`,
+  `eos.fuller_schettler_giddings_diffusivity`, `eos.hayduk_minhas_diffusivity`,
+  `eos.siddiqi_lucas_diffusivity`, `eos.tyn_calus_diffusivity`,
+  `eos.wilke_chang_diffusivity`), `ParachorSurfaceTension` (the pure and mixture forms,
+  `eos.parachor_surface_tension` / `eos.parachor_mixture_surface_tension`), and the
+  phase-type dispatch that assigns them (`eos.phase_transport`).
+  **Owed**: `FilippovConductivityMethod`, `FrictionTheoryViscosityMethod` and
+  `FirozabadiRamleyInterfaceTension` are direct calculations and are P1's close-out, with
+  `InterfaceProperties` as their dispatch (model 0, the default, installs Parachor for
+  gas-oil and gas-aqueous and Firozabadi-Ramley for liquid-liquid; models 3 and 5 are its
+  aliases). `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and
+  `CDFTSurfaceTension` are density-profile solvers, need a mutable profile object this tree
+  does not carry, and are the tranche after; `GTSurfaceTensionODE` is unreachable upstream
+  (`useFullGT = 1` with no setter) and is not a port target. The captures
+  `surface_tension_probe.tsv` and `surface_tension_solvers_probe.tsv` record the default
+  pairs and models 1, 2 and 4 respectively.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
