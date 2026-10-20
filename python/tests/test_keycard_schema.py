@@ -37,6 +37,9 @@ from typing import Any, cast
 import pytest
 from jsonschema import Draft202012Validator
 
+#: A module-scoped fixture loads the schema; the file runs on one xdist worker.
+pytestmark = pytest.mark.xdist_group("keycard-schema")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"

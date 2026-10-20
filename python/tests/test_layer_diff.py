@@ -46,23 +46,46 @@ def tools_module(name: str) -> ModuleType:
         sys.path.pop(0)
 
 
-@pytest.mark.slow_sweep
-def test_every_recorded_case_agrees_at_its_layers() -> None:
-    """The gate, run where it runs in CI: every case, every layer it shares.
+def dumped_case_ids() -> list[str]:
+    """The `eos` cases the layer diff can dump - `--all`'s eos half, one id per test.
 
-    A failure here names a layer rather than a total, which is the whole point - the
-    case's own test says a model is 4% out, and this says where.
+    **Read from the generator's table rather than typed here**, so a case added to the table
+    is covered without a second list. The process half is `test_process_layer_diff.py`'s
+    parametrization; `--all` is their union.
+    """
+    gen: Any = tools_module("gen_neqsim_cases")
+    from azoth.eos import layers as azoth_layers
+
+    return [case.id for case in gen.CASES if case.calc in azoth_layers.DUMPERS]
+
+
+@pytest.mark.slow_sweep
+@pytest.mark.parametrize("case_id", dumped_case_ids())
+def test_a_recorded_case_agrees_at_its_layers(case_id: str) -> None:
+    """One case's layers against its capture.
+
+    A failure names a layer rather than a total, which is the whole point - the case's own
+    test says a model is 4% out, and this says where. Parametrized so `-k` can reach one case,
+    and so xdist can distribute the six; `--all` ran them in one 462-second function.
     """
     result = subprocess.run(
-        [sys.executable, str(TOOLS / "neqsim_layer_diff.py"), "--all"],
+        [sys.executable, str(TOOLS / "neqsim_layer_diff.py"), case_id],
         capture_output=True,
         text=True,
         check=False,
     )
 
     assert result.returncode == 0, (
-        f"a layer diverged from its NeqSim capture\n{result.stdout}{result.stderr}"
+        f"{case_id}: a layer diverged from its NeqSim capture\n{result.stdout}{result.stderr}"
     )
+
+
+def test_the_gate_has_cases_in_both_tiers() -> None:
+    """An empty tier would make the parametrized gate vacuous."""
+    from azoth.process import layers as process_layers
+
+    assert dumped_case_ids(), "no eos case has a dumper"
+    assert process_layers.LAYER_CASES, "no process case has a dumper"
 
 
 def test_every_dumped_case_shares_layers_with_its_capture() -> None:

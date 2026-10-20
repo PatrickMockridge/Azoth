@@ -30,6 +30,9 @@ from azoth.process.reference.mechanical import (
 )
 from test_designer_report import _binary_column
 
+#: A module-scoped fixture holds the solved column; the file runs on one xdist worker.
+pytestmark = pytest.mark.xdist_group("mechanical-report")
+
 Q = ureg.Quantity
 
 COMPONENTS = ["methane", "n-butane"]

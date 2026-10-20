@@ -51,6 +51,10 @@ VENDOR = Path(__file__).resolve().parent / "vendor" / "mcp"
 CURRENT = VENDOR / "schema-2026-07-28.json"
 LEGACY = VENDOR / "schema-2025-11-25.json"
 
+#: The server and the binary it builds are module-scoped: every test in this file has to run
+#: on one xdist worker, or each worker would build and bind its own.
+pytestmark = pytest.mark.xdist_group("mcp-conformance")
+
 #: The lane each revision is, and where the server's methods live in it.
 CURRENT_REVISION = "2026-07-28"
 LEGACY_REVISION = "2025-11-25"

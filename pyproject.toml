@@ -32,6 +32,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8",
+  # **Process parallelism, because the suite is CPU-bound and the box has 24 cores.** The
+  # sweeps are parametrized with stable ids and there are no session-scoped fixtures except
+  # three module-scoped ones, which carry `xdist_group`; `tools/test_scope.py` renders
+  # `-n <workers> --dist loadgroup`, so a module with a fixture stays on one worker while the
+  # big parametrized sweeps distribute as individual tests.
+  "pytest-xdist>=3.6",
   "ruff>=0.9",
   "mypy>=1.13",
   # Needed to build the extension, so it is part of developing rather than an
@@ -106,6 +112,8 @@ markers = [
   # one whole. Registered here because `--strict-markers` makes a half-adopted marker an
   # immediate collection error.
   "slow_sweep: a registry-wide sweep; iterate/push deselect it, tranche narrows it, nightly runs it",
+  # A module whose fixtures are process-scoped or bind a fixed path stays on one xdist worker.
+  "xdist_group: keep every test with the same group on one worker",
 ]
 filterwarnings = ["error"]
 

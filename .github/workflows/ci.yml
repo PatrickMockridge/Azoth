@@ -29,8 +29,13 @@ jobs:
   scope:
     name: scope
     runs-on: ubuntu-latest
+    # A job that cannot finish is a job that fails; the whole-tree run is the nightly's.
+    timeout-minutes: 10
     outputs:
       base: ${{ steps.plan.outputs.base }}
+      # Whether the scoped set names a python/tests target, so the extension build can be
+      # skipped for a docs- or skills-only diff.
+      extension: ${{ steps.plan.outputs.extension }}
       rust-test: ${{ steps.plan.outputs.rust-test }}
       python-test: ${{ steps.plan.outputs.python-test }}
       wheel-data: ${{ steps.plan.outputs.wheel-data }}
@@ -71,6 +76,7 @@ jobs:
   spec-validate:
     name: spec-validate
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -191,6 +197,7 @@ jobs:
   rust-test:
     name: rust-test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: scope
     if: needs.scope.outputs.rust-test == 'true'
     steps:
@@ -224,6 +231,7 @@ jobs:
   rust-lint:
     name: rust-lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -238,12 +246,17 @@ jobs:
   python-test:
     name: python-test
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: scope
     if: needs.scope.outputs.python-test == 'true'
     env:
       # The scoped set runs instrumented, so the check below can say whether the tests that ran
-      # executed the lines the diff changed. One run rather than two.
-      AZOTH_COVERAGE: "1"
+      # executed the lines the diff changed. One run rather than two. Full mode skips the
+      # measurement to buy nightly budget; there is no diff-shaped demand to check.
+      AZOTH_COVERAGE: ${{ inputs.mode == 'full' && '0' || '1' }}
+      # The nightly is where an unmarked slow test is a finding; a scoped run should not fail
+      # for one it did not select.
+      AZOTH_SLOW_SWEEP_GATE: ${{ inputs.mode == 'full' && '1' || '0' }}
       # The whole point of this job. Without it, a broken extension build makes
       # every test pass on the Python path while the cross-language agreement
       # this project promises is verified by nothing.
@@ -272,8 +285,10 @@ jobs:
       # generator, neither of which failed locally where the full set is present.
       - run: uv sync --extra dev --no-install-project
       # Builds the extension against the venv interpreter, so both backends are
-      # available and the cross-implementation tests actually run.
-      - run: .venv/bin/maturin develop
+      # available and the cross-implementation tests actually run. A docs- or skills-only
+      # scoped set names no python/tests target and needs neither.
+      - if: needs.scope.outputs.extension == 'true'
+        run: .venv/bin/maturin develop
       # **What this change reaches, which is not the whole suite.** The full Python tree runs
       # in `.github/workflows/nightly.yml`. A push runs its own models' cases on both
       # backends, the namespaces its diff touches, and the generator checks - the list comes
@@ -298,6 +313,7 @@ jobs:
       # **Every target has to collect something.** An empty collection is a green run over
       # nothing, and it is the one failure a scoped set can hide that a full one cannot.
       - name: every target selects a test
+        if: inputs.mode != 'full'
         env:
           PYTHONPATH: ""
         run: |
@@ -308,22 +324,17 @@ jobs:
       # targets collect something; a target can collect forty tests and touch none of the code
       # the diff changed. This writes the document the check reads, from the run above.
       - name: did the scoped set run the changed lines?
+        if: inputs.mode != 'full'
         env:
           PYTHONPATH: ""
         run: |
           .venv/bin/python -m coverage json -o coverage.json
           python tools/check_coverage.py \
             --base "${{ needs.scope.outputs.base }}" --json coverage.json
-      # The skill tests: smoke checks that the API the skills document still exists.
-      # Collected separately because the main run is scoped to python/tests. Not scoped in
-      # turn: they read the skills, which no diff here claims, and they are quick.
-      - run: .venv/bin/python -m pytest skills
-        env:
-          PYTHONPATH: ""
-
   wheel-data:
     name: wheel-data
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: scope
     if: needs.scope.outputs.wheel-data == 'true'
     steps:
@@ -354,6 +365,7 @@ jobs:
   python-lint:
     name: python-lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -371,6 +383,7 @@ jobs:
   ui:
     name: ui
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: scope
     if: needs.scope.outputs.ui == 'true'
     steps:
@@ -418,6 +431,7 @@ jobs:
   docs-build:
     name: docs-build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: scope
     if: needs.scope.outputs.docs-build == 'true'
     steps:
@@ -439,6 +453,7 @@ jobs:
   docs-drift:
     name: docs-drift
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: scope
     if: needs.scope.outputs.docs-drift == 'true'
     env:
@@ -540,6 +555,7 @@ jobs:
   provenance:
     name: provenance
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -580,6 +596,7 @@ jobs:
   validation:
     name: validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: scope
     if: needs.scope.outputs.validation == 'true'
     env:
@@ -598,7 +615,8 @@ jobs:
       - run: uv sync --extra dev --no-install-project
       - run: .venv/bin/maturin develop
       # A validation case is an external check on a calculation. Anything that
-      # disagrees with the recorded numbers fails here.
-      - run: .venv/bin/python -m pytest python/tests/validation
+      # disagrees with the recorded numbers fails here. The MCP conformance module is
+      # `xdist_group`ed because its server is module-scoped.
+      - run: .venv/bin/python -m pytest python/tests/validation -n 4 --dist loadgroup --durations=25
         env:
           PYTHONPATH: ""

@@ -1421,6 +1421,20 @@ def known_jobs() -> tuple[str, ...]:
     return tuple(sorted(re.findall(r"^  ([\w-]+):", jobs.group(1), re.M)))
 
 
+def needs_extension(commands: list[Command]) -> bool:
+    """Whether `python-test` must build the extension for this set.
+
+    A skills-only diff never touches `python/tests` and needs no `maturin develop`; a Rust
+    change emits the rebuild command itself. The job's separate build step is guarded on this,
+    so a docs or skills push does not pay a Rust link.
+    """
+    return any(
+        entry.command.endswith("/maturin develop")
+        or (entry.kind == PYTEST and entry.command.split()[0].startswith(TESTS))
+        for entry in commands
+    )
+
+
 def plan(commands: list[Command], full: bool) -> list[tuple[str, bool]]:
     """Which jobs run, as `(job, runs)`.
 
@@ -1454,8 +1468,32 @@ def with_timeout(line: str, seconds: int | None) -> str:
     return f"{cap} {line}"
 
 
+@lru_cache(maxsize=1)
+def pytest_workers() -> int:
+    """How many xdist workers a pytest target gets.
+
+    `AZOTH_PYTEST_WORKERS` overrides; a runner gets four (ubuntu-latest is 4 vCPU), a
+    developer box eight, and `0` disables xdist. The suite has no session-scoped fixtures, and
+    the three module-scoped ones carry `xdist_group`, so `--dist loadgroup` keeps each of them
+    on one worker while the 6,800-parametrized sweeps distribute individually - which is the
+    difference between a sweep landing on one worker and an 81-minute suite becoming minutes.
+    """
+    override = os.environ.get("AZOTH_PYTEST_WORKERS")
+    if override is not None:
+        try:
+            return max(0, int(override))
+        except ValueError:
+            return 0
+    if os.environ.get("CI"):
+        return 4
+    return min(8, os.cpu_count() or 1)
+
+
 def pytest_line(target: str, gate: bool, budget_seconds: int | None) -> str:
     """A pytest target as the shell line the gate runs."""
+    workers = pytest_workers()
+    if workers and target.split()[0].startswith(TESTS):
+        target = f"{target} -n {workers} --dist loadgroup --durations=25"
     if os.environ.get("AZOTH_COVERAGE") == "1":
         # **One instrumented run, not two.** `--cov-append` accumulates across the several
         # pytest invocations a scoped set is, and a job that ran the suite twice - once to
@@ -2013,6 +2051,7 @@ def main() -> int:
         # **The skip decision and the run decision are one computation.** These lines go to
         # `$GITHUB_OUTPUT` and each job reads its own, so a job that does not run is a job this
         # said `false` about - visible in the summary rather than absent without explanation.
+        print(f"extension={'true' if needs_extension(commands) else 'false'}")
         for job, runs in plan(commands, full=args.full):
             print(f"{job}={'true' if runs else 'false'}")
         if args.explain:

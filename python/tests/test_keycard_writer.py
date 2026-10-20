@@ -81,7 +81,7 @@ def test_the_shipped_baseline_survives_the_writer() -> None:
     assert sorted(row.name for row in rows) == sorted(written(card).components)
 
 
-def test_a_characterisation_becomes_a_card_and_reaches_a_flash() -> None:
+def test_a_characterisation_becomes_a_card_and_reaches_a_flash(tmp_path: Path) -> None:
     """**The point of the writer, and the one test that cannot be satisfied by agreeing with
     itself.**
 
@@ -107,8 +107,7 @@ def test_a_characterisation_becomes_a_card_and_reaches_a_flash() -> None:
         "alpha_param_1",
     }
 
-    path = REPO_ROOT / "target" / "c19_keycard.toml"
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = tmp_path / "c19_keycard.toml"
     keycard.dump(card, path)
     from_file = keycard.load(path)
 
