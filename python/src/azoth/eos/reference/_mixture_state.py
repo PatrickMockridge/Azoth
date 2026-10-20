@@ -1897,6 +1897,67 @@ def helmholtz_hessian(
     return hessian
 
 
+def helmholtz_gradient(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    n: list[float],
+    compressibility: float,
+) -> list[float]:
+    """``d(A^R/RT)/dn_i`` at constant temperature and **volume**.
+
+    The first derivative of :func:`helmholtz_energy`, and the primitive a
+    gradient-theory surface-tension solve needs: NeqSim's
+    ``ComponentEos.getChemicalPotential`` is the T,V form
+    ``H_id - T S_id + R T ln(n_i R T/V / P_ref) + R T dF/dN``, which stays finite
+    where the pressure is not. **``ln phi_i + ln Z`` is algebraically the same number
+    but is not a substitute**: the LGT profile crosses the cubic's own loop, where
+    ``Z < 0``, and the logarithm no longer exists even though this derivative does.
+
+    ``n`` is a set of mole numbers, as in :func:`helmholtz_energy`.
+    """
+    if reduced.association is not None:
+        raise InvalidInputError(
+            "mixture",
+            "this mixture associates, and the association's first composition derivative "
+            "is not assembled - so this gradient would be the cubic's and not the energy's",
+        )
+    count = len(n)
+    a_hat = [value / compressibility for value in reduced.a]
+    b_hat = [value / compressibility for value in reduced.b]
+    a_ij = [
+        [(1.0 - kij[i][j]) * math.sqrt(a_hat[i] * a_hat[j]) for j in range(count)]
+        for i in range(count)
+    ]
+    total = sum(n)
+    b_sum = sum(n[i] * b_hat[i] for i in range(count))
+    if not b_sum > 0.0:
+        raise OutOfRangeError(
+            "compressibility",
+            compressibility,
+            f"the mixture's `B/Z` came out as {b_sum}, and the logarithmic terms of "
+            f"the Helmholtz energy are written against it",
+        )
+    d = 1.0 - b_sum
+    g = reduced.cubic.helmholtz_g(b_sum)
+    g_prime = reduced.cubic.helmholtz_g_prime(b_sum)
+    delta_diff = reduced.cubic.delta_diff
+    a_bar = [sum(n[j] * a_ij[i][j] for j in range(count)) for i in range(count)]
+    a_sum = sum(n[i] * a_bar[i] for i in range(count))
+    return [
+        -math.log(d)
+        + total * b_hat[k] / d
+        - (
+            (
+                2.0 * a_bar[k] / (delta_diff * b_sum)
+                - a_sum * b_hat[k] / (delta_diff * b_sum * b_sum)
+            )
+            * g
+            + (a_sum / (delta_diff * b_sum)) * g_prime * b_hat[k]
+        )
+        for k in range(count)
+    ]
+
+
 def criticality_matrix(
     reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],

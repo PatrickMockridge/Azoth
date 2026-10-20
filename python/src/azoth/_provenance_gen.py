@@ -763,6 +763,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.lgt_surface_tension': {
+        "calc_id": 'eos.lgt_surface_tension',
+        "name": 'Surface tension from the linear-gradient theory',
+        "spec": {'path': 'specs/models/eos/lgt_surface_tension.toml', 'sha256': '01f7369836848d39d24ee58d14984400bc42302d5e5acb18f2316e7f18d12e2a'},
+        "code": [{'path': 'python/src/azoth/eos/reference/lgt_surface_tension.py', 'sha256': 'ca31a1e72183a7693a77e39b228ed68533ee81c4aeca4a958eaf579585cf4b80'}, {'path': 'crates/azoth-eos/src/lgt_surface_tension.rs', 'sha256': '801d4ec7d6f27db21eefe74d9f010252ab29f0acef8ed5e15df0f51326c00bcf'}],
+        "source": 'NeqSim master `LGTSurfaceTension`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 2,
+        "tests_skipped": 0,
+    },
     'eos.liquid_conductivity_polynom': {
         "calc_id": 'eos.liquid_conductivity_polynom',
         "name": 'Liquid thermal conductivity from the LIQCOND polynomial',

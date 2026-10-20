@@ -114,6 +114,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.interface_properties`](./interface_properties.md) | `direct composition` | NeqSim master `InterfaceProperties` |
 | [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim master `PhaseKentEisenberg` |
+| [`eos.lgt_surface_tension`](./lgt_surface_tension.md) | `lgt_density_integration` | NeqSim master `LGTSurfaceTension` |
 | [`eos.liquid_conductivity_polynom`](./liquid_conductivity_polynom.md) | `direct composition` | NeqSim master `liquidphysicalproperties/conductivity/Conductivity` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |

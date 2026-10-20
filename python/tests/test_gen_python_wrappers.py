@@ -71,7 +71,11 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 54 -> 55 when `reactions.reactive_co2_brine_phase_equilibrium` landed: the kernel names the
 #: two state variables `temperature` and `pressure` where the spec declares `T` and `P`, the
 #: same name mismatch the first two carry.
-KNOWN_HAND_WRITTEN = 55
+#: 55 -> 56 when `eos.lgt_surface_tension` landed: its kernel takes a `Mixture` built from the
+#: `components` names and a `Vec<Vec<f64>>` interaction matrix. The first is the record/mixture
+#: shape the generator refuses by design; the second is a matrix whose row length is a
+#: per-component quantity the spec states in prose, not in a column count.
+KNOWN_HAND_WRITTEN = 56
 
 
 def _tools_module(name: str) -> ModuleType:

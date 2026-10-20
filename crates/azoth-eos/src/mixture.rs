@@ -2460,6 +2460,63 @@ impl Mixture {
         Ok(hessian)
     }
 
+    /// `d(A^R/RT)/dn_i` at constant temperature and **volume**.
+    ///
+    /// The first derivative of [`Self::helmholtz_energy`], and the primitive a
+    /// gradient-theory surface-tension solve needs: NeqSim's `ComponentEos.getChemicalPotential`
+    /// is the T,V form `H_id - T S_id + R T ln(n R T/V / P_ref) + R T dF/dN`, which stays
+    /// finite where the pressure is not. **`ln phi_i + ln Z` is algebraically the same
+    /// number but is not a substitute**: the profile crosses the cubic's own loop, where
+    /// `Z < 0`, and the logarithm no longer exists even though this derivative does.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `n` is not one entry per component, or if the
+    ///   mixture associates - the association's first composition derivative is not
+    ///   assembled, the same refusal [`Self::helmholtz_hessian`] makes for its second.
+    /// * [`AzothError::OutOfRange`] if the mixture's `B` is not positive.
+    pub fn helmholtz_gradient(
+        &self,
+        reduced: &ReducedParameters,
+        n: &[f64],
+        compressibility: f64,
+    ) -> Result<Vec<f64>> {
+        let count = self.check_mole_numbers(n)?;
+        if self.association().is_some() {
+            return Err(AzothError::invalid_input(
+                "mixture",
+                "this mixture associates, and the association's first composition \
+                 derivative is not assembled - so this gradient would be the cubic's and \
+                 not the energy's",
+            ));
+        }
+        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, n);
+        let total: f64 = n.iter().sum();
+        let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
+        self.check_b_sum(b_sum, compressibility)?;
+
+        let d = 1.0 - b_sum;
+        let g = self.cubic.helmholtz_g(b_sum);
+        let g_prime = self.cubic.helmholtz_g_prime(b_sum);
+        let delta_diff = self.cubic.delta_diff();
+        let a_bar: Vec<f64> = (0..count)
+            .map(|i| (0..count).map(|j| n[j] * a_ij[i][j]).sum())
+            .collect();
+        let a_sum: f64 = (0..count).map(|i| n[i] * a_bar[i]).sum();
+
+        Ok((0..count)
+            .map(|k| {
+                // `-N ln(1-b)` differentiates to `-ln(1-b) + N b_k/(1-b)`.
+                let repulsive = -d.ln() + total * b_hat[k] / d;
+                // `(a_sum/(delta_diff b)) G` differentiates to the two terms below.
+                let attractive = (2.0 * a_bar[k] / (delta_diff * b_sum)
+                    - a_sum * b_hat[k] / (delta_diff * b_sum * b_sum))
+                    * g
+                    + (a_sum / (delta_diff * b_sum)) * g_prime * b_hat[k];
+                repulsive - attractive
+            })
+            .collect())
+    }
+
     /// Heidemann & Khalil's `Q`, whose smallest eigenvalue vanishes at a critical point.
     ///
     /// ```text

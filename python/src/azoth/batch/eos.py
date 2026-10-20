@@ -146,6 +146,7 @@ _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
+_FIROZABADI_RAMLEY_INTERFACE_TENSION = "eos.firozabadi_ramley_interface_tension"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -1148,6 +1149,49 @@ def parachor_surface_tension(
             "M": sequence(M, "M"),
         },
         _build_parachor_surface_tension,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class FirozabadiRamleyInterfaceTensionBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.firozabadi_ramley_interface_tension`."""
+
+    #: Interfacial tension per element, in N/m.
+    sigma: array[float]
+
+
+def _build_firozabadi_ramley_interface_tension(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> FirozabadiRamleyInterfaceTensionBatch:
+    return FirozabadiRamleyInterfaceTensionBatch(
+        warnings=warnings,
+        units=units,
+        sigma=columns["sigma"],  # type: ignore[arg-type]
+    )
+
+
+def firozabadi_ramley_interface_tension(
+    *,
+    T: Sequence[float],
+    pseudo_critical_temperature: Sequence[float],
+    rho_1: Sequence[float],
+    rho_2: Sequence[float],
+) -> FirozabadiRamleyInterfaceTensionBatch:
+    """The Firoozabadi-Ramey interface tension, over arrays."""
+    result: FirozabadiRamleyInterfaceTensionBatch = run(
+        _FIROZABADI_RAMLEY_INTERFACE_TENSION,
+        {
+            "T": sequence(T, "T"),
+            "pseudo_critical_temperature": sequence(
+                pseudo_critical_temperature, "pseudo_critical_temperature"
+            ),
+            "rho_1": sequence(rho_1, "rho_1"),
+            "rho_2": sequence(rho_2, "rho_2"),
+        },
+        _build_firozabadi_ramley_interface_tension,
     )
     return result
 

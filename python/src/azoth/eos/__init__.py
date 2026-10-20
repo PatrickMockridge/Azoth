@@ -124,6 +124,7 @@ from azoth.core.result import (
     IdealGasCpResult,
     InterfacePropertiesResult,
     KentEisenbergPhaseResult,
+    LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
@@ -397,6 +398,7 @@ _PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
 _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
+_LGT_SURFACE_TENSION = "eos.lgt_surface_tension"
 _LIQUID_CONDUCTIVITY_POLYNOM = "eos.liquid_conductivity_polynom"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _LIQUID_VISCOSITY_PURE = "eos.liquid_viscosity_pure"
@@ -1023,6 +1025,42 @@ def heat_of_vaporization(
     See :func:`azoth.eos.reference.heat_of_vaporization`.
     """
     return resolve(_HEAT_OF_VAPORIZATION)(c0=c0, c1=c1, c2=c2, c3=c3, Tc=Tc, T=T)  # type: ignore[no-any-return]
+
+
+def lgt_surface_tension(
+    components: list[str],
+    eos: str,
+    influence_parameters: Sequence[float],
+    reference_component: float,
+    pair_interactions: Sequence[Sequence[float]],
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> LgtSurfaceTensionResult:
+    """The linear-gradient-theory interface tension of a flashed fluid.
+
+    The density path runs between the two phases; each step evaluates the T,V chemical
+    potential, which is finite where the cubic's pressure is negative. The influence
+    parameters and the water/MEG interaction matrix are the caller's, as the class
+    computes them from component names.
+
+    Raises:
+        InvalidInputError: for a single-phase feed, an absent component, or a step whose
+            integrand is not positive.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.lgt_surface_tension`.
+    """
+    return resolve(_LGT_SURFACE_TENSION)(  # type: ignore[no-any-return]
+        components=components,
+        eos=eos,
+        influence_parameters=influence_parameters,
+        reference_component=reference_component,
+        pair_interactions=pair_interactions,
+        T=T,
+        P=P,
+        z=z,
+    )
 
 
 def liquid_conductivity_polynom(

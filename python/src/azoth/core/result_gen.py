@@ -1622,6 +1622,19 @@ class KentEisenbergPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class LgtSurfaceTensionResult(_HasWarnings):
+    """Result of ``eos.lgt_surface_tension``."""
+
+    CALC_ID: ClassVar[str] = "eos.lgt_surface_tension"
+
+    #: the interface tension.
+    sigma: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LiquidConductivityPolynomResult(_HasWarnings):
     """Result of ``eos.liquid_conductivity_polynom``."""
 

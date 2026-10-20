@@ -852,6 +852,11 @@ class KentEisenbergPhaseResult:
     warnings: list[Warning]
 
 @final
+class LgtSurfaceTensionResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class LiquidConductivityPolynomResult:
     k: Qty
     warnings: list[Warning]
@@ -2985,6 +2990,16 @@ def kent_eisenberg_phase(
     P: float,
     x: list[float],
 ) -> KentEisenbergPhaseResult: ...
+def lgt_surface_tension(
+    components: list[str],
+    eos: str,
+    influence_parameters: list[float],
+    reference_component: float,
+    pair_interactions: list[list[float]],
+    T: float,
+    P: float,
+    z: list[float],
+) -> LgtSurfaceTensionResult: ...
 def liquid_conductivity_polynom(
     liquid_conductivity: list[list[float]],
     molar_mass: list[float],

@@ -69,6 +69,7 @@
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/models/eos/interface_properties.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
+//!   - specs/models/eos/lgt_surface_tension.toml
 //!   - specs/models/eos/liquid_conductivity_polynom.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
 //!   - specs/calcs/eos/liquid_viscosity_pure.toml
@@ -769,6 +770,24 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.kent_eisenberg_phase", "T", "thermodynamic_temperature"),
     ("eos.kent_eisenberg_phase", "P", "pressure"),
     ("eos.kent_eisenberg_phase", "x", "dimensionless"),
+    (
+        "eos.lgt_surface_tension",
+        "influence_parameters",
+        "dimensionless",
+    ),
+    (
+        "eos.lgt_surface_tension",
+        "reference_component",
+        "dimensionless",
+    ),
+    (
+        "eos.lgt_surface_tension",
+        "pair_interactions",
+        "dimensionless",
+    ),
+    ("eos.lgt_surface_tension", "T", "thermodynamic_temperature"),
+    ("eos.lgt_surface_tension", "P", "pressure"),
+    ("eos.lgt_surface_tension", "z", "dimensionless"),
     (
         "eos.liquid_conductivity_polynom",
         "liquid_conductivity",

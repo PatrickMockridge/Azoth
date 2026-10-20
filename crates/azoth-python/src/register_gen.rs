@@ -87,6 +87,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIdealGasCpResult>()?;
     m.add_class::<crate::transport_gen::PyInterfacePropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyKentEisenbergPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyLgtSurfaceTensionResult>()?;
     m.add_class::<crate::transport_gen::PyLiquidConductivityPolynomResult>()?;
     m.add_class::<crate::transport_gen::PyLiquidHeatCapacityResult>()?;
     m.add_class::<crate::transport_gen::PyLiquidViscosityPureResult>()?;
@@ -418,6 +419,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::kent_eisenberg_phase,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::lgt_surface_tension, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::liquid_conductivity_polynom,
         m

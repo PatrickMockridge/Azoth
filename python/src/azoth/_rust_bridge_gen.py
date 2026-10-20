@@ -101,6 +101,7 @@ from azoth.core.result import (
     KFactorsResult,
     KineticRateLawResult,
     KineticsResult,
+    LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
@@ -362,6 +363,7 @@ __all__ = [
     "kent_eisenberg_phase",
     "kinetic_rate_law",
     "kinetics",
+    "lgt_surface_tension",
     "liquid_conductivity_polynom",
     "liquid_heat_capacity",
     "liquid_viscosity_pure",
@@ -1911,6 +1913,25 @@ def kent_eisenberg_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[floa
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def lgt_surface_tension(components: list[str], eos: str, influence_parameters: Sequence[float], reference_component: float, pair_interactions: Sequence[Sequence[float]], T: Q, P: Q, z: Sequence[float]) -> LgtSurfaceTensionResult:
+    """``eos.lgt_surface_tension``, computed in Rust."""
+    spec = _models_gen.model("eos.lgt_surface_tension")
+    result = _core.lgt_surface_tension(
+        list(components),
+        list(influence_parameters),
+        reference_component,
+        [list(row) for row in pair_interactions],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        eos,
+    )
+    return LgtSurfaceTensionResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 

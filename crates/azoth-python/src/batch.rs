@@ -1407,6 +1407,30 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "sigma", "N/m", sigma);
         }
 
+        "eos.firozabadi_ramley_interface_tension" => {
+            let (t, pseudo, rho_1, rho_2) = (
+                take(&inputs, "T")?,
+                take(&inputs, "pseudo_critical_temperature")?,
+                take(&inputs, "rho_1")?,
+                take(&inputs, "rho_2")?,
+            );
+            let mut sigma = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::firozabadi_ramley_interface_tension(
+                        kelvins(t[i]),
+                        kelvins(pseudo[i]),
+                        kilograms_per_cubic_meter(rho_1[i]),
+                        kilograms_per_cubic_meter(rho_2[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                sigma.push(r.sigma.value);
+            }
+            push_values(&mut columns, "sigma", "N/m", sigma);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

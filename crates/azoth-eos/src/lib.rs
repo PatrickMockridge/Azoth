@@ -124,6 +124,7 @@ pub mod ideal_gas_cp;
 pub mod interface_properties;
 pub mod kent_eisenberg_phase;
 pub mod leachman;
+pub mod lgt_surface_tension;
 pub mod liquid_conductivity_polynom;
 pub mod liquid_heat_capacity;
 pub mod liquid_viscosity_pure;
@@ -301,6 +302,7 @@ pub use iapws_saturation_pressure::iapws_saturation_pressure;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use interface_properties::interface_properties;
 pub use kent_eisenberg_phase::kent_eisenberg_phase;
+pub use lgt_surface_tension::lgt_surface_tension;
 pub use liquid_conductivity_polynom::liquid_conductivity_polynom;
 pub use liquid_heat_capacity::liquid_heat_capacity;
 pub use liquid_viscosity_pure::liquid_viscosity_pure;
@@ -362,7 +364,7 @@ pub use results::{
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
     HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
     HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult,
-    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult,
+    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,

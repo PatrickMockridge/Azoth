@@ -88,6 +88,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.ideal_gas_cp" => azoth_eos::results::IdealGasCpResult::FIELDS.to_vec(),
         "eos.interface_properties" => azoth_eos::results::InterfacePropertiesResult::FIELDS.to_vec(),
         "eos.kent_eisenberg_phase" => azoth_eos::results::KentEisenbergPhaseResult::FIELDS.to_vec(),
+        "eos.lgt_surface_tension" => azoth_eos::results::LgtSurfaceTensionResult::FIELDS.to_vec(),
         "eos.liquid_conductivity_polynom" => azoth_eos::results::LiquidConductivityPolynomResult::FIELDS.to_vec(),
         "eos.liquid_heat_capacity" => azoth_eos::results::LiquidHeatCapacityResult::FIELDS.to_vec(),
         "eos.liquid_viscosity_pure" => azoth_eos::results::LiquidViscosityPureResult::FIELDS.to_vec(),

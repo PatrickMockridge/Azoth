@@ -1,0 +1,89 @@
+id = "eos.lgt_surface_tension"
+name = "Surface tension from the linear-gradient theory"
+kind = "procedure"
+assumptions = [
+    "**model 2's only calculator**, and the simplest of the three gradient theories: the density path between the two phases is a straight line in molar density, fixed at 200 steps, with no inner Newton and no influence-parameter solve.\n",
+    "the chemical potential is the T,V form NeqSim's `ComponentEos.getChemicalPotential` uses: `mu_i/(RT) = ln x_i + ln(rho R T) + dA_R/dn_i`, with the derivative at fixed T,V. It is finite through the cubic's negative-pressure loop, which the path crosses.\n",
+    "the influence parameters and the pair interactions are the caller's: the class computes them from `getSurfaceTenisionInfluenceParameter` and its water/MEG name rules, and this id takes the arrays so a name-free mixture can run it.\n",
+    "the reference component is the one with the highest normal boiling point; the class picks it from `NORMBOIL`, and the caller supplies the index.\n",
+    "phase 1 is the vapour and phase 2 the liquid, as the class's `calcSurfaceTension(0, 1)` on these flashes.\n",
+    "a single-phase feed is refused, and so is a step whose `kappa mu_times_rho` is not positive: the class takes its square root and stops at the NaN, while this port refuses rather than reporting a partial integral.\n",
+    "the 200 steps are fixed; the algorithm block's tolerance is the format's requirement for a procedure, not a stopping rule.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/LGTSurfaceTension.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/lgt_profile_probe.tsv` - the 200-step density path, its pressures (negative from step 53 to 198) and `z`; `lgt_local_probe.tsv` - the local system's chemical potentials where the pressure is negative.\n",
+]
+[source]
+standard = "NeqSim master `LGTSurfaceTension`"
+edition = "`calcSurfaceTension`, ported verbatim: the linear density interpolation, the influence-parameter sum with its name-keyed interaction rule, and the `sqrt(2 kappa mu_times_rho)` accumulation."
+[algorithm]
+scheme = "lgt_density_integration"
+initialisation = "linear_density_between_phases"
+convergence = "absolute"
+tolerance = 1e-15
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs.\n"
+[inputs.influence_parameters]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's gradient-theory influence parameter, in NeqSim's unit; the class's `getSurfaceTenisionInfluenceParameter` at `T`.\n"
+[inputs.reference_component]
+unit = "dimensionless"
+description = "the 0-based index of the highest-boiling component, which is the class's integration variable; a value that is not a whole index in range is refused.\n"
+[inputs.pair_interactions]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per component, one column per component"
+description = "the class's `interact` values: 0.35 for a water-other pair, 0.2 for water-MEG, zero otherwise; the diagonal is unread.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the fluid is flashed.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions; the flash is what produces the two phases the path runs between.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the interface tension.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The flash runs at it, and a non-positive pressure is not a state.\n"
+[[valid_range]]
+quantity = "influence_parameters"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The sum takes their square roots; a non-positive influence parameter has no gradient-theory meaning.\n"
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[implementations]
+python = "azoth.eos.lgt_surface_tension"
+rust = "azoth_eos::lgt_surface_tension"

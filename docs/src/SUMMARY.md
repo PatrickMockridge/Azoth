@@ -139,6 +139,7 @@
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)
   - [Interface tension by NeqSim's phase-pair dispatch](./eos/interface_properties.md)
   - [Fugacity coefficients of a Kent-Eisenberg phase](./eos/kent_eisenberg_phase.md)
+  - [Surface tension from the linear-gradient theory](./eos/lgt_surface_tension.md)
   - [Liquid thermal conductivity from the LIQCOND polynomial](./eos/liquid_conductivity_polynom.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)

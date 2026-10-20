@@ -1,0 +1,31 @@
+model = "eos.lgt_surface_tension"
+[[cases]]
+id = "methane_nbutane_at_300_k_and_20_bar"
+tolerance = 1e-06
+source = "NeqSim master `LGTSurfaceTension` on methane/n-butane 0.5/0.5 at 300 K and 20 bar, from `validation/neqsim/captures/lgt_profile_probe.tsv`. The influence parameters are the class's own for methane `9.634812734820117e-21` and n-butane `2.7571945977326497e-19`; the reference component is n-butane, the higher boiler. The interaction matrix is zero because neither component is water or MEG. The path crosses the cubic's loop, where the pressure is negative and `getChemicalPotential` remains finite in its T,V form - that is what makes this the case that pins the primitive.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+eos = "srk"
+influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19]
+reference_component = 1.0
+pair_interactions = [[0.0, 0.0], [0.0, 0.0]]
+T = 300.0
+P = 2000000.0
+z = [0.5, 0.5]
+[cases.expected]
+sigma = 0.010011889708138906
+[[cases]]
+id = "co2_water_at_313_k_and_50_bar"
+tolerance = 1e-06
+source = "The same class on CO2/water 0.02/0.98 at 313.15 K and 50 bar. The influence parameters are CO2 `3.453431599008472e-20` and water `1.9939776242117276e-20`; water is the reference component and the only water-other pair is `0.35`, which is the class's name-keyed rule arriving as an array.\n"
+[cases.inputs]
+components = ["CO2", "water"]
+eos = "srk"
+influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20]
+reference_component = 1.0
+pair_interactions = [[0.0, 0.35], [0.35, 0.0]]
+T = 313.15
+P = 5000000.0
+z = [0.02, 0.98]
+[cases.expected]
+sigma = 0.0628784322609245
