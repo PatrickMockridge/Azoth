@@ -25,7 +25,7 @@ def _guard() -> ModuleType:
 
 def _allowed(command: str) -> bool:
     allow, _ = _guard().decide(command)
-    return allow
+    return bool(allow)
 
 
 def test_a_wrapped_whole_suite_is_still_refused() -> None:
