@@ -61,7 +61,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.
 
-- **models 1, 2 and 4 are refused rather than computed**: `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and `CDFTSurfaceTension` are density-profile solvers; they need a mutable mixture and its chemical-potential derivatives, which this tree does not carry.
+- **models 1, 2 and 4 are refused here**: `GTSurfaceTension`, `GTSurfaceTensionSimple` and `CDFTSurfaceTension` need a mutable profile object this tree does not carry; `LGTSurfaceTension` is `eos.lgt_surface_tension`, and this dispatch lacks the arrays it takes.
 
 
 ## Cases

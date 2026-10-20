@@ -118,14 +118,17 @@ process model needs.
   `InterfaceProperties`' tension dispatch (`eos.interface_properties`): model 0, the
   default, installs Parachor for gas-oil and gas-aqueous and Firozabadi-Ramley for
   liquid-liquid, models 3 and 5 are its aliases, and the string selector's two
-  calculators are selectable.
-  **Owed**: `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and
-  `CDFTSurfaceTension` are density-profile solvers, need a mutable profile object this tree
-  does not carry, and are the tranche after; `eos.interface_properties` refuses their model
-  arms (1, 2 and 4) by class. `GTSurfaceTensionODE` is unreachable upstream (`useFullGT = 1`
-  with no setter) and is not a port target. The captures `surface_tension_probe.tsv` and
-  `surface_tension_solvers_probe.tsv` record the default pairs and models 1, 2 and 4
-  respectively.
+  calculators are selectable. `LGTSurfaceTension` is `eos.lgt_surface_tension`, model 2's
+  calculator, whose 200-step profile runs on `Mixture::helmholtz_gradient`.
+  **Owed**: `GTSurfaceTension`, `GTSurfaceTensionSimple` and `CDFTSurfaceTension` are
+  density-profile solvers, need a mutable profile object this tree does not carry, and are
+  the tranche after. `eos.interface_properties` refuses models 1, 2 and 4: model 2's
+  calculator is ported, but the dispatch does not carry the influence parameters, reference
+  component and interaction matrix it takes. `GTSurfaceTensionODE` is unreachable upstream
+  (`useFullGT = 1` with no setter) and is not a port target. The captures
+  `surface_tension_probe.tsv`, `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`
+  and `lgt_local_probe.tsv` record the default pairs, models 1, 2 and 4, and the profile's
+  negative-pressure segment respectively.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,

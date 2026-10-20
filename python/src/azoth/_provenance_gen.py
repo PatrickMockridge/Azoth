@@ -744,8 +744,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.interface_properties': {
         "calc_id": 'eos.interface_properties',
         "name": "Interface tension by NeqSim's phase-pair dispatch",
-        "spec": {'path': 'specs/models/eos/interface_properties.toml', 'sha256': 'a3892013ca3695b248d441a3dfd88450091b89efdb2a2f3023b1dbc96ea14c23'},
-        "code": [{'path': 'python/src/azoth/eos/reference/interface_properties.py', 'sha256': 'af1d9ba91c3e5b5f261c7126a64a7ae66cd2282b4ff466848f4edffcd30a5adf'}, {'path': 'crates/azoth-eos/src/interface_properties.rs', 'sha256': 'ec40c00b61d6d9094132dc8e2b346ef1fde6fa4c4474c17e6d2ad5e46472ec7d'}],
+        "spec": {'path': 'specs/models/eos/interface_properties.toml', 'sha256': '52af679c27eeb42425b89170ed0d64abc2acef6ee5b24263731390d7f6edc2c8'},
+        "code": [{'path': 'python/src/azoth/eos/reference/interface_properties.py', 'sha256': '4a78d16014008396bb4c8c572d2f5daa4f9d53e84d33ba6270cd452a33aba03f'}, {'path': 'crates/azoth-eos/src/interface_properties.rs', 'sha256': '1d8f47ebfb8fbb902a31ceae7cbafbde4e89cb43785e41ee6c338d04baa68d8d'}],
         "source": 'NeqSim master `InterfaceProperties`',
         "verification": 'partially_verified',
         "validation_cases": 0,

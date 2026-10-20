@@ -7,7 +7,7 @@ assumptions = [
     "the string selector's `parachor` and `firozabadi_ramley` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `interface`.\n",
     "the two phases share one component list, as NeqSim's system does, so `parachors` and `tc` are one vector each and `x_1`/`x_2` are the two phases' compositions over it.\n",
     "the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.\n",
-    "**models 1, 2 and 4 are refused rather than computed**: `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` and `CDFTSurfaceTension` are density-profile solvers; they need a mutable mixture and its chemical-potential derivatives, which this tree does not carry.\n",
+    "**models 1, 2 and 4 are refused here**: `GTSurfaceTension`, `GTSurfaceTensionSimple` and `CDFTSurfaceTension` need a mutable profile object this tree does not carry; `LGTSurfaceTension` is `eos.lgt_surface_tension`, and this dispatch lacks the arrays it takes.\n",
 ]
 references = [
     "NeqSim master, `physicalproperties/interfaceproperties/InterfaceProperties.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7. The dispatch, its six integer arms and the string selector.",

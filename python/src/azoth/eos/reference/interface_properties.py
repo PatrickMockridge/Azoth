@@ -114,7 +114,13 @@ def interface_properties(
     elif selection == "model_1":
         raise _refused(selection, "`GTSurfaceTension` / `GTSurfaceTensionSimple`")
     elif selection == "model_2":
-        raise _refused(selection, "`LGTSurfaceTension`")
+        raise InvalidInputError(
+            "selection",
+            "`model_2` installs `LGTSurfaceTension` in all three slots. That calculator is "
+            "`eos.lgt_surface_tension`, and this dispatch does not carry the influence "
+            "parameters, reference component and interaction matrix it takes - so the arm is "
+            "refused here rather than assumed",
+        )
     elif selection == "model_4":
         raise _refused(selection, "`GTSurfaceTensionSimple` / `LGTSurfaceTension`")
     else:
