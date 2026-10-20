@@ -38,11 +38,12 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """**A slow test that is not marked is a finding**, reported every night.
 
-    The marker is what the iterate lane deselects, and a marker that stops being applied is
-    invisible - which is exactly how a 462-second sweep went unnamed while the tool's own list
-    claimed to have them all. So the suite times itself: under `AZOTH_SLOW_SWEEP_GATE=1` (the
-    nightly and the release preflight) an unmarked sweep fails the session; without it the
-    offenders are printed, because a developer running one file should not be stopped by it.
+    The marker is what the iterate and push lanes deselect, and a marker that stops being
+    applied is invisible - which is exactly how a 462-second sweep went unnamed while the
+    tool's own list claimed to have them all. So the suite times itself: under
+    `AZOTH_SLOW_SWEEP_GATE=1` (the nightly and the release preflight) an unmarked sweep fails
+    the session; without it the offenders are printed, because a developer running one file
+    should not be stopped by it.
     """
     unmarked = sorted(
         (node, seconds)
@@ -56,8 +57,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     if os.environ.get("AZOTH_SLOW_SWEEP_GATE") == "1":
         print(
             "Mark it `@pytest.mark.slow_sweep` (or `pytestmark` for the whole module): an "
-            "unparametrised test this slow is a sweep no `-k` can narrow, and the iterate lane "
-            "needs to know."
+            "unparametrised test this slow is a registry-wide sweep, the iterate and push "
+            "lanes deselect those, and the nightly runs them whole."
         )
         session.exitstatus = 1
 

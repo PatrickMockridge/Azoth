@@ -17,6 +17,7 @@ import importlib
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from types import ModuleType
 
@@ -183,32 +184,79 @@ def test_a_target_that_selects_nothing_is_caught() -> None:
 # ------------------------------------------------------ what the iterate lane may narrow
 
 
-def test_the_iterate_lane_deselects_by_marker_rather_than_by_name() -> None:
+def test_the_working_lanes_deselect_by_marker_rather_than_by_name() -> None:
     """**The list went stale; the marker cannot.** A node id in this tool goes stale the moment
-    a sweep is renamed, and the 462-second layer diff was missing from the list entirely."""
+    a sweep is renamed, and the 462-second layer diff was missing from the list entirely. The
+    iterate and push lanes deselect; the nightly runs everything."""
     module = tool()
     command = module.Command("x", module.PYTEST, f"{module.TESTS}/eos")
-    line = module.render(command, "iterate", gate=False)
-    assert f'-m "not {module.MARKER}"' in line
-    assert "--deselect" not in line
-    push = module.render(command, "push", gate=False)
-    assert module.MARKER not in push, "the push lane runs the sweeps: that is the cost it buys"
+    for lane in ("iterate", "push", "tranche"):
+        line = module.render(command, lane, gate=False)
+        assert f'-m "not {module.MARKER}"' in line, lane
+        assert "--deselect" not in line, lane
+    nightly = module.render(command, "nightly", gate=False)
+    assert module.MARKER not in nightly, "the nightly runs the sweeps whole"
 
 
 def test_a_wholly_marked_file_is_skipped_rather_than_filtered_to_nothing() -> None:
     """A filter over a file where every test is marked leaves an empty collection, and pytest
-    calls an empty collection exit 5 - which the tool would read as a failure. So the iterate
-    lane skips such a file whole and says why, rather than turning a skip into a red."""
+    calls an empty collection exit 5 - which the tool would read as a failure. So the working
+    lanes skip such a file whole and say why, rather than turning a skip into a red."""
     module = tool()
-    line = module.render(
-        module.Command("x", module.PYTEST, f"{module.TESTS}/test_dispatch.py"),
-        "iterate",
-        gate=False,
-    )
+    sweep = f"{module.TESTS}/test_degenerate_sweep.py"
+    line = module.render(module.Command("x", module.PYTEST, sweep), "iterate", gate=False)
     assert line.startswith("#"), line
     assert "skips" in line
-    assert module.module_is_a_sweep(f"{module.TESTS}/test_dispatch.py")
-    assert not module.module_is_a_sweep(f"{module.TESTS}/eos")
+    assert module.module_is_a_sweep(sweep)
+    assert not module.module_is_a_sweep(f"{module.TESTS}/test_dispatch.py"), (
+        "the dispatch module's slow loop is one function, not the whole file"
+    )
+
+
+def test_the_tranche_narrows_a_reached_sweep_to_the_selected_ids() -> None:
+    """The close-out runs the reached ids inside a sweep, not the sweep.
+
+    A diff that reaches both a spec and core has real terms (`eos.`, `eos.pt_flash`) and a
+    marked file (`test_units_contract`); a core-only diff has neither, so its sweeps are the
+    nightly's.
+    """
+    module = tool()
+    edges = module.crate_edges()
+    mixed, _ = module.scope(
+        ["specs/models/eos/ge_nrtl_phase.toml", "python/src/azoth/core/result.py"], edges
+    )
+    selection = module.selection_terms(mixed)
+    assert "eos." in selection and "eos.ge_nrtl_phase" in selection
+    entry = next(
+        entry
+        for entry in mixed
+        if entry.kind == module.PYTEST
+        and entry.command.startswith(f"{module.TESTS}/test_units_contract.py")
+    )
+    line = module.sweep_line(entry, selection, gate=False, budget_seconds=None)
+    assert line is not None and f"-m {module.MARKER}" in line and '-k "' in line
+
+    core, _ = module.scope(["python/src/azoth/core/result.py"], edges)
+    core_entry = next(
+        entry
+        for entry in core
+        if entry.kind == module.PYTEST
+        and entry.command.startswith(f"{module.TESTS}/test_units_contract.py")
+    )
+    assert (
+        module.sweep_line(core_entry, module.selection_terms(core), gate=False, budget_seconds=None)
+        is None
+    )
+
+
+def test_the_smoke_ids_do_not_open_a_registry_sweep() -> None:
+    """One id per namespace is not a reached set; narrowing a sweep to it is the sweep in a
+    disguise. The smoke lives in the cross-implementation command, not in `-k` over sweeps."""
+    module = tool()
+    commands, _ = module.scope(["python/src/azoth/core/result.py"], module.crate_edges())
+    assert module.selection_terms(commands) == ""
+    joined = " ".join(entry.command for entry in commands if entry.kind == module.PYTEST)
+    assert "eos.pt_flash" in joined
 
 
 def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:
@@ -490,3 +538,107 @@ def test_the_cheap_checks_run_before_the_expensive_targets() -> None:
     cheap = [entry for entry in ordered if module.is_cheap(entry)]
     assert len(cheap) > len([e for e in ordered if module.is_generator_check(e)])
     assert ordered[: len(cheap)] == cheap
+
+
+# ------------------------------------------------------------ the lanes and their budgets
+
+
+def _cli(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(TOOLS / "test_scope.py"), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_the_timeout_sits_inside_the_memory_cap() -> None:
+    """`timeout` signals its own process group; putting it outside the cgroup would signal
+    the shell nobody is waiting for."""
+    module = tool()
+    entry = module.Command("x", module.PYTEST, f"{module.TESTS}/eos")
+    gated = module.render(entry, "push", gate=True, budget_seconds=900)
+    assert gated.startswith("tools/gated.sh timeout --signal=TERM"), gated
+    bare = module.render(entry, "push", gate=False, budget_seconds=900)
+    assert bare.startswith("timeout --signal=TERM"), bare
+    assert module.render(entry, "push", gate=False, budget_seconds=0).startswith("env "), (
+        "zero disables the cap"
+    )
+
+
+def test_the_watchdog_kills_the_process_group() -> None:
+    """A shell-only kill leaves xdist workers and servers running; this spawns a process and
+    expects the whole group to go."""
+    module = tool()
+    started = time.monotonic()
+    code = module.run_with_watchdog(
+        [("a process that would outlive the lane", "sleep 30")], 1, "iterate"
+    )
+    elapsed = time.monotonic() - started
+    assert code == 1
+    assert elapsed < 15, elapsed
+
+
+def test_the_estimate_names_the_lane_budget() -> None:
+    result = _cli(
+        "--paths",
+        f"{tool().TESTS}/test_guard_bash.py",
+        "--lane",
+        "iterate",
+        "--estimate",
+        "--no-gate",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "estimated:" in result.stdout
+    assert "iterate" in result.stdout
+
+
+def test_full_forces_the_nightly_render() -> None:
+    """`mode: full` must not inherit the push lane's deselection, or the nightly silently
+    stops running every sweep."""
+    result = _cli("--paths", f"{tool().TESTS}/test_guard_bash.py", "--full", "--no-gate")
+    assert result.returncode == 0, result.stderr
+    assert f'-m "not {tool().MARKER}"' not in result.stdout
+
+
+def test_a_working_lane_refuses_the_nightly_run() -> None:
+    result = _cli("--lane", "nightly", "--run")
+    assert result.returncode == 2
+    assert "print-only" in result.stderr
+
+
+# ------------------------------------------------------------ the generator subset
+
+
+def test_a_test_change_asks_no_generator() -> None:
+    joined = " ".join(commands_for([f"{tool().TESTS}/test_guard_bash.py"]))
+    assert "gen_" not in joined
+
+
+def test_a_docs_change_asks_no_generator() -> None:
+    joined = " ".join(commands_for(["docs/src/safety.md"]))
+    assert "gen_" not in joined
+
+
+def test_a_generated_file_asks_its_own_generator_and_no_other() -> None:
+    joined = " ".join(commands_for(["python/src/azoth/core/result_gen.py"]))
+    assert "gen_python_result.py --check" in joined
+    assert "gen_python_bridge.py --check" not in joined
+
+
+def test_a_reference_module_asks_only_the_provenance_generator() -> None:
+    joined = " ".join(commands_for(["python/src/azoth/eos/reference/ge_nrtl_phase.py"]))
+    assert "gen_registry.py --check" in joined
+    assert "gen_python_bridge.py --check" not in joined
+
+
+def test_the_root_conftest_is_not_the_whole_suite() -> None:
+    """Every test imports it, so the nearest-directory rule named the whole suite - the
+    exact 81-minute answer the lanes exist to remove. The fixtures it defines are exercised
+    by the extension, backend and selector tests, and the smoke covers the namespaces."""
+    module = tool()
+    commands = commands_for([f"{module.TESTS}/conftest.py"])
+    joined = " ".join(commands)
+    assert module.TESTS not in commands
+    assert f"{module.TESTS}/test_extension.py" in joined
+    assert "eos.pt_flash" in joined

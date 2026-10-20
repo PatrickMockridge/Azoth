@@ -29,8 +29,6 @@ from azoth.core.provenance import FRAMEWORK_DOCUMENT_KEYS
 from azoth.core.units import CANONICAL_UNITS, unit_for
 from azoth.core.warnings import Warning, WarningCode
 
-pytestmark = pytest.mark.slow_sweep
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -118,6 +116,7 @@ def _assert_serialises(result: Any, context: str) -> dict[str, Any]:
     return loaded
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.parametrize(
     ("calc", "case"), _cases(), ids=lambda x: x["id"] if isinstance(x, dict) else ""
 )
@@ -126,6 +125,7 @@ def test_a_calculation_result_serialises(calc: dict[str, Any], case: dict[str, A
     _assert_serialises(result, f"{calc['id']}::{case['id']}")
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.parametrize(
     ("model", "case"), _model_cases(), ids=lambda x: x["id"] if isinstance(x, dict) else ""
 )

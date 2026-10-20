@@ -42,8 +42,6 @@ from azoth._registry_gen import CALCS
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si
 from azoth.keycard import UNIT_VOCABULARY
 
-pytestmark = pytest.mark.slow_sweep
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 UNIT_SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
@@ -110,6 +108,7 @@ def test_every_generated_copy_is_the_table() -> None:
     _report("keycard.UNIT_VOCABULARY", table, set(UNIT_VOCABULARY))
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.requires_rust
 def test_the_rust_vocabulary_is_the_table() -> None:
     """The Rust leg, which is the one that was unchecked and the one that was wrong.
@@ -121,6 +120,7 @@ def test_the_rust_vocabulary_is_the_table() -> None:
     _report("the Rust vocabulary", table_units(), set(_extension().unit_names()))
 
 
+@pytest.mark.slow_sweep
 def test_the_generated_files_are_current() -> None:
     """Regenerating from the table changes nothing.
 
@@ -180,6 +180,7 @@ def test_the_table_states_which_dimensions_uom_has_no_quantity_for() -> None:
     assert carried and lacked, "one of the two classes is empty, so nothing was compared"
 
 
+@pytest.mark.slow_sweep
 def test_every_vocabulary_entry_has_a_working_conversion() -> None:
     """Each name converts, in both directions, without raising.
 
@@ -202,6 +203,7 @@ def test_every_vocabulary_entry_has_a_working_conversion() -> None:
         )
 
 
+@pytest.mark.slow_sweep
 def test_every_unit_a_spec_declares_is_in_the_vocabulary() -> None:
     """No spec may name a unit the vocabulary does not carry.
 

@@ -21,17 +21,22 @@ it comes back green. Seven namespaces did exactly that until `--audit` walked th
 
 # The lanes
 
-`iterate` is the inner loop - the push set with the `slow_sweep`-marked global sweeps
-deselected **by marker**. A marked test is one function looping over every registered id, so
-`-k` cannot reach inside it; the marker lives on the test rather than in a list here because a
-list went stale, and could not see the 462-second layer diff at all until someone timed the
-suite.
+`iterate` is the inner loop, and is what `--run` uses when no lane is named: the scoped set
+with the `slow_sweep`-marked sweeps deselected **by marker**. A marked test is a registry-wide
+sweep, so `-k` cannot reach inside it; the marker lives on the test rather than in a list here
+because a list went stale, and could not see the 462-second layer diff at all until someone
+timed the suite.
 
-`push` is the default and is what the pre-push gate runs. Both lanes name the marked sweeps a
-diff reaches, so the minutes are stated rather than discovered.
+`push` is what CI runs for a scoped diff. It also deselects the marked sweeps - the nightly is
+where they run - and adds the five unconditional jobs' commands.
+
+`tranche` is the close-out: the push set with each reached sweep narrowed to the ids the scope
+selected (`-m slow_sweep -k "<ids>"`). A core or binding change selects one smoke id per
+namespace, not a reached set, so it skips the sweeps and leaves them to the nightly.
 
 `nightly` is everything in both languages, run by `.github/workflows/nightly.yml` on a
-24-hour cycle. The full set is the nightly's job and is not something anyone types.
+24-hour cycle. The full set is the nightly's job and is not something anyone types locally;
+`--full` forces this render.
 
 # What this costs, measured 2026-10-16
 
@@ -50,10 +55,13 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
 import os
 import re
+import signal
 import subprocess
 import sys
+import time
 import tomllib
 from dataclasses import dataclass
 from functools import cache, lru_cache
@@ -247,6 +255,16 @@ SURFACE_TESTS: tuple[str, ...] = (
     f"{TESTS}/test_units_contract.py",
 )
 
+#: The root `conftest.py` is imported by every test, so a change to it is genuinely as wide as
+#: the suite - and "as wide as the suite" is the 81-minute answer the lanes exist to remove. It
+#: gets the tests that exercise what it defines (the extension guard, the backend fixtures, the
+#: selector's own rules) plus the smoke; the whole tree is the nightly's.
+CONFTEST_TESTS: tuple[str, ...] = (
+    f"{TESTS}/test_extension.py",
+    f"{TESTS}/test_dispatch.py",
+    f"{TESTS}/test_test_scope.py",
+)
+
 #: The binding crate's own tests: the extension, the generated wrappers and the registries.
 EXTENSION_TESTS: tuple[str, ...] = (
     f"{TESTS}/test_extension.py",
@@ -275,6 +293,71 @@ SMOKE_IDS: tuple[str, ...] = (
     "reactions.chemical_equilibrium",
     "characterization.delumping",
     "standards.iso6976",
+)
+
+#: The wall-clock budget each lane is held to, in minutes. The tool enforces the local run
+#: with a process-group watchdog and renders a matching `timeout` for CI; `--max-minutes`
+#: overrides. The numbers are the point of the lanes: an edit is minutes, not hours.
+LANE_BUDGET_MINUTES: dict[str, int] = {
+    "iterate": 5,
+    "push": 15,
+    "tranche": 20,
+    "nightly": 45,
+}
+
+#: **Which generators a diff can make stale.** Conservative by design: a miss here is caught
+#: by CI's unconditional `spec-validate` and the drift job, so the cost is one stale file
+#: found on the push rather than one merged. The alternative - the full 23-generator sweep on
+#: every edit - spends 2m40s of a 5-minute budget before a test runs.
+SPEC_GENERATORS = frozenset(
+    {
+        "gen_dispatch",
+        "gen_docs",
+        "gen_guard_theorems",
+        "gen_model_inputs",
+        "gen_models",
+        "gen_palette",
+        "gen_parameter_bounds",
+        "gen_python_bridge",
+        "gen_python_record_outputs",
+        "gen_python_records",
+        "gen_python_register",
+        "gen_python_registry",
+        "gen_python_result",
+        "gen_python_transport",
+        "gen_python_wrappers",
+        "gen_reaction_data",
+        "gen_registry",
+        "gen_rust_model_records",
+        "gen_stub",
+        "gen_vocabulary",
+    }
+)
+RUST_GENERATORS = SPEC_GENERATORS
+#: A hand-written Python reference module is hashed into the provenance block `gen_registry`
+#: emits; nothing else generated reads it.
+PYTHON_GENERATORS = frozenset({"gen_registry"})
+DATA_GENERATORS = frozenset({"gen_databank", "gen_keycard"})
+CAPTURE_GENERATORS = frozenset({"gen_neqsim_cases"})
+
+#: A tree that cannot make any generated file stale.
+QUIET_TREES = (
+    "docs/",
+    f"{TESTS}/",
+    "CLAUDE.md",
+    "README.md",
+    "ROADMAP.md",
+    ".claude/",
+    "skills/",
+    "agents/",
+    "ui/",
+    "lean/",
+    ".github/",
+    # The Python toolchain's own configuration: it changes how the tests run, not what the
+    # generators emit. `Cargo.toml`/`Cargo.lock` stay out of this list - a member or a
+    # dependency change can move the registry the generators read.
+    "pyproject.toml",
+    "uv.lock",
 )
 
 #: namespace -> the tests a change **in that namespace** runs. Every entry names files that
@@ -594,6 +677,7 @@ def table_problems() -> list[str]:
     for label, targets in (
         ("CORE_TESTS", CORE_TESTS),
         ("SURFACE_TESTS", SURFACE_TESTS),
+        ("CONFTEST_TESTS", CONFTEST_TESTS),
         ("EXTENSION_TESTS", EXTENSION_TESTS),
     ):
         for target in targets:
@@ -605,6 +689,14 @@ def table_problems() -> list[str]:
             f"SMOKE_IDS names {unknown_smoke}, which are not registered ids - a `-k` on one "
             "selects nothing, and that looks like a pass"
         )
+    triggered = SPEC_GENERATORS | DATA_GENERATORS | CAPTURE_GENERATORS
+    for entry in generator_sweep():
+        stem = Path(entry.command.split()[1]).stem
+        if stem not in triggered:
+            problems.append(
+                f"the generator {stem!r} is in the sweep and in no trigger set, so no diff "
+                "asks for it - add it to SPEC_GENERATORS, DATA_GENERATORS or CAPTURE_GENERATORS"
+            )
     for crate in members():
         if crate not in crate_namespaces() and crate not in NAMELESS_CRATES:
             problems.append(
@@ -725,15 +817,77 @@ def generated_file(path: str) -> bool:
     return bool(GENERATED_MARK.search(head))
 
 
+GENERATOR_BY_HEADER = re.compile(r"Generated by [`\"']?tools/(gen_\w+)\.py")
+
+
+def generator_of(path: str) -> str | None:
+    """The generator whose output this file is, read from its own header."""
+    file = ROOT / path
+    if not file.is_file():
+        return None
+    try:
+        with file.open(encoding="utf-8", errors="replace") as handle:
+            head = "".join(handle.readline() for _ in range(5))
+    except OSError:
+        return None
+    found = GENERATOR_BY_HEADER.search(head)
+    return found.group(1) if found else None
+
+
+def triggered_generators(paths: list[str]) -> frozenset[str] | None:
+    """The generators this diff can make stale, or None for "ask all of them".
+
+    **None is the conservative answer, not the empty one.** A path no rule places takes the
+    full sweep: this map is an optimisation, and an optimisation that misses is a stale file
+    CI finds rather than a file nothing checked.
+    """
+    names: set[str] = set()
+    for path in paths:
+        if generated_file(path):
+            generator = generator_of(path)
+            if generator is None:
+                return None
+            names.add(generator)
+            continue
+        if path.startswith("tools/gen_") and path.endswith(".py"):
+            names.add(Path(path).stem)
+            continue
+        matched = False
+        for prefix, generators in (
+            ("specs/", SPEC_GENERATORS),
+            ("crates/", RUST_GENERATORS),
+            ("python/src/azoth/", PYTHON_GENERATORS),
+            ("data/", DATA_GENERATORS),
+            ("databank/", DATA_GENERATORS),
+            ("validation/neqsim/captures/", CAPTURE_GENERATORS),
+        ):
+            if path.startswith(prefix):
+                names |= generators
+                matched = True
+                break
+        if matched:
+            continue
+        if path.startswith(QUIET_TREES) or path in QUIET_TREES:
+            continue
+        return None
+    return frozenset(names)
+
+
 def python_claim(path: str, parts: list[str]) -> Claim:
     """A path under `python/`: a test file, a fixture, a module, or a namespace package."""
     if path.startswith(f"{TESTS}/"):
         name = parts[-1]
         if name.startswith("test_") and name.endswith(".py"):
             return Claim(files=(path,))
-        # **`conftest.py`, `_helpers.py` and a vendored fixture are not test files.** Handing one
-        # to pytest collects nothing, and the tests it reaches are the ones beside it - which for
-        # a `conftest` is a whole directory, because that is what a conftest is for.
+        if path == f"{TESTS}/conftest.py":
+            # **The root conftest is not a directory's conftest.** It is imported by every
+            # test, so the nearest-directory rule would name the whole suite; the fixtures it
+            # defines are exercised by the extension, backend and selector tests, and the
+            # smoke keeps a namespace path honest.
+            return Claim(files=CONFTEST_TESTS, ids=SMOKE_IDS)
+        # **`_helpers.py` and a vendored fixture are not test files.** Handing one to pytest
+        # collects nothing, and the tests it reaches are the ones beside it - which for a
+        # nested `conftest` is a whole directory, because that is what a conftest is for.
         directory = nearest_test_dir(path)
         if directory is None:
             return Claim(inert="a fixture under the test tree with no test beside it")
@@ -1166,9 +1320,15 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
 
     # **The sweep runs for a Python change too.** A registered calc's reference source is in its
     # provenance block, so editing `python/src/azoth/eos/reference/...` makes `gen_registry`'s
-    # output stale - which is not a guess: it happened in this very tree, twice.
+    # output stale - which is not a guess: it happened in this very tree, twice. The *subset*
+    # is the diff's: a docs or test change asks no generator, a generated file asks its own,
+    # and a path the map cannot place falls back to the whole sweep.
     if crates or ids or tools or data or generated or namespaces or files:
-        commands += generator_sweep()
+        selected = triggered_generators(paths)
+        sweep = generator_sweep()
+        if selected is not None:
+            sweep = [entry for entry in sweep if Path(entry.command.split()[1]).stem in selected]
+        commands += sweep
     if data:
         for path in ("test_data.py", "test_data_agreement.py", "test_manifest_tally.py"):
             commands.append(
@@ -1279,11 +1439,56 @@ def plan(commands: list[Command], full: bool) -> list[tuple[str, bool]]:
     return [(job, full or job in ALWAYS_JOBS or job in tagged) for job in sorted(known)]
 
 
-def render(entry: Command, lane: str, gate: bool = True) -> str:
+def with_timeout(line: str, seconds: int | None) -> str:
+    """Prefix a command with GNU `timeout`, **inside** the memory cap.
+
+    `subprocess.run(timeout=)` kills only the shell; xdist workers, `cargo` and a server
+    survive it. `timeout` signals its own process group, and placing it inside
+    `tools/gated.sh` means the cgroup receives the command it is timing.
+    """
+    if not seconds or line.startswith("#"):
+        return line
+    cap = f"timeout --signal=TERM --kill-after=30s {seconds}s"
+    if line.startswith("tools/gated.sh "):
+        return f"tools/gated.sh {cap} {line[len('tools/gated.sh ') :]}"
+    return f"{cap} {line}"
+
+
+def pytest_line(target: str, gate: bool, budget_seconds: int | None) -> str:
+    """A pytest target as the shell line the gate runs."""
+    if os.environ.get("AZOTH_COVERAGE") == "1":
+        # **One instrumented run, not two.** `--cov-append` accumulates across the several
+        # pytest invocations a scoped set is, and a job that ran the suite twice - once to
+        # test and once to measure - would pay the whole cost again for the measurement.
+        # The document is written once afterwards by `coverage json`.
+        target = f"{target} --cov=azoth --cov-append --cov-report="
+    # **`PYTHONPATH` is set, not inherited.** This box has ROS on the path, which puts
+    # `/opt/ros/...` in front of the interpreter and makes pytest's plugin autoload import
+    # a `launch` module that needs a `yaml` the venv does not have - so a bare `pytest`
+    # fails here and passes on a runner, which is the worst kind of difference. Stating it
+    # removes the ambient dependency in both places.
+    # **`env`, not a bare assignment.** `tools/gated.sh` ends in `exec systemd-run ... "$@"`,
+    # which is not a shell - so `PYTHONPATH=x python` reaches it as a *program named
+    # `PYTHONPATH=x`* and fails with "No such file or directory". `env` is a real program
+    # and passes the assignment through.
+    line = f"env PYTHONPATH={ROOT / 'python' / 'src'} {python_runner()} -m pytest {target} -q"
+    line = f"tools/gated.sh {line}" if gate else line
+    return with_timeout(line, budget_seconds)
+
+
+def render(
+    entry: Command,
+    lane: str,
+    gate: bool = True,
+    budget_seconds: int | None = None,
+) -> str:
     """One command as a shell line.
 
     `gate` wraps the heavy ones in `tools/gated.sh`, which caps memory - **and does not exist
     on a CI runner**, so the nightly calls this with `--no-gate` and runs the bare commands.
+
+    `iterate`, `push` and `tranche` deselect the marked global sweeps; the tranche lane's
+    narrowed half is [`sweep_line`]'s. `nightly` runs everything.
     """
     reason, kind, command = entry.reason, entry.kind, entry.command
     if kind == SCRIPT and command == "true":
@@ -1293,43 +1498,153 @@ def render(entry: Command, lane: str, gate: bool = True) -> str:
         return f"# {reason}"
     if kind == PYTEST:
         target = command
-        # **Deselected by marker, and unconditionally.** `-m` composes with `-k` by AND, so a
-        # narrowed target is narrowed further rather than left carrying the sweeps - which is
-        # what the old `" -k " not in target` guard silently did.
-        if lane == "iterate":
+        if lane != "nightly":
             wanted = bare_targets(command)
             if wanted and all(module_is_a_sweep(name) for name in wanted):
                 # Filtering a wholly-marked file leaves an empty collection, which pytest calls
                 # exit 5 and this tool calls a failure. Skip it whole, and say so.
-                return f"# the iterate lane skips {target}: every test in it is a marked sweep"
+                return f"# the {lane} lane skips {target}: every test in it is a marked sweep"
+            # **Deselected by marker, and unconditionally.** `-m` composes with `-k` by AND, so
+            # a narrowed target is narrowed further rather than left carrying the sweeps.
             target = f'{target} -m "not {MARKER}"'
-        if os.environ.get("AZOTH_COVERAGE") == "1":
-            # **One instrumented run, not two.** `--cov-append` accumulates across the several
-            # pytest invocations a scoped set is, and a job that ran the suite twice - once to
-            # test and once to measure - would pay the whole cost again for the measurement.
-            # The document is written once afterwards by `coverage json`.
-            target = f"{target} --cov=azoth --cov-append --cov-report="
-        # **`PYTHONPATH` is set, not inherited.** This box has ROS on the path, which puts
-        # `/opt/ros/...` in front of the interpreter and makes pytest's plugin autoload import
-        # a `launch` module that needs a `yaml` the venv does not have - so a bare `pytest`
-        # fails here and passes on a runner, which is the worst kind of difference. Stating it
-        # removes the ambient dependency in both places.
-        # **`env`, not a bare assignment.** `tools/gated.sh` ends in `exec systemd-run ... "$@"`,
-        # which is not a shell - so `PYTHONPATH=x python` reaches it as a *program named
-        # `PYTHONPATH=x`* and fails with "No such file or directory". `env` is a real program
-        # and passes the assignment through.
-        line = f"env PYTHONPATH={ROOT / 'python' / 'src'} {python_runner()} -m pytest {target} -q"
-        return (
-            f"tools/gated.sh {line}"
-            if gate
-            else f"PYTHONPATH={ROOT / 'python' / 'src'} {python_runner()} -m pytest {target} -q"
-        )
+        return pytest_line(target, gate, budget_seconds)
     if kind in (CARGO, CLIPPY) or command.endswith("/maturin develop"):
-        return f"tools/gated.sh {command}" if gate else command
+        line = f"tools/gated.sh {command}" if gate else command
+        return with_timeout(line, budget_seconds)
     # **The venv's own tools.** `CLOSE_OUT` stores `ruff` and `mypy` as `ci.yml` writes them, so
     # the table can be read straight against the workflow; here the checkout's venv is substituted,
     # which is what makes them runnable on a box with nothing of theirs on `PATH`.
     return command.replace(".venv/bin/", f"{venv_bin()}/")
+
+
+@cache
+def file_has_marked_tests(path: str) -> bool:
+    """True when a *file* carries the marker anywhere - module-level or on a function."""
+    file = ROOT / path
+    if file.suffix != ".py" or not file.is_file():
+        return False
+    try:
+        tree = ast.parse(file.read_text(encoding="utf-8"))
+    except SyntaxError:
+        return False
+    return MARKER in ast.dump(tree)
+
+
+def sweep_line(
+    entry: Command, selection: str, gate: bool, budget_seconds: int | None
+) -> str | None:
+    """The tranche lane's marked half: the reached ids inside a sweep, and nothing else.
+
+    `None` when the entry is not pytest, when it names no marked test, or when the scope
+    selected no id (a core or binding change - its sweeps are the nightly's).
+    """
+    if entry.kind != PYTEST or not selection:
+        return None
+    targets = bare_targets(entry.command)
+    files: list[str] = []
+    for target in targets:
+        path = ROOT / target
+        if path.is_dir():
+            files.extend(str(p.relative_to(ROOT)) for p in path.rglob("test_*.py"))
+        else:
+            files.append(target)
+    if not any(file_has_marked_tests(path) for path in files):
+        return None
+    return pytest_line(f'{entry.command} -m {MARKER} -k "{selection}"', gate, budget_seconds)
+
+
+def selection_terms(commands: list[Command]) -> str:
+    """The ids and namespace terms the scope selected, minus the smoke.
+
+    The smoke ids are one per namespace by construction, not a reached set: narrowing a
+    registry-wide sweep to them would be the full sweep wearing nine names.
+    """
+    terms: set[str] = set()
+    for entry in commands:
+        if entry.kind != PYTEST:
+            continue
+        found = re.search(r'-k "([^"]+)"', entry.command)
+        if found:
+            terms |= {term.strip() for term in found.group(1).split(" or ")}
+    terms -= set(SMOKE_IDS)
+    return " or ".join(sorted(terms))
+
+
+#: Advisory seconds per target, anchored on the measured numbers the module docstring states.
+#: The watchdog and the CI job caps are the enforcement; this only says what is coming.
+ESTIMATE_SECONDS: dict[str, int] = {
+    f"{TESTS}/test_degenerate_sweep.py": 836,
+    f"{TESTS}/test_layer_diff.py": 462,
+    f"{TESTS}/test_units_conversion.py": 120,
+    f"{TESTS}/test_units_contract.py": 60,
+    f"{TESTS}/test_result_json.py": 90,
+    f"{TESTS}/test_batch.py": 120,
+    f"{TESTS}/test_registry_contract.py": 90,
+    f"{TESTS}/models/test_model_contract.py": 120,
+    f"{TESTS}/models/test_model_cases.py": 60,
+    f"{TESTS}/test_cross_impl.py": 180,
+}
+ESTIMATE_GENERATORS: dict[str, int] = {
+    "gen_python_wrappers": 23,
+    "gen_python_register": 24,
+    "gen_python_bridge": 59,
+    "gen_python_result": 7,
+}
+ESTIMATE_PYTEST_DEFAULT = 8
+ESTIMATE_CARGO = 45
+
+
+def estimate_seconds(entry: Command) -> int:
+    """A rough cost for one command, in seconds."""
+    if entry.kind == PYTEST:
+        targets = bare_targets(entry.command)
+        return max(
+            (ESTIMATE_SECONDS.get(target, ESTIMATE_PYTEST_DEFAULT) for target in targets),
+            default=ESTIMATE_PYTEST_DEFAULT,
+        )
+    if is_generator_check(entry):
+        stem = Path(entry.command.split()[1]).stem
+        return ESTIMATE_GENERATORS.get(stem, 2)
+    if entry.kind in (CARGO, CLIPPY) or entry.command.endswith("/maturin develop"):
+        return ESTIMATE_CARGO
+    return 3
+
+
+def run_with_watchdog(
+    labelled: list[tuple[str, str]], budget_seconds: int | None, lane: str
+) -> int:
+    """Run the lines, killing the whole process group when the lane's budget is spent."""
+    start = time.monotonic()
+    for reason, line in labelled:
+        remaining = None if not budget_seconds else budget_seconds - (time.monotonic() - start)
+        if remaining is not None and remaining <= 0:
+            print(f"\ntest_scope: the {lane} budget of {budget_seconds // 60} min is spent")
+            return 1
+        print(f"\n== {reason}\n== {line}", flush=True)
+        process = subprocess.Popen(line, shell=True, cwd=ROOT, start_new_session=True)
+        try:
+            code = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            _terminate(process)
+            print(f"\ntest_scope: the {lane} budget is spent at: {line}")
+            return 1
+        if code != 0:
+            print(f"\ntest_scope: failed: {line}")
+            return 1
+    return 0
+
+
+def _terminate(process: subprocess.Popen) -> None:
+    """Kill the process group, so xdist workers and servers die with the shell."""
+    try:
+        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
 
 
 def bare_targets(command: str) -> list[str]:
@@ -1579,7 +1894,23 @@ def main() -> int:
     parser.add_argument("--base", default="origin/main", help="what to diff against")
     parser.add_argument("--staged", action="store_true", help="diff the index instead")
     parser.add_argument("--paths", nargs="*", help="explicit paths, rather than a diff")
-    parser.add_argument("--lane", choices=("iterate", "push", "nightly"), default="push")
+    parser.add_argument(
+        "--lane",
+        choices=("iterate", "push", "tranche", "nightly"),
+        default=None,
+        help="the wall-time budget and sweep policy; --run defaults to iterate, printing to push",
+    )
+    parser.add_argument(
+        "--max-minutes",
+        type=int,
+        default=None,
+        help="override the lane budget; 0 disables the watchdog",
+    )
+    parser.add_argument(
+        "--estimate",
+        action="store_true",
+        help="print the advisory minutes and whether they fit the lane's budget",
+    )
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--run", action="store_true")
     parser.add_argument(
@@ -1618,7 +1949,21 @@ def main() -> int:
     if args.audit:
         return audit()
 
+    # **`--run` is the edit lane unless told otherwise.** A local run that silently reaches the
+    # whole suite is the hour this tool exists to prevent; the close-out is explicit.
+    lane = args.lane or ("iterate" if args.run else "push")
+    if args.full:
+        # The full surface is the nightly's render: no deselection, whichever lane was typed.
+        lane = "nightly"
+
     if args.lane == "nightly":
+        if args.run:
+            print(
+                "test_scope: --lane nightly is print-only. CI runs it; a local whole-tree run "
+                "is `--full --run` with AZOTH_FULL_GATE=1 (and no lane).",
+                file=sys.stderr,
+            )
+            return 2
         for line in nightly(gate=not args.no_gate):
             print(line)
         return 0
@@ -1632,10 +1977,10 @@ def main() -> int:
     else:
         paths = changed_paths(args)
         commands, unclaimed = scope(paths, crate_edges())
-        if args.lane == "push":
-            # **The push also runs what the diff does not reach**, because CI does: the five
-            # `ALWAYS_JOBS` are flat-cost and unconditional. Deduplicated by command, since a
-            # docs change already claims `check_doc_claims` itself.
+        if lane in ("push", "tranche"):
+            # **The push and the close-out also run what the diff does not reach**, because CI
+            # does: the five `ALWAYS_JOBS` are flat-cost and unconditional. Deduplicated by
+            # command, since a docs change already claims `check_doc_claims` itself.
             seen = {entry.command for entry in commands}
             commands += [entry for entry in CLOSE_OUT if entry.command not in seen]
     commands = cheap_first(commands)
@@ -1690,27 +2035,45 @@ def main() -> int:
         print(f"# nothing in {len(paths)} changed path(s) reaches a test")
         return 0
 
+    budget = args.max_minutes if args.max_minutes is not None else LANE_BUDGET_MINUTES[lane]
+    budget_seconds = budget * 60 if budget else None
+    selection = selection_terms(commands) if lane == "tranche" else ""
+
     sweeps = marked_sweeps(commands)
     if sweeps:
         if args.full:
             print(f"# the full surface runs {len(sweeps)} marked slow sweep(s):")
         else:
-            verb = "has deselected" if args.lane == "iterate" else "reaches"
+            verb = (
+                "narrows to the reached ids"
+                if lane == "tranche"
+                else "has deselected"
+                if lane in ("iterate", "push")
+                else "reaches"
+            )
             print(f"# this diff {verb} {len(sweeps)} marked slow sweep(s):")
         for sweep in sweeps:
             print(f"#   {sweep}")
 
+    labelled: list[tuple[str, str]] = []
     for entry in commands:
-        line = render(entry, args.lane, gate=not args.no_gate)
-        print(f"# {entry.reason}\n{line}" if args.explain else line)
+        line = render(entry, lane, gate=not args.no_gate, budget_seconds=budget_seconds)
+        labelled.append((entry.reason, line))
+        marked = sweep_line(entry, selection, not args.no_gate, budget_seconds)
+        if marked:
+            labelled.append((f"the reached ids inside {entry.command}", marked))
+
+    if args.estimate:
+        minutes = sum(estimate_seconds(entry) for entry in commands) / 60
+        print(f"# estimated: {minutes:.1f} min against a {budget}-minute {lane} lane")
+        if budget and minutes > budget:
+            print(f"# WARNING: over the {lane} budget; the tranche lane is the close-out")
+
+    for reason, line in labelled:
+        print(f"# {reason}\n{line}" if args.explain else line)
 
     if args.run:
-        for entry in commands:
-            line = render(entry, args.lane, gate=not args.no_gate)
-            print(f"\n== {entry.reason}\n== {line}", flush=True)
-            if subprocess.run(line, shell=True, cwd=ROOT).returncode != 0:
-                print(f"\ntest_scope: failed: {line}")
-                return 1
+        return run_with_watchdog(labelled, budget_seconds, lane)
     return 0
 
 

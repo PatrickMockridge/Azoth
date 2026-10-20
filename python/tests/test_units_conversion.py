@@ -25,8 +25,6 @@ import _helpers as h
 from azoth.core.errors import UnitMismatchError
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for, ureg
 
-pytestmark = pytest.mark.slow_sweep
-
 #: The SI base magnitude of one of each unit, where it is not simply 1.0.
 #:
 #: **A unit of a dimension whose SI base is its own unit is 1.0**, and that was every
@@ -236,6 +234,7 @@ def test_an_offset_unit_is_refused_where_a_difference_is_meant() -> None:
     assert to_si(ureg.Quantity(20.0, "degC"), "K", "temperature") == pytest.approx(293.15)
 
 
+@pytest.mark.slow_sweep
 def test_every_interval_input_in_the_registry_is_honoured_on_both_backends() -> None:
     """The flag is only worth having if the calcs carrying it act on it.
 

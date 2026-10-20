@@ -38,8 +38,6 @@ from azoth._registry_gen import CALCS
 from azoth.core.errors import InvalidInputError
 from azoth.core.solver import SolverKind
 
-pytestmark = pytest.mark.slow_sweep
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
 

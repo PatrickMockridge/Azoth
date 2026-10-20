@@ -61,8 +61,6 @@ from azoth import _models_gen
 from azoth._dispatch import result_types
 from azoth._registry_gen import CALCS
 
-pytestmark = pytest.mark.slow_sweep
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STUB_PATH = REPO_ROOT / "python" / "src" / "azoth" / "_core.pyi"
 
@@ -108,6 +106,7 @@ def test_there_are_calcs_to_check() -> None:
 # --- the result class is a real dataclass ---------------------------------
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.parametrize("calc_id", CALC_IDS)
 def test_the_result_type_is_a_usable_dataclass(calc_id: str) -> None:
     """A result class without its decorator is a class you cannot construct.
@@ -133,6 +132,7 @@ def test_the_result_type_is_a_usable_dataclass(calc_id: str) -> None:
 # --- the extension's own list --------------------------------------------
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.requires_rust
 def test_the_extension_registers_exactly_the_registry() -> None:
     """``_core.calc_ids()`` is the same set as the generated registry.
@@ -156,6 +156,7 @@ def test_the_extension_registers_exactly_the_registry() -> None:
     )
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.requires_rust
 @pytest.mark.parametrize("calc_id", CALC_IDS)
 def test_the_extension_exposes_the_function(calc_id: str) -> None:
@@ -187,6 +188,7 @@ def _registered_ids() -> list[str]:
     return sorted([calc["id"] for calc in CALCS] + [model["id"] for model in MODELS])
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.requires_rust
 def test_the_bridge_covers_exactly_the_registry() -> None:
     """Every registered id resolves to a bridge function that exists.
@@ -270,6 +272,7 @@ def _public_dispatch_sites() -> list[tuple[str, list[str], str]]:
     return sites
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.requires_rust
 def test_the_bridge_accepts_the_arguments_the_public_api_passes() -> None:
     """Every keyword the public wrapper sends, the bridge function takes.
@@ -708,6 +711,7 @@ def test_the_stub_types_the_quantity_fields_the_transport_carries() -> None:
     )
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.parametrize("calc_id", CALC_IDS)
 def test_the_stub_declares_the_calc_function(calc_id: str) -> None:
     """The stub declares the extension function for every calc.
@@ -724,6 +728,7 @@ def test_the_stub_declares_the_calc_function(calc_id: str) -> None:
     )
 
 
+@pytest.mark.slow_sweep
 @pytest.mark.parametrize("calc_id", CALC_IDS)
 def test_the_stub_declares_the_result_class(calc_id: str) -> None:
     """The stub declares the result class for every calc.
