@@ -4268,6 +4268,24 @@ impl CalcResult for ParachorMixtureSurfaceTensionResult {
     }
 }
 
+/// Result of `eos.firozabadi_ramley_interface_tension`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FirozabadiRamleyInterfaceTensionResult {
+    /// The interfacial tension, in N/m.
+    pub sigma: SurfaceTension,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FirozabadiRamleyInterfaceTensionResult {
+    const CALC_ID: &'static str = "eos.firozabadi_ramley_interface_tension";
+    const FIELDS: &'static [&'static str] = &["sigma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

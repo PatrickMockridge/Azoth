@@ -8,6 +8,7 @@
 //!   - specs/calcs/eos/chung_viscosity.toml
 //!   - specs/calcs/eos/co2_water_diffusivity.toml
 //!   - specs/calcs/eos/costald_molar_volume.toml
+//!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
 //!   - specs/calcs/eos/fuller_schettler_giddings_diffusivity.toml
 //!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
@@ -1037,6 +1038,177 @@ pub static COSTALD_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected_records: &[],
     },
     tests: COSTALD_MOLAR_VOLUME_TESTS,
+};
+
+/// Registry entry for `eos.firozabadi_ramley_interface_tension`.
+static FIROZABADI_RAMLEY_INTERFACE_TENSION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The reduced temperature divides by `Tc_pseudo` and takes `T`; a non-positive absolute temperature is not a state.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pseudo_critical_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "It is the denominator of `Tr`; a non-positive value is not a mixture's critical temperature.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_1",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A phase with no mass density has no interface.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_2",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A phase with no mass density has no interface.",
+        },
+    },
+];
+
+static FIROZABADI_RAMLEY_INTERFACE_TENSION_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "gas_first_on_methane_nbutane",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 300.0),
+            ("pseudo_critical_temperature", 229.1158152222658),
+            ("rho_1", 19.938328330315997),
+            ("rho_2", 549.3851668858096),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("sigma", 0.03622765708367235)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "gas_first_on_co2_water",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 313.15),
+            ("pseudo_critical_temperature", 304.92555763578747),
+            ("rho_1", 113.27066791939949),
+            ("rho_2", 988.9287133030801),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("sigma", 0.10420927512440828)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registered spec for `eos.firozabadi_ramley_interface_tension`.
+///
+/// Public and addressable directly, so a calc can hold `&FIROZABADI_RAMLEY_INTERFACE_TENSION_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static FIROZABADI_RAMLEY_INTERFACE_TENSION_SPEC: CalcSpec = CalcSpec {
+    id: "eos.firozabadi_ramley_interface_tension",
+    checks: FIROZABADI_RAMLEY_INTERFACE_TENSION_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "oil_water_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("T", 300.0),
+            ("pseudo_critical_temperature", 540.2432308699056),
+            ("rho_1", 690.6031246582897),
+            ("rho_2", 1000.0024520207028),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("sigma", 0.05083361859364053)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    tests: FIROZABADI_RAMLEY_INTERFACE_TENSION_TESTS,
 };
 
 /// Registry entry for `eos.fuller_schettler_giddings_diffusivity`.
@@ -7565,6 +7737,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &CHUNG_VISCOSITY_SPEC,
     &CO2_WATER_DIFFUSIVITY_SPEC,
     &COSTALD_MOLAR_VOLUME_SPEC,
+    &FIROZABADI_RAMLEY_INTERFACE_TENSION_SPEC,
     &FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_SPEC,
     &HAYDUK_MINHAS_DIFFUSIVITY_SPEC,
     &HEAT_OF_VAPORIZATION_SPEC,

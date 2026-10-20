@@ -422,6 +422,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.firozabadi_ramley_interface_tension': {
+        "calc_id": 'eos.firozabadi_ramley_interface_tension',
+        "name": 'Interface tension from the Firoozabadi-Ramey correlation',
+        "spec": {'path': 'specs/calcs/eos/firozabadi_ramley_interface_tension.toml', 'sha256': '838d6a58c23fae098486cb475976b83b69c82623b1445df3e92ec60ac0dd771a'},
+        "code": [{'path': 'python/src/azoth/eos/reference/firozabadi_ramley_interface_tension.py', 'sha256': '0b6478df00a00c60ee6f33f5903d98993d9dbe3d7e0737ff56e18de3bf4a787a'}, {'path': 'crates/azoth-eos/src/firozabadi_ramley_interface_tension.rs', 'sha256': '42f3f193c34fc308fecddb1add64a53ce7ebc0071ef1e187475840e5bbdc1c32'}],
+        "source": 'NeqSim master `FirozabadiRamleyInterfaceTension`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 4,
+        "tests_skipped": 0,
+    },
     'eos.freezing_point': {
         "calc_id": 'eos.freezing_point',
         "name": 'Freezing-point temperature',

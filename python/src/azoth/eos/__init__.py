@@ -93,6 +93,7 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     ElectrolyteCpaStatoilPhaseResult,
     EosCgPhaseResult,
+    FirozabadiRamleyInterfaceTensionResult,
     FreezingPointResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
@@ -515,6 +516,7 @@ _SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_MIXTURE_SURFACE_TENSION = "eos.parachor_mixture_surface_tension"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
+_FIROZABADI_RAMLEY_INTERFACE_TENSION = "eos.firozabadi_ramley_interface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
 _VS_FLASH = "eos.vs_flash"
@@ -1386,6 +1388,28 @@ def parachor_surface_tension(
     """
     return resolve(_PARACHOR_SURFACE_TENSION)(  # type: ignore[no-any-return]
         parachor=parachor, rho_l=rho_l, rho_v=rho_v, M=M
+    )
+
+
+def firozabadi_ramley_interface_tension(
+    T: Q, pseudo_critical_temperature: Q, rho_1: Q, rho_2: Q
+) -> FirozabadiRamleyInterfaceTensionResult:
+    """The interface tension from the Firoozabadi-Ramey correlation.
+
+    ``pseudo_critical_temperature`` is ``sum(x_i Tc_i)`` over the **first**
+    phase's composition; the order of the two densities is part of the input.
+
+    Raises:
+        OutOfRangeError: if ``T``, the pseudo-critical temperature, or either
+            density is not positive.
+
+    See :func:`azoth.eos.reference.firozabadi_ramley_interface_tension`.
+    """
+    return resolve(_FIROZABADI_RAMLEY_INTERFACE_TENSION)(  # type: ignore[no-any-return]
+        T=T,
+        pseudo_critical_temperature=pseudo_critical_temperature,
+        rho_1=rho_1,
+        rho_2=rho_2,
     )
 
 

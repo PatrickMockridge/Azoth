@@ -907,6 +907,19 @@ class EosCgPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FirozabadiRamleyInterfaceTensionResult(_HasWarnings):
+    """Result of ``eos.firozabadi_ramley_interface_tension``."""
+
+    CALC_ID: ClassVar[str] = "eos.firozabadi_ramley_interface_tension"
+
+    #: The interfacial tension.
+    sigma: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FreezingPointResult(_HasWarnings):
     """Result of ``eos.freezing_point``."""
 

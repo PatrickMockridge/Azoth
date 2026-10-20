@@ -38,6 +38,7 @@
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/calcs/eos/fuller_schettler_giddings_diffusivity.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
@@ -525,6 +526,26 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),
+    (
+        "eos.firozabadi_ramley_interface_tension",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.firozabadi_ramley_interface_tension",
+        "pseudo_critical_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.firozabadi_ramley_interface_tension",
+        "rho_1",
+        "mass_density",
+    ),
+    (
+        "eos.firozabadi_ramley_interface_tension",
+        "rho_2",
+        "mass_density",
+    ),
     ("eos.freezing_point", "z", "dimensionless"),
     ("eos.freezing_point", "P", "pressure"),
     (

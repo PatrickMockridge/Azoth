@@ -56,6 +56,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyEffectiveDiffusionResult>()?;
     m.add_class::<crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
     m.add_class::<crate::transport_gen::PyFreezingPointResult>()?;
     m.add_class::<crate::transport_gen::PyFullerSchettlerGiddingsDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyFurstElectrolyteMod2004PhaseResult>()?;
@@ -341,6 +342,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::eos_cg_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::firozabadi_ramley_interface_tension,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::freezing_point, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::fuller_schettler_giddings_diffusivity,

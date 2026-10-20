@@ -2310,6 +2310,47 @@ impl From<&azoth_eos::results::EosCgPhaseResult> for PyEosCgPhaseResult {
         }
     }
 }
+/// Result of `eos.firozabadi_ramley_interface_tension`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FirozabadiRamleyInterfaceTensionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFirozabadiRamleyInterfaceTensionResult {
+    /// The interfacial tension.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFirozabadiRamleyInterfaceTensionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FirozabadiRamleyInterfaceTensionResult(sigma={:?}, {} warning(s))",
+            self.sigma,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FirozabadiRamleyInterfaceTensionResult>
+    for PyFirozabadiRamleyInterfaceTensionResult
+{
+    fn from(r: &azoth_eos::results::FirozabadiRamleyInterfaceTensionResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.freezing_point`, transported.
 #[pyclass(
     frozen,

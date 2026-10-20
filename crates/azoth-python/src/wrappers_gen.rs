@@ -908,6 +908,30 @@ pub fn eos_cg_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Interface tension from the Firoozabadi-Ramey correlation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, pseudo_critical_temperature, rho_1, rho_2))]
+#[pyo3(text_signature = "(T, pseudo_critical_temperature, rho_1, rho_2)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn firozabadi_ramley_interface_tension(
+    py: Python<'_>,
+    T: f64,
+    pseudo_critical_temperature: f64,
+    rho_1: f64,
+    rho_2: f64,
+) -> PyResult<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult> {
+    azoth_eos::firozabadi_ramley_interface_tension::firozabadi_ramley_interface_tension(
+        kelvins(T),
+        kelvins(pseudo_critical_temperature),
+        kilograms_per_cubic_meter(rho_1),
+        kilograms_per_cubic_meter(rho_2),
+    )
+    .map(|r| crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Freezing-point temperature.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

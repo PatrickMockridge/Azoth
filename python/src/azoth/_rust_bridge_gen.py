@@ -58,6 +58,7 @@ from azoth.core.result import (
     EquilibriumConstantResult,
     ExpanderResult,
     FilterResult,
+    FirozabadiRamleyInterfaceTensionResult,
     FlareResult,
     FlowRegime,
     FreezingPointResult,
@@ -317,6 +318,7 @@ __all__ = [
     "equilibrium_constant",
     "expander",
     "filter",
+    "firozabadi_ramley_interface_tension",
     "flare",
     "freezing_point",
     "friction_factor_colebrook",
@@ -1239,6 +1241,21 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def firozabadi_ramley_interface_tension(T: Q, pseudo_critical_temperature: Q, rho_1: Q, rho_2: Q) -> FirozabadiRamleyInterfaceTensionResult:
+    """``eos.firozabadi_ramley_interface_tension``, computed in Rust."""
+    spec = _spec_for("eos.firozabadi_ramley_interface_tension")
+    result = _core.firozabadi_ramley_interface_tension(
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "pseudo_critical_temperature", pseudo_critical_temperature),
+        input_to_si(spec, "rho_1", rho_1),
+        input_to_si(spec, "rho_2", rho_2),
+    )
+    return FirozabadiRamleyInterfaceTensionResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -593,6 +593,11 @@ class EosCgPhaseResult:
     warnings: list[Warning]
 
 @final
+class FirozabadiRamleyInterfaceTensionResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class FreezingPointResult:
     temperature: Qty
     component: str
@@ -2665,6 +2670,12 @@ def electrolyte_cpa_statoil_phase(
     compressed_phase: str,
 ) -> ElectrolyteCpaStatoilPhaseResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def firozabadi_ramley_interface_tension(
+    T: float,
+    pseudo_critical_temperature: float,
+    rho_1: float,
+    rho_2: float,
+) -> FirozabadiRamleyInterfaceTensionResult: ...
 def freezing_point(
     components: list[str],
     z: list[float],
