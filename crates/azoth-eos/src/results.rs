@@ -4313,6 +4313,36 @@ impl CalcResult for FilippovConductivityResult {
     }
 }
 
+/// Result of `eos.friction_theory_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrictionTheoryViscosityResult {
+    /// The mixture's dynamic viscosity.
+    pub mu: DynamicViscosity,
+    /// Each component's Chung baseline viscosity.
+    pub pure_component_viscosity: Vec<f64>,
+    /// The Wilke mixture of the pure values, before the friction term.
+    pub dilute_viscosity: DynamicViscosity,
+    /// The friction term's contribution, which may be negative.
+    pub friction_viscosity: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FrictionTheoryViscosityResult {
+    const CALC_ID: &'static str = "eos.friction_theory_viscosity";
+    const FIELDS: &'static [&'static str] = &[
+        "mu",
+        "pure_component_viscosity",
+        "dilute_viscosity",
+        "friction_viscosity",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

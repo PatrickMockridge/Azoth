@@ -1,0 +1,146 @@
+id = "eos.friction_theory_viscosity"
+name = "Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi"
+kind = "direct"
+assumptions = [
+    "**the pure-component baseline is the class's own Chung form**, not `eos.chung_viscosity`: it adds the `varLast` sine term and uses `40.785 sqrt(M_g T) / (Vc_cm3^(2/3) Omega) Fc` in micropoise, with `Fc = 1 - 0.2756 omega + 0.059035 delta^4 + kappa` and `delta = 131.3 mu_d / sqrt(Vc_cm3 Tc)`.\n",
+    "the dilute mixture is Wilke's rule over those pure viscosities, `visk0 = sum_i x_i mu_i / sum_j x_j phi_ij`, with `phi_ij` the class's own expression.\n",
+    "**the friction term is `kappa_r P_rep + kappa_a P_att + kappa_rr P_rep^2`**, in micropoise, with `P_rep` and `P_att` the EOS's two pressures **supplied by the caller**: the class reads `PhaseEosInterface`, and this id does not build an EOS.\n",
+    "the reduced friction constants are selected by `peng_robinson`: true for `PhasePrEos`, and the SRK set for every other phase - which is the class's `instanceof PhasePrEos` test, not a list of cubic names.\n",
+    "each component contributes `nci kappa / Pc` with `nci = critical_viscosity * 1e7` (Pa*s to micropoise) and `Pc` in **bar**; `k` is the class's `viscosityFrictionK`, which defaults to `1.0` and no databank column supplies, so it is fixed at one here.\n",
+    "the final answer is `max((visk0 + visk1) * 1e-7, 1e-6)` Pa*s - NeqSim's `MIN_VISCOSITY_PA_S` floor.\n",
+    "`critical_viscosity` is the component's value after NeqSim's load-time fallback for a zero column (`7.94830 sqrt(1000 M) Pc^(2/3) / Tc^(1/6) 1e-7`, `Pc` in bar); the databank applies it, and a component built from critical constants alone carries zero and is refused.\n",
+    "the class's `TBPcorrection` static is fixed at `1.0` and no `src/main` path sets it, so no TBP branch is carried; the plus-fraction correction is dead code.\n",
+]
+references = [
+    "Quinones-Cisneros, S. E.; Firoozabadi, A. (2000). \"Friction theory for viscosity modeling: generalization of the corresponding states principle.\" AIChE Journal 46(4), 16-23.",
+    "Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). \"Generalized multiparameter correlation for nonpolar and polar fluid transport properties.\" Industrial & Engineering Chemistry Research 27(4), 671-679.",
+    "Wilke, C. R. (1950). \"A viscosity equation for gas mixtures.\" The Journal of Chemical Physics 18(4), 517-519.",
+    "NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/viscosity/FrictionTheoryViscosityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+]
+[source]
+standard = "NeqSim master `FrictionTheoryViscosityMethod`"
+edition = "`calcViscosity`, `calcDiluteGasMixtureViscosityMicroPoise`, `initChungPureComponentViscosity` and the three reduced-constant evaluations, ported verbatim."
+[inputs]
+[inputs.tc]
+type = "vector"
+unit = "K"
+length = "one per component"
+description = "each component's critical temperature.\n"
+[inputs.pc]
+type = "vector"
+unit = "Pa"
+length = "one per component"
+description = "each component's critical pressure. The reduced constants divide by it in bar, which the kernel converts.\n"
+[inputs.critical_volume]
+type = "vector"
+unit = "m**3/mol"
+length = "one per component"
+description = "each component's critical molar volume. The Chung baseline takes it in cm**3/mol, which the kernel converts.\n"
+[inputs.omega]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's acentric factor.\n"
+[inputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per component"
+description = "each component's molar mass.\n"
+[inputs.critical_viscosity]
+type = "vector"
+unit = "Pa*s"
+length = "one per component"
+description = "each component's critical viscosity, after the databank's fallback for a zero column.\n"
+[inputs.viscosity_correction_factor]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "NeqSim's `VISCFACT`, the `kappa` the Chung `Fc` adds.\n"
+[inputs.dipole]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's dipole moment, in debye.\n"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.p_repulsive]
+unit = "Pa"
+description = "the EOS's repulsive pressure at the state - `getPressureRepulsive`, `RT/(v-b)` for the classes this carries.\n"
+[inputs.p_attractive]
+unit = "Pa"
+description = "the EOS's attractive pressure at the state - `getPressureAttractive`, `P - P_repulsive`; negative at a normal liquid state.\n"
+[inputs.peng_robinson]
+type = "boolean"
+description = "which reduced-constant set to use: true for `PhasePrEos`, false for every other phase - the class's own `instanceof` test.\n"
+[outputs]
+[outputs.mu]
+unit = "Pa*s"
+description = "the mixture's dynamic viscosity.\n"
+[outputs.pure_component_viscosity]
+type = "vector"
+unit = "Pa*s"
+length = "one per component"
+description = "each component's Chung baseline viscosity at the state.\n"
+[outputs.dilute_viscosity]
+unit = "Pa*s"
+description = "the Wilke mixture of the pure values, before the friction term.\n"
+[outputs.friction_viscosity]
+unit = "Pa*s"
+description = "the friction term's contribution, which may be negative where the attractive pressure dominates and the dilute term carries it.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The reduced temperature divides by it.\n"
+[[valid_range]]
+quantity = "pc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The reduced constants divide by it.\n"
+[[valid_range]]
+quantity = "critical_volume"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The Chung baseline takes `Vc^(2/3)` and divides by it.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The Chung baseline takes its square root and divides by `M^0.3`.\n"
+[[valid_range]]
+quantity = "critical_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A zero here is a component the databank fallback did not reach - a card's substance - and the friction term has no baseline without it.\n"
+[[valid_range]]
+quantity = "x"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[[valid_range]]
+quantity = "p_repulsive"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`RT/(v-b)` is positive at every state a cubic admits.\n"
+[implementations]
+python = "azoth.eos.friction_theory_viscosity"
+rust = "azoth_eos::friction_theory_viscosity"

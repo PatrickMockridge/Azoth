@@ -63,6 +63,7 @@ from azoth.core.result import (
     FlareResult,
     FlowRegime,
     FreezingPointResult,
+    FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
@@ -326,6 +327,7 @@ __all__ = [
     "friction_factor_colebrook",
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
+    "friction_theory_viscosity",
     "fuller_schettler_giddings_diffusivity",
     "furst_electrolyte_mod2004_phase",
     "furst_electrolyte_phase",
@@ -1298,6 +1300,33 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
         component=result.component,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def friction_theory_viscosity(tc: Sequence[Q], pc: Sequence[Q], critical_volume: Sequence[Q], omega: Sequence[float], molar_mass: Sequence[Q], critical_viscosity: Sequence[Q], viscosity_correction_factor: Sequence[float], dipole: Sequence[float], x: Sequence[float], T: Q, p_repulsive: Q, p_attractive: Q, peng_robinson: bool) -> FrictionTheoryViscosityResult:
+    """``eos.friction_theory_viscosity``, computed in Rust."""
+    spec = _models_gen.model("eos.friction_theory_viscosity")
+    result = _core.friction_theory_viscosity(
+        [input_to_si(spec, "tc", v) for v in tc],
+        [input_to_si(spec, "pc", v) for v in pc],
+        [input_to_si(spec, "critical_volume", v) for v in critical_volume],
+        list(omega),
+        [input_to_si(spec, "molar_mass", v) for v in molar_mass],
+        [input_to_si(spec, "critical_viscosity", v) for v in critical_viscosity],
+        list(viscosity_correction_factor),
+        list(dipole),
+        list(x),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "p_repulsive", p_repulsive),
+        input_to_si(spec, "p_attractive", p_attractive),
+        peng_robinson,
+    )
+    return FrictionTheoryViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        pure_component_viscosity=tuple(from_si(q.magnitude_si, q.unit) for q in result.pure_component_viscosity),
+        dilute_viscosity=from_si(result.dilute_viscosity.magnitude_si, result.dilute_viscosity.unit),
+        friction_viscosity=from_si(result.friction_viscosity.magnitude_si, result.friction_viscosity.unit),
         warnings=_warnings(result.warnings),
     )
 

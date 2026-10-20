@@ -236,6 +236,17 @@ pub struct Entry {
     pub critical_volume: Option<f64>,
     /// Dipole moment, in debye.
     pub dipole: Option<f64>,
+    /// The critical viscosity in Pa*s, `CRITICALVISCOSITY`.
+    ///
+    /// **A zero in the table takes NeqSim's own load-time fallback** -
+    /// `7.94830 sqrt(1000 M) Pc^(2/3) / Tc^(1/6) 1e-7`, `Pc` in bar - so this field is
+    /// the number the class would have carried rather than the raw column. Read by
+    /// `eos.friction_theory_viscosity`.
+    pub critical_viscosity: f64,
+    /// The viscosity correction factor, `VISCFACT`, dimensionless. Read by the Chung
+    /// baseline inside `eos.friction_theory_viscosity`, and by `eos.chung_viscosity`'s
+    /// caller as its `kappa`.
+    pub viscosity_correction_factor: f64,
     /// The Rackett compressibility `Z_RA`, dimensionless, as NeqSim's `RACKETZ` column
     /// states it - and **zero means the table does not carry one**, which is how NeqSim
     /// reads it too.
@@ -500,6 +511,11 @@ impl Entry {
                     self.critical_volume,
                 )
                 .with_liquid_viscosity(self.liqvisc, self.liqvisc_model)
+                .with_friction_theory_data(
+                    self.critical_viscosity,
+                    self.viscosity_correction_factor,
+                    self.dipole.unwrap_or(0.0),
+                )
                 .with_volume_shift(
                     crate::pr_peneloux_shift::pr_peneloux_shift(
                         self.omega,
@@ -1275,6 +1291,37 @@ fn number(record: &csv::StringRecord, index: usize, column: &str, row: usize) ->
     })
 }
 
+/// The critical viscosity, with NeqSim's own fallback for a zero column.
+///
+/// `Component.createComponent` reads `criticalViscosity` and, where it is below `1e-20`,
+/// replaces it with `7.94830 sqrt(1000 M) Pc^(2/3) / Tc^(1/6) 1e-7` - `Pc` in bar, `M` in
+/// g/mol. The fallback is applied at load rather than in the model because it is what the
+/// class's *component* carries: `getCriticalViscosity()` answers the fallback value, and
+/// every correlation that asks for it sees that.
+fn critical_viscosity(
+    record: &csv::StringRecord,
+    index: &HashMap<&str, usize>,
+    row: usize,
+) -> Result<f64> {
+    let value = number(record, index["criticalviscosity"], "criticalviscosity", row)?;
+    if value >= 1.0e-20 {
+        return Ok(value);
+    }
+    let molar_mass = number(
+        record,
+        index["molar_mass_kg_per_mol"],
+        "molar_mass_kg_per_mol",
+        row,
+    )?;
+    let pressure_bar = number(record, index["pc_pa"], "pc_pa", row)? / 1.0e5;
+    let temperature = number(record, index["tc_k"], "tc_k", row)?;
+    Ok(
+        7.94830 * (1.0e3 * molar_mass).sqrt() * pressure_bar.powf(2.0 / 3.0)
+            / temperature.powf(1.0 / 6.0)
+            * 1.0e-7,
+    )
+}
+
 /// A `csv` failure as this crate's error.
 ///
 /// Unreachable in practice - the table is embedded, so a malformed one is a build
@@ -1392,6 +1439,8 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "molar_mass_kg_per_mol",
         "critical_volume_m3_per_mol",
         "dipole_moment_debye",
+        "criticalviscosity",
+        "viscosity_correction_factor",
         "racketz",
         "liqviscmodel",
         "liqvisc1",
@@ -1549,6 +1598,13 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "dipole_moment_debye",
                     row,
                 )?),
+                critical_viscosity: critical_viscosity(&record, &index, row)?,
+                viscosity_correction_factor: number(
+                    &record,
+                    index["viscosity_correction_factor"],
+                    "viscosity_correction_factor",
+                    row,
+                )?,
                 rackett_z: number(&record, index["racketz"], "racketz", row)?,
                 liqvisc: [
                     number(&record, index["liqvisc1"], "liqvisc1", row)?,
@@ -2054,6 +2110,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // A card states no Antoine coefficients and no dipole moment: neither is a
                 // parameter of the component it produces, so neither has a card key.
                 dipole: None,
+                // A card states no critical viscosity and no correction factor: neither is
+                // a parameter of the component it produces.
+                critical_viscosity: 0.0,
+                viscosity_correction_factor: 0.0,
                 // Zero is this table's spelling of absence, and the Peneloux shift falls
                 // back to its `omega` correlation on a zero - which is what NeqSim does for
                 // a zero column too.
@@ -2152,6 +2212,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             molar_mass: over.molar_mass.or(base.molar_mass),
             critical_volume: over.critical_volume.or(base.critical_volume),
             dipole: base.dipole,
+            // The table's, for the same reason: `ComponentOverride` is a closed list.
+            critical_viscosity: base.critical_viscosity,
+            viscosity_correction_factor: base.viscosity_correction_factor,
             // The table's, for the reason the PC-SAFT set below is: `ComponentOverride`
             // is a closed list, and a card correcting `Tc` does not change which Rackett
             // compressibility the volume translation reads.

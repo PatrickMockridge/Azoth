@@ -162,6 +162,19 @@ pub struct Component {
     pub liqvisc: [f64; 4],
     /// Which of NeqSim's four liquid-viscosity expressions those four are; zero names none.
     pub liqvisc_model: u32,
+    /// The critical viscosity in Pa*s, the table's `CRITICALVISCOSITY`; the viscosity
+    /// correction factor `VISCFACT`; and the dipole moment in debye, `DIPOLEMOMENT`.
+    ///
+    /// Read by `eos.friction_theory_viscosity`'s Chung baseline. **A critical viscosity the
+    /// table states as zero takes NeqSim's own fallback at load** -
+    /// `7.94830 sqrt(1000 M) Pc^(2/3) / Tc^(1/6) 1e-7`, `Pc` in bar - so a databank
+    /// component arrives with the number the class would have computed. A component built
+    /// from critical constants alone carries zero, which the model refuses.
+    pub critical_viscosity: f64,
+    /// See [`Self::critical_viscosity`].
+    pub viscosity_correction_factor: f64,
+    /// The dipole moment, in debye.
+    pub dipole_moment: f64,
     /// The volume-translation parameter in m³/mol, subtracted from the untranslated
     /// molar volume: `v_corr = v - c`. Zero for a component without a translation,
     /// which is the plain PR/SRK/RK forms. The Peneloux shift of
@@ -256,6 +269,9 @@ impl Component {
             alpha_params: Vec::new(),
             liqvisc: [0.0; 4],
             liqvisc_model: 0,
+            critical_viscosity: 0.0,
+            viscosity_correction_factor: 0.0,
+            dipole_moment: 0.0,
             liquid_conductivity: [0.0; 3],
             parachor: 0.0,
             lennard_jones_diameter: 0.0,
@@ -410,6 +426,21 @@ impl Component {
     pub fn with_liquid_viscosity(mut self, liqvisc: [f64; 4], model: u32) -> Self {
         self.liqvisc = liqvisc;
         self.liqvisc_model = model;
+        self
+    }
+
+    /// The friction-theory data: the critical viscosity in Pa*s, the viscosity correction
+    /// factor, and the dipole moment in debye.
+    #[must_use]
+    pub fn with_friction_theory_data(
+        mut self,
+        critical_viscosity: f64,
+        viscosity_correction_factor: f64,
+        dipole_moment: f64,
+    ) -> Self {
+        self.critical_viscosity = critical_viscosity;
+        self.viscosity_correction_factor = viscosity_correction_factor;
+        self.dipole_moment = dipole_moment;
         self
     }
 }

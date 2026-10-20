@@ -613,6 +613,14 @@ class FreezingPointResult:
     warnings: list[Warning]
 
 @final
+class FrictionTheoryViscosityResult:
+    mu: Qty
+    pure_component_viscosity: list[Qty]
+    dilute_viscosity: Qty
+    friction_viscosity: Qty
+    warnings: list[Warning]
+
+@final
 class FullerSchettlerGiddingsDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -2700,6 +2708,21 @@ def freezing_point(
     solid: str,
     P: float,
 ) -> FreezingPointResult: ...
+def friction_theory_viscosity(
+    tc: list[float],
+    pc: list[float],
+    critical_volume: list[float],
+    omega: list[float],
+    molar_mass: list[float],
+    critical_viscosity: list[float],
+    viscosity_correction_factor: list[float],
+    dipole: list[float],
+    x: list[float],
+    T: float,
+    p_repulsive: float,
+    p_attractive: float,
+    peng_robinson: bool,
+) -> FrictionTheoryViscosityResult: ...
 def fuller_schettler_giddings_diffusivity(
     MA: float,
     MB: float,

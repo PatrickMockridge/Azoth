@@ -41,6 +41,7 @@
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
 //!   - specs/models/eos/freezing_point.toml
+//!   - specs/models/eos/friction_theory_viscosity.toml
 //!   - specs/calcs/eos/fuller_schettler_giddings_diffusivity.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
 //!   - specs/models/eos/furst_electrolyte_phase.toml
@@ -573,6 +574,38 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("eos.freezing_point", "z", "dimensionless"),
     ("eos.freezing_point", "P", "pressure"),
+    (
+        "eos.friction_theory_viscosity",
+        "tc",
+        "thermodynamic_temperature",
+    ),
+    ("eos.friction_theory_viscosity", "pc", "pressure"),
+    (
+        "eos.friction_theory_viscosity",
+        "critical_volume",
+        "molar_volume",
+    ),
+    ("eos.friction_theory_viscosity", "omega", "dimensionless"),
+    ("eos.friction_theory_viscosity", "molar_mass", "molar_mass"),
+    (
+        "eos.friction_theory_viscosity",
+        "critical_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "eos.friction_theory_viscosity",
+        "viscosity_correction_factor",
+        "dimensionless",
+    ),
+    ("eos.friction_theory_viscosity", "dipole", "dimensionless"),
+    ("eos.friction_theory_viscosity", "x", "dimensionless"),
+    (
+        "eos.friction_theory_viscosity",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.friction_theory_viscosity", "p_repulsive", "pressure"),
+    ("eos.friction_theory_viscosity", "p_attractive", "pressure"),
     (
         "eos.fuller_schettler_giddings_diffusivity",
         "MA",

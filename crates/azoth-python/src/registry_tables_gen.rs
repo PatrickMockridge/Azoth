@@ -60,6 +60,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.filippov_conductivity" => azoth_eos::results::FilippovConductivityResult::FIELDS.to_vec(),
         "eos.firozabadi_ramley_interface_tension" => azoth_eos::results::FirozabadiRamleyInterfaceTensionResult::FIELDS.to_vec(),
         "eos.freezing_point" => azoth_eos::results::FreezingPointResult::FIELDS.to_vec(),
+        "eos.friction_theory_viscosity" => azoth_eos::results::FrictionTheoryViscosityResult::FIELDS.to_vec(),
         "eos.fuller_schettler_giddings_diffusivity" => azoth_eos::results::FullerSchettlerGiddingsDiffusivityResult::FIELDS.to_vec(),
         "eos.furst_electrolyte_mod2004_phase" => azoth_eos::results::FurstElectrolyteMod2004PhaseResult::FIELDS.to_vec(),
         "eos.furst_electrolyte_phase" => azoth_eos::results::FurstElectrolytePhaseResult::FIELDS.to_vec(),

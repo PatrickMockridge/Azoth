@@ -991,6 +991,60 @@ pub fn freezing_point(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (tc, pc, critical_volume, omega, molar_mass, critical_viscosity, viscosity_correction_factor, dipole, x, T, p_repulsive, p_attractive, peng_robinson))]
+#[pyo3(
+    text_signature = "(tc, pc, critical_volume, omega, molar_mass, critical_viscosity, viscosity_correction_factor, dipole, x, T, p_repulsive, p_attractive, peng_robinson)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn friction_theory_viscosity(
+    py: Python<'_>,
+    tc: Vec<f64>,
+    pc: Vec<f64>,
+    critical_volume: Vec<f64>,
+    omega: Vec<f64>,
+    molar_mass: Vec<f64>,
+    critical_viscosity: Vec<f64>,
+    viscosity_correction_factor: Vec<f64>,
+    dipole: Vec<f64>,
+    x: Vec<f64>,
+    T: f64,
+    p_repulsive: f64,
+    p_attractive: f64,
+    peng_robinson: bool,
+) -> PyResult<crate::transport_gen::PyFrictionTheoryViscosityResult> {
+    azoth_eos::friction_theory_viscosity::friction_theory_viscosity(
+        &tc.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+        &pc.iter().map(|v| pascals(*v)).collect::<Vec<_>>(),
+        &critical_volume
+            .iter()
+            .map(|v| cubic_meters_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &omega,
+        &molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &critical_viscosity
+            .iter()
+            .map(|v| pascal_seconds(*v))
+            .collect::<Vec<_>>(),
+        &viscosity_correction_factor,
+        &dipole,
+        &x,
+        kelvins(T),
+        pascals(p_repulsive),
+        pascals(p_attractive),
+        peng_robinson,
+    )
+    .map(|r| crate::transport_gen::PyFrictionTheoryViscosityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Gas binary diffusivity from the Fuller-Schettler-Giddings correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

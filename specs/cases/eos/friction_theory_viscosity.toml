@@ -1,0 +1,70 @@
+model = "eos.friction_theory_viscosity"
+[[cases]]
+id = "srk_methane_nbutane_oil_phase"
+tolerance = 1e-12
+source = "The capture's `srk_methane_nbutane_300K_20bara` row, the oil phase at 300 K and 20 bar on a `SystemSrkEos`.\n\n  methane: x = 0.09542082642782022, Fc = 0.9968306, Omega = 1.1797482417070884, pure = 111.71524572814582 micropoise\n  n-butane: x = 0.9045791735721797, Fc = 0.94482488, Omega = 1.6938073684832455, pure = 74.70717049329748 micropoise\n  Wilke: visk0 = 76.54039973647495 micropoise\n  friction: visk1 = kaprmx*829.1753495002592 + kapamx*(-809.1753495002592) + kaprrmx*829.1753495002592^2 = 1306.9834064110491 micropoise\n  mu = (76.54039973647495 + 1306.9834064110491)*1e-7 = 1.383523806147524e-4 Pa*s\n"
+[cases.inputs]
+tc = [190.55999999999997, 425.12]
+pc = [4599000.0, 3796000.0]
+critical_volume = [9.9e-5, 0.000255]
+omega = [0.0115, 0.2002]
+molar_mass = [0.016042999999999998, 0.058122999999999994]
+critical_viscosity = [1.5293e-5, 2.5768e-5]
+viscosity_correction_factor = [0.0, 0.0]
+dipole = [0.0, 0.0]
+x = [0.09542082642782022, 0.9045791735721797]
+T = 300.0
+p_repulsive = 829.1753495002592
+p_attractive = -809.1753495002592
+peng_robinson = false
+[cases.expected]
+mu = 1.383523806147524e-4
+pure_component_viscosity = [1.1171524572814582e-5, 7.470717049329748e-6]
+dilute_viscosity = 7.654039973647495e-6
+friction_viscosity = 1.3069834064110491e-4
+[[cases]]
+id = "pr_methane_nbutane_oil_phase"
+tolerance = 1e-12
+source = "The capture's `pr_methane_nbutane_300K_20bara` row - the same fluid on a `SystemPrEos`, whose oil phase splits slightly differently. **The composition and the two pressures are the PR system's own**, which is what makes the case pin the constant set rather than the arithmetic alone.\n\n  x = 0.09718095876744977 / 0.9028190412325503, P_rep = 977.1223664955916 Pa, P_att = -957.1223664955916 Pa\n  visk0 = 76.57599214850218 micropoise, visk1 = 1282.656664539927 micropoise\n  mu = 1.3592326566884292e-4 Pa*s\n"
+[cases.inputs]
+tc = [190.55999999999997, 425.12]
+pc = [4599000.0, 3796000.0]
+critical_volume = [9.9e-5, 0.000255]
+omega = [0.0115, 0.2002]
+molar_mass = [0.016042999999999998, 0.058122999999999994]
+critical_viscosity = [1.5293e-5, 2.5768e-5]
+viscosity_correction_factor = [0.0, 0.0]
+dipole = [0.0, 0.0]
+x = [0.09718095876744977, 0.9028190412325503]
+T = 300.0
+p_repulsive = 977.1223664955916
+p_attractive = -957.1223664955916
+peng_robinson = true
+[cases.expected]
+mu = 1.3592326566884292e-4
+pure_component_viscosity = [1.1171524572814582e-5, 7.470717049329748e-6]
+dilute_viscosity = 7.657599214850218e-6
+friction_viscosity = 1.282656664539927e-4
+[[cases]]
+id = "pr_pure_methane"
+tolerance = 1e-12
+source = "The capture's `pr_methane_300K_10bara` row: a pure component, where the Wilke mixing is the identity and the friction term is almost cancelled by the attractive pressure. The analytic check of the Chung baseline: `Fc = 0.9968306`, `Omega = 1.1797482417070884`, pure = 111.71524572814582 micropoise.\n\n  P_rep = 10.332089673913584 Pa, P_att = -0.33208967391358435 Pa\n  visk1 = -0.18810001208777793 micropoise\n  mu = (111.71524572814582 - 0.18810001208777793)*1e-7 = 1.1152714571605806e-5 Pa*s\n"
+[cases.inputs]
+tc = [190.55999999999997]
+pc = [4599000.0]
+critical_volume = [9.9e-5]
+omega = [0.0115]
+molar_mass = [0.016042999999999998]
+critical_viscosity = [1.5293e-5]
+viscosity_correction_factor = [0.0]
+dipole = [0.0]
+x = [1.0]
+T = 300.0
+p_repulsive = 10.332089673913584
+p_attractive = -0.33208967391358435
+peng_robinson = true
+[cases.expected]
+mu = 1.1152714571605806e-5
+pure_component_viscosity = [1.1171524572814582e-5]
+dilute_viscosity = 1.1171524572814582e-5
+friction_viscosity = -1.8810001208777793e-8

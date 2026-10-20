@@ -96,6 +96,7 @@ from azoth.core.result import (
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
     FreezingPointResult,
+    FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
@@ -519,6 +520,7 @@ _PARACHOR_MIXTURE_SURFACE_TENSION = "eos.parachor_mixture_surface_tension"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _FIROZABADI_RAMLEY_INTERFACE_TENSION = "eos.firozabadi_ramley_interface_tension"
 _FILIPPOV_CONDUCTIVITY = "eos.filippov_conductivity"
+_FRICTION_THEORY_VISCOSITY = "eos.friction_theory_viscosity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
 _VS_FLASH = "eos.vs_flash"
@@ -1448,6 +1450,50 @@ def filippov_conductivity(
         P=P,
         filippov_coefficient=filippov_coefficient,
         use_pressure_correction=use_pressure_correction,
+    )
+
+
+def friction_theory_viscosity(
+    tc: Sequence[Q],
+    pc: Sequence[Q],
+    critical_volume: Sequence[Q],
+    omega: Sequence[float],
+    molar_mass: Sequence[Q],
+    critical_viscosity: Sequence[Q],
+    viscosity_correction_factor: Sequence[float],
+    dipole: Sequence[float],
+    x: Sequence[float],
+    T: Q,
+    p_repulsive: Q,
+    p_attractive: Q,
+    peng_robinson: bool,
+) -> FrictionTheoryViscosityResult:
+    """The friction-theory viscosity of a mixture at a state.
+
+    The pure baseline is the class's own Chung form, the dilute mixture is Wilke's
+    rule, and the excess friction is ``kappa_r P_rep + kappa_a P_att + kappa_rr
+    P_rep^2``. The two pressures are the caller's EOS values.
+
+    Raises:
+        InvalidInputError: if the vectors differ in length.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.friction_theory_viscosity`.
+    """
+    return resolve(_FRICTION_THEORY_VISCOSITY)(  # type: ignore[no-any-return]
+        tc=tc,
+        pc=pc,
+        critical_volume=critical_volume,
+        omega=omega,
+        molar_mass=molar_mass,
+        critical_viscosity=critical_viscosity,
+        viscosity_correction_factor=viscosity_correction_factor,
+        dipole=dipole,
+        x=x,
+        T=T,
+        p_repulsive=p_repulsive,
+        p_attractive=p_attractive,
+        peng_robinson=peng_robinson,
     )
 
 

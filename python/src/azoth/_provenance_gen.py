@@ -455,6 +455,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'eos.friction_theory_viscosity': {
+        "calc_id": 'eos.friction_theory_viscosity',
+        "name": 'Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi',
+        "spec": {'path': 'specs/models/eos/friction_theory_viscosity.toml', 'sha256': 'e8c0663b6595273fdc900a1a0e88faba2092aa8971ff124b4cc8490314010733'},
+        "code": [{'path': 'python/src/azoth/eos/reference/friction_theory_viscosity.py', 'sha256': '65194a76a9ec23317c147cdd4185495db44323617caab7a88868fecbe988828d'}, {'path': 'crates/azoth-eos/src/friction_theory_viscosity.rs', 'sha256': 'adbfbe612310a5f864894454858c8a320935c26432b85bfe92d8749ea39af82f'}],
+        "source": 'NeqSim master `FrictionTheoryViscosityMethod`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'eos.fuller_schettler_giddings_diffusivity': {
         "calc_id": 'eos.fuller_schettler_giddings_diffusivity',
         "name": 'Gas binary diffusivity from the Fuller-Schettler-Giddings correlation',

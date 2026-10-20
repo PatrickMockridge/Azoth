@@ -2461,6 +2461,73 @@ impl From<&azoth_eos::results::FreezingPointResult> for PyFreezingPointResult {
         }
     }
 }
+/// Result of `eos.friction_theory_viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FrictionTheoryViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFrictionTheoryViscosityResult {
+    /// the mixture's dynamic viscosity.
+    #[pyo3(get)]
+    pub mu: PyQty,
+    /// each component's Chung baseline viscosity at the state.
+    #[pyo3(get)]
+    pub pure_component_viscosity: Vec<PyQty>,
+    /// the Wilke mixture of the pure values, before the friction term.
+    #[pyo3(get)]
+    pub dilute_viscosity: PyQty,
+    /// the friction term's contribution, which may be negative where the attractive pressure dominates and the dilute term carries it.
+    #[pyo3(get)]
+    pub friction_viscosity: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFrictionTheoryViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FrictionTheoryViscosityResult(mu={:?}, pure_component_viscosity={:?}, dilute_viscosity={:?}, friction_viscosity={:?}, {} warning(s))",
+            self.mu,
+            self.pure_component_viscosity,
+            self.dilute_viscosity,
+            self.friction_viscosity,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FrictionTheoryViscosityResult> for PyFrictionTheoryViscosityResult {
+    fn from(r: &azoth_eos::results::FrictionTheoryViscosityResult) -> Self {
+        Self {
+            mu: PyQty {
+                magnitude_si: r.mu.value,
+                unit: "Pa*s".to_string(),
+            },
+            pure_component_viscosity: r
+                .pure_component_viscosity
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa*s".to_string(),
+                })
+                .collect(),
+            dilute_viscosity: PyQty {
+                magnitude_si: r.dilute_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            friction_viscosity: PyQty {
+                magnitude_si: r.friction_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.fuller_schettler_giddings_diffusivity`, transported.
 #[pyclass(
     frozen,

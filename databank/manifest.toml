@@ -739,11 +739,10 @@ unit = "J/mol"
 reason = "uncalled-upstream: the same solid-vapour-pressure route as `TRIPLEPOINTPRESSURE`. **`ComponentSolid.fugcoef2`, which is the route ported, reads the tabulated heat of fusion instead.** A zero here also switches the Clausius-Clapeyron branch off - `ComponentSolid.fugcoef(double, double)` clears `CCequation` below `1e-6` - so the Antoine pair is the only live switch on the rows this carries"
 [[upstreams.files.columns]]
 name = "criticalViscosity"
-disposition = "vendored"
+disposition = "used"
 as = "criticalviscosity"
 unit = "Pa*s"
-reason = "not-ported: the friction-theory viscosity method; NeqSim's `FrictionTheoryViscosityMethod`. `eos.viscosity` does not read it - it ports `PFCTViscosityMethodHeavyOil`, which reads none of these."
-consumer = "roadmap:P1"
+reason = "read by `eos.friction_theory_viscosity`, which takes it as each component's critical viscosity. **A zero in the table is replaced at load by NeqSim's own fallback** `7.94830 sqrt(1000 M) Pc^(2/3) / Tc^(1/6) 1e-7`, with `Pc` in bar - the value `Component.getCriticalViscosity()` answers - so the compiled component never carries the raw zero."
 [[upstreams.files.columns]]
 name = "HydrateA1Small"
 disposition = "used"

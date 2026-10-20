@@ -961,6 +961,28 @@ class FreezingPointResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FrictionTheoryViscosityResult(_HasWarnings):
+    """Result of ``eos.friction_theory_viscosity``."""
+
+    CALC_ID: ClassVar[str] = "eos.friction_theory_viscosity"
+
+    #: the mixture's dynamic viscosity.
+    mu: Q
+
+    #: each component's Chung baseline viscosity at the state.
+    pure_component_viscosity: tuple[Q, ...]
+
+    #: the Wilke mixture of the pure values, before the friction term.
+    dilute_viscosity: Q
+
+    #: the friction term's contribution, which may be negative where the attractive pressure dominates and the dilute term carries it.
+    friction_viscosity: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FullerSchettlerGiddingsDiffusivityResult(_HasWarnings):
     """Result of ``eos.fuller_schettler_giddings_diffusivity``."""
 
