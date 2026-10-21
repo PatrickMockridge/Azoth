@@ -813,7 +813,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "eos.gt_surface_tension_simple",
         name: "Surface tension from the simplified gradient theory",
         spec_path: "specs/models/eos/gt_surface_tension_simple.toml",
-        spec_sha256: "2df4993bec89eada16d2c68ef7742e4e52473df0041a4940b3c1e1615bc89534",
+        spec_sha256: "c52874e8185e61768ab367863ac59b138e5ffc811f3ed69d60448130a9cbae6f",
         python_path: "python/src/azoth/eos/reference/gt_surface_tension_simple.py",
         python_sha256: "36acaa7ed9c6b8b4a58ad300c6437072408376009972e9eb5944be9d5dd941eb",
         rust_path: "crates/azoth-eos/src/gt_surface_tension_simple.rs",

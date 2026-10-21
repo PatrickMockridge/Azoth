@@ -601,7 +601,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.gt_surface_tension_simple': {
         "calc_id": 'eos.gt_surface_tension_simple',
         "name": 'Surface tension from the simplified gradient theory',
-        "spec": {'path': 'specs/models/eos/gt_surface_tension_simple.toml', 'sha256': '2df4993bec89eada16d2c68ef7742e4e52473df0041a4940b3c1e1615bc89534'},
+        "spec": {'path': 'specs/models/eos/gt_surface_tension_simple.toml', 'sha256': 'c52874e8185e61768ab367863ac59b138e5ffc811f3ed69d60448130a9cbae6f'},
         "code": [{'path': 'python/src/azoth/eos/reference/gt_surface_tension_simple.py', 'sha256': '36acaa7ed9c6b8b4a58ad300c6437072408376009972e9eb5944be9d5dd941eb'}, {'path': 'crates/azoth-eos/src/gt_surface_tension_simple.rs', 'sha256': '22c9c480f664897e5d37d59275f524e5f95298d187aef6bd8728621c28df0a7b'}],
         "source": 'NeqSim master `GTSurfaceTensionSimple`',
         "verification": 'partially_verified',
