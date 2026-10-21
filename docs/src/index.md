@@ -185,6 +185,7 @@ Five sections, and the difference between them is the point:
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
 - [`eos.filippov_conductivity`](./eos/filippov_conductivity.md) — Liquid thermal conductivity from the Filippov mixing rule
 - [`eos.freezing_point`](./eos/freezing_point.md) — Freezing-point temperature
+- [`eos.friction_theory_conductivity`](./eos/friction_theory_conductivity.md) — Thermal conductivity from the friction-theory residual
 - [`eos.friction_theory_viscosity`](./eos/friction_theory_viscosity.md) — Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi
 - [`eos.furst_electrolyte_mod2004_phase`](./eos/furst_electrolyte_mod2004_phase.md) — Phase state of a Furst electrolyte fluid, 2004 revision
 - [`eos.furst_electrolyte_phase`](./eos/furst_electrolyte_phase.md) — Phase state of a Furst electrolyte fluid

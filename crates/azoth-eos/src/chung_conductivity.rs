@@ -70,32 +70,9 @@ pub fn chung_conductivity(
         &mut warnings,
     )?;
 
-    // The published constants are tuned to Vc in cm**3/mol and M in g/mol.
-    let vc_cm3 = Vc.value * 1.0e6;
-    let m_g = M.value * 1000.0;
-
-    let rel_visc = 131.3 * dipole / (vc_cm3 * Tc.value).sqrt();
-    let rel4 = rel_visc * rel_visc * rel_visc * rel_visc;
-    let fc = 1.0 - 0.2756 * omega + 0.059035 * rel4 + kappa;
-
-    let t_star = 1.2593 * T.value / Tc.value;
-    let omega_v = 1.16145 * t_star.powf(-0.14874)
-        + 0.52487 * (-0.77320 * t_star).exp()
-        + 2.16178 * (-2.43787 * t_star).exp();
-
-    // The dilute-gas Chung viscosity, in microPoise then Pa*s.
-    let eta0_micropoise = 40.785 * fc * (m_g * T.value).sqrt() / (vc_cm3.powf(2.0 / 3.0) * omega_v);
-    let eta0 = eta0_micropoise * 1.0e-7;
-
-    let alpha = Cv0.value / R - 1.5;
-    let beta = 0.7862 - 0.7109 * omega + 1.3168 * omega * omega;
-    let z = 2.0 + 10.5 * (T.value / Tc.value).powi(2);
-    let psi = 1.0
-        + alpha
-            * ((0.215 + 0.28288 * alpha - 1.061 * beta + 0.26665 * z)
-                / (0.6366 + beta * z + 1.061 * alpha * beta));
-
-    let k = 3.75 * R * psi * eta0 / M.value;
+    let (k, _) = chung_dilute(
+        Cv0.value, M.value, omega, Tc.value, Vc.value, dipole, kappa, T.value,
+    );
 
     apply_checks(
         spec.derived_checks(),
@@ -107,4 +84,53 @@ pub fn chung_conductivity(
         k: watts_per_meter_kelvin(k),
         warnings,
     })
+}
+
+/// Chung's dilute-gas viscosity and thermal conductivity, in SI units.
+///
+/// **One expression, two callers.** `eos.chung_conductivity` and
+/// `eos.friction_theory_conductivity` each need both numbers from the same correlation -
+/// the first answers with the conductivity, the second converts a viscosity excess with
+/// the Eucken factor and needs the dilute viscosity to measure it against. Splitting the
+/// block out is what keeps the two from drifting.
+#[allow(non_snake_case)] // `Cv0`, `Tc`, `Vc`, `M` and `T` are the symbols in the published equation
+#[allow(clippy::approx_constant)] // `0.6366` is Chung's coefficient, not 2/pi.
+#[allow(clippy::too_many_arguments)] // The correlation's own inputs, one per symbol.
+pub(crate) fn chung_dilute(
+    Cv0: f64,
+    M: f64,
+    omega: f64,
+    Tc: f64,
+    Vc: f64,
+    dipole: f64,
+    kappa: f64,
+    T: f64,
+) -> (f64, f64) {
+    // The published constants are tuned to Vc in cm**3/mol and M in g/mol.
+    let vc_cm3 = Vc * 1.0e6;
+    let m_g = M * 1000.0;
+
+    let rel_visc = 131.3 * dipole / (vc_cm3 * Tc).sqrt();
+    let rel4 = rel_visc * rel_visc * rel_visc * rel_visc;
+    let fc = 1.0 - 0.2756 * omega + 0.059035 * rel4 + kappa;
+
+    let t_star = 1.2593 * T / Tc;
+    let omega_v = 1.16145 * t_star.powf(-0.14874)
+        + 0.52487 * (-0.77320 * t_star).exp()
+        + 2.16178 * (-2.43787 * t_star).exp();
+
+    // The dilute-gas Chung viscosity, in microPoise then Pa*s.
+    let eta0_micropoise = 40.785 * fc * (m_g * T).sqrt() / (vc_cm3.powf(2.0 / 3.0) * omega_v);
+    let eta0 = eta0_micropoise * 1.0e-7;
+
+    let alpha = Cv0 / R - 1.5;
+    let beta = 0.7862 - 0.7109 * omega + 1.3168 * omega * omega;
+    let z = 2.0 + 10.5 * (T / Tc).powi(2);
+    let psi = 1.0
+        + alpha
+            * ((0.215 + 0.28288 * alpha - 1.061 * beta + 0.26665 * z)
+                / (0.6366 + beta * z + 1.061 * alpha * beta));
+
+    let k = 3.75 * R * psi * eta0 / M;
+    (k, eta0)
 }

@@ -618,6 +618,14 @@ class FreezingPointResult:
     warnings: list[Warning]
 
 @final
+class FrictionTheoryConductivityResult:
+    conductivity: Qty
+    pure_component_conductivity: list[Qty]
+    dilute_conductivity: Qty
+    dense_conductivity: Qty
+    warnings: list[Warning]
+
+@final
 class FrictionTheoryViscosityResult:
     mu: Qty
     pure_component_viscosity: list[Qty]
@@ -2743,6 +2751,17 @@ def freezing_point(
     solid: str,
     P: float,
 ) -> FreezingPointResult: ...
+def friction_theory_conductivity(
+    cv0: list[float],
+    tc: list[float],
+    critical_volume: list[float],
+    omega: list[float],
+    dipole: list[float],
+    molar_mass: list[float],
+    x: list[float],
+    T: float,
+    viscosity: float,
+) -> FrictionTheoryConductivityResult: ...
 def friction_theory_viscosity(
     tc: list[float],
     pc: list[float],

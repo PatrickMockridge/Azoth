@@ -2500,6 +2500,75 @@ impl From<&azoth_eos::results::FreezingPointResult> for PyFreezingPointResult {
         }
     }
 }
+/// Result of `eos.friction_theory_conductivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FrictionTheoryConductivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFrictionTheoryConductivityResult {
+    /// the phase's thermal conductivity.
+    #[pyo3(get)]
+    pub conductivity: PyQty,
+    /// each component's dilute-gas Chung conductivity, before mixing.
+    #[pyo3(get)]
+    pub pure_component_conductivity: Vec<PyQty>,
+    /// the Mason-Saxena mixture of the pure values, before the dense term.
+    #[pyo3(get)]
+    pub dilute_conductivity: PyQty,
+    /// the Eucken-scaled viscosity excess, which the class floors at zero.
+    #[pyo3(get)]
+    pub dense_conductivity: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFrictionTheoryConductivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FrictionTheoryConductivityResult(conductivity={:?}, pure_component_conductivity={:?}, dilute_conductivity={:?}, dense_conductivity={:?}, {} warning(s))",
+            self.conductivity,
+            self.pure_component_conductivity,
+            self.dilute_conductivity,
+            self.dense_conductivity,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FrictionTheoryConductivityResult>
+    for PyFrictionTheoryConductivityResult
+{
+    fn from(r: &azoth_eos::results::FrictionTheoryConductivityResult) -> Self {
+        Self {
+            conductivity: PyQty {
+                magnitude_si: r.conductivity.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            pure_component_conductivity: r
+                .pure_component_conductivity
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "W/(m*K)".to_string(),
+                })
+                .collect(),
+            dilute_conductivity: PyQty {
+                magnitude_si: r.dilute_conductivity.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            dense_conductivity: PyQty {
+                magnitude_si: r.dense_conductivity.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.friction_theory_viscosity`, transported.
 #[pyclass(
     frozen,

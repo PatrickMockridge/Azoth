@@ -85,6 +85,7 @@ pub mod flash_iteration;
 pub mod flash_newton;
 pub mod flash_property;
 pub mod freezing_point;
+pub mod friction_theory_conductivity;
 pub mod friction_theory_viscosity;
 pub mod fuller_schettler_giddings_diffusivity;
 pub mod furst_dielectric;
@@ -279,6 +280,7 @@ pub use eos_cg_phase::eos_cg_phase;
 pub use filippov_conductivity::filippov_conductivity;
 pub use firozabadi_ramley_interface_tension::firozabadi_ramley_interface_tension;
 pub use freezing_point::freezing_point;
+pub use friction_theory_conductivity::friction_theory_conductivity;
 pub use friction_theory_viscosity::friction_theory_viscosity;
 pub use fuller_schettler_giddings_diffusivity::fuller_schettler_giddings_diffusivity;
 pub use furst_electrolyte_mod2004_phase::furst_electrolyte_mod2004_phase;
@@ -363,19 +365,19 @@ pub use results::{
     CostaldMolarVolumeResult, CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult,
     DewTemperatureResult, EffectiveDiffusionResult, ElectrolyteCpaStatoilPhaseResult,
     EosCgPhaseResult, FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult,
-    FreezingPointResult, FrictionTheoryViscosityResult, FullerSchettlerGiddingsDiffusivityResult,
-    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult, GtSurfaceTensionResult,
-    GtSurfaceTensionSimpleResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
-    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
-    IapwsSaturationPressureResult, IdealGasCpResult, InterfacePropertiesResult,
-    KentEisenbergPhaseResult, LgtSurfaceTensionResult, LiquidConductivityPolynomResult,
-    LiquidHeatCapacityResult, LiquidViscosityPureResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    FreezingPointResult, FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
+    FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
+    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
+    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
+    Gerg2008PhaseResult, GtSurfaceTensionResult, GtSurfaceTensionSimpleResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
+    HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
+    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult,
+    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
+    LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PitzerDataset, PitzerPhaseResult,
     Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,

@@ -64,6 +64,7 @@ from azoth.core.result import (
     FlareResult,
     FlowRegime,
     FreezingPointResult,
+    FrictionTheoryConductivityResult,
     FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
@@ -333,6 +334,7 @@ __all__ = [
     "friction_factor_colebrook",
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
+    "friction_theory_conductivity",
     "friction_theory_viscosity",
     "fuller_schettler_giddings_diffusivity",
     "furst_electrolyte_mod2004_phase",
@@ -1328,6 +1330,29 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
         component=result.component,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def friction_theory_conductivity(cv0: Sequence[Q], tc: Sequence[Q], critical_volume: Sequence[Q], omega: Sequence[float], dipole: Sequence[float], molar_mass: Sequence[Q], x: Sequence[float], T: Q, viscosity: Q) -> FrictionTheoryConductivityResult:
+    """``eos.friction_theory_conductivity``, computed in Rust."""
+    spec = _models_gen.model("eos.friction_theory_conductivity")
+    result = _core.friction_theory_conductivity(
+        [input_to_si(spec, "cv0", v) for v in cv0],
+        [input_to_si(spec, "tc", v) for v in tc],
+        [input_to_si(spec, "critical_volume", v) for v in critical_volume],
+        list(omega),
+        list(dipole),
+        [input_to_si(spec, "molar_mass", v) for v in molar_mass],
+        list(x),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "viscosity", viscosity),
+    )
+    return FrictionTheoryConductivityResult(
+        conductivity=from_si(result.conductivity.magnitude_si, result.conductivity.unit),
+        pure_component_conductivity=tuple(from_si(q.magnitude_si, q.unit) for q in result.pure_component_conductivity),
+        dilute_conductivity=from_si(result.dilute_conductivity.magnitude_si, result.dilute_conductivity.unit),
+        dense_conductivity=from_si(result.dense_conductivity.magnitude_si, result.dense_conductivity.unit),
         warnings=_warnings(result.warnings),
     )
 

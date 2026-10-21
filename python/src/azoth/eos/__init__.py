@@ -97,6 +97,7 @@ from azoth.core.result import (
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
     FreezingPointResult,
+    FrictionTheoryConductivityResult,
     FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
@@ -530,6 +531,7 @@ _PARACHOR_MIXTURE_SURFACE_TENSION = "eos.parachor_mixture_surface_tension"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _FIROZABADI_RAMLEY_INTERFACE_TENSION = "eos.firozabadi_ramley_interface_tension"
 _FILIPPOV_CONDUCTIVITY = "eos.filippov_conductivity"
+_FRICTION_THEORY_CONDUCTIVITY = "eos.friction_theory_conductivity"
 _FRICTION_THEORY_VISCOSITY = "eos.friction_theory_viscosity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
@@ -1503,6 +1505,42 @@ def filippov_conductivity(
         P=P,
         filippov_coefficient=filippov_coefficient,
         use_pressure_correction=use_pressure_correction,
+    )
+
+
+def friction_theory_conductivity(
+    cv0: Sequence[Q],
+    tc: Sequence[Q],
+    critical_volume: Sequence[Q],
+    omega: Sequence[float],
+    dipole: Sequence[float],
+    molar_mass: Sequence[Q],
+    x: Sequence[float],
+    T: Q,
+    viscosity: Q,
+) -> FrictionTheoryConductivityResult:
+    """The dense-fluid thermal conductivity from a phase's own viscosity.
+
+    The dilute term is Chung's pure-component conductivity mixed by Mason-Saxena; the
+    dense term converts the viscosity excess with the Eucken factor. The phase's total
+    viscosity is the caller's, because the class reads whatever model the phase carries.
+
+    Raises:
+        InvalidInputError: if the vectors differ in length.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.friction_theory_conductivity`.
+    """
+    return resolve(_FRICTION_THEORY_CONDUCTIVITY)(  # type: ignore[no-any-return]
+        cv0=cv0,
+        tc=tc,
+        critical_volume=critical_volume,
+        omega=omega,
+        dipole=dipole,
+        molar_mass=molar_mass,
+        x=x,
+        T=T,
+        viscosity=viscosity,
     )
 
 

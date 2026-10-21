@@ -60,6 +60,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyFilippovConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
     m.add_class::<crate::transport_gen::PyFreezingPointResult>()?;
+    m.add_class::<crate::transport_gen::PyFrictionTheoryConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFrictionTheoryViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyFullerSchettlerGiddingsDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyFurstElectrolyteMod2004PhaseResult>()?;
@@ -359,6 +360,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::freezing_point, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::friction_theory_conductivity,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::friction_theory_viscosity,
         m

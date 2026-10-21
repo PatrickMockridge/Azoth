@@ -1,0 +1,109 @@
+id = "eos.friction_theory_conductivity"
+name = "Thermal conductivity from the friction-theory residual"
+kind = "direct"
+assumptions = [
+    "the dilute-gas term is Chung's `40.785 sqrt(M_g T)/(Vc_cm3^(2/3) Omega) Fc` viscosity and modified-Eucken `psi` factor, converted by `3.75 R psi eta0 / M` - the block `eos.chung_conductivity` answers from, one helper serving both.\n",
+    "**the class's two Mason-Saxena mass exponents disagree**: the conductivity rule raises `M_i/M_j` to a quarter and the viscosity rule `M_j/M_i`. The asymmetry is the class's own and is reproduced rather than repaired.\n",
+    "the dense term is `max(eta - eta_0mix, 0)(Cv0_mix + 1.25 R)/M_mix`, with **the phase's total viscosity the caller's**: the class reads `phase.getViscosity()` - whatever model that phase already carries - and this id runs none.\n",
+    "`Cv0_i` is the ideal-gas heat capacity at constant volume, `Cp0 - R` from `eos.ideal_gas_cp`; the class reads `getCv0(T)` on the component.\n",
+    "the answer is floored at `1e-10 W/(m K)`, the class's own floor, and `R` is NeqSim's `8.3144621`, which the correlation is tuned to.\n",
+    "**the method is reachable only through `setConductivityModel(\"friction theory\")`**; `eos.phase_transport`'s assignments do not include it, so no dispatch arm runs it.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/conductivity/FrictionTheoryConductivityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/friction_conductivity_probe.tsv` - an oil and a gas on both cubics, with the phase's own viscosity and the class's pure-component arrays.",
+    "Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). Ind. Eng. Chem. Res. 27(4), 671-679. Poling, Prausnitz and O'Connell (2001), The Properties of Gases and Liquids, 5th edition, Chapter 10.\n",
+]
+[source]
+standard = "NeqSim master `FrictionTheoryConductivityMethod`"
+edition = "`calcConductivity` and `initPureComponentProperties`, ported; the viscosity the class reads from the phase is an input here."
+[inputs]
+[inputs.cv0]
+type = "vector"
+unit = "J/(mol*K)"
+length = "one per component"
+description = "each component's ideal-gas heat capacity at constant volume at `T`.\n"
+[inputs.tc]
+type = "vector"
+unit = "K"
+length = "one per component"
+description = "each component's critical temperature.\n"
+[inputs.critical_volume]
+type = "vector"
+unit = "m**3/mol"
+length = "one per component"
+description = "each component's critical volume, the `Vc` in Chung's dilute viscosity.\n"
+[inputs.omega]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's acentric factor.\n"
+[inputs.dipole]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's dipole moment, in debye.\n"
+[inputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per component"
+description = "each component's molar mass.\n"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.viscosity]
+unit = "Pa*s"
+description = "the phase's total dynamic viscosity, from whatever model the phase carries.\n"
+[outputs]
+[outputs.conductivity]
+unit = "W/(m*K)"
+description = "the phase's thermal conductivity.\n"
+[outputs.pure_component_conductivity]
+type = "vector"
+unit = "W/(m*K)"
+length = "one per component"
+description = "each component's dilute-gas Chung conductivity, before mixing.\n"
+[outputs.dilute_conductivity]
+unit = "W/(m*K)"
+description = "the Mason-Saxena mixture of the pure values, before the dense term.\n"
+[outputs.dense_conductivity]
+unit = "W/(m*K)"
+description = "the Eucken-scaled viscosity excess, which the class floors at zero.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "critical_volume"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Vc` is the divisor in Chung's dilute viscosity; a non-positive critical volume is not a substance.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The conductivity divides by it.\n"
+[[valid_range]]
+quantity = "viscosity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A viscosity excess below the dilute value contributes nothing rather than a negative conductivity.\n"
+[[valid_range]]
+quantity = "x"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[implementations]
+python = "azoth.eos.friction_theory_conductivity"
+rust = "azoth_eos::friction_theory_conductivity"

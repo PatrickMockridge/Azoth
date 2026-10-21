@@ -974,6 +974,28 @@ class FreezingPointResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FrictionTheoryConductivityResult(_HasWarnings):
+    """Result of ``eos.friction_theory_conductivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.friction_theory_conductivity"
+
+    #: the phase's thermal conductivity.
+    conductivity: Q
+
+    #: each component's dilute-gas Chung conductivity, before mixing.
+    pure_component_conductivity: tuple[Q, ...]
+
+    #: the Mason-Saxena mixture of the pure values, before the dense term.
+    dilute_conductivity: Q
+
+    #: the Eucken-scaled viscosity excess, which the class floors at zero.
+    dense_conductivity: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FrictionTheoryViscosityResult(_HasWarnings):
     """Result of ``eos.friction_theory_viscosity``."""
 

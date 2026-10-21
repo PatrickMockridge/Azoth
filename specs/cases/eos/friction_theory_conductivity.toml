@@ -1,0 +1,96 @@
+model = "eos.friction_theory_conductivity"
+[[cases]]
+id = "srk_methane_nbutane_oil_phase"
+tolerance = 1e-12
+source = "The capture's `srk_methane_nbutane_300K_20bara` row, the oil phase at 300 K and 20 bar on a `SystemSrkEos`, with the phase's own PFCT viscosity as the input.\n\n  lambda0 = 0.0177055731460434, dense = 0.22374664048249707\n  lambda = 0.24145221362854047 W/(m K)\n"
+[cases.inputs]
+cv0 = [27.544151393999996, 90.979083256]
+tc = [190.55999999999997, 425.12]
+critical_volume = [9.9e-5, 0.00025499999999999996]
+omega = [0.0115, 0.2002]
+dipole = [0.0, 0.0]
+molar_mass = [0.016042999999999998, 0.058122999999999994]
+x = [0.09542082642782022, 0.9045791735721797]
+T = 300.0
+viscosity = 1.3466360688772563e-4
+[cases.expected]
+conductivity = 0.24145221362854047
+pure_component_conductivity = [0.03384023073765177, 0.016194390268630662]
+dilute_conductivity = 0.0177055731460434
+dense_conductivity = 0.22374664048249707
+[[cases]]
+id = "pr_methane_nbutane_oil_phase"
+tolerance = 1e-12
+source = "The capture's `pr_methane_nbutane_300K_20bara` row: the same fluid on a `SystemPrEos`, whose oil phase composition and viscosity are its own.\n\n  lambda0 = 0.017733852258944197, dense = 0.22298051577888492\n  lambda = 0.2407143680378291 W/(m K)\n"
+[cases.inputs]
+cv0 = [27.544151393999996, 90.979083256]
+tc = [190.55999999999997, 425.12]
+critical_volume = [9.9e-5, 0.00025499999999999996]
+omega = [0.0115, 0.2002]
+dipole = [0.0, 0.0]
+molar_mass = [0.016042999999999998, 0.058122999999999994]
+x = [0.09718095876744977, 0.9028190412325503]
+T = 300.0
+viscosity = 1.3420725019807622e-4
+[cases.expected]
+conductivity = 0.2407143680378291
+pure_component_conductivity = [0.03384023073765177, 0.016194390268630662]
+dilute_conductivity = 0.017733852258944197
+dense_conductivity = 0.22298051577888492
+[[cases]]
+id = "pr_pure_methane_gas"
+tolerance = 1e-12
+source = "The capture's `pr_methane_300K_10bara` row: a pure gas, where both mixing rules are the identity and the dense term is the viscosity excess alone. The arithmetic, which is the spec's worked example:\n\n  Vc_cm3 = 99, M_g = 16.043\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593*300/190.56 = 1.982525188916877\n  Omega = 1.16145*T*^-0.14874 + 0.52487*exp(-0.7732 T*) + 2.16178*exp(-2.43787 T*) = 1.179576645518974\n  eta0 = 40.785*0.9968306*sqrt(16.043*300)/(99^(2/3)*1.179576645518974) = 111.73149724549656 micropoise = 1.1173149724549656e-5 Pa s\n  alpha = Cv0/R - 1.5 = 1.81280016226185\n  beta = 0.7862 - 0.7109*0.0115 + 1.3168*0.0115^2 = 0.7781987968\n  z = 2 + 10.5*(300/190.56)^2 = 28.023656643973375\n  psi = 1 + alpha*(0.215 + 0.28288 alpha - 1.061 beta + 0.26665 z)/(0.6366 + beta z + 1.061 alpha beta) = 1.5583961077549813\n  lambda0 = 3.75*R*psi*eta0/M = 0.03384023073765177 W/(m K)\n  eucken = Cv0 + 1.25 R = 37.937229019\n  dense = (1.1403910448332615e-5 - 1.1173149724549656e-5)*37.937229019/0.016043 = 0.0005456848735737892\n  lambda = 0.03384023073765177 + 0.0005456848735737892 = 0.03438591561122556 W/(m K)\n"
+[cases.inputs]
+cv0 = [27.544151393999996]
+tc = [190.55999999999997]
+critical_volume = [9.9e-5]
+omega = [0.0115]
+dipole = [0.0]
+molar_mass = [0.016042999999999998]
+x = [1.0]
+T = 300.0
+viscosity = 1.1403910448332615e-5
+[cases.expected]
+conductivity = 0.034385915611225566
+pure_component_conductivity = [0.03384023073765177]
+dilute_conductivity = 0.03384023073765177
+dense_conductivity = 0.0005456848735737973
+[[cases]]
+id = "aqueous_co2_water"
+tolerance = 1e-12
+source = "The capture's `aqueous_co2_water_313K_50bara` row, the aqueous phase of CO2/water 0.02/0.98 at 313.15 K and 50 bar: water's 1.8 debye dipole enters `Fc`, and the water-dominated phase's viscosity excess carries the dense term to 1.27.\n\n  lambda0 = 0.02466910402443104, dense = 1.2708465140577754, lambda = 1.2955156180822065 W/(m K)\n"
+[cases.inputs]
+cv0 = [29.49650800685513, 25.298286839496484]
+tc = [304.19, 647.3]
+critical_volume = [9.4e-5, 5.6e-5]
+omega = [0.2276, 0.344]
+dipole = [0.0, 1.8]
+molar_mass = [0.04401, 0.018015]
+x = [0.0006691762234084198, 0.9993308237765915]
+T = 313.15
+viscosity = 6.526078179332641e-4
+[cases.expected]
+conductivity = 1.2955156180822065
+pure_component_conductivity = [0.018089446559992537, 0.024672679813184016]
+dilute_conductivity = 0.02466910402443104
+dense_conductivity = 1.2708465140577754
+[[cases]]
+id = "n_pentane_liquid"
+tolerance = 1e-12
+source = "The capture's `npentane_300K_1bara` row: a pure liquid, where the dense term is three per cent of the answer.\n\n  lambda0 = 0.014887189623492371, dense = 0.0005192875262050564\n  lambda = 0.015406477149697428 W/(m K)\n"
+[cases.inputs]
+cv0 = [112.55343410200003]
+tc = [469.7]
+critical_volume = [0.00030399999999999996]
+omega = [0.2515]
+dipole = [0.0]
+molar_mass = [0.07215]
+x = [1.0]
+T = 300.0
+viscosity = 7.2216627302922416e-6
+[cases.expected]
+conductivity = 0.015406477149697428
+pure_component_conductivity = [0.014887189623492371]
+dilute_conductivity = 0.014887189623492371
+dense_conductivity = 0.0005192875262050564

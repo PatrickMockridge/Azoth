@@ -4331,6 +4331,36 @@ impl CalcResult for FilippovConductivityResult {
     }
 }
 
+/// Result of `eos.friction_theory_conductivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrictionTheoryConductivityResult {
+    /// The mixture's thermal conductivity.
+    pub conductivity: ThermalConductivity,
+    /// Each component's dilute-gas Chung conductivity.
+    pub pure_component_conductivity: Vec<f64>,
+    /// The Mason-Saxena mixture of the pure values, before the dense term.
+    pub dilute_conductivity: ThermalConductivity,
+    /// The Eucken-scaled viscosity excess, which the class floors at zero.
+    pub dense_conductivity: ThermalConductivity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FrictionTheoryConductivityResult {
+    const CALC_ID: &'static str = "eos.friction_theory_conductivity";
+    const FIELDS: &'static [&'static str] = &[
+        "conductivity",
+        "pure_component_conductivity",
+        "dilute_conductivity",
+        "dense_conductivity",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.friction_theory_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrictionTheoryViscosityResult {

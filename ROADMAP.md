@@ -136,18 +136,20 @@ process model needs.
   profile parameters. Its Parachor and Firozabadi slots read the databank's `parachor`
   and `tc`, and both phases' translated densities - the SRK Peneloux shift, which the
   databank now carries beside the Peng-Robinson one, is what makes those densities
-  NeqSim's rather than the untranslated cubic's. **Owed**: `FrictionTheoryConductivityMethod`,
-  the viscosity method's sibling, reachable only through `setConductivityModel`'s
-  `"friction theory"` string and in none of P1's bullet.
+  NeqSim's rather than the untranslated cubic's. `FrictionTheoryConductivityMethod` is
+  `eos.friction_theory_conductivity`, reached the only way the class reaches it - an
+  explicit `setConductivityModel("friction theory")` - and taking the phase's own
+  viscosity as an input, as the class reads `getViscosity()`.
   **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
   CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
   `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`
   is the reproduction. The captures `surface_tension_probe.tsv`,
   `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`, `lgt_local_probe.tsv`,
-  `gt_simple_profile_probe.tsv`, `gt_simple_initial_probe.tsv`, `full_gt_probe.tsv` and
-  `cdft_probe.tsv` record the default pairs, models 1, 2 and 4, the profiles'
-  negative-pressure segments, the GT-simple profile, the FullGT answers and the CDFT
-  states with the parachor beside each so a silent fallback would show.
+  `gt_simple_profile_probe.tsv`, `gt_simple_initial_probe.tsv`, `full_gt_probe.tsv`,
+  `cdft_probe.tsv` and `friction_conductivity_probe.tsv` record the default pairs, models
+  1, 2 and 4, the profiles' negative-pressure segments, the GT-simple profile, the FullGT
+  answers, the CDFT states with the parachor beside each so a silent fallback would show,
+  and the friction-theory conductivity on both cubics.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,

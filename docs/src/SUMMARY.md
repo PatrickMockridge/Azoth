@@ -118,6 +118,7 @@
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
   - [Liquid thermal conductivity from the Filippov mixing rule](./eos/filippov_conductivity.md)
   - [Freezing-point temperature](./eos/freezing_point.md)
+  - [Thermal conductivity from the friction-theory residual](./eos/friction_theory_conductivity.md)
   - [Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi](./eos/friction_theory_viscosity.md)
   - [Phase state of a Furst electrolyte fluid, 2004 revision](./eos/furst_electrolyte_mod2004_phase.md)
   - [Phase state of a Furst electrolyte fluid](./eos/furst_electrolyte_phase.md)

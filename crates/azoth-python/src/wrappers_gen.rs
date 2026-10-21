@@ -991,6 +991,49 @@ pub fn freezing_point(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Thermal conductivity from the friction-theory residual.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (cv0, tc, critical_volume, omega, dipole, molar_mass, x, T, viscosity))]
+#[pyo3(text_signature = "(cv0, tc, critical_volume, omega, dipole, molar_mass, x, T, viscosity)")]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn friction_theory_conductivity(
+    py: Python<'_>,
+    cv0: Vec<f64>,
+    tc: Vec<f64>,
+    critical_volume: Vec<f64>,
+    omega: Vec<f64>,
+    dipole: Vec<f64>,
+    molar_mass: Vec<f64>,
+    x: Vec<f64>,
+    T: f64,
+    viscosity: f64,
+) -> PyResult<crate::transport_gen::PyFrictionTheoryConductivityResult> {
+    azoth_eos::friction_theory_conductivity::friction_theory_conductivity(
+        &cv0.iter()
+            .map(|v| joules_per_mole_kelvin(*v))
+            .collect::<Vec<_>>(),
+        &tc.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+        &critical_volume
+            .iter()
+            .map(|v| cubic_meters_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &omega,
+        &dipole,
+        &molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &x,
+        kelvins(T),
+        pascal_seconds(viscosity),
+    )
+    .map(|r| crate::transport_gen::PyFrictionTheoryConductivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
