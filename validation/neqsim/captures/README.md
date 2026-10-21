@@ -570,6 +570,21 @@ no probe, which is the honest form of that.
 Each capture's own header says what it is and, where the probe emits a key table, what each
 key came from.
 
+**The scale family's three probes** record the water-analysis scale calculations: the
+saturation-index calculator with every intermediate it exposes (Ksp, ionic strength,
+Debye-Huckel A, the free ions, the five SIs) across the upstream tests' brines and both pH
+paths; the binary Pitzer model with its raw eight-salt parameter table read by reflection and
+the 29-point Hamer-Wu NaCl curve; and the solid solution, mass calculator, multi-mineral
+equilibrium in three activity modes, flowline profile and water-compatibility screener. The
+last two compose the first, and both inert pH arguments are proven inert by running the same
+state twice.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ScalePredictionProbe > captures/scale_prediction_probe.tsv
+java -cp .:neqsim-f0c7436.jar PitzerScaleActivityProbe > captures/pitzer_scale_activity_probe.tsv
+java -cp .:neqsim-f0c7436.jar ScaleFamilyProbe > captures/scale_family_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,

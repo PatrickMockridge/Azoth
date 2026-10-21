@@ -1,0 +1,272 @@
+solid_solution
+  pure_barite margules=2.3 temperature=298.15 a_ba=0.01 a_sr=0.0 a_so4=0.05 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=1.0 x_srso4=0.0 total_si=6.665546248849069
+  pure_celestite margules=2.3 temperature=298.15 a_ba=0.0 a_sr=0.01 a_so4=0.05 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.0 x_srso4=1.0 total_si=3.162411561764489
+  both_zero margules=2.3 temperature=298.15 a_ba=0.0 a_sr=0.0 a_so4=0.05 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.5 x_srso4=0.5 total_si=-Infinity
+  strontium_trace margules=2.3 temperature=298.15 a_ba=0.01 a_sr=1.0E-31 a_so4=0.05 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=1.0 x_srso4=0.0 total_si=6.665546248849069
+  mixed margules=2.3 temperature=298.15 a_ba=0.001 a_sr=0.005 a_so4=0.01 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.9989999999709545 x_srso4=0.0010000000290455446 total_si=4.967009757422328
+  mixed_at_350K margules=2.3 temperature=350.0 a_ba=0.001 a_sr=0.005 a_so4=0.01 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.9989999999709545 x_srso4=0.0010000000290455446 total_si=4.967009757422328
+  mixed_margules_zero margules=0.0 temperature=298.15 a_ba=0.001 a_sr=0.005 a_so4=0.01 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.9984326928913942 x_srso4=0.0015673071086057533 total_si=4.96725745131145
+  mixed_margules_five margules=5.0 temperature=298.15 a_ba=0.001 a_sr=0.005 a_so4=0.01 ksp_ba=1.08E-10 ksp_sr=3.44E-7 x_baso4=0.9989999999709545 x_srso4=0.0010000000290455446 total_si=4.967008584827159
+  mixed_custom_ksp margules=2.3 temperature=298.15 a_ba=0.001 a_sr=0.005 a_so4=0.01 ksp_ba=1.0E-9 ksp_sr=1.0E-6 x_baso4=0.9989999999709545 x_srso4=0.0010000000290455446 total_si=4.000433512909278
+
+scale_mass
+  si=2.5 cation=0.01 anion=0.02 caco3=990.8910000000001 baso4=2310.5609999999997 srso4=1818.4320000000002 caso4=1347.7859999999998 feco3=1146.9150000000002
+  si=-1.0 cation=0.01 anion=0.02 caco3=0.0 baso4=0.0 srso4=0.0 caso4=0.0 feco3=0.0
+  si=5.0 cation=0.01 anion=0.02 caco3=990.8910000000001 baso4=2310.5609999999997 srso4=1818.4320000000002 caso4=1347.7859999999998 feco3=1146.9150000000002
+  si=0.0 cation=0.001 anion=0.001 caco3=0.0 baso4=0.0 srso4=0.0 caso4=0.0 feco3=0.0
+  volume_2l baso4_mass_mg_per_l=2310.5609999999997
+
+multi_mineral_equilibrium
+  sulphate_limited_davies iterations=43 limit_reached=false complementarity=8.355304428255001E-10 ion_balance=1.734723475976807E-18 divalent_gamma=0.5977037496634197 total_mass_mg_per_l=1699.4196722154927
+    mineral=BaSO4 common=barite initial_si=4.876927696794577 final_si=8.355304428255001E-10 product=0.35724977236171185 mol_per_l=0.007281458812354825 mg_per_l=1699.4196722154927 grams=1.6994196722154926 limiting=false
+    mineral=SrSO4 common=celestite initial_si=0.6239941092936203 final_si=-0.024562773607350038 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=0.5172688634939727 final_si=-0.13128801940699758 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaCO3 common=calcite initial_si=-6.977584279583682 final_si=-6.977584279583682 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.01842164244793327
+    residual_Ba++=4.304009826848216E-7
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.002109334143737786
+    residual_CO3--=2.658084434176394E-14
+    activity_divalent=0.5977037496634197
+  sulphate_limited_bdot iterations=43 limit_reached=false complementarity=4.841367472462266E-11 ion_balance=1.734723475976807E-18 divalent_gamma=0.14347698831781966 total_mass_mg_per_l=1697.7826379846324
+    mineral=BaSO4 common=barite initial_si=3.6375202399726745 final_si=4.841367472462266E-11 product=0.020585646176751758 mol_per_l=0.007274444654803687 mg_per_l=1697.7826379846324 grams=1.6977826379846324 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-0.615413347528282 final_si=-1.2625284691246774 product=0.020585646176751758 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-0.7221385933279296 final_si=-1.369253714924325 product=0.020585646176751758 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaCO3 common=calcite initial_si=-8.216991736405584 final_si=-8.216991736405584 product=0.020585646176751758 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.01842164244793327
+    residual_Ba++=7.4445585338233635E-6
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.0021163483012889253
+    residual_CO3--=2.658084434176394E-14
+    activity_divalent=0.14347698831781966
+  sulphate_limited_pitzer iterations=43 limit_reached=false complementarity=2.1168916545261838E-11 ion_balance=8.673617379884035E-19 divalent_gamma=0.1644721754836052 total_mass_mg_per_l=1695.5336415358588
+    mineral=BaSO4 common=barite initial_si=3.274878675779998 final_si=2.1168916545261838E-11 product=0.008931469915838508 mol_per_l=0.00726480843881854 mg_per_l=1695.5336415358588 grams=1.6955336415358588 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-0.9124199836271142 final_si=-1.5575621517542084 product=0.01038862016952095 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-1.0264704689060817 final_si=-1.6716126370331759 product=0.010214864928879578 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaCO3 common=calcite initial_si=-8.40272422321372 final_si=-8.40272422321372 product=0.013422456869096844 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.01842164244793327
+    residual_Ba++=1.7080774518967346E-5
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.002125984517274069
+    residual_CO3--=2.658084434176394E-14
+    activity_Na+=0.64887119535163
+    activity_Cl-=0.64887119535163
+    activity_Ca++=0.1644721754836052
+    activity_Ba++=0.14380790128425686
+    activity_Sr++=0.1672698534391079
+    activity_Fe++=0.14969412867150467
+    activity_SO4--=0.062106948478332785
+    activity_CO3--=0.08160928637096317
+    activity_HCO3-=0.38059557316418474
+  high_salinity_davies iterations=0 limit_reached=false complementarity=0.0 ion_balance=0.0 divalent_gamma=75.96683436247041 total_mass_mg_per_l=0.0
+    mineral=BaSO4 common=barite initial_si=-0.125960782995881 final_si=-0.125960782995881 product=5770.959923055015 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-5.247258657156502 final_si=-5.247258657156502 product=5770.959923055015 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-3.485167640834143 final_si=-3.485167640834143 product=5770.959923055015 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.032535825723316154
+    residual_Ba++=0.002912755685335003
+    residual_Sr++=0.00913033553983109
+    residual_Fe++=0.0
+    residual_SO4--=1.8175788587455416E-11
+    residual_CO3--=4.8611986416753326E-23
+    activity_divalent=75.96683436247041
+  high_salinity_bdot iterations=0 limit_reached=false complementarity=0.0 ion_balance=0.0 divalent_gamma=0.12361642149395544 total_mass_mg_per_l=0.0
+    mineral=BaSO4 common=barite initial_si=-5.703056506762753 final_si=-5.703056506762753 product=0.015281019662971247 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-10.824354380923374 final_si=-10.824354380923374 product=0.015281019662971247 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-9.062263364601014 final_si=-9.062263364601014 product=0.015281019662971247 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.032535825723316154
+    residual_Ba++=0.002912755685335003
+    residual_Sr++=0.00913033553983109
+    residual_Fe++=0.0
+    residual_SO4--=1.8175788587455416E-11
+    residual_CO3--=4.8611986416753326E-23
+    activity_divalent=0.12361642149395544
+  high_salinity_pitzer iterations=0 limit_reached=false complementarity=0.0 ion_balance=0.0 divalent_gamma=0.1313959474047632 total_mass_mg_per_l=0.0
+    mineral=BaSO4 common=barite initial_si=-6.9181531095379825 final_si=-6.9181531095379825 product=9.312273695703053E-4 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-11.695423450185787 final_si=-11.695423450185787 product=0.0020562848002661305 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-10.042875196262637 final_si=-10.042875196262637 product=0.0015978665413164464 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.032535825723316154
+    residual_Ba++=0.002912755685335003
+    residual_Sr++=0.00913033553983109
+    residual_Fe++=0.0
+    residual_SO4--=1.8175788587455416E-11
+    residual_CO3--=4.8611986416753326E-23
+    activity_Na+=0.720014546492339
+    activity_Cl-=0.720014546492339
+    activity_Ca++=0.1313959474047632
+    activity_Ba++=0.07657679744212341
+    activity_Sr++=0.1690926510310311
+    activity_Fe++=0.12871196454027947
+    activity_SO4--=0.012160698810551918
+    activity_CO3--=0.028629670450427497
+    activity_HCO3-=0.12375128714919997
+  co_precipitation iterations=133 limit_reached=false complementarity=3.5926079406150245E-9 ion_balance=3.469446951953614E-18 divalent_gamma=0.5977037496634197 total_mass_mg_per_l=4292.748019675318
+    mineral=BaSO4 common=barite initial_si=4.445020684845298 final_si=3.5926079406150245E-9 product=0.35724977236171185 mol_per_l=7.281088239304693E-4 mg_per_l=169.93331841713223 grams=0.16993331841713222 limiting=false
+    mineral=SrSO4 common=celestite initial_si=1.112905851296717 final_si=-9.575771742875196E-14 product=0.35724977236171185 mol_per_l=0.021789720872479743 mg_per_l=4002.33592985708 grams=4.00233592985708 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=0.562231451720118 final_si=8.688590473644248E-14 product=0.35724977236171185 mol_per_l=8.849623284935045E-4 mg_per_l=120.47877140110569 grams=0.12047877140110569 limiting=false
+    mineral=CaCO3 common=calcite initial_si=-7.377023818186227 final_si=-7.452860219247141 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.004638328974134712
+    residual_Ba++=8.009740328147105E-8
+    residual_Sr++=0.006742577689492408
+    residual_Fe++=0.0
+    residual_SO4--=0.011334443525572637
+    residual_CO3--=3.533943757312137E-14
+    activity_divalent=0.5977037496634197
+  single_mineral_barite_pure_water iterations=43 limit_reached=false complementarity=6.427348640123371E-11 ion_balance=0.0 divalent_gamma=0.9028713356445365 total_mass_mg_per_l=1697.3864119588732
+    mineral=BaSO4 common=barite initial_si=5.606432391478347 final_si=6.427348640123371E-11 product=0.8151766487285492 mol_per_l=0.007272746955563105 mg_per_l=1697.3864119588732 grams=1.697386411958873 limiting=false
+    residual_Ca++=0.0
+    residual_Ba++=9.142257774402902E-6
+    residual_Sr++=0.0
+    residual_Fe++=0.0
+    residual_SO4--=1.4365265965106606E-5
+    residual_CO3--=0.0
+    activity_divalent=0.9028713356445365
+  no_minerals iterations=0 limit_reached=false complementarity=0.0 ion_balance=0.0 divalent_gamma=0.976903933457206 total_mass_mg_per_l=0.0
+    residual_Ca++=0.0
+    residual_Ba++=0.0
+    residual_Sr++=0.0
+    residual_Fe++=0.0
+    residual_SO4--=0.0
+    residual_CO3--=0.0
+    activity_divalent=0.976903933457206
+  iteration_limit_one_step iterations=1 limit_reached=true complementarity=4.36289374866633 ion_balance=0.0 divalent_gamma=0.5977037496634197 total_mass_mg_per_l=849.7098361078415
+    mineral=BaSO4 common=barite initial_si=4.876927696792897 final_si=4.36289374866633 product=0.35724977236171185 mol_per_l=0.00364072940617782 mg_per_l=849.7098361078415 grams=0.8497098361078416 limiting=false
+    mineral=SrSO4 common=celestite initial_si=0.623994109291941 final_si=0.4109644883191465 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=0.5172688634965064 final_si=0.30423924252371193 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.018421642448111977
+    residual_Ba++=0.0036411598071596878
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.005750063549878477
+    residual_CO3--=3.386049682281995E-59
+    activity_divalent=0.5977037496634197
+  water_volume_1000l iterations=43 limit_reached=false complementarity=8.354946662765598E-10 ion_balance=8.673617379884035E-19 divalent_gamma=0.5977037496634197 total_mass_mg_per_l=1699.4196722154904
+    mineral=BaSO4 common=barite initial_si=4.876927696792897 final_si=8.354946662765598E-10 product=0.35724977236171185 mol_per_l=0.0072814588123548156 mg_per_l=1699.4196722154904 grams=1699.4196722154904 limiting=false
+    mineral=SrSO4 common=celestite initial_si=0.623994109291941 final_si=-0.024562773614825117 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=0.5172688634965064 final_si=-0.1312880194102597 product=0.35724977236171185 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.018421642448111977
+    residual_Ba++=4.3040098269219416E-7
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.00210933414370148
+    residual_CO3--=3.386049682281995E-59
+    activity_divalent=0.5977037496634197
+  pitzer_explicit_i_1p5 iterations=43 limit_reached=false complementarity=1.2888911619520012E-11 ion_balance=8.673617379884035E-19 divalent_gamma=0.15204348374063842 total_mass_mg_per_l=1692.9491918665149
+    mineral=BaSO4 common=barite initial_si=3.055585310712245 final_si=1.2888911619520012E-11 product=0.005390506507357176 mol_per_l=0.007253734915234222 mg_per_l=1692.9491918665149 grams=1.692949191866515 limiting=false
+    mineral=SrSO4 common=celestite initial_si=-1.1174428480400487 final_si=-1.7603287961427958 product=0.006479403160571401 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    mineral=CaSO4 common=anhydrite initial_si=-1.2358009687706295 final_si=-1.8786869168733769 product=0.006308151695075457 mol_per_l=0.0 mg_per_l=0.0 grams=0.0 limiting=false
+    residual_Ca++=0.018421642448111977
+    residual_Ba++=2.8154298103285507E-5
+    residual_Sr++=0.034238758274366586
+    residual_Fe++=0.0
+    residual_SO4--=0.002137058040822074
+    residual_CO3--=3.386049682281995E-59
+    activity_Na+=0.6534446620528015
+    activity_Cl-=0.6534446620528015
+    activity_Ca++=0.15204348374063842
+    activity_Ba++=0.1299257576739937
+    activity_Sr++=0.15617110632619224
+    activity_Fe++=0.13957170355406656
+    activity_SO4--=0.04148912889838898
+    activity_CO3--=0.058650170671863476
+    activity_HCO3-=0.29880866977922205
+
+flowline_scale_profile
+  upstream_state ph_argument=6.5 segments=10
+    fraction=0.0 t_c=80.0 p_bar=200.0 si_caco3=-0.5354413918208152 si_baso4=0.33344821269580377 si_srso4=-5.045556020614717 si_caso4=-2.1200032759616736 si_feco3=NaN
+    fraction=0.1 t_c=74.0 p_bar=185.0 si_caco3=-0.5829624143384334 si_baso4=0.3670291527860441 si_srso4=-4.8039375023781465 si_caso4=-2.1949909075284944 si_feco3=NaN
+    fraction=0.2 t_c=68.0 p_bar=170.0 si_caco3=-0.6300423460027208 si_baso4=0.40743293150656873 si_srso4=-4.554593996910108 si_caso4=-2.2641649463242195 si_feco3=NaN
+    fraction=0.3 t_c=62.0 p_bar=155.0 si_caco3=-0.6769249965150664 si_baso4=0.4551808540992592 si_srso4=-4.297070613643547 si_caso4=-2.3270082326603387 si_feco3=NaN
+    fraction=0.4 t_c=56.0 p_bar=140.0 si_caco3=-0.7238917201390003 si_baso4=0.5108327710599033 si_srso4=-4.030882947803879 si_caso4=-2.3829635510641864 si_feco3=NaN
+    fraction=0.5 t_c=50.0 p_bar=125.0 si_caco3=-0.7712656160518646 si_baso4=0.5749912137808355 si_srso4=-3.7555140165260084 si_caso4=-2.431429252072116 si_feco3=NaN
+    fraction=0.6 t_c=44.0 p_bar=110.0 si_caco3=-0.8194163016629658 si_baso4=0.6483059804134023 si_srso4=-3.470410884071624 si_caso4=-2.4717543881216555 si_feco3=NaN
+    fraction=0.7 t_c=38.0 p_bar=95.0 si_caco3=-0.8687653264730618 si_baso4=0.7314792408594665 si_srso4=-3.1749809277468573 si_caso4=-2.5032332890860074 si_feco3=NaN
+    fraction=0.8 t_c=32.0 p_bar=80.0 si_caco3=-0.9197923093616684 si_baso4=0.8252712400802729 si_srso4=-2.8685876892688653 si_caso4=-2.5250994918023997 si_feco3=NaN
+    fraction=0.9 t_c=26.0 p_bar=65.0 si_caco3=-0.9730419020429558 si_baso4=0.9305066911905926 si_srso4=-2.5505462481242245 si_caso4=-2.5365189245728623 si_feco3=NaN
+    fraction=1.0 t_c=20.0 p_bar=50.0 si_caco3=-1.0291317074510238 si_baso4=1.048081964483009 si_srso4=-2.220118043642967 si_caso4=-2.5365822316268236 si_feco3=NaN
+    max_CaCO3=-0.5354413918208152
+    max_BaSO4=1.048081964483009
+    max_SrSO4=-2.220118043642967
+    max_CaSO4=-2.1200032759616736
+    max_FeCO3=-Infinity
+  one_segment_clamped ph_argument=6.5 segments=1
+    fraction=0.0 t_c=80.0 p_bar=200.0 si_caco3=-0.5354413918208152 si_baso4=0.33344821269580377 si_srso4=-5.045556020614717 si_caso4=-2.1200032759616736 si_feco3=NaN
+    fraction=0.5 t_c=50.0 p_bar=125.0 si_caco3=-0.7712656160518646 si_baso4=0.5749912137808355 si_srso4=-3.7555140165260084 si_caso4=-2.431429252072116 si_feco3=NaN
+    fraction=1.0 t_c=20.0 p_bar=50.0 si_caco3=-1.0291317074510238 si_baso4=1.048081964483009 si_srso4=-2.220118043642967 si_caso4=-2.5365822316268236 si_feco3=NaN
+    max_CaCO3=-0.5354413918208152
+    max_BaSO4=1.048081964483009
+    max_SrSO4=-2.220118043642967
+    max_CaSO4=-2.1200032759616736
+    max_FeCO3=-Infinity
+  ph_argument_four ph_argument=4.0 segments=10
+    fraction=0.0 t_c=80.0 p_bar=200.0 si_caco3=-0.5354413918208152 si_baso4=0.33344821269580377 si_srso4=-5.045556020614717 si_caso4=-2.1200032759616736 si_feco3=NaN
+    fraction=0.1 t_c=74.0 p_bar=185.0 si_caco3=-0.5829624143384334 si_baso4=0.3670291527860441 si_srso4=-4.8039375023781465 si_caso4=-2.1949909075284944 si_feco3=NaN
+    fraction=0.2 t_c=68.0 p_bar=170.0 si_caco3=-0.6300423460027208 si_baso4=0.40743293150656873 si_srso4=-4.554593996910108 si_caso4=-2.2641649463242195 si_feco3=NaN
+    fraction=0.3 t_c=62.0 p_bar=155.0 si_caco3=-0.6769249965150664 si_baso4=0.4551808540992592 si_srso4=-4.297070613643547 si_caso4=-2.3270082326603387 si_feco3=NaN
+    fraction=0.4 t_c=56.0 p_bar=140.0 si_caco3=-0.7238917201390003 si_baso4=0.5108327710599033 si_srso4=-4.030882947803879 si_caso4=-2.3829635510641864 si_feco3=NaN
+    fraction=0.5 t_c=50.0 p_bar=125.0 si_caco3=-0.7712656160518646 si_baso4=0.5749912137808355 si_srso4=-3.7555140165260084 si_caso4=-2.431429252072116 si_feco3=NaN
+    fraction=0.6 t_c=44.0 p_bar=110.0 si_caco3=-0.8194163016629658 si_baso4=0.6483059804134023 si_srso4=-3.470410884071624 si_caso4=-2.4717543881216555 si_feco3=NaN
+    fraction=0.7 t_c=38.0 p_bar=95.0 si_caco3=-0.8687653264730618 si_baso4=0.7314792408594665 si_srso4=-3.1749809277468573 si_caso4=-2.5032332890860074 si_feco3=NaN
+    fraction=0.8 t_c=32.0 p_bar=80.0 si_caco3=-0.9197923093616684 si_baso4=0.8252712400802729 si_srso4=-2.8685876892688653 si_caso4=-2.5250994918023997 si_feco3=NaN
+    fraction=0.9 t_c=26.0 p_bar=65.0 si_caco3=-0.9730419020429558 si_baso4=0.9305066911905926 si_srso4=-2.5505462481242245 si_caso4=-2.5365189245728623 si_feco3=NaN
+    fraction=1.0 t_c=20.0 p_bar=50.0 si_caco3=-1.0291317074510238 si_baso4=1.048081964483009 si_srso4=-2.220118043642967 si_caso4=-2.5365822316268236 si_feco3=NaN
+    max_CaCO3=-0.5354413918208152
+    max_BaSO4=1.048081964483009
+    max_SrSO4=-2.220118043642967
+    max_CaSO4=-2.1200032759616736
+    max_FeCO3=-Infinity
+  high_sulphate_120c ph_argument=6.5 segments=10
+    fraction=0.0 t_c=120.0 p_bar=200.0 si_caco3=-0.40284134419014656 si_baso4=NaN si_srso4=NaN si_caso4=1.7185687934587706 si_feco3=NaN
+    fraction=0.1 t_c=112.0 p_bar=185.0 si_caco3=-0.46967783430031257 si_baso4=NaN si_srso4=NaN si_caso4=1.5687057193136105 si_feco3=NaN
+    fraction=0.2 t_c=104.0 p_bar=170.0 si_caco3=-0.5326393148875113 si_baso4=NaN si_srso4=NaN si_caso4=1.4261512242761611 si_feco3=NaN
+    fraction=0.3 t_c=96.0 p_bar=155.0 si_caco3=-0.5919154375544268 si_baso4=NaN si_srso4=NaN si_caso4=1.2916524329275658 si_feco3=NaN
+    fraction=0.4 t_c=88.0 p_bar=140.0 si_caco3=-0.6477333471636294 si_baso4=NaN si_srso4=NaN si_caso4=1.1660338639172694 si_feco3=NaN
+    fraction=0.5 t_c=80.0 p_bar=125.0 si_caco3=-0.7003666051485793 si_baso4=NaN si_srso4=NaN si_caso4=1.050207181917238 si_feco3=NaN
+    fraction=0.6 t_c=72.0 p_bar=110.0 si_caco3=-0.7501456657276302 si_baso4=NaN si_srso4=NaN si_caso4=0.9451822823144291 si_feco3=NaN
+    fraction=0.7 t_c=64.0 p_bar=95.0 si_caco3=-0.7974703130838006 si_baso4=NaN si_srso4=NaN si_caso4=0.8520799635355949 si_feco3=NaN
+    fraction=0.8 t_c=56.0 p_bar=80.0 si_caco3=-0.8428245671088269 si_baso4=NaN si_srso4=NaN si_caso4=0.7721464837333817 si_feco3=NaN
+    fraction=0.9 t_c=48.0 p_bar=65.0 si_caco3=-0.8867946962095278 si_baso4=NaN si_srso4=NaN si_caso4=0.706770352369742 si_feco3=NaN
+    fraction=1.0 t_c=40.0 p_bar=50.0 si_caco3=-0.9300911474097698 si_baso4=NaN si_srso4=NaN si_caso4=0.6575017753770802 si_feco3=NaN
+    max_CaCO3=-0.40284134419014656
+    max_BaSO4=-Infinity
+    max_SrSO4=-Infinity
+    max_CaSO4=1.7185687934587706
+    max_FeCO3=-Infinity
+
+water_compatibility
+  upstream_seawater ph_argument=6.5
+    fraction_pct=0.0 si_caco3=-52.24840783232192 si_baso4=1.7099735185305647 si_srso4=-4.969173263694933 si_caso4=-2.036987907773766 si_feco3=NaN
+    fraction_pct=10.0 si_caco3=-52.329921416787116 si_baso4=3.1181806270104584 si_srso4=-3.3530486565514037 si_caso4=-0.7433743001524477 si_feco3=NaN
+    fraction_pct=20.0 si_caco3=-52.41746020260077 si_baso4=3.3740447058235024 si_srso4=-2.8883691542865044 si_caso4=-0.6010093903862389 si_feco3=NaN
+    fraction_pct=30.0 si_caco3=-52.511958367392836 si_baso4=3.509654690473085 si_srso4=-2.5431124629212425 si_caso4=-0.5778205480714317 si_feco3=NaN
+    fraction_pct=40.0 si_caco3=-52.614439970881946 si_baso4=3.5936087424018033 si_srso4=-2.2487561101245497 si_caso4=-0.6050407430255403 si_feco3=NaN
+    fraction_pct=50.0 si_caco3=-52.72628168858727 si_baso4=3.6457653669145365 si_srso4=-1.9855274005854462 si_caso4=-0.6623094533654097 si_feco3=NaN
+    fraction_pct=60.0 si_caco3=-52.84981404309792 si_baso4=3.6714748302694473 si_srso4=-1.7481732117116864 si_caso4=-0.7430873941556531 si_feco3=NaN
+    fraction_pct=70.0 si_caco3=-52.98974318466464 si_baso4=3.6666474768798554 si_srso4=-1.5408930492447657 si_caso4=-0.8485760089468426 si_feco3=NaN
+    fraction_pct=80.0 si_caco3=-53.15709713274702 si_baso4=3.612245606457187 si_srso4=-1.3828487269252006 si_caso4=-0.9894791550964106 si_feco3=NaN
+    fraction_pct=90.0 si_caco3=-53.38400905952058 si_baso4=3.4374762712919846 si_srso4=-1.3449733380534985 si_caso4=-1.2004943645649975 si_feco3=NaN
+    fraction_pct=100.0 si_caco3=-53.83091631710796 si_baso4=NaN si_srso4=NaN si_caso4=-1.6488454046476255 si_feco3=NaN
+    worst_ratio=60.0 worst_scale=BaSO4 worst_si=3.6714748302694473
+  single_ratio ph_argument=6.5
+    fraction_pct=0.0 si_caco3=-52.24840783232192 si_baso4=1.7099735185305647 si_srso4=-4.969173263694933 si_caso4=-2.036987907773766 si_feco3=NaN
+    worst_ratio=0.0 worst_scale=BaSO4 worst_si=1.7099735185305647
+  ph_argument_four ph_argument=4.0
+    fraction_pct=0.0 si_caco3=-52.24840783232192 si_baso4=1.7099735185305647 si_srso4=-4.969173263694933 si_caso4=-2.036987907773766 si_feco3=NaN
+    fraction_pct=50.0 si_caco3=-52.72628168858727 si_baso4=3.6457653669145365 si_srso4=-1.9855274005854462 si_caso4=-0.6623094533654097 si_feco3=NaN
+    fraction_pct=100.0 si_caco3=-53.83091631710796 si_baso4=NaN si_srso4=NaN si_caso4=-1.6488454046476255 si_feco3=NaN
+    worst_ratio=50.0 worst_scale=BaSO4 worst_si=3.6457653669145365
+  ph_argument_eleven ph_argument=11.0
+    fraction_pct=0.0 si_caco3=-52.24840783232192 si_baso4=1.7099735185305647 si_srso4=-4.969173263694933 si_caso4=-2.036987907773766 si_feco3=NaN
+    fraction_pct=50.0 si_caco3=-52.72628168858727 si_baso4=3.6457653669145365 si_srso4=-1.9855274005854462 si_caso4=-0.6623094533654097 si_feco3=NaN
+    fraction_pct=100.0 si_caco3=-53.83091631710796 si_baso4=NaN si_srso4=NaN si_caso4=-1.6488454046476255 si_feco3=NaN
+    worst_ratio=50.0 worst_scale=BaSO4 worst_si=3.6457653669145365
+  five_ratios ph_argument=6.5
+    fraction_pct=0.0 si_caco3=-52.24840783232192 si_baso4=1.7099735185305647 si_srso4=-4.969173263694933 si_caso4=-2.036987907773766 si_feco3=NaN
+    fraction_pct=25.0 si_caco3=-52.46377946748017 si_baso4=3.4505770635136166 si_srso4=-2.707112847072343 si_caso4=-0.5808273781794384 si_feco3=NaN
+    fraction_pct=50.0 si_caco3=-52.72628168858727 si_baso4=3.6457653669145365 si_srso4=-1.9855274005854462 si_caso4=-0.6623094533654097 si_feco3=NaN
+    fraction_pct=75.0 si_caco3=-53.06881919278403 si_baso4=3.6479083203227107 si_srso4=-1.45344308301058 si_caso4=-0.9133413642430633 si_feco3=NaN
+    fraction_pct=100.0 si_caco3=-53.83091631710796 si_baso4=NaN si_srso4=NaN si_caso4=-1.6488454046476255 si_feco3=NaN
+    worst_ratio=75.0 worst_scale=BaSO4 worst_si=3.6479083203227107
+

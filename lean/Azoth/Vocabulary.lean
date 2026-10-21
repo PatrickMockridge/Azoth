@@ -59,6 +59,8 @@ def units : List (String × Units.Dimension) :=
     ("1/K**2", Dim.ofExponents [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", Dim.ofExponents [0, 0, 0, 0, -3, 0, 0]),
     ("mol/kg", Dim.ofExponents [0, -1, 0, 0, 0, 1, 0]),
+    ("mol/m**3", Dim.ofExponents [-3, 0, 0, 0, 0, 1, 0]),
+    ("kmol/m**3", Dim.ofExponents [-3, 0, 0, 0, 0, 1, 0]),
     ("bar", Dim.ofExponents [-1, 1, -2, 0, 0, 0, 0]),
     ("kPa", Dim.ofExponents [-1, 1, -2, 0, 0, 0, 0]),
     ("MPa", Dim.ofExponents [-1, 1, -2, 0, 0, 0, 0]),
@@ -139,6 +141,8 @@ def exponents : List (String × List Int) :=
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
+    ("mol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
+    ("kmol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
     ("bar", [-1, 1, -2, 0, 0, 0, 0]),
     ("kPa", [-1, 1, -2, 0, 0, 0, 0]),
     ("MPa", [-1, 1, -2, 0, 0, 0, 0]),
@@ -406,6 +410,18 @@ theorem u_1_per_K_pow_3_dimension :
     `Dimension.AmountOfSubstance / Dimension.Mass`. -/
 theorem u_mol_per_kg_dimension :
     dimOf "mol/kg" = some (Dimension.AmountOfSubstance / Dimension.Mass) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "mol/m**3" carries the dimension `lean-units` calls
+    `Dimension.AmountOfSubstance / Dimension.Volume`. -/
+theorem u_mol_per_m_pow_3_dimension :
+    dimOf "mol/m**3" = some (Dimension.AmountOfSubstance / Dimension.Volume) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "kmol/m**3" carries the dimension `lean-units` calls
+    `Dimension.AmountOfSubstance / Dimension.Volume`. -/
+theorem u_kmol_per_m_pow_3_dimension :
+    dimOf "kmol/m**3" = some (Dimension.AmountOfSubstance / Dimension.Volume) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "bar" carries the dimension `lean-units` calls

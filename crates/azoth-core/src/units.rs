@@ -18,7 +18,8 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
-    HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity,
+    HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarConcentration, MolarEnergy,
+    MolarHeatCapacity,
     MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity, SurfaceTension,
     TemperatureInterval, ThermalConductance, ThermalConductivity, ThermodynamicTemperature,
     Velocity, VolumeRate,
@@ -31,7 +32,10 @@ pub use uom::si::{
     length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
     length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
     mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
-    molality::mole_per_kilogram, molar_energy::joule_per_mole, molar_energy::kilojoule_per_mole,
+    molality::mole_per_kilogram,
+    molar_concentration::kilomole_per_cubic_meter,
+    molar_concentration::mole_per_cubic_meter, molar_energy::joule_per_mole,
+    molar_energy::kilojoule_per_mole,
     molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
     molar_volume::cubic_meter_per_mole, power::kilowatt, power::megawatt, power::watt,
     pressure::atmosphere, pressure::bar, pressure::kilopascal, pressure::megapascal,
@@ -273,6 +277,18 @@ pub fn moles(value: f64) -> AmountOfSubstance {
 #[must_use]
 pub fn moles_per_kilogram(value: f64) -> Molality {
     Molality::new::<mole_per_kilogram>(value)
+}
+
+/// An amount concentration in moles per cubic metre.
+#[must_use]
+pub fn moles_per_cubic_meter(value: f64) -> MolarConcentration {
+    MolarConcentration::new::<mole_per_cubic_meter>(value)
+}
+
+/// An amount concentration in kilomoles per cubic metre.
+#[must_use]
+pub fn kilomoles_per_cubic_meter(value: f64) -> MolarConcentration {
+    MolarConcentration::new::<kilomole_per_cubic_meter>(value)
 }
 
 /// A molar mass in kilograms per mole.

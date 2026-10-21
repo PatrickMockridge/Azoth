@@ -314,12 +314,27 @@ pint = "1/kelvin**3"
 [[dimensions]]
 id = "molality"
 exponents = [0, -1, 0, 0, 0, 1, 0]
+[[dimensions]]
+id = "amount_concentration"
+exponents = [-3, 0, 0, 0, 0, 1, 0]
 [[units]]
 id = "mol/kg"
 dimension = "molality"
 pint = "mole/kilogram"
 uom = "molality::mole_per_kilogram"
 rust_ctor = "moles_per_kilogram"
+[[units]]
+id = "mol/m**3"
+dimension = "amount_concentration"
+pint = "mole/meter**3"
+uom = "molar_concentration::mole_per_cubic_meter"
+rust_ctor = "moles_per_cubic_meter"
+[[units]]
+id = "kmol/m**3"
+dimension = "amount_concentration"
+pint = "kilomole/meter**3"
+uom = "molar_concentration::kilomole_per_cubic_meter"
+rust_ctor = "kilomoles_per_cubic_meter"
 [[units]]
 id = "bar"
 dimension = "pressure"
@@ -512,6 +527,7 @@ mass_rate = "kg/s"
 molar_flow = "mol/s"
 amount = "mol"
 mass = "kg"
+amount_concentration = "mol/m**3"
 energy = "J"
 power = "W"
 length = "m"
@@ -537,6 +553,7 @@ length = "ft"
 volume_rate = "gpm"
 velocity = "ft/s"
 mass_density = "lb/ft**3"
+amount_concentration = "kmol/m**3"
 specific_heat_capacity = "Btu/(lb*degF)"
 molar_energy = "kJ/mol"
 dynamic_viscosity = "cP"

@@ -49,6 +49,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "per_temperature_squared",
     "per_temperature_cubed",
     "molality",
+    "amount_concentration",
 ];
 
 /// Each dimension id, as exponents in [`SLOTS`] order.
@@ -100,6 +101,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("per_temperature_squared", [0, 0, 0, 0, -2, 0, 0]),
     ("per_temperature_cubed", [0, 0, 0, 0, -3, 0, 0]),
     ("molality", [0, -1, 0, 0, 0, 1, 0]),
+    ("amount_concentration", [-3, 0, 0, 0, 0, 1, 0]),
 ];
 
 /// The exponents of one named dimension, or `None` if the id is not in the
@@ -155,6 +157,8 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K**2",
     "1/K**3",
     "mol/kg",
+    "mol/m**3",
+    "kmol/m**3",
     "bar",
     "kPa",
     "MPa",
@@ -227,6 +231,8 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
+    ("mol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
+    ("kmol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
     ("bar", [-1, 1, -2, 0, 0, 0, 0]),
     ("kPa", [-1, 1, -2, 0, 0, 0, 0]),
     ("MPa", [-1, 1, -2, 0, 0, 0, 0]),
@@ -328,6 +334,10 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
     ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
+    ("mol/m**3", |v| crate::units::moles_per_cubic_meter(v).value),
+    ("kmol/m**3", |v| {
+        crate::units::kilomoles_per_cubic_meter(v).value
+    }),
     ("bar", |v| crate::units::bars(v).value),
     ("kPa", |v| crate::units::kilopascals(v).value),
     ("MPa", |v| crate::units::megapascals(v).value),
@@ -428,6 +438,7 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("molar_flow", "mol/s"),
             ("amount", "mol"),
             ("mass", "kg"),
+            ("amount_concentration", "mol/m**3"),
             ("energy", "J"),
             ("power", "W"),
             ("length", "m"),
@@ -455,6 +466,7 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("volume_rate", "gpm"),
             ("velocity", "ft/s"),
             ("mass_density", "lb/ft**3"),
+            ("amount_concentration", "kmol/m**3"),
             ("specific_heat_capacity", "Btu/(lb*degF)"),
             ("molar_energy", "kJ/mol"),
             ("dynamic_viscosity", "cP"),
@@ -551,6 +563,8 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
     let _: uom::si::f64::Length = crate::units::angstroms(1.0);
     let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
+    let _: uom::si::f64::MolarConcentration = crate::units::moles_per_cubic_meter(1.0);
+    let _: uom::si::f64::MolarConcentration = crate::units::kilomoles_per_cubic_meter(1.0);
     let _: uom::si::f64::Pressure = crate::units::bars(1.0);
     let _: uom::si::f64::Pressure = crate::units::kilopascals(1.0);
     let _: uom::si::f64::Pressure = crate::units::megapascals(1.0);
