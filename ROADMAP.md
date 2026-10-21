@@ -136,7 +136,9 @@ process model needs.
   profile parameters. Its Parachor and Firozabadi slots read the databank's `parachor`
   and `tc`, and both phases' translated densities - the SRK Peneloux shift, which the
   databank now carries beside the Peng-Robinson one, is what makes those densities
-  NeqSim's rather than the untranslated cubic's.
+  NeqSim's rather than the untranslated cubic's. **Owed**: `FrictionTheoryConductivityMethod`,
+  the viscosity method's sibling, reachable only through `setConductivityModel`'s
+  `"friction theory"` string and in none of P1's bullet.
   **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
   CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
   `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`
