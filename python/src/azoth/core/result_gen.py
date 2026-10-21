@@ -590,6 +590,19 @@ class CapillaryDewPointResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CdftSurfaceTensionResult(_HasWarnings):
+    """Result of ``eos.cdft_surface_tension``."""
+
+    CALC_ID: ClassVar[str] = "eos.cdft_surface_tension"
+
+    #: the interface tension.
+    sigma: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ChapmanEnskogDiffusivityResult(_HasWarnings):
     """Result of ``eos.chapman_enskog_diffusivity``."""
 

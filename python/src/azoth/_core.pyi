@@ -478,6 +478,11 @@ class CapillaryDewPointResult:
     warnings: list[Warning]
 
 @final
+class CdftSurfaceTensionResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class ChapmanEnskogDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -2606,6 +2611,15 @@ def capillary_dew_point(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> CapillaryDewPointResult: ...
+def cdft_surface_tension(
+    components: list[str],
+    eos: str,
+    T: float,
+    x_liquid: list[float],
+    x_vapour: list[float],
+    molar_volume_liquid: float,
+    molar_volume_vapour: float,
+) -> CdftSurfaceTensionResult: ...
 def chapman_enskog_diffusivity(
     MA: float,
     MB: float,

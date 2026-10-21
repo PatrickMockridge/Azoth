@@ -27,6 +27,7 @@ from azoth.core.result import (
     BwrsPhaseResult,
     CalcIonicCompositionResult,
     CapillaryDewPointResult,
+    CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult,
     CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
@@ -293,6 +294,7 @@ __all__ = [
     "bwrs_phase",
     "calc_ionic_composition",
     "capillary_dew_point",
+    "cdft_surface_tension",
     "chapman_enskog_diffusivity",
     "characterise_plus_fraction",
     "characterize_to_reference",
@@ -973,6 +975,24 @@ def capillary_dew_point(mixture: Mixture, P: Q, y: list[float], pore_radius: Q, 
         min_t_over_tc=result.min_t_over_tc,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def cdft_surface_tension(components: list[str], eos: str, T: Q, x_liquid: Sequence[float], x_vapour: Sequence[float], molar_volume_liquid: Q, molar_volume_vapour: Q) -> CdftSurfaceTensionResult:
+    """``eos.cdft_surface_tension``, computed in Rust."""
+    spec = _models_gen.model("eos.cdft_surface_tension")
+    result = _core.cdft_surface_tension(
+        list(components),
+        eos,
+        input_to_si(spec, "T", T),
+        list(x_liquid),
+        list(x_vapour),
+        input_to_si(spec, "molar_volume_liquid", molar_volume_liquid),
+        input_to_si(spec, "molar_volume_vapour", molar_volume_vapour),
+    )
+    return CdftSurfaceTensionResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 

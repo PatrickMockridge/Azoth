@@ -106,6 +106,7 @@
   - [BWRS (MBWR-32) phase state](./eos/bwrs_phase.md)
   - [Molalities and activity coefficients of a phase](./eos/calc_ionic_composition.md)
   - [Capillary dew point](./eos/capillary_dew_point.md)
+  - [Surface tension from the classical density functional theory](./eos/cdft_surface_tension.md)
   - [Constrained CO2/brine phase selection](./eos/co2_brine_phase_equilibrium.md)
   - [CO2 reference phase state](./eos/co2_phase.md)
   - [Mixture critical point](./eos/critical_point.md)

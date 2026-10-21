@@ -1,0 +1,176 @@
+methane_150K_pr
+eos_class=SystemPrEos
+temperature=150.0
+pressure=10.471626674421177
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=9.709562218655069E-4
+phase0_x=[1.0000000011004573]
+phase0_rho=[1029.9125527813687]
+phase1_type=OIL
+phase1_molar_volume=4.128785631897625E-5
+phase1_x=[1.0]
+phase1_rho=[24220.196666892378]
+component0_name=methane
+component0_tc=190.55999999999997
+component0_pc=45.99
+component0_omega=0.0115
+cdft_sigma=0.002875574857984931
+parachor_sigma=0.006319276273905999
+
+methane_150K_srk
+eos_class=SystemSrkEos
+temperature=150.0
+pressure=10.511359261300134
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=9.781889635193295E-4
+phase0_x=[1.0000000009730972]
+phase0_rho=[1022.2973661196256]
+phase1_type=OIL
+phase1_molar_volume=4.6778444901635543E-5
+phase1_x=[1.0]
+phase1_rho=[21377.367334522838]
+component0_name=methane
+component0_tc=190.55999999999997
+component0_pc=45.99
+component0_omega=0.0115
+cdft_sigma=0.0024177301612412438
+parachor_sigma=0.006518560239369025
+
+nbutane_320K_pr
+eos_class=SystemPrEos
+temperature=320.0
+pressure=4.557037829633628
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=0.00518640306330642
+phase0_x=[0.9999999995935118]
+phase0_rho=[192.81185580589928]
+phase1_type=OIL
+phase1_molar_volume=1.0202386159315462E-4
+phase1_x=[1.0]
+phase1_rho=[9801.628603196254]
+component0_name=n-butane
+component0_tc=425.12
+component0_pc=37.96
+component0_omega=0.2002
+cdft_sigma=0.005318959293325729
+parachor_sigma=0.009050042508633482
+
+nbutane_320K_srk
+eos_class=SystemSrkEos
+temperature=320.0
+pressure=4.598701429110761
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=0.00516626248782857
+phase0_x=[0.9999999996468466]
+phase0_rho=[193.56352914757846]
+phase1_type=OIL
+phase1_molar_volume=1.1568521862918132E-4
+phase1_x=[1.0]
+phase1_rho=[8644.146692633318]
+component0_name=n-butane
+component0_tc=425.12
+component0_pc=37.96
+component0_omega=0.2002
+cdft_sigma=0.00447138688725543
+parachor_sigma=0.009276031381266049
+
+methane_nbutane_300K_20bara_srk
+eos_class=SystemSrkEos
+temperature=300.0
+pressure=20.0
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=0.001153452734177525
+phase0_x=[0.8356249351028912, 0.1643750648971088]
+phase0_rho=[724.4552900546354, 142.50697928625328]
+phase1_type=OIL
+phase1_molar_volume=1.0590737562944744E-4
+phase1_x=[0.09542082642782022, 0.9045791735721797]
+phase1_rho=[900.9837687006999, 8541.229241079054]
+component0_name=methane
+component0_tc=190.55999999999997
+component0_pc=45.99
+component0_omega=0.0115
+component1_name=n-butane
+component1_tc=425.12
+component1_pc=37.96
+component1_omega=0.2002
+cdft_sigma=0.004745726951688798
+parachor_sigma=0.009424889197268286
+
+methane_nheptane_313K_30bara_srk
+eos_class=SystemSrkEos
+temperature=313.15
+pressure=30.0
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=8.30248161619652E-4
+phase0_x=[0.9925247399319554, 0.007475260068044608]
+phase0_rho=[1195.4555105496813, 9.003645432302838]
+phase1_type=OIL
+phase1_molar_volume=1.5625869944485923E-4
+phase1_x=[0.13019261725316564, 0.8698073827468343]
+phase1_rho=[833.1863615638767, 5566.457329012732]
+component0_name=methane
+component0_tc=190.55999999999997
+component0_pc=45.99
+component0_omega=0.0115
+component1_name=n-heptane
+component1_tc=540.2
+component1_pc=27.4
+component1_omega=0.3495
+cdft_sigma=0.009478185958688426
+parachor_sigma=0.014943834402605884
+
+co2_water_313K_50bara_srk
+eos_class=SystemSrkEos
+temperature=313.15
+pressure=50.0
+phase_count=2
+phase0_type=GAS
+phase0_molar_volume=3.9137934446536755E-4
+phase0_x=[0.9978562046113857, 0.002143795388614308]
+phase0_rho=[2549.5883181430495, 5.47753840086471]
+phase1_type=AQUEOUS
+phase1_molar_volume=2.406803160974614E-5
+phase1_x=[6.691762234084198E-4, 0.9993308237765915]
+phase1_rho=[27.80352935623712, 41521.0865591485]
+component0_name=CO2
+component0_tc=304.19
+component0_pc=73.815
+component0_omega=0.2276
+component1_name=water
+component1_tc=647.3
+component1_pc=220.89
+component1_omega=0.344
+cdft_sigma=0.1058479521281978
+parachor_sigma=0.053145026912194734
+
+nheptane_water_300K_1bara_srk
+eos_class=SystemSrkEos
+temperature=300.0
+pressure=1.0
+phase_count=2
+phase0_type=OIL
+phase0_molar_volume=1.681108733850542E-4
+phase0_x=[0.9995963504210494, 4.0364957895044424E-4]
+phase0_rho=[5946.054114724015, 2.4010914393734297]
+phase1_type=AQUEOUS
+phase1_molar_volume=2.3850393536458033E-5
+phase1_x=[9.208893557273499E-26, 1.0]
+phase1_rho=[3.861107592709806E-21, 41928.02934137697]
+component0_name=n-heptane
+component0_tc=540.2
+component0_pc=27.4
+component0_omega=0.3495
+component1_name=water
+component1_tc=647.3
+component1_pc=220.89
+component1_omega=0.344
+cdft_sigma=0.0
+parachor_sigma=3.932397216657965E-4
+

@@ -1393,6 +1393,38 @@ pub fn gt_surface_tension_simple(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The classical density functional theory's interface tension between two states, computed in
+/// Rust.
+#[pyfunction]
+#[pyo3(signature = (components, eos, T, x_liquid, x_vapour, molar_volume_liquid, molar_volume_vapour))]
+#[allow(non_snake_case)] // `T` is the symbol in the equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn cdft_surface_tension(
+    py: Python<'_>,
+    components: Vec<String>,
+    eos: &str,
+    T: f64,
+    x_liquid: Vec<f64>,
+    x_vapour: Vec<f64>,
+    molar_volume_liquid: f64,
+    molar_volume_vapour: f64,
+) -> PyResult<crate::transport_gen::PyCdftSurfaceTensionResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) =
+        azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
+            .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::cdft_surface_tension(
+        &mixture,
+        kelvins(T),
+        &x_liquid,
+        &x_vapour,
+        molar_volume_liquid,
+        molar_volume_vapour,
+    )
+    .map(|r| crate::transport_gen::PyCdftSurfaceTensionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The full gradient theory's interface tension of a fluid, computed in Rust.
 #[pyfunction]
 #[pyo3(signature = (components, eos, influence_parameters, T, P, z))]

@@ -268,6 +268,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'eos.cdft_surface_tension': {
+        "calc_id": 'eos.cdft_surface_tension',
+        "name": 'Surface tension from the classical density functional theory',
+        "spec": {'path': 'specs/models/eos/cdft_surface_tension.toml', 'sha256': 'd3bdd50b2e3692ac9bdbf8e5c4754b7ad4acbdd7e90c3c6982cbe2756f31ebdc'},
+        "code": [{'path': 'python/src/azoth/eos/reference/cdft_surface_tension.py', 'sha256': 'c4e4d1d899b61f8db24a88a7acaca539a92455bd684d0be05dcc1a16cefdaa3b'}, {'path': 'crates/azoth-eos/src/cdft_surface_tension.rs', 'sha256': '49538f4b58cc9c306b5c7e85b000e06941745c13b5c194aec24df7fed322e27f'}],
+        "source": 'NeqSim master `CDFTSurfaceTension`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 7,
+        "tests_skipped": 0,
+    },
     'eos.chapman_enskog_diffusivity': {
         "calc_id": 'eos.chapman_enskog_diffusivity',
         "name": 'Gas binary diffusivity from the Chapman-Enskog theory',

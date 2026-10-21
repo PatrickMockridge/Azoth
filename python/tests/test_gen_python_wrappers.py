@@ -78,7 +78,9 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 56 -> 57 when `eos.gt_surface_tension_simple` landed, the same shape as LGT and for the
 #: same two reasons.
 #: 57 -> 58 when `eos.gt_surface_tension` landed, again the `components` shape.
-KNOWN_HAND_WRITTEN = 58
+#: 58 -> 59 when `eos.cdft_surface_tension` landed, the same `components` shape with two
+#: dimensionless vector inputs the generator's row rules cannot size.
+KNOWN_HAND_WRITTEN = 59
 
 
 def _tools_module(name: str) -> ModuleType:

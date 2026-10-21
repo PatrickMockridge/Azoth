@@ -1,0 +1,90 @@
+id = "eos.cdft_surface_tension"
+name = "Surface tension from the classical density functional theory"
+kind = "procedure"
+assumptions = [
+    "the class reads only each phase's molar volume and mole fractions from a flashed system, so this model takes those four quantities and forms `x_i / V`; no flash runs, and the pure branch is reachable only this way - a pure fluid is two-phase only on its saturation line.\n",
+    "the pure branch (one component) uses the analytic repulsive and attractive potentials at the liquid density; the mixture branch forms `a_ij = sqrt(a_i a_j)` with **no interaction term** - the class ignores the mixing rule - and differences its free-energy density for the potentials.\n",
+    "**the mixture branch's potentials are a central difference** with `eps = rho_L 1e-7` over a free-energy density of order `1e8`, so the cancellation leaves about nine digits: the answer is held to 1e-5 relative, and the pure branch, which is analytic, to 1e-10.\n",
+    "the tanh width is chosen by a fixed scan and golden section over `[0.3, 30]` molecular diameters - 80 and 60 steps pure, 60 and 50 mixture - on a 2048-point grid spanning 15 diameters; the class's setters have no main-source caller, so its defaults are the state.\n",
+    "the class clamps where the equations leave the physical domain: the pure branch's density to `[1e-10, 0.999/b]`, the mixture's total to `0.999/bMix` after `aMix` and `bMix` are formed, and each component at `1e-30`.\n",
+    "the class returns `max(sigma, 0)` and falls back to Parachor on any exception; this port refuses a non-positive variational minimum - n-heptane/water at 300 K and 1 bar is the state - rather than answering a different model or zero.\n",
+    "the cubic constants are chosen by system class name: SRK takes `(1, 0)` and everything else the Peng-Robinson pair, so only `pr` and `srk` are offered; an RK state would mix RK's attraction with the PR denominator.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/CDFTSurfaceTension.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/cdft_probe.tsv` - eight states, the densities each branch receives and the class's answers, with the parachor beside them so a silent fallback would show.\n",
+]
+[source]
+standard = "NeqSim master `CDFTSurfaceTension`"
+edition = "`calcSurfaceTension`, `solvePureComponent`, `solveMixture`, `computeSigmaForDelta`, `computeMixtureSigmaForDelta`, the step convolution and the variational search, ported; predictive mode and the three setters are unreachable in the tree's main sources."
+[algorithm]
+scheme = "cdft_tanh_variational"
+initialisation = "tanh_profile_between_phases"
+convergence = "relative"
+tolerance = 1e-05
+max_iterations = 60
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk"]
+description = "the cubic whose attraction and covolume each component carries.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.x_liquid]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid phase's mole fractions, which the component densities are formed from.\n"
+[inputs.x_vapour]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour phase's mole fractions.\n"
+[inputs.molar_volume_liquid]
+unit = "m**3/mol"
+description = "the liquid phase's molar volume; its reciprocal is the total molar density.\n"
+[inputs.molar_volume_vapour]
+unit = "m**3/mol"
+description = "the vapour phase's molar volume.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the interface tension.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "x_liquid"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[[valid_range]]
+quantity = "x_vapour"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[[valid_range]]
+quantity = "molar_volume_liquid"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Its reciprocal is a density the profile takes the logarithm of.\n"
+[[valid_range]]
+quantity = "molar_volume_vapour"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Its reciprocal is a density the profile takes the logarithm of.\n"
+[implementations]
+python = "azoth.eos.cdft_surface_tension"
+rust = "azoth_eos::cdft_surface_tension"

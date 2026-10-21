@@ -79,6 +79,7 @@ from azoth.core.result import (
     BwrsPhaseResult,
     CalcIonicCompositionResult,
     CapillaryDewPointResult,
+    CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -458,6 +459,7 @@ _GE_VAN_LAAR_ACID_PHASE = "eos.ge_van_laar_acid_phase"
 _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
+_CDFT_SURFACE_TENSION = "eos.cdft_surface_tension"
 _GT_SURFACE_TENSION = "eos.gt_surface_tension"
 _GT_SURFACE_TENSION_SIMPLE = "eos.gt_surface_tension_simple"
 _VISCOSITY = "eos.viscosity"
@@ -3297,6 +3299,40 @@ def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg200
     See :func:`azoth.eos.reference.gerg2008_phase`.
     """
     return resolve(_GERG2008_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def cdft_surface_tension(
+    components: list[str],
+    eos: str,
+    T: Q,
+    x_liquid: Sequence[float],
+    x_vapour: Sequence[float],
+    molar_volume_liquid: Q,
+    molar_volume_vapour: Q,
+) -> CdftSurfaceTensionResult:
+    """The classical density functional theory's interface tension between two states.
+
+    The class reads only each phase's molar volume and mole fractions, so those are the
+    inputs: no flash runs here. A single component takes the analytic pure branch; a
+    mixture takes the branch whose equilibrium potentials are a central difference of the
+    mixture's free-energy density, with no interaction term in `sqrt(a_i a_j)`.
+
+    Raises:
+        InvalidInputError: for a composition that does not sum to one, or a variational
+            minimum that is not positive.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.cdft_surface_tension`.
+    """
+    return resolve(_CDFT_SURFACE_TENSION)(  # type: ignore[no-any-return]
+        components=components,
+        eos=eos,
+        T=T,
+        x_liquid=x_liquid,
+        x_vapour=x_vapour,
+        molar_volume_liquid=molar_volume_liquid,
+        molar_volume_vapour=molar_volume_vapour,
+    )
 
 
 def gt_surface_tension(

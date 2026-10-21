@@ -173,6 +173,7 @@ Five sections, and the difference between them is the point:
 - [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state
 - [`eos.calc_ionic_composition`](./eos/calc_ionic_composition.md) — Molalities and activity coefficients of a phase
 - [`eos.capillary_dew_point`](./eos/capillary_dew_point.md) — Capillary dew point
+- [`eos.cdft_surface_tension`](./eos/cdft_surface_tension.md) — Surface tension from the classical density functional theory
 - [`eos.co2_brine_phase_equilibrium`](./eos/co2_brine_phase_equilibrium.md) — Constrained CO2/brine phase selection
 - [`eos.co2_phase`](./eos/co2_phase.md) — CO2 reference phase state
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point

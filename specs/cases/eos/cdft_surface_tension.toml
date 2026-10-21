@@ -1,0 +1,99 @@
+model = "eos.cdft_surface_tension"
+[[cases]]
+id = "methane_at_150_k_pr"
+tolerance = 1e-10
+source = "NeqSim master `CDFTSurfaceTension.solvePureComponent` on methane at its 150 K bubble point (10.4716 bar), from `validation/neqsim/captures/cdft_probe.tsv`; the two states are the saturated pair the bubble-point flash produced, which is the only two-phase state a pure fluid has.\n"
+[cases.inputs]
+components = ["methane"]
+eos = "pr"
+T = 150.0
+x_liquid = [1.0]
+x_vapour = [1.0000000011004573]
+molar_volume_liquid = 4.128785631897625e-5
+molar_volume_vapour = 9.709562218655069e-4
+[cases.expected]
+sigma = 0.002875574857984931
+[[cases]]
+id = "methane_at_150_k_srk"
+tolerance = 1e-10
+source = "The same branch on methane at its 150 K SRK bubble point (10.5114 bar).\n"
+[cases.inputs]
+components = ["methane"]
+eos = "srk"
+T = 150.0
+x_liquid = [1.0]
+x_vapour = [1.0000000009730972]
+molar_volume_liquid = 4.6778444901635543e-5
+molar_volume_vapour = 9.781889635193295e-4
+[cases.expected]
+sigma = 0.0024177301612412438
+[[cases]]
+id = "nbutane_at_320_k_pr"
+tolerance = 1e-10
+source = "The same branch on n-butane at its 320 K PR bubble point (4.5570 bar).\n"
+[cases.inputs]
+components = ["n-butane"]
+eos = "pr"
+T = 320.0
+x_liquid = [1.0]
+x_vapour = [0.9999999995935118]
+molar_volume_liquid = 1.0202386159315462e-4
+molar_volume_vapour = 0.00518640306330642
+[cases.expected]
+sigma = 0.005318959293325729
+[[cases]]
+id = "nbutane_at_320_k_srk"
+tolerance = 1e-10
+source = "The same branch on n-butane at its 320 K SRK bubble point (4.5987 bar).\n"
+[cases.inputs]
+components = ["n-butane"]
+eos = "srk"
+T = 320.0
+x_liquid = [1.0]
+x_vapour = [0.9999999996468466]
+molar_volume_liquid = 1.1568521862918132e-4
+molar_volume_vapour = 0.00516626248782857
+[cases.expected]
+sigma = 0.00447138688725543
+[[cases]]
+id = "methane_nbutane_at_300_k_and_20_bar"
+tolerance = 1e-05
+source = "The mixture branch on methane/n-butane 0.5/0.5 at 300 K and 20 bar, from the same capture. The tolerance is the branch's own conditioning: its equilibrium potentials are a central difference that leaves about nine digits, and the class's answer is a floating-point artefact at that precision.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+eos = "srk"
+T = 300.0
+x_liquid = [0.09542082642782022, 0.9045791735721797]
+x_vapour = [0.8356249351028912, 0.1643750648971088]
+molar_volume_liquid = 1.0590737562944744e-4
+molar_volume_vapour = 0.001153452734177525
+[cases.expected]
+sigma = 0.004745726951688798
+[[cases]]
+id = "methane_nheptane_at_313_k_and_30_bar"
+tolerance = 1e-05
+source = "The mixture branch on methane/n-heptane 0.5/0.5 at 313.15 K and 30 bar.\n"
+[cases.inputs]
+components = ["methane", "n-heptane"]
+eos = "srk"
+T = 313.15
+x_liquid = [0.13019261725316564, 0.8698073827468343]
+x_vapour = [0.9925247399319554, 0.007475260068044608]
+molar_volume_liquid = 1.5625869944485923e-4
+molar_volume_vapour = 8.30248161619652e-4
+[cases.expected]
+sigma = 0.009478185958688426
+[[cases]]
+id = "co2_water_at_313_k_and_50_bar"
+tolerance = 1e-05
+source = "The mixture branch on CO2/water 0.02/0.98 at 313.15 K and 50 bar, where the class answers twice the parachor's 0.0531.\n"
+[cases.inputs]
+components = ["CO2", "water"]
+eos = "srk"
+T = 313.15
+x_liquid = [6.691762234084198e-4, 0.9993308237765915]
+x_vapour = [0.9978562046113857, 0.002143795388614308]
+molar_volume_liquid = 2.406803160974614e-5
+molar_volume_vapour = 3.9137934446536755e-4
+[cases.expected]
+sigma = 0.1058479521281978

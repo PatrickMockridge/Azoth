@@ -1489,6 +1489,45 @@ impl From<&azoth_eos::results::CapillaryDewPointResult> for PyCapillaryDewPointR
         }
     }
 }
+/// Result of `eos.cdft_surface_tension`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CdftSurfaceTensionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCdftSurfaceTensionResult {
+    /// the interface tension.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCdftSurfaceTensionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CdftSurfaceTensionResult(sigma={:?}, {} warning(s))",
+            self.sigma,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::CdftSurfaceTensionResult> for PyCdftSurfaceTensionResult {
+    fn from(r: &azoth_eos::results::CdftSurfaceTensionResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.chapman_enskog_diffusivity`, transported.
 #[pyclass(
     frozen,

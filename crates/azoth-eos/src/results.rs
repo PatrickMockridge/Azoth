@@ -3283,6 +3283,24 @@ impl CalcResult for CalcIonicCompositionResult {
     }
 }
 
+/// Result of `eos.cdft_surface_tension`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CdftSurfaceTensionResult {
+    /// The interface tension, in N/m.
+    pub sigma: SurfaceTension,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CdftSurfaceTensionResult {
+    const CALC_ID: &'static str = "eos.cdft_surface_tension";
+    const FIELDS: &'static [&'static str] = &["sigma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.saturate_with_water`.
 ///
 /// The phases reported are the water-saturated non-aqueous ones: a residual incipient aqueous

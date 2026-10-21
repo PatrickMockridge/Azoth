@@ -81,6 +81,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |
 | [`eos.calc_ionic_composition`](./calc_ionic_composition.md) | `direct composition` | NeqSim master `CalcIonicComposition` |
 | [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim master `CapillaryDewPointFlash` |
+| [`eos.cdft_surface_tension`](./cdft_surface_tension.md) | `cdft_tanh_variational` | NeqSim master `CDFTSurfaceTension` |
 | [`eos.co2_brine_phase_equilibrium`](./co2_brine_phase_equilibrium.md) | `normalized_tangent_plane_with_ion_confined_split` | NeqSim master `CO2BrinePhaseEquilibrium` |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |

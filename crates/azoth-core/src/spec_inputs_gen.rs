@@ -24,6 +24,7 @@
 //!   - specs/models/eos/bwrs_phase.toml
 //!   - specs/models/eos/calc_ionic_composition.toml
 //!   - specs/models/eos/capillary_dew_point.toml
+//!   - specs/models/eos/cdft_surface_tension.toml
 //!   - specs/calcs/eos/chapman_enskog_diffusivity.toml
 //!   - specs/calcs/eos/chung_conductivity.toml
 //!   - specs/calcs/eos/chung_viscosity.toml
@@ -453,6 +454,19 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "eos.capillary_dew_point",
         "surface_tension",
         "surface_tension",
+    ),
+    ("eos.cdft_surface_tension", "T", "thermodynamic_temperature"),
+    ("eos.cdft_surface_tension", "x_liquid", "dimensionless"),
+    ("eos.cdft_surface_tension", "x_vapour", "dimensionless"),
+    (
+        "eos.cdft_surface_tension",
+        "molar_volume_liquid",
+        "molar_volume",
+    ),
+    (
+        "eos.cdft_surface_tension",
+        "molar_volume_vapour",
+        "molar_volume",
     ),
     ("eos.chapman_enskog_diffusivity", "MA", "molar_mass"),
     ("eos.chapman_enskog_diffusivity", "MB", "molar_mass"),

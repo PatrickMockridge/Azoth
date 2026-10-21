@@ -124,18 +124,22 @@ process model needs.
   model 1's gas-aqueous and liquid-liquid slot, which adds the `dmu/dn` inner Newton, and
   `GTSurfaceTension` is `eos.gt_surface_tension`, model 1's gas-oil slot, solved through its
   reachable FullGT branch on a remeshed finite-difference grid (`GTSurfaceTensionODE` is
-  unreachable upstream - `useFullGT = 1` has no setter). **Owed**: `CDFTSurfaceTension`.
+  unreachable upstream - `useFullGT = 1` has no setter). `CDFTSurfaceTension` is
+  `eos.cdft_surface_tension`, the string selector's other calculator: a tanh profile on a
+  2048-point grid, varied over its width, taking each phase's molar volume and mole
+  fractions because that is all the class reads from the flashed system.
   `eos.interface_properties` refuses models 1, 2 and 4: each arm needs the influence
   parameters, reference component or interaction matrix its calculator takes, and the
-  dispatch has no inputs for them.
+  dispatch has no inputs for them; the string selector's CDFT arm is the model above.
   **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
   CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
   `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`
   is the reproduction. The captures `surface_tension_probe.tsv`,
   `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`, `lgt_local_probe.tsv`,
-  `gt_simple_profile_probe.tsv`, `gt_simple_initial_probe.tsv` and `full_gt_probe.tsv`
-  record the default pairs, models 1, 2 and 4, the profiles' negative-pressure segments,
-  the GT-simple profile and the FullGT answers.
+  `gt_simple_profile_probe.tsv`, `gt_simple_initial_probe.tsv`, `full_gt_probe.tsv` and
+  `cdft_probe.tsv` record the default pairs, models 1, 2 and 4, the profiles'
+  negative-pressure segments, the GT-simple profile, the FullGT answers and the CDFT
+  states with the parachor beside each so a silent fallback would show.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
