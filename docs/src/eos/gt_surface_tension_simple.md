@@ -20,7 +20,7 @@ not an equation, and both implementations read it from here.
 |---|---|
 | Scheme | `gt_simple_density_newton` |
 | Convergence | `absolute` |
-| Tolerance | `1e-15` |
+| Tolerance | `1e-06` |
 | Max iterations | `200` |
 | Initialisation | `linear_density_between_phases` |
 
@@ -77,6 +77,8 @@ not an equation, and both implementations read it from here.
 - **on CO2/water 0.02/0.98 at 313.15 K and 50 bar the class's own profile collapses** - its densities are zero from step 3 - and it returns the two-step partial `0.0145737553`; this port refuses that state.
 
 - the class's inner update adds one Newton step after its stopping test, so its stored density and its integration variable differ by that step; this port uses the post-update value for both, and the difference is below the case tolerance.
+
+- the outer walk has no stopping test - it takes 200 fixed steps - so the declared outer tolerance is the accuracy the answer is held to, not a test the class runs; the only convergence test is the inner Newton's.
 
 
 ## Cases

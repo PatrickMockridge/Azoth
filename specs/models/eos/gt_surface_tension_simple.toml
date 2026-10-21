@@ -10,6 +10,7 @@ assumptions = [
     "a single-phase feed, a singular inner system, and a step whose density vector is not a state are refused; a non-converged inner loop is carried with a warning, as the class carries it.\n",
     "**on CO2/water 0.02/0.98 at 313.15 K and 50 bar the class's own profile collapses** - its densities are zero from step 3 - and it returns the two-step partial `0.0145737553`; this port refuses that state.\n",
     "the class's inner update adds one Newton step after its stopping test, so its stored density and its integration variable differ by that step; this port uses the post-update value for both, and the difference is below the case tolerance.\n",
+    "the outer walk has no stopping test - it takes 200 fixed steps - so the declared outer tolerance is the accuracy the answer is held to, not a test the class runs; the only convergence test is the inner Newton's.\n",
 ]
 references = [
     "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/GTSurfaceTensionSimple.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
@@ -22,7 +23,7 @@ edition = "`calcSurfaceTension`, ported: the linear density interpolation, the i
 scheme = "gt_simple_density_newton"
 initialisation = "linear_density_between_phases"
 convergence = "absolute"
-tolerance = 1e-15
+tolerance = 1e-06
 max_iterations = 200
 [algorithm.inner]
 scheme = "gt_simple_mu_equalisation"

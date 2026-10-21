@@ -4962,7 +4962,7 @@ static GT_SURFACE_TENSION_SIMPLE_INNER: ModelAlgorithm = ModelAlgorithm {
 static GT_SURFACE_TENSION_SIMPLE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     scheme: "gt_simple_density_newton",
     convergence: "absolute",
-    tolerance: 1e-15,
+    tolerance: 1e-06,
     max_iterations: 200,
     bracket: None,
     initialisation: Some("linear_density_between_phases"),

@@ -88,6 +88,7 @@ def test_the_rows_that_went_false_are_no_longer_claims() -> None:
         "neqsim/COMP.csv.LIQUIDCONDUCTIVITY2",
         "neqsim/COMP.csv.LIQUIDCONDUCTIVITY3",
         "neqsim/COMP.csv.PARACHOR",
+        "neqsim/COMP.csv.criticalViscosity",
     ):
         assert where not in claimed, (
             f"{where} claims to be unread again, and the tree reads it - the audit's `--check` "
@@ -97,7 +98,7 @@ def test_the_rows_that_went_false_are_no_longer_claims() -> None:
     # And the tool is not passing by reporting everything as read: a column that genuinely is
     # unread is still there, parsed into no field at all.
     unread = {row["where"]: row for row in rows}
-    assert unread["neqsim/COMP.csv.criticalViscosity"]["verdict"] == "unparsed", (
-        "criticalViscosity is the friction-theory viscosity method, which is not ported and is "
-        "not parsed into the entry - a verdict of `READ` here means the search is too loose"
+    assert unread["neqsim/COMP.csv.MWAVG"]["verdict"] == "unparsed", (
+        "MWAVG is parsed into no field of the entry - a verdict of `READ` here means the "
+        "search is too loose"
     )
