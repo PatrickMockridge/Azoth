@@ -61,7 +61,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.
 
-- **models 1, 2 and 4 are refused here**: model 1's gas-oil slot is `GTSurfaceTension`, which this tree does not carry; models 2 and 4's calculators are `eos.lgt_surface_tension`, `eos.gt_surface_tension_simple` and Parachor, and this dispatch lacks the arrays the two profile ones take.
+- **models 1, 2 and 4 are refused here**: their calculators (`eos.gt_surface_tension`, `eos.lgt_surface_tension` and `eos.gt_surface_tension_simple`) are ported, and this dispatch has no inputs for the parameters they take.
 
 
 ## Cases

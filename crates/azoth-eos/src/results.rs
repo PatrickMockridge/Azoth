@@ -4399,6 +4399,24 @@ impl CalcResult for GtSurfaceTensionSimpleResult {
     }
 }
 
+/// Result of `eos.gt_surface_tension`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GtSurfaceTensionResult {
+    /// The interface tension, in N/m.
+    pub sigma: SurfaceTension,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for GtSurfaceTensionResult {
+    const CALC_ID: &'static str = "eos.gt_surface_tension";
+    const FIELDS: &'static [&'static str] = &["sigma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

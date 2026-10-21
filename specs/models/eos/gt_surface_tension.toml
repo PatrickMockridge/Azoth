@@ -1,0 +1,87 @@
+id = "eos.gt_surface_tension"
+name = "Surface tension from the full gradient theory"
+kind = "procedure"
+assumptions = [
+    "**model 1's gas-oil slot**, and the general gradient-theory solve: a finite-difference profile on `2^3+1` grid points, a damped Newton whose Jacobian is block tridiagonal, deferred correction, and an outer remeshing loop that doubles the grid until the integral moves less than one per cent.\n",
+    "the residual is `Delta mu(rho) - C (rho[i-1] - 2 rho[i] + rho[i+1]) / h^2`, with the T,V chemical potential and its physical-density derivative; the influence matrix is `1e18 sqrt(c_i c_j)` in the class's nanometre length scale.\n",
+    "**the class's interface-width accumulator is a single assignment, not a sum** (`dum =` inside its `m`/`n` loops), so its remesh width is the last column's contribution; this port reproduces the assignment, because the width sets the grid the outer loop re-solves on.\n",
+    "the class's centre-of-gravity shift assigns row references, so the row it shifts from and the boundary row become one array that the Newton update then moves together; the port reproduces that, and measured, it is worth 3e-4 in the tension on the first case.\n",
+    "the feed is flashed by the stability-seeded `eos.tp_multiflash`, which is NeqSim's `TPflash`; a feed the flash does not split into exactly two phases is refused, because the class profiles phases 0 and 1 and silently ignores any third.\n",
+    "a component absent from one phase is refused: the class adds a trace amount and reflashes, which perturbs the feed, and this port does not silently change the caller's composition.\n",
+    "the bulk state is checked for equal chemical potentials between the two phases, as the class's `initmu` does; a flash that is not solved is refused rather than profiled.\n",
+    "the ODE branch (`useFullGT = 0`) is unreachable upstream: `useFullGT` is `1` with no setter, so only this branch is a port target.\n",
+]
+references = [
+    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/GTSurfaceTensionFullGT.java` and `GTSurfaceTensionUtils.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/full_gt_probe.tsv` - four states and the class's answers; `gt_simple_initial_probe.tsv` records the T,V potentials the derivative is built from.\n",
+]
+[source]
+standard = "NeqSim master `GTSurfaceTensionFullGT`"
+edition = "`runcase`, `Newton`, `directsolve`, `sigmaCalc`, `calc_std_integral`, `delta_mu` and `linspace`, ported; the block-tridiagonal solve is a block Thomas algorithm where the class uses a banded LU."
+[algorithm]
+scheme = "gt_full_density_newton"
+initialisation = "step_profile_between_phases"
+convergence = "relative"
+tolerance = 0.01
+max_iterations = 7
+[algorithm.inner]
+scheme = "gt_full_newton"
+convergence = "relative"
+tolerance = 1e-05
+max_iterations = 20
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs.\n"
+[inputs.influence_parameters]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's gradient-theory influence parameter, in NeqSim's unit.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the fluid is flashed.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the interface tension.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The flash runs at it, and a non-positive pressure is not a state.\n"
+[[valid_range]]
+quantity = "influence_parameters"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The influence matrix takes their square roots.\n"
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A mole fraction cannot be negative.\n"
+[implementations]
+python = "azoth.eos.gt_surface_tension"
+rust = "azoth_eos::gt_surface_tension"

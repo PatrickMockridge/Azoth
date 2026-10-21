@@ -3267,6 +3267,45 @@ impl From<&azoth_eos::results::Gerg2008PhaseResult> for PyGerg2008PhaseResult {
         }
     }
 }
+/// Result of `eos.gt_surface_tension`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GtSurfaceTensionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGtSurfaceTensionResult {
+    /// the interface tension.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGtSurfaceTensionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GtSurfaceTensionResult(sigma={:?}, {} warning(s))",
+            self.sigma,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::GtSurfaceTensionResult> for PyGtSurfaceTensionResult {
+    fn from(r: &azoth_eos::results::GtSurfaceTensionResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.gt_surface_tension_simple`, transported.
 #[pyclass(
     frozen,

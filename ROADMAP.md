@@ -121,19 +121,21 @@ process model needs.
   calculators are selectable. `LGTSurfaceTension` is `eos.lgt_surface_tension`, model 2's
   calculator, whose 200-step profile runs on `Mixture::helmholtz_gradient`, and
   `GTSurfaceTensionSimple` is `eos.gt_surface_tension_simple`, model 4's gas-oil and
-  model 1's gas-aqueous and liquid-liquid slot, which adds the `dmu/dn` inner Newton.
-  **Owed**: `GTSurfaceTension` (model 1's gas-oil slot, the FullGT branch; `GTSurfaceTensionODE`
-  is unreachable upstream - `useFullGT = 1` has no setter) and `CDFTSurfaceTension`.
-  `eos.interface_properties` refuses models 1, 2 and 4: model 1's gas-oil slot lacks its
-  class, and the other arms lack the influence parameters, reference component and
-  interaction matrix the two profile calculators take.
+  model 1's gas-aqueous and liquid-liquid slot, which adds the `dmu/dn` inner Newton, and
+  `GTSurfaceTension` is `eos.gt_surface_tension`, model 1's gas-oil slot, solved through its
+  reachable FullGT branch on a remeshed finite-difference grid (`GTSurfaceTensionODE` is
+  unreachable upstream - `useFullGT = 1` has no setter). **Owed**: `CDFTSurfaceTension`.
+  `eos.interface_properties` refuses models 1, 2 and 4: each arm needs the influence
+  parameters, reference component or interaction matrix its calculator takes, and the
+  dispatch has no inputs for them.
   **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
   CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
   `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`
   is the reproduction. The captures `surface_tension_probe.tsv`,
   `surface_tension_solvers_probe.tsv`, `lgt_profile_probe.tsv`, `lgt_local_probe.tsv`,
-  `gt_simple_profile_probe.tsv` and `gt_simple_initial_probe.tsv` record the default pairs,
-  models 1, 2 and 4, the profiles' negative-pressure segments, and the GT-simple profile.
+  `gt_simple_profile_probe.tsv`, `gt_simple_initial_probe.tsv` and `full_gt_probe.tsv`
+  record the default pairs, models 1, 2 and 4, the profiles' negative-pressure segments,
+  the GT-simple profile and the FullGT answers.
 - **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,

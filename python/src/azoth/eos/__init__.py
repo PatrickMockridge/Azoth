@@ -108,6 +108,7 @@ from azoth.core.result import (
     GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
+    GtSurfaceTensionResult,
     GtSurfaceTensionSimpleResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -457,6 +458,7 @@ _GE_VAN_LAAR_ACID_PHASE = "eos.ge_van_laar_acid_phase"
 _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
+_GT_SURFACE_TENSION = "eos.gt_surface_tension"
 _GT_SURFACE_TENSION_SIMPLE = "eos.gt_surface_tension_simple"
 _VISCOSITY = "eos.viscosity"
 _AQUEOUS_VISCOSITY = "eos.aqueous_viscosity"
@@ -3295,6 +3297,37 @@ def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg200
     See :func:`azoth.eos.reference.gerg2008_phase`.
     """
     return resolve(_GERG2008_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def gt_surface_tension(
+    components: list[str],
+    eos: str,
+    influence_parameters: Sequence[float],
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> GtSurfaceTensionResult:
+    """The full gradient theory's interface tension of a flashed fluid.
+
+    The density profile is a finite-difference solve of the Euler-Lagrange equations: a
+    damped Newton whose Jacobian is block tridiagonal, deferred correction, and an outer
+    remeshing loop that refines the grid until the integral stops moving.
+
+    Raises:
+        InvalidInputError: for a feed that is not two phases, a bulk state out of
+            equilibrium, a singular block solve, or a profile that does not stay finite.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.gt_surface_tension`.
+    """
+    return resolve(_GT_SURFACE_TENSION)(  # type: ignore[no-any-return]
+        components=components,
+        eos=eos,
+        influence_parameters=influence_parameters,
+        T=T,
+        P=P,
+        z=z,
+    )
 
 
 def gt_surface_tension_simple(

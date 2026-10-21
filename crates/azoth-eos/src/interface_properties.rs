@@ -90,9 +90,10 @@ pub fn interface_properties(
         "model_1" => {
             return Err(AzothError::invalid_input(
                 "selection",
-                "`model_1` installs `GTSurfaceTension` in the gas-oil slot, which this tree \
-                 does not carry; its other two slots are `eos.gt_surface_tension_simple`, and \
-                 this dispatch does not carry the arrays that calculator takes",
+                "`model_1` installs `GTSurfaceTension` (`eos.gt_surface_tension`) in the \
+                 gas-oil slot and `GTSurfaceTensionSimple` in the other two; all three are \
+                 ported, and this dispatch does not carry the influence parameters the \
+                 gas-oil calculator takes",
             ));
         }
         "model_2" => {

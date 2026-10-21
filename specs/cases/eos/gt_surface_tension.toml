@@ -1,0 +1,53 @@
+model = "eos.gt_surface_tension"
+[[cases]]
+id = "methane_nbutane_at_300_k_and_20_bar"
+tolerance = 1e-06
+source = "NeqSim master `GTSurfaceTensionFullGT.runcase` on methane/n-butane 0.5/0.5 at 300 K and 20 bar, from `validation/neqsim/captures/full_gt_probe.tsv`, where it is also model 1's gas-oil slot. The influence parameters are methane `9.634812734820117e-21` and n-butane `2.7571945977326497e-19`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+eos = "srk"
+influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19]
+T = 300.0
+P = 2000000.0
+z = [0.5, 0.5]
+[cases.expected]
+sigma = 0.00950471504464287
+[[cases]]
+id = "methane_nheptane_at_313_k_and_30_bar"
+tolerance = 1e-06
+source = "The same class on methane/n-heptane 0.5/0.5 at 313.15 K and 30 bar.\n"
+[cases.inputs]
+components = ["methane", "n-heptane"]
+eos = "srk"
+influence_parameters = [9.338094864869405e-21, 8.71891375210775e-19]
+T = 313.15
+P = 3000000.0
+z = [0.5, 0.5]
+[cases.expected]
+sigma = 0.01469953306363218
+[[cases]]
+id = "co2_water_at_313_k_and_50_bar"
+tolerance = 1e-06
+source = "The same class on CO2/water 0.02/0.98 at 313.15 K and 50 bar. **Direct `FullGT` on this pair is robust** - unlike `GTSurfaceTensionSimple`, whose profile collapses on it - so this is a real state of the class, not model 1's gas-aqueous slot (which is GT-simple).\n"
+[cases.inputs]
+components = ["CO2", "water"]
+eos = "srk"
+influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20]
+T = 313.15
+P = 5000000.0
+z = [0.02, 0.98]
+[cases.expected]
+sigma = 0.018431814630995885
+[[cases]]
+id = "nheptane_water_at_300_k_and_1_bar"
+tolerance = 1e-06
+source = "The same class on n-heptane/water 0.5/0.5 at 300 K and 1 bar, an oil/aqueous pair.\n"
+[cases.inputs]
+components = ["n-heptane", "water"]
+eos = "srk"
+influence_parameters = [8.673919735107106e-19, 1.9939776242117276e-20]
+T = 300.0
+P = 100000.0
+z = [0.5, 0.5]
+[cases.expected]
+sigma = 0.008295124802206816

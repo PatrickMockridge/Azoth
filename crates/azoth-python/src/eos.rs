@@ -1393,6 +1393,29 @@ pub fn gt_surface_tension_simple(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The full gradient theory's interface tension of a fluid, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (components, eos, influence_parameters, T, P, z))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn gt_surface_tension(
+    py: Python<'_>,
+    components: Vec<String>,
+    eos: &str,
+    influence_parameters: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyGtSurfaceTensionResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) =
+        azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
+            .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::gt_surface_tension(&mixture, &influence_parameters, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyGtSurfaceTensionResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The hydrate formation pressure of a fluid at a temperature, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
