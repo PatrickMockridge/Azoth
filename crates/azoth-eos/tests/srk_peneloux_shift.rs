@@ -12,6 +12,7 @@ fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::SrkPenelouxShiftResult 
         common::input(case, "omega"),
         kelvins(common::input(case, "Tc")),
         pascals(common::input(case, "Pc")),
+        case.input("z_ra"),
     )
     .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
 }

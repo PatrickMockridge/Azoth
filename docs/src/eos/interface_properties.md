@@ -8,7 +8,7 @@
 
 **NeqSim master `InterfaceProperties`**
 
-`setInterfacialTensionModel(int)`'s model-0 arm, its 3 and 5 aliases, the string `parachor` and `Firozabadi Ramley` arms, and `getSurfaceTension`'s phase-type dispatch, ported verbatim. The other arms are refused.
+`setInterfacialTensionModel(int)`'s six arms, the string `parachor`, `Firozabadi Ramley` and `cDFT` arms, and `getSurfaceTension`'s phase-type dispatch, ported. The dispatch flashes the feed with `eos.tp_multiflash` and lets each arm's own model answer.
 
 
 ## What this model is
@@ -19,17 +19,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
-| `interface` | gas_oil / gas_aqueous / liquid_liquid | which pair the tension is between, which selects the calculator slot. |
-| `selection` | model_0 / model_3 / model_5 / parachor / firozabadi_ramley / model_1 / model_2 / model_4 | the class's `interfacialTensionModel`: `model_0` is the default, `model_3` and `model_5` are its aliases, `parachor` and `firozabadi_ramley` are the string selector's two calculators applied to the named pair. `model_1`, `model_2` and `model_4` are refused. |
-| `parachors` | dimensionless | each component's parachor, in `(mN/m)**(1/4) * cm**3/mol`. |
-| `tc` | K | each component's critical temperature, for the Firozabadi slot's pseudo-critical temperature. |
-| `rho_1` | kg/m**3 | the first phase's mass density. |
-| `rho_2` | kg/m**3 | the second phase's mass density. |
-| `molar_mass_1` | kg/mol | the first phase's molar mass. |
-| `molar_mass_2` | kg/mol | the second phase's molar mass. |
-| `x_1` | dimensionless | the first phase's mole fractions. |
-| `x_2` | dimensionless | the second phase's mole fractions. |
+| `components` | - | the substances the fluid is made of, by name, resolved against the component databank. |
+| `eos` | pr / srk / rk | the cubic the fluid runs. |
+| `influence_parameters` | dimensionless | each component's gradient-theory influence parameter, for the profile arms. |
+| `reference_component` | dimensionless | the 0-based index of the highest-boiling component, the profile's integration variable; LGT and GT-simple take it, FullGT does not. |
+| `pair_interactions` | dimensionless | the interaction matrix LGT and GT-simple take. |
+| `selection` | model_0 / model_3 / model_5 / parachor / firozabadi_ramley / model_1 / model_2 / model_4 / cdft | the class's `interfacialTensionModel`: `model_0` is the default, `model_3` and `model_5` are its aliases, the three strings are the string selector's calculators applied to the named pair, and models 1, 2 and 4 install their own calculators. |
 | `T` | K | absolute temperature at the interface. |
+| `P` | Pa | absolute pressure at which the fluid is flashed. |
+| `z` | dimensionless | the overall mole fractions. |
 
 
 ## Outputs
@@ -37,47 +35,55 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Name | Unit | Description |
 |---|---|---|
 | `sigma` | N/m | the pair's interfacial tension. |
-| `selected_model` | - | the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable. |
+| `selected_model` | - | the NeqSim class the slot installed: `ParachorSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` or `CDFTSurfaceTension`. The dispatch itself is what this output makes testable. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
-| `rho_1 > 0` | raises | A phase with no mass density has no interface. |
-| `rho_2 > 0` | raises | A phase with no mass density has no interface. |
-| `molar_mass_1 > 0` | raises | The parachor sum divides by it. |
-| `molar_mass_2 > 0` | raises | The parachor sum divides by it. |
-| `x_1 >= 0` | raises | A mole fraction cannot be negative. |
-| `x_2 >= 0` | raises | A mole fraction cannot be negative. |
+| `P > 0` | raises | The flash runs at it, and a non-positive pressure is not a state. |
+| `influence_parameters > 0` | raises | The influence matrix takes their square roots. |
+| `z >= 0` | raises | A mole fraction cannot be negative. |
 
 ## Assumptions
 
-- **the pair decides the calculator slot, not the argument order**: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the gas-aqueous slot, and every other pair - including a reversed oil/gas pair - the liquid-liquid slot (`InterfaceProperties.getSurfaceTension`).
+- **the pair decides the calculator slot**: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the gas-aqueous slot, and every other pair - including a reversed oil/gas pair - the liquid-liquid slot (`InterfaceProperties.getSurfaceTension`). The phases are the flash's, labelled by `PhaseEos.init`'s rule.
 
-- **model 0 is the default and the one this id carries**: Parachor for the gas-liquid and gas-aqueous slots and Firozabadi-Ramley for the liquid-liquid slot. Models 3 and 5 install the same three calculators, so they are aliases of 0 and accepted as such.
+- **model 0 is the default**: Parachor for the gas-liquid and gas-aqueous slots and Firozabadi-Ramley for the liquid-liquid slot. Models 3 and 5 install the same three calculators, so they are aliases of 0 and accepted as such.
 
-- the string selector's `parachor` and `firozabadi_ramley` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `interface`.
+- the string selector's `parachor`, `firozabadi_ramley` and `cDFT` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `selection`.
 
-- the two phases share one component list, as NeqSim's system does, so `parachors` and `tc` are one vector each and `x_1`/`x_2` are the two phases' compositions over it.
+- **the inputs are the union of the arms'**: the feed, the fluid, the influence parameters, the reference component and the interaction matrix. An arm reads only what its calculator takes; the profile arms re-flash the feed through their own models, and the dispatch's answer is theirs.
 
-- the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.
+- **models 1, 2 and 4 are carried**: model 1 installs `GTSurfaceTension`/`GTSurfaceTensionSimple`/`GTSurfaceTensionSimple`, model 2 `LGTSurfaceTension` in all three slots, and model 4 `GTSurfaceTensionSimple`/`LGTSurfaceTension`/Parachor.
 
-- **models 1, 2 and 4 are refused here**: their calculators (`eos.gt_surface_tension`, `eos.lgt_surface_tension` and `eos.gt_surface_tension_simple`) are ported, and this dispatch has no inputs for the parameters they take.
+- the Parachor and Firozabadi slots read the databank's `parachor` and `tc`, as the class reads `getParachor()` and `getTC()`; a component with no parachor is refused rather than counted as zero.
+
+- the Firozabadi slot's pseudo-critical temperature is the **first** phase's; the Parachor sum is symmetric in the two phases.
 
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `model_0_on_a_gas_oil_pair` | interface = gas_oil, selection = model_0, parachors = [77.3, 191.7], tc = [190.55999999999997, 425.12], rho_1 = 19.938328330315997, rho_2 = 549.3851668858096, molar_mass_1 = 0.022959902730870334, molar_mass_2 = 0.054107691623917306, x_1 = [0.8356249351028912, 0.1643750648971088], x_2 = [0.09542082642782022, 0.9045791735721797], T = 300.0 | sigma = 0.009424889197268286, selected_model = ParachorSurfaceTension |
-| `model_0_on_a_gas_aqueous_pair` | interface = gas_aqueous, selection = model_0, parachors = [78.0, 52.8786226], tc = [304.19, 647.3], rho_1 = 113.27066791939949, rho_2 = 988.9287133030801, molar_mass_1 = 0.04395427203887297, molar_mass_2 = 0.018032395235927503, x_1 = [0.9978562046113857, 0.002143795388614308], x_2 = [0.0006691762234084198, 0.9993308237765915], T = 313.15 | sigma = 0.053145026912194734, selected_model = ParachorSurfaceTension |
-| `model_0_on_a_liquid_liquid_pair` | interface = liquid_liquid, selection = model_0, parachors = [311.0, 52.8786226], tc = [540.2, 647.3], rho_1 = 690.6031246582897, rho_2 = 1000.0024520207028, molar_mass_1 = 0.10017182404110607, molar_mass_2 = 0.018015, x_1 = [0.9995963504210497, 0.00040364957895032145], x_2 = [9.208893557276302e-26, 1.0], T = 300.0 | sigma = 0.05083361859364053, selected_model = FirozabadiRamleyInterfaceTension |
-| `the_parachor_string_arm_on_the_liquid_liquid_pair` | interface = liquid_liquid, selection = parachor, parachors = [311.0, 52.8786226], tc = [540.2, 647.3], rho_1 = 690.6031246582897, rho_2 = 1000.0024520207028, molar_mass_1 = 0.10017182404110607, molar_mass_2 = 0.018015, x_1 = [0.9995963504210497, 0.00040364957895032145], x_2 = [9.208893557276302e-26, 1.0], T = 300.0 | sigma = 0.0003932397216657965, selected_model = ParachorSurfaceTension |
-| `the_firozabadi_string_arm_on_the_gas_oil_pair` | interface = gas_oil, selection = firozabadi_ramley, parachors = [77.3, 191.7], tc = [190.55999999999997, 425.12], rho_1 = 19.938328330315997, rho_2 = 549.3851668858096, molar_mass_1 = 0.022959902730870334, molar_mass_2 = 0.054107691623917306, x_1 = [0.8356249351028912, 0.1643750648971088], x_2 = [0.09542082642782022, 0.9045791735721797], T = 300.0 | sigma = 0.03622765708367235, selected_model = FirozabadiRamleyInterfaceTension |
+| `model_0_on_a_gas_oil_pair` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = model_0, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.009424889197268286, selected_model = ParachorSurfaceTension |
+| `model_3_is_model_0s_alias` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = model_3, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.009424889197268286, selected_model = ParachorSurfaceTension |
+| `model_0_on_a_gas_aqueous_pair` | components = ['CO2', 'water'], eos = srk, influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = model_0, T = 313.15, P = 5000000.0, z = [0.02, 0.98] | sigma = 0.053145026912194734, selected_model = ParachorSurfaceTension |
+| `model_0_on_a_liquid_liquid_pair` | components = ['n-heptane', 'water'], eos = srk, influence_parameters = [8.673919735107106e-19, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = model_0, T = 300.0, P = 100000.0, z = [0.5, 0.5] | sigma = 0.05083361859364053, selected_model = FirozabadiRamleyInterfaceTension |
+| `the_parachor_string_arm_on_the_liquid_liquid_pair` | components = ['n-heptane', 'water'], eos = srk, influence_parameters = [8.673919735107106e-19, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = parachor, T = 300.0, P = 100000.0, z = [0.5, 0.5] | sigma = 0.0003932397216657965, selected_model = ParachorSurfaceTension |
+| `the_firozabadi_string_arm_on_the_gas_oil_pair` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = firozabadi_ramley, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.03622765708367235, selected_model = FirozabadiRamleyInterfaceTension |
+| `model_1_gas_oil_installs_full_gt` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = model_1, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.00950471504464287, selected_model = GTSurfaceTension |
+| `model_2_gas_oil_installs_lgt` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = model_2, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.010011889708138906, selected_model = LGTSurfaceTension |
+| `model_2_gas_aqueous_installs_lgt` | components = ['CO2', 'water'], eos = srk, influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = model_2, T = 313.15, P = 5000000.0, z = [0.02, 0.98] | sigma = 0.0628784322609245, selected_model = LGTSurfaceTension |
+| `model_4_gas_oil_installs_gt_simple` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = model_4, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.00951973185903182, selected_model = GTSurfaceTensionSimple |
+| `model_4_gas_aqueous_installs_lgt` | components = ['CO2', 'water'], eos = srk, influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = model_4, T = 313.15, P = 5000000.0, z = [0.02, 0.98] | sigma = 0.0628784322609245, selected_model = LGTSurfaceTension |
+| `model_4_liquid_liquid_installs_parachor` | components = ['n-heptane', 'water'], eos = srk, influence_parameters = [8.673919735107106e-19, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = model_4, T = 300.0, P = 100000.0, z = [0.5, 0.5] | sigma = 0.0003932397216657965, selected_model = ParachorSurfaceTension |
+| `the_cdft_string_arm_on_the_gas_oil_pair` | components = ['methane', 'n-butane'], eos = srk, influence_parameters = [9.634812734820117e-21, 2.7571945977326497e-19], reference_component = 1.0, pair_interactions = [[0.0, 0.0], [0.0, 0.0]], selection = cdft, T = 300.0, P = 2000000.0, z = [0.5, 0.5] | sigma = 0.004745726951688798, selected_model = CDFTSurfaceTension |
+| `the_cdft_string_arm_on_the_gas_aqueous_pair` | components = ['CO2', 'water'], eos = srk, influence_parameters = [3.453431599008472e-20, 1.9939776242117276e-20], reference_component = 1.0, pair_interactions = [[0.0, 0.35], [0.35, 0.0]], selection = cdft, T = 313.15, P = 5000000.0, z = [0.02, 0.98] | sigma = 0.1058479521281978, selected_model = CDFTSurfaceTension |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 5 declared, every one run
+- Tests: 14 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -87,5 +93,5 @@ declared checks *that call* could not evaluate.
 ## References
 
 - NeqSim master, `physicalproperties/interfaceproperties/InterfaceProperties.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7. The dispatch, its six integer arms and the string selector.
-- `validation/neqsim/captures/surface_tension_probe.tsv` - model 0 on a gas-oil, a gas-aqueous and an oil-water pair, and the two calculators called directly. `surface_tension_solvers_probe.tsv` records the refused models' answers for the next tranche.
+- `validation/neqsim/captures/surface_tension_probe.tsv` - model 0 on a gas-oil, a gas-aqueous and an oil-water pair, and the two calculators called directly. `surface_tension_solvers_probe.tsv` records models 1, 2 and 4 on the same pairs.
 

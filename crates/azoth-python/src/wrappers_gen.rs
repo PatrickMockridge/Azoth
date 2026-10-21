@@ -1325,47 +1325,6 @@ pub fn ideal_gas_cp(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// Interface tension by NeqSim's phase-pair dispatch.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (interface, selection, parachors, tc, rho_1, rho_2, molar_mass_1, molar_mass_2, x_1, x_2, T))]
-#[pyo3(
-    text_signature = "(interface, selection, parachors, tc, rho_1, rho_2, molar_mass_1, molar_mass_2, x_1, x_2, T)"
-)]
-#[allow(non_snake_case)] // symbols from the published equation
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn interface_properties(
-    py: Python<'_>,
-    interface: &str,
-    selection: &str,
-    parachors: Vec<f64>,
-    tc: Vec<f64>,
-    rho_1: f64,
-    rho_2: f64,
-    molar_mass_1: f64,
-    molar_mass_2: f64,
-    x_1: Vec<f64>,
-    x_2: Vec<f64>,
-    T: f64,
-) -> PyResult<crate::transport_gen::PyInterfacePropertiesResult> {
-    azoth_eos::interface_properties::interface_properties(
-        interface,
-        selection,
-        &parachors,
-        &tc.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
-        kilograms_per_cubic_meter(rho_1),
-        kilograms_per_cubic_meter(rho_2),
-        kilograms_per_mole(molar_mass_1),
-        kilograms_per_mole(molar_mass_2),
-        &x_1,
-        &x_2,
-        kelvins(T),
-    )
-    .map(|r| crate::transport_gen::PyInterfacePropertiesResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Fugacity coefficients of a Kent-Eisenberg phase.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -2787,16 +2746,17 @@ pub fn srk_kappa(py: Python<'_>, omega: f64) -> PyResult<crate::transport_gen::P
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (omega, Tc, Pc))]
-#[pyo3(text_signature = "(omega, Tc, Pc)")]
+#[pyo3(signature = (omega, Tc, Pc, z_ra))]
+#[pyo3(text_signature = "(omega, Tc, Pc, z_ra)")]
 #[allow(non_snake_case)] // symbols from the published equation
 pub fn srk_peneloux_shift(
     py: Python<'_>,
     omega: f64,
     Tc: f64,
     Pc: f64,
+    z_ra: Option<f64>,
 ) -> PyResult<crate::transport_gen::PySrkPenelouxShiftResult> {
-    azoth_eos::srk_peneloux_shift::srk_peneloux_shift(omega, kelvins(Tc), pascals(Pc))
+    azoth_eos::srk_peneloux_shift::srk_peneloux_shift(omega, kelvins(Tc), pascals(Pc), z_ra)
         .map(|r| crate::transport_gen::PySrkPenelouxShiftResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

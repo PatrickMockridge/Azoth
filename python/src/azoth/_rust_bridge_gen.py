@@ -1937,21 +1937,19 @@ def ideal_gas_cp(cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float
     )
 
 
-def interface_properties(interface: str, selection: str, parachors: Sequence[float], tc: Sequence[Q], rho_1: Q, rho_2: Q, molar_mass_1: Q, molar_mass_2: Q, x_1: Sequence[float], x_2: Sequence[float], T: Q) -> InterfacePropertiesResult:
+def interface_properties(components: list[str], eos: str, influence_parameters: Sequence[float], reference_component: float, pair_interactions: Sequence[Sequence[float]], selection: str, T: Q, P: Q, z: Sequence[float]) -> InterfacePropertiesResult:
     """``eos.interface_properties``, computed in Rust."""
     spec = _models_gen.model("eos.interface_properties")
     result = _core.interface_properties(
-        interface,
+        list(components),
+        eos,
+        list(influence_parameters),
+        reference_component,
+        [list(row) for row in pair_interactions],
         selection,
-        list(parachors),
-        [input_to_si(spec, "tc", v) for v in tc],
-        input_to_si(spec, "rho_1", rho_1),
-        input_to_si(spec, "rho_2", rho_2),
-        input_to_si(spec, "molar_mass_1", molar_mass_1),
-        input_to_si(spec, "molar_mass_2", molar_mass_2),
-        list(x_1),
-        list(x_2),
         input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
     )
     return InterfacePropertiesResult(
         sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
@@ -3151,13 +3149,14 @@ def srk_kappa(omega: float) -> SrkKappaResult:
     )
 
 
-def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
+def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q, z_ra: float | None=None) -> SrkPenelouxShiftResult:
     """``eos.srk_peneloux_shift``, computed in Rust."""
     spec = _spec_for("eos.srk_peneloux_shift")
     result = _core.srk_peneloux_shift(
         omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
+        None if z_ra is None else z_ra,
     )
     return SrkPenelouxShiftResult(
         c=from_si(result.c.magnitude_si, result.c.unit),

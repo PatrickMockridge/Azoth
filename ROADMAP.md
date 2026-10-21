@@ -128,9 +128,15 @@ process model needs.
   `eos.cdft_surface_tension`, the string selector's other calculator: a tanh profile on a
   2048-point grid, varied over its width, taking each phase's molar volume and mole
   fractions because that is all the class reads from the flashed system.
-  `eos.interface_properties` refuses models 1, 2 and 4: each arm needs the influence
-  parameters, reference component or interaction matrix its calculator takes, and the
-  dispatch has no inputs for them; the string selector's CDFT arm is the model above.
+  `eos.interface_properties` now carries all six arms and the string selector's three
+  calculators: the gas-liquid, gas-aqueous and liquid-liquid slots install model 0's
+  Parachor/Firozabadi pair, model 1's `GTSurfaceTension`/`GTSurfaceTensionSimple` pair,
+  model 2's `LGTSurfaceTension` in every slot, and model 4's
+  `GTSurfaceTensionSimple`/`LGTSurfaceTension`/Parachor, from the flashed pair and the
+  profile parameters. Its Parachor and Firozabadi slots read the databank's `parachor`
+  and `tc`, and both phases' translated densities - the SRK Peneloux shift, which the
+  databank now carries beside the Peng-Robinson one, is what makes those densities
+  NeqSim's rather than the untranslated cubic's.
   **`GTSurfaceTensionSimple` returns a partial integral from a collapsed profile** on
   CO2/water 0.02/0.98 at 313.15 K and 50 bar: densities are zero from step 3 and it answers
   `0.0145737553` over two steps. The port refuses that state; `gt_simple_profile_probe.tsv`

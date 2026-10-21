@@ -79,6 +79,7 @@ from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 from azoth.eos.reference.pr_peneloux_shift import pr_peneloux_shift
 from azoth.eos.reference.srk_kappa import srk_kappa
+from azoth.eos.reference.srk_peneloux_shift import srk_peneloux_shift
 
 COMPONENTS_CSV = "data/components/components.csv"
 KIJ_CSV = "data/components/kij.csv"
@@ -674,6 +675,11 @@ class DatabankEntry:
             # compressibility is what NeqSim reads, and zero - its spelling of absence - is
             # what makes the shift calc fall back.
             volume_shift=pr_peneloux_shift(self.omega, self.Tc, self.Pc, self.rackett_z)
+            .c.to("m**3/mol")
+            .magnitude,
+            # The SRK form takes different constants and the same `RACKETZ`; the system's
+            # cubic chooses which one a density is built with.
+            volume_shift_srk=srk_peneloux_shift(self.omega, self.Tc, self.Pc, self.rackett_z)
             .c.to("m**3/mol")
             .magnitude,
             molar_mass=self.molar_mass,

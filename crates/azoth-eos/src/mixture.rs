@@ -175,12 +175,16 @@ pub struct Component {
     pub viscosity_correction_factor: f64,
     /// The dipole moment, in debye.
     pub dipole_moment: f64,
-    /// The volume-translation parameter in m³/mol, subtracted from the untranslated
-    /// molar volume: `v_corr = v - c`. Zero for a component without a translation,
-    /// which is the plain PR/SRK/RK forms. The Peneloux shift of
-    /// [`crate::pr_peneloux_shift`] or [`crate::srk_peneloux_shift`] is one source; a
-    /// fitted constant is another.
+    /// The **Peng-Robinson** volume-translation parameter in m³/mol, subtracted from the
+    /// untranslated molar volume: `v_corr = v - c`. Zero for a component without a
+    /// translation. Its SRK sibling is [`Self::volume_shift_srk`]; NeqSim's two cubic
+    /// families carry different constants and a different `Z_RA`, so one number cannot
+    /// stand for both.
     pub volume_shift: f64,
+    /// The **Soave-Redlich-Kwong** volume-translation parameter in m³/mol, from
+    /// [`crate::srk_peneloux_shift`] with the databank's `RACKETZ`. Zero for the plain
+    /// RK form, which has no translation.
+    pub volume_shift_srk: f64,
     /// Whether the substance precipitates as wax: the databank's `waxformer`, and the flag
     /// that decides whether it can be in a wax phase at all.
     ///
@@ -279,6 +283,7 @@ impl Component {
             normal_liquid_density: 0.0,
             critical_volume: None,
             volume_shift: 0.0,
+            volume_shift_srk: 0.0,
             wax_former: false,
             class: String::new(),
             heat_of_fusion: 0.0,
@@ -389,6 +394,13 @@ impl Component {
     #[must_use]
     pub fn with_volume_shift(mut self, volume_shift: f64) -> Self {
         self.volume_shift = volume_shift;
+        self
+    }
+
+    /// This component, with its SRK volume-translation parameter attached.
+    #[must_use]
+    pub fn with_volume_shift_srk(mut self, volume_shift_srk: f64) -> Self {
+        self.volume_shift_srk = volume_shift_srk;
         self
     }
 

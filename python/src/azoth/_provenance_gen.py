@@ -777,12 +777,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.interface_properties': {
         "calc_id": 'eos.interface_properties',
         "name": "Interface tension by NeqSim's phase-pair dispatch",
-        "spec": {'path': 'specs/models/eos/interface_properties.toml', 'sha256': '02e05f5cc9ed0d5577d9c053451f9223d9abc7660f5f87234a57447728ffe0d1'},
-        "code": [{'path': 'python/src/azoth/eos/reference/interface_properties.py', 'sha256': '28da47de5df90443c3016a8a5e75564cdf9818ed166a538d325045b85b3c74d3'}, {'path': 'crates/azoth-eos/src/interface_properties.rs', 'sha256': '8f9343b3e3de3a2701d362199a9aed765faf2b04f4922e48e2ca7d1310e51e20'}],
+        "spec": {'path': 'specs/models/eos/interface_properties.toml', 'sha256': '8ce6aac0f8cf891e53609bb9a54c09ba9c7df86b3e2f9477b2c5a5967a0e68d9'},
+        "code": [{'path': 'python/src/azoth/eos/reference/interface_properties.py', 'sha256': 'fac96e6ed083c1f2493f39a31230871efc5469a5d0f1866b22602b8223c2a329'}, {'path': 'crates/azoth-eos/src/interface_properties.rs', 'sha256': 'aeb8fd79584e0f7c9634d7b8bafc5439a50fcd71caaf9ab2770bb27c5fa0640c'}],
         "source": 'NeqSim master `InterfaceProperties`',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 5,
+        "tests_active": 14,
         "tests_skipped": 0,
     },
     'eos.kent_eisenberg_phase': {
@@ -1481,8 +1481,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.srk_peneloux_shift': {
         "calc_id": 'eos.srk_peneloux_shift',
         "name": 'Soave-Redlich-Kwong Peneloux volume-translation parameter',
-        "spec": {'path': 'specs/calcs/eos/srk_peneloux_shift.toml', 'sha256': 'a1d13c4bdbe94b41d106388e143acd5809dd7c1e8e914f11556c48ff317a1cf1'},
-        "code": [{'path': 'python/src/azoth/eos/reference/srk_peneloux_shift.py', 'sha256': '1ed4c5b5be40f5355ea8f8860edc6b80c1c213bd5c324ac8af94f32c70cb7c2e'}, {'path': 'crates/azoth-eos/src/srk_peneloux_shift.rs', 'sha256': 'ca63c8ab49b4e6e633c4e86f0052423b8c19632ddd40723731520ff33022dbcc'}],
+        "spec": {'path': 'specs/calcs/eos/srk_peneloux_shift.toml', 'sha256': '4b1f771a6cad869b9dce6496c9458008b030b17da558e51fc4c4e057cf672511'},
+        "code": [{'path': 'python/src/azoth/eos/reference/srk_peneloux_shift.py', 'sha256': 'f6a57825d2df6ca6fd7b1b7cdb327aad1216b573e29621438953097b3331ebf0'}, {'path': 'crates/azoth-eos/src/srk_peneloux_shift.rs', 'sha256': 'ec2a7e25e907f9334e9de0a1ef3757680d25f771c7c24441ddaff74a96963126'}],
         "source": 'Péneloux, A.; Rauzy, E.; Fréze, R. (1982)',
         "verification": 'verified',
         "validation_cases": 1,

@@ -2,7 +2,8 @@
 //! parameter.
 //!
 //! ```text
-//! c = 0.40768*(0.29441 - Z_RA)*R*Tc/Pc,  Z_RA = 0.29056 - 0.08775*omega
+//! c = 0.40768*(0.29441 - Z_RA)*R*Tc/Pc
+//! Z_RA = the databank's RACKETZ where it carries one, else 0.29056 - 0.08775*omega
 //! ```
 //!
 //! Spec: `specs/calcs/eos/srk_peneloux_shift.toml`.
@@ -16,8 +17,9 @@ use crate::spec_gen;
 
 /// The Soave-Redlich-Kwong Peneloux volume-translation parameter for a pure component.
 ///
-/// `omega`, `Tc` and `Pc` are the caller's. The shift is subtracted from the
-/// untranslated molar volume: `v_corr = v - c`.
+/// `omega`, `Tc` and `Pc` are the caller's, and `z_ra` is the databank's RACKETZ where
+/// the component carries one. The shift is subtracted from the untranslated molar
+/// volume: `v_corr = v - c`.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if `Tc` or `Pc` is not positive.
@@ -27,7 +29,7 @@ use crate::spec_gen;
 /// use azoth_core::units::{kelvins, pascals};
 /// use azoth_eos::srk_peneloux_shift;
 ///
-/// let r = srk_peneloux_shift(0.152, kelvins(369.83), pascals(4_248_000.0))?;
+/// let r = srk_peneloux_shift(0.152, kelvins(369.83), pascals(4_248_000.0), None)?;
 /// assert!((r.c.value - 5.072202290436595e-06).abs() < 1e-18);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
@@ -36,6 +38,7 @@ pub fn srk_peneloux_shift(
     omega: f64,
     Tc: ThermodynamicTemperature,
     Pc: Pressure,
+    z_ra: Option<f64>,
 ) -> Result<SrkPenelouxShiftResult> {
     let spec = &spec_gen::SRK_PENELOUX_SHIFT_SPEC;
     let mut warnings = Vec::new();
@@ -46,12 +49,19 @@ pub fn srk_peneloux_shift(
             "omega" => Some(omega),
             "Tc" => Some(Tc.value),
             "Pc" => Some(Pc.value),
+            "z_ra" => z_ra,
             _ => None,
         },
         &mut warnings,
     )?;
 
-    let z_ra = 0.29056 - 0.08775 * omega;
+    // NeqSim's own rule: the field when it carries one, the correlation where it does
+    // not. `Some(0.0)` and `None` are the same statement, because zero *is* the table's
+    // spelling of absence.
+    let z_ra = match z_ra {
+        Some(value) if value.abs() >= 1e-10 => value,
+        _ => 0.29056 - 0.08775 * omega,
+    };
     let c = 0.40768 * (0.29441 - z_ra) * MOLAR_GAS_CONSTANT * Tc.value / Pc.value;
 
     apply_checks(

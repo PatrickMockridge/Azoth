@@ -417,10 +417,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ideal_gas_cp, m)?)?;
-    m.add_function(wrap_pyfunction!(
-        crate::wrappers_gen::interface_properties,
-        m
-    )?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::interface_properties, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::kent_eisenberg_phase,
         m

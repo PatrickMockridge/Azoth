@@ -31,6 +31,7 @@ DOI: [10.1016/0378-3812(82)80002-2](https://doi.org/10.1016/0378-3812(82)80002-2
 | `omega` | dimensionless | Acentric factor of the pure component, as in `eos.srk_kappa`. |
 | `Tc` | K | Critical temperature of the pure component. |
 | `Pc` | Pa | Critical pressure of the pure component. |
+| `z_ra` | dimensionless | *Optional.* The Rackett compressibility ``Z_RA``, the databank's NeqSim ``RACKETZ`` column. Absent or zero takes the acentric-factor correlation, which is the rule the databank's own reader follows. |
 
 
 ## Outputs
@@ -56,7 +57,9 @@ satisfy for the result to mean what it says.
 
 - the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - this calc has no databank and no second source; all three come from the caller and are taken at face value.
 
-- `Z_RA` is the Rackett compressibility from `Z_RA = 0.29056 - 0.08775*omega`. NeqSim defaults to it when a databank Rackett Z is absent, and this library ships no Rackett Z column, so the default is the whole correlation.
+- `Z_RA` is the Rackett compressibility: the caller's when `z_ra` is given and non-zero, else `0.29056 - 0.08775*omega`. **That is NeqSim's own rule** - `ComponentSrk.getVolumeCorrection()` reads the databank's `RACKETZ` field and falls back to the correlation only where it is below `1e-10`.
+
+- **the fallback is the wrong answer for 132 of the 348 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the shift is 0.584 against 0.338 in NeqSim's molar-volume units, a 10% density difference on the aqueous phase.
 
 - `R` is the exact molar gas constant from the 2019 SI definition, not NeqSim's truncated `8.3144621` - the same value `eos.pr_molar_volume` uses, and the shift is subtracted from that calc's volume.
 

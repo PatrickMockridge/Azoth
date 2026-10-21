@@ -1002,7 +1002,9 @@ def pr_peneloux_shift(
     return resolve(_PR_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc, z_ra=z_ra)  # type: ignore[no-any-return]
 
 
-def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
+def srk_peneloux_shift(
+    omega: float, Tc: Q, Pc: Q, z_ra: float | None = None
+) -> SrkPenelouxShiftResult:
     """The Soave-Redlich-Kwong Peneloux volume-translation parameter.
 
     The shift is subtracted from the untranslated molar volume: ``v_corr = v - c``,
@@ -1014,7 +1016,12 @@ def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
 
     See :func:`azoth.eos.reference.srk_peneloux_shift`.
     """
-    return resolve(_SRK_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc)  # type: ignore[no-any-return]
+    return resolve(_SRK_PENELOUX_SHIFT)(  # type: ignore[no-any-return]
+        omega=omega,
+        Tc=Tc,
+        Pc=Pc,
+        z_ra=z_ra,
+    )
 
 
 def heat_of_vaporization(
@@ -2203,42 +2210,41 @@ def ideal_gas_cp(
 
 
 def interface_properties(
-    interface: str,
+    components: list[str],
+    eos: str,
+    influence_parameters: Sequence[float],
+    reference_component: float,
+    pair_interactions: Sequence[Sequence[float]],
     selection: str,
-    parachors: Sequence[float],
-    tc: Sequence[Q],
-    rho_1: Q,
-    rho_2: Q,
-    molar_mass_1: Q,
-    molar_mass_2: Q,
-    x_1: Sequence[float],
-    x_2: Sequence[float],
     T: Q,
+    P: Q,
+    z: Sequence[float],
 ) -> InterfacePropertiesResult:
-    """The interface tension of a phase pair by NeqSim's dispatch.
+    """The interface tension of a flashed phase pair by NeqSim's dispatch.
 
-    The pair decides the slot: ``gas_oil`` and ``gas_aqueous`` take Parachor in model 0,
-    and every other pair takes Firozabadi-Ramley. Models 3 and 5 are aliases of 0; models
-    1, 2 and 4 are refused.
+    The pair decides the slot: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the
+    gas-aqueous slot, and every other pair the liquid-liquid slot. Models 3 and 5 are
+    aliases of 0; the string selector's three calculators and models 1, 2 and 4 are
+    selectable. The inputs are the union of the arms', and an arm reads only what its
+    calculator uses.
 
     Raises:
-        InvalidInputError: for an unknown pair or selection, or a refused model.
+        InvalidInputError: for a feed that is not two phases, an unknown selection, or a
+            component with no parachor.
         OutOfRangeError: if an input is outside its declared range.
 
     See :func:`azoth.eos.reference.interface_properties`.
     """
     return resolve(_INTERFACE_PROPERTIES)(  # type: ignore[no-any-return]
-        interface=interface,
+        components=components,
+        eos=eos,
+        influence_parameters=influence_parameters,
+        reference_component=reference_component,
+        pair_interactions=pair_interactions,
         selection=selection,
-        parachors=parachors,
-        tc=tc,
-        rho_1=rho_1,
-        rho_2=rho_2,
-        molar_mass_1=molar_mass_1,
-        molar_mass_2=molar_mass_2,
-        x_1=x_1,
-        x_2=x_2,
         T=T,
+        P=P,
+        z=z,
     )
 
 

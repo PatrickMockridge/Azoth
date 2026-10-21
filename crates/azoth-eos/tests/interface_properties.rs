@@ -1,45 +1,48 @@
 //! Spec-driven tests for the `eos.interface_properties` model.
 
-use azoth_core::units::{kelvins, kilograms_per_cubic_meter, kilograms_per_mole};
+use azoth_core::units::{kelvins, pascals};
 use azoth_eos::interface_properties::interface_properties;
+use azoth_eos::{Cubic, databank, model_gen};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.interface_properties";
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::InterfacePropertiesResult {
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    let cubic = match case.string("eos").unwrap_or("srk") {
+        "pr" => Cubic::Pr,
+        "srk" => Cubic::Srk,
+        "rk" => Cubic::Rk,
+        other => panic!("case `{}` names an unhandled cubic `{other}`", case.id),
+    };
+    let (mixture, _) =
+        databank::mixture_of(names, cubic, None).expect("the case's components resolve");
+    let count = names.len();
+    let flat = case
+        .matrix("pair_interactions")
+        .expect("the case states the interaction matrix");
+    let interactions: Vec<Vec<f64>> = flat.chunks(count).map(<[f64]>::to_vec).collect();
     interface_properties(
-        case.string("interface")
-            .expect("the case states the interface"),
+        &mixture,
         case.string("selection")
             .expect("the case states the selection"),
-        case.vector("parachors")
-            .expect("the case states the parachors"),
-        &case
-            .vector("tc")
-            .expect("the case states the critical temperatures")
-            .iter()
-            .map(|value| kelvins(*value))
-            .collect::<Vec<_>>(),
-        kilograms_per_cubic_meter(case.input("rho_1").expect("the case states rho_1")),
-        kilograms_per_cubic_meter(case.input("rho_2").expect("the case states rho_2")),
-        kilograms_per_mole(
-            case.input("molar_mass_1")
-                .expect("the case states molar_mass_1"),
-        ),
-        kilograms_per_mole(
-            case.input("molar_mass_2")
-                .expect("the case states molar_mass_2"),
-        ),
-        case.vector("x_1").expect("the case states x_1"),
-        case.vector("x_2").expect("the case states x_2"),
+        case.vector("influence_parameters")
+            .expect("the case states the influence parameters"),
+        case.input("reference_component")
+            .expect("the case states the reference component"),
+        &interactions,
         kelvins(case.input("T").expect("the case states T")),
+        pascals(case.input("P").expect("the case states P")),
+        case.vector("z").expect("the case states z"),
     )
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = azoth_eos::model_gen::model(MODEL_ID).expect("the model should be in its table");
+    let spec = model_gen::model(MODEL_ID).expect("the model should be in its table");
     assert!(!spec.cases.is_empty(), "the model should have cases");
 
     for case in spec.cases {
@@ -61,67 +64,67 @@ fn every_case_in_the_spec() {
     }
 }
 
-/// **The pair decides the slot.** The same selection on a liquid-liquid pair takes
-/// Firozabadi-Ramley, and on a gas-oil pair Parachor; an oil/gas pair named as
-/// `liquid_liquid` is the third slot, which is what NeqSim does with a reversed pair.
+/// **The pair decides the slot.** Model 0 on a gas-oil feed takes Parachor; on an
+/// oil-water feed it takes Firozabadi-Ramley, which is the liquid-liquid slot.
 #[test]
 fn the_pair_decides_the_slot() {
-    let methane_butane = |interface: &str| {
-        interface_properties(
-            interface,
-            "model_0",
-            &[77.3, 191.7],
-            &[kelvins(190.56), kelvins(425.12)],
-            kilograms_per_cubic_meter(19.938328330315997),
-            kilograms_per_cubic_meter(549.3851668858096),
-            kilograms_per_mole(0.022959902730870334),
-            kilograms_per_mole(0.054107691623917306),
-            &[0.8356249351028912, 0.1643750648971088],
-            &[0.09542082642782022, 0.9045791735721797],
-            kelvins(300.0),
-        )
-        .expect("the state runs")
+    let spec = model_gen::model(MODEL_ID).expect("the model");
+    let case = |id: &str| {
+        spec.cases
+            .iter()
+            .find(|case| case.id == id)
+            .expect("the case is in the spec")
     };
+    let gas_oil = call(case("model_0_on_a_gas_oil_pair"));
+    assert_eq!(gas_oil.selected_model, "ParachorSurfaceTension");
+    let liquid_liquid = call(case("model_0_on_a_liquid_liquid_pair"));
     assert_eq!(
-        methane_butane("gas_oil").selected_model,
-        "ParachorSurfaceTension"
-    );
-    assert_eq!(
-        methane_butane("liquid_liquid").selected_model,
+        liquid_liquid.selected_model,
         "FirozabadiRamleyInterfaceTension"
     );
-    assert_ne!(
-        methane_butane("gas_oil").sigma.value,
-        methane_butane("liquid_liquid").sigma.value
+    assert_ne!(gas_oil.sigma.value, liquid_liquid.sigma.value);
+}
+
+/// The profile arms propagate their calculator's refusal rather than answering a
+/// partial integral: model 1's gas-aqueous slot is GT-simple, whose profile collapses on
+/// CO2/water at this state.
+#[test]
+fn a_profile_arms_refusal_is_the_calculators() {
+    let (mixture, _) =
+        databank::mixture_of(&["CO2", "water"], Cubic::Srk, None).expect("both resolve");
+    let error = interface_properties(
+        &mixture,
+        "model_1",
+        &[3.453431599008472e-20, 1.9939776242117276e-20],
+        1.0,
+        &[vec![0.0, 0.35], vec![0.35, 0.0]],
+        kelvins(313.15),
+        pascals(5.0e6),
+        &[0.02, 0.98],
+    )
+    .expect_err("GT-simple's profile collapses on this state, and the arm carries that");
+    assert!(
+        error
+            .to_string()
+            .contains("GT-simple profile's density vector is not a state"),
+        "{error}"
     );
 }
 
-/// The three unported arms name their classes rather than approximating.
 #[test]
-fn the_solver_arms_are_refused_by_class() {
-    for (selection, class) in [
-        ("model_1", "GTSurfaceTension"),
-        ("model_2", "LGTSurfaceTension"),
-        ("model_4", "GTSurfaceTensionSimple"),
-    ] {
-        let error = interface_properties(
-            "gas_oil",
-            selection,
-            &[77.3, 191.7],
-            &[kelvins(190.56), kelvins(425.12)],
-            kilograms_per_cubic_meter(19.938328330315997),
-            kilograms_per_cubic_meter(549.3851668858096),
-            kilograms_per_mole(0.022959902730870334),
-            kilograms_per_mole(0.054107691623917306),
-            &[0.8356249351028912, 0.1643750648971088],
-            &[0.09542082642782022, 0.9045791735721797],
-            kelvins(300.0),
-        )
-        .expect_err("the solver arms are refused");
-        let message = error.to_string();
-        assert!(
-            message.contains(class),
-            "the refusal names {class}, got {message}"
-        );
-    }
+fn a_single_phase_feed_is_refused() {
+    let (mixture, _) =
+        databank::mixture_of(&["methane"], Cubic::Srk, None).expect("methane resolves");
+    let error = interface_properties(
+        &mixture,
+        "model_0",
+        &[9.634812734820117e-21],
+        0.0,
+        &[vec![0.0]],
+        kelvins(400.0),
+        pascals(1.0e5),
+        &[1.0],
+    )
+    .expect_err("one supercritical phase has no pair to dispatch");
+    assert!(error.to_string().contains("no pair to dispatch"), "{error}");
 }

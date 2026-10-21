@@ -79,6 +79,10 @@ class Component:
     #: translation, which is the plain PR/SRK/RK forms; the databank fills it from
     #: :func:`azoth.eos.pr_peneloux_shift` and the component's own Rackett compressibility.
     volume_shift: float = 0.0
+    #: The **Soave-Redlich-Kwong** Peneloux translation, in ``m**3/mol``. NeqSim's two
+    #: cubic families carry different constants and the same ``RACKETZ``, so one number
+    #: cannot stand for both; the RK form has no translation and carries zero.
+    volume_shift_srk: float = 0.0
     molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
     association: AssociationParameters | None = None

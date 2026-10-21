@@ -1393,6 +1393,41 @@ pub fn gt_surface_tension_simple(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The interface tension of a flashed phase pair by NeqSim's dispatch, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (components, eos, influence_parameters, reference_component, pair_interactions, selection, T, P, z))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn interface_properties(
+    py: Python<'_>,
+    components: Vec<String>,
+    eos: &str,
+    influence_parameters: Vec<f64>,
+    reference_component: f64,
+    pair_interactions: Vec<Vec<f64>>,
+    selection: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyInterfacePropertiesResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) =
+        azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
+            .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::interface_properties(
+        &mixture,
+        selection,
+        &influence_parameters,
+        reference_component,
+        &pair_interactions,
+        kelvins(T),
+        pascals(P),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyInterfacePropertiesResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The classical density functional theory's interface tension between two states, computed in
 /// Rust.
 #[pyfunction]

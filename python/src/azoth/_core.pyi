@@ -3014,17 +3014,15 @@ def ideal_gas_cp(
     T: float,
 ) -> IdealGasCpResult: ...
 def interface_properties(
-    interface: str,
+    components: list[str],
+    eos: str,
+    influence_parameters: list[float],
+    reference_component: float,
+    pair_interactions: list[list[float]],
     selection: str,
-    parachors: list[float],
-    tc: list[float],
-    rho_1: float,
-    rho_2: float,
-    molar_mass_1: float,
-    molar_mass_2: float,
-    x_1: list[float],
-    x_2: list[float],
     T: float,
+    P: float,
+    z: list[float],
 ) -> InterfacePropertiesResult: ...
 def kent_eisenberg_phase(
     components: list[str],
@@ -3453,7 +3451,12 @@ def srk_departure(
     Tr: float,
 ) -> SrkDepartureResult: ...
 def srk_kappa(omega: float) -> SrkKappaResult: ...
-def srk_peneloux_shift(omega: float, Tc: float, Pc: float) -> SrkPenelouxShiftResult: ...
+def srk_peneloux_shift(
+    omega: float,
+    Tc: float,
+    Pc: float,
+    z_ra: float | None = None,
+) -> SrkPenelouxShiftResult: ...
 def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult: ...
 def stability_test(
     Tc: list[float],

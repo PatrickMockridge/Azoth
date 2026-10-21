@@ -4202,7 +4202,7 @@ pub struct PyInterfacePropertiesResult {
     /// the pair's interfacial tension.
     #[pyo3(get)]
     pub sigma: PyQty,
-    /// the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.
+    /// the NeqSim class the slot installed: `ParachorSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` or `CDFTSurfaceTension`. The dispatch itself is what this output makes testable.
     #[pyo3(get)]
     pub selected_model: String,
     /// Caveats, deduplicated.

@@ -80,7 +80,10 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 57 -> 58 when `eos.gt_surface_tension` landed, again the `components` shape.
 #: 58 -> 59 when `eos.cdft_surface_tension` landed, the same `components` shape with two
 #: dimensionless vector inputs the generator's row rules cannot size.
-KNOWN_HAND_WRITTEN = 59
+#: 59 -> 60 when `eos.interface_properties` moved: its kernel now takes a `Mixture` and
+#: the interaction matrix, the same two reasons as LGT, so the generated wrapper it had
+#: could no longer be derived.
+KNOWN_HAND_WRITTEN = 60
 
 
 def _tools_module(name: str) -> ModuleType:

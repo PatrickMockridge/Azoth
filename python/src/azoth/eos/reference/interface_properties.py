@@ -1,7 +1,7 @@
 """``eos.interface_properties`` - NeqSim's phase-pair dispatch for interfacial tension.
 
 Spec: ``specs/models/eos/interface_properties.toml``, which records
-``InterfaceProperties.setInterfacialTensionModel``'s model-0 arm and
+``InterfaceProperties.setInterfacialTensionModel``'s six arms, the string selector and
 ``getSurfaceTension``'s phase-type dispatch.
 """
 
@@ -15,12 +15,19 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import InterfacePropertiesResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.reference._mixture_state import reduced_parameters
+from azoth.eos.reference.cdft_surface_tension import cdft_surface_tension
 from azoth.eos.reference.firozabadi_ramley_interface_tension import (
     firozabadi_ramley_interface_tension,
 )
+from azoth.eos.reference.gt_surface_tension import gt_surface_tension
+from azoth.eos.reference.gt_surface_tension_simple import gt_surface_tension_simple
+from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, GAS, OIL, phase_label
+from azoth.eos.reference.lgt_surface_tension import lgt_surface_tension
 from azoth.eos.reference.parachor_mixture_surface_tension import (
     parachor_mixture_surface_tension,
 )
+from azoth.eos.reference.tp_multiflash import tp_multiflash
 
 CALC_ID = "eos.interface_properties"
 
@@ -30,166 +37,289 @@ PARACHOR = "ParachorSurfaceTension"
 FIROZABADI = "FirozabadiRamleyInterfaceTension"
 
 
+class _Phase:
+    """One phase, with the two volumes the class reads."""
+
+    def __init__(
+        self,
+        composition: list[float],
+        z_factor: float,
+        molar_volume: float,
+        translated_density: float,
+        molar_mass: float,
+    ) -> None:
+        self.x = composition
+        self.z_factor = z_factor
+        self.molar_volume = molar_volume
+        self.translated_density = translated_density
+        self.molar_mass = molar_mass
+
+    def mass_density(self) -> Q:
+        return from_si(self.translated_density * self.molar_mass, "kg/m**3")
+
+
 def interface_properties(
-    interface: str,
+    components: Sequence[str],
+    eos: str,
     selection: str,
-    parachors: Sequence[float],
-    tc: Sequence[Q],
-    rho_1: Q,
-    rho_2: Q,
-    molar_mass_1: Q,
-    molar_mass_2: Q,
-    x_1: Sequence[float],
-    x_2: Sequence[float],
+    influence_parameters: Sequence[float],
+    reference_component: float,
+    pair_interactions: Sequence[Sequence[float]],
     T: Q,
+    P: Q,
+    z: Sequence[float],
 ) -> InterfacePropertiesResult:
-    """The interface tension of a phase pair by NeqSim's dispatch.
+    """The interface tension of a flashed phase pair by NeqSim's dispatch.
 
-    The pair decides the slot: ``gas_oil`` and ``gas_aqueous`` take Parachor in model 0,
-    and every other pair - including a reversed oil/gas one - takes Firozabadi-Ramley.
-    Models 3 and 5 are aliases of 0; the string selector's two calculators can be asked
-    for directly; models 1, 2 and 4 are refused.
+    The pair decides the slot: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the
+    gas-aqueous slot, and every other pair the liquid-liquid slot. Models 3 and 5 are
+    aliases of 0; the string selector's three calculators can be asked for directly;
+    models 1, 2 and 4 install their own calculators.
 
-    Args:
-        interface: ``gas_oil``, ``gas_aqueous`` or ``liquid_liquid``.
-        selection: the class's ``interfacialTensionModel``.
-        parachors: each component's parachor.
-        tc: each component's critical temperature.
-        rho_1: the first phase's mass density.
-        rho_2: the second phase's mass density.
-        molar_mass_1: the first phase's molar mass.
-        molar_mass_2: the second phase's molar mass.
-        x_1: the first phase's mole fractions.
-        x_2: the second phase's mole fractions.
-        T: absolute temperature.
-
-    Returns:
-        The tension and the class the selected slot installed.
+    The inputs are the union of the arms': the feed, the fluid, the influence
+    parameters, the reference component and the interaction matrix. An arm reads only
+    what its calculator uses.
 
     Raises:
-        InvalidInputError: for an unknown pair or selection, or a refused model.
+        InvalidInputError: for a feed that is not two phases, an unknown selection, a
+            component with no parachor or molar mass, or vectors that are not one entry
+            per component.
         OutOfRangeError: if an input is outside its declared range.
 
-    Example:
-        >>> import azoth
-        >>> q = azoth.ureg.Quantity
-        >>> r = interface_properties(
-        ...     "gas_oil", "model_0", [77.3, 191.7],
-        ...     [q(190.56, "K"), q(425.12, "K")],
-        ...     q(19.938328330315997, "kg/m**3"), q(549.3851668858096, "kg/m**3"),
-        ...     q(0.022959902730870334, "kg/mol"), q(0.054107691623917306, "kg/mol"),
-        ...     [0.8356249351028912, 0.1643750648971088],
-        ...     [0.09542082642782022, 0.9045791735721797], q(300.0, "K"))
-        >>> round(r.sigma.magnitude, 15), r.selected_model
-        (0.009424889197268, 'ParachorSurfaceTension')
+    The Rust half is ``azoth_eos::interface_properties``; the two run the same dispatch.
     """
     from azoth._models_gen import model
+    from azoth.eos import components as databank
 
     spec: dict[str, Any] = model(CALC_ID)
     checks = checks_for(spec)
     warnings: list[Warning] = []
 
-    if interface not in ("gas_oil", "gas_aqueous", "liquid_liquid"):
+    count = len(components)
+    if (
+        len(influence_parameters) != count
+        or len(pair_interactions) != count
+        or any(len(row) != count for row in pair_interactions)
+        or len(z) != count
+    ):
         raise InvalidInputError(
-            "interface",
-            f"`{interface}` is not one of `gas_oil`, `gas_aqueous` or `liquid_liquid`; the "
-            f"pair decides which calculator slot runs",
+            "influence_parameters",
+            f"{count} component(s) against {len(influence_parameters)} influence "
+            f"parameter(s), {len(pair_interactions)} interaction row(s) and {len(z)} "
+            f"mole fraction(s): every one is one entry per component",
+        )
+    if (
+        reference_component != int(reference_component)
+        or int(reference_component) < 0
+        or int(reference_component) >= count
+    ):
+        raise InvalidInputError(
+            "reference_component",
+            f"`{reference_component}` is not a whole index in 0..{count}",
         )
 
+    temperature = input_to_si(spec, "T", T)
+    pressure = input_to_si(spec, "P", P)
+    influences = [float(value) for value in influence_parameters]
+    apply_checks(
+        checks.on_input,
+        {
+            "T": temperature,
+            "P": pressure,
+            "influence_parameters": min(influences) if influences else None,
+            "z": min(float(value) for value in z) if z else None,
+        }.get,
+        warnings,
+    )
+
+    mixture, _ = databank.mixture_of(list(components), eos=eos)
+    flash = tp_multiflash(
+        mixture, from_si(temperature, "K"), from_si(pressure, "Pa"), [float(v) for v in z]
+    )
+    if flash.phase_count != 2:
+        raise InvalidInputError(
+            "z",
+            f"the feed splits into {flash.phase_count} phase(s) at this state, so there is "
+            f"no pair to dispatch; the class's `getSurfaceTension` is called with two phases",
+        )
+
+    gases = mixture.cubic.name
+    if gases == "srk":
+        shift = [component.volume_shift_srk for component in mixture.components]
+    elif gases == "pr":
+        shift = [component.volume_shift for component in mixture.components]
+    else:
+        shift = [0.0] * count
+
+    gas_constant = 8.3144621
+    rt = gas_constant * temperature
+    phases: list[_Phase] = []
+    for index in range(2):
+        composition = [float(value) for value in flash.x[index]]
+        molar_mass = 0.0
+        for i, fraction in enumerate(composition):
+            mass = mixture.components[i].molar_mass
+            if mass is None:
+                raise InvalidInputError(
+                    "components",
+                    f"component {i} carries no molar mass, and the mass densities the "
+                    f"parachor and Firozabadi slots take need one",
+                )
+            molar_mass += fraction * float(mass.to("kg/mol").magnitude)
+        molar_volume = flash.z_factor[index] * rt / pressure
+        translated = sum(fraction * c for fraction, c in zip(composition, shift, strict=True))
+        phases.append(
+            _Phase(
+                composition,
+                flash.z_factor[index],
+                molar_volume,
+                1.0 / (molar_volume - translated),
+                molar_mass,
+            )
+        )
+    # NeqSim's system orders its phases lightest first; the flash's order is denser first.
+    phases.sort(key=lambda phase: phase.molar_volume, reverse=True)
+
+    reduced = reduced_parameters(mixture, temperature, pressure)
+    labels = [phase_label(mixture, reduced, phase.x, phase.z_factor) for phase in phases]
+    if labels[0] == GAS and labels[1] == OIL:
+        slot = "gas_oil"
+    elif labels[0] == GAS and labels[1] == AQUEOUS:
+        slot = "gas_aqueous"
+    else:
+        slot = "liquid_liquid"
+
+    def parachor_arm() -> tuple[float, str, list[Warning]]:
+        parachors: list[float] = []
+        for index, component in enumerate(mixture.components):
+            if component.parachor <= 0.0:
+                raise InvalidInputError(
+                    "components",
+                    f"component {index} carries no parachor, so the slot's sum would count "
+                    f"it as zero; the class reads `getParachor()` and would answer a number "
+                    f"built on a missing coefficient",
+                )
+            parachors.append(component.parachor)
+        result = parachor_mixture_surface_tension(
+            parachors,
+            phases[0].mass_density(),
+            from_si(phases[0].molar_mass, "kg/mol"),
+            phases[0].x,
+            phases[1].mass_density(),
+            from_si(phases[1].molar_mass, "kg/mol"),
+            phases[1].x,
+        )
+        return (
+            result.sigma.to("N/m").magnitude,
+            PARACHOR,
+            list(result.warnings),
+        )
+
+    def firozabadi_arm() -> tuple[float, str, list[Warning]]:
+        pseudo = sum(
+            fraction * float(mixture.components[i].Tc.to("K").magnitude)
+            for i, fraction in enumerate(phases[0].x)
+        )
+        result = firozabadi_ramley_interface_tension(
+            from_si(temperature, "K"),
+            from_si(pseudo, "K"),
+            phases[0].mass_density(),
+            phases[1].mass_density(),
+        )
+        return (
+            result.sigma.to("N/m").magnitude,
+            FIROZABADI,
+            list(result.warnings),
+        )
+
+    def simple_arm() -> tuple[float, str, list[Warning]]:
+        result = gt_surface_tension_simple(
+            list(components),
+            eos,
+            influences,
+            reference_component,
+            pair_interactions,
+            from_si(temperature, "K"),
+            from_si(pressure, "Pa"),
+            [float(v) for v in z],
+        )
+        return (
+            result.sigma.to("N/m").magnitude,
+            "GTSurfaceTensionSimple",
+            list(result.warnings),
+        )
+
+    def lgt_arm() -> tuple[float, str, list[Warning]]:
+        result = lgt_surface_tension(
+            list(components),
+            eos,
+            influences,
+            reference_component,
+            pair_interactions,
+            from_si(temperature, "K"),
+            from_si(pressure, "Pa"),
+            [float(v) for v in z],
+        )
+        return (result.sigma.to("N/m").magnitude, "LGTSurfaceTension", list(result.warnings))
+
     if selection in ("model_0", "model_3", "model_5"):
-        use_firozabadi = interface == "liquid_liquid"
+        arm = firozabadi_arm() if slot == "liquid_liquid" else parachor_arm()
     elif selection == "parachor":
-        use_firozabadi = False
+        arm = parachor_arm()
     elif selection == "firozabadi_ramley":
-        use_firozabadi = True
+        arm = firozabadi_arm()
     elif selection == "model_1":
-        raise InvalidInputError(
-            "selection",
-            "`model_1` installs `GTSurfaceTension` (`eos.gt_surface_tension`) in the "
-            "gas-oil slot and `GTSurfaceTensionSimple` in the other two; all three are "
-            "ported, and this dispatch does not carry the influence parameters the gas-oil "
-            "calculator takes",
-        )
+        if slot == "gas_oil":
+            result = gt_surface_tension(
+                list(components),
+                eos,
+                influences,
+                from_si(temperature, "K"),
+                from_si(pressure, "Pa"),
+                [float(v) for v in z],
+            )
+            arm = (
+                result.sigma.to("N/m").magnitude,
+                "GTSurfaceTension",
+                list(result.warnings),
+            )
+        else:
+            arm = simple_arm()
     elif selection == "model_2":
-        raise InvalidInputError(
-            "selection",
-            "`model_2` installs `LGTSurfaceTension` in all three slots. That calculator is "
-            "`eos.lgt_surface_tension`, and this dispatch does not carry the influence "
-            "parameters, reference component and interaction matrix it takes - so the arm is "
-            "refused here rather than assumed",
-        )
+        arm = lgt_arm()
     elif selection == "model_4":
-        raise InvalidInputError(
-            "selection",
-            "`model_4` installs `GTSurfaceTensionSimple` (`eos.gt_surface_tension_simple`), "
-            "`LGTSurfaceTension` (`eos.lgt_surface_tension`) and Parachor in its three slots; "
-            "all three are ported, and this dispatch does not carry the influence parameters, "
-            "reference component and interaction matrix the two profile calculators take",
+        if slot == "gas_oil":
+            arm = simple_arm()
+        elif slot == "gas_aqueous":
+            arm = lgt_arm()
+        else:
+            arm = parachor_arm()
+    elif selection == "cdft":
+        cdft_result = cdft_surface_tension(
+            list(components),
+            eos,
+            from_si(temperature, "K"),
+            phases[0].x,
+            phases[1].x,
+            from_si(phases[0].molar_volume, "m**3/mol"),
+            from_si(phases[1].molar_volume, "m**3/mol"),
+        )
+        arm = (
+            cdft_result.sigma.to("N/m").magnitude,
+            "CDFTSurfaceTension",
+            list(cdft_result.warnings),
         )
     else:
         raise InvalidInputError(
             "selection",
             f"`{selection}` is not one of `model_0`, `model_3`, `model_5`, `parachor`, "
-            f"`firozabadi_ramley`, or the refused `model_1`, `model_2`, `model_4`",
+            f"`firozabadi_ramley`, `model_1`, `model_2`, `model_4` or `cdft`",
         )
 
-    count = len(x_1)
-    if len(parachors) != count or len(tc) != count or len(x_2) != count:
-        raise InvalidInputError(
-            "parachors",
-            f"{len(parachors)} parachor(s), {len(tc)} critical temperature(s), {count} and "
-            f"{len(x_2)} mole fraction(s): the two phases share one component list, so every "
-            f"vector has one entry per component",
-        )
-
-    temperature = input_to_si(spec, "T", T)
-    density_1 = input_to_si(spec, "rho_1", rho_1)
-    density_2 = input_to_si(spec, "rho_2", rho_2)
-    mass_1 = input_to_si(spec, "molar_mass_1", molar_mass_1)
-    mass_2 = input_to_si(spec, "molar_mass_2", molar_mass_2)
-    critical_temperatures = [input_to_si(spec, "tc", value) for value in tc]
-
-    apply_checks(
-        checks.on_input,
-        {
-            "T": temperature,
-            "rho_1": density_1,
-            "rho_2": density_2,
-            "molar_mass_1": mass_1,
-            "molar_mass_2": mass_2,
-            "x_1": min(float(value) for value in x_1) if x_1 else None,
-            "x_2": min(float(value) for value in x_2) if x_2 else None,
-        }.get,
-        warnings,
-    )
-
-    if use_firozabadi:
-        pseudo_critical = sum(float(x_1[i]) * critical_temperatures[i] for i in range(count))
-        firozabadi = firozabadi_ramley_interface_tension(
-            from_si(temperature, "K"),
-            from_si(pseudo_critical, "K"),
-            from_si(density_1, "kg/m**3"),
-            from_si(density_2, "kg/m**3"),
-        )
-        sigma = firozabadi.sigma
-        warnings.extend(firozabadi.warnings)
-        selected = FIROZABADI
-    else:
-        parachor = parachor_mixture_surface_tension(
-            parachors,
-            from_si(density_1, "kg/m**3"),
-            from_si(mass_1, "kg/mol"),
-            x_1,
-            from_si(density_2, "kg/m**3"),
-            from_si(mass_2, "kg/mol"),
-            x_2,
-        )
-        sigma = parachor.sigma
-        warnings.extend(parachor.warnings)
-        selected = PARACHOR
-
+    sigma, selected_model, arm_warnings = arm
+    warnings.extend(arm_warnings)
     return InterfacePropertiesResult(
-        sigma=sigma,
-        selected_model=selected,
+        sigma=from_si(sigma, "N/m"),
+        selected_model=selected_model,
         warnings=tuple(warnings),
     )

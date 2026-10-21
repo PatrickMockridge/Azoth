@@ -1634,7 +1634,7 @@ class InterfacePropertiesResult(_HasWarnings):
     #: the pair's interfacial tension.
     sigma: Q
 
-    #: the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.
+    #: the NeqSim class the slot installed: `ParachorSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` or `CDFTSurfaceTension`. The dispatch itself is what this output makes testable.
     selected_model: str
 
     #: Caveats.

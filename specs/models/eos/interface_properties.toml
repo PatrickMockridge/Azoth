@@ -2,25 +2,43 @@ id = "eos.interface_properties"
 name = "Interface tension by NeqSim's phase-pair dispatch"
 kind = "direct"
 assumptions = [
-    "**the pair decides the calculator slot, not the argument order**: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the gas-aqueous slot, and every other pair - including a reversed oil/gas pair - the liquid-liquid slot (`InterfaceProperties.getSurfaceTension`).\n",
-    "**model 0 is the default and the one this id carries**: Parachor for the gas-liquid and gas-aqueous slots and Firozabadi-Ramley for the liquid-liquid slot. Models 3 and 5 install the same three calculators, so they are aliases of 0 and accepted as such.\n",
-    "the string selector's `parachor` and `firozabadi_ramley` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `interface`.\n",
-    "the two phases share one component list, as NeqSim's system does, so `parachors` and `tc` are one vector each and `x_1`/`x_2` are the two phases' compositions over it.\n",
-    "the parachor slot is `eos.parachor_mixture_surface_tension`, whose sum is symmetric in the two phases; the Firozabadi slot is `eos.firozabadi_ramley_interface_tension`, whose `Tr` is the **first** phase's pseudo-critical temperature.\n",
-    "**models 1, 2 and 4 are refused here**: their calculators (`eos.gt_surface_tension`, `eos.lgt_surface_tension` and `eos.gt_surface_tension_simple`) are ported, and this dispatch has no inputs for the parameters they take.\n",
+    "**the pair decides the calculator slot**: GAS/OIL takes the gas-liquid slot, GAS/AQUEOUS the gas-aqueous slot, and every other pair - including a reversed oil/gas pair - the liquid-liquid slot (`InterfaceProperties.getSurfaceTension`). The phases are the flash's, labelled by `PhaseEos.init`'s rule.\n",
+    "**model 0 is the default**: Parachor for the gas-liquid and gas-aqueous slots and Firozabadi-Ramley for the liquid-liquid slot. Models 3 and 5 install the same three calculators, so they are aliases of 0 and accepted as such.\n",
+    "the string selector's `parachor`, `firozabadi_ramley` and `cDFT` arms are exposed as selections that apply their calculator to the named pair; the class's string form sets one slot, and this id has no per-slot input beyond `selection`.\n",
+    "**the inputs are the union of the arms'**: the feed, the fluid, the influence parameters, the reference component and the interaction matrix. An arm reads only what its calculator takes; the profile arms re-flash the feed through their own models, and the dispatch's answer is theirs.\n",
+    "**models 1, 2 and 4 are carried**: model 1 installs `GTSurfaceTension`/`GTSurfaceTensionSimple`/`GTSurfaceTensionSimple`, model 2 `LGTSurfaceTension` in all three slots, and model 4 `GTSurfaceTensionSimple`/`LGTSurfaceTension`/Parachor.\n",
+    "the Parachor and Firozabadi slots read the databank's `parachor` and `tc`, as the class reads `getParachor()` and `getTC()`; a component with no parachor is refused rather than counted as zero.\n",
+    "the Firozabadi slot's pseudo-critical temperature is the **first** phase's; the Parachor sum is symmetric in the two phases.\n",
 ]
 references = [
     "NeqSim master, `physicalproperties/interfaceproperties/InterfaceProperties.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7. The dispatch, its six integer arms and the string selector.",
-    "`validation/neqsim/captures/surface_tension_probe.tsv` - model 0 on a gas-oil, a gas-aqueous and an oil-water pair, and the two calculators called directly. `surface_tension_solvers_probe.tsv` records the refused models' answers for the next tranche.\n",
+    "`validation/neqsim/captures/surface_tension_probe.tsv` - model 0 on a gas-oil, a gas-aqueous and an oil-water pair, and the two calculators called directly. `surface_tension_solvers_probe.tsv` records models 1, 2 and 4 on the same pairs.\n",
 ]
 [source]
 standard = "NeqSim master `InterfaceProperties`"
-edition = "`setInterfacialTensionModel(int)`'s model-0 arm, its 3 and 5 aliases, the string `parachor` and `Firozabadi Ramley` arms, and `getSurfaceTension`'s phase-type dispatch, ported verbatim. The other arms are refused."
+edition = "`setInterfacialTensionModel(int)`'s six arms, the string `parachor`, `Firozabadi Ramley` and `cDFT` arms, and `getSurfaceTension`'s phase-type dispatch, ported. The dispatch flashes the feed with `eos.tp_multiflash` and lets each arm's own model answer."
 [inputs]
-[inputs.interface]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank.\n"
+[inputs.eos]
 type = "enum"
-values = ["gas_oil", "gas_aqueous", "liquid_liquid"]
-description = "which pair the tension is between, which selects the calculator slot.\n"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs.\n"
+[inputs.influence_parameters]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's gradient-theory influence parameter, for the profile arms.\n"
+[inputs.reference_component]
+unit = "dimensionless"
+description = "the 0-based index of the highest-boiling component, the profile's integration variable; LGT and GT-simple take it, FullGT does not.\n"
+[inputs.pair_interactions]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per component, one column per component"
+description = "the interaction matrix LGT and GT-simple take.\n"
 [inputs.selection]
 type = "enum"
 values = [
@@ -32,50 +50,27 @@ values = [
     "model_1",
     "model_2",
     "model_4",
+    "cdft",
 ]
-description = "the class's `interfacialTensionModel`: `model_0` is the default, `model_3` and `model_5` are its aliases, `parachor` and `firozabadi_ramley` are the string selector's two calculators applied to the named pair. `model_1`, `model_2` and `model_4` are refused.\n"
-[inputs.parachors]
-type = "vector"
-unit = "dimensionless"
-length = "one per component"
-description = "each component's parachor, in `(mN/m)**(1/4) * cm**3/mol`.\n"
-[inputs.tc]
-type = "vector"
-unit = "K"
-length = "one per component"
-description = "each component's critical temperature, for the Firozabadi slot's pseudo-critical temperature.\n"
-[inputs.rho_1]
-unit = "kg/m**3"
-description = "the first phase's mass density.\n"
-[inputs.rho_2]
-unit = "kg/m**3"
-description = "the second phase's mass density.\n"
-[inputs.molar_mass_1]
-unit = "kg/mol"
-description = "the first phase's molar mass.\n"
-[inputs.molar_mass_2]
-unit = "kg/mol"
-description = "the second phase's molar mass.\n"
-[inputs.x_1]
-type = "vector"
-unit = "dimensionless"
-length = "one per component"
-description = "the first phase's mole fractions.\n"
-[inputs.x_2]
-type = "vector"
-unit = "dimensionless"
-length = "one per component"
-description = "the second phase's mole fractions.\n"
+description = "the class's `interfacialTensionModel`: `model_0` is the default, `model_3` and `model_5` are its aliases, the three strings are the string selector's calculators applied to the named pair, and models 1, 2 and 4 install their own calculators.\n"
 [inputs.T]
 unit = "K"
 description = "absolute temperature at the interface.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the fluid is flashed.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions.\n"
 [outputs]
 [outputs.sigma]
 unit = "N/m"
 description = "the pair's interfacial tension.\n"
 [outputs.selected_model]
 type = "string"
-description = "the NeqSim class the slot installed: `ParachorSurfaceTension` or `FirozabadiRamleyInterfaceTension`. The dispatch itself is what this output makes testable.\n"
+description = "the NeqSim class the slot installed: `ParachorSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `GTSurfaceTension`, `GTSurfaceTensionSimple`, `LGTSurfaceTension` or `CDFTSurfaceTension`. The dispatch itself is what this output makes testable.\n"
 [[valid_range]]
 quantity = "T"
 min = 0
@@ -83,37 +78,19 @@ min_inclusive = false
 severity = "error"
 rationale = "An absolute temperature; zero and below are not states.\n"
 [[valid_range]]
-quantity = "rho_1"
+quantity = "P"
 min = 0
 min_inclusive = false
 severity = "error"
-rationale = "A phase with no mass density has no interface.\n"
+rationale = "The flash runs at it, and a non-positive pressure is not a state.\n"
 [[valid_range]]
-quantity = "rho_2"
+quantity = "influence_parameters"
 min = 0
 min_inclusive = false
 severity = "error"
-rationale = "A phase with no mass density has no interface.\n"
+rationale = "The influence matrix takes their square roots.\n"
 [[valid_range]]
-quantity = "molar_mass_1"
-min = 0
-min_inclusive = false
-severity = "error"
-rationale = "The parachor sum divides by it.\n"
-[[valid_range]]
-quantity = "molar_mass_2"
-min = 0
-min_inclusive = false
-severity = "error"
-rationale = "The parachor sum divides by it.\n"
-[[valid_range]]
-quantity = "x_1"
-min = 0
-min_inclusive = true
-severity = "error"
-rationale = "A mole fraction cannot be negative.\n"
-[[valid_range]]
-quantity = "x_2"
+quantity = "z"
 min = 0
 min_inclusive = true
 severity = "error"

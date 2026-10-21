@@ -526,6 +526,19 @@ impl Entry {
                     .c
                     .value,
                 )
+                // The SRK form takes different constants and the same `RACKETZ`; NeqSim
+                // picks by component class, so both are carried and the system's cubic
+                // chooses.
+                .with_volume_shift_srk(
+                    crate::srk_peneloux_shift::srk_peneloux_shift(
+                        self.omega,
+                        kelvins(self.tc),
+                        pascals(self.pc),
+                        Some(self.rackett_z),
+                    )?
+                    .c
+                    .value,
+                )
                 .with_alpha_params(self.alpha_params.clone())
                 .with_association(self.association.clone()),
         )
