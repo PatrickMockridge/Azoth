@@ -24,6 +24,7 @@ from typing import ClassVar
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
     BrineMixingPointRow,
+    ChemicalWarningRow,
     DepositionSegmentRow,
     FlowlineScaleSegment,
     KComponent,
@@ -31,6 +32,8 @@ from azoth.core.record_outputs_gen import (
     RemediationOptionRow,
     ScaleControlRiskRow,
     ScaleControlRow,
+    ScenarioChangeRow,
+    ScenarioIndexRow,
     StreamScaleMineralRow,
     SubFraction,
     WaterMixingResult,
@@ -2588,6 +2591,43 @@ class PrZFactorResult(_HasWarnings):
 
     #: the residual at the final iterate
     residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ProductionChemicalScaleScenarioResult(_HasWarnings):
+    """Result of ``eos.production_chemical_scale_scenario``."""
+
+    CALC_ID: ClassVar[str] = "eos.production_chemical_scale_scenario"
+
+    #: the pH after the dose, or the untreated pH when nothing changes the carbonate balance.
+    treated_ph: float
+
+    #: the bicarbonate at the treated pH.
+    treated_bicarbonate: Q
+
+    #: the summed acid/base equivalents, positive for a base.
+    base_dose_equivalents: Q
+
+    #: the summed H2S capacity of the dosed scavengers.
+    scavenger_capacity: Q
+
+    #: the dissolved H2S the capacity leaves.
+    residual_dissolved_h2s: Q
+
+    #: The untreated indices, in the equilibrium's mineral order.
+    baseline_si: tuple[ScenarioIndexRow, ...]
+
+    #: The treated indices, in the same order.
+    treated_si: tuple[ScenarioIndexRow, ...]
+
+    #: The treated minus baseline index, over the baseline's minerals.
+    si_change: tuple[ScenarioChangeRow, ...]
+
+    #: The class's warning map, in insertion order.
+    model_warnings: tuple[ChemicalWarningRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

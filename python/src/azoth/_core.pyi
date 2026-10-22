@@ -270,6 +270,17 @@ class BrineAnalysis(TypedDict):
     sulphate: float
     bicarbonate: float
 
+class ProductionChemicalDose(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    chemical_type: str
+    name: str
+    active_ingredient: str
+    active_wt_pct: float
+    dosage: float
+    alkalinity_capacity: float | None
+    h2s_capacity: float | None
+
 class ScaleInhibitor(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -358,6 +369,27 @@ class ActivityCoefficientRow:
 
     ion: str
     activity_coefficient: float
+
+@final
+class ScenarioIndexRow:
+    """The treated indices, in the same order."""
+
+    mineral: str
+    saturation_index: float | None
+
+@final
+class ScenarioChangeRow:
+    """The treated minus baseline index, over the baseline's minerals."""
+
+    mineral: str
+    change: float | None
+
+@final
+class ChemicalWarningRow:
+    """The class's warning map, in insertion order."""
+
+    code: str
+    message: str
 
 @final
 class ScaleControlRow:
@@ -1343,6 +1375,19 @@ class PrZFactorResult:
     iterations: int
     converged: bool
     residual: float
+    warnings: list[Warning]
+
+@final
+class ProductionChemicalScaleScenarioResult:
+    treated_ph: float
+    treated_bicarbonate: Qty
+    base_dose_equivalents: Qty
+    scavenger_capacity: Qty
+    residual_dissolved_h2s: Qty
+    baseline_si: list[ScenarioIndexRow]
+    treated_si: list[ScenarioIndexRow]
+    si_change: list[ScenarioChangeRow]
+    model_warnings: list[ChemicalWarningRow]
     warnings: list[Warning]
 
 @final
@@ -3712,6 +3757,24 @@ def pr_peneloux_shift(
     z_ra: float | None = None,
 ) -> PrPenelouxShiftResult: ...
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult: ...
+def production_chemical_scale_scenario(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    sulphate: float,
+    bicarbonate: float,
+    total_dissolved_solids: float,
+    ph: float,
+    dissolved_h2s: float,
+    temperature: float,
+    pressure: float,
+    activity_model: str,
+    chemicals: list[ProductionChemicalDose],
+    pitzer_ionic_strength_molal: float | None = None,
+) -> ProductionChemicalScaleScenarioResult: ...
 def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult: ...
 def ps_flash(
     Tc: list[float],

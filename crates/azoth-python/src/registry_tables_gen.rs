@@ -135,6 +135,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.pr_molar_volume" => azoth_eos::results::PrMolarVolumeResult::FIELDS.to_vec(),
         "eos.pr_peneloux_shift" => azoth_eos::results::PrPenelouxShiftResult::FIELDS.to_vec(),
         "eos.pr_z_factor" => azoth_eos::results::PrZFactorResult::FIELDS.to_vec(),
+        "eos.production_chemical_scale_scenario" => azoth_eos::results::ProductionChemicalScaleScenarioResult::FIELDS.to_vec(),
         "eos.prsv_kappa" => azoth_eos::results::PrsvKappaResult::FIELDS.to_vec(),
         "eos.ps_flash" => azoth_eos::results::PsFlashResult::FIELDS.to_vec(),
         "eos.pt_flash" => azoth_eos::results::PtFlashResult::FIELDS.to_vec(),

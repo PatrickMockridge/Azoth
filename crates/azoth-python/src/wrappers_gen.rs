@@ -2506,6 +2506,72 @@ pub fn pr_z_factor(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Treatment-aware mineral-scale scenario for a produced water.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, sulphate, bicarbonate, total_dissolved_solids, ph, dissolved_h2s, temperature, pressure, activity_model, chemicals, pitzer_ionic_strength_molal))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, sulphate, bicarbonate, total_dissolved_solids, ph, dissolved_h2s, temperature, pressure, activity_model, chemicals, pitzer_ionic_strength_molal)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn production_chemical_scale_scenario(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    sulphate: f64,
+    bicarbonate: f64,
+    total_dissolved_solids: f64,
+    ph: f64,
+    dissolved_h2s: f64,
+    temperature: f64,
+    pressure: f64,
+    activity_model: &str,
+    chemicals: Vec<crate::records_gen::ProductionChemicalDose>,
+    pitzer_ionic_strength_molal: Option<f64>,
+) -> PyResult<crate::transport_gen::PyProductionChemicalScaleScenarioResult> {
+    let chemicals_records: Vec<
+        azoth_eos::production_chemical_scale_scenario::ProductionChemicalDose,
+    > = chemicals
+        .into_iter()
+        .map(
+            |row| azoth_eos::production_chemical_scale_scenario::ProductionChemicalDose {
+                chemical_type: row.chemical_type,
+                name: row.name,
+                active_ingredient: row.active_ingredient,
+                active_wt_pct: row.active_wt_pct,
+                dosage: kilograms_per_cubic_meter(row.dosage),
+                alkalinity_capacity: row.alkalinity_capacity,
+                h2s_capacity: row.h2s_capacity,
+            },
+        )
+        .collect();
+    azoth_eos::production_chemical_scale_scenario::production_chemical_scale_scenario(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        ph,
+        kilograms_per_cubic_meter(dissolved_h2s),
+        kelvins(temperature),
+        pascals(pressure),
+        activity_model,
+        &chemicals_records,
+        pitzer_ionic_strength_molal,
+    )
+    .map(|r| crate::transport_gen::PyProductionChemicalScaleScenarioResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Peng-Robinson-Stryjek-Vera alpha-function coefficient.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

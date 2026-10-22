@@ -235,6 +235,7 @@ Five sections, and the difference between them is the point:
 - [`eos.pitzer_hydrate_formation_temperature`](./eos/pitzer_hydrate_formation_temperature.md) — Hydrate formation temperature of a Pitzer brine
 - [`eos.pitzer_phase`](./eos/pitzer_phase.md) — Activity coefficients of a Pitzer electrolyte phase
 - [`eos.pr_cpa_phase`](./eos/pr_cpa_phase.md) — Peng-Robinson CPA phase state
+- [`eos.production_chemical_scale_scenario`](./eos/production_chemical_scale_scenario.md) — Treatment-aware mineral-scale scenario for a produced water
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pt_phase_envelope`](./eos/pt_phase_envelope.md) — PT phase envelope

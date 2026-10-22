@@ -1,0 +1,174 @@
+id = "eos.production_chemical_scale_scenario"
+name = "Treatment-aware mineral-scale scenario for a produced water"
+kind = "direct"
+assumptions = [
+    "**the carbonate balance is closed**: a pH adjuster's acid/base equivalents are added to the total inorganic carbon the untreated pH and bicarbonate define, and the treated pH is a bisection of the alkalinity on `[2, 14]`; no gas exchange, organic-acid buffer or mineral dissolution is modelled.\n",
+    "**the alkalinity is the class's**: `C_T(alpha1 + 2 alpha2) + Kw/h - h` with `Kw = 1e-14` at every temperature, and K1/K2 from the class's Plante-Busenberg fits.\n",
+    "**a chemical's dose is its active mass**: `max(0, dose) * max(0, active wt%) / 100`, with the capacity fields used when stated and the class's name-based equivalents otherwise; an unrecognised active is a warning, not an invented effect.\n",
+    "**a scale inhibitor changes no thermodynamic index**: it is reported as a kinetic control, and the class's warning says to use `eos.scale_control_assessor` for its MIC and growth effect.\n",
+    "**every other chemical type is `other`**: the class's default branch keeps it in the audit trail with a no-effect warning, and this model folds the functional types it does not act on into that one value.\n",
+    "**the saturation indices are the coupled equilibrium's initial indices** at the baseline and treated pH and bicarbonate, in the equilibrium's registered mineral order; a mineral absent from one side gives an absent change rather than a number.\n",
+    "**the CO2 partial pressure is not an input**: the scenario sets it on the predictor but never enables auto-pH, so it is stored and not read.\n",
+    "the class's warning map is reported as a record list of its codes and messages, in insertion order; the formatted calcite delta is the class's `%.2f`.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ProductionChemicalScaleScenario.java` and `process/chemistry/ProductionChemical.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/production_chemical_scenario_probe.tsv` - caustic, MDEA and HCl adjusters, two triazine doses, a scale and a corrosion inhibitor, no bicarbonate, a large caustic dose, the B-dot and Pitzer models, and an unsupported active.",
+]
+[source]
+standard = "NeqSim master `ProductionChemicalScaleScenario`"
+edition = "`evaluate`, `applyChemical`, `applyBaseDose`, `createEquilibrium`, `carbonateFractions`, `alkalinity`, `baseEquivalentsMolPerL` and `scavengerCapacityMgL`, ported. `ProductionChemical` is a property record here, so its factory defaults and `isStableAt` are the caller's; the Gson report is not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "calcium ion concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "barium ion concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "strontium ion concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "ferrous iron concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "magnesium ion concentration.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "sodium ion concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "sulphate ion concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "bicarbonate concentration as HCO3-, 800 mg/L as 0.8 kg/m3.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "total dissolved solids.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the untreated aqueous pH.\n"
+[inputs.dissolved_h2s]
+unit = "kg/m**3"
+description = "dissolved H2S as H2S, 20 mg/L as 0.02 kg/m3.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.activity_model]
+type = "enum"
+values = ["davies", "bdot", "pitzer_binary"]
+description = "the coupled equilibrium's activity model for both cases.\n"
+[inputs.chemicals]
+type = "record_list"
+row_type = "ProductionChemicalDose"
+description = "The chemicals dosed, in the order they are applied.\n"
+[inputs.chemicals.fields.chemical_type]
+type = "enum"
+values = ["acid", "ph_adjuster", "h2s_scavenger", "scale_inhibitor", "other"]
+description = "the functional type; every class type with no stoichiometric effect is `other`.\n"
+[inputs.chemicals.fields.name]
+type = "string"
+description = "the chemical's name, which its warning code carries.\n"
+[inputs.chemicals.fields.active_ingredient]
+type = "string"
+description = "the active ingredient family, read by the name-based equivalent and H2S fits.\n"
+[inputs.chemicals.fields.active_wt_pct]
+unit = "dimensionless"
+description = "the active ingredient's weight percent in the neat product.\n"
+[inputs.chemicals.fields.dosage]
+unit = "kg/m**3"
+description = "the neat-product dose, 100 ppm as 0.1 kg/m3.\n"
+[inputs.chemicals.fields.alkalinity_capacity]
+unit = "mol/kg"
+optional = true
+description = "the signed acid/base capacity per kg active; absent falls back to the name-based fit.\n"
+[inputs.chemicals.fields.h2s_capacity]
+unit = "dimensionless"
+optional = true
+description = "kilograms of H2S removed per kilogram active; absent falls back to the name-based fit.\n"
+[inputs.pitzer_ionic_strength_molal]
+unit = "mol/kg"
+optional = true
+description = "the Pitzer ionic strength; absent uses the equilibrium's estimate.\n"
+[outputs]
+[outputs.treated_ph]
+unit = "dimensionless"
+description = "the pH after the dose, or the untreated pH when nothing changes the carbonate balance.\n"
+[outputs.treated_bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate at the treated pH.\n"
+[outputs.base_dose_equivalents]
+unit = "mol/m**3"
+description = "the summed acid/base equivalents, positive for a base.\n"
+[outputs.scavenger_capacity]
+unit = "kg/m**3"
+description = "the summed H2S capacity of the dosed scavengers.\n"
+[outputs.residual_dissolved_h2s]
+unit = "kg/m**3"
+description = "the dissolved H2S the capacity leaves.\n"
+[outputs.baseline_si]
+type = "record_list"
+description = "The untreated indices, in the equilibrium's mineral order.\n"
+[outputs.baseline_si.fields.mineral]
+type = "string"
+description = "the mineral's formula.\n"
+[outputs.baseline_si.fields.saturation_index]
+unit = "dimensionless"
+optional = true
+description = "the index.\n"
+[outputs.treated_si]
+type = "record_list"
+description = "The treated indices, in the same order.\n"
+[outputs.treated_si.fields.mineral]
+type = "string"
+description = "the mineral's formula.\n"
+[outputs.treated_si.fields.saturation_index]
+unit = "dimensionless"
+optional = true
+description = "the index.\n"
+[outputs.si_change]
+type = "record_list"
+description = "The treated minus baseline index, over the baseline's minerals.\n"
+[outputs.si_change.fields.mineral]
+type = "string"
+description = "the mineral's formula.\n"
+[outputs.si_change.fields.change]
+unit = "dimensionless"
+optional = true
+description = "the change; absent where either side's index is.\n"
+[outputs.model_warnings]
+type = "record_list"
+description = "The class's warning map, in insertion order.\n"
+[outputs.model_warnings.fields.code]
+type = "string"
+description = "the warning's code.\n"
+[outputs.model_warnings.fields.message]
+type = "string"
+description = "the warning's message.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[implementations]
+python = "azoth.eos.production_chemical_scale_scenario"
+rust = "azoth_eos::production_chemical_scale_scenario"

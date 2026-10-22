@@ -1619,6 +1619,78 @@ impl CalcResult for ScaleDepositionAccumulatorResult {
     }
 }
 
+/// One warning a production-chemical scenario reports.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChemicalWarningRow {
+    /// The warning's code.
+    pub code: String,
+    /// The warning's message.
+    pub message: String,
+}
+
+/// One mineral's index in a scenario.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScenarioIndexRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The index; absent where the equilibrium has no row for it.
+    pub saturation_index: Option<f64>,
+}
+
+/// One mineral's treated-minus-baseline change.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScenarioChangeRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The change; absent where either side's index is.
+    pub change: Option<f64>,
+}
+
+/// Result of `eos.production_chemical_scale_scenario`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProductionChemicalScaleScenarioResult {
+    /// The pH after the dose.
+    pub treated_ph: f64,
+    /// The bicarbonate at the treated pH.
+    pub treated_bicarbonate: MassDensity,
+    /// The summed acid/base equivalents, positive for a base.
+    pub base_dose_equivalents: MolarConcentration,
+    /// The summed H2S capacity of the dosed scavengers.
+    pub scavenger_capacity: MassDensity,
+    /// The dissolved H2S the capacity leaves.
+    pub residual_dissolved_h2s: MassDensity,
+    /// The untreated indices.
+    pub baseline_si: Vec<ScenarioIndexRow>,
+    /// The treated indices.
+    pub treated_si: Vec<ScenarioIndexRow>,
+    /// The treated-minus-baseline change.
+    pub si_change: Vec<ScenarioChangeRow>,
+    /// The class's warning map, in insertion order.
+    pub model_warnings: Vec<ChemicalWarningRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ProductionChemicalScaleScenarioResult {
+    const CALC_ID: &'static str = "eos.production_chemical_scale_scenario";
+    const FIELDS: &'static [&'static str] = &[
+        "treated_ph",
+        "treated_bicarbonate",
+        "base_dose_equivalents",
+        "scavenger_capacity",
+        "residual_dissolved_h2s",
+        "baseline_si",
+        "treated_si",
+        "si_change",
+        "model_warnings",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

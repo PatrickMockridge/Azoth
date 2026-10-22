@@ -14,10 +14,10 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyBrineMixingPointRow, PyDepositionSegmentRow,
+    PyActivityCoefficientRow, PyBrineMixingPointRow, PyChemicalWarningRow, PyDepositionSegmentRow,
     PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow,
-    PyScaleControlRiskRow, PyScaleControlRow, PyStreamScaleMineralRow, PySubFraction,
-    PyWaterMixingResult,
+    PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow,
+    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -6677,6 +6677,100 @@ impl From<&azoth_eos::results::PrZFactorResult> for PyPrZFactorResult {
             iterations: r.iterations,
             converged: r.converged,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.production_chemical_scale_scenario`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ProductionChemicalScaleScenarioResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyProductionChemicalScaleScenarioResult {
+    /// the pH after the dose, or the untreated pH when nothing changes the carbonate balance.
+    #[pyo3(get)]
+    pub treated_ph: f64,
+    /// the bicarbonate at the treated pH.
+    #[pyo3(get)]
+    pub treated_bicarbonate: PyQty,
+    /// the summed acid/base equivalents, positive for a base.
+    #[pyo3(get)]
+    pub base_dose_equivalents: PyQty,
+    /// the summed H2S capacity of the dosed scavengers.
+    #[pyo3(get)]
+    pub scavenger_capacity: PyQty,
+    /// the dissolved H2S the capacity leaves.
+    #[pyo3(get)]
+    pub residual_dissolved_h2s: PyQty,
+    /// The untreated indices, in the equilibrium's mineral order.
+    #[pyo3(get)]
+    pub baseline_si: Vec<PyScenarioIndexRow>,
+    /// The treated indices, in the same order.
+    #[pyo3(get)]
+    pub treated_si: Vec<PyScenarioIndexRow>,
+    /// The treated minus baseline index, over the baseline's minerals.
+    #[pyo3(get)]
+    pub si_change: Vec<PyScenarioChangeRow>,
+    /// The class's warning map, in insertion order.
+    #[pyo3(get)]
+    pub model_warnings: Vec<PyChemicalWarningRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyProductionChemicalScaleScenarioResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ProductionChemicalScaleScenarioResult(treated_ph={:?}, treated_bicarbonate={:?}, base_dose_equivalents={:?}, scavenger_capacity={:?}, residual_dissolved_h2s={:?}, baseline_si={:?}, treated_si={:?}, si_change={:?}, model_warnings={:?}, {} warning(s))",
+            self.treated_ph,
+            self.treated_bicarbonate,
+            self.base_dose_equivalents,
+            self.scavenger_capacity,
+            self.residual_dissolved_h2s,
+            self.baseline_si,
+            self.treated_si,
+            self.si_change,
+            self.model_warnings,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ProductionChemicalScaleScenarioResult>
+    for PyProductionChemicalScaleScenarioResult
+{
+    fn from(r: &azoth_eos::results::ProductionChemicalScaleScenarioResult) -> Self {
+        Self {
+            treated_ph: r.treated_ph,
+            treated_bicarbonate: PyQty {
+                magnitude_si: r.treated_bicarbonate.value,
+                unit: "kg/m**3".to_string(),
+            },
+            base_dose_equivalents: PyQty {
+                magnitude_si: r.base_dose_equivalents.value,
+                unit: "mol/m**3".to_string(),
+            },
+            scavenger_capacity: PyQty {
+                magnitude_si: r.scavenger_capacity.value,
+                unit: "kg/m**3".to_string(),
+            },
+            residual_dissolved_h2s: PyQty {
+                magnitude_si: r.residual_dissolved_h2s.value,
+                unit: "kg/m**3".to_string(),
+            },
+            baseline_si: r.baseline_si.iter().map(PyScenarioIndexRow::from).collect(),
+            treated_si: r.treated_si.iter().map(PyScenarioIndexRow::from).collect(),
+            si_change: r.si_change.iter().map(PyScenarioChangeRow::from).collect(),
+            model_warnings: r
+                .model_warnings
+                .iter()
+                .map(PyChemicalWarningRow::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

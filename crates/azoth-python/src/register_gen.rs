@@ -134,6 +134,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPrMolarVolumeResult>()?;
     m.add_class::<crate::transport_gen::PyPrPenelouxShiftResult>()?;
     m.add_class::<crate::transport_gen::PyPrZFactorResult>()?;
+    m.add_class::<crate::transport_gen::PyProductionChemicalScaleScenarioResult>()?;
     m.add_class::<crate::transport_gen::PyPrsvKappaResult>()?;
     m.add_class::<crate::transport_gen::PyPsFlashResult>()?;
     m.add_class::<crate::transport_gen::PyPtFlashResult>()?;
@@ -266,6 +267,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
@@ -273,6 +275,8 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRiskRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyScenarioChangeRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyScenarioIndexRow>()?;
     m.add_class::<crate::record_outputs_gen::PyStreamScaleMineralRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
     m.add_class::<crate::record_outputs_gen::PyWaterMixingResult>()?;
@@ -573,6 +577,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_molar_volume, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_peneloux_shift, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_z_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::production_chemical_scale_scenario,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::prsv_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ps_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pt_flash, m)?)?;

@@ -1280,6 +1280,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 8,
         "tests_skipped": 1,
     },
+    'eos.production_chemical_scale_scenario': {
+        "calc_id": 'eos.production_chemical_scale_scenario',
+        "name": 'Treatment-aware mineral-scale scenario for a produced water',
+        "spec": {'path': 'specs/models/eos/production_chemical_scale_scenario.toml', 'sha256': '1848e1e5e4761db50cd49164fda4f065bb721867d6188d8214a245b252dd60ab'},
+        "code": [{'path': 'python/src/azoth/eos/reference/production_chemical_scale_scenario.py', 'sha256': '203ba702ed413629fd5c8f09e127c77f35c9d9267f766ffb8b8e1aef0447295f'}, {'path': 'crates/azoth-eos/src/production_chemical_scale_scenario.rs', 'sha256': '8cdadc2ad7d7d11edfb69c4bb59afbd0bb3da8fee47ebebaa3afb6594f93fd2e'}],
+        "source": 'NeqSim master `ProductionChemicalScaleScenario`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 11,
+        "tests_skipped": 0,
+    },
     'eos.prsv_kappa': {
         "calc_id": 'eos.prsv_kappa',
         "name": 'Peng-Robinson-Stryjek-Vera alpha-function coefficient',

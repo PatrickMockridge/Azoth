@@ -168,6 +168,7 @@
   - [Hydrate formation temperature of a Pitzer brine](./eos/pitzer_hydrate_formation_temperature.md)
   - [Activity coefficients of a Pitzer electrolyte phase](./eos/pitzer_phase.md)
   - [Peng-Robinson CPA phase state](./eos/pr_cpa_phase.md)
+  - [Treatment-aware mineral-scale scenario for a produced water](./eos/production_chemical_scale_scenario.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [PT phase envelope](./eos/pt_phase_envelope.md)

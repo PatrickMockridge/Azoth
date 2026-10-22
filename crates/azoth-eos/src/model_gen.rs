@@ -65,6 +65,7 @@
 //!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
+//!   - specs/models/eos/production_chemical_scale_scenario.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
 //!   - specs/models/eos/pt_phase_envelope.toml
@@ -14120,6 +14121,2704 @@ pub static PR_CPA_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: PR_CPA_PHASE_CASES,
 };
 
+static PRODUCTION_CHEMICAL_SCALE_SCENARIO_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static PRODUCTION_CHEMICAL_SCALE_SCENARIO_CASES: &[TestCase] = &[
+    TestCase {
+        id: "caustic_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.612286718254484),
+            ("treated_bicarbonate", 0.8761187807037203),
+            ("base_dose_equivalents", 1.2500937570317774),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("caustic"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("NaOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.423208147780234),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6564148549680096),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4632431345215311),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.24836279383147514),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.516801978049319),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0033453720183884705),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0033453720183882485),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0009388765418312239),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.1517345028756344),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.15601875143585409),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "mdea_200",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.574404485391451),
+            ("treated_bicarbonate", 0.8511049682652292),
+            ("base_dose_equivalents", 0.839186660288848),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.2),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.422109565057132),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6575134376911118),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4629334211803143),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.29881657410294227),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.5686640543851054),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0022467892952864332),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.002246789295285989),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0006291632006144021),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.10128072260416726),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.10415667510006776),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "hcl_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.464653452086296),
+            ("treated_bicarbonate", 0.7749387898370603),
+            ("base_dose_equivalents", -0.41139848056827844),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("acid"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("acid"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("HCl"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(15.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.418759793057685),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6608632096905587),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.46199742905131225),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4492581867413085),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.7233914311519204),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0011029827041606488),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0011029827041608709),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.00030682892838762577),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.04916089003419899),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.050570701666747264),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "triazine_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.007202789812955723),
+            ("residual_dissolved_h2s", 0.01279721018704428),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("h2s_scavenger"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("scavenger"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MEA-triazine"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("triazine_spent_product"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium",
+                            ),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("h2s_scavenger_under_capacity"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Calculated dissolved-H2S load exceeds the practical active scavenger capacity",
+                            ),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "triazine_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0007202789812955722),
+            ("residual_dissolved_h2s", 0.01927972101870443),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("h2s_scavenger"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("scavenger"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MEA-triazine"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("triazine_spent_product"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium",
+                            ),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("h2s_scavenger_under_capacity"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Calculated dissolved-H2S load exceeds the practical active scavenger capacity",
+                            ),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "scale_inhibitor_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("scale_inhibitor"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("si"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(30.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("inhibitor_is_kinetic"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Scale inhibitor does not change thermodynamic SI; evaluate MIC and growth control separately with ScaleControlAssessor",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "corrosion_inhibitor_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("other"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("ci"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("imidazoline"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(20.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("no_equilibrium_effect_ci"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Chemical retained in audit trail; no supported stoichiometric effect on this aqueous scale scenario",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "huge_caustic",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 12.52246120309228),
+            ("treated_bicarbonate", 0.005387695012895745),
+            ("base_dose_equivalents", 62.504687851588855),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("caustic"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("NaOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(5.0),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.593267701220774),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.4863553015274698),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.7516010698859693),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(3.445865139181771),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(3.635843443768905),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.17340492545892827),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.17340492545892805),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.28929681190626944),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(3.8459624358888806),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(4.308664173254078),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("chemical_induced_calcite_risk"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Base-equivalent dosing increased calcite SI by 3.85",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "bdot",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "bdot")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.51828261991834),
+            ("treated_bicarbonate", 0.8127783997063651),
+            ("base_dose_equivalents", 0.209796665072212),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.05),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.6669205869710103),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.4127024157772334),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.2152464467705353),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.153039485497945),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.4257629182760083),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.6674826794323343),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.412140323315909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.215403321590899),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.127878914054967),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.399883379551343),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.000562092461323993),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0005620924613243261),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.00015687482036375044),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.025160571442977897),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.02587953872466553),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "pitzer",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("pitzer_ionic_strength_molal", 1.2),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "pitzer_binary")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.51828261991834),
+            ("treated_bicarbonate", 0.8127783997063651),
+            ("base_dose_equivalents", 0.209796665072212),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.05),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.26048251916882753),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.7575856531386673),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.56233740129713),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.3766734311564868),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.678533528887676),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.2610446116301516),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.7570235606773434),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.5624942761174943),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.351512859713509),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.6526539901630106),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0005620924613240486),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.000562092461323882),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.00015687482036419453),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.025160571442977897),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.02587953872466553),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "unsupported_adjuster",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("bespoke"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("KOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(45.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("unsupported_ph_adjuster_bespoke"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "No acid/base-equivalent model for active ingredient KOH",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+];
+
+/// Registry entry for `eos.production_chemical_scale_scenario`.
+pub static PRODUCTION_CHEMICAL_SCALE_SCENARIO_SPEC: ModelSpec = ModelSpec {
+    id: "eos.production_chemical_scale_scenario",
+    kind: "direct",
+    algorithm: None,
+    checks: PRODUCTION_CHEMICAL_SCALE_SCENARIO_CHECKS,
+    cases: PRODUCTION_CHEMICAL_SCALE_SCENARIO_CASES,
+};
+
 static PS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -22458,6 +25157,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PITZER_HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &PITZER_PHASE_SPEC,
     &PR_CPA_PHASE_SPEC,
+    &PRODUCTION_CHEMICAL_SCALE_SCENARIO_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
     &PT_PHASE_ENVELOPE_SPEC,

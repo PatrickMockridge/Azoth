@@ -143,6 +143,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.pitzer_hydrate_formation_temperature`](./pitzer_hydrate_formation_temperature.md) | `pitzer_hydrate_scan_bisection` | NeqSim master `PitzerHydrateFlash` |
 | [`eos.pitzer_phase`](./pitzer_phase.md) | `direct composition` | NeqSim master `PhasePitzer` |
 | [`eos.pr_cpa_phase`](./pr_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
+| [`eos.production_chemical_scale_scenario`](./production_chemical_scale_scenario.md) | `direct composition` | NeqSim master `ProductionChemicalScaleScenario` |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
 | [`eos.pt_phase_envelope`](./pt_phase_envelope.md) | `phase_envelope_continuation` | Michelsen, M. L. (1980), with `eos.critical_point` for the critical point |

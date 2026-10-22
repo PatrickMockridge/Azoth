@@ -44,6 +44,17 @@ class BrineMixingPointRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ChemicalWarningRow:
+    """The class's warning map, in insertion order."""
+
+    #: the warning's code.
+    code: str
+
+    #: the warning's message.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class DepositionSegmentRow:
     """One row per evaluated segment, in the profile's order."""
 
@@ -186,6 +197,28 @@ class ScaleControlRow:
     scale: str
 
     #: the index; absent where the water has none.
+    saturation_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScenarioChangeRow:
+    """The treated minus baseline index, over the baseline's minerals."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the change; absent where either side's index is.
+    change: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScenarioIndexRow:
+    """The treated indices, in the same order."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the index.
     saturation_index: float | None
 
 

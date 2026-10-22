@@ -94,6 +94,42 @@ impl From<&azoth_eos::results::BrineMixingPointRow> for PyBrineMixingPointRow {
     }
 }
 
+/// The class's warning map, in insertion order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ChemicalWarningRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyChemicalWarningRow {
+    /// the warning's code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the warning's message.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyChemicalWarningRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ChemicalWarningRow(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ChemicalWarningRow> for PyChemicalWarningRow {
+    fn from(row: &azoth_eos::results::ChemicalWarningRow) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
 /// One row per evaluated segment, in the profile's order.
 #[pyclass(
     frozen,
@@ -484,6 +520,78 @@ impl From<&azoth_eos::results::ScaleControlRow> for PyScaleControlRow {
     fn from(row: &azoth_eos::results::ScaleControlRow) -> Self {
         Self {
             scale: row.scale.clone(),
+            saturation_index: row.saturation_index,
+        }
+    }
+}
+
+/// The treated minus baseline index, over the baseline's minerals.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScenarioChangeRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScenarioChangeRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the change; absent where either side's index is.
+    #[pyo3(get)]
+    pub change: Option<f64>,
+}
+
+#[pymethods]
+impl PyScenarioChangeRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScenarioChangeRow(mineral={}, change={:?})",
+            self.mineral, self.change
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScenarioChangeRow> for PyScenarioChangeRow {
+    fn from(row: &azoth_eos::results::ScenarioChangeRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
+            change: row.change,
+        }
+    }
+}
+
+/// The treated indices, in the same order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScenarioIndexRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScenarioIndexRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the index.
+    #[pyo3(get)]
+    pub saturation_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScenarioIndexRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScenarioIndexRow(mineral={}, saturation_index={:?})",
+            self.mineral, self.saturation_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScenarioIndexRow> for PyScenarioIndexRow {
+    fn from(row: &azoth_eos::results::ScenarioIndexRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
             saturation_index: row.saturation_index,
         }
     }

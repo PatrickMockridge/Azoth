@@ -170,6 +170,7 @@ from azoth.core.result import (
     PrMassDensityResult,
     PrMolarVolumeResult,
     PrPenelouxShiftResult,
+    ProductionChemicalScaleScenarioResult,
     PrsvKappaResult,
     PrZFactorResult,
     PsFlashResult,
@@ -4154,6 +4155,62 @@ def ph_flash(
     """
     return resolve(_PH_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, H=H, z=z
+    )
+
+
+def production_chemical_scale_scenario(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    sulphate: Q,
+    bicarbonate: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    dissolved_h2s: Q,
+    temperature: Q,
+    pressure: Q,
+    activity_model: str,
+    chemicals: list[dict[str, object]],
+    pitzer_ionic_strength_molal: float | None = None,
+) -> ProductionChemicalScaleScenarioResult:
+    """The treatment-aware scale scenario of a produced water.
+
+    NeqSim's ``ProductionChemicalScaleScenario``: a pH adjuster's acid/base equivalents are
+    added to a closed carbonate balance, H2S scavengers consume dissolved sulphide by their
+    capacity, a scale inhibitor is reported as a kinetic control that changes no
+    thermodynamic index, and the coupled mineral equilibrium is solved before and after.
+    The class's warning map is reported as a record list of codes and messages.
+
+    Args:
+        chemicals: record rows of ``chemical_type``, ``name``, ``active_ingredient``,
+            ``active_wt_pct``, ``dosage``, and the optional ``alkalinity_capacity`` and
+            ``h2s_capacity``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.production_chemical_scale_scenario`.
+    """
+    return resolve("eos.production_chemical_scale_scenario")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        sulphate=sulphate,
+        bicarbonate=bicarbonate,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        dissolved_h2s=dissolved_h2s,
+        temperature=temperature,
+        pressure=pressure,
+        activity_model=activity_model,
+        pitzer_ionic_strength_molal=pitzer_ionic_strength_molal,
+        chemicals=chemicals,
     )
 
 

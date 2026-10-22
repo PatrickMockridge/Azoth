@@ -36,6 +36,7 @@ from azoth.core.result import (
     CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
     ChemicalEquilibriumResult,
+    ChemicalWarningRow,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -162,6 +163,7 @@ from azoth.core.result import (
     PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    ProductionChemicalScaleScenarioResult,
     PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
@@ -202,6 +204,8 @@ from azoth.core.result import (
     ScalePredictionResult,
     ScaleRemediationAdvisorResult,
     ScaleSaturationRatioResult,
+    ScenarioChangeRow,
+    ScenarioIndexRow,
     SchwartzentruberAlphaResult,
     SeparatorResult,
     SetHeavyTbpToPlusResult,
@@ -453,6 +457,7 @@ __all__ = [
     "pr_molar_volume",
     "pr_peneloux_shift",
     "pr_z_factor",
+    "production_chemical_scale_scenario",
     "prsv_kappa",
     "ps_flash",
     "pt_flash",
@@ -2886,6 +2891,41 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
         iterations=result.iterations,
         converged=result.converged,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def production_chemical_scale_scenario(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, sulphate: Q, bicarbonate: Q, total_dissolved_solids: Q, ph: float, dissolved_h2s: Q, temperature: Q, pressure: Q, activity_model: str, chemicals: list[dict[str, object]], pitzer_ionic_strength_molal: float | None=None) -> ProductionChemicalScaleScenarioResult:
+    """``eos.production_chemical_scale_scenario``, computed in Rust."""
+    spec = _models_gen.model("eos.production_chemical_scale_scenario")
+    result = _core.production_chemical_scale_scenario(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "dissolved_h2s", dissolved_h2s),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        activity_model,
+        input_records_to_si(spec, "chemicals", chemicals),
+        None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
+    )
+    return ProductionChemicalScaleScenarioResult(
+        treated_ph=result.treated_ph,
+        treated_bicarbonate=from_si(result.treated_bicarbonate.magnitude_si, result.treated_bicarbonate.unit),
+        base_dose_equivalents=from_si(result.base_dose_equivalents.magnitude_si, result.base_dose_equivalents.unit),
+        scavenger_capacity=from_si(result.scavenger_capacity.magnitude_si, result.scavenger_capacity.unit),
+        residual_dissolved_h2s=from_si(result.residual_dissolved_h2s.magnitude_si, result.residual_dissolved_h2s.unit),
+        baseline_si=tuple(ScenarioIndexRow(mineral=c.mineral, saturation_index=c.saturation_index) for c in result.baseline_si),
+        treated_si=tuple(ScenarioIndexRow(mineral=c.mineral, saturation_index=c.saturation_index) for c in result.treated_si),
+        si_change=tuple(ScenarioChangeRow(mineral=c.mineral, change=c.change) for c in result.si_change),
+        model_warnings=tuple(ChemicalWarningRow(code=c.code, message=c.message) for c in result.model_warnings),
         warnings=_warnings(result.warnings),
     )
 

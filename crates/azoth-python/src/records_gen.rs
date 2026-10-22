@@ -79,6 +79,25 @@ pub struct Lump {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ProductionChemicalDose {
+    #[pyo3(item)]
+    pub chemical_type: String,
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub active_ingredient: String,
+    #[pyo3(item)]
+    pub active_wt_pct: f64,
+    #[pyo3(item)]
+    pub dosage: f64,
+    #[pyo3(item)]
+    pub alkalinity_capacity: Option<f64>,
+    #[pyo3(item)]
+    pub h2s_capacity: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct ReferenceRow {
     #[pyo3(item)]
     pub molar_mass: f64,
