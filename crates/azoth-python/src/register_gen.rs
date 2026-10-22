@@ -104,6 +104,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyMatcopPrumrNewAlphaResult>()?;
     m.add_class::<crate::transport_gen::PyMolarEnthalpyEntropyResult>()?;
     m.add_class::<crate::transport_gen::PyMollerupAlphaResult>()?;
+    m.add_class::<crate::transport_gen::PyMultiMineralScaleEquilibriumResult>()?;
     m.add_class::<crate::transport_gen::PyMultiflashStabilityTestResult>()?;
     m.add_class::<crate::transport_gen::PyNitricSulfuricAcidVaporPressureResult>()?;
     m.add_class::<crate::transport_gen::PyNrtlActivityCoefficientsResult>()?;
@@ -250,7 +251,9 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyReferencePotentialsResult>()?;
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
+    m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
+    m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
 
     // The calculations and models themselves.
@@ -471,6 +474,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::mollerup_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::multi_mineral_scale_equilibrium,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::multiflash_stability_test,
         m

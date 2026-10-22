@@ -9,9 +9,10 @@
 use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
-    cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole, joules_per_mole_kelvin,
-    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
-    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, watts,
+    cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole,
+    joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter, kilograms_per_mole,
+    kilograms_per_second, meters, meters_per_second, moles_per_cubic_meter, pascal_seconds,
+    pascals, watts,
 };
 use pyo3::prelude::*;
 
@@ -1710,6 +1711,70 @@ pub fn mollerup_alpha(
     azoth_eos::mollerup_alpha::mollerup_alpha(p1, p2, p3, Tr)
         .map(|r| crate::transport_gen::PyMollerupAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Coupled multi-mineral scale equilibrium of a water analysis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_volume, max_iterations, relaxation, convergence_threshold))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_volume, max_iterations, relaxation, convergence_threshold)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn multi_mineral_scale_equilibrium(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    total_dissolved_solids: f64,
+    temperature: f64,
+    pressure: f64,
+    co2_partial_pressure: f64,
+    ph: f64,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: &str,
+    bdot_ion_size: Option<f64>,
+    bdot_b: Option<f64>,
+    pitzer_ionic_strength_molal: Option<f64>,
+    water_volume: Option<f64>,
+    max_iterations: Option<usize>,
+    relaxation: Option<f64>,
+    convergence_threshold: Option<f64>,
+) -> PyResult<crate::transport_gen::PyMultiMineralScaleEquilibriumResult> {
+    azoth_eos::multi_mineral_scale_equilibrium::multi_mineral_scale_equilibrium(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        kelvins(temperature),
+        pascals(pressure),
+        pascals(co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+        activity_model,
+        bdot_ion_size,
+        bdot_b,
+        pitzer_ionic_strength_molal,
+        water_volume.map(cubic_meters),
+        max_iterations,
+        relaxation,
+        convergence_threshold.map(moles_per_cubic_meter),
+    )
+    .map(|r| crate::transport_gen::PyMultiMineralScaleEquilibriumResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Multiflash seeding stability test.

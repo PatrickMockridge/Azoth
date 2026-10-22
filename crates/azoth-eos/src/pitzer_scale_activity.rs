@@ -19,7 +19,7 @@ const MIN_IONIC_STRENGTH: f64 = 1.0e-12;
 const REFERENCE_TEMPERATURE_K: f64 = 298.15;
 
 /// The nine ions the model carries, in the class's order.
-const IONS: [&str; 9] = [
+pub(crate) const IONS: [&str; 9] = [
     "sodium",
     "chloride",
     "calcium",
@@ -232,7 +232,7 @@ fn mean_at_equivalent_strength(name: &str, ionic_strength: f64, t: f64, a: f64) 
 }
 
 /// The nine ions' coefficients at the configured strength, by the MacInnes mapping.
-fn ion_coefficients(t: f64, a: f64, ionic_strength: f64) -> [f64; 9] {
+pub(crate) fn ion_coefficients(t: f64, a: f64, ionic_strength: f64) -> [f64; 9] {
     let strength = ionic_strength.max(MIN_IONIC_STRENGTH);
     let gamma_nacl = mean_at_equivalent_strength("nacl", strength, t, a);
     let divalent = |salt: &str| {

@@ -1881,20 +1881,19 @@ mod tests {
             "volume".to_string(),
             crate::unit_op::Param {
                 required: false,
-                unit: Some("m**3".to_string()),
-                description: "the tank's volume".to_string(),
+                unit: Some("m**4".to_string()),
+                description: "a unit the vocabulary does not carry".to_string(),
             },
         );
         let diags = validate_palette(&[spec]);
-        // `m**3` is not `m**3/s`: the vocabulary has no plain volume unit, so a volume
-        // cannot be declared until one is added. That is the state this records rather
-        // than a spelling to be worked around.
+        // `m**4` is no dimension the vocabulary carries, so a parameter declaring it is
+        // refused rather than converted against a plausible neighbour.
         assert!(has(
             &diags,
             Diagnostic::UnknownParameterUnit {
                 unit_op: "unit_ops.tank".into(),
                 parameter: "volume".into(),
-                unit: "m**3".into(),
+                unit: "m**4".into(),
             }
         ));
     }

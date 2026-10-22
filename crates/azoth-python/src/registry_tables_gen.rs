@@ -105,6 +105,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.matcop_prumr_new_alpha" => azoth_eos::results::MatcopPrumrNewAlphaResult::FIELDS.to_vec(),
         "eos.molar_enthalpy_entropy" => azoth_eos::results::MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         "eos.mollerup_alpha" => azoth_eos::results::MollerupAlphaResult::FIELDS.to_vec(),
+        "eos.multi_mineral_scale_equilibrium" => azoth_eos::results::MultiMineralScaleEquilibriumResult::FIELDS.to_vec(),
         "eos.multiflash_stability_test" => azoth_eos::results::MultiflashStabilityTestResult::FIELDS.to_vec(),
         "eos.nitric_sulfuric_acid_vapor_pressure" => azoth_eos::results::NitricSulfuricAcidVaporPressureResult::FIELDS.to_vec(),
         "eos.nrtl_activity_coefficients" => azoth_eos::results::NrtlActivityCoefficientsResult::FIELDS.to_vec(),

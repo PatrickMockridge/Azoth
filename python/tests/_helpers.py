@@ -119,6 +119,13 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # is the arithmetic that decided where each stopped. The model's declared tolerance is
         # the bound.
         "convergence_residual",
+        # `eos.multi_mineral_scale_equilibrium`'s two certificates. The complementarity
+        # violation is the largest `|SI|` over the solids the coordinate descent stopped on,
+        # of order `1e-10`; the ion balance is a ledger that is zero by construction, of order
+        # `1e-15`. Both are the loop's own stopping evidence, compared against the declared
+        # threshold rather than relatively - the same shape as `residual` above.
+        "maximum_complementarity_violation",
+        "maximum_ion_balance_residual",
     }
 )
 

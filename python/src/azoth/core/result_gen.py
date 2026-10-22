@@ -22,7 +22,9 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
+    ActivityCoefficientRow,
     KComponent,
+    MineralEquilibriumRow,
     SubFraction,
 )
 from azoth.core.result_base import (
@@ -1882,6 +1884,58 @@ class MollerupAlphaResult(_HasWarnings):
 
     #: the temperature-dependent alpha function
     alpha: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MultiMineralScaleEquilibriumResult(_HasWarnings):
+    """Result of ``eos.multi_mineral_scale_equilibrium``."""
+
+    CALC_ID: ClassVar[str] = "eos.multi_mineral_scale_equilibrium"
+
+    #: The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero.
+    minerals: tuple[MineralEquilibriumRow, ...]
+
+    #: The total precipitated mass per cubic metre.
+    total_mass: Q
+
+    #: The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise.
+    activity_coefficients: tuple[ActivityCoefficientRow, ...]
+
+    #: The divalent coefficient the solve used.
+    divalent_activity_coefficient: float
+
+    #: Coordinate-descent steps taken.
+    iterations: int
+
+    #: Whether the loop stopped at its cap rather than at the threshold.
+    iteration_limit_reached: bool
+
+    #: The largest `|SI|` over solids and positive `SI` over absent solids.
+    maximum_complementarity_violation: float
+
+    #: The largest `initial - residual - precipitated` over the six ions.
+    maximum_ion_balance_residual: Q
+
+    #: Residual free calcium.
+    residual_calcium: Q
+
+    #: Residual free barium.
+    residual_barium: Q
+
+    #: Residual free strontium.
+    residual_strontium: Q
+
+    #: Residual free ferrous iron.
+    residual_ferrous: Q
+
+    #: Residual free sulphate.
+    residual_sulphate: Q
+
+    #: Residual free carbonate.
+    residual_carbonate: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

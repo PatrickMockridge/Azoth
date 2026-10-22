@@ -27,7 +27,7 @@ r.provenance.rust_sha256  # the bytes of the kernel that produced this number
 
 The last line is the one that changes what is possible. It is not a claim in a manual; it is
 a claim a machine can check against the tree, and
-`python/tests/test_provenance.py` recomputes all 231 of them. `r.to_json()`
+`python/tests/test_provenance.py` recomputes all 232 of them. `r.to_json()`
 carries the block, so the same holds for a result written to a file, served over MCP, or
 handed to an agent.
 
@@ -93,7 +93,7 @@ chemistry that cannot run away over a relief valve that catches it.
 - **A formal layer underneath, and a gate on it.** A quantity's dimension and the
   arithmetic over it are meant to be a proved construction, so a dimension that does not
   compose fails rather than converting. What reaches Lean today is the dimension group, the
-  70-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
+  72-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
   the first-order sensitivity of a solution and the keycard's non-amplification — each
   behind an axiom gate that fails the build on a `sorry`, including one inside a vendored
   dependency. **The physics kernels are measured, not proved**, and
@@ -174,7 +174,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 79 calculations and 152 models, each with its equation, source, valid
+The full catalog — 79 calculations and 153 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 

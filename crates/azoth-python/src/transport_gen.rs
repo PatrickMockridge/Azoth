@@ -13,7 +13,9 @@
 //! Regenerate with `python tools/gen_python_transport.py`; CI runs `--check` and fails
 //! on any difference.
 
-use crate::record_outputs_gen::{PyKComponent, PySubFraction};
+use crate::record_outputs_gen::{
+    PyActivityCoefficientRow, PyKComponent, PyMineralEquilibriumRow, PySubFraction,
+};
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
@@ -4919,6 +4921,141 @@ impl From<&azoth_eos::results::MollerupAlphaResult> for PyMollerupAlphaResult {
     fn from(r: &azoth_eos::results::MollerupAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.multi_mineral_scale_equilibrium`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MultiMineralScaleEquilibriumResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMultiMineralScaleEquilibriumResult {
+    /// The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero.
+    #[pyo3(get)]
+    pub minerals: Vec<PyMineralEquilibriumRow>,
+    /// The total precipitated mass per cubic metre.
+    #[pyo3(get)]
+    pub total_mass: PyQty,
+    /// The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise.
+    #[pyo3(get)]
+    pub activity_coefficients: Vec<PyActivityCoefficientRow>,
+    /// The divalent coefficient the solve used.
+    #[pyo3(get)]
+    pub divalent_activity_coefficient: f64,
+    /// Coordinate-descent steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Whether the loop stopped at its cap rather than at the threshold.
+    #[pyo3(get)]
+    pub iteration_limit_reached: bool,
+    /// The largest `|SI|` over solids and positive `SI` over absent solids.
+    #[pyo3(get)]
+    pub maximum_complementarity_violation: f64,
+    /// The largest `initial - residual - precipitated` over the six ions.
+    #[pyo3(get)]
+    pub maximum_ion_balance_residual: PyQty,
+    /// Residual free calcium.
+    #[pyo3(get)]
+    pub residual_calcium: PyQty,
+    /// Residual free barium.
+    #[pyo3(get)]
+    pub residual_barium: PyQty,
+    /// Residual free strontium.
+    #[pyo3(get)]
+    pub residual_strontium: PyQty,
+    /// Residual free ferrous iron.
+    #[pyo3(get)]
+    pub residual_ferrous: PyQty,
+    /// Residual free sulphate.
+    #[pyo3(get)]
+    pub residual_sulphate: PyQty,
+    /// Residual free carbonate.
+    #[pyo3(get)]
+    pub residual_carbonate: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMultiMineralScaleEquilibriumResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MultiMineralScaleEquilibriumResult(minerals={:?}, total_mass={:?}, activity_coefficients={:?}, divalent_activity_coefficient={:?}, iterations={:?}, iteration_limit_reached={:?}, maximum_complementarity_violation={:?}, maximum_ion_balance_residual={:?}, residual_calcium={:?}, residual_barium={:?}, residual_strontium={:?}, residual_ferrous={:?}, residual_sulphate={:?}, residual_carbonate={:?}, {} warning(s))",
+            self.minerals,
+            self.total_mass,
+            self.activity_coefficients,
+            self.divalent_activity_coefficient,
+            self.iterations,
+            self.iteration_limit_reached,
+            self.maximum_complementarity_violation,
+            self.maximum_ion_balance_residual,
+            self.residual_calcium,
+            self.residual_barium,
+            self.residual_strontium,
+            self.residual_ferrous,
+            self.residual_sulphate,
+            self.residual_carbonate,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::MultiMineralScaleEquilibriumResult>
+    for PyMultiMineralScaleEquilibriumResult
+{
+    fn from(r: &azoth_eos::results::MultiMineralScaleEquilibriumResult) -> Self {
+        Self {
+            minerals: r
+                .minerals
+                .iter()
+                .map(PyMineralEquilibriumRow::from)
+                .collect(),
+            total_mass: PyQty {
+                magnitude_si: r.total_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            activity_coefficients: r
+                .activity_coefficients
+                .iter()
+                .map(PyActivityCoefficientRow::from)
+                .collect(),
+            divalent_activity_coefficient: r.divalent_activity_coefficient,
+            iterations: r.iterations,
+            iteration_limit_reached: r.iteration_limit_reached,
+            maximum_complementarity_violation: r.maximum_complementarity_violation,
+            maximum_ion_balance_residual: PyQty {
+                magnitude_si: r.maximum_ion_balance_residual.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_calcium: PyQty {
+                magnitude_si: r.residual_calcium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_barium: PyQty {
+                magnitude_si: r.residual_barium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_strontium: PyQty {
+                magnitude_si: r.residual_strontium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_ferrous: PyQty {
+                magnitude_si: r.residual_ferrous.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_sulphate: PyQty {
+                magnitude_si: r.residual_sulphate.value,
+                unit: "mol/m**3".to_string(),
+            },
+            residual_carbonate: PyQty {
+                magnitude_si: r.residual_carbonate.value,
+                unit: "mol/m**3".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

@@ -21,7 +21,7 @@ pub use uom::si::f64::{
     HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarConcentration, MolarEnergy,
     MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
     SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
-    ThermodynamicTemperature, Velocity, VolumeRate,
+    ThermodynamicTemperature, Velocity, Volume, VolumeRate,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
@@ -41,8 +41,9 @@ pub use uom::si::{
     temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
     thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
     thermodynamic_temperature::kelvin, time::hour, time::minute, velocity::foot_per_second,
-    velocity::meter_per_second, volume_rate::cubic_meter_per_hour,
-    volume_rate::cubic_meter_per_second, volume_rate::liter_per_minute,
+    velocity::meter_per_second, volume::cubic_meter, volume::liter,
+    volume_rate::cubic_meter_per_hour, volume_rate::cubic_meter_per_second,
+    volume_rate::liter_per_minute,
 };
 
 /// A length in metres.
@@ -163,6 +164,18 @@ pub fn kelvin_intervals(value: f64) -> TemperatureInterval {
 #[must_use]
 pub fn square_meters(value: f64) -> Area {
     Area::new::<square_meter>(value)
+}
+
+/// A volume in cubic metres.
+#[must_use]
+pub fn cubic_meters(value: f64) -> Volume {
+    Volume::new::<cubic_meter>(value)
+}
+
+/// A volume in litres.
+#[must_use]
+pub fn liters(value: f64) -> Volume {
+    Volume::new::<liter>(value)
 }
 
 /// A volumetric flow rate in cubic metres per second.

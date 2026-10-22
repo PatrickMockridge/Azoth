@@ -17,6 +17,7 @@ from azoth._registry_gen import spec as _spec_for
 from azoth.core.bridge_support import _association_spec, _count, _molar_masses, _si, _warnings
 from azoth.core.result import (
     AbsorptionColumnResult,
+    ActivityCoefficientRow,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     AqueousViscosityResult,
@@ -118,10 +119,12 @@ from azoth.core.result import (
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult,
+    MineralEquilibriumRow,
     MixerResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     MultiflashStabilityTestResult,
+    MultiMineralScaleEquilibriumResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     OilAssayDerivationResult,
@@ -391,6 +394,7 @@ __all__ = [
     "mixer",
     "molar_enthalpy_entropy",
     "mollerup_alpha",
+    "multi_mineral_scale_equilibrium",
     "multiflash_stability_test",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
@@ -2246,6 +2250,53 @@ def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaR
     )
     return MollerupAlphaResult(
         alpha=result.alpha,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def multi_mineral_scale_equilibrium(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, temperature: Q, pressure: Q, co2_partial_pressure: Q, ph: float, auto_ph: bool, second_order_pressure_correction: bool, activity_model: str, bdot_ion_size: float | None=None, bdot_b: float | None=None, pitzer_ionic_strength_molal: float | None=None, water_volume: Q | None=None, max_iterations: float | None=None, relaxation: float | None=None, convergence_threshold: Q | None=None) -> MultiMineralScaleEquilibriumResult:
+    """``eos.multi_mineral_scale_equilibrium``, computed in Rust."""
+    spec = _models_gen.model("eos.multi_mineral_scale_equilibrium")
+    result = _core.multi_mineral_scale_equilibrium(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+        activity_model,
+        None if bdot_ion_size is None else _si(spec, "bdot_ion_size", bdot_ion_size),
+        None if bdot_b is None else _si(spec, "bdot_b", bdot_b),
+        None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
+        None if water_volume is None else input_to_si(spec, "water_volume", water_volume),
+        None if max_iterations is None else _count("max_iterations", max_iterations),
+        None if relaxation is None else relaxation,
+        None if convergence_threshold is None else input_to_si(spec, "convergence_threshold", convergence_threshold),
+    )
+    return MultiMineralScaleEquilibriumResult(
+        minerals=tuple(MineralEquilibriumRow(name=c.name, common_name=c.common_name, initial_saturation_index=c.initial_saturation_index, final_saturation_index=c.final_saturation_index, activity_coefficient_product=c.activity_coefficient_product, precipitated_amount=from_si(c.precipitated_amount.magnitude_si, c.precipitated_amount.unit), precipitated_mass=from_si(c.precipitated_mass.magnitude_si, c.precipitated_mass.unit), total_precipitated_mass=from_si(c.total_precipitated_mass.magnitude_si, c.total_precipitated_mass.unit), limiting_ion_exhausted=c.limiting_ion_exhausted) for c in result.minerals),
+        total_mass=from_si(result.total_mass.magnitude_si, result.total_mass.unit),
+        activity_coefficients=tuple(ActivityCoefficientRow(ion=c.ion, activity_coefficient=c.activity_coefficient) for c in result.activity_coefficients),
+        divalent_activity_coefficient=result.divalent_activity_coefficient,
+        iterations=result.iterations,
+        iteration_limit_reached=result.iteration_limit_reached,
+        maximum_complementarity_violation=result.maximum_complementarity_violation,
+        maximum_ion_balance_residual=from_si(result.maximum_ion_balance_residual.magnitude_si, result.maximum_ion_balance_residual.unit),
+        residual_calcium=from_si(result.residual_calcium.magnitude_si, result.residual_calcium.unit),
+        residual_barium=from_si(result.residual_barium.magnitude_si, result.residual_barium.unit),
+        residual_strontium=from_si(result.residual_strontium.magnitude_si, result.residual_strontium.unit),
+        residual_ferrous=from_si(result.residual_ferrous.magnitude_si, result.residual_ferrous.unit),
+        residual_sulphate=from_si(result.residual_sulphate.magnitude_si, result.residual_sulphate.unit),
+        residual_carbonate=from_si(result.residual_carbonate.magnitude_si, result.residual_carbonate.unit),
         warnings=_warnings(result.warnings),
     )
 

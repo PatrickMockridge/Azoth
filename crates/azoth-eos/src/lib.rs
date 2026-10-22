@@ -144,6 +144,7 @@ pub mod mixture;
 pub mod model_gen;
 pub mod molar_enthalpy_entropy;
 pub mod mollerup_alpha;
+pub mod multi_mineral_scale_equilibrium;
 pub mod multiflash_stability_test;
 pub mod multiphase;
 pub mod nitric_sulfuric_acid_vapor_pressure;

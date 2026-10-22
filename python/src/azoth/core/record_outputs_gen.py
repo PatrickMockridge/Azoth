@@ -13,6 +13,17 @@ from azoth.core.units import Q
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ActivityCoefficientRow:
+    """The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise."""
+
+    #: The ion, or `divalent` under the models that carry one coefficient.
+    ion: str
+
+    #: The coefficient.
+    activity_coefficient: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
 
@@ -24,6 +35,38 @@ class KComponent:
 
     #: this fitting's resistance coefficient, f_t * n_ld
     k: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MineralEquilibriumRow:
+    """The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero."""
+
+    #: The mineral's formula, as the class names it.
+    name: str
+
+    #: The mineral's common name.
+    common_name: str
+
+    #: The index before anything precipitated.
+    initial_saturation_index: float
+
+    #: The index at the answer, against the frozen activity coefficients.
+    final_saturation_index: float
+
+    #: The product of the two ions' activity coefficients the solve used.
+    activity_coefficient_product: float
+
+    #: The precipitated amount per cubic metre of water.
+    precipitated_amount: Q
+
+    #: The precipitated mass per cubic metre of water.
+    precipitated_mass: Q
+
+    #: The precipitated mass over the stated water volume.
+    total_precipitated_mass: Q
+
+    #: Whether a limiting ion was exhausted while solid was present.
+    limiting_ion_exhausted: bool
 
 
 @dataclass(frozen=True, slots=True, eq=False)

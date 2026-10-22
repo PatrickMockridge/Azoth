@@ -6,7 +6,7 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, MassDensity, MolarConcentration, MolarEnergy,
+    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, MolarConcentration, MolarEnergy,
     MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
     ThermodynamicTemperature, Velocity,
 };
@@ -5055,6 +5055,105 @@ impl CalcResult for GeFlashResult {
         "phase",
         "iterations",
         "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One mineral of `eos.multi_mineral_scale_equilibrium`'s solid assemblage.
+///
+/// **A `record_list` output's row, so its fields are the spec's own `fields` block.** The
+/// spelling here is the transport's - a `uom` alias for a dimensioned field and a bare number
+/// for a dimensionless one - and `tools/gen_python_record_outputs.py` emits the pyclass and the
+/// Python dataclass from that same declaration rather than from this struct.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MineralEquilibriumRow {
+    /// The mineral's formula, as the class names it.
+    pub name: String,
+    /// The mineral's common name.
+    pub common_name: String,
+    /// The index before anything precipitated.
+    pub initial_saturation_index: f64,
+    /// The index at the answer.
+    pub final_saturation_index: f64,
+    /// The product of the two ions' activity coefficients, frozen at the solve's state.
+    pub activity_coefficient_product: f64,
+    /// The precipitated amount.
+    pub precipitated_amount: MolarConcentration,
+    /// The precipitated mass per cubic metre of water.
+    pub precipitated_mass: MassDensity,
+    /// The precipitated mass over the stated water volume.
+    pub total_precipitated_mass: Mass,
+    /// Whether a limiting ion was exhausted while solid was present.
+    pub limiting_ion_exhausted: bool,
+}
+
+/// One activity coefficient the solve used.
+///
+/// **A `record_list` output's row**, declared the same way as [`MineralEquilibriumRow`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActivityCoefficientRow {
+    /// The ion, or `divalent` under the models that carry one coefficient.
+    pub ion: String,
+    /// The coefficient.
+    pub activity_coefficient: f64,
+}
+
+/// Result of `eos.multi_mineral_scale_equilibrium`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MultiMineralScaleEquilibriumResult {
+    /// The minerals that were registered, in the class's order.
+    pub minerals: Vec<MineralEquilibriumRow>,
+    /// The total precipitated mass per cubic metre.
+    pub total_mass: MassDensity,
+    /// The activity coefficients the solve used.
+    pub activity_coefficients: Vec<ActivityCoefficientRow>,
+    /// The divalent coefficient the solve used.
+    pub divalent_activity_coefficient: f64,
+    /// Coordinate-descent steps taken.
+    pub iterations: u32,
+    /// Whether the loop stopped at its cap rather than at the threshold.
+    pub iteration_limit_reached: bool,
+    /// The largest complementarity violation over the assemblage.
+    pub maximum_complementarity_violation: f64,
+    /// The largest `initial - residual - precipitated` over the six ions.
+    pub maximum_ion_balance_residual: MolarConcentration,
+    /// Residual free calcium.
+    pub residual_calcium: MolarConcentration,
+    /// Residual free barium.
+    pub residual_barium: MolarConcentration,
+    /// Residual free strontium.
+    pub residual_strontium: MolarConcentration,
+    /// Residual free ferrous iron.
+    pub residual_ferrous: MolarConcentration,
+    /// Residual free sulphate.
+    pub residual_sulphate: MolarConcentration,
+    /// Residual free carbonate.
+    pub residual_carbonate: MolarConcentration,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MultiMineralScaleEquilibriumResult {
+    const CALC_ID: &'static str = "eos.multi_mineral_scale_equilibrium";
+    const FIELDS: &'static [&'static str] = &[
+        "minerals",
+        "total_mass",
+        "activity_coefficients",
+        "divalent_activity_coefficient",
+        "iterations",
+        "iteration_limit_reached",
+        "maximum_complementarity_violation",
+        "maximum_ion_balance_residual",
+        "residual_calcium",
+        "residual_barium",
+        "residual_strontium",
+        "residual_ferrous",
+        "residual_sulphate",
+        "residual_carbonate",
         "warnings",
     ];
 

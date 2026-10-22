@@ -223,6 +223,17 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `salt` names the `compsalt` row and the three overrides, like `form` and `eos`:
         # a categorical input with no float-array column shape.
         "eos.scale_saturation_ratio",
+        # The binary Pitzer model takes four categorical inputs - the salt, the ion whose
+        # coefficient is reported, and the cation and anion of the product - so a batch has
+        # no column to vary any of them down, the same reason as `salt` above.
+        "eos.pitzer_scale_activity",
+        # The mass calculator's `mineral` names one of five molar masses: a categorical
+        # input, the same reason, and the arithmetic is otherwise one multiplication.
+        "eos.scale_mass",
+        # The saturation-index calculator carries two switches - `auto_ph` and the
+        # second-order pressure correction - and a batch column is a sequence of numbers,
+        # so there is no column to vary either down. A single batch would run one branch.
+        "eos.scale_prediction",
         # `packing` names a row in the packing table, and the answer changes with which row it
         # is: a categorical choice rather than a scale factor, like the others here.
         "hydraulics.packing_hydraulics",

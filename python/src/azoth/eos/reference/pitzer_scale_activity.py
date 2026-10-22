@@ -120,6 +120,31 @@ def _mean_at_equivalent_strength(
     return _mean(salt, ionic_strength / per_molality, temperature_k, debye_huckel_a)
 
 
+def ion_coefficients(
+    temperature_k: float, debye_huckel_a: float, ionic_strength: float
+) -> tuple[float, ...]:
+    """The nine ions' coefficients at an ionic strength, by the MacInnes mapping."""
+    strength = max(ionic_strength, MIN_IONIC_STRENGTH)
+    gamma_nacl = _mean_at_equivalent_strength("nacl", strength, temperature_k, debye_huckel_a)
+
+    def divalent(name: str) -> float:
+        value = _mean_at_equivalent_strength(name, strength, temperature_k, debye_huckel_a)
+        return math.pow(value, 3.0) / (gamma_nacl * gamma_nacl)
+
+    gamma_nahco3 = _mean_at_equivalent_strength("nahco3", strength, temperature_k, debye_huckel_a)
+    return (
+        gamma_nacl,
+        gamma_nacl,
+        divalent("cacl2"),
+        divalent("bacl2"),
+        divalent("srcl2"),
+        divalent("fecl2"),
+        divalent("na2so4"),
+        divalent("na2co3"),
+        gamma_nahco3 * gamma_nahco3 / gamma_nacl,
+    )
+
+
 def pitzer_scale_activity(
     temperature: Q,
     ionic_strength_molal: Q,
@@ -184,25 +209,7 @@ def pitzer_scale_activity(
     selected = SALTS[salt]
     mean = _mean(selected, molality_si, temperature_k, debye_huckel_a)
 
-    strength = max(strength_si, MIN_IONIC_STRENGTH)
-    gamma_nacl = _mean_at_equivalent_strength("nacl", strength, temperature_k, debye_huckel_a)
-
-    def divalent(name: str) -> float:
-        value = _mean_at_equivalent_strength(name, strength, temperature_k, debye_huckel_a)
-        return math.pow(value, 3.0) / (gamma_nacl * gamma_nacl)
-
-    gamma_nahco3 = _mean_at_equivalent_strength("nahco3", strength, temperature_k, debye_huckel_a)
-    gammas = (
-        gamma_nacl,
-        gamma_nacl,
-        divalent("cacl2"),
-        divalent("bacl2"),
-        divalent("srcl2"),
-        divalent("fecl2"),
-        divalent("na2so4"),
-        divalent("na2co3"),
-        gamma_nahco3 * gamma_nahco3 / gamma_nacl,
-    )
+    gammas = ion_coefficients(temperature_k, debye_huckel_a, strength_si)
 
     def gamma_of(name: str) -> float:
         return gammas[IONS.index(name)]

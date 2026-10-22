@@ -17,6 +17,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "dimensionless",
     "length",
     "area",
+    "volume",
     "volume_rate",
     "mass",
     "mass_rate",
@@ -57,6 +58,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("length", [1, 0, 0, 0, 0, 0, 0]),
     ("area", [2, 0, 0, 0, 0, 0, 0]),
+    ("volume", [3, 0, 0, 0, 0, 0, 0]),
     ("volume_rate", [3, 0, -1, 0, 0, 0, 0]),
     ("mass", [0, 1, 0, 0, 0, 0, 0]),
     ("mass_rate", [0, 1, -1, 0, 0, 0, 0]),
@@ -124,6 +126,8 @@ pub const UNIT_NAMES: &[&str] = &[
     "m",
     "mm",
     "m**2",
+    "m**3",
+    "L",
     "m**3/s",
     "kg/s",
     "mol/s",
@@ -198,6 +202,8 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("m", [1, 0, 0, 0, 0, 0, 0]),
     ("mm", [1, 0, 0, 0, 0, 0, 0]),
     ("m**2", [2, 0, 0, 0, 0, 0, 0]),
+    ("m**3", [3, 0, 0, 0, 0, 0, 0]),
+    ("L", [3, 0, 0, 0, 0, 0, 0]),
     ("m**3/s", [3, 0, -1, 0, 0, 0, 0]),
     ("kg/s", [0, 1, -1, 0, 0, 0, 0]),
     ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
@@ -291,6 +297,8 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("m", |v| crate::units::meters(v).value),
     ("mm", |v| crate::units::millimeters(v).value),
     ("m**2", |v| crate::units::square_meters(v).value),
+    ("m**3", |v| crate::units::cubic_meters(v).value),
+    ("L", |v| crate::units::liters(v).value),
     ("m**3/s", |v| crate::units::cubic_meters_per_second(v).value),
     ("kg/s", |v| crate::units::kilograms_per_second(v).value),
     ("mol/s", |v| crate::units::moles_per_second(v).value),
@@ -442,6 +450,7 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("energy", "J"),
             ("power", "W"),
             ("length", "m"),
+            ("volume", "m**3"),
             ("volume_rate", "m**3/s"),
             ("velocity", "m/s"),
             ("mass_density", "kg/m**3"),
@@ -463,6 +472,7 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("energy", "Btu"),
             ("power", "hp"),
             ("length", "ft"),
+            ("volume", "L"),
             ("volume_rate", "gpm"),
             ("velocity", "ft/s"),
             ("mass_density", "lb/ft**3"),
@@ -539,6 +549,8 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Length = crate::units::meters(1.0);
     let _: uom::si::f64::Length = crate::units::millimeters(1.0);
     let _: uom::si::f64::Area = crate::units::square_meters(1.0);
+    let _: uom::si::f64::Volume = crate::units::cubic_meters(1.0);
+    let _: uom::si::f64::Volume = crate::units::liters(1.0);
     let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_second(1.0);
     let _: uom::si::f64::MassRate = crate::units::kilograms_per_second(1.0);
     let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);

@@ -86,6 +86,7 @@
 //!   - specs/calcs/eos/matcop_prumr_new_alpha.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/calcs/eos/mollerup_alpha.toml
+//!   - specs/models/eos/multi_mineral_scale_equilibrium.toml
 //!   - specs/models/eos/multiflash_stability_test.toml
 //!   - specs/calcs/eos/nitric_sulfuric_acid_vapor_pressure.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
@@ -1016,6 +1017,102 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.mollerup_alpha", "p2", "dimensionless"),
     ("eos.mollerup_alpha", "p3", "dimensionless"),
     ("eos.mollerup_alpha", "Tr", "dimensionless"),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "calcium",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "barium",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "strontium",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "iron",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "magnesium",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "sodium",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "bicarbonate",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "sulphate",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "pressure",
+        "pressure",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "co2_partial_pressure",
+        "pressure",
+    ),
+    ("eos.multi_mineral_scale_equilibrium", "ph", "dimensionless"),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "bdot_ion_size",
+        "length",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "bdot_b",
+        "molar_mass",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "pitzer_ionic_strength_molal",
+        "molality",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "water_volume",
+        "volume",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "max_iterations",
+        "dimensionless",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "relaxation",
+        "dimensionless",
+    ),
+    (
+        "eos.multi_mineral_scale_equilibrium",
+        "convergence_threshold",
+        "amount_concentration",
+    ),
     (
         "eos.multiflash_stability_test",
         "T",

@@ -10,6 +10,42 @@
 use crate::results::PyQty;
 use pyo3::prelude::*;
 
+/// The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ActivityCoefficientRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyActivityCoefficientRow {
+    /// The ion, or `divalent` under the models that carry one coefficient.
+    #[pyo3(get)]
+    pub ion: String,
+    /// The coefficient.
+    #[pyo3(get)]
+    pub activity_coefficient: f64,
+}
+
+#[pymethods]
+impl PyActivityCoefficientRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ActivityCoefficientRow(ion={}, activity_coefficient={})",
+            self.ion, self.activity_coefficient
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficientRow {
+    fn from(row: &azoth_eos::results::ActivityCoefficientRow) -> Self {
+        Self {
+            ion: row.ion.clone(),
+            activity_coefficient: row.activity_coefficient,
+        }
+    }
+}
+
 /// one row per fitting supplied, in the order they were listed
 #[pyclass(
     frozen,
@@ -46,6 +82,87 @@ impl From<&azoth_hydraulics::results::KComponent> for PyKComponent {
             fitting_id: row.fitting_id.clone(),
             n_ld: row.n_ld,
             k: row.k,
+        }
+    }
+}
+
+/// The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MineralEquilibriumRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMineralEquilibriumRow {
+    /// The mineral's formula, as the class names it.
+    #[pyo3(get)]
+    pub name: String,
+    /// The mineral's common name.
+    #[pyo3(get)]
+    pub common_name: String,
+    /// The index before anything precipitated.
+    #[pyo3(get)]
+    pub initial_saturation_index: f64,
+    /// The index at the answer, against the frozen activity coefficients.
+    #[pyo3(get)]
+    pub final_saturation_index: f64,
+    /// The product of the two ions' activity coefficients the solve used.
+    #[pyo3(get)]
+    pub activity_coefficient_product: f64,
+    /// The precipitated amount per cubic metre of water.
+    #[pyo3(get)]
+    pub precipitated_amount: PyQty,
+    /// The precipitated mass per cubic metre of water.
+    #[pyo3(get)]
+    pub precipitated_mass: PyQty,
+    /// The precipitated mass over the stated water volume.
+    #[pyo3(get)]
+    pub total_precipitated_mass: PyQty,
+    /// Whether a limiting ion was exhausted while solid was present.
+    #[pyo3(get)]
+    pub limiting_ion_exhausted: bool,
+}
+
+#[pymethods]
+impl PyMineralEquilibriumRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "MineralEquilibriumRow(name={}, common_name={}, initial_saturation_index={}, final_saturation_index={}, activity_coefficient_product={}, precipitated_amount={:?}, precipitated_mass={:?}, total_precipitated_mass={:?}, limiting_ion_exhausted={:?})",
+            self.name,
+            self.common_name,
+            self.initial_saturation_index,
+            self.final_saturation_index,
+            self.activity_coefficient_product,
+            self.precipitated_amount,
+            self.precipitated_mass,
+            self.total_precipitated_mass,
+            self.limiting_ion_exhausted
+        )
+    }
+}
+
+impl From<&azoth_eos::results::MineralEquilibriumRow> for PyMineralEquilibriumRow {
+    fn from(row: &azoth_eos::results::MineralEquilibriumRow) -> Self {
+        Self {
+            name: row.name.clone(),
+            common_name: row.common_name.clone(),
+            initial_saturation_index: row.initial_saturation_index,
+            final_saturation_index: row.final_saturation_index,
+            activity_coefficient_product: row.activity_coefficient_product,
+            precipitated_amount: PyQty {
+                magnitude_si: row.precipitated_amount.value,
+                unit: "mol/m**3".to_string(),
+            },
+            precipitated_mass: PyQty {
+                magnitude_si: row.precipitated_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            total_precipitated_mass: PyQty {
+                magnitude_si: row.total_precipitated_mass.value,
+                unit: "kg".to_string(),
+            },
+            limiting_ion_exhausted: row.limiting_ion_exhausted,
         }
     }
 }

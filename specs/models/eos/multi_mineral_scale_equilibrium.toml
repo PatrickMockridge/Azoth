@@ -1,0 +1,297 @@
+id = "eos.multi_mineral_scale_equilibrium"
+name = "Coupled multi-mineral scale equilibrium of a water analysis"
+kind = "procedure"
+assumptions = [
+    "**the solve is the class's greedy coordinate descent, not a Gibbs minimisation**: the single most-violating mineral is advanced by `relaxation * extent`, precipitation capped at the limiting ion, redissolution at the solid present.\n",
+    "**each step's extent solves `(c_cat - xi)(c_an - xi) = Ksp / (gamma_cat gamma_an)` in closed form** - the class's quadratic, with a negative discriminant floored at zero, and a negative root meaning redissolution.\n",
+    "**a mineral is registered only if both its ions are above `1e-18` mol/L and its Ksp is positive**, so a mineral below the floor has no row rather than a zero row. The order is barite, celestite, anhydrite, calcite, siderite.\n",
+    "**the starting state is `eos.scale_prediction`'s own.** Free calcium, sulphate and carbonate are the ion-pair-corrected values; barium, strontium and iron are the analytical totals, which the predictor does not pair.\n",
+    "**the activity coefficients are frozen at the starting state and never re-solved** as ions precipitate. Davies and B-dot give one divalent coefficient, used for every mineral's product; the binary Pitzer gives each ion its own coefficient and the products are taken per mineral.\n",
+    "**the Pitzer strength is the sodium molarity where sodium is present, else TDS/58440**, unless the caller overrides it; the class's own fallback and its getter's sodium constant are what this reads.\n",
+    "**the B-dot arm keeps the class's dimensional looseness**: `log10(gamma) = -A z^2 sqrt(I)/(1 + a*0.3283*sqrt(I)) + b*I`, where `a` is an Angstrom ion size and `b` a kg/mol coefficient multiplied by a mol/L strength.\n",
+    "**the final indices use the frozen products**, so a solid's SI is driven to zero only as far as those coefficients allow; the violation is the largest `|SI|` over solids and the largest positive `SI` over absent ones.\n",
+    "**the ion-balance residual is `max |initial - residual - precipitated|` over the six ions**, accumulated per registered mineral; it is a check on the ledger rather than on the chemistry.\n",
+    "**a solve that reaches the iteration cap is returned with a `SolverNotConverged` warning**, its last iterate and its violation, rather than refused: the class reports the flag and the numbers beside it.\n",
+    "**the water volume scales the reported grams and nothing else.** Mass per litre, moles and the equilibrium itself do not read it.\n",
+    "the class's Gson report is not a calculation; a stateless port recomputes.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/MultiMineralScaleEquilibrium.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_family_probe.tsv` - the solver on a sulphate-limited brine, a high-salinity brine, a co-precipitating brine and a single-mineral state, each in all three activity modes, plus the iteration-cap, water-volume and explicit-strength controls.",
+]
+[source]
+standard = "NeqSim master `MultiMineralScaleEquilibrium`"
+edition = "`solve`, `divalentActivityCoefficient`, `activityProduct`, `estimatePitzerIonicStrengthMolal`, `putPitzerActivityCoefficients` and `saturationIndex`, ported. The Gson report and the lazy `ensureSolved` flag are not."
+[algorithm]
+scheme = "greedy_coordinate_descent"
+initialisation = "predictor_free_ions"
+convergence = "absolute"
+tolerance = 1.0e-15
+max_iterations = 200000
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "the calcium ion's mass concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "the barium ion's mass concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "the strontium ion's mass concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "the ferrous iron's mass concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "the magnesium ion's mass concentration, read by the predictor's ion pairing.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "the sodium ion's mass concentration, read by the predictor's ion pairing and the Pitzer strength fallback.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate ion's mass concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "the sulphate ion's mass concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "TDS, which sets the predictor's ionic strength and the Pitzer strength's second fallback.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure, read by the auto-pH path.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the water's pH, ignored when `auto_ph` is on and its gate holds.\n"
+[inputs.auto_ph]
+type = "boolean"
+description = "whether to estimate the pH with the class's own Henry constant.\n"
+[inputs.second_order_pressure_correction]
+type = "boolean"
+description = "whether the Ksp pressure correction carries its compressibility term.\n"
+[inputs.activity_model]
+type = "enum"
+values = ["davies", "bdot", "pitzer_binary"]
+description = "the activity-coefficient model: Davies, extended Debye-Huckel B-dot, or the binary Pitzer.\n"
+[inputs.bdot_ion_size]
+unit = "angstrom"
+optional = true
+description = "the B-dot model's effective ion size; absent takes the class's 5 Angstrom.\n"
+[inputs.bdot_b]
+unit = "kg/mol"
+optional = true
+description = "the B-dot model's Helgeson coefficient; absent takes the class's 0.041.\n"
+[inputs.pitzer_ionic_strength_molal]
+unit = "mol/kg"
+optional = true
+description = "the strength the Pitzer model is configured with; absent takes the class's sodium-or-TDS fallback.\n"
+[inputs.water_volume]
+unit = "L"
+optional = true
+description = "the water volume the grams are reported over; absent takes one litre.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the coordinate-descent cap; absent takes 200000.\n"
+[inputs.relaxation]
+unit = "dimensionless"
+optional = true
+description = "the under-relaxation on each step; absent takes 0.5.\n"
+[inputs.convergence_threshold]
+unit = "mol/m**3"
+optional = true
+description = "the extent below which the loop stops; absent takes `1e-12` mol/m3, the class's `1e-15` mol/L.\n"
+[outputs]
+[outputs.minerals]
+type = "record_list"
+description = "The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero.\n"
+[outputs.minerals.fields.name]
+type = "string"
+description = "The mineral's formula, as the class names it.\n"
+[outputs.minerals.fields.common_name]
+type = "string"
+description = "The mineral's common name.\n"
+[outputs.minerals.fields.initial_saturation_index]
+unit = "dimensionless"
+description = "The index before anything precipitated.\n"
+[outputs.minerals.fields.final_saturation_index]
+unit = "dimensionless"
+description = "The index at the answer, against the frozen activity coefficients.\n"
+[outputs.minerals.fields.activity_coefficient_product]
+unit = "dimensionless"
+description = "The product of the two ions' activity coefficients the solve used.\n"
+[outputs.minerals.fields.precipitated_amount]
+unit = "mol/m**3"
+description = "The precipitated amount per cubic metre of water.\n"
+[outputs.minerals.fields.precipitated_mass]
+unit = "kg/m**3"
+description = "The precipitated mass per cubic metre of water.\n"
+[outputs.minerals.fields.total_precipitated_mass]
+unit = "kg"
+description = "The precipitated mass over the stated water volume.\n"
+[outputs.minerals.fields.limiting_ion_exhausted]
+type = "boolean"
+description = "Whether a limiting ion was exhausted while solid was present.\n"
+[outputs.total_mass]
+unit = "kg/m**3"
+description = "The total precipitated mass per cubic metre.\n"
+[outputs.activity_coefficients]
+type = "record_list"
+description = "The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise.\n"
+[outputs.activity_coefficients.fields.ion]
+type = "string"
+description = "The ion, or `divalent` under the models that carry one coefficient.\n"
+[outputs.activity_coefficients.fields.activity_coefficient]
+unit = "dimensionless"
+description = "The coefficient.\n"
+[outputs.divalent_activity_coefficient]
+unit = "dimensionless"
+description = "The divalent coefficient the solve used.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Coordinate-descent steps taken.\n"
+[outputs.iteration_limit_reached]
+type = "boolean"
+description = "Whether the loop stopped at its cap rather than at the threshold.\n"
+[outputs.maximum_complementarity_violation]
+unit = "dimensionless"
+description = "The largest `|SI|` over solids and positive `SI` over absent solids.\n"
+[outputs.maximum_ion_balance_residual]
+unit = "mol/m**3"
+description = "The largest `initial - residual - precipitated` over the six ions.\n"
+[outputs.residual_calcium]
+unit = "mol/m**3"
+description = "Residual free calcium.\n"
+[outputs.residual_barium]
+unit = "mol/m**3"
+description = "Residual free barium.\n"
+[outputs.residual_strontium]
+unit = "mol/m**3"
+description = "Residual free strontium.\n"
+[outputs.residual_ferrous]
+unit = "mol/m**3"
+description = "Residual free ferrous iron.\n"
+[outputs.residual_sulphate]
+unit = "mol/m**3"
+description = "Residual free sulphate.\n"
+[outputs.residual_carbonate]
+unit = "mol/m**3"
+description = "Residual free carbonate.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "barium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "strontium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "iron"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "magnesium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sodium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "bicarbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sulphate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "total_dissolved_solids"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The ionic strength is its quotient by 40000, so it cannot be negative.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[[valid_range]]
+quantity = "bdot_ion_size"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An ion size is a positive length; it is a divisor in the B-dot expression.\n"
+[[valid_range]]
+quantity = "pitzer_ionic_strength_molal"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The class's setter refuses a negative strength.\n"
+[[valid_range]]
+quantity = "water_volume"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A zero volume scales the reported grams to zero; the class stores it without a guard.\n"
+[[valid_range]]
+quantity = "relaxation"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A zero relaxation never moves the iterate.\n"
+[[valid_range]]
+quantity = "convergence_threshold"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The class's threshold is an extent in mol/L and cannot be negative.\n"
+[implementations]
+python = "azoth.eos.multi_mineral_scale_equilibrium"
+rust = "azoth_eos::multi_mineral_scale_equilibrium"

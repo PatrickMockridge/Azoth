@@ -11,6 +11,9 @@ exponents = [1, 0, 0, 0, 0, 0, 0]
 id = "area"
 exponents = [2, 0, 0, 0, 0, 0, 0]
 [[dimensions]]
+id = "volume"
+exponents = [3, 0, 0, 0, 0, 0, 0]
+[[dimensions]]
 id = "volume_rate"
 exponents = [3, 0, -1, 0, 0, 0, 0]
 [[dimensions]]
@@ -119,6 +122,18 @@ dimension = "area"
 pint = "meter**2"
 uom = "area::square_meter"
 rust_ctor = "square_meters"
+[[units]]
+id = "m**3"
+dimension = "volume"
+pint = "meter**3"
+uom = "volume::cubic_meter"
+rust_ctor = "cubic_meters"
+[[units]]
+id = "L"
+dimension = "volume"
+pint = "liter"
+uom = "volume::liter"
+rust_ctor = "liters"
 [[units]]
 id = "m**3/s"
 dimension = "volume_rate"
@@ -531,6 +546,7 @@ amount_concentration = "mol/m**3"
 energy = "J"
 power = "W"
 length = "m"
+volume = "m**3"
 volume_rate = "m**3/s"
 velocity = "m/s"
 mass_density = "kg/m**3"
@@ -550,6 +566,7 @@ mass = "lb"
 energy = "Btu"
 power = "hp"
 length = "ft"
+volume = "L"
 volume_rate = "gpm"
 velocity = "ft/s"
 mass_density = "lb/ft**3"

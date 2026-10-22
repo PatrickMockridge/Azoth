@@ -275,6 +275,27 @@ class SubFraction:
     density: Qty | None
     boiling_point: Qty | None
 
+@final
+class MineralEquilibriumRow:
+    """The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero."""
+
+    name: str
+    common_name: str
+    initial_saturation_index: float
+    final_saturation_index: float
+    activity_coefficient_product: float
+    precipitated_amount: Qty
+    precipitated_mass: Qty
+    total_precipitated_mass: Qty
+    limiting_ion_exhausted: bool
+
+@final
+class ActivityCoefficientRow:
+    """The activity coefficients the solve used: nine ions under the binary Pitzer, one `divalent` row otherwise."""
+
+    ion: str
+    activity_coefficient: float
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -949,6 +970,24 @@ class MolarEnthalpyEntropyResult:
 @final
 class MollerupAlphaResult:
     alpha: float
+    warnings: list[Warning]
+
+@final
+class MultiMineralScaleEquilibriumResult:
+    minerals: list[MineralEquilibriumRow]
+    total_mass: Qty
+    activity_coefficients: list[ActivityCoefficientRow]
+    divalent_activity_coefficient: float
+    iterations: int
+    iteration_limit_reached: bool
+    maximum_complementarity_violation: float
+    maximum_ion_balance_residual: Qty
+    residual_calcium: Qty
+    residual_barium: Qty
+    residual_strontium: Qty
+    residual_ferrous: Qty
+    residual_sulphate: Qty
+    residual_carbonate: Qty
     warnings: list[Warning]
 
 @final
@@ -3225,6 +3264,31 @@ def molar_enthalpy_entropy(
     alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult: ...
+def multi_mineral_scale_equilibrium(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: str,
+    bdot_ion_size: float | None = None,
+    bdot_b: float | None = None,
+    pitzer_ionic_strength_molal: float | None = None,
+    water_volume: float | None = None,
+    max_iterations: float | None = None,
+    relaxation: float | None = None,
+    convergence_threshold: float | None = None,
+) -> MultiMineralScaleEquilibriumResult: ...
 def multiflash_stability_test(
     Tc: list[float],
     Pc: list[float],

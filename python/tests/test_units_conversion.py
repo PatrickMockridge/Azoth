@@ -45,6 +45,7 @@ from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for
 NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {
     "mm": 1.0e-3,
     "angstrom": 1.0e-10,
+    "L": 1.0e-3,
     # pressure
     "bar": 1.0e5,
     "kPa": 1.0e3,

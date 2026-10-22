@@ -51,6 +51,7 @@
 //!   - specs/models/eos/liquid_conductivity_polynom.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
+//!   - specs/models/eos/multi_mineral_scale_equilibrium.toml
 //!   - specs/models/eos/multiflash_stability_test.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/parachor_mixture_surface_tension.toml
@@ -112,8 +113,8 @@
 #![allow(clippy::approx_constant)]
 
 use azoth_core::{
-    Band, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, RangeCheck, Severity, SpecCheck,
-    TestCase, WarningCode,
+    Band, FieldValue, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, RangeCheck,
+    RecordField, Severity, SpecCheck, TestCase, WarningCode,
 };
 
 static AMMONIA_PHASE_CHECKS: &[SpecCheck] = &[
@@ -7995,6 +7996,2170 @@ pub static MOLAR_ENTHALPY_ENTROPY_SPEC: ModelSpec = ModelSpec {
     cases: MOLAR_ENTHALPY_ENTROPY_CASES,
 };
 
+static MULTI_MINERAL_SCALE_EQUILIBRIUM_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "calcium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "barium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "strontium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "iron",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "magnesium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sodium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bicarbonate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sulphate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "total_dissolved_solids",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The ionic strength is its quotient by 40000, so it cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "co2_partial_pressure",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A partial pressure cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bdot_ion_size",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An ion size is a positive length; it is a divisor in the B-dot expression.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pitzer_ionic_strength_molal",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's setter refuses a negative strength.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "water_volume",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A zero volume scales the reported grams to zero; the class stores it without a guard.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "relaxation",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A zero relaxation never moves the iterate.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "convergence_threshold",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's threshold is an extent in mol/L and cannot be negative.",
+        },
+    },
+];
+
+static MULTI_MINERAL_SCALE_EQUILIBRIUM_CASES: &[TestCase] = &[
+    TestCase {
+        id: "sulphate_limited_davies",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.6994196722154926),
+            ("divalent_activity_coefficient", 0.5977037496634197),
+            ("maximum_ion_balance_residual", 1.734723475976807e-15),
+            ("residual_calcium", 18.42164244793327),
+            ("residual_barium", 0.0004304009826848216),
+            ("residual_strontium", 34.23875827436659),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 2.109334143737786),
+            ("residual_carbonate", 2.658084434176394e-11),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[&[
+                    RecordField {
+                        name: "ion",
+                        value: FieldValue::Name("divalent"),
+                    },
+                    RecordField {
+                        name: "activity_coefficient",
+                        value: FieldValue::Number(0.5977037496634197),
+                    },
+                ]],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(4.876927696794577),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(8.355304428255001e-10),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(7.281458812354825),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(1.6994196722154926),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0016994196722154927),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(0.6239941092936203),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-0.024562773607350038),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(0.5172688634939727),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-0.13128801940699758),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("calcite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-6.977584279583682),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-6.977584279583682),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "sulphate_limited_bdot",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "bdot")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.6977826379846324),
+            ("divalent_activity_coefficient", 0.14347698831781966),
+            ("residual_calcium", 18.42164244793327),
+            ("residual_barium", 0.0074445585338233635),
+            ("residual_strontium", 34.23875827436659),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 2.1163483012889253),
+            ("residual_carbonate", 2.658084434176394e-11),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[&[
+                    RecordField {
+                        name: "ion",
+                        value: FieldValue::Name("divalent"),
+                    },
+                    RecordField {
+                        name: "activity_coefficient",
+                        value: FieldValue::Number(0.14347698831781966),
+                    },
+                ]],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(3.6375202399726745),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(4.841367472462266e-11),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.020585646176751758),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(7.274444654803687),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(1.6977826379846324),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0016977826379846325),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-0.615413347528282),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.2625284691246774),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.020585646176751758),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-0.7221385933279296),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.369253714924325),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.020585646176751758),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("calcite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-8.216991736405584),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-8.216991736405584),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.020585646176751758),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "sulphate_limited_pitzer",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "pitzer_binary")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.6955336415358588),
+            ("divalent_activity_coefficient", 0.1644721754836052),
+            ("residual_calcium", 18.42164244793327),
+            ("residual_barium", 0.017080774518967345),
+            ("residual_strontium", 34.23875827436659),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 2.125984517274069),
+            ("residual_carbonate", 2.658084434176394e-11),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Na+"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.64887119535163),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Cl-"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.64887119535163),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Ca++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.1644721754836052),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Ba++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.14380790128425686),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Sr++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.1672698534391079),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Fe++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.14969412867150467),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("SO4--"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.062106948478332785),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("CO3--"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.08160928637096317),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("HCO3-"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.38059557316418474),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(3.274878675779998),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(2.1168916545261838e-11),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.008931469915838508),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(7.26480843881854),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(1.6955336415358588),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0016955336415358589),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-0.9124199836271142),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.5575621517542084),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.01038862016952095),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-1.0264704689060817),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.6716126370331759),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.010214864928879578),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("calcite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-8.40272422321372),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-8.40272422321372),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.013422456869096844),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "high_salinity_davies_precipitates_nothing",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 15.0),
+            ("barium", 0.4),
+            ("strontium", 0.8),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 0.6),
+            ("total_dissolved_solids", 200.0),
+            ("temperature", 363.15),
+            ("pressure", 20000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 0.0),
+            ("divalent_activity_coefficient", 75.96683436247041),
+            ("residual_calcium", 32.53582572331615),
+            ("residual_barium", 2.912755685335003),
+            ("residual_strontium", 9.13033553983109),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 1.8175788587455414e-08),
+            ("residual_carbonate", 4.8611986416753325e-20),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[&[
+                    RecordField {
+                        name: "ion",
+                        value: FieldValue::Name("divalent"),
+                    },
+                    RecordField {
+                        name: "activity_coefficient",
+                        value: FieldValue::Number(75.96683436247041),
+                    },
+                ]],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-0.125960782995881),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-0.125960782995881),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(5770.959923055015),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-5.247258657156502),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-5.247258657156502),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(5770.959923055015),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-3.485167640834143),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-3.485167640834143),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(5770.959923055015),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "co_precipitation_davies",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.5),
+            ("barium", 0.1),
+            ("strontium", 2.5),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.1),
+            ("sulphate", 4.0),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 4.292748019675318),
+            ("divalent_activity_coefficient", 0.5977037496634197),
+            ("residual_calcium", 4.638328974134712),
+            ("residual_barium", 8.009740328147105e-05),
+            ("residual_strontium", 6.742577689492408),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 11.334443525572636),
+            ("residual_carbonate", 3.533943757312137e-11),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[&[
+                    RecordField {
+                        name: "ion",
+                        value: FieldValue::Name("divalent"),
+                    },
+                    RecordField {
+                        name: "activity_coefficient",
+                        value: FieldValue::Number(0.5977037496634197),
+                    },
+                ]],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(4.445020684845298),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(3.5926079406150245e-09),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.7281088239304693),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.16993331841713222),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.00016993331841713222),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(1.112905851296717),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-9.575771742875196e-14),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(21.789720872479744),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(4.00233592985708),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.00400233592985708),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(0.562231451720118),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(8.688590473644248e-14),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.8849623284935045),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.12047877140110569),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.00012047877140110569),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("calcite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-7.377023818186227),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-7.452860219247141),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.35724977236171185),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "single_mineral_barite_pure_water",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.0),
+            ("barium", 1.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.0),
+            ("sulphate", 0.7),
+            ("total_dissolved_solids", 0.02),
+            ("temperature", 298.15),
+            ("pressure", 101300.0),
+            ("co2_partial_pressure", 0.0),
+            ("ph", 7.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.6973864119588733),
+            ("divalent_activity_coefficient", 0.9028713356445365),
+            ("residual_calcium", 0.0),
+            ("residual_barium", 0.009142257774402902),
+            ("residual_strontium", 0.0),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 0.014365265965106606),
+            ("residual_carbonate", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[&[
+                    RecordField {
+                        name: "ion",
+                        value: FieldValue::Name("divalent"),
+                    },
+                    RecordField {
+                        name: "activity_coefficient",
+                        value: FieldValue::Number(0.9028713356445365),
+                    },
+                ]],
+            ),
+            (
+                "minerals",
+                &[&[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("barite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(5.606432391478347),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(6.427348640123371e-11),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.8151766487285492),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(7.272746955563105),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6973864119588733),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.001697386411958873),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "no_minerals",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("calcium", 0.0),
+            ("barium", 0.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.0),
+            ("sulphate", 0.0),
+            ("total_dissolved_solids", 0.001),
+            ("temperature", 298.15),
+            ("pressure", 101300.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 7.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 0.0),
+            ("divalent_activity_coefficient", 0.976903933457206),
+            ("residual_calcium", 0.0),
+            ("residual_barium", 0.0),
+            ("residual_strontium", 0.0),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 0.0),
+            ("residual_carbonate", 0.0),
+            ("maximum_ion_balance_residual", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "activity_coefficients",
+            &[&[
+                RecordField {
+                    name: "ion",
+                    value: FieldValue::Name("divalent"),
+                },
+                RecordField {
+                    name: "activity_coefficient",
+                    value: FieldValue::Number(0.976903933457206),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "iteration_limit_one_step",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("max_iterations", 1.0),
+            ("convergence_threshold", 1e-27),
+        ],
+        flags: &[
+            ("auto_ph", true),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 0.8497098361078415),
+            ("divalent_activity_coefficient", 0.5977037496634197),
+            ("residual_calcium", 18.421642448111978),
+            ("residual_barium", 3.641159807159688),
+            ("residual_strontium", 34.23875827436659),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 5.750063549878477),
+            ("residual_carbonate", 3.386049682281995e-56),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("barite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(4.876927696792897),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(4.36289374866633),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(3.64072940617782),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.8497098361078415),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.0008497098361078416),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("celestite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(0.623994109291941),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(0.4109644883191465),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("anhydrite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(0.5172688634965064),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(0.30423924252371193),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "water_volume_1000l",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_volume", 1000.0),
+        ],
+        flags: &[
+            ("auto_ph", true),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.6994196722154904),
+            ("divalent_activity_coefficient", 0.5977037496634197),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("barite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(4.876927696792897),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(8.354946662765598e-10),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(7.281458812354815),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154904),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154904),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("celestite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(0.623994109291941),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(-0.024562773614825117),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "common_name",
+                        value: FieldValue::Name("anhydrite"),
+                    },
+                    RecordField {
+                        name: "initial_saturation_index",
+                        value: FieldValue::Number(0.5172688634965064),
+                    },
+                    RecordField {
+                        name: "final_saturation_index",
+                        value: FieldValue::Number(-0.1312880194102597),
+                    },
+                    RecordField {
+                        name: "activity_coefficient_product",
+                        value: FieldValue::Number(0.35724977236171185),
+                    },
+                    RecordField {
+                        name: "precipitated_amount",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "total_precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "limiting_ion_exhausted",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "pitzer_explicit_strength_1p5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("pitzer_ionic_strength_molal", 1.5),
+        ],
+        flags: &[
+            ("auto_ph", true),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "pitzer_binary")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_mass", 1.692949191866515),
+            ("divalent_activity_coefficient", 0.15204348374063842),
+            ("residual_calcium", 18.421642448111978),
+            ("residual_barium", 0.028154298103285506),
+            ("residual_strontium", 34.23875827436659),
+            ("residual_ferrous", 0.0),
+            ("residual_sulphate", 2.137058040822074),
+            ("residual_carbonate", 3.386049682281995e-56),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[
+            (
+                "activity_coefficients",
+                &[
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Na+"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.6534446620528015),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Cl-"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.6534446620528015),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Ca++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.15204348374063842),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Ba++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.1299257576739937),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Sr++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.15617110632619224),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("Fe++"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.13957170355406656),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("SO4--"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.04148912889838898),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("CO3--"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.058650170671863476),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "ion",
+                            value: FieldValue::Name("HCO3-"),
+                        },
+                        RecordField {
+                            name: "activity_coefficient",
+                            value: FieldValue::Number(0.29880866977922205),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "minerals",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("barite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(3.055585310712245),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(1.2888911619520012e-11),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.005390506507357176),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(7.253734915234222),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(1.692949191866515),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.001692949191866515),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("celestite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-1.1174428480400487),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.7603287961427958),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.006479403160571401),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "common_name",
+                            value: FieldValue::Name("anhydrite"),
+                        },
+                        RecordField {
+                            name: "initial_saturation_index",
+                            value: FieldValue::Number(-1.2358009687706295),
+                        },
+                        RecordField {
+                            name: "final_saturation_index",
+                            value: FieldValue::Number(-1.8786869168733769),
+                        },
+                        RecordField {
+                            name: "activity_coefficient_product",
+                            value: FieldValue::Number(0.006308151695075457),
+                        },
+                        RecordField {
+                            name: "precipitated_amount",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "total_precipitated_mass",
+                            value: FieldValue::Number(0.0),
+                        },
+                        RecordField {
+                            name: "limiting_ion_exhausted",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+];
+
+static MULTI_MINERAL_SCALE_EQUILIBRIUM_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "greedy_coordinate_descent",
+    convergence: "absolute",
+    tolerance: 1e-15,
+    max_iterations: 200000,
+    bracket: None,
+    initialisation: Some("predictor_free_ions"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.multi_mineral_scale_equilibrium`.
+pub static MULTI_MINERAL_SCALE_EQUILIBRIUM_SPEC: ModelSpec = ModelSpec {
+    id: "eos.multi_mineral_scale_equilibrium",
+    kind: "procedure",
+    algorithm: Some(&MULTI_MINERAL_SCALE_EQUILIBRIUM_ALGORITHM),
+    checks: MULTI_MINERAL_SCALE_EQUILIBRIUM_CHECKS,
+    cases: MULTI_MINERAL_SCALE_EQUILIBRIUM_CASES,
+};
+
 static MULTIFLASH_STABILITY_TEST_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -14117,6 +16282,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &LIQUID_CONDUCTIVITY_POLYNOM_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
+    &MULTI_MINERAL_SCALE_EQUILIBRIUM_SPEC,
     &MULTIFLASH_STABILITY_TEST_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
     &PARACHOR_MIXTURE_SURFACE_TENSION_SPEC,

@@ -142,6 +142,7 @@ from azoth.core.result import (
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     MultiflashStabilityTestResult,
+    MultiMineralScaleEquilibriumResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult,
@@ -4476,6 +4477,72 @@ def water_dew_point_temperature(
     """
     return resolve(_WATER_DEW_POINT_TEMPERATURE)(  # type: ignore[no-any-return]
         components=components, z=z, P=P, eos=eos
+    )
+
+
+def multi_mineral_scale_equilibrium(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    temperature: Q,
+    pressure: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: str,
+    bdot_ion_size: float | None = None,
+    bdot_b: float | None = None,
+    pitzer_ionic_strength_molal: float | None = None,
+    water_volume: Q | None = None,
+    max_iterations: float | None = None,
+    relaxation: float | None = None,
+    convergence_threshold: Q | None = None,
+) -> MultiMineralScaleEquilibriumResult:
+    """The coupled multi-mineral scale equilibrium of a water analysis.
+
+    NeqSim's ``MultiMineralScaleEquilibrium``: barite, celestite, anhydrite, calcite and
+    siderite competing for shared ions, solved by a greedy coordinate descent that precipitates
+    each mineral to its saturation index and redissolves an under-saturated solid. The
+    activities are the predictor's Davies or B-dot coefficient (frozen at the starting state),
+    or the binary Pitzer model's per-ion coefficients.
+
+    Raises:
+        InvalidInputError: for an activity-model name outside the three.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.multi_mineral_scale_equilibrium`.
+    """
+    return resolve("eos.multi_mineral_scale_equilibrium")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        temperature=temperature,
+        pressure=pressure,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        auto_ph=auto_ph,
+        second_order_pressure_correction=second_order_pressure_correction,
+        activity_model=activity_model,
+        bdot_ion_size=bdot_ion_size,
+        bdot_b=bdot_b,
+        pitzer_ionic_strength_molal=pitzer_ionic_strength_molal,
+        water_volume=water_volume,
+        max_iterations=max_iterations,
+        relaxation=relaxation,
+        convergence_threshold=convergence_threshold,
     )
 
 

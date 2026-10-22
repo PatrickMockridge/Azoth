@@ -56,6 +56,7 @@ pub(crate) struct ScaleState {
     pub total_strontium: f64,
     pub total_iron: f64,
     pub total_sodium: f64,
+    pub tds_mg_l: f64,
     pub ksp: [f64; 5],
     pub si: [f64; 5],
 }
@@ -288,6 +289,7 @@ pub(crate) fn state(inputs: &ScaleInputs) -> ScaleState {
         total_strontium: c_sr,
         total_iron: c_fe,
         total_sodium: inputs.sodium_mg_l / MW_SODIUM_GETTER,
+        tds_mg_l: inputs.tds_mg_l,
         ksp,
         si,
     }
