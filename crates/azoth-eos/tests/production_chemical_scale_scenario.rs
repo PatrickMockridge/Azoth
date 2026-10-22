@@ -157,7 +157,10 @@ fn caustic(capacity: Option<f64>) -> ProductionChemicalDose {
     }
 }
 
-fn run(chemicals: &[ProductionChemicalDose], bicarbonate: f64) -> ProductionChemicalScaleScenarioResult {
+fn run(
+    chemicals: &[ProductionChemicalDose],
+    bicarbonate: f64,
+) -> ProductionChemicalScaleScenarioResult {
     production_chemical_scale_scenario(
         kilograms_per_cubic_meter(2.0),
         kilograms_per_cubic_meter(0.05),
