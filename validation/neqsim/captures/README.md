@@ -647,6 +647,17 @@ five-year service, doubled base rate and no-calcite corners.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
 ```
 
+**The treatment-scenario probe** records `ProductionChemicalScaleScenario`: caustic, MDEA and
+HCl pH adjusters, two triazine scavenger doses, a scale and a corrosion inhibitor, no
+bicarbonate, a large caustic dose that trips the chemical-induced calcite warning, the B-dot
+and Pitzer activity models, and an unsupported active. Each row prints the treated pH and
+bicarbonate, the dose equivalents, the scavenger capacity and residual H2S, the baseline and
+treated indices and their change, and the warning map with its messages.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
