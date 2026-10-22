@@ -612,6 +612,17 @@ identity and the 0.999 efficiency cap.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessScaleProbe > captures/process_scale_probe.tsv
 ```
 
+**The stream analyser probe** records `StreamScaleAnalyzer` on the equilibrium capture's own
+brines, so the two layers can be compared directly: the sulphate-limited water in Davies and
+B-dot, the co-precipitating water, and the corners - zero flow, no minerals, an absent
+barium, and the auto-pH path, where the class's broken Henry constant removes the carbonate
+row rather than moving it. Every row prints the per-mineral initial and final indices, the
+precipitated mg/L and the kg/day rate, with the total and the dominant mineral.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
