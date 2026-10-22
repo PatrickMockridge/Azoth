@@ -61,6 +61,7 @@
   - [Mollerup alpha function](./eos/mollerup_alpha.md)
   - [Pure-component vapour pressures of water, nitric acid and sulfuric acid](./eos/nitric_sulfuric_acid_vapor_pressure.md)
   - [Surface tension from the parachor (Macleod-Sugden)](./eos/parachor_surface_tension.md)
+  - [Binary Pitzer activity coefficients for a scale-forming brine](./eos/pitzer_scale_activity.md)
   - [Peng-Robinson (1978) attraction-parameter coefficient](./eos/pr78_kappa.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Danesh alpha function](./eos/pr_danesh_alpha.md)

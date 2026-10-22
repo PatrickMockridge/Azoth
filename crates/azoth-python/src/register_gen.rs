@@ -114,6 +114,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPhFlashResult>()?;
     m.add_class::<crate::transport_gen::PyPhaseTransportResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyPitzerScaleActivityResult>()?;
     m.add_class::<crate::transport_gen::PyPr78KappaResult>()?;
     m.add_class::<crate::transport_gen::PyPrAlphaAbResult>()?;
     m.add_class::<crate::transport_gen::PyPrCpaPhaseResult>()?;
@@ -498,6 +499,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::phase_transport, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pitzer_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::pitzer_scale_activity,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr78_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_cpa_phase, m)?)?;

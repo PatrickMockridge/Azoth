@@ -1060,6 +1060,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 8,
         "tests_skipped": 0,
     },
+    'eos.pitzer_scale_activity': {
+        "calc_id": 'eos.pitzer_scale_activity',
+        "name": 'Binary Pitzer activity coefficients for a scale-forming brine',
+        "spec": {'path': 'specs/calcs/eos/pitzer_scale_activity.toml', 'sha256': '32198fe389bc1171543749784a95a3443e85ec2db2cb6ee604d8323083aca50b'},
+        "code": [{'path': 'python/src/azoth/eos/reference/pitzer_scale_activity.py', 'sha256': 'bf48c718d9fc3dba89868cc61515c380b671163fe9a349dbfd0646af9d06b1cd'}, {'path': 'crates/azoth-eos/src/pitzer_scale_activity.rs', 'sha256': '5ba2dff1d531b6ab7eca9966511be70efe52b1b582eeadc284560df850bffbf4'}],
+        "source": 'NeqSim master `PitzerScaleActivityModel`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
+        "tests_skipped": 0,
+    },
     'eos.pr78_kappa': {
         "calc_id": 'eos.pr78_kappa',
         "name": 'Peng-Robinson (1978) attraction-parameter coefficient',

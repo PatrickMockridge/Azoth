@@ -138,6 +138,7 @@ from azoth.core.result import (
     PhFlashResult,
     PipeResult,
     PitzerPhaseResult,
+    PitzerScaleActivityResult,
     PlugFlowReactorResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -407,6 +408,7 @@ __all__ = [
     "phase_transport",
     "pipe",
     "pitzer_phase",
+    "pitzer_scale_activity",
     "plug_flow_reactor",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -2456,6 +2458,36 @@ def pitzer_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> P
         osmotic_coefficient=result.osmotic_coefficient,
         water_activity=result.water_activity,
         dataset=result.dataset,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_scale_activity(temperature: Q, ionic_strength_molal: Q, debye_huckel_a: float, salt: str, salt_molality: Q, ion: str, cation: str, anion: str) -> PitzerScaleActivityResult:
+    """``eos.pitzer_scale_activity``, computed in Rust."""
+    spec = _spec_for("eos.pitzer_scale_activity")
+    result = _core.pitzer_scale_activity(
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "ionic_strength_molal", ionic_strength_molal),
+        debye_huckel_a,
+        salt,
+        input_to_si(spec, "salt_molality", salt_molality),
+        ion,
+        cation,
+        anion,
+    )
+    return PitzerScaleActivityResult(
+        mean_activity_coefficient=result.mean_activity_coefficient,
+        ion_activity_coefficient=result.ion_activity_coefficient,
+        activity_coefficient_product=result.activity_coefficient_product,
+        gamma_sodium=result.gamma_sodium,
+        gamma_chloride=result.gamma_chloride,
+        gamma_calcium=result.gamma_calcium,
+        gamma_barium=result.gamma_barium,
+        gamma_strontium=result.gamma_strontium,
+        gamma_ferrous=result.gamma_ferrous,
+        gamma_sulphate=result.gamma_sulphate,
+        gamma_carbonate=result.gamma_carbonate,
+        gamma_bicarbonate=result.gamma_bicarbonate,
         warnings=_warnings(result.warnings),
     )
 

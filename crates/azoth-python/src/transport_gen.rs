@@ -5576,6 +5576,97 @@ impl From<&azoth_eos::results::PitzerPhaseResult> for PyPitzerPhaseResult {
         }
     }
 }
+/// Result of `eos.pitzer_scale_activity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerScaleActivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerScaleActivityResult {
+    /// the selected salt's mean molal activity coefficient at `salt_molality`.
+    #[pyo3(get)]
+    pub mean_activity_coefficient: f64,
+    /// the selected ion's coefficient at the configured strength.
+    #[pyo3(get)]
+    pub ion_activity_coefficient: f64,
+    /// the selected cation's and anion's coefficients, multiplied.
+    #[pyo3(get)]
+    pub activity_coefficient_product: f64,
+    /// sodium's coefficient.
+    #[pyo3(get)]
+    pub gamma_sodium: f64,
+    /// chloride's coefficient.
+    #[pyo3(get)]
+    pub gamma_chloride: f64,
+    /// calcium's coefficient.
+    #[pyo3(get)]
+    pub gamma_calcium: f64,
+    /// barium's coefficient.
+    #[pyo3(get)]
+    pub gamma_barium: f64,
+    /// strontium's coefficient.
+    #[pyo3(get)]
+    pub gamma_strontium: f64,
+    /// ferrous iron's coefficient.
+    #[pyo3(get)]
+    pub gamma_ferrous: f64,
+    /// sulphate's coefficient.
+    #[pyo3(get)]
+    pub gamma_sulphate: f64,
+    /// carbonate's coefficient.
+    #[pyo3(get)]
+    pub gamma_carbonate: f64,
+    /// bicarbonate's coefficient.
+    #[pyo3(get)]
+    pub gamma_bicarbonate: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerScaleActivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerScaleActivityResult(mean_activity_coefficient={:?}, ion_activity_coefficient={:?}, activity_coefficient_product={:?}, gamma_sodium={:?}, gamma_chloride={:?}, gamma_calcium={:?}, gamma_barium={:?}, gamma_strontium={:?}, gamma_ferrous={:?}, gamma_sulphate={:?}, gamma_carbonate={:?}, gamma_bicarbonate={:?}, {} warning(s))",
+            self.mean_activity_coefficient,
+            self.ion_activity_coefficient,
+            self.activity_coefficient_product,
+            self.gamma_sodium,
+            self.gamma_chloride,
+            self.gamma_calcium,
+            self.gamma_barium,
+            self.gamma_strontium,
+            self.gamma_ferrous,
+            self.gamma_sulphate,
+            self.gamma_carbonate,
+            self.gamma_bicarbonate,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PitzerScaleActivityResult> for PyPitzerScaleActivityResult {
+    fn from(r: &azoth_eos::results::PitzerScaleActivityResult) -> Self {
+        Self {
+            mean_activity_coefficient: r.mean_activity_coefficient,
+            ion_activity_coefficient: r.ion_activity_coefficient,
+            activity_coefficient_product: r.activity_coefficient_product,
+            gamma_sodium: r.gamma_sodium,
+            gamma_chloride: r.gamma_chloride,
+            gamma_calcium: r.gamma_calcium,
+            gamma_barium: r.gamma_barium,
+            gamma_strontium: r.gamma_strontium,
+            gamma_ferrous: r.gamma_ferrous,
+            gamma_sulphate: r.gamma_sulphate,
+            gamma_carbonate: r.gamma_carbonate,
+            gamma_bicarbonate: r.gamma_bicarbonate,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.pr78_kappa`, transported.
 #[pyclass(
     frozen,

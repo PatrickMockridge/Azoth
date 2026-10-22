@@ -2138,6 +2138,52 @@ class PitzerPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PitzerScaleActivityResult(_HasWarnings):
+    """Result of ``eos.pitzer_scale_activity``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_scale_activity"
+
+    #: the selected salt's mean molal activity coefficient at `salt_molality`.
+    mean_activity_coefficient: float
+
+    #: the selected ion's coefficient at the configured strength.
+    ion_activity_coefficient: float
+
+    #: the selected cation's and anion's coefficients, multiplied.
+    activity_coefficient_product: float
+
+    #: sodium's coefficient.
+    gamma_sodium: float
+
+    #: chloride's coefficient.
+    gamma_chloride: float
+
+    #: calcium's coefficient.
+    gamma_calcium: float
+
+    #: barium's coefficient.
+    gamma_barium: float
+
+    #: strontium's coefficient.
+    gamma_strontium: float
+
+    #: ferrous iron's coefficient.
+    gamma_ferrous: float
+
+    #: sulphate's coefficient.
+    gamma_sulphate: float
+
+    #: carbonate's coefficient.
+    gamma_carbonate: float
+
+    #: bicarbonate's coefficient.
+    gamma_bicarbonate: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Pr78KappaResult(_HasWarnings):
     """Result of ``eos.pr78_kappa``."""
 

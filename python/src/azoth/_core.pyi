@@ -1042,6 +1042,22 @@ class PitzerPhaseResult:
     warnings: list[Warning]
 
 @final
+class PitzerScaleActivityResult:
+    mean_activity_coefficient: float
+    ion_activity_coefficient: float
+    activity_coefficient_product: float
+    gamma_sodium: float
+    gamma_chloride: float
+    gamma_calcium: float
+    gamma_barium: float
+    gamma_strontium: float
+    gamma_ferrous: float
+    gamma_sulphate: float
+    gamma_carbonate: float
+    gamma_bicarbonate: float
+    warnings: list[Warning]
+
+@final
 class Pr78KappaResult:
     kappa: float
     warnings: list[Warning]
@@ -3286,6 +3302,16 @@ def pitzer_phase(
     P: float,
     x: list[float],
 ) -> PitzerPhaseResult: ...
+def pitzer_scale_activity(
+    temperature: float,
+    ionic_strength_molal: float,
+    debye_huckel_a: float,
+    salt: str,
+    salt_molality: float,
+    ion: str,
+    cation: str,
+    anion: str,
+) -> PitzerScaleActivityResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
 def pr_cpa_phase(

@@ -96,6 +96,7 @@
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
 //!   - specs/models/eos/pitzer_phase.toml
+//!   - specs/calcs/eos/pitzer_scale_activity.toml
 //!   - specs/calcs/eos/pr78_kappa.toml
 //!   - specs/calcs/eos/pr_alpha_ab.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
@@ -1090,6 +1091,22 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.pitzer_phase", "T", "thermodynamic_temperature"),
     ("eos.pitzer_phase", "P", "pressure"),
     ("eos.pitzer_phase", "x", "dimensionless"),
+    (
+        "eos.pitzer_scale_activity",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.pitzer_scale_activity",
+        "ionic_strength_molal",
+        "molality",
+    ),
+    (
+        "eos.pitzer_scale_activity",
+        "debye_huckel_a",
+        "dimensionless",
+    ),
+    ("eos.pitzer_scale_activity", "salt_molality", "molality"),
     ("eos.pr78_kappa", "omega", "dimensionless"),
     ("eos.pr_alpha_ab", "kappa", "dimensionless"),
     ("eos.pr_alpha_ab", "Tr", "dimensionless"),

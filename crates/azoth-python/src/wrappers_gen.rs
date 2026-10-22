@@ -1954,6 +1954,40 @@ pub fn pitzer_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Binary Pitzer activity coefficients for a scale-forming brine.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (temperature, ionic_strength_molal, debye_huckel_a, salt, salt_molality, ion, cation, anion))]
+#[pyo3(
+    text_signature = "(temperature, ionic_strength_molal, debye_huckel_a, salt, salt_molality, ion, cation, anion)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pitzer_scale_activity(
+    py: Python<'_>,
+    temperature: f64,
+    ionic_strength_molal: f64,
+    debye_huckel_a: f64,
+    salt: &str,
+    salt_molality: f64,
+    ion: &str,
+    cation: &str,
+    anion: &str,
+) -> PyResult<crate::transport_gen::PyPitzerScaleActivityResult> {
+    azoth_eos::pitzer_scale_activity::pitzer_scale_activity(
+        kelvins(temperature),
+        ionic_strength_molal,
+        debye_huckel_a,
+        salt,
+        salt_molality,
+        ion,
+        cation,
+        anion,
+    )
+    .map(|r| crate::transport_gen::PyPitzerScaleActivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Peng-Robinson (1978) attraction-parameter coefficient.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

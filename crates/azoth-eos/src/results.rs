@@ -1002,6 +1002,60 @@ impl CalcResult for SolidFugacityResult {
     }
 }
 
+/// Result of `eos.pitzer_scale_activity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerScaleActivityResult {
+    /// The selected salt's mean molal activity coefficient at its molality.
+    pub mean_activity_coefficient: f64,
+    /// The selected ion's coefficient at the configured ionic strength.
+    pub ion_activity_coefficient: f64,
+    /// The selected cation's and anion's coefficients, multiplied.
+    pub activity_coefficient_product: f64,
+    /// Sodium's coefficient.
+    pub gamma_sodium: f64,
+    /// Chloride's coefficient.
+    pub gamma_chloride: f64,
+    /// Calcium's coefficient.
+    pub gamma_calcium: f64,
+    /// Barium's coefficient.
+    pub gamma_barium: f64,
+    /// Strontium's coefficient.
+    pub gamma_strontium: f64,
+    /// Ferrous iron's coefficient.
+    pub gamma_ferrous: f64,
+    /// Sulphate's coefficient.
+    pub gamma_sulphate: f64,
+    /// Carbonate's coefficient.
+    pub gamma_carbonate: f64,
+    /// Bicarbonate's coefficient.
+    pub gamma_bicarbonate: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerScaleActivityResult {
+    const CALC_ID: &'static str = "eos.pitzer_scale_activity";
+    const FIELDS: &'static [&'static str] = &[
+        "mean_activity_coefficient",
+        "ion_activity_coefficient",
+        "activity_coefficient_product",
+        "gamma_sodium",
+        "gamma_chloride",
+        "gamma_calcium",
+        "gamma_barium",
+        "gamma_strontium",
+        "gamma_ferrous",
+        "gamma_sulphate",
+        "gamma_carbonate",
+        "gamma_bicarbonate",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.barite_celestite_solid_solution`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BariteCelestiteSolidSolutionResult {

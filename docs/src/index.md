@@ -125,6 +125,7 @@ Five sections, and the difference between them is the point:
 - [`eos.mollerup_alpha`](./eos/mollerup_alpha.md)
 - [`eos.nitric_sulfuric_acid_vapor_pressure`](./eos/nitric_sulfuric_acid_vapor_pressure.md)
 - [`eos.parachor_surface_tension`](./eos/parachor_surface_tension.md)
+- [`eos.pitzer_scale_activity`](./eos/pitzer_scale_activity.md)
 - [`eos.pr78_kappa`](./eos/pr78_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_danesh_alpha`](./eos/pr_danesh_alpha.md)

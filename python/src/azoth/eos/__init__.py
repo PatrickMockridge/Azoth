@@ -151,6 +151,7 @@ from azoth.core.result import (
     PhaseTransportResult,
     PhFlashResult,
     PitzerPhaseResult,
+    PitzerScaleActivityResult,
     Pr78KappaResult,
     PrAlphaAbResult,
     PrCpaPhaseResult,
@@ -2839,6 +2840,40 @@ def scale_mass(
         cation_concentration=cation_concentration,
         anion_concentration=anion_concentration,
         saturation_index=saturation_index,
+    )
+
+
+def pitzer_scale_activity(
+    temperature: Q,
+    ionic_strength_molal: Q,
+    debye_huckel_a: float,
+    salt: str,
+    salt_molality: Q,
+    ion: str,
+    cation: str,
+    anion: str,
+) -> PitzerScaleActivityResult:
+    """The binary Pitzer activity coefficients of a scale-forming brine.
+
+    The parameters are the PHREEQC ``pitzer.dat`` sets the tree already vendors; the model
+    is binary (no theta/psi), and trace ions are mapped by the MacInnes convention at the
+    configured strength. The mean coefficient computes its own strength from the molality.
+
+    Raises:
+        InvalidInputError: for a salt or ion name outside the model's set.
+        OutOfRangeError: if a temperature or strength is outside the spec's range.
+
+    See :func:`azoth.eos.reference.pitzer_scale_activity`.
+    """
+    return resolve("eos.pitzer_scale_activity")(  # type: ignore[no-any-return]
+        temperature=temperature,
+        ionic_strength_molal=ionic_strength_molal,
+        debye_huckel_a=debye_huckel_a,
+        salt=salt,
+        salt_molality=salt_molality,
+        ion=ion,
+        cation=cation,
+        anion=anion,
     )
 
 
