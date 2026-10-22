@@ -224,6 +224,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 8,
         "tests_skipped": 0,
     },
+    'eos.beggs_brill_segment': {
+        "calc_id": 'eos.beggs_brill_segment',
+        "name": 'Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment',
+        "spec": {'path': 'specs/calcs/eos/beggs_brill_segment.toml', 'sha256': 'bbf47b5034268b80a6d866b21a1b6c5ddf784c6bc3ce9ea2e20c7532a79b3077'},
+        "code": [{'path': 'python/src/azoth/eos/reference/beggs_brill_segment.py', 'sha256': 'f70d4c452fe944e3267a0b21648ed4bdcc47573cfee085f966a926f8f347062f'}, {'path': 'crates/azoth-eos/src/beggs_brill_segment.rs', 'sha256': '0b821c6c20691b1e66f9981f0ea53b22ebaf180a157aef3085f98df7861f3561'}],
+        "source": 'NeqSim master `PipeBeggsAndBrills`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 8,
+        "tests_skipped": 0,
+    },
     'eos.brine_mixing_scale_evaluator': {
         "calc_id": 'eos.brine_mixing_scale_evaluator',
         "name": 'Mineral-scale risk of mixing two incompatible brines',

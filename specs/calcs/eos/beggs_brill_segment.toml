@@ -1,0 +1,357 @@
+id = "eos.beggs_brill_segment"
+name = "Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment"
+equation = "v_sl = q_l / A,  v_sg = q_g / A,  v_m = v_sl + v_sg,  lambda_l = v_sl / v_m\n\nFr = v_m^2 / (g_c D),  with the class's 32.174 ft/s2\n\nregime from L1 = 316 lambda^0.302, L2 = 0.0009252 lambda^-2.4684, L3 = 0.1 lambda^-1.4516, L4 = 0.5 lambda^-6.738\n\nE_l = C_regime(lambda, Fr) (1 + beta (sin 1.8 theta - sin^3(1.8 theta)/3)),  bounded to [lambda, 1]\n\ndp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y - 1.2) or the Beggs-Brill fit"
+latex = '''\lambda_l = \frac{v_{sl}}{v_m}, \qquad F_r = \frac{v_m^2}{g_c D}, \qquad E_l = C_{\mathrm{regime}}(\lambda_l, F_r)\left(1 + \beta\left(\sin 1.8\theta - \tfrac{1}{3}\sin^3 1.8\theta\right)\right)
+\frac{\mathrm{d}p}{\mathrm{d}z} = \rho_m g + f_{tp}\frac{\rho_{ns} v_m^2}{2D}, \qquad f_{tp} = f e^{S}'''
+assumptions = [
+    "**the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.\n",
+    "**the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.\n",
+    "**the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.\n",
+    "**the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.\n",
+    "**the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.\n",
+    "the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.\n",
+    "the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values, which is how the class combines its two liquid phases.\n",
+]
+references = [
+    "NeqSim master, `process/equipment/pipeline/PipeBeggsAndBrills.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/pipe_beggs_and_brills_probe.tsv` - the `correlation` rows, one flashed segment per fluid and inclination with its phase properties and correlation outputs, and the twelve line states that reach every regime.",
+    "Beggs, H. D.; Brill, J. P. (1973). J. Pet. Technol. 25(5), 607-617.",
+]
+[source]
+standard = "NeqSim master `PipeBeggsAndBrills`"
+edition = "`calcFlowRegime`, `calcHydrostaticPressureDifference`, `inclinationCorrectedHoldup`, `calcFrictionPressureLoss`, `homogeneousDensity`, `homogeneousViscosity` and the Baker-Swerdloff surface tension, ported. The flash, the segment march and the heat transfer are not."
+[inputs]
+[inputs.gas_flow]
+unit = "m**3/s"
+description = "the gas phase's volumetric flow.\n"
+[inputs.liquid_flow]
+unit = "m**3/s"
+description = "the liquid's volumetric flow, a single phase.\n"
+[inputs.gas_density]
+unit = "kg/m**3"
+description = "the gas phase's density.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid's density.\n"
+[inputs.gas_viscosity]
+unit = "Pa*s"
+description = "the gas phase's dynamic viscosity.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid's dynamic viscosity.\n"
+[inputs.temperature]
+unit = "K"
+description = "the segment's absolute temperature, read by the surface-tension fit.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "the segment's absolute pressure, read by the surface-tension fit.\n"
+[inputs.diameter]
+unit = "m"
+description = "the pipe's internal diameter.\n"
+[inputs.length]
+unit = "m"
+description = "the segment's length.\n"
+[inputs.elevation]
+unit = "m"
+description = "the segment's elevation change, positive uphill.\n"
+[inputs.roughness]
+unit = "m"
+description = "the pipe wall's absolute roughness, 10 um as 1e-5 m by default.\n"
+[outputs]
+[outputs.regime]
+type = "string"
+description = "`single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.\n"
+[outputs.liquid_holdup]
+unit = "dimensionless"
+description = "the liquid holdup after the inclination correction and the physical bound.\n"
+[outputs.superficial_gas_velocity]
+unit = "m/s"
+description = "the gas superficial velocity.\n"
+[outputs.superficial_liquid_velocity]
+unit = "m/s"
+description = "the liquid superficial velocity.\n"
+[outputs.superficial_mixture_velocity]
+unit = "m/s"
+description = "their sum.\n"
+[outputs.no_slip_density]
+unit = "kg/m**3"
+description = "the volume-weighted no-slip mixture density.\n"
+[outputs.no_slip_viscosity]
+unit = "Pa*s"
+description = "the volume-weighted no-slip mixture viscosity.\n"
+[outputs.reynolds]
+unit = "dimensionless"
+description = "the no-slip Reynolds number, with the class's field-unit factor.\n"
+[outputs.friction_factor]
+unit = "dimensionless"
+description = "the single-phase Darcy friction factor.\n"
+[outputs.two_phase_friction_factor]
+unit = "dimensionless"
+description = "`f exp(S)`, the Beggs-Brill two-phase multiplier applied.\n"
+[outputs.hydrostatic_drop]
+unit = "Pa"
+description = "the elevation term over the segment.\n"
+[outputs.friction_drop]
+unit = "Pa"
+description = "the friction term over the segment.\n"
+[outputs.total_drop]
+unit = "Pa"
+description = "their sum; negative on a downhill segment whose gravity term exceeds friction.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A pipe with no diameter has no area, so the superficial velocities are undefined.\n"
+[[valid_range]]
+quantity = "length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A segment has a length; the inclination is `asin(elevation/length)`.\n"
+[[valid_range]]
+quantity = "gas_flow"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A volumetric flow cannot be negative.\n"
+[[valid_range]]
+quantity = "liquid_flow"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A volumetric flow cannot be negative.\n"
+[[valid_range]]
+quantity = "gas_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A phase density is positive.\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A phase density is positive.\n"
+[[valid_range]]
+quantity = "gas_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A viscosity is positive; it divides the Reynolds number.\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A viscosity is positive; it divides the Reynolds number.\n"
+[[valid_range]]
+quantity = "roughness"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative roughness is a caller's mistake; it enters the friction factor through a positive power of epsilon/D.\n"
+[worked_example]
+source = "the capture's `segment_two_phase` row"
+derivation = "The horizontal wet-gas segment: gas 0.01796694 m3/s at 69.5815 kg/m3 and 0.0150895 cP, liquid 1.4299396e-4 m3/s at 970.120 kg/m3 and 0.465354 cP, 60 C, 100 bara, 0.1 m diameter, a 0.1 m segment (1 m over ten increments), no elevation, 1e-5 m roughness.\n\n  A = pi/4 (0.328084 ft)^2 = 0.08453 ft2,  v_sl = 0.0182066 m/s,  v_sg = 2.28762 m/s\n  lambda = 0.0078959,  Fr = 5.4217,  L2 = 143.3, so SEGREGATED\n  E_l = 0.0810184 after the horizontal fit and the bound;  rho_ns = 76.6921 kg/m3\n  f = 0.013385,  f_tp = 0.013385,  Re = 947858\n  dp = 3.9297e-5 bar = 3.9297 Pa over the metre\n"
+tolerance = 1e-5
+[worked_example.inputs]
+gas_flow = 0.01796694168385081
+liquid_flow = 1.42993961618865e-4
+gas_density = 69.58154569795788
+liquid_density = 970.1200910245294
+gas_viscosity = 1.5089488997328844e-5
+liquid_viscosity = 4.6535425555414334e-4
+temperature = 333.15
+pressure = 9999960.703327656
+diameter = 0.1
+length = 0.1
+elevation = 0.0
+roughness = 1.0e-5
+[worked_example.expected]
+regime = "segregated"
+liquid_holdup = 0.08101840055713928
+superficial_gas_velocity = 2.2876220649829424
+superficial_liquid_velocity = 0.0182065566591481
+superficial_mixture_velocity = 2.3058286216420902
+no_slip_density = 76.69207798793744
+no_slip_viscosity = 1.8644727624775804e-5
+reynolds = 947857.6024426492
+total_drop = 3.929674081293431
+[[tests]]
+id = "segment_two_phase_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "segment_uphill"
+type = "reference"
+status = "active"
+source = "The capture's `segment_uphill` row: the same wet gas on a 0.1 m rise over 1 m, where the inclination correction lifts the holdup to 0.1492 and the drop to 23.48 Pa.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.0179673120546455
+liquid_flow = 0.00014299392955963608
+gas_density = 69.5801135083802
+liquid_density = 970.1200401551641
+gas_viscosity = 1.5089425539551083e-05
+liquid_viscosity = 0.00046535416834148194
+temperature = 333.15
+pressure = 9999765.191037206
+diameter = 0.1
+length = 0.1
+elevation = 0.01
+roughness = 1e-05
+[tests.expected]
+regime = "segregated"
+liquid_holdup = 0.14919471101090462
+no_slip_density = 76.69050970702564
+reynolds = 947864.57458263
+total_drop = 23.48077136277771
+
+[[tests]]
+id = "segment_downhill"
+type = "reference"
+status = "active"
+source = "The capture's `segment_downhill` row: the same line falling 0.1 m, where gravity dominates friction and the total drop is negative, -6.765 Pa.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.017966739089067485
+liquid_flow = 0.00014299397915527745
+gas_density = 69.5823291382155
+liquid_density = 970.1201188512072
+gas_viscosity = 1.5089523710435615e-05
+liquid_viscosity = 0.0004653543032614091
+temperature = 333.15
+pressure = 10000067.65297401
+diameter = 0.1
+length = 0.1
+elevation = -0.01
+roughness = 1e-05
+[tests.expected]
+regime = "segregated"
+liquid_holdup = 0.04876945305464971
+reynolds = 947853.788554448
+total_drop = -6.76533811112044
+
+[[tests]]
+id = "segment_gas_only"
+type = "reference"
+status = "active"
+source = "The capture's `segment_gas_only` row: methane alone, a single-phase gas with zero holdup and the gas density as the no-slip density.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.022105898897438685
+liquid_flow = 0.0
+gas_density = 62.82888089431249
+liquid_density = 62.82888089431249
+gas_viscosity = 1.4464230182881149e-05
+liquid_viscosity = 1.4464230182881149e-05
+temperature = 333.15
+pressure = 9999967.357500201
+diameter = 0.1
+length = 0.1
+elevation = 0.0
+roughness = 1e-05
+[tests.expected]
+regime = "single_phase"
+liquid_holdup = 0.0
+no_slip_density = 62.82886768470841
+reynolds = 1221810.3971775854
+total_drop = 3.264254915663871
+
+[[tests]]
+id = "segment_water_only"
+type = "reference"
+status = "active"
+source = "The capture's `segment_water_only` row: water alone, a single-phase liquid with holdup one.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.0
+liquid_flow = 0.0014317227085365615
+gas_density = 970.0823215331583
+liquid_density = 970.0823215331583
+gas_viscosity = 0.0004653468818608475
+liquid_viscosity = 0.0004653468818608475
+temperature = 333.15
+pressure = 9999996.40885511
+diameter = 0.1
+length = 0.1
+elevation = 0.0
+roughness = 1e-05
+[tests.expected]
+regime = "single_phase"
+liquid_holdup = 1.0
+reynolds = 37977.1467554362
+total_drop = 0.35911448867756085
+
+[[tests]]
+id = "segment_three_phase"
+type = "reference"
+status = "active"
+source = "The capture's `segment_three_phase` row: oil, water and gas, whose two liquids reach the calc as their volume-weighted density and viscosity; the state is in TRANSITION.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.003213658328629358
+liquid_flow = 0.0018166803846936625
+gas_density = 66.37076508831166
+liquid_density = 647.111976757226
+gas_viscosity = 1.4569716873110148e-05
+liquid_viscosity = 0.00025802951059340643
+temperature = 333.15
+pressure = 9999986.458516946
+diameter = 0.1
+length = 0.1
+elevation = 0.0
+roughness = 1e-05
+[tests.expected]
+regime = "transition"
+liquid_holdup = 0.5044402362685357
+no_slip_density = 276.1024010570563
+reynolds = 172425.28232233354
+total_drop = 1.3541489747874063
+
+[[tests]]
+id = "segment_liquid_rich"
+type = "reference"
+status = "active"
+source = "The capture's `segment_liquid_rich` row: a liquid-rich line in the INTERMITTENT regime.\n"
+tolerance = 1e-5
+[tests.inputs]
+gas_flow = 0.018083807879389284
+liquid_flow = 0.004088444058118105
+gas_density = 87.85994731183645
+liquid_density = 970.2256143626688
+gas_viscosity = 1.657720587616779e-05
+liquid_viscosity = 0.0004653723422113723
+temperature = 333.15
+pressure = 9999799.372017471
+diameter = 0.1
+length = 0.1
+elevation = 0.0
+roughness = 1e-05
+[tests.expected]
+regime = "intermittent"
+liquid_holdup = 0.3297744367031475
+no_slip_density = 250.56337999284995
+reynolds = 711651.3180900133
+total_drop = 20.06294664918516
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.beggs_brill_segment"
+rust = "azoth_eos::beggs_brill_segment"

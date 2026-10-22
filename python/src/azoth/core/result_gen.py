@@ -476,6 +476,55 @@ class BariteCelestiteSolidSolutionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BeggsBrillSegmentResult(_HasWarnings):
+    """Result of ``eos.beggs_brill_segment``."""
+
+    CALC_ID: ClassVar[str] = "eos.beggs_brill_segment"
+
+    #: `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
+    regime: str
+
+    #: the liquid holdup after the inclination correction and the physical bound.
+    liquid_holdup: float
+
+    #: the gas superficial velocity.
+    superficial_gas_velocity: Q
+
+    #: the liquid superficial velocity.
+    superficial_liquid_velocity: Q
+
+    #: their sum.
+    superficial_mixture_velocity: Q
+
+    #: the volume-weighted no-slip mixture density.
+    no_slip_density: Q
+
+    #: the volume-weighted no-slip mixture viscosity.
+    no_slip_viscosity: Q
+
+    #: the no-slip Reynolds number, with the class's field-unit factor.
+    reynolds: float
+
+    #: the single-phase Darcy friction factor.
+    friction_factor: float
+
+    #: `f exp(S)`, the Beggs-Brill two-phase multiplier applied.
+    two_phase_friction_factor: float
+
+    #: the elevation term over the segment.
+    hydrostatic_drop: Q
+
+    #: the friction term over the segment.
+    friction_drop: Q
+
+    #: their sum; negative on a downhill segment whose gravity term exceeds friction.
+    total_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class BrineMixingScaleEvaluatorResult(_HasWarnings):
     """Result of ``eos.brine_mixing_scale_evaluator``."""
 

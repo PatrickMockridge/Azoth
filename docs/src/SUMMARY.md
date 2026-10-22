@@ -39,6 +39,7 @@
   - [A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma](./characterization/whitson_gamma_split.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
+  - [Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment](./eos/beggs_brill_segment.md)
   - [Gas binary diffusivity from the Chapman-Enskog theory](./eos/chapman_enskog_diffusivity.md)
   - [Gas thermal conductivity from the Chung correlation](./eos/chung_conductivity.md)
   - [Gas viscosity from the Chung correlation](./eos/chung_viscosity.md)

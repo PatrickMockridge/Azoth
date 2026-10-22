@@ -607,6 +607,23 @@ class BariteCelestiteSolidSolutionResult:
     warnings: list[Warning]
 
 @final
+class BeggsBrillSegmentResult:
+    regime: str
+    liquid_holdup: float
+    superficial_gas_velocity: Qty
+    superficial_liquid_velocity: Qty
+    superficial_mixture_velocity: Qty
+    no_slip_density: Qty
+    no_slip_viscosity: Qty
+    reynolds: float
+    friction_factor: float
+    two_phase_friction_factor: float
+    hydrostatic_drop: Qty
+    friction_drop: Qty
+    total_drop: Qty
+    warnings: list[Warning]
+
+@final
 class BrineMixingScaleEvaluatorResult:
     points: list[BrineMixingPointRow]
     worst_fraction_a: float
@@ -2966,6 +2983,20 @@ def barite_celestite_solid_solution(
     ksp_baso4: float,
     ksp_srso4: float,
 ) -> BariteCelestiteSolidSolutionResult: ...
+def beggs_brill_segment(
+    gas_flow: float,
+    liquid_flow: float,
+    gas_density: float,
+    liquid_density: float,
+    gas_viscosity: float,
+    liquid_viscosity: float,
+    temperature: float,
+    pressure: float,
+    diameter: float,
+    length: float,
+    elevation: float,
+    roughness: float,
+) -> BeggsBrillSegmentResult: ...
 def brine_mixing_scale_evaluator(
     brine_a: list[BrineAnalysis],
     brine_b: list[BrineAnalysis],

@@ -24,6 +24,7 @@ from azoth.core.result import (
     ArgonSolidPhaseResult,
     AssayMassFractionsResult,
     BariteCelestiteSolidSolutionResult,
+    BeggsBrillSegmentResult,
     BrineMixingPointRow,
     BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
@@ -323,6 +324,7 @@ __all__ = [
     "argon_solid_phase",
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
+    "beggs_brill_segment",
     "brine_mixing_scale_evaluator",
     "bubble_pressure",
     "bubble_temperature",
@@ -919,6 +921,41 @@ def barite_celestite_solid_solution(margules: float, a_ba: float, a_sr: float, a
         x_srso4=result.x_srso4,
         total_saturation_index=result.total_saturation_index,
         supersaturated=result.supersaturated,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def beggs_brill_segment(gas_flow: Q, liquid_flow: Q, gas_density: Q, liquid_density: Q, gas_viscosity: Q, liquid_viscosity: Q, temperature: Q, pressure: Q, diameter: Q, length: Q, elevation: Q, roughness: Q) -> BeggsBrillSegmentResult:
+    """``eos.beggs_brill_segment``, computed in Rust."""
+    spec = _spec_for("eos.beggs_brill_segment")
+    result = _core.beggs_brill_segment(
+        input_to_si(spec, "gas_flow", gas_flow),
+        input_to_si(spec, "liquid_flow", liquid_flow),
+        input_to_si(spec, "gas_density", gas_density),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "gas_viscosity", gas_viscosity),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "elevation", elevation),
+        input_to_si(spec, "roughness", roughness),
+    )
+    return BeggsBrillSegmentResult(
+        regime=result.regime,
+        liquid_holdup=result.liquid_holdup,
+        superficial_gas_velocity=from_si(result.superficial_gas_velocity.magnitude_si, result.superficial_gas_velocity.unit),
+        superficial_liquid_velocity=from_si(result.superficial_liquid_velocity.magnitude_si, result.superficial_liquid_velocity.unit),
+        superficial_mixture_velocity=from_si(result.superficial_mixture_velocity.magnitude_si, result.superficial_mixture_velocity.unit),
+        no_slip_density=from_si(result.no_slip_density.magnitude_si, result.no_slip_density.unit),
+        no_slip_viscosity=from_si(result.no_slip_viscosity.magnitude_si, result.no_slip_viscosity.unit),
+        reynolds=result.reynolds,
+        friction_factor=result.friction_factor,
+        two_phase_friction_factor=result.two_phase_friction_factor,
+        hydrostatic_drop=from_si(result.hydrostatic_drop.magnitude_si, result.hydrostatic_drop.unit),
+        friction_drop=from_si(result.friction_drop.magnitude_si, result.friction_drop.unit),
+        total_drop=from_si(result.total_drop.magnitude_si, result.total_drop.unit),
         warnings=_warnings(result.warnings),
     )
 

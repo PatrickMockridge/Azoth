@@ -51,6 +51,7 @@ pub mod argon_solid;
 pub mod argon_solid_phase;
 pub mod association;
 pub mod barite_celestite_solid_solution;
+pub mod beggs_brill_segment;
 pub mod brine_mixing_scale_evaluator;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
@@ -380,9 +381,9 @@ pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BrineMixingPointRow,
-    BrineMixingScaleEvaluatorResult, BubblePressureResult, BubbleTemperatureResult,
-    BwrsPhaseResult, CalcIonicCompositionResult, CdftSurfaceTensionResult,
+    AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BeggsBrillSegmentResult,
+    BrineMixingPointRow, BrineMixingScaleEvaluatorResult, BubblePressureResult,
+    BubbleTemperatureResult, BwrsPhaseResult, CalcIonicCompositionResult, CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult, ChemicalWarningRow, ChungConductivityResult,
     ChungViscosityResult, Co2BrinePhaseEquilibriumResult, Co2PhaseResult,
     Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult, DepositionSegmentRow,

@@ -39,6 +39,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.aqueous_viscosity" => azoth_eos::results::AqueousViscosityResult::FIELDS.to_vec(),
         "eos.argon_solid_phase" => azoth_eos::results::ArgonSolidPhaseResult::FIELDS.to_vec(),
         "eos.barite_celestite_solid_solution" => azoth_eos::results::BariteCelestiteSolidSolutionResult::FIELDS.to_vec(),
+        "eos.beggs_brill_segment" => azoth_eos::results::BeggsBrillSegmentResult::FIELDS.to_vec(),
         "eos.brine_mixing_scale_evaluator" => azoth_eos::results::BrineMixingScaleEvaluatorResult::FIELDS.to_vec(),
         "eos.bubble_pressure" => azoth_eos::results::BubblePressureResult::FIELDS.to_vec(),
         "eos.bubble_temperature" => azoth_eos::results::BubbleTemperatureResult::FIELDS.to_vec(),
@@ -280,6 +281,7 @@ pub fn calc_ids() -> Vec<String> {
     vec![
         "characterization.tbp_cut_properties".to_string(),
         "eos.antoine_vapor_pressure".to_string(),
+        "eos.beggs_brill_segment".to_string(),
         "eos.chapman_enskog_diffusivity".to_string(),
         "eos.chung_conductivity".to_string(),
         "eos.chung_viscosity".to_string(),

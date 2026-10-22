@@ -75,6 +75,7 @@ from azoth.core.result import (
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BariteCelestiteSolidSolutionResult,
+    BeggsBrillSegmentResult,
     BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -2385,6 +2386,50 @@ def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -
     """
     return resolve(_BWRS_PHASE)(  # type: ignore[no-any-return]
         coeffs=coeffs, T=T, P=P, z=z
+    )
+
+
+def beggs_brill_segment(
+    gas_flow: Q,
+    liquid_flow: Q,
+    gas_density: Q,
+    liquid_density: Q,
+    gas_viscosity: Q,
+    liquid_viscosity: Q,
+    temperature: Q,
+    pressure: Q,
+    diameter: Q,
+    length: Q,
+    elevation: Q,
+    roughness: Q,
+) -> BeggsBrillSegmentResult:
+    """One pipe segment's Beggs-and-Brill state.
+
+    NeqSim's ``PipeBeggsAndBrills`` segment correlation: the flow regime from the Froude
+    number and no-slip liquid fraction, the liquid holdup with its inclination correction,
+    the no-slip density and viscosity, the Reynolds number, the Haaland friction factor with
+    the Beggs-Brill two-phase multiplier, and the hydrostatic and friction drops. The
+    class's field-unit constants are reproduced internally; the inputs and outputs are SI.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if neither phase flows.
+
+    See :func:`azoth.eos.reference.beggs_brill_segment`.
+    """
+    return resolve("eos.beggs_brill_segment")(  # type: ignore[no-any-return]
+        gas_flow=gas_flow,
+        liquid_flow=liquid_flow,
+        gas_density=gas_density,
+        liquid_density=liquid_density,
+        gas_viscosity=gas_viscosity,
+        liquid_viscosity=liquid_viscosity,
+        temperature=temperature,
+        pressure=pressure,
+        diameter=diameter,
+        length=length,
+        elevation=elevation,
+        roughness=roughness,
     )
 
 

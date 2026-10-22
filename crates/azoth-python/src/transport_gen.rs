@@ -1199,6 +1199,126 @@ impl From<&azoth_eos::results::BariteCelestiteSolidSolutionResult>
         }
     }
 }
+/// Result of `eos.beggs_brill_segment`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BeggsBrillSegmentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBeggsBrillSegmentResult {
+    /// `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
+    #[pyo3(get)]
+    pub regime: String,
+    /// the liquid holdup after the inclination correction and the physical bound.
+    #[pyo3(get)]
+    pub liquid_holdup: f64,
+    /// the gas superficial velocity.
+    #[pyo3(get)]
+    pub superficial_gas_velocity: PyQty,
+    /// the liquid superficial velocity.
+    #[pyo3(get)]
+    pub superficial_liquid_velocity: PyQty,
+    /// their sum.
+    #[pyo3(get)]
+    pub superficial_mixture_velocity: PyQty,
+    /// the volume-weighted no-slip mixture density.
+    #[pyo3(get)]
+    pub no_slip_density: PyQty,
+    /// the volume-weighted no-slip mixture viscosity.
+    #[pyo3(get)]
+    pub no_slip_viscosity: PyQty,
+    /// the no-slip Reynolds number, with the class's field-unit factor.
+    #[pyo3(get)]
+    pub reynolds: f64,
+    /// the single-phase Darcy friction factor.
+    #[pyo3(get)]
+    pub friction_factor: f64,
+    /// `f exp(S)`, the Beggs-Brill two-phase multiplier applied.
+    #[pyo3(get)]
+    pub two_phase_friction_factor: f64,
+    /// the elevation term over the segment.
+    #[pyo3(get)]
+    pub hydrostatic_drop: PyQty,
+    /// the friction term over the segment.
+    #[pyo3(get)]
+    pub friction_drop: PyQty,
+    /// their sum; negative on a downhill segment whose gravity term exceeds friction.
+    #[pyo3(get)]
+    pub total_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBeggsBrillSegmentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BeggsBrillSegmentResult(regime={:?}, liquid_holdup={:?}, superficial_gas_velocity={:?}, superficial_liquid_velocity={:?}, superficial_mixture_velocity={:?}, no_slip_density={:?}, no_slip_viscosity={:?}, reynolds={:?}, friction_factor={:?}, two_phase_friction_factor={:?}, hydrostatic_drop={:?}, friction_drop={:?}, total_drop={:?}, {} warning(s))",
+            self.regime,
+            self.liquid_holdup,
+            self.superficial_gas_velocity,
+            self.superficial_liquid_velocity,
+            self.superficial_mixture_velocity,
+            self.no_slip_density,
+            self.no_slip_viscosity,
+            self.reynolds,
+            self.friction_factor,
+            self.two_phase_friction_factor,
+            self.hydrostatic_drop,
+            self.friction_drop,
+            self.total_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BeggsBrillSegmentResult> for PyBeggsBrillSegmentResult {
+    fn from(r: &azoth_eos::results::BeggsBrillSegmentResult) -> Self {
+        Self {
+            regime: r.regime.clone(),
+            liquid_holdup: r.liquid_holdup,
+            superficial_gas_velocity: PyQty {
+                magnitude_si: r.superficial_gas_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            superficial_liquid_velocity: PyQty {
+                magnitude_si: r.superficial_liquid_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            superficial_mixture_velocity: PyQty {
+                magnitude_si: r.superficial_mixture_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            no_slip_density: PyQty {
+                magnitude_si: r.no_slip_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            no_slip_viscosity: PyQty {
+                magnitude_si: r.no_slip_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            reynolds: r.reynolds,
+            friction_factor: r.friction_factor,
+            two_phase_friction_factor: r.two_phase_friction_factor,
+            hydrostatic_drop: PyQty {
+                magnitude_si: r.hydrostatic_drop.value,
+                unit: "Pa".to_string(),
+            },
+            friction_drop: PyQty {
+                magnitude_si: r.friction_drop.value,
+                unit: "Pa".to_string(),
+            },
+            total_drop: PyQty {
+                magnitude_si: r.total_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.brine_mixing_scale_evaluator`, transported.
 #[pyclass(
     frozen,

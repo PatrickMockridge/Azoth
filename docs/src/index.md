@@ -103,6 +103,7 @@ Five sections, and the difference between them is the point:
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.antoine_vapor_pressure`](./eos/antoine_vapor_pressure.md)
+- [`eos.beggs_brill_segment`](./eos/beggs_brill_segment.md)
 - [`eos.chapman_enskog_diffusivity`](./eos/chapman_enskog_diffusivity.md)
 - [`eos.chung_conductivity`](./eos/chung_conductivity.md)
 - [`eos.chung_viscosity`](./eos/chung_viscosity.md)

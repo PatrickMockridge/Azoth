@@ -1691,6 +1691,63 @@ impl CalcResult for ProductionChemicalScaleScenarioResult {
     }
 }
 
+/// Result of `eos.beggs_brill_segment`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BeggsBrillSegmentResult {
+    /// `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
+    pub regime: String,
+    /// The liquid holdup after the inclination correction and the physical bound.
+    pub liquid_holdup: f64,
+    /// The gas superficial velocity.
+    pub superficial_gas_velocity: Velocity,
+    /// The liquid superficial velocity.
+    pub superficial_liquid_velocity: Velocity,
+    /// Their sum.
+    pub superficial_mixture_velocity: Velocity,
+    /// The volume-weighted no-slip mixture density.
+    pub no_slip_density: MassDensity,
+    /// The volume-weighted no-slip mixture viscosity.
+    pub no_slip_viscosity: DynamicViscosity,
+    /// The no-slip Reynolds number.
+    pub reynolds: f64,
+    /// The single-phase Darcy friction factor.
+    pub friction_factor: f64,
+    /// `f exp(S)`.
+    pub two_phase_friction_factor: f64,
+    /// The elevation term over the segment.
+    pub hydrostatic_drop: Pressure,
+    /// The friction term over the segment.
+    pub friction_drop: Pressure,
+    /// Their sum.
+    pub total_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BeggsBrillSegmentResult {
+    const CALC_ID: &'static str = "eos.beggs_brill_segment";
+    const FIELDS: &'static [&'static str] = &[
+        "regime",
+        "liquid_holdup",
+        "superficial_gas_velocity",
+        "superficial_liquid_velocity",
+        "superficial_mixture_velocity",
+        "no_slip_density",
+        "no_slip_viscosity",
+        "reynolds",
+        "friction_factor",
+        "two_phase_friction_factor",
+        "hydrostatic_drop",
+        "friction_drop",
+        "total_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

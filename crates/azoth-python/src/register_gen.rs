@@ -38,6 +38,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyAqueousViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyArgonSolidPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyBariteCelestiteSolidSolutionResult>()?;
+    m.add_class::<crate::transport_gen::PyBeggsBrillSegmentResult>()?;
     m.add_class::<crate::transport_gen::PyBrineMixingScaleEvaluatorResult>()?;
     m.add_class::<crate::transport_gen::PyBubblePressureResult>()?;
     m.add_class::<crate::transport_gen::PyBubbleTemperatureResult>()?;
@@ -332,6 +333,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::argon_solid_phase, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::barite_celestite_solid_solution,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::beggs_brill_segment,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(

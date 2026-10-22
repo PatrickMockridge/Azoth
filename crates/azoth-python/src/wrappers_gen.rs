@@ -392,6 +392,48 @@ pub fn barite_celestite_solid_solution(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (gas_flow, liquid_flow, gas_density, liquid_density, gas_viscosity, liquid_viscosity, temperature, pressure, diameter, length, elevation, roughness))]
+#[pyo3(
+    text_signature = "(gas_flow, liquid_flow, gas_density, liquid_density, gas_viscosity, liquid_viscosity, temperature, pressure, diameter, length, elevation, roughness)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn beggs_brill_segment(
+    py: Python<'_>,
+    gas_flow: f64,
+    liquid_flow: f64,
+    gas_density: f64,
+    liquid_density: f64,
+    gas_viscosity: f64,
+    liquid_viscosity: f64,
+    temperature: f64,
+    pressure: f64,
+    diameter: f64,
+    length: f64,
+    elevation: f64,
+    roughness: f64,
+) -> PyResult<crate::transport_gen::PyBeggsBrillSegmentResult> {
+    azoth_eos::beggs_brill_segment::beggs_brill_segment(
+        cubic_meters_per_second(gas_flow),
+        cubic_meters_per_second(liquid_flow),
+        kilograms_per_cubic_meter(gas_density),
+        kilograms_per_cubic_meter(liquid_density),
+        pascal_seconds(gas_viscosity),
+        pascal_seconds(liquid_viscosity),
+        kelvins(temperature),
+        pascals(pressure),
+        meters(diameter),
+        meters(length),
+        meters(elevation),
+        meters(roughness),
+    )
+    .map(|r| crate::transport_gen::PyBeggsBrillSegmentResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Mineral-scale risk of mixing two incompatible brines.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

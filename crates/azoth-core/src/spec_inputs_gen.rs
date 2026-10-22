@@ -20,6 +20,7 @@
 //!   - specs/models/eos/aqueous_viscosity.toml
 //!   - specs/models/eos/argon_solid_phase.toml
 //!   - specs/models/eos/barite_celestite_solid_solution.toml
+//!   - specs/calcs/eos/beggs_brill_segment.toml
 //!   - specs/models/eos/brine_mixing_scale_evaluator.toml
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
@@ -482,6 +483,30 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "ksp_srso4",
         "dimensionless",
     ),
+    ("eos.beggs_brill_segment", "gas_flow", "volume_rate"),
+    ("eos.beggs_brill_segment", "liquid_flow", "volume_rate"),
+    ("eos.beggs_brill_segment", "gas_density", "mass_density"),
+    ("eos.beggs_brill_segment", "liquid_density", "mass_density"),
+    (
+        "eos.beggs_brill_segment",
+        "gas_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "eos.beggs_brill_segment",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "eos.beggs_brill_segment",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.beggs_brill_segment", "pressure", "pressure"),
+    ("eos.beggs_brill_segment", "diameter", "length"),
+    ("eos.beggs_brill_segment", "length", "length"),
+    ("eos.beggs_brill_segment", "elevation", "length"),
+    ("eos.beggs_brill_segment", "roughness", "length"),
     (
         "eos.brine_mixing_scale_evaluator",
         "temperature",
