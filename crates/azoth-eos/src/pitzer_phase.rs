@@ -1376,6 +1376,7 @@ pub fn catalogue_interactions(
     charge: &[f64],
     ions: &[usize],
     neutrals: &[usize],
+    zero_missing_zeta: bool,
 ) -> Option<Vec<NeutralInteraction>> {
     use crate::pitzer_catalog::Family;
     let mut out = Vec::new();
@@ -1407,10 +1408,16 @@ pub fn catalogue_interactions(
                 if charge[anion] >= 0.0 {
                     continue;
                 }
-                let form = lookup(
+                let form = match lookup(
                     Family::Zeta,
                     &[species[neutral], species[cation], species[anion]],
-                )?;
+                ) {
+                    Some(form) => form,
+                    // The manual CO2-chloride dataset supplies these rows as zero, and a zero
+                    // coefficient contributes nothing - so the term is absent, not the dataset.
+                    None if zero_missing_zeta => continue,
+                    None => return None,
+                };
                 out.push(NeutralInteraction::new(
                     NeutralFamily::Zeta,
                     vec![neutral, cation, anion],
@@ -1589,11 +1596,42 @@ struct Activity {
 }
 
 #[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+/// Which parameter dataset a GE phase is built from.
+///
+/// `Auto` is NeqSim's own selection rule. `PhreeqcCo2Chloride` is the *manual* dataset
+/// `PitzerParameterDatasets.applyPhreeqcCo2ChlorideParameters` assembles: the PHREEQC
+/// catalogue's ion and CO2 lambda rows, with the CO2-cation-Cl zeta rows the catalogue does
+/// not carry supplied as zero - the upstream caller's explicit screening assumption.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PitzerDatasetSelection {
+    /// `PitzerParameterDatasets.tryApplyCompletePhreeqcPitzerCatalog`'s rule.
+    #[default]
+    Auto,
+    /// The manual CO2-chloride dataset, with a zero CO2-cation-Cl zeta.
+    PhreeqcCo2Chloride,
+}
+
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the published equation
 pub fn pitzer_phase(
     names: &[&str],
     T: f64,
     P: f64,
     x: &[f64],
+) -> azoth_core::Result<crate::results::PitzerPhaseResult> {
+    pitzer_phase_with_dataset(names, T, P, x, PitzerDatasetSelection::Auto)
+}
+
+/// The same model over a stated dataset, which the Pitzer hydrate flash needs.
+///
+/// # Errors
+/// As [`pitzer_phase`].
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the published equation
+pub fn pitzer_phase_with_dataset(
+    names: &[&str],
+    T: f64,
+    P: f64,
+    x: &[f64],
+    dataset: PitzerDatasetSelection,
 ) -> azoth_core::Result<crate::results::PitzerPhaseResult> {
     let spec = &crate::model_gen::PITZER_PHASE_SPEC;
     let mut warnings = Vec::new();
@@ -1607,7 +1645,7 @@ pub fn pitzer_phase(
         &mut warnings,
     )?;
 
-    let activity = activity_of(names, T, x)?;
+    let activity = activity_of(names, T, x, dataset)?;
     let Activity {
         entries,
         charge,
@@ -1720,7 +1758,12 @@ pub fn pitzer_phase(
 /// whole model would recurse into itself without end. Splitting it is what NeqSim's own
 /// structure does, in the same place.
 #[allow(non_snake_case)] // `T` is the symbol in the chemistry
-fn activity_of(names: &[&str], T: f64, x: &[f64]) -> azoth_core::Result<Activity> {
+fn activity_of(
+    names: &[&str],
+    T: f64,
+    x: &[f64],
+    dataset: PitzerDatasetSelection,
+) -> azoth_core::Result<Activity> {
     use crate::pitzer_catalog::{Family, Selection, Species};
     let n = names.len();
     if x.len() != n {
@@ -1786,7 +1829,10 @@ fn activity_of(names: &[&str], T: f64, x: &[f64]) -> azoth_core::Result<Activity
         })
         .collect();
 
-    let selection = crate::pitzer_catalog::select_dataset(&species);
+    let selection = match dataset {
+        PitzerDatasetSelection::Auto => crate::pitzer_catalog::select_dataset(&species),
+        PitzerDatasetSelection::PhreeqcCo2Chloride => Selection::Phreeqc,
+    };
     let audit = crate::pitzer_catalog::coverage(&species, &selection, composition.solvent_mass);
     crate::pitzer_catalog::require_complete(&audit)?;
     let parameters = DatasetParameters::new(names, &selection);
@@ -1805,8 +1851,9 @@ fn activity_of(names: &[&str], T: f64, x: &[f64]) -> azoth_core::Result<Activity
         })
         .collect();
 
+    let zero_missing_zeta = dataset == PitzerDatasetSelection::PhreeqcCo2Chloride;
     let interactions = if catalogue {
-        catalogue_interactions(names, &charge, &ions, &neutrals)
+        catalogue_interactions(names, &charge, &ions, &neutrals, zero_missing_zeta)
     } else {
         None
     };
@@ -1868,7 +1915,14 @@ fn activity_of(names: &[&str], T: f64, x: &[f64]) -> azoth_core::Result<Activity
                     ln_gamma_neutral(list, &composition.molality, i, T)
                 })
             } else {
+                // **An ion carries the neutral layer's contribution too**, NeqSim's
+                // `getNeutralPitzerLogGammaContribution` added after the binary and mixing
+                // sums: a neutral's lambda with an ion is asymmetric between the cation and
+                // the anion, which is why a CO2 brine's Na+ and Cl- coefficients differ.
                 ln_gamma(&context, &parameters, i)
+                    + interactions.as_deref().map_or(0.0, |list| {
+                        ln_gamma_neutral(list, &composition.molality, i, T)
+                    })
             }
         })
         .collect();
@@ -2003,7 +2057,7 @@ fn reference_phase_gamma(
 ) -> azoth_core::Result<f64> {
     let dilute = [1.0e-11, 1.0 - 1.0e-11];
     let pair = [names[solute], names[solvent]];
-    let reference = activity_of(&pair, t, &dilute)?;
+    let reference = activity_of(&pair, t, &dilute, PitzerDatasetSelection::Auto)?;
     Ok(reference.gamma[0])
 }
 
@@ -2031,7 +2085,7 @@ mod neutral_tests {
         let neutrals = [3];
 
         let interactions =
-            catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &ions, &neutrals)
+            catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &ions, &neutrals, false)
                 .expect("the catalogue covers CO2 with Na+ and SO4--");
         assert_eq!(
             interactions.len(),
@@ -2113,12 +2167,15 @@ mod neutral_tests {
             "the catalogue pairs CO2 with sulphate, not chloride"
         );
         assert_eq!(
-            catalogue_interactions(&species, &[0.0, 1.0, -1.0, 0.0], &[1, 2], &[3]),
+            catalogue_interactions(&species, &[0.0, 1.0, -1.0, 0.0], &[1, 2], &[3], false),
             None
         );
 
         // And the sulphate pair it does carry.
         let species = ["water", "Na+", "SO4--", "CO2"];
-        assert!(catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &[1, 2], &[3]).is_some());
+        assert!(
+            catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &[1, 2], &[3], false)
+                .is_some()
+        );
     }
 }

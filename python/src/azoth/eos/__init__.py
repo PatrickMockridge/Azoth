@@ -152,6 +152,8 @@ from azoth.core.result import (
     PcsaftRahmatPhaseResult,
     PhaseTransportResult,
     PhFlashResult,
+    PitzerHydrateFormationPressureResult,
+    PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     Pr78KappaResult,
@@ -2390,6 +2392,81 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     See :func:`azoth.eos.reference.helium_phase`.
     """
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def pitzer_hydrate_formation_temperature(
+    components: list[str],
+    cubic: str,
+    moles: list[Q],
+    P: Q,
+    structure: str | None = None,
+    minimum_temperature: Q | None = None,
+    maximum_temperature: Q | None = None,
+    pitzer_dataset: str | None = None,
+) -> PitzerHydrateFormationTemperatureResult:
+    """The temperature at which a Pitzer brine's hydrate appears, at a pressure.
+
+    NeqSim's ``PitzerHydrateFlash``: each trial is the hybrid EoS/GE flash on a
+    ``SystemPitzer``, and the hydrate's water reference is ``ComponentHydratePitzer``'s -
+    the pure-water Antoine vapour pressure, with the structure the lower of the two
+    coefficients. A salty CO2 state runs the manual PHREEQC CO2-chloride dataset.
+
+    Raises:
+        InvalidInputError: for an unknown structure or dataset name, or a feed with no water
+            or no hydrate former.
+        OutOfRangeError: for a pressure outside the class's window, or a water activity
+            outside ``(0, 1]``.
+        SolverNotConvergedError: if the scan finds no bracket or the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.pitzer_hydrate_formation_temperature`.
+    """
+    return resolve("eos.pitzer_hydrate_formation_temperature")(  # type: ignore[no-any-return]
+        components=components,
+        cubic=cubic,
+        moles=moles,
+        P=P,
+        structure=structure,
+        minimum_temperature=minimum_temperature,
+        maximum_temperature=maximum_temperature,
+        pitzer_dataset=pitzer_dataset,
+    )
+
+
+def pitzer_hydrate_formation_pressure(
+    components: list[str],
+    cubic: str,
+    moles: list[Q],
+    T: Q,
+    structure: str | None = None,
+    minimum_pressure: Q | None = None,
+    maximum_pressure: Q | None = None,
+    pitzer_dataset: str | None = None,
+) -> PitzerHydrateFormationPressureResult:
+    """The pressure at which a Pitzer brine's hydrate appears, at a temperature.
+
+    The same saturation as :func:`pitzer_hydrate_formation_temperature` with the pressure
+    solved: the class's ``max(P*1.3, P+0.5 bara)`` scan from 1 bara, then a bisection on
+    ``ln(f_hydrate^water / f_aq^water)``.
+
+    Raises:
+        InvalidInputError: for an unknown structure or dataset name, or a feed with no water
+            or no hydrate former.
+        OutOfRangeError: for a temperature outside 273.15-323.15 K or below the guests'
+            Henry floor, or a water activity outside ``(0, 1]``.
+        SolverNotConvergedError: if the scan finds no bracket or the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.pitzer_hydrate_formation_pressure`.
+    """
+    return resolve("eos.pitzer_hydrate_formation_pressure")(  # type: ignore[no-any-return]
+        components=components,
+        cubic=cubic,
+        moles=moles,
+        T=T,
+        structure=structure,
+        minimum_pressure=minimum_pressure,
+        maximum_pressure=maximum_pressure,
+        pitzer_dataset=pitzer_dataset,
+    )
 
 
 def hydrate_formation_temperature(

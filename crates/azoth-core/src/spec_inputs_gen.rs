@@ -97,6 +97,8 @@
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_pressure.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
 //!   - specs/calcs/eos/pitzer_scale_activity.toml
 //!   - specs/calcs/eos/pr78_kappa.toml
@@ -1218,6 +1220,38 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.phase_transport", "T", "thermodynamic_temperature"),
     ("eos.phase_transport", "P", "pressure"),
     ("eos.phase_transport", "z", "dimensionless"),
+    ("eos.pitzer_hydrate_formation_pressure", "moles", "amount"),
+    (
+        "eos.pitzer_hydrate_formation_pressure",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.pitzer_hydrate_formation_pressure",
+        "minimum_pressure",
+        "pressure",
+    ),
+    (
+        "eos.pitzer_hydrate_formation_pressure",
+        "maximum_pressure",
+        "pressure",
+    ),
+    (
+        "eos.pitzer_hydrate_formation_temperature",
+        "moles",
+        "amount",
+    ),
+    ("eos.pitzer_hydrate_formation_temperature", "P", "pressure"),
+    (
+        "eos.pitzer_hydrate_formation_temperature",
+        "minimum_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.pitzer_hydrate_formation_temperature",
+        "maximum_temperature",
+        "thermodynamic_temperature",
+    ),
     ("eos.pitzer_phase", "T", "thermodynamic_temperature"),
     ("eos.pitzer_phase", "P", "pressure"),
     ("eos.pitzer_phase", "x", "dimensionless"),

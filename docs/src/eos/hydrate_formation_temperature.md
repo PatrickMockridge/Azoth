@@ -8,7 +8,7 @@
 
 **NeqSim master `HydrateFormationTemperatureFlash`**
 
-The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported. `hydrate_model` selects between the two component models.
+The path for a fluid that is not a `SystemPitzer`; the Pitzer route is `eos.pitzer_hydrate_formation_temperature` and `_pressure`. `hydrate_model` selects between the two component models.
 
 
 ## Algorithm

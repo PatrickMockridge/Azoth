@@ -1,0 +1,77 @@
+model = "eos.pitzer_hydrate_formation_temperature"
+
+# The fluids are the upstream test's one-kilogram water basis: the guest at 10 mol (5 each for the
+# mixture), water at 1/0.01801528 mol, and a chloride brine in mol per kilogram of water.
+# `validation/neqsim/captures/pitzer_hydrate_probe.tsv` is the source of every expected value.
+
+[[cases]]
+id = "co2_water_30bara"
+tolerance = 1.0e-05
+source = "The capture's `co2_water_30bara` row: pure CO2 and water at 30 bara solve 280.86478680610657 K at a water activity of 0.9854726170359023, structure I. The upstream test's own window (273.15, 283.15) K at this state is the same answer.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+P = 3.0e6
+cubic = "srk"
+[cases.expected]
+temperature = 280.86478680610657
+structure = "structure_i"
+water_activity = 0.9854726170359023
+
+[[cases]]
+id = "co2_nacl_1molal_30bara"
+tolerance = 1.0e-05
+source = "The capture's `co2_nacl_1molal_30bara` row: one mol/kg NaCl suppresses the hydrate to 277.8689917945862 K, 3 K below pure water, at a water activity of 0.9421844191719909.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.9999936196592771, 0.0, 0.0, 0.0, 0.9999936196592771]
+P = 3.0e6
+cubic = "srk"
+pitzer_dataset = "phreeqc_co2_chloride"
+[cases.expected]
+temperature = 277.8689917945862
+structure = "structure_i"
+water_activity = 0.9421844191719909
+
+[[cases]]
+id = "methane_water_50bara"
+tolerance = 1.0e-05
+source = "The capture's `methane_water_50bara` row: methane and water at 50 bara solve 279.82848044395445 K, and the water activity is one to twelve digits because no salt or CO2 is in the aqueous phase.\n"
+[cases.inputs]
+components = ["methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+P = 5.0e6
+cubic = "srk"
+[cases.expected]
+temperature = 279.82848044395445
+structure = "structure_i"
+water_activity = 0.9999999999991899
+
+[[cases]]
+id = "co2_methane_mixture_50bara"
+tolerance = 1.0e-05
+source = "The capture's `co2_methane_water_50bara` row: a five-mole CO2, five-mole methane feed at 50 bara selects **structure II** at 283.2409369564056 K, where each pure gas selects structure I at the same pressure.\n"
+[cases.inputs]
+components = ["CO2", "methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [5.0, 5.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+P = 5.0e6
+cubic = "srk"
+[cases.expected]
+temperature = 283.2409369564056
+structure = "structure_ii"
+water_activity = 0.9904024578453489
+
+[[cases]]
+id = "structure_pinned_to_sii"
+tolerance = 1.0e-05
+source = "The capture's `co2_water_30bara_sii` row: the same state with structure II requested solves 279.12119835853576 K. **The request is evaluated alone**, so it reports a lower temperature than the stable structure's - which is why the class exposes the pin.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+P = 3.0e6
+cubic = "srk"
+structure = "sii"
+[cases.expected]
+temperature = 279.12119835853576
+structure = "structure_ii"
+water_activity = 0.9846310322031774

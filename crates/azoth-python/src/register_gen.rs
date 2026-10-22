@@ -115,6 +115,8 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPcsaftRahmatPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyPhFlashResult>()?;
     m.add_class::<crate::transport_gen::PyPhaseTransportResult>()?;
+    m.add_class::<crate::transport_gen::PyPitzerHydrateFormationPressureResult>()?;
+    m.add_class::<crate::transport_gen::PyPitzerHydrateFormationTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerScaleActivityResult>()?;
     m.add_class::<crate::transport_gen::PyPr78KappaResult>()?;
@@ -513,6 +515,14 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::phase_transport, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::pitzer_hydrate_formation_pressure,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::pitzer_hydrate_formation_temperature,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pitzer_phase, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::pitzer_scale_activity,

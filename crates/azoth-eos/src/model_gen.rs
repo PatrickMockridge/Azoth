@@ -60,6 +60,8 @@
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_pressure.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
 //!   - specs/models/eos/ps_flash.toml
@@ -12062,6 +12064,392 @@ pub static PHASE_TRANSPORT_SPEC: ModelSpec = ModelSpec {
     cases: PHASE_TRANSPORT_CASES,
 };
 
+static PITZER_HYDRATE_FORMATION_PRESSURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(273.15),
+            min_inclusive: true,
+            max: Some(323.15),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's own window: the pressure solve refuses a temperature outside it.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "minimum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "maximum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute pressure.",
+        },
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_278k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 278.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2073413.7846824892),
+            ("water_activity", 0.9881796770768043),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_nacl_5wt_278k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 278.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("pitzer_dataset", "phreeqc_co2_chloride")],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.9006088115566122,
+                0.0,
+                0.0,
+                0.0,
+                0.9006088115566122,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2956387.148120002),
+            ("water_activity", 0.945688038723503),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_water_280k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 280.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2672590.293502712),
+            ("water_activity", 0.9863644219606345),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pitzer_hydrate_scan_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 70,
+    bracket: None,
+    initialisation: Some("pressure_lower_bound"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.pitzer_hydrate_formation_pressure`.
+pub static PITZER_HYDRATE_FORMATION_PRESSURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pitzer_hydrate_formation_pressure",
+    kind: "procedure",
+    algorithm: Some(&PITZER_HYDRATE_FORMATION_PRESSURE_ALGORITHM),
+    checks: PITZER_HYDRATE_FORMATION_PRESSURE_CHECKS,
+    cases: PITZER_HYDRATE_FORMATION_PRESSURE_CASES,
+};
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(100000000.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's own window: 0 < P <= 1000 bara.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "minimum_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "maximum_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature.",
+        },
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_30bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 280.86478680610657),
+            ("water_activity", 0.9854726170359023),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_nacl_1molal_30bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("pitzer_dataset", "phreeqc_co2_chloride")],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.9999936196592771,
+                0.0,
+                0.0,
+                0.0,
+                0.9999936196592771,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 277.8689917945862),
+            ("water_activity", 0.9421844191719909),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "methane_water_50bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 279.82848044395445),
+            ("water_activity", 0.9999999999991899),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_methane_mixture_50bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "CO2", "methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-",
+            ],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[5.0, 5.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 283.2409369564056),
+            ("water_activity", 0.9904024578453489),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "structure_pinned_to_sii",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("structure", "sii")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 279.12119835853576),
+            ("water_activity", 0.9846310322031774),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pitzer_hydrate_scan_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 70,
+    bracket: None,
+    initialisation: Some("henry_floor"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.pitzer_hydrate_formation_temperature`.
+pub static PITZER_HYDRATE_FORMATION_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pitzer_hydrate_formation_temperature",
+    kind: "procedure",
+    algorithm: Some(&PITZER_HYDRATE_FORMATION_TEMPERATURE_ALGORITHM),
+    checks: PITZER_HYDRATE_FORMATION_TEMPERATURE_CHECKS,
+    cases: PITZER_HYDRATE_FORMATION_TEMPERATURE_CASES,
+};
+
 static PITZER_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -18094,6 +18482,8 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PCSAFT_RAHMAT_PHASE_SPEC,
     &PH_FLASH_SPEC,
     &PHASE_TRANSPORT_SPEC,
+    &PITZER_HYDRATE_FORMATION_PRESSURE_SPEC,
+    &PITZER_HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &PITZER_PHASE_SPEC,
     &PR_CPA_PHASE_SPEC,
     &PS_FLASH_SPEC,

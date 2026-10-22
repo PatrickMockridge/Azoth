@@ -5681,6 +5681,128 @@ impl From<&azoth_eos::results::PhaseTransportResult> for PyPhaseTransportResult 
         }
     }
 }
+/// Result of `eos.pitzer_hydrate_formation_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerHydrateFormationPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerHydrateFormationPressureResult {
+    /// the pressure at which the hydrate's water fugacity equals the aqueous phase's.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the structure the coefficient comparison chose, or the one the caller pinned.
+    #[pyo3(get)]
+    pub structure: String,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    #[pyo3(get)]
+    pub water_activity: f64,
+    /// flash evaluations taken, the scan's and the bisection's together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerHydrateFormationPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerHydrateFormationPressureResult(pressure={:?}, structure={:?}, water_activity={:?}, iterations={:?}, residual={:?}, {} warning(s))",
+            self.pressure,
+            self.structure,
+            self.water_activity,
+            self.iterations,
+            self.residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PitzerHydrateFormationPressureResult>
+    for PyPitzerHydrateFormationPressureResult
+{
+    fn from(r: &azoth_eos::results::PitzerHydrateFormationPressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            structure: r.structure.as_str().to_string(),
+            water_activity: r.water_activity,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.pitzer_hydrate_formation_temperature`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerHydrateFormationTemperatureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerHydrateFormationTemperatureResult {
+    /// the temperature at which the hydrate's water fugacity equals the aqueous phase's.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the structure the coefficient comparison chose, or the one the caller pinned.
+    #[pyo3(get)]
+    pub structure: String,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    #[pyo3(get)]
+    pub water_activity: f64,
+    /// flash evaluations taken, the scan's and the bisection's together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerHydrateFormationTemperatureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerHydrateFormationTemperatureResult(temperature={:?}, structure={:?}, water_activity={:?}, iterations={:?}, residual={:?}, {} warning(s))",
+            self.temperature,
+            self.structure,
+            self.water_activity,
+            self.iterations,
+            self.residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PitzerHydrateFormationTemperatureResult>
+    for PyPitzerHydrateFormationTemperatureResult
+{
+    fn from(r: &azoth_eos::results::PitzerHydrateFormationTemperatureResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            structure: r.structure.as_str().to_string(),
+            water_activity: r.water_activity,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.pitzer_phase`, transported.
 #[pyclass(
     frozen,

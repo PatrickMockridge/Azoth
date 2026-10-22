@@ -583,9 +583,7 @@ def _log_fugacity_residual(
     """
     ln_phi = [
         [natural_log(value) for value in row]
-        for row in _hybrid._coefficients(
-            reduced, mixture.kij, phases, components, t_si, p_si, AQUEOUS_ROLE
-        )
+        for row in _hybrid._coefficients(reduced, mixture.kij, phases, components, t_si, p_si)
     ]
     total = sum(coupled)
     _, fugacity = _hybrid._acceptance(

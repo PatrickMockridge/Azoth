@@ -2049,6 +2049,84 @@ pub fn ph_flash(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Hydrate formation pressure of a Pitzer brine.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, moles, T, cubic, structure, pitzer_dataset, minimum_pressure, maximum_pressure))]
+#[pyo3(
+    text_signature = "(components, moles, T, cubic, structure, pitzer_dataset, minimum_pressure, maximum_pressure)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pitzer_hydrate_formation_pressure(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    T: f64,
+    cubic: &str,
+    structure: Option<&str>,
+    pitzer_dataset: Option<&str>,
+    minimum_pressure: Option<f64>,
+    maximum_pressure: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPitzerHydrateFormationPressureResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    let cubic_parsed: azoth_eos::cubic::Cubic = cubic
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::pitzer_hydrate_formation_pressure::pitzer_hydrate_formation_pressure(
+        &components_refs,
+        cubic_parsed,
+        &moles,
+        kelvins(T),
+        structure,
+        minimum_pressure,
+        maximum_pressure,
+        pitzer_dataset,
+    )
+    .map(|r| crate::transport_gen::PyPitzerHydrateFormationPressureResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Hydrate formation temperature of a Pitzer brine.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, moles, P, cubic, structure, pitzer_dataset, minimum_temperature, maximum_temperature))]
+#[pyo3(
+    text_signature = "(components, moles, P, cubic, structure, pitzer_dataset, minimum_temperature, maximum_temperature)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pitzer_hydrate_formation_temperature(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    P: f64,
+    cubic: &str,
+    structure: Option<&str>,
+    pitzer_dataset: Option<&str>,
+    minimum_temperature: Option<f64>,
+    maximum_temperature: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPitzerHydrateFormationTemperatureResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    let cubic_parsed: azoth_eos::cubic::Cubic = cubic
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::pitzer_hydrate_formation_temperature::pitzer_hydrate_formation_temperature(
+        &components_refs,
+        cubic_parsed,
+        &moles,
+        pascals(P),
+        structure,
+        minimum_temperature,
+        maximum_temperature,
+        pitzer_dataset,
+    )
+    .map(|r| crate::transport_gen::PyPitzerHydrateFormationTemperatureResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Activity coefficients of a Pitzer electrolyte phase.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

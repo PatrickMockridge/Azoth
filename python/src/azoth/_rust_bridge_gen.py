@@ -142,6 +142,8 @@ from azoth.core.result import (
     PhaseTransportResult,
     PhFlashResult,
     PipeResult,
+    PitzerHydrateFormationPressureResult,
+    PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     PlugFlowReactorResult,
@@ -416,6 +418,8 @@ __all__ = [
     "ph_flash",
     "phase_transport",
     "pipe",
+    "pitzer_hydrate_formation_pressure",
+    "pitzer_hydrate_formation_temperature",
     "pitzer_phase",
     "pitzer_scale_activity",
     "plug_flow_reactor",
@@ -2523,6 +2527,52 @@ def phase_transport(components: Sequence[str], phase: str, T: Q, P: Q, z: Sequen
         k=from_si(result.k.magnitude_si, result.k.unit),
         d_binary=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.d_binary),
         d_effective=tuple(from_si(q.magnitude_si, q.unit) for q in result.d_effective),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_hydrate_formation_pressure(components: list[str], cubic: str, moles: list[Q], T: Q, structure: str | None=None, minimum_pressure: Q | None=None, maximum_pressure: Q | None=None, pitzer_dataset: str | None=None) -> PitzerHydrateFormationPressureResult:
+    """``eos.pitzer_hydrate_formation_pressure``, computed in Rust."""
+    spec = _models_gen.model("eos.pitzer_hydrate_formation_pressure")
+    result = _core.pitzer_hydrate_formation_pressure(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "T", T),
+        cubic,
+        structure,
+        pitzer_dataset,
+        None if minimum_pressure is None else input_to_si(spec, "minimum_pressure", minimum_pressure),
+        None if maximum_pressure is None else input_to_si(spec, "maximum_pressure", maximum_pressure),
+    )
+    return PitzerHydrateFormationPressureResult(
+        pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),
+        structure=HydrateStructure(result.structure),
+        water_activity=result.water_activity,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_hydrate_formation_temperature(components: list[str], cubic: str, moles: list[Q], P: Q, structure: str | None=None, minimum_temperature: Q | None=None, maximum_temperature: Q | None=None, pitzer_dataset: str | None=None) -> PitzerHydrateFormationTemperatureResult:
+    """``eos.pitzer_hydrate_formation_temperature``, computed in Rust."""
+    spec = _models_gen.model("eos.pitzer_hydrate_formation_temperature")
+    result = _core.pitzer_hydrate_formation_temperature(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "P", P),
+        cubic,
+        structure,
+        pitzer_dataset,
+        None if minimum_temperature is None else input_to_si(spec, "minimum_temperature", minimum_temperature),
+        None if maximum_temperature is None else input_to_si(spec, "maximum_temperature", maximum_temperature),
+    )
+    return PitzerHydrateFormationTemperatureResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        structure=HydrateStructure(result.structure),
+        water_activity=result.water_activity,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 

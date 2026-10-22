@@ -66,7 +66,12 @@ class _Activity(NamedTuple):
     dataset: str
 
 
-def _activity_of(components: Sequence[str], t_si: float, x: Sequence[float]) -> _Activity:
+def _activity_of(
+    components: Sequence[str],
+    t_si: float,
+    x: Sequence[float],
+    dataset: str = "auto",
+) -> _Activity:
     """The activity-coefficient surface alone, which is what the reference phase is.
 
     Separate from :func:`pitzer_phase` because the reference phase must not compute a
@@ -74,10 +79,15 @@ def _activity_of(components: Sequence[str], t_si: float, x: Sequence[float]) -> 
     the excess-Gibbs energy, which is this surface, and a twin that took the whole model
     would recurse into itself without end.
     """
-    return _activity_inner(components, t_si, x)
+    return _activity_inner(components, t_si, x, dataset)
 
 
-def _activity_inner(components: Sequence[str], t_si: float, x: Sequence[float]) -> _Activity:
+def _activity_inner(
+    components: Sequence[str],
+    t_si: float,
+    x: Sequence[float],
+    dataset: str = "auto",
+) -> _Activity:
     """The activity-coefficient arithmetic, with the input checks left to the caller."""
     n = len(components)
 
@@ -123,7 +133,7 @@ def _activity_inner(components: Sequence[str], t_si: float, x: Sequence[float]) 
         )
         for record, moles in zip(entries, x, strict=True)
     ]
-    selection = catalog.select_dataset(species)
+    selection = catalog.select_dataset(species) if dataset == "auto" else ("phreeqc", None)
     audit = catalog.coverage(species, selection, composition.solvent_mass)
     catalog.require_complete(audit)
     catalogue = selection[0] == "phreeqc"
@@ -137,7 +147,13 @@ def _activity_inner(components: Sequence[str], t_si: float, x: Sequence[float]) 
         and names[i].lower() != "water"
         and not catalog.is_hydrocarbon(species[i])
     ]
-    interactions = catalogue_interactions(names, charge, ions, neutrals) if catalogue else None
+    interactions = (
+        catalogue_interactions(
+            names, charge, ions, neutrals, zero_missing_zeta=dataset == "phreeqc_co2_chloride"
+        )
+        if catalogue
+        else None
+    )
     neutral_active = interactions is not None and len(interactions) > 0
     neutral_osmotic = (
         osmotic_neutral(interactions, composition.molality, t_si) if interactions else 0.0
@@ -210,6 +226,10 @@ def _activity_inner(components: Sequence[str], t_si: float, x: Sequence[float]) 
                 else 0.0
             )
         else:
+            # **An ion carries the neutral layer's contribution too**, NeqSim's
+            # ``getNeutralPitzerLogGammaContribution`` added after the binary and mixing
+            # sums: a neutral's lambda with an ion is asymmetric between the cation and the
+            # anion, which is why a CO2 brine's Na+ and Cl- coefficients differ.
             logged.append(
                 ln_gamma(
                     composition.molality,
@@ -220,6 +240,11 @@ def _activity_inner(components: Sequence[str], t_si: float, x: Sequence[float]) 
                     i,
                     common_ion_terms=catalogue,
                     **ion_keyword,
+                )
+                + (
+                    ln_gamma_neutral(interactions, composition.molality, i, t_si)
+                    if interactions
+                    else 0.0
                 )
             )
 
@@ -242,6 +267,8 @@ def pitzer_phase(
     T: Q,
     P: Q,
     x: Sequence[float],
+    *,
+    dataset: str = "auto",
 ) -> PitzerPhaseResult:
     """The activity coefficients of a brine whose non-ideality is Pitzer's.
 
@@ -291,7 +318,7 @@ def pitzer_phase(
     p_si = input_to_si(spec, "P", P)
     apply_checks(checks.on_input, {"T": t_si, "P": p_si}.get, warnings)
 
-    activity = _activity_of(components, t_si, x)
+    activity = _activity_of(components, t_si, x, dataset)
     bar = p_si / _BAR_TO_PA
     n = len(components)
 

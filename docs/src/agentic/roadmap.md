@@ -11,7 +11,7 @@ the mapping, so an agent can tell "validated" from "placeholder" at a glance.
 A skill whose `calculation_basis` is `azoth` drives the validated library. Seventeen
 are: the four `library/` skills, four under `eos/`, four under `flow-assurance/`,
 two under `hydraulics/`, two under `process/` and one under `thermal/`, driving the
-79 calculations and 155 models the library implements.
+79 calculations and 157 models the library implements.
 
 The remaining 73 are placeholders — 44 `screening`, 18 `advisory`, 10
 `data-retrieval` and 1 `hybrid` — and each `screening` one names **what would back it**,
@@ -76,12 +76,12 @@ auto-pH path carries a defect upstream and reproduces it**: NeqSim's CO2 Henry c
 the aqueous estimate near `1e48`, so an auto-pH carbonate index lands about `-52` and a
 manual pH is the physical route. The specs pin that value, so a future repair upstream is a
 visible divergence rather than a silent one.
-**The hydrate ids carry a caveat worth stating**: they reproduce NeqSim's non-Pitzer
-route, and NeqSim answers a `SystemPitzer` brine from `PitzerHydrateFlash` instead
-— a path that needs a flash whose two phases run different models, which this
-library does not have. So a hydrate margin on a brine is not what these three
-compute, and the difference is the electrolyte coupling rather than the hydrate
-physics.
+**The hydrate ids now cover both of NeqSim's routes**: the three fluent-cubic ids above,
+and `eos.pitzer_hydrate_formation_temperature` with `eos.pitzer_hydrate_formation_pressure`
+for a `SystemPitzer` brine. The latter run `PitzerHydrateFlash` over the hybrid EoS/GE flash,
+whose water reference is the pure-water Antoine pressure; a salty CO2 state takes the manual
+PHREEQC CO2-chloride dataset through the `pitzer_dataset` input, because the catalogue does
+not carry the CO2-cation-Cl zeta rows and the upstream caller supplies them as zero.
 **Three of the flow-assurance skills wait on no tranche at all**:
 `azoth-two-phase-flow-regime-screening` and `azoth-multiphase-flow-slug-screening`
 are `advisory` — their maps are NeqSim's `fluidmechanics/`, which is not a port

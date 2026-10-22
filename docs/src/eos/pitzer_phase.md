@@ -58,7 +58,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **which of two datasets answers is a property of the brine's topology, not of the build.** The PHREEQC catalogue applies where it covers every pair and `PitzerParameters.csv` otherwise; the two disagree on shared pairs, so the dataset is reported.
 - the brine is refused where the loaded dataset does not cover its topology. NeqSim enforces that only for a mixture with more than one cation or anion, so a single salt over an absent pair initializes there and evaluates the pair at zero; this model refuses it.
 - `getGamma`'s `pressure` argument is never read - the ion, water and neutral branches all ignore it - so `P` is read by the fugacity coefficients alone and `gamma` is a function of `T` and `x`.
-- the branch a component takes for its **activity coefficient** is its charge, except for water: water with the `solvent` reference state takes the osmotic route, any other neutral takes the sparse neutral layer, and an ion takes the extended Pitzer expression.
+- the branch a component takes for its **activity coefficient** is its charge, except for water: water takes the osmotic route, any other neutral the sparse neutral layer, and an ion the extended Pitzer expression **plus that layer**, whose lambda with an ion is asymmetric between cation and anion.
 - a molality is `n_i / m_water` from the mole fractions alone, so the phase's size cancels and no density is needed. `T` is the only state variable.
 - `x` is checked rather than renormalised.
 - `beta2`, `theta` and `psi` are zero for a brine on the legacy dataset, whatever the CSV's columns say: that loader calls no setter for them. The coverage audit is what refuses a topology where the zero matters.

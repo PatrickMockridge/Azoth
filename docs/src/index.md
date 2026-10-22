@@ -227,6 +227,8 @@ Five sections, and the difference between them is the point:
 - [`eos.pcsaft_rahmat_phase`](./eos/pcsaft_rahmat_phase.md) — PC-SAFT (Rahmat) phase state
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
 - [`eos.phase_transport`](./eos/phase_transport.md) — A phase's transport properties, by NeqSim's phase-type dispatch
+- [`eos.pitzer_hydrate_formation_pressure`](./eos/pitzer_hydrate_formation_pressure.md) — Hydrate formation pressure of a Pitzer brine
+- [`eos.pitzer_hydrate_formation_temperature`](./eos/pitzer_hydrate_formation_temperature.md) — Hydrate formation temperature of a Pitzer brine
 - [`eos.pitzer_phase`](./eos/pitzer_phase.md) — Activity coefficients of a Pitzer electrolyte phase
 - [`eos.pr_cpa_phase`](./eos/pr_cpa_phase.md) — Peng-Robinson CPA phase state
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash

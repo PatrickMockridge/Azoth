@@ -78,13 +78,14 @@ HYDROCARBON = "hc"
 
 
 class _Phase:
-    """One role's fraction and composition."""
+    """One role's fraction, composition and which role it is."""
 
-    __slots__ = ("composition", "fraction")
+    __slots__ = ("composition", "fraction", "kind")
 
-    def __init__(self, fraction: float, composition: list[float]) -> None:
+    def __init__(self, fraction: float, composition: list[float], kind: str = "gas") -> None:
         self.fraction = fraction
         self.composition = composition
+        self.kind = kind
 
 
 def _solve(hessian: list[list[float]], gradient: list[float]) -> list[float] | None:
@@ -192,9 +193,9 @@ def _seed(entries: list[Any], z: list[float], ion: list[bool]) -> list[_Phase]:
     aqueous_feed = max(aqueous_feed, floor)
     total = gas_feed + oil_feed + aqueous_feed
     return [
-        _Phase(gas_feed / total, gas),
-        _Phase(oil_feed / total, oil),
-        _Phase(aqueous_feed / total, aqueous),
+        _Phase(gas_feed / total, gas, "gas"),
+        _Phase(oil_feed / total, oil, "oil"),
+        _Phase(aqueous_feed / total, aqueous, "aqueous"),
     ]
 
 
@@ -225,7 +226,7 @@ def _enforce_aqueous_fraction_bounds(
     if minimum <= current <= stepped_maximum:
         return
 
-    others = [k for k in range(3) if k != aqueous]
+    others = [k for k in range(len(phases)) if k != aqueous]
     if current > stepped_maximum:
         excess = current - stepped_maximum
         share_total = sum(phases[k].fraction for k in others)
@@ -261,7 +262,7 @@ def _set_compositions(
     e: list[float],
     inverted: list[list[float]],
     ion: list[bool],
-    aqueous: int,
+    aqueous: int | None,
 ) -> None:
     """`TPHybridEosGeFlash.setXY`: the compositions the material balance gives.
 
@@ -347,12 +348,50 @@ def _acceptance(
     return balance, fugacity
 
 
+def _supported_roles(
+    entries: list[Any], z: list[float], ion: list[bool], t_si: float, p_si: float
+) -> list[str]:
+    """The roles the feed supports, in ``[gas, oil, aqueous]`` order.
+
+    ``SystemEosGE.activateSupportedHybridPhaseRoles``: a role enters the solve only if a
+    feed component gives it a candidate, which is what keeps a metastable EoS-liquid root
+    made only of supercritical gas and water out of a gas-aqueous solve.
+    """
+
+    def wilson(entry: Any) -> float:
+        pc = float(entry.Pc.to("Pa").magnitude)
+        tc = float(entry.Tc.to("K").magnitude)
+        return pc / p_si * math.exp(5.373 * (1.0 + float(entry.omega)) * (1.0 - tc / t_si))
+
+    gas = oil = aqueous = False
+    for index, entry in enumerate(entries):
+        if z[index] <= 1.0e-12:
+            continue
+        name = entry.name.strip().lower()
+        if ion[index] or name in AQUEOUS_SOLVENTS:
+            aqueous = True
+            continue
+        tc = float(entry.Tc.to("K").magnitude)
+        pc = float(entry.Pc.to("Pa").magnitude)
+        if tc > 0.0 and pc > 0.0 and p_si > 0.0:
+            k = wilson(entry)
+            if math.isfinite(k) and k > 1.0:
+                gas = True
+        dense_co2 = name in ("co2", "carbon dioxide") and wilson(entry) <= 1.0
+        if tc > t_si and (entry.component_type == HYDROCARBON or dense_co2):
+            oil = True
+    kinds = (["gas"] if gas else []) + (["oil"] if oil else []) + (["aqueous"] if aqueous else [])
+    return kinds or ["gas"]
+
+
 def hybrid_eos_ge_flash(
     components: list[str],
     cubic: str,
     T: Q,
     P: Q,
     moles: list[float],
+    *,
+    dataset: str = "auto",
 ) -> HybridEosGeFlashResult:
     """The isothermal flash of a fixed gas-oil-brine topology.
 
@@ -424,8 +463,13 @@ def hybrid_eos_ge_flash(
     tolerance = float(algorithm["tolerance"])
     cap = int(algorithm["max_iterations"])
 
-    phases = _seed(entries, z, ion)
-    aqueous = 2
+    seeded = _seed(entries, z, ion)
+    seeds = {"gas": seeded[0], "oil": seeded[1], "aqueous": seeded[2]}
+    kinds = _supported_roles(entries, z, ion, t_si, p_si)
+    phases = [seeds[kind] for kind in kinds]
+    active_total = sum(phase.fraction for phase in phases)
+    for phase in phases:
+        phase.fraction /= active_total
     iterations, residual, gradient_norm = solve_fixed_topology_from(
         reduced,
         kij,
@@ -437,13 +481,14 @@ def hybrid_eos_ge_flash(
         p_si,
         tolerance,
         cap,
+        dataset=dataset,
     )
 
     beta = [phase.fraction for phase in phases]
     composition = [list(phase.composition) for phase in phases]
     ln_phi = [
         [math.log(value) for value in row]
-        for row in _coefficients(reduced, kij, phases, components, t_si, p_si, aqueous)
+        for row in _coefficients(reduced, kij, phases, components, t_si, p_si, dataset)
     ]
 
     balance, fugacity = _acceptance(beta, composition, ln_phi, z, ion, p_si)
@@ -473,6 +518,8 @@ def solve_fixed_topology_from(
     p_si: float,
     tolerance: float,
     cap: int,
+    *,
+    dataset: str = "auto",
 ) -> tuple[int, float, float]:
     """The fixed-topology solve **from a split the caller already has**.
 
@@ -490,7 +537,7 @@ def solve_fixed_topology_from(
     Returns the steps taken, the last step's norm and the last gradient's, which is what the
     caller's own convergence test reads.
     """
-    aqueous = 2
+    aqueous = next((k for k, phase in enumerate(phases) if phase.kind == "aqueous"), None)
     n = len(feed)
     z = [value / sum(feed) for value in feed]
     iterations = 0
@@ -500,7 +547,7 @@ def solve_fixed_topology_from(
     for outer in range(MAXIMUM_HYBRID_ITERATIONS):
         for step in range(1, cap + 1):
             iterations += 1
-            phi = _coefficients(reduced, kij, phases, components, t_si, p_si, aqueous)
+            phi = _coefficients(reduced, kij, phases, components, t_si, p_si, dataset)
             # An ion is excluded from the EoS roles **exactly**: its inverse coefficient is
             # zero there, so it never enters a gradient, and a coefficient the model could
             # not answer with is excluded the same way.
@@ -509,7 +556,7 @@ def solve_fixed_topology_from(
                     0.0 if (ion[i] and k != aqueous) or not (phi[k][i] > 0.0) else 1.0 / phi[k][i]
                     for i in range(n)
                 ]
-                for k in range(3)
+                for k in range(len(phases))
             ]
 
             e = [0.0] * n
@@ -520,13 +567,13 @@ def solve_fixed_topology_from(
                 if not math.isfinite(e[i]) or e[i] < MINIMUM_E:
                     e[i] = MINIMUM_E
 
-            gradient = [1.0] * 3
-            for k in range(3):
+            gradient = [1.0] * len(phases)
+            for k in range(len(phases)):
                 for i in range(n):
                     gradient[k] -= z[i] * inverted[k][i] / e[i]
-            hessian = [[0.0] * 3 for _ in range(3)]
-            for j in range(3):
-                for k in range(3):
+            hessian = [[0.0] * len(phases) for _ in range(len(phases))]
+            for j in range(len(phases)):
+                for k in range(len(phases)):
                     for i in range(n):
                         hessian[j][k] += z[i] * inverted[j][i] * inverted[k][i] / (e[i] * e[i])
                     if j == k:
@@ -544,7 +591,7 @@ def solve_fixed_topology_from(
             if any(ion):
                 scale = min(scale, IONIC_BETA_STEP_SCALE)
             # `calcQ` captures the settled fraction *before* the proposal is written.
-            previous_aqueous = phases[aqueous].fraction
+            previous_aqueous = None if aqueous is None else phases[aqueous].fraction
             total_fraction = 0.0
             for k, phase in enumerate(phases):
                 candidate = phase.fraction - scale * correction[k]
@@ -553,7 +600,8 @@ def solve_fixed_topology_from(
             for phase in phases:
                 phase.fraction /= total_fraction
 
-            _enforce_aqueous_fraction_bounds(phases, ion, z, aqueous, previous_aqueous)
+            if aqueous is not None and previous_aqueous is not None:
+                _enforce_aqueous_fraction_bounds(phases, ion, z, aqueous, previous_aqueous)
             _set_compositions(phases, z, e, inverted, ion, aqueous)
 
             if step >= 2 and residual <= tolerance and gradient_norm <= GRADIENT_TOLERANCE:
@@ -574,7 +622,7 @@ def _coefficients(
     components: list[str],
     t_si: float,
     p_si: float,
-    aqueous: int,
+    dataset: str = "auto",
 ) -> list[list[float]]:
     """The fugacity coefficients of every component in every role.
 
@@ -583,12 +631,18 @@ def _coefficients(
     phase is and whose fugacity surface this flash is the first caller of.
     """
     out: list[list[float]] = []
-    for k, phase in enumerate(phases):
-        if k == aqueous:
-            result = pitzer_phase(components, _kelvin(t_si), _pascal(p_si), list(phase.composition))
+    for phase in phases:
+        if phase.kind == "aqueous":
+            result = pitzer_phase(
+                components,
+                _kelvin(t_si),
+                _pascal(p_si),
+                list(phase.composition),
+                dataset=dataset,
+            )
             out.append([math.exp(value) for value in result.ln_phi])
         else:
-            state = phase_state(reduced, kij, list(phase.composition), liquid=k != 0)
+            state = phase_state(reduced, kij, list(phase.composition), liquid=phase.kind == "oil")
             out.append([math.exp(value) for value in state.ln_phi])
     if any(not (value > 0.0) or not math.isfinite(value) for row in out for value in row):
         # A coefficient a role cannot answer with is not a state this solve can carry, and

@@ -1,0 +1,47 @@
+model = "eos.pitzer_hydrate_formation_pressure"
+
+# The same one-kilogram water basis the temperature cases use. The expected pressures are the
+# capture's `pressure_solve` rows, bara converted to pascals by 1e5.
+
+[[cases]]
+id = "co2_water_278k"
+tolerance = 1.0e-05
+source = "The capture's `co2_water_278.0k` row: CO2 and water at a fixed 278 K solve 20.734137846824893 bara at a water activity of 0.9881796770768043, structure I.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+T = 278.0
+cubic = "srk"
+[cases.expected]
+pressure = 2073413.7846824892
+structure = "structure_i"
+water_activity = 0.9881796770768043
+
+[[cases]]
+id = "co2_nacl_5wt_278k"
+tolerance = 1.0e-05
+source = "The capture's `co2_nacl_5wt_278k` row: a 5 wt% NaCl brine at 278 K needs 29.563871481200017 bara, nine bara above pure water, at a water activity of 0.945688038723503.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.9006088115566122, 0.0, 0.0, 0.0, 0.9006088115566122]
+T = 278.0
+cubic = "srk"
+pitzer_dataset = "phreeqc_co2_chloride"
+[cases.expected]
+pressure = 2956387.148120002
+structure = "structure_i"
+water_activity = 0.945688038723503
+
+[[cases]]
+id = "co2_water_280k"
+tolerance = 1.0e-05
+source = "The capture's `co2_water_280.0k` row: 26.725902935027122 bara at 280 K, between the 278 and 283 K points and monotone with them.\n"
+[cases.inputs]
+components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
+moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
+T = 280.0
+cubic = "srk"
+[cases.expected]
+pressure = 2672590.2935027122
+structure = "structure_i"
+water_activity = 0.9863644219606345

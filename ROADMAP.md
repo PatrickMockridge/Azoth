@@ -388,13 +388,15 @@ The specialist physics.
   have: the **phase label** `PhaseEos.init` assigns - a volume ratio against `1.75`, then
   whether a phase's hydrocarbons outweigh its aqueous components - which `eos.hydrate_inhibitor_wt`
   carries because it is the only model here that asks which phase is the aqueous one.
-  **Not ported**: `PitzerHydrateFlash` with `ComponentHydratePitzer`, which is reachable through
-  the model name. It was recorded as gated on the EoS/GE hybrid seam P8 did not close - **and
-  that seam is now closed** (`eos.hybrid_eos_ge_flash`, with the reactive coupling over it in
-  `reactions.reactive_hybrid_eos_ge_flash`), so `SystemPitzer`'s two-models-in-one-flash route
-  exists here. What is left is the flash itself and the Pitzer hydrate component, which is this
-  tier's. `HydrateEquilibriumDiagnostics` is an audit of a
-  state rather than a model, and what it asserts belongs in a test. **Carried as unreachable
+  **The Pitzer route is ported**: `eos.pitzer_hydrate_formation_temperature` and
+  `eos.pitzer_hydrate_formation_pressure` carry `PitzerHydrateFlash` with
+  `ComponentHydratePitzer`, whose water reference is the pure-water Antoine pressure, over
+  `eos.hybrid_eos_ge_flash`. A salty CO2 state runs the manual PHREEQC CO2-chloride dataset
+  the upstream test applies, selected by the `pitzer_dataset` input. The tranche also closed
+  the two defects it exposed: the hybrid flash's role activation
+  (`activateSupportedHybridPhaseRoles`) and the neutral layer's contribution to an ion's
+  Pitzer coefficient. `HydrateEquilibriumDiagnostics` is an audit of a state rather than a
+  model, and what it asserts belongs in a test. **Carried as unreachable
   upstream**: `ComponentHydrateKluda`, which has no construction site anywhere in `src/main`,
   `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose only sites are two
   commented-out lines in `PhaseHydrate`, and `OLGAhydrateCurveGenerator`, which only a test

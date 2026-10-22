@@ -2182,6 +2182,56 @@ class PhaseTransportResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PitzerHydrateFormationPressureResult(_HasWarnings):
+    """Result of ``eos.pitzer_hydrate_formation_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_hydrate_formation_pressure"
+
+    #: the pressure at which the hydrate's water fugacity equals the aqueous phase's.
+    pressure: Q
+
+    #: the structure the coefficient comparison chose, or the one the caller pinned.
+    structure: HydrateStructure
+
+    #: `f_aq^water / pSat_water(T)` at the answer.
+    water_activity: float
+
+    #: flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+
+    #: `ln(f_hydrate^water / f_aq^water)` at the answer.
+    residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PitzerHydrateFormationTemperatureResult(_HasWarnings):
+    """Result of ``eos.pitzer_hydrate_formation_temperature``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_hydrate_formation_temperature"
+
+    #: the temperature at which the hydrate's water fugacity equals the aqueous phase's.
+    temperature: Q
+
+    #: the structure the coefficient comparison chose, or the one the caller pinned.
+    structure: HydrateStructure
+
+    #: `f_aq^water / pSat_water(T)` at the answer.
+    water_activity: float
+
+    #: flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+
+    #: `ln(f_hydrate^water / f_aq^water)` at the answer.
+    residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PitzerPhaseResult(_HasWarnings):
     """Result of ``eos.pitzer_phase``."""
 

@@ -1117,6 +1117,24 @@ class PhaseTransportResult:
     warnings: list[Warning]
 
 @final
+class PitzerHydrateFormationPressureResult:
+    pressure: Qty
+    structure: str
+    water_activity: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class PitzerHydrateFormationTemperatureResult:
+    temperature: Qty
+    structure: str
+    water_activity: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PitzerPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -3436,6 +3454,26 @@ def phase_transport(
     P: float,
     z: list[float],
 ) -> PhaseTransportResult: ...
+def pitzer_hydrate_formation_pressure(
+    components: list[str],
+    moles: list[float],
+    T: float,
+    cubic: str,
+    structure: str | None = None,
+    pitzer_dataset: str | None = None,
+    minimum_pressure: float | None = None,
+    maximum_pressure: float | None = None,
+) -> PitzerHydrateFormationPressureResult: ...
+def pitzer_hydrate_formation_temperature(
+    components: list[str],
+    moles: list[float],
+    P: float,
+    cubic: str,
+    structure: str | None = None,
+    pitzer_dataset: str | None = None,
+    minimum_temperature: float | None = None,
+    maximum_temperature: float | None = None,
+) -> PitzerHydrateFormationTemperatureResult: ...
 def pitzer_phase(
     components: list[str],
     T: float,

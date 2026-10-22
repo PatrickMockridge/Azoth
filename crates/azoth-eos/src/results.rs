@@ -5270,3 +5270,69 @@ impl CalcResult for WaterCompatibilityResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.pitzer_hydrate_formation_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerHydrateFormationTemperatureResult {
+    /// The temperature at which the hydrate's water fugacity meets the aqueous phase's.
+    pub temperature: ThermodynamicTemperature,
+    /// The structure the coefficient comparison chose, or the pinned one.
+    pub structure: HydrateStructure,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    pub water_activity: f64,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerHydrateFormationTemperatureResult {
+    const CALC_ID: &'static str = "eos.pitzer_hydrate_formation_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "structure",
+        "water_activity",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pitzer_hydrate_formation_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerHydrateFormationPressureResult {
+    /// The pressure at which the hydrate's water fugacity meets the aqueous phase's.
+    pub pressure: Pressure,
+    /// The structure the coefficient comparison chose, or the pinned one.
+    pub structure: HydrateStructure,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    pub water_activity: f64,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerHydrateFormationPressureResult {
+    const CALC_ID: &'static str = "eos.pitzer_hydrate_formation_pressure";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure",
+        "structure",
+        "water_activity",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

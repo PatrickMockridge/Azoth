@@ -160,6 +160,8 @@
   - [PC-SAFT (Rahmat) phase state](./eos/pcsaft_rahmat_phase.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [A phase's transport properties, by NeqSim's phase-type dispatch](./eos/phase_transport.md)
+  - [Hydrate formation pressure of a Pitzer brine](./eos/pitzer_hydrate_formation_pressure.md)
+  - [Hydrate formation temperature of a Pitzer brine](./eos/pitzer_hydrate_formation_temperature.md)
   - [Activity coefficients of a Pitzer electrolyte phase](./eos/pitzer_phase.md)
   - [Peng-Robinson CPA phase state](./eos/pr_cpa_phase.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
