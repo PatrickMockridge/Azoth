@@ -1,0 +1,143 @@
+id = "eos.brine_mixing_scale_evaluator"
+name = "Mineral-scale risk of mixing two incompatible brines"
+kind = "direct"
+assumptions = [
+    "**each brine is a one-row record list** of the nine ions the class's `BrineComposition` carries; a list with any other length is refused rather than read for its first row.\n",
+    "**the blend is linear in each ion's mass concentration**, `fA A + (1 - fA) B` at `fA = i/(steps - 1)`; every ion the calculator takes is blended, while iron and carbonate are absent from `BrineComposition` and the class sets both to zero.\n",
+    "**`steps` is the class's `setSteps`, floored at 2**; the points run from all brine A to all brine B, and an end point can be the worst only when the other brine does not raise an index.\n",
+    "**the worst case is the largest index in point order, minerals CaCO3, BaSO4, CaSO4, SrSO4**, with a strict greater-than, so a tie keeps the earlier point and mineral.\n",
+    "each blend is `eos.electrolyte_scale_calculator`'s own state; the class's Gson report is not a calculation.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/BrineMixingScaleEvaluator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the `brine_mixing` rows: the two upstream formation/seawater pairs at 11 and 21 points, and the steps floor.",
+]
+[source]
+standard = "NeqSim master `BrineMixingScaleEvaluator`"
+edition = "`evaluate`, `blend`, `updateWorst` and the two loops, ported. The constructors' null checks, the Gson report and the `MixPoint` class are not."
+[inputs]
+[inputs.brine_a]
+type = "record_list"
+row_type = "BrineAnalysis"
+description = "The first brine end member (for example formation water), exactly one row.\n"
+[inputs.brine_a.fields.calcium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.barium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.strontium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.magnesium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.sodium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.potassium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.chloride]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.sulphate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_a.fields.bicarbonate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b]
+type = "record_list"
+row_type = "BrineAnalysis"
+description = "The second brine end member (for example injection seawater), the same nine fields and exactly one row.\n"
+[inputs.brine_b.fields.calcium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.barium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.strontium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.magnesium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.sodium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.potassium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.chloride]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.sulphate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.brine_b.fields.bicarbonate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.temperature]
+unit = "K"
+description = "the temperature every blend is evaluated at.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "the pressure every blend is evaluated at.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the pH every blend is evaluated at.\n"
+[inputs.steps]
+unit = "dimensionless"
+description = "the number of mixing points, floored at 2 as the class's `setSteps` floors it.\n"
+[outputs]
+[outputs.points]
+type = "record_list"
+description = "One row per mixing fraction, from all brine A to all brine B.\n"
+[outputs.points.fields.fraction_a]
+unit = "dimensionless"
+description = "the fraction of brine A in the mixture.\n"
+[outputs.points.fields.si_caco3]
+unit = "dimensionless"
+description = "calcite's index.\n"
+[outputs.points.fields.si_baso4]
+unit = "dimensionless"
+description = "barite's index.\n"
+[outputs.points.fields.si_caso4]
+unit = "dimensionless"
+description = "gypsum's index.\n"
+[outputs.points.fields.si_srso4]
+unit = "dimensionless"
+description = "celestite's index.\n"
+[outputs.worst_fraction_a]
+unit = "dimensionless"
+description = "the fraction of brine A where the worst index occurs.\n"
+[outputs.worst_mineral]
+type = "string"
+description = "the mineral that produced it.\n"
+[outputs.worst_saturation_index]
+unit = "dimensionless"
+description = "the worst index itself.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[implementations]
+python = "azoth.eos.brine_mixing_scale_evaluator"
+rust = "azoth_eos::brine_mixing_scale_evaluator"

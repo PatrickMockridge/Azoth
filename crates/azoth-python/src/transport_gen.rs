@@ -14,8 +14,8 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow,
-    PySubFraction, PyWaterMixingResult,
+    PyActivityCoefficientRow, PyBrineMixingPointRow, PyFlowlineScaleSegment, PyKComponent,
+    PyMineralEquilibriumRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -1197,6 +1197,59 @@ impl From<&azoth_eos::results::BariteCelestiteSolidSolutionResult>
         }
     }
 }
+/// Result of `eos.brine_mixing_scale_evaluator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BrineMixingScaleEvaluatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBrineMixingScaleEvaluatorResult {
+    /// One row per mixing fraction, from all brine A to all brine B.
+    #[pyo3(get)]
+    pub points: Vec<PyBrineMixingPointRow>,
+    /// the fraction of brine A where the worst index occurs.
+    #[pyo3(get)]
+    pub worst_fraction_a: f64,
+    /// the mineral that produced it.
+    #[pyo3(get)]
+    pub worst_mineral: String,
+    /// the worst index itself.
+    #[pyo3(get)]
+    pub worst_saturation_index: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBrineMixingScaleEvaluatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BrineMixingScaleEvaluatorResult(points={:?}, worst_fraction_a={:?}, worst_mineral={:?}, worst_saturation_index={:?}, {} warning(s))",
+            self.points,
+            self.worst_fraction_a,
+            self.worst_mineral,
+            self.worst_saturation_index,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BrineMixingScaleEvaluatorResult>
+    for PyBrineMixingScaleEvaluatorResult
+{
+    fn from(r: &azoth_eos::results::BrineMixingScaleEvaluatorResult) -> Self {
+        Self {
+            points: r.points.iter().map(PyBrineMixingPointRow::from).collect(),
+            worst_fraction_a: r.worst_fraction_a,
+            worst_mineral: r.worst_mineral.clone(),
+            worst_saturation_index: r.worst_saturation_index,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.bubble_pressure`, transported.
 #[pyclass(
     frozen,
@@ -2317,6 +2370,92 @@ impl From<&azoth_eos::results::ElectrolyteCpaStatoilPhaseResult>
         Self {
             z_factor: r.z_factor,
             ln_phi: r.ln_phi.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.electrolyte_scale_calculator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ElectrolyteScaleCalculatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyElectrolyteScaleCalculatorResult {
+    /// `0.5 sum(m_i z_i^2)` over the eleven ions.
+    #[pyo3(get)]
+    pub ionic_strength: PyQty,
+    /// the temperature-adjusted Debye-Huckel A, floored at 0.5.
+    #[pyo3(get)]
+    pub debye_hueckel_a: f64,
+    /// the Davies coefficient for a divalent ion.
+    #[pyo3(get)]
+    pub divalent_activity_coefficient: f64,
+    /// the Davies coefficient for a monovalent ion.
+    #[pyo3(get)]
+    pub monovalent_activity_coefficient: f64,
+    /// calcite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_caco3: f64,
+    /// barite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_baso4: f64,
+    /// gypsum's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_caso4: f64,
+    /// celestite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_srso4: f64,
+    /// brucite's activity-corrected saturation index, from the hydroxide activity squared.
+    #[pyo3(get)]
+    pub si_brucite: f64,
+    /// `10^(pH - pKw)` at the state's temperature.
+    #[pyo3(get)]
+    pub hydroxide_activity: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyElectrolyteScaleCalculatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ElectrolyteScaleCalculatorResult(ionic_strength={:?}, debye_hueckel_a={:?}, divalent_activity_coefficient={:?}, monovalent_activity_coefficient={:?}, si_caco3={:?}, si_baso4={:?}, si_caso4={:?}, si_srso4={:?}, si_brucite={:?}, hydroxide_activity={:?}, {} warning(s))",
+            self.ionic_strength,
+            self.debye_hueckel_a,
+            self.divalent_activity_coefficient,
+            self.monovalent_activity_coefficient,
+            self.si_caco3,
+            self.si_baso4,
+            self.si_caso4,
+            self.si_srso4,
+            self.si_brucite,
+            self.hydroxide_activity,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ElectrolyteScaleCalculatorResult>
+    for PyElectrolyteScaleCalculatorResult
+{
+    fn from(r: &azoth_eos::results::ElectrolyteScaleCalculatorResult) -> Self {
+        Self {
+            ionic_strength: PyQty {
+                magnitude_si: r.ionic_strength.value,
+                unit: "mol/kg".to_string(),
+            },
+            debye_hueckel_a: r.debye_hueckel_a,
+            divalent_activity_coefficient: r.divalent_activity_coefficient,
+            monovalent_activity_coefficient: r.monovalent_activity_coefficient,
+            si_caco3: r.si_caco3,
+            si_baso4: r.si_baso4,
+            si_caso4: r.si_caso4,
+            si_srso4: r.si_srso4,
+            si_brucite: r.si_brucite,
+            hydroxide_activity: r.hydroxide_activity,
             warnings: transport(&r.warnings),
         }
     }

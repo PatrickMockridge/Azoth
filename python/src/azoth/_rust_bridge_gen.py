@@ -24,6 +24,8 @@ from azoth.core.result import (
     ArgonSolidPhaseResult,
     AssayMassFractionsResult,
     BariteCelestiteSolidSolutionResult,
+    BrineMixingPointRow,
+    BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -57,6 +59,7 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     EjectorResult,
     ElectrolyteCpaStatoilPhaseResult,
+    ElectrolyteScaleCalculatorResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
     ExpanderResult,
@@ -304,6 +307,7 @@ __all__ = [
     "argon_solid_phase",
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
+    "brine_mixing_scale_evaluator",
     "bubble_pressure",
     "bubble_temperature",
     "bwrs_phase",
@@ -337,6 +341,7 @@ __all__ = [
     "effective_diffusion",
     "ejector",
     "electrolyte_cpa_statoil_phase",
+    "electrolyte_scale_calculator",
     "eos_cg_phase",
     "equilibrium_constant",
     "expander",
@@ -894,6 +899,26 @@ def barite_celestite_solid_solution(margules: float, a_ba: float, a_sr: float, a
     )
 
 
+def brine_mixing_scale_evaluator(brine_a: list[dict[str, Q]], brine_b: list[dict[str, Q]], temperature: Q, pressure: Q, ph: float, steps: int) -> BrineMixingScaleEvaluatorResult:
+    """``eos.brine_mixing_scale_evaluator``, computed in Rust."""
+    spec = _models_gen.model("eos.brine_mixing_scale_evaluator")
+    result = _core.brine_mixing_scale_evaluator(
+        input_records_to_si(spec, "brine_a", brine_a),
+        input_records_to_si(spec, "brine_b", brine_b),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        ph,
+        _count("steps", steps),
+    )
+    return BrineMixingScaleEvaluatorResult(
+        points=tuple(BrineMixingPointRow(fraction_a=c.fraction_a, si_caco3=c.si_caco3, si_baso4=c.si_baso4, si_caso4=c.si_caso4, si_srso4=c.si_srso4) for c in result.points),
+        worst_fraction_a=result.worst_fraction_a,
+        worst_mineral=result.worst_mineral,
+        worst_saturation_index=result.worst_saturation_index,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:
     """``eos.bubble_pressure``, computed in Rust."""
     spec = _models_gen.model("eos.bubble_pressure")
@@ -1295,6 +1320,40 @@ def electrolyte_cpa_statoil_phase(components: list[str], T: Q, P: Q, x: list[flo
     return ElectrolyteCpaStatoilPhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def electrolyte_scale_calculator(calcium: Q, barium: Q, strontium: Q, magnesium: Q, sodium: Q, potassium: Q, iron: Q, chloride: Q, sulphate: Q, bicarbonate: Q, carbonate: Q, temperature: Q, pressure: Q, ph: float) -> ElectrolyteScaleCalculatorResult:
+    """``eos.electrolyte_scale_calculator``, computed in Rust."""
+    spec = _spec_for("eos.electrolyte_scale_calculator")
+    result = _core.electrolyte_scale_calculator(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "potassium", potassium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "chloride", chloride),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "carbonate", carbonate),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        ph,
+    )
+    return ElectrolyteScaleCalculatorResult(
+        ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
+        debye_hueckel_a=result.debye_hueckel_a,
+        divalent_activity_coefficient=result.divalent_activity_coefficient,
+        monovalent_activity_coefficient=result.monovalent_activity_coefficient,
+        si_caco3=result.si_caco3,
+        si_baso4=result.si_baso4,
+        si_caso4=result.si_caso4,
+        si_srso4=result.si_srso4,
+        si_brucite=result.si_brucite,
+        hydroxide_activity=result.hydroxide_activity,
         warnings=_warnings(result.warnings),
     )
 

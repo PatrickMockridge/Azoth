@@ -5,6 +5,7 @@
 //!   - specs/models/eos/aqueous_viscosity.toml
 //!   - specs/models/eos/argon_solid_phase.toml
 //!   - specs/models/eos/barite_celestite_solid_solution.toml
+//!   - specs/models/eos/brine_mixing_scale_evaluator.toml
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
@@ -926,6 +927,1156 @@ pub static BARITE_CELESTITE_SOLID_SOLUTION_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&BARITE_CELESTITE_SOLID_SOLUTION_ALGORITHM),
     checks: BARITE_CELESTITE_SOLID_SOLUTION_CHECKS,
     cases: BARITE_CELESTITE_SOLID_SOLUTION_CASES,
+};
+
+static BRINE_MIXING_SCALE_EVALUATOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static BRINE_MIXING_SCALE_EVALUATOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "mixing_11",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.0),
+            ("steps", 11.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 0.7),
+            ("worst_saturation_index", 4.154711564966543),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "BaSO4")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(30.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(55.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.4),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.7),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-1.3795591383150576),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.072442643843596),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.006857090708146885),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.6922553591975804),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.9123756907222873),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.281920635573397),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.3543029953784256),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.6398214165022846),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.5932687627500659),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.601636416136442),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.5590642602397704),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.3404987945810829),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.3312207134388139),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7967824415215885),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.7079650976722802),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.15236898773719254),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.09954805660357557),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.9376856965751195),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.8237576321427804),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.01501681119195375),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.11331650020186856),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.043189336695914),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9134670050803426),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.0883421604622514),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.3134401710628332),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.117332975237079),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9767527160332996),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.1610501134582627),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.7),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.5043963563216387),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.154711564966543),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(1.0062060040469119),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.1974002999558051),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.6884621018193755),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.135003033578822),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9804571182382182),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.17691886485473685),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.9),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.8671740232008869),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.986149433722609),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.8268466857018488),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.027463165246042642),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(1.0416155205107964),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.313575300869248),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-11.476721387971768),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-12.27274385088555),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "mixing_21",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.2),
+            ("steps", 21.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 0.65),
+            ("worst_saturation_index", 4.0485505005539615),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "BaSO4")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(25.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(45.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.3),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.8),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.9873571817254163),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.15593617926975),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.09604228707634732),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-2.47634981128195),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.866575982456963),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.0994282881379034),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.17041341191692894),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-2.138737251666787),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.758335287050155),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.3954082107690517),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.23231012851471),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.9547310884795701),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.15),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.6592994637181491),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.566000512760783),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.28480311842844674),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.8289511309042012),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.5673076487865085),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.684765004271143),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.32978139577788834),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.7344552141207785),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.25),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.48087832281670373),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7745740708923288),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.3684379399516926),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.659886114056329),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.39895073971444894),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.8454416473461652),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4015169555161293),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.599483971280658),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.35),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.3207389912857721),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.902528719051859),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.42944579848060993),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.5500296879895954),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.24564445318320338),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.948716895544268),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.45240413425454395),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.509655446809802),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.45),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.17320061212589266),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.985634321285307),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4703537209196025),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4773144014747892),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.10303686539023715),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.014112830152513),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4830379626035759),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.452532038167547),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.55),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.03485395172996064),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.034390048631849),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.48995121952493115),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4353025127702157),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.03159320944696731),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.046167153558794),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.49026870228482533),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4260815922792647),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.65),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.09650780425426575),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.0485505005539615),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4827135267458127),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4258729843397164),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.7),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.16006011145223553),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.039848891200383),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4653083298703562),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4364473627958576),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.75),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.22239420135415067),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.017115756531689),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4348883665353718),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4608101221980592),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.2836330129520288),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.9751225335938463),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.38605571906722247),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.5042343002423513),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.85),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.34388225935362904),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.903784307984779),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.30859194082409314),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.576839060671201),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.9),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.4032334720927029),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7801534322159966),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.17944263652566583),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.7015988543668046),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.95),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.46176640275076686),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.53058954596421),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-0.07511893988163099),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.9521753185590036),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.519550938209763),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.582402147472612),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-12.192658261069177),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-14.066080355091454),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "steps_floor",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.0),
+            ("steps", 1.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 1.0),
+            ("worst_saturation_index", 1.0416155205107964),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "CaCO3")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(30.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(55.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.4),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.7),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-1.3795591383150576),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.072442643843596),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.006857090708146885),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.6922553591975804),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(1.0416155205107964),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.313575300869248),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-11.476721387971768),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-12.27274385088555),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.brine_mixing_scale_evaluator`.
+pub static BRINE_MIXING_SCALE_EVALUATOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.brine_mixing_scale_evaluator",
+    kind: "direct",
+    algorithm: None,
+    checks: BRINE_MIXING_SCALE_EVALUATOR_CHECKS,
+    cases: BRINE_MIXING_SCALE_EVALUATOR_CASES,
 };
 
 static BUBBLE_PRESSURE_CHECKS: &[SpecCheck] = &[
@@ -18427,6 +19578,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &AQUEOUS_VISCOSITY_SPEC,
     &ARGON_SOLID_PHASE_SPEC,
     &BARITE_CELESTITE_SOLID_SOLUTION_SPEC,
+    &BRINE_MIXING_SCALE_EVALUATOR_SPEC,
     &BUBBLE_PRESSURE_SPEC,
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,

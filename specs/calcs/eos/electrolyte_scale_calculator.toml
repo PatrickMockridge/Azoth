@@ -1,0 +1,382 @@
+id = "eos.electrolyte_scale_calculator"
+name = "Activity-corrected mineral-scale saturation indices from a brine analysis"
+equation = "I = 0.5 sum(m_i z_i^2)\n\nlog10(gamma_z) = -A z^2 (sqrt(I)/(1 + sqrt(I)) - 0.3 I),  A = 0.5092 + 8.5e-4 (T_C - 25), floor 0.5\n\n[CO3--] = [HCO3-] 10^(pH - pK2),  pK2 = 10.329 + 0.013 (T_K - 298.15)/25\n\na(OH-) = 10^(pH - pKw),  pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K\n\nSI_j = log10(IAP_j) - log10(Ksp_j),  IAP_j = (gamma_M m_M)(gamma_X m_X)\n\nwith the class's four temperature Ksp correlations and the Van't Hoff brucite form, each after the pressure correction exp(-dV (P - 1.01325)/(83.1446 T))."
+latex = '''I = \frac{1}{2}\sum_i m_i z_i^2, \qquad \log_{10}\gamma_z = -A z^2\left(\frac{\sqrt{I}}{1+\sqrt{I}} - 0.3I\right), \qquad A = 0.5092 + 8.5\times10^{-4}(T_C - 25)
+\mathrm{SI}_j = \log_{10}\left(a^{+}_j a^{-}_j\right) - \log_{10}K_{sp,j}, \qquad a(\mathrm{OH}^-) = 10^{\mathrm{pH} - pK_w}'''
+assumptions = [
+    "the class's inputs are mg/L, degrees Celsius and bara; this calc takes kg/m3, kelvin and pascal. Its molar masses are the class's own (Ca 40.08 ... CO3 60.01 g/mol), not modern atomic weights.\n",
+    "`I = 0.5 sum(m_i z_i^2)` is a charge sum over the eleven ions on the class's 1 kg/L assumption, so a mol/L concentration is also its molality and the result is reported in mol/kg.\n",
+    "the Debye-Huckel A is the class's linear form `0.5092 + 8.5e-4 (T_C - 25)`, floored at 0.5 and with no upper bound, in the Davies equation with its `0.3 I` term.\n",
+    "pH enters twice: carbonate is `HCO3 * 10^(pH - pK2)` with `pK2 = 10.329 + 0.013 (T_K - 298.15)/25`, and the hydroxide activity is `10^(pH - pKw)` with `pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K`.\n",
+    "the four Ksp correlations are the class's (Plummer-Busenberg calcite, Templeton barite, gypsum and celestite); brucite is its Van't Hoff form on `log10 Ksp(25 C) = -11.16` and `dH = -113.4 kJ/mol`.\n",
+    "the pressure correction `exp(-dV (P - 1.01325)/(83.1446 T_K))` runs only above 1.013 bara, with the class's cm3/mol `dV`; `pKsp` is `-log10` of the corrected Ksp, so `SI = log10(IAP) + pKsp`.\n",
+    "**the `-10` sentinel in `saturationIndex` is dead.** Every activity is floored at `1e-15` before the call, so the branch cannot see a non-positive argument; it is ported as written and stays unreachable.\n",
+    "**the CO2 partial-pressure setter is stored and never read**, so it is not an input. The class's eleven-name activity map holds two values (`gamma_1`, `gamma_2`) and is reported as the two.\n",
+    "the class does not validate pH or the ions; the port refuses a negative concentration and a non-positive temperature or pressure, and warns outside `0 <= pH <= 14`.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ElectrolyteScaleCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the upstream brucite and advanced-models brines, the pH and temperature grid, the floor and the absent-ion states.",
+    "Plummer, L. N.; Busenberg, E. (1982). Geochim. Cosmochim. Acta 46(6), 1011-1040. Templeton, C. C. (1960). J. Chem. Eng. Data 5(4), 514-517. Marshall, W. L.; Slusher, R. (1966). J. Chem. Eng. Data 11(3), 339-340.",
+]
+[source]
+standard = "NeqSim master `ElectrolyteScaleCalculator`"
+edition = "`calculate`, `daviesLogGamma`, `saturationIndex`, `applyPressureCorrection`, `pKsp`, the five Ksp correlations and `pKw`, ported. The setters' storage, the eleven-name activity map and the Gson report are not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "calcium ion concentration, 400 mg/L as 0.4 kg/m3.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "barium ion concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "strontium ion concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "magnesium ion concentration.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "sodium ion concentration.\n"
+[inputs.potassium]
+unit = "kg/m**3"
+description = "potassium ion concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "ferrous iron concentration.\n"
+[inputs.chloride]
+unit = "kg/m**3"
+description = "chloride ion concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "sulphate ion concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "bicarbonate concentration, which sets carbonate through `pK2` and the pH.\n"
+[inputs.carbonate]
+unit = "kg/m**3"
+description = "carbonate ion concentration, which adds to the derived carbonate.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure, used by the Ksp pressure correction.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the water's pH, which sets carbonate and the hydroxide activity.\n"
+[outputs]
+[outputs.ionic_strength]
+unit = "mol/kg"
+description = "`0.5 sum(m_i z_i^2)` over the eleven ions.\n"
+[outputs.debye_hueckel_a]
+unit = "dimensionless"
+description = "the temperature-adjusted Debye-Huckel A, floored at 0.5.\n"
+[outputs.divalent_activity_coefficient]
+unit = "dimensionless"
+description = "the Davies coefficient for a divalent ion.\n"
+[outputs.monovalent_activity_coefficient]
+unit = "dimensionless"
+description = "the Davies coefficient for a monovalent ion.\n"
+[outputs.si_caco3]
+unit = "dimensionless"
+description = "calcite's activity-corrected saturation index.\n"
+[outputs.si_baso4]
+unit = "dimensionless"
+description = "barite's activity-corrected saturation index.\n"
+[outputs.si_caso4]
+unit = "dimensionless"
+description = "gypsum's activity-corrected saturation index.\n"
+[outputs.si_srso4]
+unit = "dimensionless"
+description = "celestite's activity-corrected saturation index.\n"
+[outputs.si_brucite]
+unit = "dimensionless"
+description = "brucite's activity-corrected saturation index, from the hydroxide activity squared.\n"
+[outputs.hydroxide_activity]
+unit = "dimensionless"
+description = "`10^(pH - pKw)` at the state's temperature.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "barium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "strontium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "magnesium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sodium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "potassium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "iron"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "chloride"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sulphate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "bicarbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "carbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[worked_example]
+source = "the capture's `advanced_60c_50bara_ph6.5` row"
+derivation = "Seawater (420, 0.05, 8, 1280, 10800, 400, 0 mg/L of Ca, Ba, Sr, Mg, Na, K, Fe; 19400, 2700, 142, 0 mg/L of Cl, SO4, HCO3, CO3) at 60 C, 50 bara and pH 6.5.\n\n  I = 0.5 sum(m z^2) = 0.6974509413079769 mol/kg\n  A = 0.5092 + 8.5e-4 (60 - 25) = 0.53895\n  gamma_2 = 10^(-A*4*(sqrtI/(1+sqrtI) - 0.3I)) = 0.29512479879482284\n  pK2 = 10.329 + 0.013 (333.15 - 298.15)/25 = 10.3472\n  a(OH-) = 10^(6.5 - pKw(333.15)) = 3.045157829187762e-7\n  SI(CaCO3) = -0.8060791957491737, SI(BaSO4) = 0.5254850466681731\n  SI(CaSO4) = 0.05426475745470505, SI(SrSO4) = -1.6550618915365867\n  SI(Mg(OH)2) = -1.6095559513991322\n"
+tolerance = 1e-12
+[worked_example.inputs]
+calcium = 0.42
+barium = 0.00005
+strontium = 0.008
+magnesium = 1.28
+sodium = 10.8
+potassium = 0.4
+iron = 0.0
+chloride = 19.4
+sulphate = 2.7
+bicarbonate = 0.142
+carbonate = 0.0
+temperature = 333.15
+pressure = 5.0e6
+ph = 6.5
+[worked_example.expected]
+ionic_strength = 0.6974509413079769
+debye_hueckel_a = 0.53895
+divalent_activity_coefficient = 0.29512479879482284
+monovalent_activity_coefficient = 0.7370575954529178
+si_caco3 = -0.8060791957491737
+si_baso4 = 0.5254850466681731
+si_caso4 = 0.05426475745470505
+si_srso4 = -1.6550618915365867
+si_brucite = -1.6095559513991322
+hydroxide_activity = 3.045157829187762e-7
+[[tests]]
+id = "advanced_models_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "brucite_cathode_boundary_layer"
+type = "reference"
+status = "active"
+source = "The capture's `seawater_10c_ph10.5` row: the brucite test's North Sea seawater at pH 10.5, where the cathode boundary layer is supersaturated.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.412
+barium = 0.00002
+strontium = 0.0079
+magnesium = 1.29
+sodium = 10.78
+potassium = 0.399
+iron = 0.000002
+chloride = 19.35
+sulphate = 2.71
+bicarbonate = 0.142
+carbonate = 0.0
+temperature = 283.15
+pressure = 1.013e5
+ph = 10.5
+[tests.expected]
+ionic_strength = 0.6969270236868836
+debye_hueckel_a = 0.5
+si_brucite = 0.27409434256769494
+hydroxide_activity = 9.263585571128483e-5
+[[tests]]
+id = "brucite_bulk_seawater"
+type = "reference"
+status = "active"
+source = "The capture's `seawater_10c_ph8.1` row: bulk seawater is undersaturated in brucite by 4.526 decades.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.412
+barium = 0.00002
+strontium = 0.0079
+magnesium = 1.29
+sodium = 10.78
+potassium = 0.399
+iron = 0.000002
+chloride = 19.35
+sulphate = 2.71
+bicarbonate = 0.142
+carbonate = 0.0
+temperature = 283.15
+pressure = 1.013e5
+ph = 8.1
+[tests.expected]
+si_brucite = -4.525905657432306
+si_caco3 = 0.5844241590426966
+si_baso4 = 0.8080392703329693
+[[tests]]
+id = "pure_water"
+type = "reference"
+status = "active"
+source = "The capture's `pure_water_25c_ph7` row: no ions, so unit activity coefficients and every index on the 1e-15 floor.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.0
+barium = 0.0
+strontium = 0.0
+magnesium = 0.0
+sodium = 0.0
+potassium = 0.0
+iron = 0.0
+chloride = 0.0
+sulphate = 0.0
+bicarbonate = 0.0
+carbonate = 0.0
+temperature = 298.15
+pressure = 1.013e5
+ph = 7.0
+[tests.expected]
+ionic_strength = 0.0
+divalent_activity_coefficient = 1.0
+monovalent_activity_coefficient = 1.0
+si_caco3 = -21.520170124846175
+si_baso4 = -20.065076781407033
+si_caso4 = -25.4214707028454
+si_srso4 = -23.368671396105665
+si_brucite = -17.829425878584605
+[[tests]]
+id = "absent_ions"
+type = "reference"
+status = "active"
+source = "The capture's `absent_ions_25c_ph7` row: calcium and sodium chloride only, so the sulphate and carbonate indices fall to the floors.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.4
+barium = 0.0
+strontium = 0.0
+magnesium = 0.0
+sodium = 10.0
+potassium = 0.0
+iron = 0.0
+chloride = 19.0
+sulphate = 0.0
+bicarbonate = 0.0
+carbonate = 0.0
+temperature = 298.15
+pressure = 1.013e5
+ph = 7.0
+[tests.expected]
+si_caco3 = -9.59604321243367
+si_baso4 = -21.140082147463303
+si_caso4 = -13.497343790432897
+si_srso4 = -24.443676762161935
+si_brucite = -18.36692856161274
+[[tests]]
+id = "debye_floor_at_cold"
+type = "reference"
+status = "active"
+source = "The capture's `seawater_0c_ph10.0` row: the linear A would be 0.488 at 0 C and the class's floor makes it 0.5.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.412
+barium = 0.00002
+strontium = 0.0079
+magnesium = 1.29
+sodium = 10.78
+potassium = 0.399
+iron = 0.000002
+chloride = 19.35
+sulphate = 2.71
+bicarbonate = 0.142
+carbonate = 0.0
+temperature = 273.15
+pressure = 1.013e5
+ph = 10.0
+[tests.expected]
+debye_hueckel_a = 0.5
+si_caco3 = 2.4605657661999407
+[[tests]]
+id = "debye_above_floor_at_hot"
+type = "reference"
+status = "active"
+source = "The capture's `seawater_120c_ph10.0` row: A = 0.5092 + 8.5e-4 (120 - 25) = 0.58995, with no upper bound.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.412
+barium = 0.00002
+strontium = 0.0079
+magnesium = 1.29
+sodium = 10.78
+potassium = 0.399
+iron = 0.000002
+chloride = 19.35
+sulphate = 2.71
+bicarbonate = 0.142
+carbonate = 0.0
+temperature = 393.15
+pressure = 1.013e5
+ph = 10.0
+[tests.expected]
+debye_hueckel_a = 0.58995
+si_brucite = 10.121338412427447
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.electrolyte_scale_calculator"
+rust = "azoth_eos::electrolyte_scale_calculator"

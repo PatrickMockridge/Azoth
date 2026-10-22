@@ -392,6 +392,65 @@ pub fn barite_celestite_solid_solution(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Mineral-scale risk of mixing two incompatible brines.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (brine_a, brine_b, temperature, pressure, ph, steps))]
+#[pyo3(text_signature = "(brine_a, brine_b, temperature, pressure, ph, steps)")]
+pub fn brine_mixing_scale_evaluator(
+    py: Python<'_>,
+    brine_a: Vec<crate::records_gen::BrineAnalysis>,
+    brine_b: Vec<crate::records_gen::BrineAnalysis>,
+    temperature: f64,
+    pressure: f64,
+    ph: f64,
+    steps: usize,
+) -> PyResult<crate::transport_gen::PyBrineMixingScaleEvaluatorResult> {
+    let brine_a_records: Vec<azoth_eos::brine_mixing_scale_evaluator::BrineAnalysis> = brine_a
+        .into_iter()
+        .map(
+            |row| azoth_eos::brine_mixing_scale_evaluator::BrineAnalysis {
+                calcium: kilograms_per_cubic_meter(row.calcium),
+                barium: kilograms_per_cubic_meter(row.barium),
+                strontium: kilograms_per_cubic_meter(row.strontium),
+                magnesium: kilograms_per_cubic_meter(row.magnesium),
+                sodium: kilograms_per_cubic_meter(row.sodium),
+                potassium: kilograms_per_cubic_meter(row.potassium),
+                chloride: kilograms_per_cubic_meter(row.chloride),
+                sulphate: kilograms_per_cubic_meter(row.sulphate),
+                bicarbonate: kilograms_per_cubic_meter(row.bicarbonate),
+            },
+        )
+        .collect();
+    let brine_b_records: Vec<azoth_eos::brine_mixing_scale_evaluator::BrineAnalysis> = brine_b
+        .into_iter()
+        .map(
+            |row| azoth_eos::brine_mixing_scale_evaluator::BrineAnalysis {
+                calcium: kilograms_per_cubic_meter(row.calcium),
+                barium: kilograms_per_cubic_meter(row.barium),
+                strontium: kilograms_per_cubic_meter(row.strontium),
+                magnesium: kilograms_per_cubic_meter(row.magnesium),
+                sodium: kilograms_per_cubic_meter(row.sodium),
+                potassium: kilograms_per_cubic_meter(row.potassium),
+                chloride: kilograms_per_cubic_meter(row.chloride),
+                sulphate: kilograms_per_cubic_meter(row.sulphate),
+                bicarbonate: kilograms_per_cubic_meter(row.bicarbonate),
+            },
+        )
+        .collect();
+    azoth_eos::brine_mixing_scale_evaluator::brine_mixing_scale_evaluator(
+        &brine_a_records,
+        &brine_b_records,
+        kelvins(temperature),
+        pascals(pressure),
+        ph,
+        steps,
+    )
+    .map(|r| crate::transport_gen::PyBrineMixingScaleEvaluatorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Bubble-point pressure.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -909,6 +968,52 @@ pub fn electrolyte_cpa_statoil_phase(
         compressed_phase,
     )
     .map(|r| crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Activity-corrected mineral-scale saturation indices from a brine analysis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, magnesium, sodium, potassium, iron, chloride, sulphate, bicarbonate, carbonate, temperature, pressure, ph))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, magnesium, sodium, potassium, iron, chloride, sulphate, bicarbonate, carbonate, temperature, pressure, ph)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn electrolyte_scale_calculator(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    magnesium: f64,
+    sodium: f64,
+    potassium: f64,
+    iron: f64,
+    chloride: f64,
+    sulphate: f64,
+    bicarbonate: f64,
+    carbonate: f64,
+    temperature: f64,
+    pressure: f64,
+    ph: f64,
+) -> PyResult<crate::transport_gen::PyElectrolyteScaleCalculatorResult> {
+    azoth_eos::electrolyte_scale_calculator::electrolyte_scale_calculator(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(potassium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(chloride),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(carbonate),
+        kelvins(temperature),
+        pascals(pressure),
+        ph,
+    )
+    .map(|r| crate::transport_gen::PyElectrolyteScaleCalculatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

@@ -23,6 +23,7 @@ from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
+    BrineMixingPointRow,
     FlowlineScaleSegment,
     KComponent,
     MineralEquilibriumRow,
@@ -461,6 +462,28 @@ class BariteCelestiteSolidSolutionResult(_HasWarnings):
 
     #: whether the index is positive.
     supersaturated: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class BrineMixingScaleEvaluatorResult(_HasWarnings):
+    """Result of ``eos.brine_mixing_scale_evaluator``."""
+
+    CALC_ID: ClassVar[str] = "eos.brine_mixing_scale_evaluator"
+
+    #: One row per mixing fraction, from all brine A to all brine B.
+    points: tuple[BrineMixingPointRow, ...]
+
+    #: the fraction of brine A where the worst index occurs.
+    worst_fraction_a: float
+
+    #: the mineral that produced it.
+    worst_mineral: str
+
+    #: the worst index itself.
+    worst_saturation_index: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -909,6 +932,46 @@ class ElectrolyteCpaStatoilPhaseResult(_HasWarnings):
 
     #: the fugacity coefficients, as logarithms, at the chosen root: the cubic's, the electrolyte's and the association's, summed. An ion's is large and negative, because its attraction is `1e-35` and its covolume is not.
     ln_phi: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ElectrolyteScaleCalculatorResult(_HasWarnings):
+    """Result of ``eos.electrolyte_scale_calculator``."""
+
+    CALC_ID: ClassVar[str] = "eos.electrolyte_scale_calculator"
+
+    #: `0.5 sum(m_i z_i^2)` over the eleven ions.
+    ionic_strength: Q
+
+    #: the temperature-adjusted Debye-Huckel A, floored at 0.5.
+    debye_hueckel_a: float
+
+    #: the Davies coefficient for a divalent ion.
+    divalent_activity_coefficient: float
+
+    #: the Davies coefficient for a monovalent ion.
+    monovalent_activity_coefficient: float
+
+    #: calcite's activity-corrected saturation index.
+    si_caco3: float
+
+    #: barite's activity-corrected saturation index.
+    si_baso4: float
+
+    #: gypsum's activity-corrected saturation index.
+    si_caso4: float
+
+    #: celestite's activity-corrected saturation index.
+    si_srso4: float
+
+    #: brucite's activity-corrected saturation index, from the hydroxide activity squared.
+    si_brucite: float
+
+    #: `10^(pH - pKw)` at the state's temperature.
+    hydroxide_activity: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

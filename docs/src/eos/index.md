@@ -12,6 +12,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.chung_viscosity`](./chung_viscosity.md) | $\eta = \eta^{*}\,36.344\,\frac{\sqrt{M\,T_c}}{V_c^{2/3}}\quad[\mu P],\qquad \eta^{*} = \frac{\sqrt{T^{*}}}{\Omega_v}\left[F_c\left(\frac{1}{G_2} + E_5\,y\right)\right] + E_6\,y^{2}\,G_2\,\exp\!\left(E_7 + \frac{E_8}{T^{*}} + \frac{E_9}{T^{*2}}\right)$ | Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988) |
 | [`eos.co2_water_diffusivity`](./co2_water_diffusivity.md) | $D_{CO_2,\mathrm{water}}^0 = 3.389\times10^{-6}\,\exp\!\left(-\frac{2213.7}{T}\right)$ | NeqSim master `CO2water` |
 | [`eos.costald_molar_volume`](./costald_molar_volume.md) | $V_s = V^{*}\,V_R^{(0)}\,(1 - \omega V_R^{(\delta)})$ | Hankinson, R. W.; Thomson, G. H. (1979) |
+| [`eos.electrolyte_scale_calculator`](./electrolyte_scale_calculator.md) | $I = \frac{1}{2}\sum_i m_i z_i^2, \qquad \log_{10}\gamma_z = -A z^2\left(\frac{\sqrt{I}}{1+\sqrt{I}} - 0.3I\right), \qquad A = 0.5092 + 8.5\times10^{-4}(T_C - 25) \mathrm{SI}_j = \log_{10}\left(a^{+}_j a^{-}_j\right) - \log_{10}K_{sp,j}, \qquad a(\mathrm{OH}^-) = 10^{\mathrm{pH} - pK_w}$ | NeqSim master `ElectrolyteScaleCalculator` |
 | [`eos.firozabadi_ramley_interface_tension`](./firozabadi_ramley_interface_tension.md) | $\sigma = 10^{-3}\left[\frac{a_1}{T_r^{0.3125}}\left(\frac{\|\rho_2-\rho_1\|}{1000}\right)^{b_1+1}\right]^4$ | NeqSim master `FirozabadiRamleyInterfaceTension` |
 | [`eos.fuller_schettler_giddings_diffusivity`](./fuller_schettler_giddings_diffusivity.md) | $D_{AB} = 1.013\times10^{-3}\,\frac{T^{1.75}\sqrt{\frac{1}{M_A}+\frac{1}{M_B}}}{P\left(V_A^{1/3}+V_B^{1/3}\right)^{2}}$ | Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966) |
 | [`eos.hayduk_minhas_diffusivity`](./hayduk_minhas_diffusivity.md) | $D_{AB}^0 = 13.3\times10^{-8}\,\frac{T^{1.47}\,\eta_B^{10.2/V_A - 0.791}}{V_A^{0.71}}\quad(\text{paraffin}),\qquad 1.25\times10^{-8}\,\left(V_A^{-0.19}-0.292\right)T^{1.52}\,\eta_B^{9.58/V_A - 1.12}\quad(\text{aqueous})$ | Hayduk, W.; Minhas, B. S. (1982) |
@@ -80,6 +81,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.aqueous_viscosity`](./aqueous_viscosity.md) | `direct composition` | NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java |
 | [`eos.argon_solid_phase`](./argon_solid_phase.md) | `bracketed_log_volume_newton` | Maltby, V.; Hammer, M.; Wilhelmsen, O. (2024) |
 | [`eos.barite_celestite_solid_solution`](./barite_celestite_solid_solution.md) | `solid_mole_fraction_bisection` | NeqSim master `BariteCelestiteSolidSolution` |
+| [`eos.brine_mixing_scale_evaluator`](./brine_mixing_scale_evaluator.md) | `direct composition` | NeqSim master `BrineMixingScaleEvaluator` |
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |

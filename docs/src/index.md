@@ -108,6 +108,7 @@ Five sections, and the difference between them is the point:
 - [`eos.chung_viscosity`](./eos/chung_viscosity.md)
 - [`eos.co2_water_diffusivity`](./eos/co2_water_diffusivity.md)
 - [`eos.costald_molar_volume`](./eos/costald_molar_volume.md)
+- [`eos.electrolyte_scale_calculator`](./eos/electrolyte_scale_calculator.md)
 - [`eos.firozabadi_ramley_interface_tension`](./eos/firozabadi_ramley_interface_tension.md)
 - [`eos.fuller_schettler_giddings_diffusivity`](./eos/fuller_schettler_giddings_diffusivity.md)
 - [`eos.hayduk_minhas_diffusivity`](./eos/hayduk_minhas_diffusivity.md)
@@ -172,6 +173,7 @@ Five sections, and the difference between them is the point:
 - [`eos.aqueous_viscosity`](./eos/aqueous_viscosity.md) — Liquid viscosity of an aqueous phase
 - [`eos.argon_solid_phase`](./eos/argon_solid_phase.md) — Solid argon reference phase state
 - [`eos.barite_celestite_solid_solution`](./eos/barite_celestite_solid_solution.md) — Barite-celestite solid-solution composition and saturation
+- [`eos.brine_mixing_scale_evaluator`](./eos/brine_mixing_scale_evaluator.md) — Mineral-scale risk of mixing two incompatible brines
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
 - [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state

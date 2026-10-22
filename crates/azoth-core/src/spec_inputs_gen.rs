@@ -20,6 +20,7 @@
 //!   - specs/models/eos/aqueous_viscosity.toml
 //!   - specs/models/eos/argon_solid_phase.toml
 //!   - specs/models/eos/barite_celestite_solid_solution.toml
+//!   - specs/models/eos/brine_mixing_scale_evaluator.toml
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
@@ -39,6 +40,7 @@
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
+//!   - specs/calcs/eos/electrolyte_scale_calculator.toml
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
@@ -472,6 +474,14 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "ksp_srso4",
         "dimensionless",
     ),
+    (
+        "eos.brine_mixing_scale_evaluator",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.brine_mixing_scale_evaluator", "pressure", "pressure"),
+    ("eos.brine_mixing_scale_evaluator", "ph", "dimensionless"),
+    ("eos.brine_mixing_scale_evaluator", "steps", "dimensionless"),
     ("eos.bubble_pressure", "T", "thermodynamic_temperature"),
     ("eos.bubble_pressure", "x", "dimensionless"),
     ("eos.bubble_temperature", "P", "pressure"),
@@ -583,6 +593,56 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("eos.electrolyte_cpa_statoil_phase", "P", "pressure"),
     ("eos.electrolyte_cpa_statoil_phase", "x", "dimensionless"),
+    (
+        "eos.electrolyte_scale_calculator",
+        "calcium",
+        "mass_density",
+    ),
+    ("eos.electrolyte_scale_calculator", "barium", "mass_density"),
+    (
+        "eos.electrolyte_scale_calculator",
+        "strontium",
+        "mass_density",
+    ),
+    (
+        "eos.electrolyte_scale_calculator",
+        "magnesium",
+        "mass_density",
+    ),
+    ("eos.electrolyte_scale_calculator", "sodium", "mass_density"),
+    (
+        "eos.electrolyte_scale_calculator",
+        "potassium",
+        "mass_density",
+    ),
+    ("eos.electrolyte_scale_calculator", "iron", "mass_density"),
+    (
+        "eos.electrolyte_scale_calculator",
+        "chloride",
+        "mass_density",
+    ),
+    (
+        "eos.electrolyte_scale_calculator",
+        "sulphate",
+        "mass_density",
+    ),
+    (
+        "eos.electrolyte_scale_calculator",
+        "bicarbonate",
+        "mass_density",
+    ),
+    (
+        "eos.electrolyte_scale_calculator",
+        "carbonate",
+        "mass_density",
+    ),
+    (
+        "eos.electrolyte_scale_calculator",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.electrolyte_scale_calculator", "pressure", "pressure"),
+    ("eos.electrolyte_scale_calculator", "ph", "dimensionless"),
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),

@@ -46,6 +46,54 @@ impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficient
     }
 }
 
+/// One row per mixing fraction, from all brine A to all brine B.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BrineMixingPointRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBrineMixingPointRow {
+    /// the fraction of brine A in the mixture.
+    #[pyo3(get)]
+    pub fraction_a: f64,
+    /// calcite's index.
+    #[pyo3(get)]
+    pub si_caco3: f64,
+    /// barite's index.
+    #[pyo3(get)]
+    pub si_baso4: f64,
+    /// gypsum's index.
+    #[pyo3(get)]
+    pub si_caso4: f64,
+    /// celestite's index.
+    #[pyo3(get)]
+    pub si_srso4: f64,
+}
+
+#[pymethods]
+impl PyBrineMixingPointRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "BrineMixingPointRow(fraction_a={}, si_caco3={}, si_baso4={}, si_caso4={}, si_srso4={})",
+            self.fraction_a, self.si_caco3, self.si_baso4, self.si_caso4, self.si_srso4
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BrineMixingPointRow> for PyBrineMixingPointRow {
+    fn from(row: &azoth_eos::results::BrineMixingPointRow) -> Self {
+        Self {
+            fraction_a: row.fraction_a,
+            si_caco3: row.si_caco3,
+            si_baso4: row.si_baso4,
+            si_caso4: row.si_caso4,
+            si_srso4: row.si_srso4,
+        }
+    }
+}
+
 /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
 #[pyclass(
     frozen,

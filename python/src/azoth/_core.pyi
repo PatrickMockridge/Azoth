@@ -257,6 +257,19 @@ class AssayCutDerivation(TypedDict):
     watson_characterization_factor: float | None
     standard_component_name: str | None
 
+class BrineAnalysis(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    calcium: float
+    barium: float
+    strontium: float
+    magnesium: float
+    sodium: float
+    potassium: float
+    chloride: float
+    sulphate: float
+    bicarbonate: float
+
 class WaterAnalysis(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -290,6 +303,16 @@ class SubFraction:
     molar_mass: Qty
     density: Qty | None
     boiling_point: Qty | None
+
+@final
+class BrineMixingPointRow:
+    """One row per mixing fraction, from all brine A to all brine B."""
+
+    fraction_a: float
+    si_caco3: float
+    si_baso4: float
+    si_caso4: float
+    si_srso4: float
 
 @final
 class FlowlineScaleSegment:
@@ -494,6 +517,14 @@ class BariteCelestiteSolidSolutionResult:
     warnings: list[Warning]
 
 @final
+class BrineMixingScaleEvaluatorResult:
+    points: list[BrineMixingPointRow]
+    worst_fraction_a: float
+    worst_mineral: str
+    worst_saturation_index: float
+    warnings: list[Warning]
+
+@final
 class BubblePressureResult:
     pressure: Qty
     incipient: list[float]
@@ -653,6 +684,20 @@ class EffectiveDiffusionResult:
 class ElectrolyteCpaStatoilPhaseResult:
     z_factor: float
     ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
+class ElectrolyteScaleCalculatorResult:
+    ionic_strength: Qty
+    debye_hueckel_a: float
+    divalent_activity_coefficient: float
+    monovalent_activity_coefficient: float
+    si_caco3: float
+    si_baso4: float
+    si_caso4: float
+    si_srso4: float
+    si_brucite: float
+    hydroxide_activity: float
     warnings: list[Warning]
 
 @final
@@ -2753,6 +2798,14 @@ def barite_celestite_solid_solution(
     ksp_baso4: float,
     ksp_srso4: float,
 ) -> BariteCelestiteSolidSolutionResult: ...
+def brine_mixing_scale_evaluator(
+    brine_a: list[BrineAnalysis],
+    brine_b: list[BrineAnalysis],
+    temperature: float,
+    pressure: float,
+    ph: float,
+    steps: float,
+) -> BrineMixingScaleEvaluatorResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],
@@ -2916,6 +2969,22 @@ def electrolyte_cpa_statoil_phase(
     x: list[float],
     compressed_phase: str,
 ) -> ElectrolyteCpaStatoilPhaseResult: ...
+def electrolyte_scale_calculator(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    magnesium: float,
+    sodium: float,
+    potassium: float,
+    iron: float,
+    chloride: float,
+    sulphate: float,
+    bicarbonate: float,
+    carbonate: float,
+    temperature: float,
+    pressure: float,
+    ph: float,
+) -> ElectrolyteScaleCalculatorResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
 def filippov_conductivity(
     liquid_conductivity: list[list[float]],

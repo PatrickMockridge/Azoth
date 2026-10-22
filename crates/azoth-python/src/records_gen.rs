@@ -41,6 +41,29 @@ pub struct AssayCutDerivation {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct BrineAnalysis {
+    #[pyo3(item)]
+    pub calcium: f64,
+    #[pyo3(item)]
+    pub barium: f64,
+    #[pyo3(item)]
+    pub strontium: f64,
+    #[pyo3(item)]
+    pub magnesium: f64,
+    #[pyo3(item)]
+    pub sodium: f64,
+    #[pyo3(item)]
+    pub potassium: f64,
+    #[pyo3(item)]
+    pub chloride: f64,
+    #[pyo3(item)]
+    pub sulphate: f64,
+    #[pyo3(item)]
+    pub bicarbonate: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct Lump {
     #[pyo3(item)]
     pub name: String,

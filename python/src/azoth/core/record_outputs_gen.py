@@ -24,6 +24,26 @@ class ActivityCoefficientRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BrineMixingPointRow:
+    """One row per mixing fraction, from all brine A to all brine B."""
+
+    #: the fraction of brine A in the mixture.
+    fraction_a: float
+
+    #: calcite's index.
+    si_caco3: float
+
+    #: barite's index.
+    si_baso4: float
+
+    #: gypsum's index.
+    si_caso4: float
+
+    #: celestite's index.
+    si_srso4: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 

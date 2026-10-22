@@ -75,6 +75,7 @@ from azoth.core.result import (
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BariteCelestiteSolidSolutionResult,
+    BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -94,6 +95,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EffectiveDiffusionResult,
     ElectrolyteCpaStatoilPhaseResult,
+    ElectrolyteScaleCalculatorResult,
     EosCgPhaseResult,
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
@@ -2349,6 +2351,37 @@ def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -
     )
 
 
+def brine_mixing_scale_evaluator(
+    brine_a: list[dict[str, Q]],
+    brine_b: list[dict[str, Q]],
+    temperature: Q,
+    pressure: Q,
+    ph: float,
+    steps: int,
+) -> BrineMixingScaleEvaluatorResult:
+    """The mineral saturation of two brines across their mixing range.
+
+    NeqSim's ``BrineMixingScaleEvaluator``: each ion blended linearly at ``steps`` fractions
+    from all ``brine_a`` to all ``brine_b``, every blend evaluated by
+    :func:`electrolyte_scale_calculator`, and the worst index reported with its fraction and
+    mineral. ``steps`` is floored at two, as the class's ``setSteps`` floors it.
+
+    Raises:
+        InvalidInputError: for a brine list that is not exactly one row.
+        OutOfRangeError: for a negative ion, or a non-positive temperature or pressure.
+
+    See :func:`azoth.eos.reference.brine_mixing_scale_evaluator`.
+    """
+    return resolve("eos.brine_mixing_scale_evaluator")(  # type: ignore[no-any-return]
+        brine_a=brine_a,
+        brine_b=brine_b,
+        temperature=temperature,
+        pressure=pressure,
+        ph=ph,
+        steps=steps,
+    )
+
+
 def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:
     """The ammonia reference phase state at a temperature and pressure.
 
@@ -4523,6 +4556,52 @@ def srk_cpa_phase(
     """
     return resolve(_SRK_CPA_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
+
+
+def electrolyte_scale_calculator(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    magnesium: Q,
+    sodium: Q,
+    potassium: Q,
+    iron: Q,
+    chloride: Q,
+    sulphate: Q,
+    bicarbonate: Q,
+    carbonate: Q,
+    temperature: Q,
+    pressure: Q,
+    ph: float,
+) -> ElectrolyteScaleCalculatorResult:
+    """The activity-corrected saturation indices of a brine.
+
+    NeqSim's ``ElectrolyteScaleCalculator``: an ionic strength from the eleven ions, Davies
+    activity coefficients over a temperature-adjusted Debye-Huckel A, and calcite, barite,
+    gypsum, celestite and brucite indices over the class's own Ksp correlations. The
+    hydroxide activity is ``10^(pH - pKw)``, so the brucite index is strongly pH-driven.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.electrolyte_scale_calculator`.
+    """
+    return resolve("eos.electrolyte_scale_calculator")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        magnesium=magnesium,
+        sodium=sodium,
+        potassium=potassium,
+        iron=iron,
+        chloride=chloride,
+        sulphate=sulphate,
+        bicarbonate=bicarbonate,
+        carbonate=carbonate,
+        temperature=temperature,
+        pressure=pressure,
+        ph=ph,
     )
 
 

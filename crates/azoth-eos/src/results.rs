@@ -6,8 +6,8 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, MolarConcentration, MolarEnergy,
-    MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
+    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, Molality, MolarConcentration,
+    MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
     ThermodynamicTemperature, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
@@ -1216,6 +1216,99 @@ impl CalcResult for ScalePredictionResult {
         "si_feco3",
         "has_scaling_risk",
         "scale_risk_count",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.electrolyte_scale_calculator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ElectrolyteScaleCalculatorResult {
+    /// `0.5 * sum(m_i z_i^2)` over the eleven ions.
+    pub ionic_strength: Molality,
+    /// The temperature-adjusted Debye-Huckel A.
+    pub debye_hueckel_a: f64,
+    /// The Davies coefficient for a divalent ion.
+    pub divalent_activity_coefficient: f64,
+    /// The Davies coefficient for a monovalent ion.
+    pub monovalent_activity_coefficient: f64,
+    /// Calcite's activity-corrected saturation index.
+    pub si_caco3: f64,
+    /// Barite's activity-corrected saturation index.
+    pub si_baso4: f64,
+    /// Gypsum's activity-corrected saturation index.
+    pub si_caso4: f64,
+    /// Celestite's activity-corrected saturation index.
+    pub si_srso4: f64,
+    /// Brucite's activity-corrected saturation index.
+    pub si_brucite: f64,
+    /// The hydroxide activity the class derives from pH and its `Kw(T)`.
+    pub hydroxide_activity: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ElectrolyteScaleCalculatorResult {
+    const CALC_ID: &'static str = "eos.electrolyte_scale_calculator";
+    const FIELDS: &'static [&'static str] = &[
+        "ionic_strength",
+        "debye_hueckel_a",
+        "divalent_activity_coefficient",
+        "monovalent_activity_coefficient",
+        "si_caco3",
+        "si_baso4",
+        "si_caso4",
+        "si_srso4",
+        "si_brucite",
+        "hydroxide_activity",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One mixing fraction's mineral indices.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrineMixingPointRow {
+    /// The fraction of brine A in the mixture.
+    pub fraction_a: f64,
+    /// Calcite's index.
+    pub si_caco3: f64,
+    /// Barite's index.
+    pub si_baso4: f64,
+    /// Gypsum's index.
+    pub si_caso4: f64,
+    /// Celestite's index.
+    pub si_srso4: f64,
+}
+
+/// Result of `eos.brine_mixing_scale_evaluator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrineMixingScaleEvaluatorResult {
+    /// One row per mixing fraction, from all brine A to all brine B.
+    pub points: Vec<BrineMixingPointRow>,
+    /// The fraction of brine A where the worst index occurs.
+    pub worst_fraction_a: f64,
+    /// The mineral that produced it.
+    pub worst_mineral: String,
+    /// The worst index itself.
+    pub worst_saturation_index: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BrineMixingScaleEvaluatorResult {
+    const CALC_ID: &'static str = "eos.brine_mixing_scale_evaluator";
+    const FIELDS: &'static [&'static str] = &[
+        "points",
+        "worst_fraction_a",
+        "worst_mineral",
+        "worst_saturation_index",
         "warnings",
     ];
 

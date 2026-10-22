@@ -38,6 +38,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyAqueousViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyArgonSolidPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyBariteCelestiteSolidSolutionResult>()?;
+    m.add_class::<crate::transport_gen::PyBrineMixingScaleEvaluatorResult>()?;
     m.add_class::<crate::transport_gen::PyBubblePressureResult>()?;
     m.add_class::<crate::transport_gen::PyBubbleTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyBwrsPhaseResult>()?;
@@ -57,6 +58,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyDewTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyEffectiveDiffusionResult>()?;
     m.add_class::<crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyElectrolyteScaleCalculatorResult>()?;
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyFilippovConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
@@ -256,6 +258,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
@@ -315,6 +318,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::barite_celestite_solid_solution,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::brine_mixing_scale_evaluator,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::bubble_temperature,
@@ -365,6 +372,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::electrolyte_cpa_statoil_phase,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::electrolyte_scale_calculator,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::eos_cg_phase, m)?)?;
