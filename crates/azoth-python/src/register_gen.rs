@@ -60,6 +60,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyFilippovConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
+    m.add_class::<crate::transport_gen::PyFlowlineScaleProfileResult>()?;
     m.add_class::<crate::transport_gen::PyFreezingPointResult>()?;
     m.add_class::<crate::transport_gen::PyFrictionTheoryConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFrictionTheoryViscosityResult>()?;
@@ -190,6 +191,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyVsFlashResult>()?;
     m.add_class::<crate::transport_gen::PyVuFlashResult>()?;
     m.add_class::<crate::transport_gen::PyVuFlashSingleCompResult>()?;
+    m.add_class::<crate::transport_gen::PyWaterCompatibilityResult>()?;
     m.add_class::<crate::transport_gen::PyWaterDewPointLineResult>()?;
     m.add_class::<crate::transport_gen::PyWaterDewPointMultiphaseResult>()?;
     m.add_class::<crate::transport_gen::PyWaterDewPointTemperatureResult>()?;
@@ -252,9 +254,11 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
+    m.add_class::<crate::record_outputs_gen::PyWaterMixingResult>()?;
 
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(
@@ -368,6 +372,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::firozabadi_ramley_interface_tension,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::flowline_scale_profile,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::freezing_point, m)?)?;
@@ -651,6 +659,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::vu_flash_single_comp,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::water_compatibility,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::water_dew_point_line, m)?)?;

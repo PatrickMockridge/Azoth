@@ -14,7 +14,8 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyKComponent, PyMineralEquilibriumRow, PySubFraction,
+    PyActivityCoefficientRow, PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow,
+    PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -2497,6 +2498,71 @@ impl From<&azoth_eos::results::FirozabadiRamleyInterfaceTensionResult>
                 magnitude_si: r.sigma.value,
                 unit: "N/m".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.flowline_scale_profile`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FlowlineScaleProfileResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFlowlineScaleProfileResult {
+    /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
+    #[pyo3(get)]
+    pub segments: Vec<PyFlowlineScaleSegment>,
+    /// the largest calcite index over the grid, absent where no point defines one.
+    #[pyo3(get)]
+    pub max_caco3: Option<f64>,
+    /// the largest barite index.
+    #[pyo3(get)]
+    pub max_baso4: Option<f64>,
+    /// the largest celestite index.
+    #[pyo3(get)]
+    pub max_srso4: Option<f64>,
+    /// the largest anhydrite index.
+    #[pyo3(get)]
+    pub max_caso4: Option<f64>,
+    /// the largest siderite index.
+    #[pyo3(get)]
+    pub max_feco3: Option<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFlowlineScaleProfileResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FlowlineScaleProfileResult(segments={:?}, max_caco3={:?}, max_baso4={:?}, max_srso4={:?}, max_caso4={:?}, max_feco3={:?}, {} warning(s))",
+            self.segments,
+            self.max_caco3,
+            self.max_baso4,
+            self.max_srso4,
+            self.max_caso4,
+            self.max_feco3,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FlowlineScaleProfileResult> for PyFlowlineScaleProfileResult {
+    fn from(r: &azoth_eos::results::FlowlineScaleProfileResult) -> Self {
+        Self {
+            segments: r
+                .segments
+                .iter()
+                .map(PyFlowlineScaleSegment::from)
+                .collect(),
+            max_caco3: r.max_caco3,
+            max_baso4: r.max_baso4,
+            max_srso4: r.max_srso4,
+            max_caso4: r.max_caso4,
+            max_feco3: r.max_feco3,
             warnings: transport(&r.warnings),
         }
     }
@@ -10089,6 +10155,57 @@ impl From<&azoth_eos::results::VuFlashSingleCompResult> for PyVuFlashSingleCompR
                 unit: "m**3/mol".to_string(),
             },
             phase: r.phase.as_str().to_string(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.water_compatibility`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaterCompatibilityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaterCompatibilityResult {
+    /// One row per requested percentage, in the caller's order; an index is absent where its ions are.
+    #[pyo3(get)]
+    pub mixtures: Vec<PyWaterMixingResult>,
+    /// the percentage whose worst index is the largest; absent where no mixture defines one.
+    #[pyo3(get)]
+    pub worst_case_percent: Option<f64>,
+    /// the mineral that produced it.
+    #[pyo3(get)]
+    pub worst_case_scale: Option<String>,
+    /// the index itself.
+    #[pyo3(get)]
+    pub worst_case_saturation_index: Option<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWaterCompatibilityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaterCompatibilityResult(mixtures={:?}, worst_case_percent={:?}, worst_case_scale={:?}, worst_case_saturation_index={:?}, {} warning(s))",
+            self.mixtures,
+            self.worst_case_percent,
+            self.worst_case_scale,
+            self.worst_case_saturation_index,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::WaterCompatibilityResult> for PyWaterCompatibilityResult {
+    fn from(r: &azoth_eos::results::WaterCompatibilityResult) -> Self {
+        Self {
+            mixtures: r.mixtures.iter().map(PyWaterMixingResult::from).collect(),
+            worst_case_percent: r.worst_case_percent,
+            worst_case_scale: r.worst_case_scale.clone(),
+            worst_case_saturation_index: r.worst_case_saturation_index,
             warnings: transport(&r.warnings),
         }
     }

@@ -1,0 +1,213 @@
+id = "eos.flowline_scale_profile"
+name = "Mineral-scale saturation indices along a flowline's temperature and pressure profile"
+kind = "direct"
+assumptions = [
+    "**the grid is `N + 1` points from fraction zero to one**, with `N` clamped to at least two: a caller asking for one segment gets the inlet, the midpoint and the outlet, as `Math.max(2, n)` does.\n",
+    "**the profile is linear in both temperature and pressure** between the inlet and outlet conditions, and the two are interpolated independently.\n",
+    "**the class's pH argument is inert**: `setWaterChemistry` stores it, `calculate()` never calls `setPH`, so every point runs at the calculator's 6.5 unless auto-pH is on. The capture's 6.5, 4 and 11 rows are identical, and this model has no pH input.\n",
+    "**each point is `eos.scale_prediction`'s own state**, not a reimplementation; the five indices follow its absent-ion rule, so an index is absent where either of its ions is.\n",
+    "**the maximum skips absent indices**, and a mineral no point defines has no maximum rather than the class's `-infinity` sentinel, which is not a value.\n",
+    "the class's Gson report and its index accessor are not calculations; the result's own segment list is the data.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/FlowlineScaleProfile.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_family_probe.tsv` - the `flowline_scale_profile` rows: an 11-point produced-water profile, the one-segment clamp, the inert pH argument and a high-sulphate water whose barite and celestite ions are absent.",
+]
+[source]
+standard = "NeqSim master `FlowlineScaleProfile`"
+edition = "`calculate`, `getMaxSI`, `getSIByName` and `setNumberOfSegments`'s clamp, ported. The pH setter's stored value, the JSON report and the index accessor are not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "the calcium ion's mass concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "the barium ion's mass concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "the strontium ion's mass concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "the ferrous iron's mass concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "the magnesium ion's mass concentration, read by the predictor's ion pairing.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "the sodium ion's mass concentration, read by the predictor's ion pairing.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate ion's mass concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "the sulphate ion's mass concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "TDS, which sets the predictor's ionic strength.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "the CO2 partial pressure, read by the auto-pH path.\n"
+[inputs.auto_ph]
+type = "boolean"
+description = "whether each point estimates its pH with the class's own Henry constant.\n"
+[inputs.inlet_temperature]
+unit = "K"
+description = "the wellhead's absolute temperature.\n"
+[inputs.inlet_pressure]
+unit = "Pa"
+description = "the wellhead's absolute pressure.\n"
+[inputs.outlet_temperature]
+unit = "K"
+description = "the host's absolute temperature.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+description = "the host's absolute pressure.\n"
+[inputs.segments]
+unit = "dimensionless"
+description = "the number of flowline segments; the grid is one point more, and the value is clamped to at least two.\n"
+[outputs]
+[outputs.segments]
+type = "record_list"
+description = "The `N + 1` points, inlet first; a point's index is absent where its ions are.\n"
+[outputs.segments.fields.distance_fraction]
+unit = "dimensionless"
+description = "the fraction of the flowline's length, zero at the inlet.\n"
+[outputs.segments.fields.temperature]
+unit = "K"
+description = "the point's absolute temperature.\n"
+[outputs.segments.fields.pressure]
+unit = "Pa"
+description = "the point's absolute pressure.\n"
+[outputs.segments.fields.si_caco3]
+unit = "dimensionless"
+optional = true
+description = "calcite's index, absent where calcium or carbonate is.\n"
+[outputs.segments.fields.si_baso4]
+unit = "dimensionless"
+optional = true
+description = "barite's index.\n"
+[outputs.segments.fields.si_srso4]
+unit = "dimensionless"
+optional = true
+description = "celestite's index.\n"
+[outputs.segments.fields.si_caso4]
+unit = "dimensionless"
+optional = true
+description = "anhydrite's index.\n"
+[outputs.segments.fields.si_feco3]
+unit = "dimensionless"
+optional = true
+description = "siderite's index.\n"
+[outputs.max_caco3]
+unit = "dimensionless"
+optional = true
+description = "the largest calcite index over the grid, absent where no point defines one.\n"
+[outputs.max_baso4]
+unit = "dimensionless"
+optional = true
+description = "the largest barite index.\n"
+[outputs.max_srso4]
+unit = "dimensionless"
+optional = true
+description = "the largest celestite index.\n"
+[outputs.max_caso4]
+unit = "dimensionless"
+optional = true
+description = "the largest anhydrite index.\n"
+[outputs.max_feco3]
+unit = "dimensionless"
+optional = true
+description = "the largest siderite index.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "barium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "strontium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "iron"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "magnesium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sodium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "bicarbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sulphate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "total_dissolved_solids"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The ionic strength is its quotient by 40000, so it cannot be negative.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative.\n"
+[[valid_range]]
+quantity = "inlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "inlet_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "outlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "outlet_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "segments"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A negative segment count is not a grid; below two the class clamps rather than refuses.\n"
+[implementations]
+python = "azoth.eos.flowline_scale_profile"
+rust = "azoth_eos::flowline_scale_profile"

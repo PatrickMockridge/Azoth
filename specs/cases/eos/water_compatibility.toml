@@ -1,0 +1,79 @@
+model = "eos.water_compatibility"
+
+# The capture's two waters: a barium-bearing formation water at 80 C and 100 bara against a
+# sulphate-bearing injection water at 20 C, both with auto-pH on. mg/L to kg/m3 by 1e-3, C to K
+# by +273.15, bara to Pa by 1e5. An index the capture prints as NaN is an absent field here.
+
+[[cases]]
+id = "upstream_seawater"
+tolerance = 1.0e-09
+source = "The capture's `upstream_seawater` row: eleven ratios from all formation water to all injection water. Barite peaks at 60 percent injection water at 3.6715; the carbonate indices sit near -52 because auto-pH is on and the class's Henry constant is broken upstream.\n"
+[cases.inputs]
+formation_water = [
+    { calcium = 0.4, barium = 0.2, strontium = 0.005, iron = 0.0, magnesium = 0.15, sodium = 10.0, bicarbonate = 0.15, sulphate = 0.01, total_dissolved_solids = 50.0, temperature = 353.15, pressure = 1.0e7, co2_partial_pressure = 2.0e5 },
+]
+injection_water = [
+    { calcium = 0.02, barium = 0.0, strontium = 0.0, iron = 0.0, magnesium = 0.1, sodium = 11.0, bicarbonate = 0.1, sulphate = 2.7, total_dissolved_solids = 35.0, temperature = 293.15, pressure = 1.0e7, co2_partial_pressure = 0.5e5 },
+]
+injection_water_percent = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
+[cases.expected]
+worst_case_percent = 60.0
+worst_case_scale = "BaSO4"
+worst_case_saturation_index = 3.6714748302694473
+mixtures = [
+    { injection_water_percent = 0.0, si_caco3 = -52.24840783232192, si_baso4 = 1.7099735185305647, si_srso4 = -4.969173263694933, si_caso4 = -2.036987907773766 },
+    { injection_water_percent = 10.0, si_caco3 = -52.329921416787116, si_baso4 = 3.1181806270104584, si_srso4 = -3.3530486565514037, si_caso4 = -0.7433743001524477 },
+    { injection_water_percent = 20.0, si_caco3 = -52.41746020260077, si_baso4 = 3.3740447058235024, si_srso4 = -2.8883691542865044, si_caso4 = -0.6010093903862389 },
+    { injection_water_percent = 30.0, si_caco3 = -52.511958367392836, si_baso4 = 3.509654690473085, si_srso4 = -2.5431124629212425, si_caso4 = -0.5778205480714317 },
+    { injection_water_percent = 40.0, si_caco3 = -52.614439970881946, si_baso4 = 3.5936087424018033, si_srso4 = -2.2487561101245497, si_caso4 = -0.6050407430255403 },
+    { injection_water_percent = 50.0, si_caco3 = -52.72628168858727, si_baso4 = 3.6457653669145365, si_srso4 = -1.9855274005854462, si_caso4 = -0.6623094533654097 },
+    { injection_water_percent = 60.0, si_caco3 = -52.84981404309792, si_baso4 = 3.6714748302694473, si_srso4 = -1.7481732117116864, si_caso4 = -0.7430873941556531 },
+    { injection_water_percent = 70.0, si_caco3 = -52.98974318466464, si_baso4 = 3.6666474768798554, si_srso4 = -1.5408930492447657, si_caso4 = -0.8485760089468426 },
+    { injection_water_percent = 80.0, si_caco3 = -53.15709713274702, si_baso4 = 3.612245606457187, si_srso4 = -1.3828487269252006, si_caso4 = -0.9894791550964106 },
+    { injection_water_percent = 90.0, si_caco3 = -53.38400905952058, si_baso4 = 3.4374762712919846, si_srso4 = -1.3449733380534985, si_caso4 = -1.2004943645649975 },
+    { injection_water_percent = 100.0, si_caco3 = -53.83091631710796, si_caso4 = -1.6488454046476255 },
+]
+
+[[cases]]
+id = "single_ratio"
+tolerance = 1.0e-09
+source = "The capture's `single_ratio` row: the formation water alone, where barite is already at 1.710 and is the worst case.\n"
+[cases.inputs]
+formation_water = [
+    { calcium = 0.4, barium = 0.2, strontium = 0.005, iron = 0.0, magnesium = 0.15, sodium = 10.0, bicarbonate = 0.15, sulphate = 0.01, total_dissolved_solids = 50.0, temperature = 353.15, pressure = 1.0e7, co2_partial_pressure = 2.0e5 },
+]
+injection_water = [
+    { calcium = 0.02, barium = 0.0, strontium = 0.0, iron = 0.0, magnesium = 0.1, sodium = 11.0, bicarbonate = 0.1, sulphate = 2.7, total_dissolved_solids = 35.0, temperature = 293.15, pressure = 1.0e7, co2_partial_pressure = 0.5e5 },
+]
+injection_water_percent = [0.0]
+[cases.expected]
+worst_case_percent = 0.0
+worst_case_scale = "BaSO4"
+worst_case_saturation_index = 1.7099735185305647
+mixtures = [
+    { injection_water_percent = 0.0, si_caco3 = -52.24840783232192, si_baso4 = 1.7099735185305647, si_srso4 = -4.969173263694933, si_caso4 = -2.036987907773766 },
+]
+
+[[cases]]
+id = "five_ratios"
+tolerance = 1.0e-09
+source = "The capture's `five_ratios` row: barite's maximum moves to 75 percent injection water at 3.6479, above the 50 percent value, so the worst case is not the middle of the grid.\n"
+[cases.inputs]
+formation_water = [
+    { calcium = 0.4, barium = 0.2, strontium = 0.005, iron = 0.0, magnesium = 0.15, sodium = 10.0, bicarbonate = 0.15, sulphate = 0.01, total_dissolved_solids = 50.0, temperature = 353.15, pressure = 1.0e7, co2_partial_pressure = 2.0e5 },
+]
+injection_water = [
+    { calcium = 0.02, barium = 0.0, strontium = 0.0, iron = 0.0, magnesium = 0.1, sodium = 11.0, bicarbonate = 0.1, sulphate = 2.7, total_dissolved_solids = 35.0, temperature = 293.15, pressure = 1.0e7, co2_partial_pressure = 0.5e5 },
+]
+injection_water_percent = [0.0, 25.0, 50.0, 75.0, 100.0]
+[cases.expected]
+worst_case_percent = 75.0
+worst_case_scale = "BaSO4"
+worst_case_saturation_index = 3.6479083203227107
+mixtures = [
+    { injection_water_percent = 0.0, si_caco3 = -52.24840783232192, si_baso4 = 1.7099735185305647, si_srso4 = -4.969173263694933, si_caso4 = -2.036987907773766 },
+    { injection_water_percent = 25.0, si_caco3 = -52.46377946748017, si_baso4 = 3.4505770635136166, si_srso4 = -2.707112847072343, si_caso4 = -0.5808273781794384 },
+    { injection_water_percent = 50.0, si_caco3 = -52.72628168858727, si_baso4 = 3.6457653669145365, si_srso4 = -1.9855274005854462, si_caso4 = -0.6623094533654097 },
+    { injection_water_percent = 75.0, si_caco3 = -53.06881919278403, si_baso4 = 3.6479083203227107, si_srso4 = -1.45344308301058, si_caso4 = -0.9133413642430633 },
+    { injection_water_percent = 100.0, si_caco3 = -53.83091631710796, si_caso4 = -1.6488454046476255 },
+]

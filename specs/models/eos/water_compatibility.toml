@@ -1,0 +1,146 @@
+id = "eos.water_compatibility"
+name = "Scale risk of mixing a formation water with an injection water"
+kind = "direct"
+assumptions = [
+    "**each water is a one-row record list**, the shape the record input type has; a list with any other length is refused rather than read for its first row.\n",
+    "**the two waters mix linearly in every quantity** - the eight ions, TDS, temperature, pressure and CO2 partial pressure - weighted by the injection water's share.\n",
+    "**the percentage is the class's own convention**: 0 is all formation water and 100 all injection water; a value outside [0, 100] is mixed as stated and warned about rather than clamped.\n",
+    "**neither water record carries a pH, because neither water's pH is read**: the class stores both and passes neither to a calculator. Every mixture runs with auto-pH on, and the calculator's 6.5 stands where auto-pH's gate fails.\n",
+    "**auto-pH is always on**, so the class's broken Henry constant is exercised: the carbonate indices sit near -52 and are reported as they are, not repaired.\n",
+    "**the worst case is the largest defined index in mineral order** CaCO3, BaSO4, SrSO4, CaSO4, FeCO3, with a strict greater-than so a tie keeps the earlier percentage and mineral.\n",
+    "each mixture is `eos.scale_prediction`'s own state; the class's Gson report is not a calculation.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/WaterCompatibilityScreener.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_family_probe.tsv` - the `water_compatibility` rows: an eleven-ratio seawater flood, the single ratio, the inert pH argument at 4 and 11, and a five-ratio grid whose worst case moves to 75 percent.",
+]
+[source]
+standard = "NeqSim master `WaterCompatibilityScreener`"
+edition = "`calculate`, `checkWorstCase` and the two mixing loops, ported. The two stored pH fields, the Gson report and the array default of eleven ratios are not."
+[inputs]
+[inputs.formation_water]
+type = "record_list"
+row_type = "WaterAnalysis"
+description = "The formation water's analysis, exactly one row. **The two waters' pH fields are not declared**, because the class stores them and never passes either to a calculator.\n"
+[inputs.formation_water.fields.calcium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.barium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.strontium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.iron]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.magnesium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.sodium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.bicarbonate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.sulphate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.total_dissolved_solids]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.formation_water.fields.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.formation_water.fields.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.formation_water.fields.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure.\n"
+[inputs.injection_water]
+type = "record_list"
+row_type = "WaterAnalysis"
+description = "The injection water's analysis, the same twelve fields and exactly one row.\n"
+[inputs.injection_water.fields.calcium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.barium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.strontium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.iron]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.magnesium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.sodium]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.bicarbonate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.sulphate]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.total_dissolved_solids]
+unit = "kg/m**3"
+description = "the ion's mass concentration.\n"
+[inputs.injection_water.fields.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.injection_water.fields.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.injection_water.fields.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure.\n"
+[inputs.injection_water_percent]
+type = "vector"
+unit = "dimensionless"
+description = "the injection water's share at each mixture, in percent: 0 is all formation water and 100 all injection water.\n"
+[outputs]
+[outputs.mixtures]
+type = "record_list"
+description = "One row per requested percentage, in the caller's order; an index is absent where its ions are.\n"
+[outputs.mixtures.fields.injection_water_percent]
+unit = "dimensionless"
+description = "the injection water's share this row was evaluated at.\n"
+[outputs.mixtures.fields.si_caco3]
+unit = "dimensionless"
+optional = true
+description = "calcite's index.\n"
+[outputs.mixtures.fields.si_baso4]
+unit = "dimensionless"
+optional = true
+description = "barite's index.\n"
+[outputs.mixtures.fields.si_srso4]
+unit = "dimensionless"
+optional = true
+description = "celestite's index.\n"
+[outputs.mixtures.fields.si_caso4]
+unit = "dimensionless"
+optional = true
+description = "anhydrite's index.\n"
+[outputs.mixtures.fields.si_feco3]
+unit = "dimensionless"
+optional = true
+description = "siderite's index.\n"
+[outputs.worst_case_percent]
+unit = "dimensionless"
+optional = true
+description = "the percentage whose worst index is the largest; absent where no mixture defines one.\n"
+[outputs.worst_case_scale]
+type = "string"
+optional = true
+description = "the mineral that produced it.\n"
+[outputs.worst_case_saturation_index]
+unit = "dimensionless"
+optional = true
+description = "the index itself.\n"
+[implementations]
+python = "azoth.eos.water_compatibility"
+rust = "azoth_eos::water_compatibility"

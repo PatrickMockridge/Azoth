@@ -97,6 +97,7 @@ from azoth.core.result import (
     EosCgPhaseResult,
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
+    FlowlineScaleProfileResult,
     FreezingPointResult,
     FrictionTheoryConductivityResult,
     FrictionTheoryViscosityResult,
@@ -227,6 +228,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterCompatibilityResult,
     WaterDewPointLineResult,
     WaterDewPointMultiphaseResult,
     WaterDewPointTemperatureResult,
@@ -2991,6 +2993,56 @@ def solid_fugacity(
     )
 
 
+def flowline_scale_profile(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    co2_partial_pressure: Q,
+    auto_ph: bool,
+    inlet_temperature: Q,
+    inlet_pressure: Q,
+    outlet_temperature: Q,
+    outlet_pressure: Q,
+    segments: int,
+) -> FlowlineScaleProfileResult:
+    """Mineral-scale saturation indices along a flowline's profile.
+
+    NeqSim's ``FlowlineScaleProfile``: ``N + 1`` points interpolated linearly between the inlet
+    and outlet temperature and pressure, each evaluated by the scale predictor. **The class's pH
+    argument never reaches a calculator**, so there is no pH input: every point runs at 6.5
+    unless ``auto_ph`` is on.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.flowline_scale_profile`.
+    """
+    return resolve("eos.flowline_scale_profile")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        co2_partial_pressure=co2_partial_pressure,
+        auto_ph=auto_ph,
+        inlet_temperature=inlet_temperature,
+        inlet_pressure=inlet_pressure,
+        outlet_temperature=outlet_temperature,
+        outlet_pressure=outlet_pressure,
+        segments=segments,
+    )
+
+
 def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> FreezingPointResult:
     """The temperature at which a fluid's solid-forming substance freezes.
 
@@ -4568,6 +4620,32 @@ def multiflash_stability_test(
     See :func:`azoth.eos.reference.multiflash_stability_test`.
     """
     return resolve(_MULTIFLASH_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def water_compatibility(
+    formation_water: list[dict[str, Q]],
+    injection_water: list[dict[str, Q]],
+    injection_water_percent: list[float],
+) -> WaterCompatibilityResult:
+    """The scale risk of mixing a formation water with an injection water.
+
+    NeqSim's ``WaterCompatibilityScreener``: the two waters mixed linearly at each injection-water
+    percentage, each mixture evaluated with auto-pH on. Neither water's own pH is read, and the
+    auto-pH path carries the class's broken Henry constant, so the carbonate indices sit near
+    -52 - reported as they are. ``worst_case_scale`` names the mineral with the largest index.
+
+    Raises:
+        OutOfRangeError: for a negative ion concentration or a non-positive temperature or
+            pressure.
+        InvalidInputError: for a water list that is not exactly one row.
+
+    See :func:`azoth.eos.reference.water_compatibility`.
+    """
+    return resolve("eos.water_compatibility")(  # type: ignore[no-any-return]
+        formation_water=formation_water,
+        injection_water=injection_water,
+        injection_water_percent=injection_water_percent,
+    )
 
 
 def water_dew_point_line(

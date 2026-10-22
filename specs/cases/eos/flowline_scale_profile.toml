@@ -1,0 +1,111 @@
+model = "eos.flowline_scale_profile"
+
+# Every row is the capture's, converted to SI: mg/L to kg/m3 by 1e-3, C to K by +273.15,
+# bara to Pa by 1e5. An index the capture prints as NaN is an absent field here.
+
+[[cases]]
+id = "upstream_state"
+tolerance = 1.0e-09
+source = "The capture's `upstream_state` row: a produced water cooling from 80 C and 200 bara to 20 C and 50 bara over ten segments. Barite's index rises from 0.333 at the inlet to 1.048 at the outlet while celestite and anhydrite fall; siderite has no iron and is absent at every point.\n"
+[cases.inputs]
+calcium = 0.4
+barium = 0.01
+strontium = 0.005
+iron = 0.0
+magnesium = 0.15
+sodium = 0.01
+bicarbonate = 0.15
+sulphate = 0.01
+total_dissolved_solids = 40.0
+co2_partial_pressure = 2.0e5
+auto_ph = false
+inlet_temperature = 353.15
+inlet_pressure = 2.0e7
+outlet_temperature = 293.15
+outlet_pressure = 5.0e6
+segments = 10
+[cases.expected]
+max_caco3 = -0.5354413918208152
+max_baso4 = 1.048081964483009
+max_srso4 = -2.220118043642967
+max_caso4 = -2.1200032759616736
+segments = [
+    { distance_fraction = 0.0, temperature = 353.15, pressure = 2.0e7, si_caco3 = -0.5354413918208152, si_baso4 = 0.33344821269580377, si_srso4 = -5.045556020614717, si_caso4 = -2.1200032759616736 },
+    { distance_fraction = 0.1, temperature = 347.15, pressure = 1.85e7, si_caco3 = -0.5829624143384334, si_baso4 = 0.3670291527860441, si_srso4 = -4.8039375023781465, si_caso4 = -2.1949909075284944 },
+    { distance_fraction = 0.2, temperature = 341.15, pressure = 1.7e7, si_caco3 = -0.6300423460027208, si_baso4 = 0.40743293150656873, si_srso4 = -4.554593996910108, si_caso4 = -2.2641649463242195 },
+    { distance_fraction = 0.3, temperature = 335.15, pressure = 1.55e7, si_caco3 = -0.6769249965150664, si_baso4 = 0.4551808540992592, si_srso4 = -4.297070613643547, si_caso4 = -2.3270082326603387 },
+    { distance_fraction = 0.4, temperature = 329.15, pressure = 1.4e7, si_caco3 = -0.7238917201390003, si_baso4 = 0.5108327710599033, si_srso4 = -4.030882947803879, si_caso4 = -2.3829635510641864 },
+    { distance_fraction = 0.5, temperature = 323.15, pressure = 1.25e7, si_caco3 = -0.7712656160518646, si_baso4 = 0.5749912137808355, si_srso4 = -3.7555140165260084, si_caso4 = -2.431429252072116 },
+    { distance_fraction = 0.6, temperature = 317.15, pressure = 1.1e7, si_caco3 = -0.8194163016629658, si_baso4 = 0.6483059804134023, si_srso4 = -3.470410884071624, si_caso4 = -2.4717543881216555 },
+    { distance_fraction = 0.7, temperature = 311.15, pressure = 9.5e6, si_caco3 = -0.8687653264730618, si_baso4 = 0.7314792408594665, si_srso4 = -3.1749809277468573, si_caso4 = -2.5032332890860074 },
+    { distance_fraction = 0.8, temperature = 305.15, pressure = 8.0e6, si_caco3 = -0.9197923093616684, si_baso4 = 0.8252712400802729, si_srso4 = -2.8685876892688653, si_caso4 = -2.5250994918023997 },
+    { distance_fraction = 0.9, temperature = 299.15, pressure = 6.5e6, si_caco3 = -0.9730419020429558, si_baso4 = 0.9305066911905926, si_srso4 = -2.5505462481242245, si_caso4 = -2.5365189245728623 },
+    { distance_fraction = 1.0, temperature = 293.15, pressure = 5.0e6, si_caco3 = -1.0291317074510238, si_baso4 = 1.048081964483009, si_srso4 = -2.220118043642967, si_caso4 = -2.5365822316268236 },
+]
+
+[[cases]]
+id = "one_segment_is_clamped_to_two"
+tolerance = 1.0e-09
+source = "The capture's `one_segment_clamped` row: one segment is clamped to two, so the grid is the inlet, the midpoint at 50 C and 125 bara, and the outlet - three points rather than two.\n"
+[cases.inputs]
+calcium = 0.4
+barium = 0.01
+strontium = 0.005
+iron = 0.0
+magnesium = 0.15
+sodium = 0.01
+bicarbonate = 0.15
+sulphate = 0.01
+total_dissolved_solids = 40.0
+co2_partial_pressure = 2.0e5
+auto_ph = false
+inlet_temperature = 353.15
+inlet_pressure = 2.0e7
+outlet_temperature = 293.15
+outlet_pressure = 5.0e6
+segments = 1
+[cases.expected]
+max_baso4 = 1.048081964483009
+segments = [
+    { distance_fraction = 0.0, temperature = 353.15, pressure = 2.0e7, si_caco3 = -0.5354413918208152, si_baso4 = 0.33344821269580377, si_srso4 = -5.045556020614717, si_caso4 = -2.1200032759616736 },
+    { distance_fraction = 0.5, temperature = 323.15, pressure = 1.25e7, si_caco3 = -0.7712656160518646, si_baso4 = 0.5749912137808355, si_srso4 = -3.7555140165260084, si_caso4 = -2.431429252072116 },
+    { distance_fraction = 1.0, temperature = 293.15, pressure = 5.0e6, si_caco3 = -1.0291317074510238, si_baso4 = 1.048081964483009, si_srso4 = -2.220118043642967, si_caso4 = -2.5365822316268236 },
+]
+
+[[cases]]
+id = "high_sulphate_120c"
+tolerance = 1.0e-09
+source = "The capture's `high_sulphate_120c` row: a 2000 mg/L calcium, 3000 mg/L sulphate water cooling from 120 C to 40 C. Anhydrite is the only mineral above saturation and its index falls from 1.72 to 0.66; there is no barium or strontium, so barite and celestite are absent at every point.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.15
+sodium = 0.01
+bicarbonate = 0.1
+sulphate = 3.0
+total_dissolved_solids = 60.0
+co2_partial_pressure = 2.0e5
+auto_ph = false
+inlet_temperature = 393.15
+inlet_pressure = 2.0e7
+outlet_temperature = 313.15
+outlet_pressure = 5.0e6
+segments = 10
+[cases.expected]
+max_caco3 = -0.40284134419014656
+max_caso4 = 1.7185687934587706
+segments = [
+    { distance_fraction = 0.0, temperature = 393.15, pressure = 2.0e7, si_caco3 = -0.40284134419014656, si_caso4 = 1.7185687934587706 },
+    { distance_fraction = 0.1, temperature = 385.15, pressure = 1.85e7, si_caco3 = -0.46967783430031257, si_caso4 = 1.5687057193136105 },
+    { distance_fraction = 0.2, temperature = 377.15, pressure = 1.7e7, si_caco3 = -0.5326393148875113, si_caso4 = 1.4261512242761611 },
+    { distance_fraction = 0.3, temperature = 369.15, pressure = 1.55e7, si_caco3 = -0.5919154375544268, si_caso4 = 1.2916524329275658 },
+    { distance_fraction = 0.4, temperature = 361.15, pressure = 1.4e7, si_caco3 = -0.6477333471636294, si_caso4 = 1.1660338639172694 },
+    { distance_fraction = 0.5, temperature = 353.15, pressure = 1.25e7, si_caco3 = -0.7003666051485793, si_caso4 = 1.050207181917238 },
+    { distance_fraction = 0.6, temperature = 345.15, pressure = 1.1e7, si_caco3 = -0.7501456657276302, si_caso4 = 0.9451822823144291 },
+    { distance_fraction = 0.7, temperature = 337.15, pressure = 9.5e6, si_caco3 = -0.7974703130838006, si_caso4 = 0.8520799635355949 },
+    { distance_fraction = 0.8, temperature = 329.15, pressure = 8.0e6, si_caco3 = -0.8428245671088269, si_caso4 = 0.7721464837333817 },
+    { distance_fraction = 0.9, temperature = 321.15, pressure = 6.5e6, si_caco3 = -0.8867946962095278, si_caso4 = 0.706770352369742 },
+    { distance_fraction = 1.0, temperature = 313.15, pressure = 5.0e6, si_caco3 = -0.9300911474097698, si_caso4 = 0.6575017753770802 },
+]

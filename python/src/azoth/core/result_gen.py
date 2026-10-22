@@ -23,9 +23,11 @@ from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
+    FlowlineScaleSegment,
     KComponent,
     MineralEquilibriumRow,
     SubFraction,
+    WaterMixingResult,
 )
 from azoth.core.result_base import (
     FlowRegime,
@@ -970,6 +972,34 @@ class FirozabadiRamleyInterfaceTensionResult(_HasWarnings):
 
     #: The interfacial tension.
     sigma: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class FlowlineScaleProfileResult(_HasWarnings):
+    """Result of ``eos.flowline_scale_profile``."""
+
+    CALC_ID: ClassVar[str] = "eos.flowline_scale_profile"
+
+    #: The `N + 1` points, inlet first; a point's index is absent where its ions are.
+    segments: tuple[FlowlineScaleSegment, ...]
+
+    #: the largest calcite index over the grid, absent where no point defines one.
+    max_caco3: float | None
+
+    #: the largest barite index.
+    max_baso4: float | None
+
+    #: the largest celestite index.
+    max_srso4: float | None
+
+    #: the largest anhydrite index.
+    max_caso4: float | None
+
+    #: the largest siderite index.
+    max_feco3: float | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -4028,6 +4058,28 @@ class VuFlashSingleCompResult(_HasWarnings):
 
     #: `two_phase` for every answer this model gives; the other two are reachable only as the diagnosis of a feed it refuses.
     phase: Phase
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class WaterCompatibilityResult(_HasWarnings):
+    """Result of ``eos.water_compatibility``."""
+
+    CALC_ID: ClassVar[str] = "eos.water_compatibility"
+
+    #: One row per requested percentage, in the caller's order; an index is absent where its ions are.
+    mixtures: tuple[WaterMixingResult, ...]
+
+    #: the percentage whose worst index is the largest; absent where no mixture defines one.
+    worst_case_percent: float | None
+
+    #: the mineral that produced it.
+    worst_case_scale: str | None
+
+    #: the index itself.
+    worst_case_saturation_index: float | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]

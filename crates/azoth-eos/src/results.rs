@@ -5161,3 +5161,112 @@ impl CalcResult for MultiMineralScaleEquilibriumResult {
         &self.warnings
     }
 }
+
+/// One point of `eos.flowline_scale_profile`'s grid.
+///
+/// **A `record_list` output's row, so its fields are the spec's own `fields` block.** The five
+/// indices are absent where the point's ions are.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FlowlineScaleSegment {
+    /// The fraction of the flowline's length, zero at the inlet.
+    pub distance_fraction: f64,
+    /// The point's absolute temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// The point's absolute pressure.
+    pub pressure: Pressure,
+    /// Calcite's index, absent where calcium or carbonate is.
+    pub si_caco3: Option<f64>,
+    /// Barite's index.
+    pub si_baso4: Option<f64>,
+    /// Celestite's index.
+    pub si_srso4: Option<f64>,
+    /// Anhydrite's index.
+    pub si_caso4: Option<f64>,
+    /// Siderite's index.
+    pub si_feco3: Option<f64>,
+}
+
+/// Result of `eos.flowline_scale_profile`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FlowlineScaleProfileResult {
+    /// The `N + 1` points, inlet first.
+    pub segments: Vec<FlowlineScaleSegment>,
+    /// The largest calcite index, absent where no point defines one.
+    pub max_caco3: Option<f64>,
+    /// The largest barite index.
+    pub max_baso4: Option<f64>,
+    /// The largest celestite index.
+    pub max_srso4: Option<f64>,
+    /// The largest anhydrite index.
+    pub max_caso4: Option<f64>,
+    /// The largest siderite index.
+    pub max_feco3: Option<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FlowlineScaleProfileResult {
+    const CALC_ID: &'static str = "eos.flowline_scale_profile";
+    const FIELDS: &'static [&'static str] = &[
+        "segments",
+        "max_caco3",
+        "max_baso4",
+        "max_srso4",
+        "max_caso4",
+        "max_feco3",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One injection-water percentage of `eos.water_compatibility`'s grid.
+///
+/// **A `record_list` output's row**, declared the same way as [`FlowlineScaleSegment`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaterMixingResult {
+    /// The injection water's share, in percent.
+    pub injection_water_percent: f64,
+    /// Calcite's index.
+    pub si_caco3: Option<f64>,
+    /// Barite's index.
+    pub si_baso4: Option<f64>,
+    /// Celestite's index.
+    pub si_srso4: Option<f64>,
+    /// Anhydrite's index.
+    pub si_caso4: Option<f64>,
+    /// Siderite's index.
+    pub si_feco3: Option<f64>,
+}
+
+/// Result of `eos.water_compatibility`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaterCompatibilityResult {
+    /// One row per requested percentage, in the caller's order.
+    pub mixtures: Vec<WaterMixingResult>,
+    /// The percentage whose worst index is the largest; absent where no mixture defines one.
+    pub worst_case_percent: Option<f64>,
+    /// The scale that produced it.
+    pub worst_case_scale: Option<String>,
+    /// The index itself.
+    pub worst_case_saturation_index: Option<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WaterCompatibilityResult {
+    const CALC_ID: &'static str = "eos.water_compatibility";
+    const FIELDS: &'static [&'static str] = &[
+        "mixtures",
+        "worst_case_percent",
+        "worst_case_scale",
+        "worst_case_saturation_index",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

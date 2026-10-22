@@ -24,6 +24,35 @@ class ActivityCoefficientRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FlowlineScaleSegment:
+    """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
+
+    #: the fraction of the flowline's length, zero at the inlet.
+    distance_fraction: float
+
+    #: the point's absolute temperature.
+    temperature: Q
+
+    #: the point's absolute pressure.
+    pressure: Q
+
+    #: calcite's index, absent where calcium or carbonate is.
+    si_caco3: float | None
+
+    #: barite's index.
+    si_baso4: float | None
+
+    #: celestite's index.
+    si_srso4: float | None
+
+    #: anhydrite's index.
+    si_caso4: float | None
+
+    #: siderite's index.
+    si_feco3: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
 
@@ -87,3 +116,26 @@ class SubFraction:
 
     #: The sub-fraction's normal boiling point, spread with its molar mass. Absent where its parent states none.
     boiling_point: Q | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class WaterMixingResult:
+    """One row per requested percentage, in the caller's order; an index is absent where its ions are."""
+
+    #: the injection water's share this row was evaluated at.
+    injection_water_percent: float
+
+    #: calcite's index.
+    si_caco3: float | None
+
+    #: barite's index.
+    si_baso4: float | None
+
+    #: celestite's index.
+    si_srso4: float | None
+
+    #: anhydrite's index.
+    si_caso4: float | None
+
+    #: siderite's index.
+    si_feco3: float | None

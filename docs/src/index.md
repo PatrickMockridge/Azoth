@@ -188,6 +188,7 @@ Five sections, and the difference between them is the point:
 - [`eos.electrolyte_cpa_statoil_phase`](./eos/electrolyte_cpa_statoil_phase.md) — Phase state of an electrolyte-CPA fluid
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
 - [`eos.filippov_conductivity`](./eos/filippov_conductivity.md) — Liquid thermal conductivity from the Filippov mixing rule
+- [`eos.flowline_scale_profile`](./eos/flowline_scale_profile.md) — Mineral-scale saturation indices along a flowline's temperature and pressure profile
 - [`eos.freezing_point`](./eos/freezing_point.md) — Freezing-point temperature
 - [`eos.friction_theory_conductivity`](./eos/friction_theory_conductivity.md) — Thermal conductivity from the friction-theory residual
 - [`eos.friction_theory_viscosity`](./eos/friction_theory_viscosity.md) — Viscosity from the friction theory of Quinones-Cisneros and Firoozabadi
@@ -264,6 +265,7 @@ Five sections, and the difference between them is the point:
 - [`eos.vs_flash`](./eos/vs_flash.md) — Volume-entropy flash
 - [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
 - [`eos.vu_flash_single_comp`](./eos/vu_flash_single_comp.md) — Volume-internal-energy flash of a pure component
+- [`eos.water_compatibility`](./eos/water_compatibility.md) — Scale risk of mixing a formation water with an injection water
 - [`eos.water_dew_point_line`](./eos/water_dew_point_line.md) — Water dew-point line against pressure
 - [`eos.water_dew_point_multiphase`](./eos/water_dew_point_multiphase.md) — Water dew-point temperature, bracketed on a multiphase flash
 - [`eos.water_dew_point_temperature`](./eos/water_dew_point_temperature.md) — Water dew-point temperature

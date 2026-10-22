@@ -46,6 +46,79 @@ impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficient
     }
 }
 
+/// The `N + 1` points, inlet first; a point's index is absent where its ions are.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FlowlineScaleSegment"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFlowlineScaleSegment {
+    /// the fraction of the flowline's length, zero at the inlet.
+    #[pyo3(get)]
+    pub distance_fraction: f64,
+    /// the point's absolute temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the point's absolute pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// calcite's index, absent where calcium or carbonate is.
+    #[pyo3(get)]
+    pub si_caco3: Option<f64>,
+    /// barite's index.
+    #[pyo3(get)]
+    pub si_baso4: Option<f64>,
+    /// celestite's index.
+    #[pyo3(get)]
+    pub si_srso4: Option<f64>,
+    /// anhydrite's index.
+    #[pyo3(get)]
+    pub si_caso4: Option<f64>,
+    /// siderite's index.
+    #[pyo3(get)]
+    pub si_feco3: Option<f64>,
+}
+
+#[pymethods]
+impl PyFlowlineScaleSegment {
+    fn __repr__(&self) -> String {
+        format!(
+            "FlowlineScaleSegment(distance_fraction={}, temperature={:?}, pressure={:?}, si_caco3={:?}, si_baso4={:?}, si_srso4={:?}, si_caso4={:?}, si_feco3={:?})",
+            self.distance_fraction,
+            self.temperature,
+            self.pressure,
+            self.si_caco3,
+            self.si_baso4,
+            self.si_srso4,
+            self.si_caso4,
+            self.si_feco3
+        )
+    }
+}
+
+impl From<&azoth_eos::results::FlowlineScaleSegment> for PyFlowlineScaleSegment {
+    fn from(row: &azoth_eos::results::FlowlineScaleSegment) -> Self {
+        Self {
+            distance_fraction: row.distance_fraction,
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            si_caco3: row.si_caco3,
+            si_baso4: row.si_baso4,
+            si_srso4: row.si_srso4,
+            si_caso4: row.si_caso4,
+            si_feco3: row.si_feco3,
+        }
+    }
+}
+
 /// one row per fitting supplied, in the order they were listed
 #[pyclass(
     frozen,
@@ -223,6 +296,63 @@ impl From<&azoth_characterization::results::SubFraction> for PySubFraction {
                 magnitude_si: v,
                 unit: "K".to_string(),
             }),
+        }
+    }
+}
+
+/// One row per requested percentage, in the caller's order; an index is absent where its ions are.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaterMixingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaterMixingResult {
+    /// the injection water's share this row was evaluated at.
+    #[pyo3(get)]
+    pub injection_water_percent: f64,
+    /// calcite's index.
+    #[pyo3(get)]
+    pub si_caco3: Option<f64>,
+    /// barite's index.
+    #[pyo3(get)]
+    pub si_baso4: Option<f64>,
+    /// celestite's index.
+    #[pyo3(get)]
+    pub si_srso4: Option<f64>,
+    /// anhydrite's index.
+    #[pyo3(get)]
+    pub si_caso4: Option<f64>,
+    /// siderite's index.
+    #[pyo3(get)]
+    pub si_feco3: Option<f64>,
+}
+
+#[pymethods]
+impl PyWaterMixingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaterMixingResult(injection_water_percent={}, si_caco3={:?}, si_baso4={:?}, si_srso4={:?}, si_caso4={:?}, si_feco3={:?})",
+            self.injection_water_percent,
+            self.si_caco3,
+            self.si_baso4,
+            self.si_srso4,
+            self.si_caso4,
+            self.si_feco3
+        )
+    }
+}
+
+impl From<&azoth_eos::results::WaterMixingResult> for PyWaterMixingResult {
+    fn from(row: &azoth_eos::results::WaterMixingResult) -> Self {
+        Self {
+            injection_water_percent: row.injection_water_percent,
+            si_caco3: row.si_caco3,
+            si_baso4: row.si_baso4,
+            si_srso4: row.si_srso4,
+            si_caso4: row.si_caso4,
+            si_feco3: row.si_feco3,
         }
     }
 }

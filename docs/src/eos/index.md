@@ -96,6 +96,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.electrolyte_cpa_statoil_phase`](./electrolyte_cpa_statoil_phase.md) | `direct composition` | NeqSim master `SystemElectrolyteCPAstatoil` |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
 | [`eos.filippov_conductivity`](./filippov_conductivity.md) | `direct composition` | NeqSim master `FilippovConductivityMethod` |
+| [`eos.flowline_scale_profile`](./flowline_scale_profile.md) | `direct composition` | NeqSim master `FlowlineScaleProfile` |
 | [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim master `FreezingPointTemperatureFlash` |
 | [`eos.friction_theory_conductivity`](./friction_theory_conductivity.md) | `direct composition` | NeqSim master `FrictionTheoryConductivityMethod` |
 | [`eos.friction_theory_viscosity`](./friction_theory_viscosity.md) | `direct composition` | NeqSim master `FrictionTheoryViscosityMethod` |
@@ -172,6 +173,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.vs_flash`](./vs_flash.md) | `vs_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash`](./vu_flash.md) | `vu_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash_single_comp`](./vu_flash_single_comp.md) | `saturation_temperature_bisection` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.water_compatibility`](./water_compatibility.md) | `direct composition` | NeqSim master `WaterCompatibilityScreener` |
 | [`eos.water_dew_point_line`](./water_dew_point_line.md) | `water_dew_point_pressure_sweep` | NeqSim master `WaterDewPointEquilibriumLine` |
 | [`eos.water_dew_point_multiphase`](./water_dew_point_multiphase.md) | `water_dew_point_bracket_bisection` | NeqSim master `WaterDewPointTemperatureMultiphaseFlash` |
 | [`eos.water_dew_point_temperature`](./water_dew_point_temperature.md) | `water_dew_point_fixed_point` | NeqSim master `WaterDewPointTemperatureFlash` |

@@ -995,6 +995,56 @@ pub fn firozabadi_ramley_interface_tension(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Mineral-scale saturation indices along a flowline's temperature and pressure profile.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, co2_partial_pressure, auto_ph, inlet_temperature, inlet_pressure, outlet_temperature, outlet_pressure, segments))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, co2_partial_pressure, auto_ph, inlet_temperature, inlet_pressure, outlet_temperature, outlet_pressure, segments)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn flowline_scale_profile(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    total_dissolved_solids: f64,
+    co2_partial_pressure: f64,
+    auto_ph: bool,
+    inlet_temperature: f64,
+    inlet_pressure: f64,
+    outlet_temperature: f64,
+    outlet_pressure: f64,
+    segments: usize,
+) -> PyResult<crate::transport_gen::PyFlowlineScaleProfileResult> {
+    azoth_eos::flowline_scale_profile::flowline_scale_profile(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        pascals(co2_partial_pressure),
+        auto_ph,
+        kelvins(inlet_temperature),
+        pascals(inlet_pressure),
+        kelvins(outlet_temperature),
+        pascals(outlet_pressure),
+        segments,
+    )
+    .map(|r| crate::transport_gen::PyFlowlineScaleProfileResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Freezing-point temperature.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -3861,6 +3911,63 @@ pub fn vu_flash_single_comp(
         joules_per_mole(U),
     )
     .map(|r| crate::transport_gen::PyVuFlashSingleCompResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Scale risk of mixing a formation water with an injection water.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (formation_water, injection_water, injection_water_percent))]
+#[pyo3(text_signature = "(formation_water, injection_water, injection_water_percent)")]
+pub fn water_compatibility(
+    py: Python<'_>,
+    formation_water: Vec<crate::records_gen::WaterAnalysis>,
+    injection_water: Vec<crate::records_gen::WaterAnalysis>,
+    injection_water_percent: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyWaterCompatibilityResult> {
+    let formation_water_records: Vec<azoth_eos::water_compatibility::WaterAnalysis> =
+        formation_water
+            .into_iter()
+            .map(|row| azoth_eos::water_compatibility::WaterAnalysis {
+                calcium: kilograms_per_cubic_meter(row.calcium),
+                barium: kilograms_per_cubic_meter(row.barium),
+                strontium: kilograms_per_cubic_meter(row.strontium),
+                iron: kilograms_per_cubic_meter(row.iron),
+                magnesium: kilograms_per_cubic_meter(row.magnesium),
+                sodium: kilograms_per_cubic_meter(row.sodium),
+                bicarbonate: kilograms_per_cubic_meter(row.bicarbonate),
+                sulphate: kilograms_per_cubic_meter(row.sulphate),
+                total_dissolved_solids: kilograms_per_cubic_meter(row.total_dissolved_solids),
+                temperature: kelvins(row.temperature),
+                pressure: pascals(row.pressure),
+                co2_partial_pressure: pascals(row.co2_partial_pressure),
+            })
+            .collect();
+    let injection_water_records: Vec<azoth_eos::water_compatibility::WaterAnalysis> =
+        injection_water
+            .into_iter()
+            .map(|row| azoth_eos::water_compatibility::WaterAnalysis {
+                calcium: kilograms_per_cubic_meter(row.calcium),
+                barium: kilograms_per_cubic_meter(row.barium),
+                strontium: kilograms_per_cubic_meter(row.strontium),
+                iron: kilograms_per_cubic_meter(row.iron),
+                magnesium: kilograms_per_cubic_meter(row.magnesium),
+                sodium: kilograms_per_cubic_meter(row.sodium),
+                bicarbonate: kilograms_per_cubic_meter(row.bicarbonate),
+                sulphate: kilograms_per_cubic_meter(row.sulphate),
+                total_dissolved_solids: kilograms_per_cubic_meter(row.total_dissolved_solids),
+                temperature: kelvins(row.temperature),
+                pressure: pascals(row.pressure),
+                co2_partial_pressure: pascals(row.co2_partial_pressure),
+            })
+            .collect();
+    azoth_eos::water_compatibility::water_compatibility(
+        &formation_water_records,
+        &injection_water_records,
+        &injection_water_percent,
+    )
+    .map(|r| crate::transport_gen::PyWaterCompatibilityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

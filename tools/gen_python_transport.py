@@ -175,7 +175,9 @@ def field_expr(
         return f"{base}.iter().map(Py{element}::from).collect()"
     if optional:
         if identity(kind, unit):
-            return base
+            # A `String` is not `Copy` and the source is behind a reference, so an optional
+            # one clones; an optional number, flag or enum index is carried as it is.
+            return f"{base}.clone()" if kind == "string" else base
         return f"{base}.map(|v| {element_expr(kind, unit, 'v', element)})"
     if depth == 0:
         return element_expr(kind, unit, base, element)

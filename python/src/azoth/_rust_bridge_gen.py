@@ -64,6 +64,8 @@ from azoth.core.result import (
     FilterResult,
     FirozabadiRamleyInterfaceTensionResult,
     FlareResult,
+    FlowlineScaleProfileResult,
+    FlowlineScaleSegment,
     FlowRegime,
     FreezingPointResult,
     FrictionTheoryConductivityResult,
@@ -244,9 +246,11 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterCompatibilityResult,
     WaterDewPointLineResult,
     WaterDewPointMultiphaseResult,
     WaterDewPointTemperatureResult,
+    WaterMixingResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
     WhitsonGammaSplitResult,
@@ -338,6 +342,7 @@ __all__ = [
     "filter",
     "firozabadi_ramley_interface_tension",
     "flare",
+    "flowline_scale_profile",
     "freezing_point",
     "friction_factor_colebrook",
     "friction_factor_haaland",
@@ -512,6 +517,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_compatibility",
     "water_dew_point_line",
     "water_dew_point_multiphase",
     "water_dew_point_temperature",
@@ -1343,6 +1349,38 @@ def firozabadi_ramley_interface_tension(T: Q, pseudo_critical_temperature: Q, rh
     )
     return FirozabadiRamleyInterfaceTensionResult(
         sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def flowline_scale_profile(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, co2_partial_pressure: Q, auto_ph: bool, inlet_temperature: Q, inlet_pressure: Q, outlet_temperature: Q, outlet_pressure: Q, segments: int) -> FlowlineScaleProfileResult:
+    """``eos.flowline_scale_profile``, computed in Rust."""
+    spec = _models_gen.model("eos.flowline_scale_profile")
+    result = _core.flowline_scale_profile(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        auto_ph,
+        input_to_si(spec, "inlet_temperature", inlet_temperature),
+        input_to_si(spec, "inlet_pressure", inlet_pressure),
+        input_to_si(spec, "outlet_temperature", outlet_temperature),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        _count("segments", segments),
+    )
+    return FlowlineScaleProfileResult(
+        segments=tuple(FlowlineScaleSegment(distance_fraction=c.distance_fraction, temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), si_caco3=c.si_caco3, si_baso4=c.si_baso4, si_srso4=c.si_srso4, si_caso4=c.si_caso4, si_feco3=c.si_feco3) for c in result.segments),
+        max_caco3=result.max_caco3,
+        max_baso4=result.max_baso4,
+        max_srso4=result.max_srso4,
+        max_caso4=result.max_caso4,
+        max_feco3=result.max_feco3,
         warnings=_warnings(result.warnings),
     )
 
@@ -4116,6 +4154,23 @@ def vu_flash_single_comp(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q,
         vapour_fraction=result.vapour_fraction,
         V=from_si(result.V.magnitude_si, result.V.unit),
         phase=_Phase(result.phase),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def water_compatibility(formation_water: list[dict[str, Q]], injection_water: list[dict[str, Q]], injection_water_percent: list[float]) -> WaterCompatibilityResult:
+    """``eos.water_compatibility``, computed in Rust."""
+    spec = _models_gen.model("eos.water_compatibility")
+    result = _core.water_compatibility(
+        input_records_to_si(spec, "formation_water", formation_water),
+        input_records_to_si(spec, "injection_water", injection_water),
+        list(injection_water_percent),
+    )
+    return WaterCompatibilityResult(
+        mixtures=tuple(WaterMixingResult(injection_water_percent=c.injection_water_percent, si_caco3=c.si_caco3, si_baso4=c.si_baso4, si_srso4=c.si_srso4, si_caso4=c.si_caso4, si_feco3=c.si_feco3) for c in result.mixtures),
+        worst_case_percent=result.worst_case_percent,
+        worst_case_scale=result.worst_case_scale,
+        worst_case_saturation_index=result.worst_case_saturation_index,
         warnings=_warnings(result.warnings),
     )
 

@@ -257,6 +257,22 @@ class AssayCutDerivation(TypedDict):
     watson_characterization_factor: float | None
     standard_component_name: str | None
 
+class WaterAnalysis(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    calcium: float
+    barium: float
+    strontium: float
+    iron: float
+    magnesium: float
+    sodium: float
+    bicarbonate: float
+    sulphate: float
+    total_dissolved_solids: float
+    temperature: float
+    pressure: float
+    co2_partial_pressure: float
+
 @final
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
@@ -274,6 +290,19 @@ class SubFraction:
     molar_mass: Qty
     density: Qty | None
     boiling_point: Qty | None
+
+@final
+class FlowlineScaleSegment:
+    """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
+
+    distance_fraction: float
+    temperature: Qty
+    pressure: Qty
+    si_caco3: float | None
+    si_baso4: float | None
+    si_srso4: float | None
+    si_caso4: float | None
+    si_feco3: float | None
 
 @final
 class MineralEquilibriumRow:
@@ -295,6 +324,17 @@ class ActivityCoefficientRow:
 
     ion: str
     activity_coefficient: float
+
+@final
+class WaterMixingResult:
+    """One row per requested percentage, in the caller's order; an index is absent where its ions are."""
+
+    injection_water_percent: float
+    si_caco3: float | None
+    si_baso4: float | None
+    si_srso4: float | None
+    si_caso4: float | None
+    si_feco3: float | None
 
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
@@ -636,6 +676,16 @@ class FilippovConductivityResult:
 @final
 class FirozabadiRamleyInterfaceTensionResult:
     sigma: Qty
+    warnings: list[Warning]
+
+@final
+class FlowlineScaleProfileResult:
+    segments: list[FlowlineScaleSegment]
+    max_caco3: float | None
+    max_baso4: float | None
+    max_srso4: float | None
+    max_caso4: float | None
+    max_feco3: float | None
     warnings: list[Warning]
 
 @final
@@ -1742,6 +1792,14 @@ class VuFlashSingleCompResult:
     vapour_fraction: float
     V: Qty
     phase: str
+    warnings: list[Warning]
+
+@final
+class WaterCompatibilityResult:
+    mixtures: list[WaterMixingResult]
+    worst_case_percent: float | None
+    worst_case_scale: str | None
+    worst_case_saturation_index: float | None
     warnings: list[Warning]
 
 @final
@@ -2858,6 +2916,24 @@ def firozabadi_ramley_interface_tension(
     rho_1: float,
     rho_2: float,
 ) -> FirozabadiRamleyInterfaceTensionResult: ...
+def flowline_scale_profile(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    co2_partial_pressure: float,
+    auto_ph: bool,
+    inlet_temperature: float,
+    inlet_pressure: float,
+    outlet_temperature: float,
+    outlet_pressure: float,
+    segments: float,
+) -> FlowlineScaleProfileResult: ...
 def freezing_point(
     components: list[str],
     z: list[float],
@@ -3967,6 +4043,11 @@ def vu_flash_single_comp(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> VuFlashSingleCompResult: ...
+def water_compatibility(
+    formation_water: list[WaterAnalysis],
+    injection_water: list[WaterAnalysis],
+    injection_water_percent: list[float],
+) -> WaterCompatibilityResult: ...
 def water_dew_point_line(
     components: list[str],
     z: list[float],

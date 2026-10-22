@@ -42,6 +42,7 @@
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
+//!   - specs/models/eos/flowline_scale_profile.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/friction_theory_conductivity.toml
 //!   - specs/models/eos/friction_theory_viscosity.toml
@@ -172,6 +173,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_compatibility.toml
 //!   - specs/models/eos/water_dew_point_line.toml
 //!   - specs/models/eos/water_dew_point_multiphase.toml
 //!   - specs/models/eos/water_dew_point_temperature.toml
@@ -626,6 +628,37 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "rho_2",
         "mass_density",
     ),
+    ("eos.flowline_scale_profile", "calcium", "mass_density"),
+    ("eos.flowline_scale_profile", "barium", "mass_density"),
+    ("eos.flowline_scale_profile", "strontium", "mass_density"),
+    ("eos.flowline_scale_profile", "iron", "mass_density"),
+    ("eos.flowline_scale_profile", "magnesium", "mass_density"),
+    ("eos.flowline_scale_profile", "sodium", "mass_density"),
+    ("eos.flowline_scale_profile", "bicarbonate", "mass_density"),
+    ("eos.flowline_scale_profile", "sulphate", "mass_density"),
+    (
+        "eos.flowline_scale_profile",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    (
+        "eos.flowline_scale_profile",
+        "co2_partial_pressure",
+        "pressure",
+    ),
+    (
+        "eos.flowline_scale_profile",
+        "inlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.flowline_scale_profile", "inlet_pressure", "pressure"),
+    (
+        "eos.flowline_scale_profile",
+        "outlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.flowline_scale_profile", "outlet_pressure", "pressure"),
+    ("eos.flowline_scale_profile", "segments", "dimensionless"),
     ("eos.freezing_point", "z", "dimensionless"),
     ("eos.freezing_point", "P", "pressure"),
     (
@@ -1524,6 +1557,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.vu_flash_single_comp", "P", "pressure"),
     ("eos.vu_flash_single_comp", "V", "molar_volume"),
     ("eos.vu_flash_single_comp", "U", "molar_energy"),
+    (
+        "eos.water_compatibility",
+        "injection_water_percent",
+        "dimensionless",
+    ),
     ("eos.water_dew_point_line", "z", "dimensionless"),
     ("eos.water_dew_point_line", "minimum_pressure", "pressure"),
     ("eos.water_dew_point_line", "maximum_pressure", "pressure"),
