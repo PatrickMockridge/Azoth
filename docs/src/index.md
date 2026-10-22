@@ -247,6 +247,8 @@ Five sections, and the difference between them is the point:
 - [`eos.saft_vr_mie_phase`](./eos/saft_vr_mie_phase.md) — SAFT-VR-Mie phase state
 - [`eos.salt_precipitation`](./eos/salt_precipitation.md) — Scale precipitation of one mineral
 - [`eos.saturate_with_water`](./eos/saturate_with_water.md) — Water saturation of a fluid
+- [`eos.scale_control_assessor`](./eos/scale_control_assessor.md) — Residual scaling risk after threshold inhibition
+- [`eos.scale_remediation_advisor`](./eos/scale_remediation_advisor.md) — Dissolver and solvent recommendations for a scaled or fouled deposit
 - [`eos.soreide_whitson_phase`](./eos/soreide_whitson_phase.md) — Phase state of a Soreide-Whitson fluid
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test

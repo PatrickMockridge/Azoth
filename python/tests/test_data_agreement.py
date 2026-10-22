@@ -220,6 +220,7 @@ def test_the_two_sides_agree_on_which_files_exist() -> None:
         "data/components/UNIFACGroupParam.csv",
         "data/components/UNIFACInterParam.csv",
         "data/components/mbwr32.csv",
+        "data/scale/scale_remediation.csv",
     } | {f"data/fluids/{name}.csv" for name in available_fluids()}
     assert rust_paths == expected, (
         f"the extension embeds {sorted(rust_paths)} but this build of the Python side "

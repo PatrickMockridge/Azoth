@@ -119,6 +119,63 @@ class MineralEquilibriumRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class RemediationOptionRow:
+    """The candidate remedies, ordered by descending effectiveness."""
+
+    #: the canonical deposit key, `UNKNOWN` for the fallback.
+    scale_type: str
+
+    #: `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    category: str
+
+    #: the dissolver or solvent chemistry.
+    dissolver: str
+
+    #: the recommended concentration or dilution, as the CSV states it.
+    concentration: str
+
+    #: the application method.
+    method: str
+
+    #: `HIGH`, `MEDIUM` or `LOW`.
+    effectiveness: str
+
+    #: the lower bound of the effective window.
+    min_temperature: Q
+
+    #: the upper bound of the effective window.
+    max_temperature: Q
+
+    #: the operational and safety cautions.
+    cautions: str
+
+    #: the informational standard reference.
+    standard: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlRiskRow:
+    """The inhibited risk index, one row per scale in the same order."""
+
+    #: `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    scale: str
+
+    #: `SI + log10(max(1e-6, 1 - efficiency))`; absent where the index is.
+    risk_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlRow:
+    """The uninhibited indices, one row per scale in the class's order."""
+
+    #: `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    scale: str
+
+    #: the index; absent where the water has none.
+    saturation_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SubFraction:
     """The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order."""
 

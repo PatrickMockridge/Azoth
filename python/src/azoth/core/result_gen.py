@@ -27,6 +27,9 @@ from azoth.core.record_outputs_gen import (
     FlowlineScaleSegment,
     KComponent,
     MineralEquilibriumRow,
+    RemediationOptionRow,
+    ScaleControlRiskRow,
+    ScaleControlRow,
     SubFraction,
     WaterMixingResult,
 )
@@ -3074,6 +3077,28 @@ class SaturateWithWaterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlAssessorResult(_HasWarnings):
+    """Result of ``eos.scale_control_assessor``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_control_assessor"
+
+    #: The uninhibited indices, one row per scale in the class's order.
+    thermodynamic_si: tuple[ScaleControlRow, ...]
+
+    #: The inhibited risk index, one row per scale in the same order.
+    kinetic_risk_index: tuple[ScaleControlRiskRow, ...]
+
+    #: the largest defined risk index; absent where none is.
+    worst_kinetic_risk_index: float | None
+
+    #: whether the worst index is below the class's 0.5 threshold.
+    kinetically_controlled: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleInhibitorPerformanceResult(_HasWarnings):
     """Result of ``eos.scale_inhibitor_performance``."""
 
@@ -3252,6 +3277,22 @@ class ScalePredictionResult(_HasWarnings):
 
     #: how many are.
     scale_risk_count: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleRemediationAdvisorResult(_HasWarnings):
+    """Result of ``eos.scale_remediation_advisor``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_remediation_advisor"
+
+    #: the knowledge-base key the lookup used.
+    canonical_key: str
+
+    #: The candidate remedies, ordered by descending effectiveness.
+    options: tuple[RemediationOptionRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

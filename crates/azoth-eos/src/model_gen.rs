@@ -77,6 +77,8 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/models/eos/scale_control_assessor.toml
+//!   - specs/models/eos/scale_remediation_advisor.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
@@ -15527,6 +15529,1068 @@ pub static SATURATE_WITH_WATER_SPEC: ModelSpec = ModelSpec {
     cases: SATURATE_WITH_WATER_CASES,
 };
 
+static SCALE_CONTROL_ASSESSOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "co2_partial_pressure",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A partial pressure cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "calcium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "barium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "strontium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "iron",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "magnesium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sodium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bicarbonate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sulphate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "total_dissolved_solids",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static SCALE_CONTROL_ASSESSOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "rca_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 20.0),
+            ("bicarbonate", 0.8),
+            ("sulphate", 0.5),
+            ("total_dissolved_solids", 80.0),
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 7.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 2.4351734337231576)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("caco3"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(353.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(1.6851624454329173),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(80.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(2.0),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(0.02),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "thermodynamic_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.22664177212405553),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4351734337231576),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.09682449444821394),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+            (
+                "kinetic_risk_index",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-2.187371248783493),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(2.4351734337231576),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-0.09682449444821394),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "skill_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.2),
+            ("barium", 0.25),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.3),
+            ("sulphate", 1.8),
+            ("total_dissolved_solids", 90.0),
+            ("temperature", 368.15),
+            ("pressure", 15000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 6.2),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 3.205981481024372)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("baso4"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(368.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(12.0),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(90.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(1.2),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(0.015),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "thermodynamic_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.2245006188239176),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(4.202408639478794),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.48292792588753775),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+            (
+                "kinetic_risk_index",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-1.2245006188239176),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(3.205981481024372),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(0.48292792588753775),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "huge_dose",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 20.0),
+            ("bicarbonate", 0.8),
+            ("sulphate", 0.5),
+            ("total_dissolved_solids", 80.0),
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 7.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 2.4351734337231576)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("caco3"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(353.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(1.6851624454329173),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(80.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(2.0),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(1000.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "kinetic_risk_index",
+            &[
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("CACO3"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(-2.773358227875944),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("BASO4"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(2.4351734337231576),
+                    },
+                ],
+                &[RecordField {
+                    name: "scale",
+                    value: FieldValue::Name("SRSO4"),
+                }],
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("CASO4"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(-0.09682449444821394),
+                    },
+                ],
+                &[RecordField {
+                    name: "scale",
+                    value: FieldValue::Name("FECO3"),
+                }],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_control_assessor`.
+pub static SCALE_CONTROL_ASSESSOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_control_assessor",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_CONTROL_ASSESSOR_CHECKS,
+    cases: SCALE_CONTROL_ASSESSOR_CASES,
+};
+
+static SCALE_REMEDIATION_ADVISOR_CHECKS: &[SpecCheck] = &[];
+
+static SCALE_REMEDIATION_ADVISOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "calcite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "calcite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "CaCO3")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("MINERAL_SCALE"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Hydrochloric acid (HCl) with corrosion inhibitor and iron-control agent",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("5-15 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name(
+                            "Acid soak or circulation, then neutralise and flush",
+                        ),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("HIGH"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(293.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Corrosive; CO2 evolution can pressurise; mandatory corrosion inhibitor and spent-acid neutralisation; verify metallurgy",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE SP0296"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("MINERAL_SCALE"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name("Chelant (EDTA/HEDTA) buffered near-neutral"),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("10-20 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Extended soak (slower, low corrosion)"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("MEDIUM"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(363.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Slower than acid but far less corrosive; check chelant biodegradability and disposal",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "barite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "barite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("BaSO4"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("MINERAL_SCALE"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name("High-pH chelant (DTPA/EDTA at pH~12) with synergist"),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("20-40 wt%"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Hot soak, long contact, multiple stages"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("LOW"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(333.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(393.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Acid-insoluble; slow dissolution; milling/mechanical removal often required",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "unmatched_name_keeps_its_spelling",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "some-mystery-deposit")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "some-mystery-deposit")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("UNKNOWN"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("UNSPECIFIED"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name(
+                        "Sample and identify deposit (XRD/SEM-EDX) before selecting solvent",
+                    ),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("n/a"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Deposit sampling and lab identification"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("HIGH"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(273.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(473.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Do not select a dissolver blindly - acid dissolves carbonate/sulfide but not sulfate scale; identify first",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "alias_is_case_insensitive",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "Barite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("BaSO4"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("MINERAL_SCALE"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name("High-pH chelant (DTPA/EDTA at pH~12) with synergist"),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("20-40 wt%"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Hot soak, long contact, multiple stages"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("LOW"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(333.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(393.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Acid-insoluble; slow dissolution; milling/mechanical removal often required",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "dithiazine_order",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "dithiazine")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "Dithiazine")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("Dithiazine"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("SCAVENGER_SOLIDS"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Proprietary dithiazine dissolver (glycolic-acid or oxidiser based) with surfactant",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("10-30 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Hot circulation with surfactant"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("MEDIUM"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Amorphous triazine-scavenger reaction product; RESTORE water pH control (7.5-9.5) and review scavenger dose to prevent recurrence",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("Dithiazine"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("SCAVENGER_SOLIDS"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Aromatic solvent (xylene) plus hot water/surfactant",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("neat solvent"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Solvent soak"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("LOW"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Only partial; mechanical trim/bridle cleaning usually still needed",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_remediation_advisor`.
+pub static SCALE_REMEDIATION_ADVISOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_remediation_advisor",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_REMEDIATION_ADVISOR_CHECKS,
+    cases: SCALE_REMEDIATION_ADVISOR_CASES,
+};
+
 static SOREIDE_WHITSON_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -19650,6 +20714,8 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SAFT_VR_MIE_PHASE_SPEC,
     &SALT_PRECIPITATION_SPEC,
     &SATURATE_WITH_WATER_SPEC,
+    &SCALE_CONTROL_ASSESSOR_SPEC,
+    &SCALE_REMEDIATION_ADVISOR_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,

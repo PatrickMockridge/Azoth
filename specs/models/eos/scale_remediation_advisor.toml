@@ -1,0 +1,63 @@
+id = "eos.scale_remediation_advisor"
+name = "Dissolver and solvent recommendations for a scaled or fouled deposit"
+kind = "direct"
+assumptions = [
+    "**the knowledge base is vendored verbatim** as a pipe-delimited CSV; the reader skips comments and blank lines, refuses a row with fewer than ten fields, and parses the two temperature columns with the class's fallbacks (0 and 200 C) on a malformed number.\n",
+    "**`canonicalKey` trims, maps the empty string to `UNKNOWN`, and consults a thirty-alias table case-insensitively**; an unmatched name is returned trimmed and unchanged rather than case-folded, which is the class's own behaviour.\n",
+    "**matching is case-insensitive against the row's canonical name**, and a key with no row falls back to every `UNKNOWN` row - the sample-and-identify guidance - rather than to an empty list.\n",
+    "**the order is a stable sort by effectiveness rank** (HIGH 3, MEDIUM 2, LOW 1, anything else 0), so rows of equal rank keep the order the CSV states them in.\n",
+    "the CSV's temperatures are degrees Celsius and cross as kelvin, `+273.15` per row; the recommendation itself is a lookup and not a calculation.\n",
+    "this is screening-level advice (NACE TM0374 / SP0296 / SP0775 informational), not a vendor-qualified treatment; the class's Gson report and its disclaimer string are not reproduced.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ScaleRemediationAdvisor.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "NeqSim master, `src/main/resources/data/scale_remediation.csv` at the same commit, vendored as `data/scale/scale_remediation.csv`.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the `remediation` rows: every canonical deposit, the aliases, the unknown fallback, the multi-mineral call and the effectiveness order.",
+]
+[source]
+standard = "NeqSim master `ScaleRemediationAdvisor`"
+edition = "`canonicalKey`, `recommendFor`, `recommendForMinerals`'s single-key loop, `loadFromResource`, `parseDouble` and `effectivenessRank`, ported, over `data/scale/scale_remediation.csv` vendored from the same commit. The Gson report and the disclaimer are not."
+[inputs]
+[inputs.deposit]
+type = "string"
+description = "the deposit's name or formula; aliases such as `calcite` and `barite` are mapped, and an unmatched name keeps its trimmed spelling.\n"
+[outputs]
+[outputs.canonical_key]
+type = "string"
+description = "the knowledge-base key the lookup used.\n"
+[outputs.options]
+type = "record_list"
+description = "The candidate remedies, ordered by descending effectiveness.\n"
+[outputs.options.fields.scale_type]
+type = "string"
+description = "the canonical deposit key, `UNKNOWN` for the fallback.\n"
+[outputs.options.fields.category]
+type = "string"
+description = "`MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.\n"
+[outputs.options.fields.dissolver]
+type = "string"
+description = "the dissolver or solvent chemistry.\n"
+[outputs.options.fields.concentration]
+type = "string"
+description = "the recommended concentration or dilution, as the CSV states it.\n"
+[outputs.options.fields.method]
+type = "string"
+description = "the application method.\n"
+[outputs.options.fields.effectiveness]
+type = "string"
+description = "`HIGH`, `MEDIUM` or `LOW`.\n"
+[outputs.options.fields.min_temperature]
+unit = "K"
+description = "the lower bound of the effective window.\n"
+[outputs.options.fields.max_temperature]
+unit = "K"
+description = "the upper bound of the effective window.\n"
+[outputs.options.fields.cautions]
+type = "string"
+description = "the operational and safety cautions.\n"
+[outputs.options.fields.standard]
+type = "string"
+description = "the informational standard reference.\n"
+[implementations]
+python = "azoth.eos.scale_remediation_advisor"
+rust = "azoth_eos::scale_remediation_advisor"

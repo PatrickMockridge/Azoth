@@ -1395,6 +1395,99 @@ impl CalcResult for ScaleKineticsResult {
     }
 }
 
+/// One candidate remedy from the remediation knowledge base.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RemediationOptionRow {
+    /// The canonical deposit key, `UNKNOWN` for the fallback.
+    pub scale_type: String,
+    /// `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    pub category: String,
+    /// The dissolver or solvent chemistry.
+    pub dissolver: String,
+    /// The recommended concentration or dilution, as the CSV states it.
+    pub concentration: String,
+    /// The application method.
+    pub method: String,
+    /// `HIGH`, `MEDIUM` or `LOW`.
+    pub effectiveness: String,
+    /// The lower bound of the effective window.
+    pub min_temperature: ThermodynamicTemperature,
+    /// The upper bound of the effective window.
+    pub max_temperature: ThermodynamicTemperature,
+    /// The operational and safety cautions.
+    pub cautions: String,
+    /// The informational standard reference.
+    pub standard: String,
+}
+
+/// Result of `eos.scale_remediation_advisor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleRemediationAdvisorResult {
+    /// The knowledge-base key the lookup used.
+    pub canonical_key: String,
+    /// The candidate remedies, ordered by descending effectiveness.
+    pub options: Vec<RemediationOptionRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleRemediationAdvisorResult {
+    const CALC_ID: &'static str = "eos.scale_remediation_advisor";
+    const FIELDS: &'static [&'static str] = &["canonical_key", "options", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One scale's uninhibited index.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    pub scale: String,
+    /// The index; absent where the water has none.
+    pub saturation_index: Option<f64>,
+}
+
+/// One scale's inhibited risk index.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlRiskRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    pub scale: String,
+    /// The risk index; absent where the thermodynamic index is.
+    pub risk_index: Option<f64>,
+}
+
+/// Result of `eos.scale_control_assessor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlAssessorResult {
+    /// The uninhibited indices, in the class's order.
+    pub thermodynamic_si: Vec<ScaleControlRow>,
+    /// The inhibited risk indices, in the same order.
+    pub kinetic_risk_index: Vec<ScaleControlRiskRow>,
+    /// The largest defined risk index.
+    pub worst_kinetic_risk_index: Option<f64>,
+    /// Whether the worst index is below the class's 0.5 threshold.
+    pub kinetically_controlled: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleControlAssessorResult {
+    const CALC_ID: &'static str = "eos.scale_control_assessor";
+    const FIELDS: &'static [&'static str] = &[
+        "thermodynamic_si",
+        "kinetic_risk_index",
+        "worst_kinetic_risk_index",
+        "kinetically_controlled",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

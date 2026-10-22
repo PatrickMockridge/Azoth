@@ -17,6 +17,7 @@
 
 use azoth_eos::association::SiteScheme;
 use azoth_eos::databank;
+use azoth_eos::scale_remediation_advisor;
 use azoth_hydraulics::{fittings, fluids};
 use pyo3::prelude::*;
 
@@ -296,6 +297,11 @@ pub fn data_files() -> Vec<PyDataFile> {
             name: "fittings".to_string(),
             path: fittings::embedded_path().to_string(),
             text: fittings::embedded_csv().to_string(),
+        },
+        PyDataFile {
+            name: "scale_remediation".to_string(),
+            path: scale_remediation_advisor::embedded_path().to_string(),
+            text: scale_remediation_advisor::embedded_csv().to_string(),
         },
         PyDataFile {
             name: "components".to_string(),

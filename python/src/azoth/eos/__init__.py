@@ -188,10 +188,12 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleControlAssessorResult,
     ScaleInhibitorPerformanceResult,
     ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
+    ScaleRemediationAdvisorResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
@@ -2860,6 +2862,59 @@ def tp_solid_flash(
     )
 
 
+def scale_control_assessor(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    temperature: Q,
+    pressure: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    inhibitors: list[dict[str, object]],
+) -> ScaleControlAssessorResult:
+    """The residual scaling risk after threshold inhibition.
+
+    NeqSim's ``ScaleControlAssessor``: the scale predictor's five saturation indices with
+    each registered inhibitor's efficiency folded into a kinetic risk index,
+    ``SI + log10(max(1e-6, 1 - efficiency))``, the efficiency capped at 0.999. An absent
+    mineral keeps its absent index, and a scale with no inhibitor carries its index
+    unchanged. **The risk index is not a thermodynamic saturation index.**
+
+    Args:
+        inhibitors: record rows of ``scale_type``, ``inhibitor_chemistry``,
+            ``temperature``, ``saturation_ratio``, ``total_dissolved_solids``,
+            ``calcium`` and ``available_dose``.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+        InvalidInputError: for an unknown scale type or chemistry in an inhibitor row.
+
+    See :func:`azoth.eos.reference.scale_control_assessor`.
+    """
+    return resolve("eos.scale_control_assessor")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        temperature=temperature,
+        pressure=pressure,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        inhibitors=inhibitors,
+    )
+
+
 def scale_inhibitor_performance(
     scale_type: str,
     inhibitor_chemistry: str,
@@ -3058,6 +3113,24 @@ def pitzer_scale_activity(
         cation=cation,
         anion=anion,
     )
+
+
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult:
+    """The candidate remedies for a scaled or fouled deposit.
+
+    NeqSim's ``ScaleRemediationAdvisor``: the deposit name is normalised through the
+    class's alias table (``calcite`` and ``CaCO3`` reach the same rows), its rows are
+    selected or the ``UNKNOWN`` sample-and-identify guidance is returned, and the options
+    are ordered by descending effectiveness with a stable sort. The knowledge base is
+    vendored as ``data/scale/scale_remediation.csv``. **Screening-level advice only**: not
+    a substitute for deposit identification and a metallurgy review.
+
+    Raises:
+        Nothing; an unmatched name falls back to the ``UNKNOWN`` rows.
+
+    See :func:`azoth.eos.reference.scale_remediation_advisor`.
+    """
+    return resolve("eos.scale_remediation_advisor")(deposit=deposit)  # type: ignore[no-any-return]
 
 
 def scale_saturation_ratio(

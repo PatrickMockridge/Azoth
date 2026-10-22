@@ -183,6 +183,7 @@ from azoth.core.result import (
     ReactivePhFlashResult,
     ReactiveTpFlashResult,
     ReferencePotentialsResult,
+    RemediationOptionRow,
     ReynoldsNumberResult,
     RkAlphaAbResult,
     RkDepartureResult,
@@ -190,10 +191,14 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleControlAssessorResult,
+    ScaleControlRiskRow,
+    ScaleControlRow,
     ScaleInhibitorPerformanceResult,
     ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
+    ScaleRemediationAdvisorResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SeparatorResult,
@@ -469,10 +474,12 @@ __all__ = [
     "saft_vr_mie_phase",
     "salt_precipitation",
     "saturate_with_water",
+    "scale_control_assessor",
     "scale_inhibitor_performance",
     "scale_kinetics",
     "scale_mass",
     "scale_prediction",
+    "scale_remediation_advisor",
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
@@ -3265,6 +3272,34 @@ def saturate_with_water(components: list[str], moles: list[float], T: Q, P: Q, e
     )
 
 
+def scale_control_assessor(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, temperature: Q, pressure: Q, co2_partial_pressure: Q, ph: float, inhibitors: list[dict[str, object]]) -> ScaleControlAssessorResult:
+    """``eos.scale_control_assessor``, computed in Rust."""
+    spec = _models_gen.model("eos.scale_control_assessor")
+    result = _core.scale_control_assessor(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        input_records_to_si(spec, "inhibitors", inhibitors),
+    )
+    return ScaleControlAssessorResult(
+        thermodynamic_si=tuple(ScaleControlRow(scale=c.scale, saturation_index=c.saturation_index) for c in result.thermodynamic_si),
+        kinetic_risk_index=tuple(ScaleControlRiskRow(scale=c.scale, risk_index=c.risk_index) for c in result.kinetic_risk_index),
+        worst_kinetic_risk_index=result.worst_kinetic_risk_index,
+        kinetically_controlled=result.kinetically_controlled,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def scale_inhibitor_performance(scale_type: str, inhibitor_chemistry: str, temperature: Q, saturation_ratio: float, total_dissolved_solids: Q, calcium: Q, available_dose: Q) -> ScaleInhibitorPerformanceResult:
     """``eos.scale_inhibitor_performance``, computed in Rust."""
     spec = _spec_for("eos.scale_inhibitor_performance")
@@ -3383,6 +3418,18 @@ def scale_prediction(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q,
         si_feco3=result.si_feco3,
         has_scaling_risk=result.has_scaling_risk,
         scale_risk_count=result.scale_risk_count,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult:
+    """``eos.scale_remediation_advisor``, computed in Rust."""
+    result = _core.scale_remediation_advisor(
+        deposit,
+    )
+    return ScaleRemediationAdvisorResult(
+        canonical_key=result.canonical_key,
+        options=tuple(RemediationOptionRow(scale_type=c.scale_type, category=c.category, dissolver=c.dissolver, concentration=c.concentration, method=c.method, effectiveness=c.effectiveness, min_temperature=from_si(c.min_temperature.magnitude_si, c.min_temperature.unit), max_temperature=from_si(c.max_temperature.magnitude_si, c.max_temperature.unit), cautions=c.cautions, standard=c.standard) for c in result.options),
         warnings=_warnings(result.warnings),
     )
 

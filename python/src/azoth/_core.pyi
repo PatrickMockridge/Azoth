@@ -270,6 +270,17 @@ class BrineAnalysis(TypedDict):
     sulphate: float
     bicarbonate: float
 
+class ScaleInhibitor(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    scale_type: str
+    inhibitor_chemistry: str
+    temperature: float
+    saturation_ratio: float
+    total_dissolved_solids: float
+    calcium: float
+    available_dose: float
+
 class WaterAnalysis(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -347,6 +358,35 @@ class ActivityCoefficientRow:
 
     ion: str
     activity_coefficient: float
+
+@final
+class ScaleControlRow:
+    """The uninhibited indices, one row per scale in the class's order."""
+
+    scale: str
+    saturation_index: float | None
+
+@final
+class ScaleControlRiskRow:
+    """The inhibited risk index, one row per scale in the same order."""
+
+    scale: str
+    risk_index: float | None
+
+@final
+class RemediationOptionRow:
+    """The candidate remedies, ordered by descending effectiveness."""
+
+    scale_type: str
+    category: str
+    dissolver: str
+    concentration: str
+    method: str
+    effectiveness: str
+    min_temperature: Qty
+    max_temperature: Qty
+    cautions: str
+    standard: str
 
 @final
 class WaterMixingResult:
@@ -1461,6 +1501,14 @@ class SaturateWithWaterResult:
     warnings: list[Warning]
 
 @final
+class ScaleControlAssessorResult:
+    thermodynamic_si: list[ScaleControlRow]
+    kinetic_risk_index: list[ScaleControlRiskRow]
+    worst_kinetic_risk_index: float | None
+    kinetically_controlled: bool
+    warnings: list[Warning]
+
+@final
 class ScaleInhibitorPerformanceResult:
     minimum_inhibitor_concentration: Qty
     recommended_dose: Qty
@@ -1522,6 +1570,12 @@ class ScalePredictionResult:
     si_feco3: float | None
     has_scaling_risk: bool
     scale_risk_count: int
+    warnings: list[Warning]
+
+@final
+class ScaleRemediationAdvisorResult:
+    canonical_key: str
+    options: list[RemediationOptionRow]
     warnings: list[Warning]
 
 @final
@@ -3760,6 +3814,22 @@ def saturate_with_water(
     eos: str,
     associating: bool | None = None,
 ) -> SaturateWithWaterResult: ...
+def scale_control_assessor(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    inhibitors: list[ScaleInhibitor],
+) -> ScaleControlAssessorResult: ...
 def scale_inhibitor_performance(
     scale_type: str,
     inhibitor_chemistry: str,
@@ -3802,6 +3872,7 @@ def scale_prediction(
     auto_ph: bool,
     second_order_pressure_correction: bool,
 ) -> ScalePredictionResult: ...
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult: ...
 def scale_saturation_ratio(
     salt: str,
     x1: float,

@@ -221,6 +221,9 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # asserting rather than dropping, because the flag is `true` on two branches that
         # accept an answer without a converged solve.
         "converged",
+        # `scale_control_assessor`'s verdict, read by the model's own test: the boolean is
+        # `worst_kinetic_risk_index < 0.5`, and both the number and the verdict are pinned.
+        "kinetically_controlled",
     }
 )
 

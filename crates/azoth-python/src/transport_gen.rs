@@ -15,7 +15,8 @@
 
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyFlowlineScaleSegment, PyKComponent,
-    PyMineralEquilibriumRow, PySubFraction, PyWaterMixingResult,
+    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
+    PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -7818,6 +7819,65 @@ impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterR
         }
     }
 }
+/// Result of `eos.scale_control_assessor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlAssessorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlAssessorResult {
+    /// The uninhibited indices, one row per scale in the class's order.
+    #[pyo3(get)]
+    pub thermodynamic_si: Vec<PyScaleControlRow>,
+    /// The inhibited risk index, one row per scale in the same order.
+    #[pyo3(get)]
+    pub kinetic_risk_index: Vec<PyScaleControlRiskRow>,
+    /// the largest defined risk index; absent where none is.
+    #[pyo3(get)]
+    pub worst_kinetic_risk_index: Option<f64>,
+    /// whether the worst index is below the class's 0.5 threshold.
+    #[pyo3(get)]
+    pub kinetically_controlled: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleControlAssessorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlAssessorResult(thermodynamic_si={:?}, kinetic_risk_index={:?}, worst_kinetic_risk_index={:?}, kinetically_controlled={:?}, {} warning(s))",
+            self.thermodynamic_si,
+            self.kinetic_risk_index,
+            self.worst_kinetic_risk_index,
+            self.kinetically_controlled,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlAssessorResult> for PyScaleControlAssessorResult {
+    fn from(r: &azoth_eos::results::ScaleControlAssessorResult) -> Self {
+        Self {
+            thermodynamic_si: r
+                .thermodynamic_si
+                .iter()
+                .map(PyScaleControlRow::from)
+                .collect(),
+            kinetic_risk_index: r
+                .kinetic_risk_index
+                .iter()
+                .map(PyScaleControlRiskRow::from)
+                .collect(),
+            worst_kinetic_risk_index: r.worst_kinetic_risk_index,
+            kinetically_controlled: r.kinetically_controlled,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.scale_inhibitor_performance`, transported.
 #[pyclass(
     frozen,
@@ -8234,6 +8294,47 @@ impl From<&azoth_eos::results::ScalePredictionResult> for PyScalePredictionResul
             si_feco3: r.si_feco3,
             has_scaling_risk: r.has_scaling_risk,
             scale_risk_count: r.scale_risk_count,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_remediation_advisor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleRemediationAdvisorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleRemediationAdvisorResult {
+    /// the knowledge-base key the lookup used.
+    #[pyo3(get)]
+    pub canonical_key: String,
+    /// The candidate remedies, ordered by descending effectiveness.
+    #[pyo3(get)]
+    pub options: Vec<PyRemediationOptionRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleRemediationAdvisorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleRemediationAdvisorResult(canonical_key={:?}, options={:?}, {} warning(s))",
+            self.canonical_key,
+            self.options,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleRemediationAdvisorResult> for PyScaleRemediationAdvisorResult {
+    fn from(r: &azoth_eos::results::ScaleRemediationAdvisorResult) -> Self {
+        Self {
+            canonical_key: r.canonical_key.clone(),
+            options: r.options.iter().map(PyRemediationOptionRow::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

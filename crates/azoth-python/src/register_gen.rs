@@ -151,10 +151,12 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySaftVrMiePhaseResult>()?;
     m.add_class::<crate::transport_gen::PySaltPrecipitationResult>()?;
     m.add_class::<crate::transport_gen::PySaturateWithWaterResult>()?;
+    m.add_class::<crate::transport_gen::PyScaleControlAssessorResult>()?;
     m.add_class::<crate::transport_gen::PyScaleInhibitorPerformanceResult>()?;
     m.add_class::<crate::transport_gen::PyScaleKineticsResult>()?;
     m.add_class::<crate::transport_gen::PyScaleMassResult>()?;
     m.add_class::<crate::transport_gen::PyScalePredictionResult>()?;
+    m.add_class::<crate::transport_gen::PyScaleRemediationAdvisorResult>()?;
     m.add_class::<crate::transport_gen::PyScaleSaturationRatioResult>()?;
     m.add_class::<crate::transport_gen::PySchwartzentruberAlphaResult>()?;
     m.add_class::<crate::transport_gen::PySiddiqiLucasDiffusivityResult>()?;
@@ -264,6 +266,9 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyScaleControlRiskRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyScaleControlRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
     m.add_class::<crate::record_outputs_gen::PyWaterMixingResult>()?;
 
@@ -590,12 +595,20 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::saturate_with_water, m)?)?;
     m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::scale_control_assessor,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::scale_inhibitor_performance,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::scale_kinetics, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::scale_mass, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::scale_prediction, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::scale_remediation_advisor,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::scale_saturation_ratio,
         m

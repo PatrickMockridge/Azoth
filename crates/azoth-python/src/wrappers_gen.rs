@@ -2930,6 +2930,64 @@ pub fn salt_precipitation(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Residual scaling risk after threshold inhibition.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, inhibitors))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, inhibitors)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn scale_control_assessor(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    total_dissolved_solids: f64,
+    temperature: f64,
+    pressure: f64,
+    co2_partial_pressure: f64,
+    ph: f64,
+    inhibitors: Vec<crate::records_gen::ScaleInhibitor>,
+) -> PyResult<crate::transport_gen::PyScaleControlAssessorResult> {
+    let inhibitors_records: Vec<azoth_eos::scale_control_assessor::ScaleInhibitor> = inhibitors
+        .into_iter()
+        .map(|row| azoth_eos::scale_control_assessor::ScaleInhibitor {
+            scale_type: row.scale_type,
+            inhibitor_chemistry: row.inhibitor_chemistry,
+            temperature: kelvins(row.temperature),
+            saturation_ratio: row.saturation_ratio,
+            total_dissolved_solids: kilograms_per_cubic_meter(row.total_dissolved_solids),
+            calcium: kilograms_per_cubic_meter(row.calcium),
+            available_dose: kilograms_per_cubic_meter(row.available_dose),
+        })
+        .collect();
+    azoth_eos::scale_control_assessor::scale_control_assessor(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        kelvins(temperature),
+        pascals(pressure),
+        pascals(co2_partial_pressure),
+        ph,
+        &inhibitors_records,
+    )
+    .map(|r| crate::transport_gen::PyScaleControlAssessorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Screening performance of an oilfield scale inhibitor.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -3065,6 +3123,21 @@ pub fn scale_prediction(
     )
     .map(|r| crate::transport_gen::PyScalePredictionResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Dissolver and solvent recommendations for a scaled or fouled deposit.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (deposit))]
+#[pyo3(text_signature = "(deposit)")]
+pub fn scale_remediation_advisor(
+    py: Python<'_>,
+    deposit: &str,
+) -> PyResult<crate::transport_gen::PyScaleRemediationAdvisorResult> {
+    azoth_eos::scale_remediation_advisor::scale_remediation_advisor(deposit)
+        .map(|r| crate::transport_gen::PyScaleRemediationAdvisorResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Scale saturation ratio of one salt.

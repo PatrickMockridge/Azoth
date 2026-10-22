@@ -180,6 +180,8 @@
   - [SAFT-VR-Mie phase state](./eos/saft_vr_mie_phase.md)
   - [Scale precipitation of one mineral](./eos/salt_precipitation.md)
   - [Water saturation of a fluid](./eos/saturate_with_water.md)
+  - [Residual scaling risk after threshold inhibition](./eos/scale_control_assessor.md)
+  - [Dissolver and solvent recommendations for a scaled or fouled deposit](./eos/scale_remediation_advisor.md)
   - [Phase state of a Soreide-Whitson fluid](./eos/soreide_whitson_phase.md)
   - [Soave-Redlich-Kwong CPA phase state](./eos/srk_cpa_phase.md)
   - [Tangent-plane stability test](./eos/stability_test.md)

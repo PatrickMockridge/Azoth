@@ -1,0 +1,196 @@
+id = "eos.scale_control_assessor"
+name = "Residual scaling risk after threshold inhibition"
+kind = "direct"
+assumptions = [
+    "**the thermodynamic indices are the scale predictor's own state**, from the same water analysis and with its auto-pH path off - the class default and the one the assessor's own test uses.\n",
+    "**the risk index is not a saturation index**: `SI + log10(max(1e-6, 1 - efficiency))`, with the efficiency clamped to `[0, 0.999]`. The 0.999 cap is what puts the smallest residual at `SI - 3`.\n",
+    "**an absent mineral keeps its absence**: a water with no barium, strontium or iron gives no barite, celestite or siderite index, and both maps report no value for it rather than a number.\n",
+    "**a scale with no registered inhibitor carries its thermodynamic index unchanged**; a second row for one scale replaces the first, as the class's `addInhibitor` puts into a map.\n",
+    "the scale order is the class's: CaCO3, BaSO4, SrSO4, CaSO4, FeCO3; the worst is the largest defined risk index, and `kinetically_controlled` is its being below 0.5, the threshold the class's report states.\n",
+    "the inhibitor rows carry their own conditions and dose, because the class's assessor evaluates a configured `ScaleInhibitorPerformance` rather than deriving one from the water.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ScaleControlAssessor.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the `control_assessor` rows: the RCA state with calcite inhibition, the skill state with barite inhibition, no inhibitor, a zero dose and a dose past the cap.",
+]
+[source]
+standard = "NeqSim master `ScaleControlAssessor`"
+edition = "`evaluate`, `getKineticRiskIndex`, `getWorstKineticRiskIndex` and `isKineticallyControlled`, ported. `fromStream`, the deprecated `getResidualSI` aliases and the Gson report are not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "calcium ion concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "barium ion concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "strontium ion concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "ferrous iron concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "magnesium ion concentration.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "sodium ion concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "bicarbonate concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "sulphate ion concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "total dissolved solids, which set the predictor's ionic strength.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure, read only by the predictor's auto-pH path, which is off.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the water's pH.\n"
+[inputs.inhibitors]
+type = "record_list"
+row_type = "ScaleInhibitor"
+description = "The inhibitors registered per scale; a scale absent from this list carries its index unchanged.\n"
+[inputs.inhibitors.fields.scale_type]
+type = "enum"
+values = ["caco3", "baso4", "srso4", "caso4", "feco3"]
+description = "the scale the row is registered for.\n"
+[inputs.inhibitors.fields.inhibitor_chemistry]
+type = "enum"
+values = ["phosphonate", "polymaleate", "polyacrylate", "phosphate_ester", "vinyl_sulphonate"]
+description = "the inhibitor family, as `eos.scale_inhibitor_performance` takes it.\n"
+[inputs.inhibitors.fields.temperature]
+unit = "K"
+description = "the temperature the inhibitor model was configured at.\n"
+[inputs.inhibitors.fields.saturation_ratio]
+unit = "dimensionless"
+description = "`SR = IAP/Ksp` the inhibitor model was configured with.\n"
+[inputs.inhibitors.fields.total_dissolved_solids]
+unit = "kg/m**3"
+description = "the TDS the inhibitor model was configured with.\n"
+[inputs.inhibitors.fields.calcium]
+unit = "kg/m**3"
+description = "the calcium the inhibitor model was configured with.\n"
+[inputs.inhibitors.fields.available_dose]
+unit = "kg/m**3"
+description = "the active dose available.\n"
+[outputs]
+[outputs.thermodynamic_si]
+type = "record_list"
+description = "The uninhibited indices, one row per scale in the class's order.\n"
+[outputs.thermodynamic_si.fields.scale]
+type = "string"
+description = "`CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.\n"
+[outputs.thermodynamic_si.fields.saturation_index]
+unit = "dimensionless"
+optional = true
+description = "the index; absent where the water has none.\n"
+[outputs.kinetic_risk_index]
+type = "record_list"
+description = "The inhibited risk index, one row per scale in the same order.\n"
+[outputs.kinetic_risk_index.fields.scale]
+type = "string"
+description = "`CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.\n"
+[outputs.kinetic_risk_index.fields.risk_index]
+unit = "dimensionless"
+optional = true
+description = "`SI + log10(max(1e-6, 1 - efficiency))`; absent where the index is.\n"
+[outputs.worst_kinetic_risk_index]
+unit = "dimensionless"
+optional = true
+description = "the largest defined risk index; absent where none is.\n"
+[outputs.kinetically_controlled]
+type = "boolean"
+description = "whether the worst index is below the class's 0.5 threshold.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "barium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "strontium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "iron"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "magnesium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sodium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "bicarbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sulphate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "total_dissolved_solids"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[implementations]
+python = "azoth.eos.scale_control_assessor"
+rust = "azoth_eos::scale_control_assessor"

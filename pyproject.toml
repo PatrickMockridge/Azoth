@@ -94,6 +94,7 @@ include = [
   "data/reactions/*.csv",
   "data/standards/*.csv",
   "data/characterization/*.csv",
+  "data/scale/*.csv",
   "specs/unit_ops/**/*.toml",
 ]
 

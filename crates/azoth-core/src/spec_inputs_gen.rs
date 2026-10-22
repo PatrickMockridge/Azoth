@@ -133,10 +133,12 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/models/eos/scale_control_assessor.toml
 //!   - specs/calcs/eos/scale_inhibitor_performance.toml
 //!   - specs/calcs/eos/scale_kinetics.toml
 //!   - specs/calcs/eos/scale_mass.toml
 //!   - specs/calcs/eos/scale_prediction.toml
+//!   - specs/models/eos/scale_remediation_advisor.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
@@ -1422,6 +1424,31 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.saturate_with_water", "moles", "amount"),
     ("eos.saturate_with_water", "T", "thermodynamic_temperature"),
     ("eos.saturate_with_water", "P", "pressure"),
+    ("eos.scale_control_assessor", "calcium", "mass_density"),
+    ("eos.scale_control_assessor", "barium", "mass_density"),
+    ("eos.scale_control_assessor", "strontium", "mass_density"),
+    ("eos.scale_control_assessor", "iron", "mass_density"),
+    ("eos.scale_control_assessor", "magnesium", "mass_density"),
+    ("eos.scale_control_assessor", "sodium", "mass_density"),
+    ("eos.scale_control_assessor", "bicarbonate", "mass_density"),
+    ("eos.scale_control_assessor", "sulphate", "mass_density"),
+    (
+        "eos.scale_control_assessor",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    (
+        "eos.scale_control_assessor",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.scale_control_assessor", "pressure", "pressure"),
+    (
+        "eos.scale_control_assessor",
+        "co2_partial_pressure",
+        "pressure",
+    ),
+    ("eos.scale_control_assessor", "ph", "dimensionless"),
     (
         "eos.scale_inhibitor_performance",
         "temperature",

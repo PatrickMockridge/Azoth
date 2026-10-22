@@ -288,6 +288,161 @@ impl From<&azoth_eos::results::MineralEquilibriumRow> for PyMineralEquilibriumRo
     }
 }
 
+/// The candidate remedies, ordered by descending effectiveness.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RemediationOptionRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRemediationOptionRow {
+    /// the canonical deposit key, `UNKNOWN` for the fallback.
+    #[pyo3(get)]
+    pub scale_type: String,
+    /// `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    #[pyo3(get)]
+    pub category: String,
+    /// the dissolver or solvent chemistry.
+    #[pyo3(get)]
+    pub dissolver: String,
+    /// the recommended concentration or dilution, as the CSV states it.
+    #[pyo3(get)]
+    pub concentration: String,
+    /// the application method.
+    #[pyo3(get)]
+    pub method: String,
+    /// `HIGH`, `MEDIUM` or `LOW`.
+    #[pyo3(get)]
+    pub effectiveness: String,
+    /// the lower bound of the effective window.
+    #[pyo3(get)]
+    pub min_temperature: PyQty,
+    /// the upper bound of the effective window.
+    #[pyo3(get)]
+    pub max_temperature: PyQty,
+    /// the operational and safety cautions.
+    #[pyo3(get)]
+    pub cautions: String,
+    /// the informational standard reference.
+    #[pyo3(get)]
+    pub standard: String,
+}
+
+#[pymethods]
+impl PyRemediationOptionRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "RemediationOptionRow(scale_type={}, category={}, dissolver={}, concentration={}, method={}, effectiveness={}, min_temperature={:?}, max_temperature={:?}, cautions={}, standard={})",
+            self.scale_type,
+            self.category,
+            self.dissolver,
+            self.concentration,
+            self.method,
+            self.effectiveness,
+            self.min_temperature,
+            self.max_temperature,
+            self.cautions,
+            self.standard
+        )
+    }
+}
+
+impl From<&azoth_eos::results::RemediationOptionRow> for PyRemediationOptionRow {
+    fn from(row: &azoth_eos::results::RemediationOptionRow) -> Self {
+        Self {
+            scale_type: row.scale_type.clone(),
+            category: row.category.clone(),
+            dissolver: row.dissolver.clone(),
+            concentration: row.concentration.clone(),
+            method: row.method.clone(),
+            effectiveness: row.effectiveness.clone(),
+            min_temperature: PyQty {
+                magnitude_si: row.min_temperature.value,
+                unit: "K".to_string(),
+            },
+            max_temperature: PyQty {
+                magnitude_si: row.max_temperature.value,
+                unit: "K".to_string(),
+            },
+            cautions: row.cautions.clone(),
+            standard: row.standard.clone(),
+        }
+    }
+}
+
+/// The inhibited risk index, one row per scale in the same order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlRiskRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlRiskRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    #[pyo3(get)]
+    pub scale: String,
+    /// `SI + log10(max(1e-6, 1 - efficiency))`; absent where the index is.
+    #[pyo3(get)]
+    pub risk_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScaleControlRiskRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlRiskRow(scale={}, risk_index={:?})",
+            self.scale, self.risk_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlRiskRow> for PyScaleControlRiskRow {
+    fn from(row: &azoth_eos::results::ScaleControlRiskRow) -> Self {
+        Self {
+            scale: row.scale.clone(),
+            risk_index: row.risk_index,
+        }
+    }
+}
+
+/// The uninhibited indices, one row per scale in the class's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    #[pyo3(get)]
+    pub scale: String,
+    /// the index; absent where the water has none.
+    #[pyo3(get)]
+    pub saturation_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScaleControlRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlRow(scale={}, saturation_index={:?})",
+            self.scale, self.saturation_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlRow> for PyScaleControlRow {
+    fn from(row: &azoth_eos::results::ScaleControlRow) -> Self {
+        Self {
+            scale: row.scale.clone(),
+            saturation_index: row.saturation_index,
+        }
+    }
+}
+
 /// The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.
 #[pyclass(
     frozen,
