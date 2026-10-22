@@ -8,14 +8,15 @@ Spec: ``specs/models/eos/water_compatibility.toml``.
 
 from __future__ import annotations
 
+import math
 from typing import Any, cast
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.record_outputs_gen import WaterMixingResult
 from azoth.core.result import WaterCompatibilityResult
-from azoth.core.units import Q, from_si, input_records_to_si
+from azoth.core.units import Q, input_records_to_si
 from azoth.core.warnings import Warning, WarningCode
-from azoth.eos.reference.scale_prediction import scale_prediction as _predictor
+from azoth.eos.reference.scale_prediction import _state
 
 CALC_ID = "eos.water_compatibility"
 
@@ -127,30 +128,31 @@ def water_compatibility(
             - 273.15
             + fraction * ((injection["temperature"] - 273.15) - (formation["temperature"] - 273.15))
         )
-        point = _predictor(
-            from_si(mix("calcium", fraction), "kg/m**3"),
-            from_si(mix("barium", fraction), "kg/m**3"),
-            from_si(mix("strontium", fraction), "kg/m**3"),
-            from_si(mix("iron", fraction), "kg/m**3"),
-            from_si(mix("magnesium", fraction), "kg/m**3"),
-            from_si(mix("sodium", fraction), "kg/m**3"),
-            from_si(mix("bicarbonate", fraction), "kg/m**3"),
-            from_si(mix("sulphate", fraction), "kg/m**3"),
-            from_si(mix("total_dissolved_solids", fraction), "kg/m**3"),
-            from_si(temperature_c + 273.15, "K"),
-            from_si(mix("pressure", fraction), "Pa"),
-            from_si(mix("co2_partial_pressure", fraction), "Pa"),
+        mixture = {
+            name: mix(name, fraction)
+            for name in (
+                "calcium",
+                "barium",
+                "strontium",
+                "iron",
+                "magnesium",
+                "sodium",
+                "bicarbonate",
+                "sulphate",
+                "total_dissolved_solids",
+                "co2_partial_pressure",
+            )
+        }
+        point = _state(
+            mixture,
+            temperature_c + 273.15,
+            mix("pressure", fraction),
+            mix("co2_partial_pressure", fraction),
             DEFAULT_PH,
             True,
             False,
         )
-        indices = (
-            point.si_caco3,
-            point.si_baso4,
-            point.si_srso4,
-            point.si_caso4,
-            point.si_feco3,
-        )
+        indices = tuple(None if math.isnan(value) else value for value in point["si"])
         for scale, index in zip(SCALES, indices, strict=True):
             if index is None:
                 continue

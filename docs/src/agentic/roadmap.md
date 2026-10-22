@@ -65,6 +65,17 @@ P9 has landed hydrate, wax, scale and freezing, and four skills were promoted to
 `eos.hydrate_fraction`), `azoth-wax-margin-check` (`eos.tp_multiflash_wax`,
 `eos.wax_solid_fugacity`) and `azoth-produced-water-scale-screening`
 (`eos.scale_saturation_ratio`, `eos.salt_precipitation`).
+
+**The scale family is now two routes, seven water-analysis ids beside the reactive two.**
+`eos.scale_prediction`, `eos.scale_mass`, `eos.pitzer_scale_activity`,
+`eos.barite_celestite_solid_solution`, `eos.multi_mineral_scale_equilibrium`,
+`eos.flowline_scale_profile` and `eos.water_compatibility` take a water analysis - mg/L, a
+temperature and a pressure - and form their own Davies, B-dot or binary-Pitzer activities,
+where the reactive route takes a speciated brine and the phase's own coefficients. **Their
+auto-pH path carries a defect upstream and reproduces it**: NeqSim's CO2 Henry constant puts
+the aqueous estimate near `1e48`, so an auto-pH carbonate index lands about `-52` and a
+manual pH is the physical route. The specs pin that value, so a future repair upstream is a
+visible divergence rather than a silent one.
 **The hydrate ids carry a caveat worth stating**: they reproduce NeqSim's non-Pitzer
 route, and NeqSim answers a `SystemPitzer` brine from `PitzerHydrateFlash` instead
 — a path that needs a flash whose two phases run different models, which this

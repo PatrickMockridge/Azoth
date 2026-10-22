@@ -31,6 +31,26 @@ MW_BICARBONATE = 61017.0
 MW_SULPHATE = 96060.0
 
 
+def _log10(value: float) -> float:
+    """`log10`, NaN where the value is not positive - Rust's own answer, not a raise."""
+    return math.log10(value) if value > 0.0 else math.nan
+
+
+def _log(value: float) -> float:
+    """`ln`, NaN where the value is not positive - Rust's own answer, not a raise."""
+    return math.log(value) if value > 0.0 else math.nan
+
+
+def _sqrt(value: float) -> float:
+    """`sqrt`, NaN where the value is negative - Rust's own answer, not a raise."""
+    return math.sqrt(value) if value >= 0.0 else math.nan
+
+
+def _pow15(value: float) -> float:
+    """`value**1.5`, NaN where the value is negative - Rust's own answer, not a raise."""
+    return math.pow(value, 1.5) if value >= 0.0 else math.nan
+
+
 def _debye_huckel_a(temperature_k: float) -> float:
     tc = temperature_k - 273.15
     rho = (
@@ -43,11 +63,11 @@ def _debye_huckel_a(temperature_k: float) -> float:
     rho = max(rho, 0.85)
     eps = 87.740 - 0.40008 * tc + 9.398e-4 * tc * tc - 1.410e-6 * tc * tc * tc
     eps = max(eps, 20.0)
-    return 1.8246e6 * math.sqrt(rho) / math.pow(eps * temperature_k, 1.5)
+    return 1.8246e6 * _sqrt(rho) / _pow15(eps * temperature_k)
 
 
 def _activity_coefficient(charge: int, ionic_strength: float, deb: float) -> float:
-    sqrt_i = math.sqrt(ionic_strength)
+    sqrt_i = _sqrt(ionic_strength)
     log_gamma = -deb * charge * charge * (sqrt_i / (1.0 + sqrt_i) - 0.3 * ionic_strength)
     return math.pow(10.0, log_gamma)
 
@@ -57,7 +77,7 @@ def _k1_carbonate(temperature_k: float) -> float:
         -356.3094
         - 0.06091964 * temperature_k
         + 21834.37 / temperature_k
-        + 126.8339 * math.log10(temperature_k)
+        + 126.8339 * _log10(temperature_k)
         - 1684915.0 / (temperature_k * temperature_k)
     )
     return math.pow(10.0, log_k1)
@@ -68,7 +88,7 @@ def _k2_carbonate(temperature_k: float) -> float:
         -107.8871
         - 0.03252849 * temperature_k
         + 5151.79 / temperature_k
-        + 38.92561 * math.log10(temperature_k)
+        + 38.92561 * _log10(temperature_k)
         - 563713.9 / (temperature_k * temperature_k)
     )
     return math.pow(10.0, log_k2)
@@ -78,7 +98,7 @@ def _henry_co2(temperature_k: float) -> float:
     log_kh = (
         -6.8346
         + 1684.88 / temperature_k
-        + 21.6215 * math.log10(temperature_k)
+        + 21.6215 * _log10(temperature_k)
         - 0.012174 * temperature_k
     )
     return math.pow(10.0, log_kh)
@@ -107,16 +127,16 @@ def _ksp(temperature_k: float, pressure_bara: float, second_order: bool) -> list
         -171.9065
         - 0.077993 * temperature_k
         + 2839.319 / temperature_k
-        + 71.595 * math.log10(temperature_k)
+        + 71.595 * _log10(temperature_k)
     )
-    barite = 136.035 - 7680.41 / temperature_k - 48.595 * math.log10(temperature_k)
+    barite = 136.035 - 7680.41 / temperature_k - 48.595 * _log10(temperature_k)
     celestite = -10452.9 / temperature_k + 19.790
-    anhydrite = -19966.8 / temperature_k + 454.860 - 69.840 * math.log(temperature_k)
+    anhydrite = -19966.8 / temperature_k + 454.860 - 69.840 * _log(temperature_k)
     siderite = (
         -59.3498
         - 0.041377 * temperature_k
         - 2.1963 / temperature_k
-        + 24.5724 * math.log10(temperature_k)
+        + 24.5724 * _log10(temperature_k)
     )
     return [
         _pressure_correction(
@@ -294,6 +314,71 @@ def scale_prediction(
     )
     apply_checks(checks.on_input, values.get, warnings)
 
+    state = _state(
+        values,
+        temperature_k,
+        pressure_si,
+        co2_si,
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+    )
+    ksp = state["ksp"]
+    si = state["si"]
+    risk_count = sum(1 for value in si if math.isfinite(value) and value > 0.0)
+
+    def concentration(value_mol_l: float) -> Q:
+        return from_si(value_mol_l * 1000.0, "mol/m**3")
+
+    return ScalePredictionResult(
+        ionic_strength=from_si(state["ionic_strength"] * 1000.0, "mol/m**3"),
+        debye_huckel_a=state["debye_huckel_a"],
+        divalent_activity_coefficient=state["gamma_divalent"],
+        monovalent_activity_coefficient=state["gamma_monovalent"],
+        ph_used=state["ph_used"],
+        free_calcium=concentration(state["free_calcium"]),
+        free_sulphate=concentration(state["free_sulphate"]),
+        free_carbonate=concentration(state["free_carbonate"]),
+        free_bicarbonate=concentration(state["free_bicarbonate"]),
+        total_barium=concentration(state["total_barium"]),
+        total_strontium=concentration(state["total_strontium"]),
+        total_iron=concentration(state["total_iron"]),
+        total_sodium=concentration(state["total_sodium"]),
+        ksp_calcite=ksp[0],
+        ksp_barite=ksp[1],
+        ksp_celestite=ksp[2],
+        ksp_anhydrite=ksp[3],
+        ksp_siderite=ksp[4],
+        log10_ksp_calcite=_log10(ksp[0]),
+        log10_ksp_barite=_log10(ksp[1]),
+        log10_ksp_celestite=_log10(ksp[2]),
+        log10_ksp_anhydrite=_log10(ksp[3]),
+        log10_ksp_siderite=_log10(ksp[4]),
+        si_caco3=None if math.isnan(si[0]) else si[0],
+        si_baso4=None if math.isnan(si[1]) else si[1],
+        si_srso4=None if math.isnan(si[2]) else si[2],
+        si_caso4=None if math.isnan(si[3]) else si[3],
+        si_feco3=None if math.isnan(si[4]) else si[4],
+        has_scaling_risk=risk_count > 0,
+        scale_risk_count=risk_count,
+        warnings=tuple(warnings),
+    )
+
+
+def _state(
+    values: dict[str, float],
+    temperature_k: float,
+    pressure_si: float,
+    co2_si: float,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+) -> dict[str, Any]:
+    """The class's `calculate()` in SI magnitudes, without the input range checks.
+
+    The composers call this directly: they run it over mixtures and interpolated points whose
+    values are not the caller's inputs, and the class itself applies no range check anywhere.
+    """
     ionic_strength = values["total_dissolved_solids"] * 1000.0 / 40000.0
     deb = _debye_huckel_a(temperature_k)
     gamma_divalent = _activity_coefficient(2, ionic_strength, deb)
@@ -306,7 +391,7 @@ def scale_prediction(
         co2_aq = _henry_co2(temperature_k) * co2_bar
         c_hco3 = values["bicarbonate"] * 1000.0 / MW_BICARBONATE
         if c_hco3 > 0.0 and co2_aq > 0.0:
-            ph_used = -math.log10(_k1_carbonate(temperature_k) * co2_aq / c_hco3)
+            ph_used = -_log10(_k1_carbonate(temperature_k) * co2_aq / c_hco3)
         else:
             ph_used = 7.0
 
@@ -321,7 +406,7 @@ def scale_prediction(
     c_na = mol_per_l("sodium", MW_SODIUM)
     c_hco3 = mol_per_l("bicarbonate", MW_BICARBONATE)
     c_so4 = mol_per_l("sulphate", MW_SULPHATE)
-    h = 10.0 ** (-ph_used)
+    h = math.pow(10.0, -ph_used)
     c_co3 = _k2_carbonate(temperature_k) * c_hco3 / h if h > 0.0 else 0.0
 
     free_ca, free_so4, free_co3, free_hco3 = _ion_pairing(
@@ -344,44 +429,20 @@ def scale_prediction(
         if values["iron"] > 0.0
         else math.nan,
     ]
-    risk_count = sum(1 for value in si if math.isfinite(value) and value > 0.0)
-
-    def optional(value: float) -> float | None:
-        return None if math.isnan(value) else value
-
-    def concentration(value_mol_l: float) -> Q:
-        return from_si(value_mol_l * 1000.0, "mol/m**3")
-
-    return ScalePredictionResult(
-        ionic_strength=from_si(ionic_strength * 1000.0, "mol/m**3"),
-        debye_huckel_a=deb,
-        divalent_activity_coefficient=gamma_divalent,
-        monovalent_activity_coefficient=gamma_monovalent,
-        ph_used=ph_used,
-        free_calcium=concentration(free_ca),
-        free_sulphate=concentration(free_so4),
-        free_carbonate=concentration(free_co3),
-        free_bicarbonate=concentration(free_hco3),
-        total_barium=concentration(c_ba),
-        total_strontium=concentration(c_sr),
-        total_iron=concentration(c_fe),
-        total_sodium=concentration(values["sodium"] * 1000.0 / MW_SODIUM_GETTER),
-        ksp_calcite=ksp[0],
-        ksp_barite=ksp[1],
-        ksp_celestite=ksp[2],
-        ksp_anhydrite=ksp[3],
-        ksp_siderite=ksp[4],
-        log10_ksp_calcite=math.log10(ksp[0]),
-        log10_ksp_barite=math.log10(ksp[1]),
-        log10_ksp_celestite=math.log10(ksp[2]),
-        log10_ksp_anhydrite=math.log10(ksp[3]),
-        log10_ksp_siderite=math.log10(ksp[4]),
-        si_caco3=optional(si[0]),
-        si_baso4=optional(si[1]),
-        si_srso4=optional(si[2]),
-        si_caso4=optional(si[3]),
-        si_feco3=optional(si[4]),
-        has_scaling_risk=risk_count > 0,
-        scale_risk_count=risk_count,
-        warnings=tuple(warnings),
-    )
+    return {
+        "ionic_strength": ionic_strength,
+        "debye_huckel_a": deb,
+        "gamma_divalent": gamma_divalent,
+        "gamma_monovalent": gamma_monovalent,
+        "ph_used": ph_used,
+        "free_calcium": free_ca,
+        "free_sulphate": free_so4,
+        "free_carbonate": free_co3,
+        "free_bicarbonate": free_hco3,
+        "total_barium": c_ba,
+        "total_strontium": c_sr,
+        "total_iron": c_fe,
+        "total_sodium": values["sodium"] * 1000.0 / MW_SODIUM_GETTER,
+        "ksp": ksp,
+        "si": si,
+    }

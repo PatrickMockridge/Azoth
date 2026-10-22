@@ -7,6 +7,7 @@ Spec: ``specs/models/eos/interface_properties.toml``, which records
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -109,7 +110,8 @@ def interface_properties(
             f"mole fraction(s): every one is one entry per component",
         )
     if (
-        reference_component != int(reference_component)
+        not math.isfinite(reference_component)
+        or reference_component != int(reference_component)
         or int(reference_component) < 0
         or int(reference_component) >= count
     ):

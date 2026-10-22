@@ -499,6 +499,12 @@ def assert_results_equal(
                             absolute_floor,
                         )
                     elif isinstance(va, float):
+                        # **A row can carry the caller's NaN**, as a scalar field can: the
+                        # mixed-percentage model echoes the percentage it was given, and a
+                        # degenerate sweep hands it one. `nan_agrees` is the same claim one
+                        # level down - both kernels carried it to the same row.
+                        if nan_agrees and _both_nan(va, vb):
+                            continue
                         assert_close(va, float(vb), tolerance, at, absolute_floor)
                     else:
                         assert va == vb, f"{at}: {va!r} against {vb!r}"

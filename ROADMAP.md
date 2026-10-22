@@ -155,14 +155,19 @@ process model needs.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
   `CricondenBarFlash`, `CricondenThermFlash`, `SysNewtonRhapsonPhaseEnvelope`.
 - **Flow assurance.** `pvtsimulation/flowassurance/` is carried as **one named group — 21
-  classes and 12,486 lines** — because it is not one family: seven scale calculations
-  (`MultiMineralScaleEquilibrium`, `ScalePredictionCalculator`, `ScaleMassCalculator`,
-  `PitzerScaleActivityModel`, `BariteCelestiteSolidSolution`, `FlowlineScaleProfile`,
-  `WaterCompatibilityScreener`), six asphaltene screens, one wax (`WaxCurveCalculator`), two
-  corrosion (`CO2CorrosionAnalyzer`, `DeWaardMilliamsCorrosion`) and five generic
-  flow-assurance calculators (`HydrateRiskMapper`, `PipelineCooldownCalculator`,
-  `SurfCooldownAnalyzer`, `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`).
-  None of it is ported. **The rest of `pvtsimulation/` is not here**: the simulation suite,
+  classes and 12,486 lines** — because it is not one family. **Its seven scale calculations are
+  ported**, each with the id that carries it: `ScalePredictionCalculator`
+  (`eos.scale_prediction`), `ScaleMassCalculator` (`eos.scale_mass`),
+  `PitzerScaleActivityModel` (`eos.pitzer_scale_activity`),
+  `BariteCelestiteSolidSolution` (`eos.barite_celestite_solid_solution`),
+  `MultiMineralScaleEquilibrium` (`eos.multi_mineral_scale_equilibrium`),
+  `FlowlineScaleProfile` (`eos.flowline_scale_profile`) and `WaterCompatibilityScreener`
+  (`eos.water_compatibility`). The six asphaltene screens stay carried on NeqSim defect
+  `#3913`, and the one wax (`WaxCurveCalculator`), two corrosion (`CO2CorrosionAnalyzer`,
+  `DeWaardMilliamsCorrosion`) and five generic flow-assurance calculators
+  (`HydrateRiskMapper`, `PipelineCooldownCalculator`, `SurfCooldownAnalyzer`,
+  `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`) are the group's remainder, in
+  Tier 4. **The rest of `pvtsimulation/` is not here**: the simulation suite,
   the model tuning and the reservoir properties are engineering deliverables, and
   [the specification](docs/src/architecture/specification.md) puts them beyond the port.
 
@@ -325,11 +330,11 @@ reaches equilibrium through.
 - **Salts and scale.** Ported, each with the id that carries it: `CheckScalePotential`
   (`eos.scale_saturation_ratio`, one salt's `IAP/Ksp` against its solubility product) and
   `MultiSaltPrecipitation` over `CalcSaltSatauration` (`eos.salt_precipitation`, one mineral's
-  extent, which is the per-mineral half of the complementarity loop). **Not ported**:
-  `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`; the
-  `pvtsimulation/flowassurance/` scale set — `MultiMineralScaleEquilibrium`,
-  `ScalePredictionCalculator`, `ScaleMassCalculator`, `PitzerScaleActivityModel`,
-  `BariteCelestiteSolidSolution`, `FlowlineScaleProfile`, `WaterCompatibilityScreener`; and
+  extent, which is the per-mineral half of the complementarity loop). The
+  `pvtsimulation/flowassurance/` scale set is the other route and is ported too, its seven ids
+  named in Tier 1's flow-assurance bullet: the water-analysis screen, its Pitzer coefficients,
+  the solid solution, the mass estimate, the coupled equilibrium and the two composers.
+  **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`, and
   the eleven `process/chemistry/scale/` classes, 3,935 lines, `BrineMixingScaleEvaluator`
   among them.
 - **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on **both**
@@ -481,8 +486,9 @@ Port on demand, as a caller needs them:
   `EmulsionViscosityCalculator` (oil-water viscosity correlations and the inversion point).
   The specification assigns `flowassurance/` to "the tranche that backs each" and **no tranche
   backs these four** - so they are here, in the long tail, rather than behind a P-number that
-  no page defines. The seven scale and six asphaltene screens in the same directory are not
-  here: they belong to the salt and asphaltene families above.
+  no page defines. The seven scale calculations in the same directory are ported (Tier 2's
+  salts bullet) and the six asphaltene screens belong to Tier 3's asphaltene bullet; neither
+  is here.
 - **Solids.** Ported, each with the id that carries it: `ComponentSolid`
   (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
   (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the

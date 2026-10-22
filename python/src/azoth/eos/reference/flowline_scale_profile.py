@@ -8,6 +8,7 @@ Spec: ``specs/models/eos/flowline_scale_profile.toml``.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from azoth.core.range import apply_checks, checks_for
@@ -15,7 +16,7 @@ from azoth.core.record_outputs_gen import FlowlineScaleSegment
 from azoth.core.result import FlowlineScaleProfileResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
-from azoth.eos.reference.scale_prediction import scale_prediction as _predictor
+from azoth.eos.reference.scale_prediction import _state
 
 CALC_ID = "eos.flowline_scale_profile"
 
@@ -120,30 +121,16 @@ def flowline_scale_profile(
         pressure_bara = values["inlet_pressure"] / 1.0e5 + fraction * (
             values["outlet_pressure"] / 1.0e5 - values["inlet_pressure"] / 1.0e5
         )
-        point = _predictor(
-            calcium,
-            barium,
-            strontium,
-            iron,
-            magnesium,
-            sodium,
-            bicarbonate,
-            sulphate,
-            total_dissolved_solids,
-            from_si(temperature_c + 273.15, "K"),
-            from_si(pressure_bara * 1.0e5, "Pa"),
-            co2_partial_pressure,
+        point = _state(
+            values,
+            temperature_c + 273.15,
+            pressure_bara * 1.0e5,
+            values["co2_partial_pressure"],
             DEFAULT_PH,
             auto_ph,
             False,
         )
-        indices = (
-            point.si_caco3,
-            point.si_baso4,
-            point.si_srso4,
-            point.si_caso4,
-            point.si_feco3,
-        )
+        indices = tuple(None if math.isnan(value) else value for value in point["si"])
         for slot, value in enumerate(indices):
             current = maxima[slot]
             if value is not None and (current is None or value > current):
