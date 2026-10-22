@@ -1,0 +1,372 @@
+id = "eos.scale_prediction"
+name = "Mineral-scale saturation indices from a water analysis"
+equation = "I = TDS/40000\n\nlog10(gamma_z) = -A z^2 (sqrt(I)/(1 + sqrt(I)) - 0.3 I),  A = 1.8246e6 sqrt(rho) / (eps T)^(3/2)\n\nSI_j = log10(IAP_j / Ksp_j),  IAP_j = (c_cation gamma_z)(c_anion gamma_z)\n\nwith the free ion concentrations after five ion-pair sweeps, and Ksp_j from the class's five temperature correlations with the pressure correction exp(-dV (P - 1.01325)/(83.1446 T))."
+latex = '''I = \frac{\mathrm{TDS}}{40000}, \qquad \log_{10}\gamma_z = -A z^2\left(\frac{\sqrt{I}}{1+\sqrt{I}} - 0.3I\right), \qquad A = \frac{1.8246\times10^{6}\sqrt{\rho}}{(\varepsilon T)^{3/2}}
+\mathrm{SI}_j = \log_{10}\frac{\left(c^{+}_j\gamma_z\right)\left(c^{-}_j\gamma_z\right)}{K_{sp,j}}'''
+assumptions = [
+    "the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.\n",
+    "`I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.\n",
+    "the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.\n",
+    "**ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.\n",
+    "**the auto-pH path is broken upstream and is reproduced.** `calcHenryCO2`'s coefficients give `log10(KH)` about 48.7 at 25 C, so auto pH lands near -45 and the carbonate indices near -50; a manual pH is the physical route. Its gate needs `auto_ph`, positive CO2 partial pressure and bicarbonate.\n",
+    "**an absent ion gives an absent index**: no barium or no sulphate leaves the barite SI unset, no strontium the celestite one, no iron the siderite one; the class returns NaN for each and this calc returns no value.\n",
+    "the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.\n",
+    "**the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.\n",
+    "Ksp is in `(mol/L)^2` and is reported dimensionless, as `eos.scale_saturation_ratio`'s `solubility_product` is; `log10` of each is reported beside it for the literature pins.\n",
+    "the risk list is the class's locale-formatted strings and is not a calculation; the count and the flag are reported instead.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/ScalePredictionCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_prediction_probe.tsv` - the upstream tests' brines, both pH paths, the pressure-correction boundary and every intermediate.",
+    "Plummer, L. N.; Busenberg, E. (1982). Geochim. Cosmochim. Acta 46(6), 1011-1040. Monnin, C. (1999). Chem. Geol. 157, 193-203. Greenberg, J.; Tomson, M. (1992). Appl. Geochem. 7(2), 185-190. Garrels, R. M.; Thompson, M. E. (1962). Am. J. Sci. 260, 57-66.",
+]
+[source]
+standard = "NeqSim master `ScalePredictionCalculator`"
+edition = "`calculate`, `debyeHuckelA`, `calculateActivityCoefficient`, `correctForIonPairing`, `estimateCarbonateFromBicarbonate`, `estimatePH`, the five Ksp correlations and `applyPressureCorrection`, ported. The toJson surface is not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "calcium ion concentration, 400 mg/L as 0.4 kg/m3.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "barium ion concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "strontium ion concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "ferrous iron concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "magnesium ion concentration; it enters through ion pairing only.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "sodium ion concentration; it enters through ion pairing only.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "bicarbonate concentration, which sets carbonate through `K2` and the pH.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "sulphate ion concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "total dissolved solids, which set the ionic strength as `TDS/40000`.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure, used by the Ksp pressure correction.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure, read by the auto-pH path alone.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the water's pH; ignored when `auto_ph` is on and its gate holds.\n"
+[inputs.auto_ph]
+type = "boolean"
+description = "whether to estimate pH from the CO2 partial pressure and the bicarbonate. **The estimate is the class's as shipped** - see the assumptions.\n"
+[inputs.second_order_pressure_correction]
+type = "boolean"
+description = "whether to add the compressibility term to the Ksp pressure correction.\n"
+[outputs]
+[outputs.ionic_strength]
+unit = "mol/m**3"
+description = "`TDS/40000`, in mol per cubic metre.\n"
+[outputs.debye_huckel_a]
+unit = "dimensionless"
+description = "the Debye-Huckel A in log10 units at the state.\n"
+[outputs.divalent_activity_coefficient]
+unit = "dimensionless"
+description = "the Davies coefficient for a divalent ion.\n"
+[outputs.monovalent_activity_coefficient]
+unit = "dimensionless"
+description = "the Davies coefficient for a monovalent ion.\n"
+[outputs.ph_used]
+unit = "dimensionless"
+description = "the pH the calculation used: the input, or the class's estimate.\n"
+[outputs.free_calcium]
+unit = "mol/m**3"
+description = "free calcium after ion pairing.\n"
+[outputs.free_sulphate]
+unit = "mol/m**3"
+description = "free sulphate after ion pairing.\n"
+[outputs.free_carbonate]
+unit = "mol/m**3"
+description = "free carbonate after ion pairing.\n"
+[outputs.free_bicarbonate]
+unit = "mol/m**3"
+description = "free bicarbonate after ion pairing.\n"
+[outputs.total_barium]
+unit = "mol/m**3"
+description = "total barium, which the class does not ion-pair.\n"
+[outputs.total_strontium]
+unit = "mol/m**3"
+description = "total strontium.\n"
+[outputs.total_iron]
+unit = "mol/m**3"
+description = "total iron.\n"
+[outputs.total_sodium]
+unit = "mol/m**3"
+description = "total sodium, divided by the class's getter constant `22989.77`.\n"
+[outputs.ksp_calcite]
+unit = "dimensionless"
+description = "calcite's solubility product, in `(mol/L)^2`.\n"
+[outputs.ksp_barite]
+unit = "dimensionless"
+description = "barite's solubility product.\n"
+[outputs.ksp_celestite]
+unit = "dimensionless"
+description = "celestite's solubility product.\n"
+[outputs.ksp_anhydrite]
+unit = "dimensionless"
+description = "anhydrite's solubility product.\n"
+[outputs.ksp_siderite]
+unit = "dimensionless"
+description = "siderite's solubility product.\n"
+[outputs.log10_ksp_calcite]
+unit = "dimensionless"
+description = "calcite's `log10(Ksp)`, the literature-benchmark surface.\n"
+[outputs.log10_ksp_barite]
+unit = "dimensionless"
+description = "barite's `log10(Ksp)`.\n"
+[outputs.log10_ksp_celestite]
+unit = "dimensionless"
+description = "celestite's `log10(Ksp)`.\n"
+[outputs.log10_ksp_anhydrite]
+unit = "dimensionless"
+description = "anhydrite's `log10(Ksp)`.\n"
+[outputs.log10_ksp_siderite]
+unit = "dimensionless"
+description = "siderite's `log10(Ksp)`.\n"
+[outputs.si_caco3]
+unit = "dimensionless"
+optional = true
+description = "calcite's saturation index; absent where the activity product is not positive.\n"
+[outputs.si_baso4]
+unit = "dimensionless"
+optional = true
+description = "barite's saturation index; absent when the water has no barium or no sulphate.\n"
+[outputs.si_srso4]
+unit = "dimensionless"
+optional = true
+description = "celestite's saturation index; absent when the water has no strontium or no sulphate.\n"
+[outputs.si_caso4]
+unit = "dimensionless"
+optional = true
+description = "anhydrite's saturation index; absent when the water has no sulphate.\n"
+[outputs.si_feco3]
+unit = "dimensionless"
+optional = true
+description = "siderite's saturation index; absent when the water has no iron.\n"
+[outputs.has_scaling_risk]
+type = "boolean"
+description = "whether any saturation index is positive.\n"
+[outputs.scale_risk_count]
+unit = "dimensionless"
+description = "how many are.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "barium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "strontium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "iron"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "magnesium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sodium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "bicarbonate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "sulphate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "total_dissolved_solids"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The ionic strength is its quotient by 40000, so it cannot be negative.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[worked_example]
+source = "the capture's `north_sea_manual_ph_80c_100bara` row"
+derivation = "North Sea produced water: Ca 400 mg/L, HCO3 150 mg/L, SO4 10 mg/L, TDS 35000 mg/L, 80 C, 100 bara, CO2 2 bar, pH 6.5.\n\n  I = 35000/40000 = 0.875 mol/L\n  A = 1.8246e6 sqrt(rho)/(eps T)^1.5 = 0.5681180315158152\n  gamma_2 = 10^(-A*4*(sqrtI/(1+sqrtI) - 0.3I)) = 0.3149231465868798\n  c_Ca = 400/40078 = 0.0099805..., c_HCO3 = 150/61017, c_SO4 = 10/96060\n  [CO3--] = K2(T) [HCO3-]/10^-6.5, then five ion-pair sweeps\n  free Ca = 0.009938888151831327 mol/L, free SO4 = 1.0114021193932607e-4, free CO3 = 4.1855661156620394e-7\n  Ksp(calcite) = 1.2499563121043342e-9 (log10 = -8.903105165986812)\n  SI(CaCO3) = log10[(c_Ca gamma_2)(c_CO3 gamma_2)/Ksp] = -0.48139366009468343\n  SI(CaSO4) = -2.117124475975582; Ba, Sr and Fe are absent, so their indices are absent\n"
+tolerance = 1e-12
+[worked_example.inputs]
+calcium = 0.4
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.15
+sulphate = 0.01
+total_dissolved_solids = 35.0
+temperature = 353.15
+pressure = 1.0e7
+co2_partial_pressure = 2.0e5
+ph = 6.5
+auto_ph = false
+second_order_pressure_correction = false
+[worked_example.expected]
+ionic_strength = 875.0
+debye_huckel_a = 0.5681180315158152
+divalent_activity_coefficient = 0.3149231465868798
+ph_used = 6.5
+free_calcium = 9.938888151831327
+free_sulphate = 0.10114021193932607
+free_carbonate = 4.1855661156620394e-4
+ksp_calcite = 1.2499563121043342e-9
+log10_ksp_calcite = -8.903105165986812
+si_caco3 = -0.48139366009468343
+si_caso4 = -2.117124475975582
+scale_risk_count = 0.0
+[[tests]]
+id = "north_sea_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "auto_ph_is_the_class_defect"
+type = "reference"
+status = "active"
+source = "The capture's `north_sea_auto_ph` row: the same water with `enableAutoPH()`. The class's Henry constant gives log10(KH) = 48.69 at 353.15 K, so the estimate is pH = -45.30001384171815, free carbonate is 6.6334332524514346e-59 mol/L and the calcite index -52.281402382552564. **The port reproduces the defect rather than repairing it.**\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.4
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.15
+sulphate = 0.01
+total_dissolved_solids = 35.0
+temperature = 353.15
+pressure = 1.0e7
+co2_partial_pressure = 2.0e5
+ph = 6.5
+auto_ph = true
+second_order_pressure_correction = false
+[tests.expected]
+ph_used = -45.30001384171815
+free_carbonate = 6.6334332524514346e-56
+si_caco3 = -52.281402382552564
+[[tests]]
+id = "barite_supersaturated"
+type = "reference"
+status = "active"
+source = "The capture's `barite_supersaturated_manual_ph` row: Ba 200 mg/L and SO4 2000 mg/L at 60 C and 1.013 bara, manual pH. BaSO4 SI = 4.212334093624506, the largest index the capture holds.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.1
+barium = 0.2
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.1
+sulphate = 2.0
+total_dissolved_solids = 40.0
+temperature = 333.15
+pressure = 1.013e5
+co2_partial_pressure = 0.5e5
+ph = 6.5
+auto_ph = false
+second_order_pressure_correction = false
+[tests.expected]
+si_baso4 = 4.212334093624506
+si_caco3 = -1.2371677507393255
+scale_risk_count = 1.0
+[[tests]]
+id = "ksp_pins_at_25c"
+type = "reference"
+status = "active"
+source = "The capture's `ksp_at_25c_1atm` row, the five log10 Ksp the literature pins are built on: calcite -8.479829875153825, barite -9.970381135949722, celestite -6.631328603894335, anhydrite -4.355595801363143, siderite -10.890916960581862.\n"
+tolerance = 1e-12
+[tests.inputs]
+calcium = 0.0
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.0
+sulphate = 0.0
+total_dissolved_solids = 0.0
+temperature = 298.15
+pressure = 1.013e5
+co2_partial_pressure = 0.0
+ph = 7.0
+auto_ph = false
+second_order_pressure_correction = false
+[tests.expected]
+log10_ksp_calcite = -8.479829875153825
+log10_ksp_barite = -9.970381135949722
+log10_ksp_celestite = -6.631328603894335
+log10_ksp_anhydrite = -4.355595801363143
+log10_ksp_siderite = -10.890916960581862
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.scale_prediction"
+rust = "azoth_eos::scale_prediction"

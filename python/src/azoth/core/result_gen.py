@@ -2809,6 +2809,106 @@ class SaturateWithWaterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ScalePredictionResult(_HasWarnings):
+    """Result of ``eos.scale_prediction``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_prediction"
+
+    #: `TDS/40000`, in mol per cubic metre.
+    ionic_strength: Q
+
+    #: the Debye-Huckel A in log10 units at the state.
+    debye_huckel_a: float
+
+    #: the Davies coefficient for a divalent ion.
+    divalent_activity_coefficient: float
+
+    #: the Davies coefficient for a monovalent ion.
+    monovalent_activity_coefficient: float
+
+    #: the pH the calculation used: the input, or the class's estimate.
+    ph_used: float
+
+    #: free calcium after ion pairing.
+    free_calcium: Q
+
+    #: free sulphate after ion pairing.
+    free_sulphate: Q
+
+    #: free carbonate after ion pairing.
+    free_carbonate: Q
+
+    #: free bicarbonate after ion pairing.
+    free_bicarbonate: Q
+
+    #: total barium, which the class does not ion-pair.
+    total_barium: Q
+
+    #: total strontium.
+    total_strontium: Q
+
+    #: total iron.
+    total_iron: Q
+
+    #: total sodium, divided by the class's getter constant `22989.77`.
+    total_sodium: Q
+
+    #: calcite's solubility product, in `(mol/L)^2`.
+    ksp_calcite: float
+
+    #: barite's solubility product.
+    ksp_barite: float
+
+    #: celestite's solubility product.
+    ksp_celestite: float
+
+    #: anhydrite's solubility product.
+    ksp_anhydrite: float
+
+    #: siderite's solubility product.
+    ksp_siderite: float
+
+    #: calcite's `log10(Ksp)`, the literature-benchmark surface.
+    log10_ksp_calcite: float
+
+    #: barite's `log10(Ksp)`.
+    log10_ksp_barite: float
+
+    #: celestite's `log10(Ksp)`.
+    log10_ksp_celestite: float
+
+    #: anhydrite's `log10(Ksp)`.
+    log10_ksp_anhydrite: float
+
+    #: siderite's `log10(Ksp)`.
+    log10_ksp_siderite: float
+
+    #: calcite's saturation index; absent where the activity product is not positive.
+    si_caco3: float | None
+
+    #: barite's saturation index; absent when the water has no barium or no sulphate.
+    si_baso4: float | None
+
+    #: celestite's saturation index; absent when the water has no strontium or no sulphate.
+    si_srso4: float | None
+
+    #: anhydrite's saturation index; absent when the water has no sulphate.
+    si_caso4: float | None
+
+    #: siderite's saturation index; absent when the water has no iron.
+    si_feco3: float | None
+
+    #: whether any saturation index is positive.
+    has_scaling_risk: bool
+
+    #: how many are.
+    scale_risk_count: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleSaturationRatioResult(_HasWarnings):
     """Result of ``eos.scale_saturation_ratio``."""
 

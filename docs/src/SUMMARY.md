@@ -78,6 +78,7 @@
   - [Saturated liquid molar volume from the Rackett equation](./eos/rackett_molar_volume.md)
   - [Redlich-Kwong alpha function and reduced attraction parameters](./eos/rk_alpha_ab.md)
   - [Redlich-Kwong fugacity coefficient and departure functions](./eos/rk_departure.md)
+  - [Mineral-scale saturation indices from a water analysis](./eos/scale_prediction.md)
   - [Scale saturation ratio of one salt](./eos/scale_saturation_ratio.md)
   - [Schwartzentruber-Renon alpha function](./eos/schwartzentruber_alpha.md)
   - [Liquid binary diffusivity from the Siddiqi-Lucas correlation](./eos/siddiqi_lucas_diffusivity.md)

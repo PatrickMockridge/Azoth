@@ -2576,6 +2576,54 @@ pub fn salt_precipitation(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Mineral-scale saturation indices from a water analysis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn scale_prediction(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    total_dissolved_solids: f64,
+    temperature: f64,
+    pressure: f64,
+    co2_partial_pressure: f64,
+    ph: f64,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+) -> PyResult<crate::transport_gen::PyScalePredictionResult> {
+    azoth_eos::scale_prediction::scale_prediction(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        kelvins(temperature),
+        pascals(pressure),
+        pascals(co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+    )
+    .map(|r| crate::transport_gen::PyScalePredictionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Scale saturation ratio of one salt.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

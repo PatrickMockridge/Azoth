@@ -82,6 +82,8 @@ NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {
     # amount and molar flow
     "kmol": 1.0e3,
     "kmol/h": 1000.0 / 3600.0,
+    # amount concentration
+    "kmol/m**3": 1.0e3,
 }
 
 

@@ -1379,6 +1379,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.scale_prediction': {
+        "calc_id": 'eos.scale_prediction',
+        "name": 'Mineral-scale saturation indices from a water analysis',
+        "spec": {'path': 'specs/calcs/eos/scale_prediction.toml', 'sha256': 'b0f471844e930b3e4cd07b7f1bb00fcafbeee278b55ab243408766bd7d612adf'},
+        "code": [{'path': 'python/src/azoth/eos/reference/scale_prediction.py', 'sha256': 'd7e5787fe4bae3f74d3e60202a651fe3e615d682a6777474666d91ec33f90781'}, {'path': 'crates/azoth-eos/src/scale_prediction.rs', 'sha256': '218573be9571d3607a20471fece20e1d49461ada9789d64453edcd6d70253e48'}],
+        "source": 'NeqSim master `ScalePredictionCalculator`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'eos.scale_saturation_ratio': {
         "calc_id": 'eos.scale_saturation_ratio',
         "name": 'Scale saturation ratio of one salt',

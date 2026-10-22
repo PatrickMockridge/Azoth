@@ -1285,6 +1285,40 @@ class SaturateWithWaterResult:
     warnings: list[Warning]
 
 @final
+class ScalePredictionResult:
+    ionic_strength: Qty
+    debye_huckel_a: float
+    divalent_activity_coefficient: float
+    monovalent_activity_coefficient: float
+    ph_used: float
+    free_calcium: Qty
+    free_sulphate: Qty
+    free_carbonate: Qty
+    free_bicarbonate: Qty
+    total_barium: Qty
+    total_strontium: Qty
+    total_iron: Qty
+    total_sodium: Qty
+    ksp_calcite: float
+    ksp_barite: float
+    ksp_celestite: float
+    ksp_anhydrite: float
+    ksp_siderite: float
+    log10_ksp_calcite: float
+    log10_ksp_barite: float
+    log10_ksp_celestite: float
+    log10_ksp_anhydrite: float
+    log10_ksp_siderite: float
+    si_caco3: float | None
+    si_baso4: float | None
+    si_srso4: float | None
+    si_caso4: float | None
+    si_feco3: float | None
+    has_scaling_risk: bool
+    scale_risk_count: int
+    warnings: list[Warning]
+
+@final
 class ScaleSaturationRatioResult:
     saturation_ratio: float
     ion_activity_product: float
@@ -3407,6 +3441,23 @@ def saturate_with_water(
     eos: str,
     associating: bool | None = None,
 ) -> SaturateWithWaterResult: ...
+def scale_prediction(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+) -> ScalePredictionResult: ...
 def scale_saturation_ratio(
     salt: str,
     x1: float,

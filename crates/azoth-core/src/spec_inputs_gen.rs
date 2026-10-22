@@ -125,6 +125,7 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/calcs/eos/scale_prediction.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
@@ -1146,6 +1147,27 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.saturate_with_water", "moles", "amount"),
     ("eos.saturate_with_water", "T", "thermodynamic_temperature"),
     ("eos.saturate_with_water", "P", "pressure"),
+    ("eos.scale_prediction", "calcium", "mass_density"),
+    ("eos.scale_prediction", "barium", "mass_density"),
+    ("eos.scale_prediction", "strontium", "mass_density"),
+    ("eos.scale_prediction", "iron", "mass_density"),
+    ("eos.scale_prediction", "magnesium", "mass_density"),
+    ("eos.scale_prediction", "sodium", "mass_density"),
+    ("eos.scale_prediction", "bicarbonate", "mass_density"),
+    ("eos.scale_prediction", "sulphate", "mass_density"),
+    (
+        "eos.scale_prediction",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    (
+        "eos.scale_prediction",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.scale_prediction", "pressure", "pressure"),
+    ("eos.scale_prediction", "co2_partial_pressure", "pressure"),
+    ("eos.scale_prediction", "ph", "dimensionless"),
     ("eos.scale_saturation_ratio", "x1", "dimensionless"),
     ("eos.scale_saturation_ratio", "x2", "dimensionless"),
     ("eos.scale_saturation_ratio", "x_water", "dimensionless"),

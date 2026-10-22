@@ -180,6 +180,7 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScalePredictionResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
@@ -2738,6 +2739,54 @@ def tp_solid_flash(
     """
     return resolve("eos.tp_solid_flash")(  # type: ignore[no-any-return]
         components=components, solid=solid, T=T, P=P, z=z, eos=eos
+    )
+
+
+def scale_prediction(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    temperature: Q,
+    pressure: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+) -> ScalePredictionResult:
+    """The mineral-scale saturation indices of a water analysis.
+
+    ``I = TDS/40000``, Davies activity coefficients with a Debye-Huckel A from water's
+    density and dielectric, five ion-pair sweeps, and five indices over the class's Ksp
+    set. **The auto-pH path is the class's as shipped**: its Henry constant is broken
+    upstream, so a manual pH is the physical route.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.scale_prediction`.
+    """
+    return resolve("eos.scale_prediction")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        temperature=temperature,
+        pressure=pressure,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        auto_ph=auto_ph,
+        second_order_pressure_correction=second_order_pressure_correction,
     )
 
 

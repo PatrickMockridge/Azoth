@@ -7210,6 +7210,214 @@ impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterR
         }
     }
 }
+/// Result of `eos.scale_prediction`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScalePredictionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScalePredictionResult {
+    /// `TDS/40000`, in mol per cubic metre.
+    #[pyo3(get)]
+    pub ionic_strength: PyQty,
+    /// the Debye-Huckel A in log10 units at the state.
+    #[pyo3(get)]
+    pub debye_huckel_a: f64,
+    /// the Davies coefficient for a divalent ion.
+    #[pyo3(get)]
+    pub divalent_activity_coefficient: f64,
+    /// the Davies coefficient for a monovalent ion.
+    #[pyo3(get)]
+    pub monovalent_activity_coefficient: f64,
+    /// the pH the calculation used: the input, or the class's estimate.
+    #[pyo3(get)]
+    pub ph_used: f64,
+    /// free calcium after ion pairing.
+    #[pyo3(get)]
+    pub free_calcium: PyQty,
+    /// free sulphate after ion pairing.
+    #[pyo3(get)]
+    pub free_sulphate: PyQty,
+    /// free carbonate after ion pairing.
+    #[pyo3(get)]
+    pub free_carbonate: PyQty,
+    /// free bicarbonate after ion pairing.
+    #[pyo3(get)]
+    pub free_bicarbonate: PyQty,
+    /// total barium, which the class does not ion-pair.
+    #[pyo3(get)]
+    pub total_barium: PyQty,
+    /// total strontium.
+    #[pyo3(get)]
+    pub total_strontium: PyQty,
+    /// total iron.
+    #[pyo3(get)]
+    pub total_iron: PyQty,
+    /// total sodium, divided by the class's getter constant `22989.77`.
+    #[pyo3(get)]
+    pub total_sodium: PyQty,
+    /// calcite's solubility product, in `(mol/L)^2`.
+    #[pyo3(get)]
+    pub ksp_calcite: f64,
+    /// barite's solubility product.
+    #[pyo3(get)]
+    pub ksp_barite: f64,
+    /// celestite's solubility product.
+    #[pyo3(get)]
+    pub ksp_celestite: f64,
+    /// anhydrite's solubility product.
+    #[pyo3(get)]
+    pub ksp_anhydrite: f64,
+    /// siderite's solubility product.
+    #[pyo3(get)]
+    pub ksp_siderite: f64,
+    /// calcite's `log10(Ksp)`, the literature-benchmark surface.
+    #[pyo3(get)]
+    pub log10_ksp_calcite: f64,
+    /// barite's `log10(Ksp)`.
+    #[pyo3(get)]
+    pub log10_ksp_barite: f64,
+    /// celestite's `log10(Ksp)`.
+    #[pyo3(get)]
+    pub log10_ksp_celestite: f64,
+    /// anhydrite's `log10(Ksp)`.
+    #[pyo3(get)]
+    pub log10_ksp_anhydrite: f64,
+    /// siderite's `log10(Ksp)`.
+    #[pyo3(get)]
+    pub log10_ksp_siderite: f64,
+    /// calcite's saturation index; absent where the activity product is not positive.
+    #[pyo3(get)]
+    pub si_caco3: Option<f64>,
+    /// barite's saturation index; absent when the water has no barium or no sulphate.
+    #[pyo3(get)]
+    pub si_baso4: Option<f64>,
+    /// celestite's saturation index; absent when the water has no strontium or no sulphate.
+    #[pyo3(get)]
+    pub si_srso4: Option<f64>,
+    /// anhydrite's saturation index; absent when the water has no sulphate.
+    #[pyo3(get)]
+    pub si_caso4: Option<f64>,
+    /// siderite's saturation index; absent when the water has no iron.
+    #[pyo3(get)]
+    pub si_feco3: Option<f64>,
+    /// whether any saturation index is positive.
+    #[pyo3(get)]
+    pub has_scaling_risk: bool,
+    /// how many are.
+    #[pyo3(get)]
+    pub scale_risk_count: u32,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScalePredictionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScalePredictionResult(ionic_strength={:?}, debye_huckel_a={:?}, divalent_activity_coefficient={:?}, monovalent_activity_coefficient={:?}, ph_used={:?}, free_calcium={:?}, free_sulphate={:?}, free_carbonate={:?}, free_bicarbonate={:?}, total_barium={:?}, total_strontium={:?}, total_iron={:?}, total_sodium={:?}, ksp_calcite={:?}, ksp_barite={:?}, ksp_celestite={:?}, ksp_anhydrite={:?}, ksp_siderite={:?}, log10_ksp_calcite={:?}, log10_ksp_barite={:?}, log10_ksp_celestite={:?}, log10_ksp_anhydrite={:?}, log10_ksp_siderite={:?}, si_caco3={:?}, si_baso4={:?}, si_srso4={:?}, si_caso4={:?}, si_feco3={:?}, has_scaling_risk={:?}, scale_risk_count={:?}, {} warning(s))",
+            self.ionic_strength,
+            self.debye_huckel_a,
+            self.divalent_activity_coefficient,
+            self.monovalent_activity_coefficient,
+            self.ph_used,
+            self.free_calcium,
+            self.free_sulphate,
+            self.free_carbonate,
+            self.free_bicarbonate,
+            self.total_barium,
+            self.total_strontium,
+            self.total_iron,
+            self.total_sodium,
+            self.ksp_calcite,
+            self.ksp_barite,
+            self.ksp_celestite,
+            self.ksp_anhydrite,
+            self.ksp_siderite,
+            self.log10_ksp_calcite,
+            self.log10_ksp_barite,
+            self.log10_ksp_celestite,
+            self.log10_ksp_anhydrite,
+            self.log10_ksp_siderite,
+            self.si_caco3,
+            self.si_baso4,
+            self.si_srso4,
+            self.si_caso4,
+            self.si_feco3,
+            self.has_scaling_risk,
+            self.scale_risk_count,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScalePredictionResult> for PyScalePredictionResult {
+    fn from(r: &azoth_eos::results::ScalePredictionResult) -> Self {
+        Self {
+            ionic_strength: PyQty {
+                magnitude_si: r.ionic_strength.value,
+                unit: "mol/m**3".to_string(),
+            },
+            debye_huckel_a: r.debye_huckel_a,
+            divalent_activity_coefficient: r.divalent_activity_coefficient,
+            monovalent_activity_coefficient: r.monovalent_activity_coefficient,
+            ph_used: r.ph_used,
+            free_calcium: PyQty {
+                magnitude_si: r.free_calcium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            free_sulphate: PyQty {
+                magnitude_si: r.free_sulphate.value,
+                unit: "mol/m**3".to_string(),
+            },
+            free_carbonate: PyQty {
+                magnitude_si: r.free_carbonate.value,
+                unit: "mol/m**3".to_string(),
+            },
+            free_bicarbonate: PyQty {
+                magnitude_si: r.free_bicarbonate.value,
+                unit: "mol/m**3".to_string(),
+            },
+            total_barium: PyQty {
+                magnitude_si: r.total_barium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            total_strontium: PyQty {
+                magnitude_si: r.total_strontium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            total_iron: PyQty {
+                magnitude_si: r.total_iron.value,
+                unit: "mol/m**3".to_string(),
+            },
+            total_sodium: PyQty {
+                magnitude_si: r.total_sodium.value,
+                unit: "mol/m**3".to_string(),
+            },
+            ksp_calcite: r.ksp_calcite,
+            ksp_barite: r.ksp_barite,
+            ksp_celestite: r.ksp_celestite,
+            ksp_anhydrite: r.ksp_anhydrite,
+            ksp_siderite: r.ksp_siderite,
+            log10_ksp_calcite: r.log10_ksp_calcite,
+            log10_ksp_barite: r.log10_ksp_barite,
+            log10_ksp_celestite: r.log10_ksp_celestite,
+            log10_ksp_anhydrite: r.log10_ksp_anhydrite,
+            log10_ksp_siderite: r.log10_ksp_siderite,
+            si_caco3: r.si_caco3,
+            si_baso4: r.si_baso4,
+            si_srso4: r.si_srso4,
+            si_caso4: r.si_caso4,
+            si_feco3: r.si_feco3,
+            has_scaling_risk: r.has_scaling_risk,
+            scale_risk_count: r.scale_risk_count,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.scale_saturation_ratio`, transported.
 #[pyclass(
     frozen,

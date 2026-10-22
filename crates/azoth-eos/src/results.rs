@@ -6,8 +6,9 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity,
-    MolarVolume, Pressure, SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Velocity,
+    DiffusionCoefficient, DynamicViscosity, MassDensity, MolarConcentration, MolarEnergy,
+    MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
+    ThermodynamicTemperature, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -995,6 +996,114 @@ pub struct SolidFugacityResult {
 impl CalcResult for SolidFugacityResult {
     const CALC_ID: &'static str = "eos.solid_fugacity";
     const FIELDS: &'static [&'static str] = &["fugacity_coefficient", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_prediction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScalePredictionResult {
+    /// `TDS/40000`, the class's ionic strength.
+    pub ionic_strength: MolarConcentration,
+    /// The Debye-Huckel A from water's density and dielectric constant.
+    pub debye_huckel_a: f64,
+    /// The Davies coefficient for a divalent ion.
+    pub divalent_activity_coefficient: f64,
+    /// The Davies coefficient for a monovalent ion.
+    pub monovalent_activity_coefficient: f64,
+    /// The pH the calculation used: the input, or the class's estimate under `auto_ph`.
+    pub ph_used: f64,
+    /// Free calcium after ion pairing.
+    pub free_calcium: MolarConcentration,
+    /// Free sulphate after ion pairing.
+    pub free_sulphate: MolarConcentration,
+    /// Free carbonate after ion pairing.
+    pub free_carbonate: MolarConcentration,
+    /// Free bicarbonate after ion pairing.
+    pub free_bicarbonate: MolarConcentration,
+    /// Total barium, which the class does not ion-pair.
+    pub total_barium: MolarConcentration,
+    /// Total strontium.
+    pub total_strontium: MolarConcentration,
+    /// Total iron.
+    pub total_iron: MolarConcentration,
+    /// Total sodium, divided by the class's getter constant `22989.77`.
+    pub total_sodium: MolarConcentration,
+    /// Calcite's solubility product, in `(mol/L)^2`.
+    pub ksp_calcite: f64,
+    /// Barite's solubility product.
+    pub ksp_barite: f64,
+    /// Celestite's solubility product.
+    pub ksp_celestite: f64,
+    /// Anhydrite's solubility product.
+    pub ksp_anhydrite: f64,
+    /// Siderite's solubility product.
+    pub ksp_siderite: f64,
+    /// Calcite's `log10(Ksp)`.
+    pub log10_ksp_calcite: f64,
+    /// Barite's `log10(Ksp)`.
+    pub log10_ksp_barite: f64,
+    /// Celestite's `log10(Ksp)`.
+    pub log10_ksp_celestite: f64,
+    /// Anhydrite's `log10(Ksp)`.
+    pub log10_ksp_anhydrite: f64,
+    /// Siderite's `log10(Ksp)`.
+    pub log10_ksp_siderite: f64,
+    /// Calcite's saturation index; absent only if the activity product is not positive.
+    pub si_caco3: Option<f64>,
+    /// Barite's saturation index; absent when the water has no barium or no sulphate.
+    pub si_baso4: Option<f64>,
+    /// Celestite's saturation index; absent when the water has no strontium or no sulphate.
+    pub si_srso4: Option<f64>,
+    /// Anhydrite's saturation index; absent when the water has no sulphate.
+    pub si_caso4: Option<f64>,
+    /// Siderite's saturation index; absent when the water has no iron.
+    pub si_feco3: Option<f64>,
+    /// Whether any saturation index is positive.
+    pub has_scaling_risk: bool,
+    /// How many are.
+    pub scale_risk_count: u32,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScalePredictionResult {
+    const CALC_ID: &'static str = "eos.scale_prediction";
+    const FIELDS: &'static [&'static str] = &[
+        "ionic_strength",
+        "debye_huckel_a",
+        "divalent_activity_coefficient",
+        "monovalent_activity_coefficient",
+        "ph_used",
+        "free_calcium",
+        "free_sulphate",
+        "free_carbonate",
+        "free_bicarbonate",
+        "total_barium",
+        "total_strontium",
+        "total_iron",
+        "total_sodium",
+        "ksp_calcite",
+        "ksp_barite",
+        "ksp_celestite",
+        "ksp_anhydrite",
+        "ksp_siderite",
+        "log10_ksp_calcite",
+        "log10_ksp_barite",
+        "log10_ksp_celestite",
+        "log10_ksp_anhydrite",
+        "log10_ksp_siderite",
+        "si_caco3",
+        "si_baso4",
+        "si_srso4",
+        "si_caso4",
+        "si_feco3",
+        "has_scaling_risk",
+        "scale_risk_count",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
