@@ -585,6 +585,19 @@ java -cp .:neqsim-f0c7436.jar PitzerScaleActivityProbe > captures/pitzer_scale_a
 java -cp .:neqsim-f0c7436.jar ScaleFamilyProbe > captures/scale_family_probe.tsv
 ```
 
+**The hydrate group's two probes** record the Pitzer-brine saturation the hybrid EoS/GE
+flash exists for: the temperature solve and the pressure solve on CO2/water, CO2 with NaCl,
+MgCl2 and CaCl2 brines, methane and a CO2/methane mixture; the structure pinned to auto, sI
+and sII; the public `ThermodynamicOperations` round trip; and the two refusals a feed without
+a guest and one without water produce. The second probe walks the salt suppression curve over
+the same three salts. The fluid is the upstream test's one-kilogram water basis, with the
+PHREEQC CO2-chloride parameters at its zero zeta map.
+
+```bash
+java -cp .:neqsim-f0c7436.jar PitzerHydrateProbe > captures/pitzer_hydrate_probe.tsv
+java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,

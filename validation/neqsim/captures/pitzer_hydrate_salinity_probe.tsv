@@ -1,0 +1,33 @@
+pitzer_hydrate_salinity
+ nacl_30bara
+  nacl_0.0wt status=solved temperature_k=280.86478680610657 structure=1 residual=-3.129617014886512E-9 water_activity=0.9854726170359023
+  nacl_1.0wt status=solved temperature_k=279.766229095459 structure=1 residual=2.3992414692836817E-9 water_activity=0.969510429217503
+  nacl_2.0wt status=solved temperature_k=279.36247915267944 structure=1 residual=-6.847866720462876E-10 water_activity=0.9636691574369252
+  nacl_5.0wt status=solved temperature_k=278.09896797180176 structure=1 residual=2.1052881638049497E-9 water_activity=0.9454799547668561
+  nacl_10.0wt status=solved temperature_k=275.7223567390442 structure=1 residual=3.141425337144897E-9 water_activity=0.9116592594062679
+  nacl_15.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.644778189299487
+  nacl_20.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7052447594600049
+  nacl_25.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7838008445650594
+ nacl_60bara
+  nacl_0.0wt status=solved temperature_k=283.8149032020569 structure=1 residual=-5.408826721306544E-10 water_activity=0.9814273136909465
+  nacl_1.0wt status=solved temperature_k=282.26791352272033 structure=1 residual=-1.905100745641142E-9 water_activity=0.9627343991247781
+  nacl_2.0wt status=solved temperature_k=281.79287404060364 structure=1 residual=4.384010256313393E-9 water_activity=0.9570354433135333
+  nacl_5.0wt status=solved temperature_k=280.30369132995605 structure=1 residual=4.91011852193041E-9 water_activity=0.9392964019444621
+  nacl_10.0wt status=solved temperature_k=277.4941536808014 structure=1 residual=2.835707886704228E-9 water_activity=0.9063595276529861
+  nacl_15.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.5833753590050516
+  nacl_20.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.6432998518980717
+  nacl_25.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7211955853201184
+ mgcl2_30bara
+  mgcl2_0.0wt status=solved temperature_k=280.86478680610657 structure=1 residual=-3.129617014886512E-9 water_activity=0.9854726170359023
+  mgcl2_1.0wt status=solved temperature_k=279.82166856765747 structure=1 residual=-3.6823079098209446E-9 water_activity=0.9703135820526492
+  mgcl2_2.0wt status=solved temperature_k=279.45524543762207 structure=1 residual=1.8426191666597506E-9 water_activity=0.9650100347422957
+  mgcl2_5.0wt status=solved temperature_k=278.1578740501404 structure=1 residual=9.305516353142156E-10 water_activity=0.9463248356723797
+  mgcl2_10.0wt status=solved temperature_k=274.99792903900146 structure=1 residual=5.318453219228684E-9 water_activity=0.9014580652489307
+  mgcl2_15.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.6686771092030135
+  mgcl2_20.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7734488141280532
+  mgcl2_25.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.931218968989509
+ cacl2_30bara
+  cacl2_1.0wt status=solved temperature_k=279.87445086479187 structure=1 residual=-1.6044943152011483E-11 water_activity=0.9710784705189233
+  cacl2_5.0wt status=solved temperature_k=278.5461577796936 structure=1 residual=-4.485986592265376E-9 water_activity=0.95190163615975
+  cacl2_10.0wt status=solved temperature_k=276.2549540424347 structure=1 residual=-5.329622868357942E-9 water_activity=0.9191920849987214
+  cacl2_15.0wt status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.632849674167858

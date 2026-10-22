@@ -1,0 +1,33 @@
+pitzer_hydrate_flash
+ temperature_solve
+  co2_water_30bara status=solved temperature_k=280.86478680610657 structure=1 residual=-3.129617014886512E-9 water_activity=0.9854726170359023 converged=true
+  co2_water_60bara status=solved temperature_k=283.8149032020569 structure=1 residual=-5.408826721306544E-10 water_activity=0.9814273136909465 converged=true
+  co2_water_100bara status=solved temperature_k=284.2497655773163 structure=1 residual=3.0150064621660244E-9 water_activity=0.9797526664912196 converged=true
+  co2_nacl_1molal_30bara status=solved temperature_k=277.8689917945862 structure=1 residual=3.960352926642293E-9 water_activity=0.9421844191719909 converged=true
+  co2_nacl_5wt_30bara status=solved temperature_k=278.09896797180176 structure=1 residual=2.1052881638049497E-9 water_activity=0.9454799547668561 converged=true
+  co2_nacl_10wt_30bara status=solved temperature_k=275.7223567390442 structure=1 residual=3.141425337144897E-9 water_activity=0.9116592594062679 converged=true
+  co2_nacl_20wt_30bara status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7052447594600049
+  co2_mgcl2_5wt_30bara status=solved temperature_k=278.1578740501404 structure=1 residual=9.305516353142156E-10 water_activity=0.9463248356723797 converged=true
+  co2_mgcl2_15wt_30bara status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.6686771092030135
+  methane_water_50bara status=solved temperature_k=279.82848044395445 structure=1 residual=-1.815887220019172E-9 water_activity=0.9999999999991899 converged=true
+  methane_water_100bara status=solved temperature_k=286.31409998893736 structure=1 residual=5.340626149269116E-9 water_activity=0.9999999999985014 converged=true
+  co2_methane_water_50bara status=solved temperature_k=283.2409369564056 structure=2 residual=-3.729383697707858E-9 water_activity=0.9904024578453489 converged=true
+ pressure_solve
+  co2_water_274.5k status=solved pressure_bara=13.66240261303656 structure=1 residual=4.338900349179109E-10 water_activity=0.9907110959326945 converged=true
+  co2_water_278.0k status=solved pressure_bara=20.734137846824893 structure=1 residual=2.589084721039775E-9 water_activity=0.9881796770768043 converged=true
+  co2_water_280.0k status=solved pressure_bara=26.725902935027122 structure=1 residual=2.304706201003799E-9 water_activity=0.9863644219606345 converged=true
+  co2_water_283.0k status=solved pressure_bara=40.98989896594104 structure=1 residual=-7.055753450858144E-9 water_activity=0.9829122304788913 converged=true
+  co2_nacl_5wt_278k status=solved pressure_bara=29.563871481200017 structure=1 residual=-1.2115730641705333E-10 water_activity=0.945688038723503 converged=true
+ structure_request
+  co2_water_30bara_auto status=solved temperature_k=280.86478680610657 structure=1 residual=-3.129617014886512E-9 water_activity=0.9854726170359023 converged=true
+  co2_water_30bara_si status=solved temperature_k=280.86478680610657 structure=1 residual=-3.129617014886512E-9 water_activity=0.9854726170359023 converged=true
+  co2_water_30bara_sii status=solved temperature_k=279.12119835853576 structure=2 residual=4.571286894116099E-9 water_activity=0.9846310322031774 converged=true
+  co2_water_60bara_auto status=solved temperature_k=283.8149032020569 structure=1 residual=-5.408826721306544E-10 water_activity=0.9814273136909465 converged=true
+  co2_water_60bara_si status=solved temperature_k=283.8149032020569 structure=1 residual=-5.408826721306544E-10 water_activity=0.9814273136909465 converged=true
+  co2_water_60bara_sii status=solved temperature_k=281.5359243774414 structure=2 residual=4.409058886040254E-9 water_activity=0.9807365039913838 converged=true
+ public_operations_api
+  hydrate_formation_temperature status=solved temperature_k=278.09896797180176 structure=1 residual=2.1052881638049497E-9 water_activity=0.9454799547668561
+  hydrate_formation_pressure status=solved pressure_bara=30.00000125895657 temperature_k=278.09896797180176 temperature_change_k=0.0
+ refusals
+  water_only_30bara status=refused reason=IllegalArgumentException:Pitzer hydrate equilibrium requires a hydrate-forming guest
+  co2_only_30bara status=refused reason=IllegalArgumentException:Pitzer hydrate equilibrium requires a positive water inventory
