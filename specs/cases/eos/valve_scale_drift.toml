@@ -1,0 +1,153 @@
+model = "eos.valve_scale_drift"
+
+# The capture's `valve_scale_drift` rows. mm/yr to m/s by 1e-3/31557600 (the class's
+# 365.25-day year), days to seconds by 86400, thickness mm to m by 1e-3.
+
+[[cases]]
+id = "thirty_days"
+tolerance = 1.0e-09
+source = "The capture's `thirty_days` row: 1 mm/yr for 30 days on a 50 mm port, a 0.0821 mm deposit, 0.66 percent fouling, and the opening drifting from 50 to 50.33 percent.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 3.168808781402895e-11
+elapsed_time = 2592000.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 8.213552361396305e-5
+elapsed_time = 2592000.0
+open_area_fraction = 0.9934399521016661
+fouling_fraction = 0.006560047898333865
+effective_kv = 99.34399521016661
+time_to_plug = 786348000.0000001
+opening_percent = 50.3301683148768
+time_to_pin = 228483176.0506852
+
+[[cases]]
+id = "one_year"
+tolerance = 1.0e-09
+source = "The capture's `one_year` row: 1 mm of deposit in a year, which leaves 0.9216 of the area open.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 3.168808781402895e-11
+elapsed_time = 31557600.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.001
+open_area_fraction = 0.9216
+fouling_fraction = 0.07840000000000003
+effective_kv = 92.16
+time_to_plug = 757382400.0000001
+opening_percent = 54.25347222222222
+time_to_pin = 199517576.05068517
+
+[[cases]]
+id = "pinned"
+tolerance = 1.0e-09
+source = "The capture's `pinned` row: the deposit passes the half-port, so the area is zero, the fouling caps at 0.999999 and the opening pins at 100 percent.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 3.168808781402895e-11
+elapsed_time = 864000000.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.02737850787132101
+open_area_fraction = 0.0
+fouling_fraction = 0.999999
+effective_kv = 0.0
+time_to_plug = 0.0
+opening_percent = 100.0
+time_to_pin = 0.0
+
+[[cases]]
+id = "not_advanced"
+tolerance = 1.0e-09
+source = "The capture's `not_advanced` row: a clean trim, with the class's time to plug and to pin from zero thickness.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 3.168808781402895e-11
+elapsed_time = 0.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.0
+open_area_fraction = 1.0
+fouling_fraction = 0.0
+effective_kv = 100.0
+time_to_plug = 788940000.0000001
+opening_percent = 50.0
+time_to_pin = 231075176.05068517
+
+[[cases]]
+id = "zero_growth"
+tolerance = 1.0e-09
+source = "The capture's `zero_growth` row: time passes and nothing grows, so both plugging times are infinite.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 0.0
+elapsed_time = 31557600.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.0
+open_area_fraction = 1.0
+fouling_fraction = 0.0
+effective_kv = 100.0
+opening_percent = 50.0
+
+[[cases]]
+id = "no_port"
+tolerance = 1.0e-09
+source = "The capture's `no_port` row: an unset port leaves the area at one while 1 mm still accumulates, and both times are infinite.\n"
+[cases.inputs]
+port_diameter = 0.0
+growth_rate = 3.168808781402895e-11
+elapsed_time = 31557600.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.001
+open_area_fraction = 1.0
+fouling_fraction = 0.0
+effective_kv = 100.0
+opening_percent = 50.0
+
+[[cases]]
+id = "clean_opening_100"
+tolerance = 1.0e-09
+source = "The capture's `clean_opening_100` row: a valve already at 100 percent has no time left to pin.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 3.168808781402895e-11
+elapsed_time = 864000000.0
+clean_opening_percent = 100.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.02737850787132101
+open_area_fraction = 0.0
+fouling_fraction = 0.999999
+effective_kv = 0.0
+time_to_plug = 0.0
+opening_percent = 100.0
+time_to_pin = 0.0
+
+[[cases]]
+id = "from_kinetics"
+tolerance = 1.0e-09
+source = "The capture's `kinetics_si_1.0` row: the growth rate taken from `ScaleKinetics` at SI 1.0, 405 mm/yr, plugs a 50 mm port in thirty days.\n"
+[cases.inputs]
+port_diameter = 0.05
+growth_rate = 1.2833675564681726e-8
+elapsed_time = 2592000.0
+clean_opening_percent = 50.0
+valve_kv = 100.0
+[cases.expected]
+deposit_thickness = 0.03326488706365503
+open_area_fraction = 0.0
+fouling_fraction = 0.999999
+effective_kv = 0.0
+time_to_plug = 0.0
+opening_percent = 100.0
+time_to_pin = 0.0

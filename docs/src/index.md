@@ -268,6 +268,7 @@ Five sections, and the difference between them is the point:
 - [`eos.unifac_psrk_activity_coefficients`](./eos/unifac_psrk_activity_coefficients.md) — Activity coefficients from UNIFAC with PSRK temperature-dependent interaction parameters
 - [`eos.unifac_umrpru_activity_coefficients`](./eos/unifac_umrpru_activity_coefficients.md) — Activity coefficients from UNIFAC with UMR-PRU group-interaction parameters
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
+- [`eos.valve_scale_drift`](./eos/valve_scale_drift.md) — Valve trim fouling from a deposit growth rate
 - [`eos.van_laar_acid_activity_coefficients`](./eos/van_laar_acid_activity_coefficients.md) — Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system
 - [`eos.vh_flash`](./eos/vh_flash.md) — Volume-enthalpy flash
 - [`eos.viscosity`](./eos/viscosity.md) — Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation

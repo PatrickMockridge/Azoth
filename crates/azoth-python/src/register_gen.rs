@@ -193,6 +193,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyUnifacPsrkActivityCoefficientsResult>()?;
     m.add_class::<crate::transport_gen::PyUnifacUmrpruActivityCoefficientsResult>()?;
     m.add_class::<crate::transport_gen::PyUniquacActivityCoefficientsResult>()?;
+    m.add_class::<crate::transport_gen::PyValveScaleDriftResult>()?;
     m.add_class::<crate::transport_gen::PyVanLaarAcidActivityCoefficientsResult>()?;
     m.add_class::<crate::transport_gen::PyVdw1fMixBinaryResult>()?;
     m.add_class::<crate::transport_gen::PyVhFlashResult>()?;
@@ -695,6 +696,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::eos::uniquac_activity_coefficients,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::valve_scale_drift, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::eos::van_laar_acid_activity_coefficients,
         m

@@ -1883,6 +1883,18 @@ class UniquacActivityCoefficientsResult:
     warnings: list[Warning]
 
 @final
+class ValveScaleDriftResult:
+    deposit_thickness: Qty
+    elapsed_time: Qty
+    open_area_fraction: float
+    fouling_fraction: float
+    effective_kv: float
+    time_to_plug: Qty
+    opening_percent: float
+    time_to_pin: Qty
+    warnings: list[Warning]
+
+@final
 class VanLaarAcidActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
@@ -4199,6 +4211,13 @@ def uniquac_activity_coefficients(
     x: list[float],
     aij: list[list[float]],
 ) -> UniquacActivityCoefficientsResult: ...
+def valve_scale_drift(
+    port_diameter: float,
+    growth_rate: float,
+    elapsed_time: float,
+    clean_opening_percent: float,
+    valve_kv: float,
+) -> ValveScaleDriftResult: ...
 def van_laar_acid_activity_coefficients(
     acid_index: list[int],
     T: float,

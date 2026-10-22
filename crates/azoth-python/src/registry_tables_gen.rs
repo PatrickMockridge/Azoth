@@ -194,6 +194,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.unifac_psrk_activity_coefficients" => azoth_eos::results::UnifacPsrkActivityCoefficientsResult::FIELDS.to_vec(),
         "eos.unifac_umrpru_activity_coefficients" => azoth_eos::results::UnifacUmrpruActivityCoefficientsResult::FIELDS.to_vec(),
         "eos.uniquac_activity_coefficients" => azoth_eos::results::UniquacActivityCoefficientsResult::FIELDS.to_vec(),
+        "eos.valve_scale_drift" => azoth_eos::results::ValveScaleDriftResult::FIELDS.to_vec(),
         "eos.van_laar_acid_activity_coefficients" => azoth_eos::results::VanLaarAcidActivityCoefficientsResult::FIELDS.to_vec(),
         "eos.vdw1f_mix_binary" => azoth_eos::results::Vdw1fMixBinaryResult::FIELDS.to_vec(),
         "eos.vh_flash" => azoth_eos::results::VhFlashResult::FIELDS.to_vec(),

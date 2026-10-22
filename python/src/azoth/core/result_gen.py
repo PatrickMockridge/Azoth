@@ -4110,6 +4110,40 @@ class UniquacActivityCoefficientsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ValveScaleDriftResult(_HasWarnings):
+    """Result of ``eos.valve_scale_drift``."""
+
+    CALC_ID: ClassVar[str] = "eos.valve_scale_drift"
+
+    #: the accumulated radial deposit thickness.
+    deposit_thickness: Q
+
+    #: the time the state is at.
+    elapsed_time: Q
+
+    #: the open flow area as a fraction of the clean area, 0..1.
+    open_area_fraction: float
+
+    #: the loss of effective flow coefficient, capped at 0.999999.
+    fouling_fraction: float
+
+    #: the clean Kv times the open-area fraction.
+    effective_kv: float
+
+    #: the time for the port to close; infinite with zero growth or no port.
+    time_to_plug: Q
+
+    #: the opening needed to hold the same flow, capped at 100.
+    opening_percent: float
+
+    #: the time for the opening to reach 100 percent; infinite when it never pins.
+    time_to_pin: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class VanLaarAcidActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.van_laar_acid_activity_coefficients``."""
 

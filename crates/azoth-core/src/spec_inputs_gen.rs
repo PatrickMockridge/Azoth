@@ -175,6 +175,7 @@
 //!   - specs/models/eos/unifac_psrk_activity_coefficients.toml
 //!   - specs/models/eos/unifac_umrpru_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
+//!   - specs/models/eos/valve_scale_drift.toml
 //!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
 //!   - specs/models/eos/vh_flash.toml
@@ -1732,6 +1733,15 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "aij",
         "thermodynamic_temperature",
     ),
+    ("eos.valve_scale_drift", "port_diameter", "length"),
+    ("eos.valve_scale_drift", "growth_rate", "velocity"),
+    ("eos.valve_scale_drift", "elapsed_time", "time"),
+    (
+        "eos.valve_scale_drift",
+        "clean_opening_percent",
+        "dimensionless",
+    ),
+    ("eos.valve_scale_drift", "valve_kv", "dimensionless"),
     (
         "eos.van_laar_acid_activity_coefficients",
         "T",

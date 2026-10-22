@@ -201,6 +201,7 @@
   - [Activity coefficients from UNIFAC with PSRK temperature-dependent interaction parameters](./eos/unifac_psrk_activity_coefficients.md)
   - [Activity coefficients from UNIFAC with UMR-PRU group-interaction parameters](./eos/unifac_umrpru_activity_coefficients.md)
   - [Activity coefficients from the UNIQUAC model](./eos/uniquac_activity_coefficients.md)
+  - [Valve trim fouling from a deposit growth rate](./eos/valve_scale_drift.md)
   - [Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system](./eos/van_laar_acid_activity_coefficients.md)
   - [Volume-enthalpy flash](./eos/vh_flash.md)
   - [Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation](./eos/viscosity.md)

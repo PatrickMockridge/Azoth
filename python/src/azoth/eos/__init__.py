@@ -230,6 +230,7 @@ from azoth.core.result import (
     UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
@@ -913,6 +914,35 @@ def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureRes
     """
     return resolve(_RK_DEPARTURE)(  # type: ignore[no-any-return]
         a_reduced=a_reduced, b_reduced=b_reduced, z=z
+    )
+
+
+def valve_scale_drift(
+    port_diameter: Q,
+    growth_rate: Q,
+    elapsed_time: Q,
+    clean_opening_percent: float,
+    valve_kv: float,
+) -> ValveScaleDriftResult:
+    """The trim fouling a deposit growth rate produces at an elapsed time.
+
+    NeqSim's ``ValveScaleDrift``: a uniform radial deposit on a circular trim port, so the
+    open-area fraction is ``((d0 - 2t)/d0)^2``, the fouling fraction its complement capped
+    at ``0.999999``, and the effective Kv the clean Kv times the open area. The valve
+    coupling is the boundary: this returns the fouling fraction, and setting it on a
+    ``ThrottlingValve`` is the process layer's step.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.valve_scale_drift`.
+    """
+    return resolve("eos.valve_scale_drift")(  # type: ignore[no-any-return]
+        port_diameter=port_diameter,
+        growth_rate=growth_rate,
+        elapsed_time=elapsed_time,
+        clean_opening_percent=clean_opening_percent,
+        valve_kv=valve_kv,
     )
 
 

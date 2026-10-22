@@ -253,6 +253,7 @@ from azoth.core.result import (
     UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
@@ -533,6 +534,7 @@ __all__ = [
     "unifac_psrk_activity_coefficients",
     "unifac_umrpru_activity_coefficients",
     "uniquac_activity_coefficients",
+    "valve_scale_drift",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vh_flash",
@@ -4200,6 +4202,29 @@ def uniquac_activity_coefficients(params: UniquacParameters, T: Q, x: Sequence[f
     return UniquacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def valve_scale_drift(port_diameter: Q, growth_rate: Q, elapsed_time: Q, clean_opening_percent: float, valve_kv: float) -> ValveScaleDriftResult:
+    """``eos.valve_scale_drift``, computed in Rust."""
+    spec = _models_gen.model("eos.valve_scale_drift")
+    result = _core.valve_scale_drift(
+        input_to_si(spec, "port_diameter", port_diameter),
+        input_to_si(spec, "growth_rate", growth_rate),
+        input_to_si(spec, "elapsed_time", elapsed_time),
+        clean_opening_percent,
+        valve_kv,
+    )
+    return ValveScaleDriftResult(
+        deposit_thickness=from_si(result.deposit_thickness.magnitude_si, result.deposit_thickness.unit),
+        elapsed_time=from_si(result.elapsed_time.magnitude_si, result.elapsed_time.unit),
+        open_area_fraction=result.open_area_fraction,
+        fouling_fraction=result.fouling_fraction,
+        effective_kv=result.effective_kv,
+        time_to_plug=from_si(result.time_to_plug.magnitude_si, result.time_to_plug.unit),
+        opening_percent=result.opening_percent,
+        time_to_pin=from_si(result.time_to_pin.magnitude_si, result.time_to_pin.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -10279,6 +10279,89 @@ impl From<&azoth_eos::results::UniquacActivityCoefficientsResult>
         }
     }
 }
+/// Result of `eos.valve_scale_drift`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ValveScaleDriftResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyValveScaleDriftResult {
+    /// the accumulated radial deposit thickness.
+    #[pyo3(get)]
+    pub deposit_thickness: PyQty,
+    /// the time the state is at.
+    #[pyo3(get)]
+    pub elapsed_time: PyQty,
+    /// the open flow area as a fraction of the clean area, 0..1.
+    #[pyo3(get)]
+    pub open_area_fraction: f64,
+    /// the loss of effective flow coefficient, capped at 0.999999.
+    #[pyo3(get)]
+    pub fouling_fraction: f64,
+    /// the clean Kv times the open-area fraction.
+    #[pyo3(get)]
+    pub effective_kv: f64,
+    /// the time for the port to close; infinite with zero growth or no port.
+    #[pyo3(get)]
+    pub time_to_plug: PyQty,
+    /// the opening needed to hold the same flow, capped at 100.
+    #[pyo3(get)]
+    pub opening_percent: f64,
+    /// the time for the opening to reach 100 percent; infinite when it never pins.
+    #[pyo3(get)]
+    pub time_to_pin: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyValveScaleDriftResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ValveScaleDriftResult(deposit_thickness={:?}, elapsed_time={:?}, open_area_fraction={:?}, fouling_fraction={:?}, effective_kv={:?}, time_to_plug={:?}, opening_percent={:?}, time_to_pin={:?}, {} warning(s))",
+            self.deposit_thickness,
+            self.elapsed_time,
+            self.open_area_fraction,
+            self.fouling_fraction,
+            self.effective_kv,
+            self.time_to_plug,
+            self.opening_percent,
+            self.time_to_pin,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ValveScaleDriftResult> for PyValveScaleDriftResult {
+    fn from(r: &azoth_eos::results::ValveScaleDriftResult) -> Self {
+        Self {
+            deposit_thickness: PyQty {
+                magnitude_si: r.deposit_thickness.value,
+                unit: "m".to_string(),
+            },
+            elapsed_time: PyQty {
+                magnitude_si: r.elapsed_time.value,
+                unit: "s".to_string(),
+            },
+            open_area_fraction: r.open_area_fraction,
+            fouling_fraction: r.fouling_fraction,
+            effective_kv: r.effective_kv,
+            time_to_plug: PyQty {
+                magnitude_si: r.time_to_plug.value,
+                unit: "s".to_string(),
+            },
+            opening_percent: r.opening_percent,
+            time_to_pin: PyQty {
+                magnitude_si: r.time_to_pin.value,
+                unit: "s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.van_laar_acid_activity_coefficients`, transported.
 #[pyclass(
     frozen,

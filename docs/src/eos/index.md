@@ -176,6 +176,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.unifac_psrk_activity_coefficients`](./unifac_psrk_activity_coefficients.md) | `direct composition` | Holderbaum, T.; Gmehling, J. (1991) |
 | [`eos.unifac_umrpru_activity_coefficients`](./unifac_umrpru_activity_coefficients.md) | `direct composition` | Voutsas, E.; Magoulas, K.; Tassios, D. (2004) |
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |
+| [`eos.valve_scale_drift`](./valve_scale_drift.md) | `direct composition` | NeqSim master `ValveScaleDrift` |
 | [`eos.van_laar_acid_activity_coefficients`](./van_laar_acid_activity_coefficients.md) | `direct composition` | Taleb, D.; Ponche, J. L.; Mirabel, P. (1996) |
 | [`eos.vh_flash`](./vh_flash.md) | `vh_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.viscosity`](./viscosity.md) | `direct composition` | NeqSim master `PFCTViscosityMethodHeavyOil` |

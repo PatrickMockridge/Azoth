@@ -12,7 +12,7 @@ use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole,
     joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter, kilograms_per_mole,
     kilograms_per_second, meters, meters_per_second, moles_per_cubic_meter, pascal_seconds,
-    pascals, watts,
+    pascals, seconds, watts,
 };
 use pyo3::prelude::*;
 
@@ -3992,6 +3992,33 @@ pub fn umrpr_alpha(
     azoth_eos::umrpr_alpha::umrpr_alpha(omega, Tr)
         .map(|r| crate::transport_gen::PyUmrprAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Valve trim fouling from a deposit growth rate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (port_diameter, growth_rate, elapsed_time, clean_opening_percent, valve_kv))]
+#[pyo3(
+    text_signature = "(port_diameter, growth_rate, elapsed_time, clean_opening_percent, valve_kv)"
+)]
+pub fn valve_scale_drift(
+    py: Python<'_>,
+    port_diameter: f64,
+    growth_rate: f64,
+    elapsed_time: f64,
+    clean_opening_percent: f64,
+    valve_kv: f64,
+) -> PyResult<crate::transport_gen::PyValveScaleDriftResult> {
+    azoth_eos::valve_scale_drift::valve_scale_drift(
+        meters(port_diameter),
+        meters_per_second(growth_rate),
+        seconds(elapsed_time),
+        clean_opening_percent,
+        valve_kv,
+    )
+    .map(|r| crate::transport_gen::PyValveScaleDriftResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// van der Waals one-fluid mixing, for a binary.

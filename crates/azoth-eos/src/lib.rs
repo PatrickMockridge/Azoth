@@ -249,6 +249,7 @@ pub mod unifac_activity_coefficients;
 pub mod unifac_psrk_activity_coefficients;
 pub mod unifac_umrpru_activity_coefficients;
 pub mod uniquac_activity_coefficients;
+pub mod valve_scale_drift;
 pub mod van_laar_acid_activity_coefficients;
 pub mod vdw1f_mix_binary;
 pub mod vega;
@@ -417,9 +418,10 @@ pub use results::{
     TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
     UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, ValveScaleDriftResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

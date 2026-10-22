@@ -6,7 +6,7 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, MassRate, Molality,
+    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate, Molality,
     MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension,
     ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
 };
@@ -1528,6 +1528,48 @@ impl CalcResult for StreamScaleAnalyzerResult {
         "total_scale_rate",
         "dominant_scale",
         "has_scaling",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.valve_scale_drift`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ValveScaleDriftResult {
+    /// The accumulated radial deposit thickness.
+    pub deposit_thickness: Length,
+    /// The time the state is at.
+    pub elapsed_time: Time,
+    /// The open flow area as a fraction of the clean area.
+    pub open_area_fraction: f64,
+    /// The loss of effective flow coefficient, capped at 0.999999.
+    pub fouling_fraction: f64,
+    /// The clean Kv times the open-area fraction.
+    pub effective_kv: f64,
+    /// The time for the port to close.
+    pub time_to_plug: Time,
+    /// The opening needed to hold the same flow, capped at 100.
+    pub opening_percent: f64,
+    /// The time for the opening to reach 100 percent.
+    pub time_to_pin: Time,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ValveScaleDriftResult {
+    const CALC_ID: &'static str = "eos.valve_scale_drift";
+    const FIELDS: &'static [&'static str] = &[
+        "deposit_thickness",
+        "elapsed_time",
+        "open_area_fraction",
+        "fouling_fraction",
+        "effective_kv",
+        "time_to_plug",
+        "opening_percent",
+        "time_to_pin",
         "warnings",
     ];
 
