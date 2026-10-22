@@ -7794,6 +7794,7 @@
       "name": "SI",
       "units": {
         "amount": "mol",
+        "amount_concentration": "mol/m**3",
         "dynamic_viscosity": "Pa*s",
         "energy": "J",
         "length": "m",
@@ -7807,6 +7808,7 @@
         "specific_heat_capacity": "J/(kg*K)",
         "thermodynamic_temperature": "K",
         "velocity": "m/s",
+        "volume": "m**3",
         "volume_rate": "m**3/s"
       }
     },
@@ -7815,6 +7817,7 @@
       "name": "Field",
       "units": {
         "amount": "kmol",
+        "amount_concentration": "kmol/m**3",
         "dynamic_viscosity": "cP",
         "energy": "Btu",
         "length": "ft",
@@ -7828,6 +7831,7 @@
         "specific_heat_capacity": "Btu/(lb*degF)",
         "thermodynamic_temperature": "°F",
         "velocity": "ft/s",
+        "volume": "L",
         "volume_rate": "gpm"
       }
     }
@@ -7906,6 +7910,11 @@
     "K": {
       "dimension": "thermodynamic_temperature",
       "factor": 1.0,
+      "offset": 0.0
+    },
+    "L": {
+      "dimension": "volume",
+      "factor": 0.001,
       "offset": 0.0
     },
     "L/min": {
@@ -8088,6 +8097,11 @@
       "factor": 0.2777777777777778,
       "offset": 0.0
     },
+    "kmol/m**3": {
+      "dimension": "amount_concentration",
+      "factor": 1000.0,
+      "offset": 0.0
+    },
     "lb": {
       "dimension": "mass",
       "factor": 0.45359237,
@@ -8115,6 +8129,11 @@
     },
     "m**2/s": {
       "dimension": "diffusion_coefficient",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "m**3": {
+      "dimension": "volume",
       "factor": 1.0,
       "offset": 0.0
     },
@@ -8150,6 +8169,11 @@
     },
     "mol/kg": {
       "dimension": "molality",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "mol/m**3": {
+      "dimension": "amount_concentration",
       "factor": 1.0,
       "offset": 0.0
     },
