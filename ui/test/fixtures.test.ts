@@ -148,13 +148,13 @@ describe("the catalogue", () => {
     // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds
     // every one of them to `pint`. A unit the catalogue omits would be one a display could not
     // convert, so the count is asserted rather than a sample.
-    // **Seventy, and two of them a spec may not declare.** Sixty-eight are the vocabulary's
+    // **Seventy-four, and two of them a spec may not declare.** Seventy-two are the vocabulary's
     // units; a degree Celsius and a degree Fahrenheit are *display* units, kept in their own
     // table so that `unit.schema.json` - the enum a spec's `unit:` is checked against - does not
     // offer them, and merged into this map because a display looks a unit up by name and does not
     // care which table it came from.
     const units = catalogue.units ?? {};
-    expect(Object.keys(units)).toHaveLength(70);
+    expect(Object.keys(units)).toHaveLength(74);
     expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1, offset: 0 });
     expect(units["psi"]?.dimension).toBe("pressure");
     expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);
@@ -174,10 +174,10 @@ describe("the catalogue", () => {
     expect(sets.map((set) => set.id)).toEqual(["si", "field"]);
     expect(sets.map((set) => set.name)).toEqual(["SI", "Field"]);
     for (const set of sets) {
-      // **Fifteen, and the fifteenth is temperature**: a scale is a choice between units like any
-      // other, so a set names one per dimension - and the pair that could not be a set's before
-      // is the one the display table made possible.
-      expect(Object.keys(set.units)).toHaveLength(15);
+      // **Seventeen, one per dimension the sets carry**: a scale is a choice between units like
+      // any other, so a set names one per dimension - temperature among them, which the display
+      // table made possible, and volume, which the scale family's water volume needed.
+      expect(Object.keys(set.units)).toHaveLength(17);
       // Every unit a set names is one this catalogue declares, and it measures the dimension it
       // was filed under - otherwise the switcher would offer a unit the display cannot reach.
       for (const [dimension, unit] of Object.entries(set.units)) {
