@@ -623,6 +623,18 @@ precipitated mg/L and the kg/day rate, with the total and the dominant mineral.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
 ```
 
+**The valve drift probe** records `ValveScaleDrift`: a uniform radial deposit on a trim
+port, its open-area fraction, fouling fraction and effective Kv, and the time to plug and
+to pin the opening for a stated clean opening. The valve is constructed without a stream
+and given a Kv directly - nothing in the drift arithmetic reads a fluid. The states are
+the not-advanced, thirty-day, one-year and pinned deposits, zero growth, an unset port, a
+clean opening already at 100 percent, a negative advance the class ignores, a reset, and a
+growth rate taken from the evaluated `ScaleKinetics`.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,

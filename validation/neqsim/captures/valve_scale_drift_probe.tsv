@@ -1,0 +1,14 @@
+valve_scale_drift
+ growth
+  thirty_days port_diameter_m=0.05 deposit_thickness_mm=0.08213552361396304 elapsed_days=30.0 open_area=0.9934399521016659 fouling=0.006560047898334087 effective_kv=99.3439952101666 time_to_plug_days=9101.25 clean_opening_percent=50.0 opening_percent=50.33016831487681 time_to_pin_days=2644.4812042903372
+  one_year port_diameter_m=0.05 deposit_thickness_mm=1.0 elapsed_days=365.25 open_area=0.9216 fouling=0.07840000000000003 effective_kv=92.16 time_to_plug_days=8766.0 clean_opening_percent=50.0 opening_percent=54.25347222222222 time_to_pin_days=2309.2312042903372
+  pinned port_diameter_m=0.05 deposit_thickness_mm=27.378507871321013 elapsed_days=10000.0 open_area=0.0 fouling=0.999999 effective_kv=0.0 time_to_plug_days=0.0 clean_opening_percent=50.0 opening_percent=100.0 time_to_pin_days=0.0
+ corners
+  not_advanced port_diameter_m=0.05 deposit_thickness_mm=0.0 elapsed_days=0.0 open_area=1.0 fouling=0.0 effective_kv=100.0 time_to_plug_days=9131.25 clean_opening_percent=50.0 opening_percent=50.0 time_to_pin_days=2674.4812042903372
+  zero_growth port_diameter_m=0.05 deposit_thickness_mm=0.0 elapsed_days=365.25 open_area=1.0 fouling=0.0 effective_kv=100.0 time_to_plug_days=Infinity clean_opening_percent=50.0 opening_percent=50.0 time_to_pin_days=Infinity
+  no_port port_diameter_m=0.0 deposit_thickness_mm=1.0 elapsed_days=365.25 open_area=1.0 fouling=0.0 effective_kv=100.0 time_to_plug_days=Infinity clean_opening_percent=50.0 opening_percent=50.0 time_to_pin_days=Infinity
+  clean_opening_100 port_diameter_m=0.05 deposit_thickness_mm=27.378507871321013 elapsed_days=10000.0 open_area=0.0 fouling=0.999999 effective_kv=0.0 time_to_plug_days=0.0 clean_opening_percent=100.0 opening_percent=100.0 time_to_pin_days=0.0
+  negative_advance_ignored port_diameter_m=0.05 deposit_thickness_mm=0.08213552361396304 elapsed_days=30.0 open_area=0.9934399521016659 fouling=0.006560047898334087 effective_kv=99.3439952101666 time_to_plug_days=9101.25 clean_opening_percent=50.0 opening_percent=50.33016831487681 time_to_pin_days=2644.4812042903372
+  reset port_diameter_m=0.05 deposit_thickness_mm=0.0 elapsed_days=0.0 open_area=1.0 fouling=0.0 effective_kv=100.0 time_to_plug_days=9131.25 clean_opening_percent=50.0 opening_percent=50.0 time_to_pin_days=2674.4812042903372
+ from_kinetics
+  kinetics_si_1.0 port_diameter_m=0.05 deposit_thickness_mm=33.26488706365503 elapsed_days=30.0 open_area=0.0 fouling=0.999999 effective_kv=0.0 time_to_plug_days=0.0 clean_opening_percent=50.0 opening_percent=100.0 time_to_pin_days=0.0
