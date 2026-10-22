@@ -8,7 +8,7 @@
 
 **NeqSim master `ClosedLoopDepositionSolver`**
 
-`solve` and its getters, ported over `eos.pipe_beggs_and_brills` and `eos.scale_deposition_accumulator`. The host pipe's mutable diameter and the restore after the solve have no counterpart here, because the model is a function rather than a mutation of a shared object; the Gson report has none either.
+`solve` and its getters, over `eos.pipe_beggs_and_brills` and `eos.scale_deposition_accumulator`. The host pipe's mutable diameter and its restore have no counterpart here; the model is a function. The Gson report has none either.
 
 
 ## What this model is
@@ -61,9 +61,9 @@ checked against one.
 
 ## Assumptions
 
-- **the loop is the class's**: the pipe is re-run at the current effective diameter, the accumulator evaluates at that diameter, the histories record the diameter and the worst thickness before the step, and the next diameter is `d_0 - 2 * thickness`, so the deposit grows from the original bore rather than cumulatively.
+- **the loop is the class's**: the pipe re-runs at the effective diameter, the accumulator evaluates there, and the next diameter is `d_0 - 2 * thickness` - the deposit grows from the original bore, not cumulatively.
 
-- **the comparison is against the diameter one iteration older than the step**: the class keeps `previousD` from before the last step, which is why a constant thickness needs three iterations to converge - the second step lands on the first and the third compares it with itself. The blocked exit sets the final diameter to zero and reports convergence.
+- **the comparison is with the diameter one iteration older than the step**: `previousD` lags by one, so a constant thickness needs three iterations - the second step lands on the first, the third compares it with itself. A blocked line reports convergence at zero.
 
 - **the accumulator sees one segment**: the isothermal pipe's temperature profile is one value, so the shorter of the two profiles is one and the whole length is that segment; segment zero's pressure and temperature are the inlet's.
 
@@ -104,4 +104,4 @@ declared checks *that call* could not evaluate.
 ## References
 
 - NeqSim master, `process/chemistry/scale/ClosedLoopDepositionSolver.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
-- `validation/neqsim/captures/closed_loop_deposition_probe.tsv` - the eight solves: a one-year service that meets the tolerance on its first step, a long service that iterates three times, the cap reached before convergence, a blocked line, a brine that deposits nothing, an inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.
+- `validation/neqsim/captures/closed_loop_deposition_probe.tsv` - the eight solves: a one-year service that meets the tolerance first, a long service that iterates, the cap reached, a blocked line, no deposit, half inhibition, a wide tolerance and a Peng-Robinson fluid.

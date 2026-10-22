@@ -348,7 +348,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.closed_loop_deposition_solver': {
         "calc_id": 'eos.closed_loop_deposition_solver',
         "name": 'Closed-loop deposition and flow solver over a Beggs-and-Brills line',
-        "spec": {'path': 'specs/models/eos/closed_loop_deposition_solver.toml', 'sha256': '869ced7131e41db76eb001de68072d5a4d5359605628542f56a992a5139c1c7b'},
+        "spec": {'path': 'specs/models/eos/closed_loop_deposition_solver.toml', 'sha256': 'a34d9bc402f39164591d61c5e04595e128bd48ce59273ffb9571fb387adeafca'},
         "code": [{'path': 'python/src/azoth/eos/reference/closed_loop_deposition_solver.py', 'sha256': 'bc3c4a4e4a5b8b364c0da9ac83620696ae9c3843a87fb9ef0a1409c5d05adab1'}, {'path': 'crates/azoth-eos/src/closed_loop_deposition_solver.rs', 'sha256': 'e7629fd9d7cb7440764ee070746129378dbf2dc8df08ab99aa251c9172937a1c'}],
         "source": 'NeqSim master `ClosedLoopDepositionSolver`',
         "verification": 'partially_verified',
@@ -1119,7 +1119,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'eos.pipe_beggs_and_brills',
         "name": 'Segmented pipeline pressure and temperature profile by Beggs and Brill',
         "spec": {'path': 'specs/models/eos/pipe_beggs_and_brills.toml', 'sha256': '18326150067b60de240c0a9968af1a6cabc1bb8baa834948a7b14643d3191157'},
-        "code": [{'path': 'python/src/azoth/eos/reference/pipe_beggs_and_brills.py', 'sha256': '8f944e17ad82be5b0117ddf32d5695229a59c88c4b45bf178b29f8e844ec79ec'}, {'path': 'crates/azoth-eos/src/pipe_beggs_and_brills.rs', 'sha256': 'e5aa2d7c4848957573054c61f887f2bf4df15aa9afec8067135d37f26b6211c4'}],
+        "code": [{'path': 'python/src/azoth/eos/reference/pipe_beggs_and_brills.py', 'sha256': '5c26e51bf28fcf159104afcd432a84a769eb8f4d42e53ed5160d5d1a6a2c3010'}, {'path': 'crates/azoth-eos/src/pipe_beggs_and_brills.rs', 'sha256': 'e5aa2d7c4848957573054c61f887f2bf4df15aa9afec8067135d37f26b6211c4'}],
         "source": 'NeqSim master `PipeBeggsAndBrills`',
         "verification": 'partially_verified',
         "validation_cases": 0,
