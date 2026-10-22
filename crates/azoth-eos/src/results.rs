@@ -1819,6 +1819,42 @@ impl CalcResult for PipeBeggsAndBrillsResult {
     }
 }
 
+/// Result of `eos.closed_loop_deposition_solver`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClosedLoopDepositionSolverResult {
+    /// The number of iterations the loop ran.
+    pub iterations_taken: u32,
+    /// Whether the loop met the diameter tolerance or detected a blocked line.
+    pub converged: bool,
+    /// The diameter after deposition; zero when the line is blocked.
+    pub final_effective_diameter: Length,
+    /// The effective diameter each iteration ran at, oldest first.
+    pub diameter_history: Vec<f64>,
+    /// The worst segment's thickness after each iteration's accumulator pass.
+    pub max_thickness_history: Vec<f64>,
+    /// The mean mixture superficial velocity of each iteration's profile.
+    pub velocity_history: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ClosedLoopDepositionSolverResult {
+    const CALC_ID: &'static str = "eos.closed_loop_deposition_solver";
+    const FIELDS: &'static [&'static str] = &[
+        "iterations_taken",
+        "converged",
+        "final_effective_diameter",
+        "diameter_history",
+        "max_thickness_history",
+        "velocity_history",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

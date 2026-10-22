@@ -50,6 +50,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.chapman_enskog_diffusivity" => azoth_eos::results::ChapmanEnskogDiffusivityResult::FIELDS.to_vec(),
         "eos.chung_conductivity" => azoth_eos::results::ChungConductivityResult::FIELDS.to_vec(),
         "eos.chung_viscosity" => azoth_eos::results::ChungViscosityResult::FIELDS.to_vec(),
+        "eos.closed_loop_deposition_solver" => azoth_eos::results::ClosedLoopDepositionSolverResult::FIELDS.to_vec(),
         "eos.co2_brine_phase_equilibrium" => azoth_eos::results::Co2BrinePhaseEquilibriumResult::FIELDS.to_vec(),
         "eos.co2_phase" => azoth_eos::results::Co2PhaseResult::FIELDS.to_vec(),
         "eos.co2_water_diffusivity" => azoth_eos::results::Co2WaterDiffusivityResult::FIELDS.to_vec(),

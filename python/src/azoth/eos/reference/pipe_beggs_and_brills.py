@@ -66,7 +66,7 @@ def _viscosity(
 
 
 def _phase_properties(
-    mixture: Any, names: list[str], t: Q, p: Q, n: float, overall: list[float]
+    mixture: Any, names: list[str], t: Q, p: Q, n: float, overall: list[float], cubic: str
 ) -> dict[str, float]:
     flash = tp_multiflash(mixture, t, p, overall)
     components = mixture.components
@@ -82,7 +82,10 @@ def _phase_properties(
             continue
         composition = list(flash.x[index])
         z_factor = flash.z_factor[index]
-        shift = sum(f * c.volume_shift_srk for f, c in zip(composition, components, strict=True))
+        shift = sum(
+            f * (c.volume_shift_srk if cubic == "srk" else c.volume_shift)
+            for f, c in zip(composition, components, strict=True)
+        )
         volume = z_factor * MOLAR_GAS_CONSTANT * t_k / p_pa - shift
         mass = sum(
             f * c.molar_mass.to("kg/mol").magnitude
@@ -124,7 +127,7 @@ def _phase_properties(
 
 def pipe_beggs_and_brills(
     components: list[str],
-    inlet_n: float,
+    inlet_n: float | Q,
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
@@ -212,6 +215,7 @@ def pipe_beggs_and_brills(
             from_si(state_pressure, "Pa"),
             values["inlet_n"],
             list(inlet_z),
+            cubic,
         )
         return beggs_brill_segment(
             from_si(properties["gas_flow"], "m**3/s"),

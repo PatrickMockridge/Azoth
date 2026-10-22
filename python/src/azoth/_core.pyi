@@ -705,6 +705,16 @@ class ChungViscosityResult:
     warnings: list[Warning]
 
 @final
+class ClosedLoopDepositionSolverResult:
+    iterations_taken: int
+    converged: bool
+    final_effective_diameter: Qty
+    diameter_history: list[Qty]
+    max_thickness_history: list[Qty]
+    velocity_history: list[Qty]
+    warnings: list[Warning]
+
+@final
 class Co2BrinePhaseEquilibriumResult:
     phase_count: int
     accepted_root: str
@@ -3109,6 +3119,32 @@ def chung_viscosity(
     T: float,
     V: float,
 ) -> ChungViscosityResult: ...
+def closed_loop_deposition_solver(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    elevation: float,
+    number_of_increments: float,
+    roughness: float,
+    calcium: float,
+    bicarbonate: float,
+    sulphate: float,
+    barium: float,
+    sodium: float,
+    total_dissolved_solids: float,
+    ph: float,
+    service_time: float,
+    scale_density: float,
+    base_rate: float,
+    inhibitor_efficiency: float,
+    tolerance: float,
+    max_iterations: float,
+    eos: str | None = None,
+) -> ClosedLoopDepositionSolverResult: ...
 def co2_brine_phase_equilibrium(
     components: list[str],
     T: float,

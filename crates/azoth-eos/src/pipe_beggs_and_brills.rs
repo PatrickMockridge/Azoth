@@ -99,6 +99,7 @@ pub fn pipe_beggs_and_brills(
     };
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _ideal) = databank::mixture_of(&names, cubic, None)?;
+    let srk_shift = matches!(cubic, crate::Cubic::Srk);
 
     let segment_length = length.value / number_of_increments as f64;
     let segment_elevation = elevation.value / number_of_increments as f64;
@@ -111,8 +112,9 @@ pub fn pipe_beggs_and_brills(
     let mut regime_profile = Vec::with_capacity(number_of_increments + 1);
 
     for _ in 0..number_of_increments {
-        let properties =
-            phase_properties(&mixture, components, inlet_n, inlet_t, pressure, inlet_z)?;
+        let properties = phase_properties(
+            &mixture, components, inlet_n, inlet_t, pressure, inlet_z, srk_shift,
+        )?;
         let drop = segment_drop(
             &properties,
             inlet_t.value,
@@ -141,8 +143,9 @@ pub fn pipe_beggs_and_brills(
 
     // The class re-evaluates the correlation once after the loop, so its segment lists are
     // one longer than the pressure profile's segments.
-    let outlet_properties =
-        phase_properties(&mixture, components, inlet_n, inlet_t, pressure, inlet_z)?;
+    let outlet_properties = phase_properties(
+        &mixture, components, inlet_n, inlet_t, pressure, inlet_z, srk_shift,
+    )?;
     let final_drop = segment_drop(
         &outlet_properties,
         inlet_t.value,
@@ -215,12 +218,20 @@ fn corrected_molar_volume(
     pressure_pa: f64,
     composition: &[f64],
     components: &[Component],
+    srk_shift: bool,
 ) -> f64 {
     let ideal_volume = z_factor * MOLAR_GAS_CONSTANT * temperature_k / pressure_pa;
     let shift: f64 = composition
         .iter()
         .zip(components)
-        .map(|(fraction, component)| fraction * component.volume_shift_srk)
+        .map(|(fraction, component)| {
+            fraction
+                * if srk_shift {
+                    component.volume_shift_srk
+                } else {
+                    component.volume_shift
+                }
+        })
         .sum();
     ideal_volume - shift
 }
@@ -246,6 +257,7 @@ fn phase_properties(
     temperature: ThermodynamicTemperature,
     pressure_pa: f64,
     overall: &[f64],
+    srk_shift: bool,
 ) -> Result<PhaseProperties> {
     let components = mixture.components();
     let flash =
@@ -269,6 +281,7 @@ fn phase_properties(
             pressure_pa,
             composition,
             components,
+            srk_shift,
         );
         let mass = molar_mass(composition, components, names)?;
         let density = mass / volume;
@@ -308,6 +321,7 @@ fn phase_properties(
             pressure_pa,
             overall,
             components,
+            srk_shift,
         )?;
         Ok(PhaseProperties {
             gas_flow,
@@ -333,6 +347,7 @@ fn phase_properties(
             pressure_pa,
             overall,
             components,
+            srk_shift,
         )?;
         Ok(PhaseProperties {
             gas_flow,
@@ -353,6 +368,7 @@ fn gas_phase_properties(
     pressure_pa: f64,
     overall: &[f64],
     components: &[Component],
+    srk_shift: bool,
 ) -> Result<(f64, f64)> {
     let flash =
         crate::tp_multiflash::tp_multiflash(mixture, temperature, pascals(pressure_pa), overall)?;
@@ -368,6 +384,7 @@ fn gas_phase_properties(
             pressure_pa,
             composition,
             components,
+            srk_shift,
         );
         let mass = molar_mass(composition, components, names)?;
         let kind = phase_kind(
@@ -398,6 +415,7 @@ fn gas_phase_properties(
         pressure_pa,
         composition,
         components,
+        srk_shift,
     );
     let mass = molar_mass(composition, components, names)?;
     let kind = phase_kind(

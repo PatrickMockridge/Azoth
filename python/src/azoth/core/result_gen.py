@@ -749,6 +749,34 @@ class ChungViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ClosedLoopDepositionSolverResult(_HasWarnings):
+    """Result of ``eos.closed_loop_deposition_solver``."""
+
+    CALC_ID: ClassVar[str] = "eos.closed_loop_deposition_solver"
+
+    #: the number of iterations the loop ran, including the one that converged.
+    iterations_taken: int
+
+    #: whether the loop met the diameter tolerance or detected a blocked line.
+    converged: bool
+
+    #: the diameter after deposition; zero when the line is blocked.
+    final_effective_diameter: Q
+
+    #: the effective diameter each iteration ran at, oldest first.
+    diameter_history: tuple[Q, ...]
+
+    #: the worst segment's thickness after each iteration's accumulator pass.
+    max_thickness_history: tuple[Q, ...]
+
+    #: the mean mixture superficial velocity of each iteration's profile.
+    velocity_history: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Co2BrinePhaseEquilibriumResult(_HasWarnings):
     """Result of ``eos.co2_brine_phase_equilibrium``."""
 

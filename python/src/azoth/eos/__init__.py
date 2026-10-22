@@ -86,6 +86,7 @@ from azoth.core.result import (
     ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    ClosedLoopDepositionSolverResult,
     Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
@@ -569,6 +570,76 @@ _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
 _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
+
+
+def closed_loop_deposition_solver(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    length: Q,
+    diameter: Q,
+    elevation: Q,
+    number_of_increments: int,
+    roughness: Q,
+    calcium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    barium: Q,
+    sodium: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    service_time: Q,
+    scale_density: Q,
+    base_rate: Q,
+    inhibitor_efficiency: float,
+    tolerance: Q,
+    max_iterations: int,
+    eos: str | None = None,
+) -> ClosedLoopDepositionSolverResult:
+    """The coupled deposition-and-flow solve over a Beggs-and-Brills line.
+
+    NeqSim's ``ClosedLoopDepositionSolver``: the pipe is re-run at a shrinking effective
+    diameter, the accumulator evaluates at that diameter, and the worst segment's thickness
+    sets the next diameter until the diameter stops moving, the iteration cap is reached, or
+    the line blocks.
+
+    Args:
+        eos: ``srk`` (the default) or ``pr``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if the pipe refuses a segment's negative outlet pressure.
+
+    See :func:`azoth.eos.reference.closed_loop_deposition_solver`.
+    """
+    return resolve("eos.closed_loop_deposition_solver")(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        length=length,
+        diameter=diameter,
+        elevation=elevation,
+        number_of_increments=number_of_increments,
+        roughness=roughness,
+        calcium=calcium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        barium=barium,
+        sodium=sodium,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        service_time=service_time,
+        scale_density=scale_density,
+        base_rate=base_rate,
+        inhibitor_efficiency=inhibitor_efficiency,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+        eos=eos,
+    )
 
 
 def pipe_beggs_and_brills(

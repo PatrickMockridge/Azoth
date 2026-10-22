@@ -31,6 +31,7 @@
 //!   - specs/calcs/eos/chapman_enskog_diffusivity.toml
 //!   - specs/calcs/eos/chung_conductivity.toml
 //!   - specs/calcs/eos/chung_viscosity.toml
+//!   - specs/models/eos/closed_loop_deposition_solver.toml
 //!   - specs/models/eos/co2_brine_phase_equilibrium.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/calcs/eos/co2_water_diffusivity.toml
@@ -582,6 +583,80 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.chung_viscosity", "kappa", "dimensionless"),
     ("eos.chung_viscosity", "T", "thermodynamic_temperature"),
     ("eos.chung_viscosity", "V", "molar_volume"),
+    ("eos.closed_loop_deposition_solver", "inlet_n", "molar_flow"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "inlet_z",
+        "dimensionless",
+    ),
+    ("eos.closed_loop_deposition_solver", "inlet_p", "pressure"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "inlet_t",
+        "thermodynamic_temperature",
+    ),
+    ("eos.closed_loop_deposition_solver", "length", "length"),
+    ("eos.closed_loop_deposition_solver", "diameter", "length"),
+    ("eos.closed_loop_deposition_solver", "elevation", "length"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "number_of_increments",
+        "dimensionless",
+    ),
+    ("eos.closed_loop_deposition_solver", "roughness", "length"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "calcium",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "bicarbonate",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "sulphate",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "barium",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "sodium",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    ("eos.closed_loop_deposition_solver", "ph", "dimensionless"),
+    ("eos.closed_loop_deposition_solver", "service_time", "time"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "scale_density",
+        "mass_density",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "base_rate",
+        "mass_flux",
+    ),
+    (
+        "eos.closed_loop_deposition_solver",
+        "inhibitor_efficiency",
+        "dimensionless",
+    ),
+    ("eos.closed_loop_deposition_solver", "tolerance", "length"),
+    (
+        "eos.closed_loop_deposition_solver",
+        "max_iterations",
+        "dimensionless",
+    ),
     (
         "eos.co2_brine_phase_equilibrium",
         "T",

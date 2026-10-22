@@ -1878,6 +1878,93 @@ impl From<&azoth_eos::results::ChungViscosityResult> for PyChungViscosityResult 
         }
     }
 }
+/// Result of `eos.closed_loop_deposition_solver`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ClosedLoopDepositionSolverResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyClosedLoopDepositionSolverResult {
+    /// the number of iterations the loop ran, including the one that converged.
+    #[pyo3(get)]
+    pub iterations_taken: u32,
+    /// whether the loop met the diameter tolerance or detected a blocked line.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// the diameter after deposition; zero when the line is blocked.
+    #[pyo3(get)]
+    pub final_effective_diameter: PyQty,
+    /// the effective diameter each iteration ran at, oldest first.
+    #[pyo3(get)]
+    pub diameter_history: Vec<PyQty>,
+    /// the worst segment's thickness after each iteration's accumulator pass.
+    #[pyo3(get)]
+    pub max_thickness_history: Vec<PyQty>,
+    /// the mean mixture superficial velocity of each iteration's profile.
+    #[pyo3(get)]
+    pub velocity_history: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyClosedLoopDepositionSolverResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ClosedLoopDepositionSolverResult(iterations_taken={:?}, converged={:?}, final_effective_diameter={:?}, diameter_history={:?}, max_thickness_history={:?}, velocity_history={:?}, {} warning(s))",
+            self.iterations_taken,
+            self.converged,
+            self.final_effective_diameter,
+            self.diameter_history,
+            self.max_thickness_history,
+            self.velocity_history,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ClosedLoopDepositionSolverResult>
+    for PyClosedLoopDepositionSolverResult
+{
+    fn from(r: &azoth_eos::results::ClosedLoopDepositionSolverResult) -> Self {
+        Self {
+            iterations_taken: r.iterations_taken,
+            converged: r.converged,
+            final_effective_diameter: PyQty {
+                magnitude_si: r.final_effective_diameter.value,
+                unit: "m".to_string(),
+            },
+            diameter_history: r
+                .diameter_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m".to_string(),
+                })
+                .collect(),
+            max_thickness_history: r
+                .max_thickness_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m".to_string(),
+                })
+                .collect(),
+            velocity_history: r
+                .velocity_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m/s".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.co2_brine_phase_equilibrium`, transported.
 #[pyclass(
     frozen,

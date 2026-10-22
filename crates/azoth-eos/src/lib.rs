@@ -65,6 +65,7 @@ pub mod cdft_surface_tension;
 pub mod chapman_enskog_diffusivity;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
+pub mod closed_loop_deposition_solver;
 pub mod co2_brine_phase_equilibrium;
 pub mod co2_phase;
 pub mod co2_water_diffusivity;
@@ -288,6 +289,7 @@ pub use cdft_surface_tension::cdft_surface_tension;
 pub use chapman_enskog_diffusivity::chapman_enskog_diffusivity;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
+pub use closed_loop_deposition_solver::closed_loop_deposition_solver;
 pub use co2_brine_phase_equilibrium::co2_brine_phase_equilibrium;
 pub use co2_phase::co2_phase;
 pub use co2_water_diffusivity::co2_water_diffusivity;
@@ -386,12 +388,12 @@ pub use results::{
     BrineMixingPointRow, BrineMixingScaleEvaluatorResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, CalcIonicCompositionResult, CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult, ChemicalWarningRow, ChungConductivityResult,
-    ChungViscosityResult, Co2BrinePhaseEquilibriumResult, Co2PhaseResult,
-    Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult, DepositionSegmentRow,
-    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
-    ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult, EosCgPhaseResult,
-    FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult, FreezingPointResult,
-    FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
+    ChungViscosityResult, ClosedLoopDepositionSolverResult, Co2BrinePhaseEquilibriumResult,
+    Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
+    DepositionSegmentRow, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
+    EffectiveDiffusionResult, ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult,
+    EosCgPhaseResult, FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult,
+    FreezingPointResult, FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
     GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,

@@ -671,6 +671,17 @@ negative outlet pressure and is recorded as such.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
 ```
 
+**The closed-loop deposition probe** records `ClosedLoopDepositionSolver` over the same pipe:
+the iteration count, convergence, the final effective diameter, the last accumulator pass and
+the diameter, thickness and mean-velocity histories. The states are a one-year service that
+meets the tolerance on its first step, a thousand-year service that iterates three times, the
+iteration cap reached before convergence, a blocked line, a brine that deposits nothing, an
+inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,

@@ -1,0 +1,122 @@
+id = "eos.closed_loop_deposition_solver"
+name = "Closed-loop deposition and flow solver over a Beggs-and-Brills line"
+kind = "direct"
+assumptions = [
+    "**the loop is the class's**: the pipe is re-run at the current effective diameter, the accumulator evaluates at that diameter, the histories record the diameter and the worst thickness before the step, and the next diameter is `d_0 - 2 * thickness`, so the deposit grows from the original bore rather than cumulatively.\n",
+    "**the comparison is against the diameter one iteration older than the step**: the class keeps `previousD` from before the last step, which is why a constant thickness needs three iterations to converge - the second step lands on the first and the third compares it with itself. The blocked exit sets the final diameter to zero and reports convergence.\n",
+    "**the accumulator sees one segment**: the isothermal pipe's temperature profile is one value, so the shorter of the two profiles is one and the whole length is that segment; segment zero's pressure and temperature are the inlet's.\n",
+    "**the thickness is independent of the diameter when the profile is one segment**, because both the wall area and the deposit's volume carry `pi d L`; what the shrinking diameter changes is the velocity history and the pressure drop the next run must survive.\n",
+    "**the velocity history averages the whole mixture superficial velocity profile**, the class's sum over every entry its pipe appended - the inlet, each segment and the final re-evaluation.\n",
+    "**a pipe that refuses stops the solve**: the class catches the failure and evaluates whatever profile the failed run left behind; this model propagates the refusal, because a partial profile is not a state.\n",
+    "the setters clamp the tolerance at `1e-7 m` and the iteration cap at one; the pipe, accumulator and solver inputs are otherwise taken as stated.\n",
+    "the CO2 partial pressure the accumulator stores is not an input for the reason `eos.scale_deposition_accumulator` states.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ClosedLoopDepositionSolver.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/closed_loop_deposition_probe.tsv` - the eight solves: a one-year service that meets the tolerance on its first step, a long service that iterates three times, the cap reached before convergence, a blocked line, a brine that deposits nothing, an inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.",
+]
+[source]
+standard = "NeqSim master `ClosedLoopDepositionSolver`"
+edition = "`solve` and its getters, ported over `eos.pipe_beggs_and_brills` and `eos.scale_deposition_accumulator`. The host pipe's mutable diameter and the restore after the solve have no counterpart here, because the model is a function rather than a mutation of a shared object; the Gson report has none either."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which the isothermal march holds.\n"
+[inputs.length]
+unit = "m"
+description = "the pipe's total length.\n"
+[inputs.diameter]
+unit = "m"
+description = "the pipe's original internal diameter, 100 mm as 0.1 m.\n"
+[inputs.elevation]
+unit = "m"
+description = "the total elevation change, positive uphill.\n"
+[inputs.number_of_increments]
+unit = "dimensionless"
+description = "the number of segments the pipe is divided into.\n"
+[inputs.roughness]
+unit = "m"
+description = "the pipe wall's absolute roughness.\n"
+[inputs.calcium]
+unit = "kg/m**3"
+description = "the calcium ion's mass concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate ion's mass concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "the sulphate ion's mass concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "the barium ion's mass concentration.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "the sodium ion's mass concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "TDS, which sets the predictor's ionic strength.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the aqueous phase's pH.\n"
+[inputs.service_time]
+unit = "s"
+description = "the exposure time the deposit masses are scaled by.\n"
+[inputs.scale_density]
+unit = "kg/m**3"
+description = "the assumed deposit density, 2700 kg/m3 for calcite.\n"
+[inputs.base_rate]
+unit = "kg/(m**2*s)"
+description = "the deposition rate at SI = 1.\n"
+[inputs.inhibitor_efficiency]
+unit = "dimensionless"
+description = "the uniform fractional efficiency reducing the deposition rate, clamped to 0..1.\n"
+[inputs.tolerance]
+unit = "m"
+description = "the convergence tolerance on the effective diameter, clamped at 1e-7 m.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap, clamped at one.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk"]
+optional = true
+description = "the cubic the pipe's flash runs; absent takes `srk`.\n"
+[outputs]
+[outputs.iterations_taken]
+unit = "dimensionless"
+description = "the number of iterations the loop ran, including the one that converged.\n"
+[outputs.converged]
+type = "boolean"
+description = "whether the loop met the diameter tolerance or detected a blocked line.\n"
+[outputs.final_effective_diameter]
+unit = "m"
+description = "the diameter after deposition; zero when the line is blocked.\n"
+[outputs.diameter_history]
+type = "vector"
+unit = "m"
+description = "the effective diameter each iteration ran at, oldest first.\n"
+[outputs.max_thickness_history]
+type = "vector"
+unit = "m"
+description = "the worst segment's thickness after each iteration's accumulator pass.\n"
+[outputs.velocity_history]
+type = "vector"
+unit = "m/s"
+description = "the mean mixture superficial velocity of each iteration's profile.\n"
+[implementations]
+python = "azoth.eos.closed_loop_deposition_solver"
+rust = "azoth_eos::closed_loop_deposition_solver"

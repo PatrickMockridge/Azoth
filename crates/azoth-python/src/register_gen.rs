@@ -49,6 +49,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyChapmanEnskogDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyChungConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyChungViscosityResult>()?;
+    m.add_class::<crate::transport_gen::PyClosedLoopDepositionSolverResult>()?;
     m.add_class::<crate::transport_gen::PyCo2BrinePhaseEquilibriumResult>()?;
     m.add_class::<crate::transport_gen::PyCo2PhaseResult>()?;
     m.add_class::<crate::transport_gen::PyCo2WaterDiffusivityResult>()?;
@@ -368,6 +369,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::chung_viscosity, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::closed_loop_deposition_solver,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::co2_brine_phase_equilibrium,
         m

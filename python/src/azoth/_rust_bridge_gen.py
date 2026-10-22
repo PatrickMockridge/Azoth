@@ -42,6 +42,7 @@ from azoth.core.result import (
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    ClosedLoopDepositionSolverResult,
     Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
@@ -341,6 +342,7 @@ __all__ = [
     "choked_flow_area",
     "chung_conductivity",
     "chung_viscosity",
+    "closed_loop_deposition_solver",
     "co2_brine_phase_equilibrium",
     "co2_phase",
     "co2_water_diffusivity",
@@ -1180,6 +1182,46 @@ def chung_viscosity(omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: floa
     )
     return ChungViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def closed_loop_deposition_solver(components: list[str], inlet_n: float, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, elevation: Q, number_of_increments: int, roughness: Q, calcium: Q, bicarbonate: Q, sulphate: Q, barium: Q, sodium: Q, total_dissolved_solids: Q, ph: float, service_time: Q, scale_density: Q, base_rate: Q, inhibitor_efficiency: float, tolerance: Q, max_iterations: int, eos: str | None=None) -> ClosedLoopDepositionSolverResult:
+    """``eos.closed_loop_deposition_solver``, computed in Rust."""
+    spec = _models_gen.model("eos.closed_loop_deposition_solver")
+    result = _core.closed_loop_deposition_solver(
+        list(components),
+        _si(spec, "inlet_n", inlet_n),
+        list(inlet_z),
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "elevation", elevation),
+        _count("number_of_increments", number_of_increments),
+        input_to_si(spec, "roughness", roughness),
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "service_time", service_time),
+        input_to_si(spec, "scale_density", scale_density),
+        input_to_si(spec, "base_rate", base_rate),
+        inhibitor_efficiency,
+        input_to_si(spec, "tolerance", tolerance),
+        _count("max_iterations", max_iterations),
+        eos,
+    )
+    return ClosedLoopDepositionSolverResult(
+        iterations_taken=result.iterations_taken,
+        converged=result.converged,
+        final_effective_diameter=from_si(result.final_effective_diameter.magnitude_si, result.final_effective_diameter.unit),
+        diameter_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.diameter_history),
+        max_thickness_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.max_thickness_history),
+        velocity_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.velocity_history),
         warnings=_warnings(result.warnings),
     )
 

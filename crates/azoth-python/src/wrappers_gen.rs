@@ -744,6 +744,72 @@ pub fn chung_viscosity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Closed-loop deposition and flow solver over a Beggs-and-Brills line.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, elevation, number_of_increments, roughness, calcium, bicarbonate, sulphate, barium, sodium, total_dissolved_solids, ph, service_time, scale_density, base_rate, inhibitor_efficiency, tolerance, max_iterations, eos))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, elevation, number_of_increments, roughness, calcium, bicarbonate, sulphate, barium, sodium, total_dissolved_solids, ph, service_time, scale_density, base_rate, inhibitor_efficiency, tolerance, max_iterations, eos)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn closed_loop_deposition_solver(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    elevation: f64,
+    number_of_increments: usize,
+    roughness: f64,
+    calcium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    barium: f64,
+    sodium: f64,
+    total_dissolved_solids: f64,
+    ph: f64,
+    service_time: f64,
+    scale_density: f64,
+    base_rate: f64,
+    inhibitor_efficiency: f64,
+    tolerance: f64,
+    max_iterations: usize,
+    eos: Option<&str>,
+) -> PyResult<crate::transport_gen::PyClosedLoopDepositionSolverResult> {
+    azoth_eos::closed_loop_deposition_solver::closed_loop_deposition_solver(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(elevation),
+        number_of_increments,
+        meters(roughness),
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        ph,
+        seconds(service_time),
+        kilograms_per_cubic_meter(scale_density),
+        kilograms_per_square_meter_second(base_rate),
+        inhibitor_efficiency,
+        meters(tolerance),
+        max_iterations,
+        eos,
+    )
+    .map(|r| crate::transport_gen::PyClosedLoopDepositionSolverResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Constrained CO2/brine phase selection.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
