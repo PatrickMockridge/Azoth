@@ -1,0 +1,120 @@
+model = "eos.barite_celestite_solid_solution"
+[[cases]]
+id = "pure_barite_end_member"
+tolerance = 1e-12
+source = "The capture's `solid_solution` `pure_barite` row: aSr = 0 gives x_Ba = 1 and the pure end member's index, log10(0.01*0.05/1.08e-10) = 6.665546248849069.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.01
+a_sr = 0.0
+a_so4 = 0.05
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 1.0
+x_srso4 = 0.0
+total_saturation_index = 6.665546248849069
+[[cases]]
+id = "pure_celestite_end_member"
+tolerance = 1e-12
+source = "The capture's `pure_celestite` row: aBa = 0 gives x_Ba = 0 and log10(0.01*0.05/3.44e-7) = 3.162411561764489.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.0
+a_sr = 0.01
+a_so4 = 0.05
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 0.0
+x_srso4 = 1.0
+total_saturation_index = 3.162411561764489
+[[cases]]
+id = "both_cations_absent"
+tolerance = 1e-12
+source = "The capture's `both_zero` row: the class sets x = 0.5 and its index to `-infinity`, which this port reports as an absent value.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.0
+a_sr = 0.0
+a_so4 = 0.05
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 0.5
+x_srso4 = 0.5
+[[cases]]
+id = "strontium_at_the_trace_floor"
+tolerance = 1e-12
+source = "The capture's `strontium_trace` row: aSr = 1e-31 is at the `1e-30` floor, so the solid is pure barite and the index is the end member's.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.01
+a_sr = 1.0e-31
+a_so4 = 0.05
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 1.0
+x_srso4 = 0.0
+total_saturation_index = 6.665546248849069
+[[cases]]
+id = "mixed_solid"
+tolerance = 1e-12
+source = "The capture's `mixed` row: the bisection stops on its width and takes the midpoint, which is why x is `0.9989999999709545` rather than 0.999.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.001
+a_sr = 0.005
+a_so4 = 0.01
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 0.9989999999709545
+x_srso4 = 0.0010000000290455446
+total_saturation_index = 4.967009757422328
+[[cases]]
+id = "mixed_ideal_solution"
+tolerance = 1e-12
+source = "The capture's `mixed_margules_zero` row: an ideal solid solution, where the gamma terms are one.\n"
+[cases.inputs]
+margules = 0.0
+a_ba = 0.001
+a_sr = 0.005
+a_so4 = 0.01
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 0.9984326928913942
+x_srso4 = 0.0015673071086057533
+total_saturation_index = 4.96725745131145
+[[cases]]
+id = "mixed_strong_interaction"
+tolerance = 1e-12
+source = "The capture's `mixed_margules_five` row: a stronger Margules parameter moves the index by about 1e-6.\n"
+[cases.inputs]
+margules = 5.0
+a_ba = 0.001
+a_sr = 0.005
+a_so4 = 0.01
+ksp_baso4 = 1.08e-10
+ksp_srso4 = 3.44e-7
+[cases.expected]
+x_baso4 = 0.9989999999709545
+x_srso4 = 0.0010000000290455446
+total_saturation_index = 4.967008584827159
+[[cases]]
+id = "mixed_custom_ksp"
+tolerance = 1e-12
+source = "The capture's `mixed_custom_ksp` row: the end-member Ksp are the caller's, which is why the class's temperature setter is inert.\n"
+[cases.inputs]
+margules = 2.3
+a_ba = 0.001
+a_sr = 0.005
+a_so4 = 0.01
+ksp_baso4 = 1.0e-9
+ksp_srso4 = 1.0e-6
+[cases.expected]
+x_baso4 = 0.9989999999709545
+x_srso4 = 0.0010000000290455446
+total_saturation_index = 4.000433512909278

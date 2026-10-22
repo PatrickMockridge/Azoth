@@ -19,6 +19,7 @@
 //!   - specs/calcs/eos/antoine_vapor_pressure.toml
 //!   - specs/models/eos/aqueous_viscosity.toml
 //!   - specs/models/eos/argon_solid_phase.toml
+//!   - specs/models/eos/barite_celestite_solid_solution.toml
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
@@ -125,6 +126,7 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/calcs/eos/scale_mass.toml
 //!   - specs/calcs/eos/scale_prediction.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
@@ -434,6 +436,36 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.aqueous_viscosity", "z", "dimensionless"),
     ("eos.argon_solid_phase", "T", "thermodynamic_temperature"),
     ("eos.argon_solid_phase", "P", "pressure"),
+    (
+        "eos.barite_celestite_solid_solution",
+        "margules",
+        "dimensionless",
+    ),
+    (
+        "eos.barite_celestite_solid_solution",
+        "a_ba",
+        "dimensionless",
+    ),
+    (
+        "eos.barite_celestite_solid_solution",
+        "a_sr",
+        "dimensionless",
+    ),
+    (
+        "eos.barite_celestite_solid_solution",
+        "a_so4",
+        "dimensionless",
+    ),
+    (
+        "eos.barite_celestite_solid_solution",
+        "ksp_baso4",
+        "dimensionless",
+    ),
+    (
+        "eos.barite_celestite_solid_solution",
+        "ksp_srso4",
+        "dimensionless",
+    ),
     ("eos.bubble_pressure", "T", "thermodynamic_temperature"),
     ("eos.bubble_pressure", "x", "dimensionless"),
     ("eos.bubble_temperature", "P", "pressure"),
@@ -1147,6 +1179,17 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.saturate_with_water", "moles", "amount"),
     ("eos.saturate_with_water", "T", "thermodynamic_temperature"),
     ("eos.saturate_with_water", "P", "pressure"),
+    (
+        "eos.scale_mass",
+        "cation_concentration",
+        "amount_concentration",
+    ),
+    (
+        "eos.scale_mass",
+        "anion_concentration",
+        "amount_concentration",
+    ),
+    ("eos.scale_mass", "saturation_index", "dimensionless"),
     ("eos.scale_prediction", "calcium", "mass_density"),
     ("eos.scale_prediction", "barium", "mass_density"),
     ("eos.scale_prediction", "strontium", "mass_density"),

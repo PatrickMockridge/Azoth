@@ -46,6 +46,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.rackett_molar_volume`](./rackett_molar_volume.md) | $V_s = \frac{R\,T_c}{P_c}\,Z_{\mathrm{RA}}^{\,1 + (1 - T_r)^{2/7}}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Spencer, C. F.; Danner, R. P. (1972) |
 | [`eos.rk_alpha_ab`](./rk_alpha_ab.md) | $\alpha = \frac{1}{\sqrt{T_{r}}}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Redlich, O.; Kwong, J. N. S. (1949) |
 | [`eos.rk_departure`](./rk_departure.md) | $\psi = -\frac{1}{2}, \qquad I = \ln\frac{z + B}{z}, \qquad C = \frac{A}{B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I$ | Redlich, O.; Kwong, J. N. S. (1949) |
+| [`eos.scale_mass`](./scale_mass.md) | $f = \min\left(1 - 10^{-\mathrm{SI}},\ 0.99\right), \qquad n = \min(c_+, c_-)\,f, \qquad m = n\,M$ | NeqSim master `ScaleMassCalculator` |
 | [`eos.scale_prediction`](./scale_prediction.md) | $I = \frac{\mathrm{TDS}}{40000}, \qquad \log_{10}\gamma_z = -A z^2\left(\frac{\sqrt{I}}{1+\sqrt{I}} - 0.3I\right), \qquad A = \frac{1.8246\times10^{6}\sqrt{\rho}}{(\varepsilon T)^{3/2}} \mathrm{SI}_j = \log_{10}\frac{\left(c^{+}_j\gamma_z\right)\left(c^{-}_j\gamma_z\right)}{K_{sp,j}}$ | NeqSim master `ScalePredictionCalculator` |
 | [`eos.scale_saturation_ratio`](./scale_saturation_ratio.md) | $m_{i} = \\frac{x_{i}}{x_{w}M_{w}}, \\qquad \\mathrm{IAP} = (\\gamma_{1}m_{1})^{\\nu_{1}}(\\gamma_{2}m_{2})^{\\nu_{2}}a_{w}^{\\nu_{w}}, \\qquad \\mathrm{SR} = \\frac{\\mathrm{IAP}}{K_{sp}}, \\qquad K_{sp} = \\exp\\!\\left(\\frac{A}{T} + B + C\\ln T + DT + \\frac{E}{T^{2}}\\right)e^{-\\Delta V (P-P_{0})/(RT}$ | NeqSim master `CheckScalePotential` |
 | [`eos.schwartzentruber_alpha`](./schwartzentruber_alpha.md) | $\alpha = \left[1 + m(1 - \sqrt{T_r}) - p_1(1 - T_r)(1 + p_2 T_r + p_3 T_r^2)\right]^2, \quad m = 0.48508 + 1.55191\omega - 0.15613\omega^2$ | NeqSim master `AttractiveTermSchwartzentruber` |
@@ -77,6 +78,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.ammonia_phase`](./ammonia_phase.md) | `newton_density_solve` | Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020) |
 | [`eos.aqueous_viscosity`](./aqueous_viscosity.md) | `direct composition` | NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java |
 | [`eos.argon_solid_phase`](./argon_solid_phase.md) | `bracketed_log_volume_newton` | Maltby, V.; Hammer, M.; Wilhelmsen, O. (2024) |
+| [`eos.barite_celestite_solid_solution`](./barite_celestite_solid_solution.md) | `solid_mole_fraction_bisection` | NeqSim master `BariteCelestiteSolidSolution` |
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |

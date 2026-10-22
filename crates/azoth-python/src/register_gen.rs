@@ -37,6 +37,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyAntoineVaporPressureResult>()?;
     m.add_class::<crate::transport_gen::PyAqueousViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyArgonSolidPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyBariteCelestiteSolidSolutionResult>()?;
     m.add_class::<crate::transport_gen::PyBubblePressureResult>()?;
     m.add_class::<crate::transport_gen::PyBubbleTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyBwrsPhaseResult>()?;
@@ -143,6 +144,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySaftVrMiePhaseResult>()?;
     m.add_class::<crate::transport_gen::PySaltPrecipitationResult>()?;
     m.add_class::<crate::transport_gen::PySaturateWithWaterResult>()?;
+    m.add_class::<crate::transport_gen::PyScaleMassResult>()?;
     m.add_class::<crate::transport_gen::PyScalePredictionResult>()?;
     m.add_class::<crate::transport_gen::PyScaleSaturationRatioResult>()?;
     m.add_class::<crate::transport_gen::PySchwartzentruberAlphaResult>()?;
@@ -299,6 +301,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::aqueous_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::argon_solid_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::barite_celestite_solid_solution,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::bubble_temperature,
@@ -540,6 +546,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::saturate_with_water, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::scale_mass, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::scale_prediction, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::scale_saturation_ratio,

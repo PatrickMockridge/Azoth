@@ -1,0 +1,116 @@
+id = "eos.scale_mass"
+name = "Scale mass precipitated from a supersaturation index"
+equation = "fraction = min(1 - 10**(-SI), 0.99)\n\nmoles = min(c_cation, c_anion) * fraction\n\nmass = moles * M_mineral"
+latex = '''f = \min\left(1 - 10^{-\mathrm{SI}},\ 0.99\right), \qquad n = \min(c_+, c_-)\,f, \qquad m = n\,M'''
+assumptions = [
+    "**the answer is the class's approximation, not an equilibrium.** It takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount; an exact calculation would iterate the equilibrium.\n",
+    "the fraction is **capped at 0.99**, so every SI above about 2 gives the same mass; the capture's SI 2.5 and SI 5 rows are identical.\n",
+    "an SI at or below zero returns zero before the fraction is computed; the limiting concentration is still reported.\n",
+    "the five minerals differ only in molar mass: CaCO3 100.09, BaSO4 233.39, SrSO4 183.68, CaSO4 136.14, FeCO3 115.85 g/mol - the class's own constants.\n",
+    "**the class's held water volume is never read by the calculation**: `setWaterVolume` only feeds a JSON report. The mass is per litre, and this calc takes no volume.\n",
+    "the class's results map is never populated and its `toJson` always reports an empty list; neither is a calculation, so both are outside this spec.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/ScaleMassCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_family_probe.tsv` - the five minerals over four states, including the 0.99 cap and the below-saturation zero.",
+]
+[source]
+standard = "NeqSim master `ScaleMassCalculator`"
+edition = "`calcCaCO3Mass`, `calcBaSO4Mass`, `calcSrSO4Mass`, `calcCaSO4Mass` and `calcFeCO3Mass`, ported as one arm per mineral."
+[inputs]
+[inputs.mineral]
+type = "enum"
+values = ["caco3", "baso4", "srso4", "caso4", "feco3"]
+description = "the mineral whose mass is wanted; the five arms differ only in molar mass.\n"
+[inputs.cation_concentration]
+unit = "mol/m**3"
+description = "the cation's concentration, in mol per cubic metre.\n"
+[inputs.anion_concentration]
+unit = "mol/m**3"
+description = "the anion's concentration.\n"
+[inputs.saturation_index]
+unit = "dimensionless"
+description = "the mineral's SI at the state.\n"
+[outputs]
+[outputs.precipitated_mass]
+unit = "kg/m**3"
+description = "the precipitated mass per litre of water, converted from mg/L.\n"
+[outputs.precipitated_moles]
+unit = "mol/m**3"
+description = "the precipitated moles per litre, converted from mol/L.\n"
+[outputs.fraction_excess]
+unit = "dimensionless"
+description = "`min(1 - 10^-SI, 0.99)`, or zero at or below saturation.\n"
+[outputs.limiting_concentration]
+unit = "mol/m**3"
+description = "`min(c_cation, c_anion)`, the concentration the precipitation is bounded by.\n"
+[[valid_range]]
+quantity = "cation_concentration"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "anion_concentration"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[worked_example]
+source = "the capture's `scale_mass` SI 2.5 row"
+derivation = "CaCO3 with SI = 2.5, calcium 0.01 mol/L and carbonate 0.02 mol/L:\n\n  limiting = min(0.01, 0.02) = 0.01 mol/L\n  fraction = 1 - 10^-2.5 = 0.99684... -> capped at 0.99\n  moles = 0.01*0.99 = 0.0099 mol/L = 9.9 mol/m3\n  mass = 0.0099*100.09*1000 = 990.891 mg/L = 0.990891 kg/m3\n"
+tolerance = 1e-12
+[worked_example.inputs]
+mineral = "caco3"
+cation_concentration = 10.0
+anion_concentration = 20.0
+saturation_index = 2.5
+[worked_example.expected]
+precipitated_mass = 0.990891
+precipitated_moles = 9.9
+fraction_excess = 0.99
+limiting_concentration = 10.0
+[[tests]]
+id = "caco3_at_the_cap"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "baso4_below_the_cap"
+type = "reference"
+status = "active"
+source = "The capture's SI 2.5 row for BaSO4: 0.0099 mol/L of barite at 233.39 g/mol gives 2310.561 mg/L. The same row's SI 5 state is identical, which is the 0.99 cap.\n"
+tolerance = 1e-12
+[tests.inputs]
+mineral = "baso4"
+cation_concentration = 10.0
+anion_concentration = 20.0
+saturation_index = 2.5
+[tests.expected]
+precipitated_mass = 2.310561
+precipitated_moles = 9.9
+fraction_excess = 0.99
+limiting_concentration = 10.0
+[[tests]]
+id = "under_saturation_precipitates_nothing"
+type = "reference"
+status = "active"
+source = "The capture's SI -1 row: every mineral returns zero, and the limiting concentration is still min(0.01, 0.02).\n"
+tolerance = 1e-12
+[tests.inputs]
+mineral = "srso4"
+cation_concentration = 10.0
+anion_concentration = 20.0
+saturation_index = -1.0
+[tests.expected]
+precipitated_mass = 0.0
+precipitated_moles = 0.0
+fraction_excess = 0.0
+limiting_concentration = 10.0
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.scale_mass"
+rust = "azoth_eos::scale_mass"

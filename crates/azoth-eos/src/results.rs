@@ -1002,6 +1002,66 @@ impl CalcResult for SolidFugacityResult {
     }
 }
 
+/// Result of `eos.barite_celestite_solid_solution`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BariteCelestiteSolidSolutionResult {
+    /// BaSO4's mole fraction in the solid.
+    pub x_baso4: f64,
+    /// SrSO4's mole fraction in the solid.
+    pub x_srso4: f64,
+    /// The Ba arm's saturation index; absent where the class returns `-infinity`.
+    pub total_saturation_index: Option<f64>,
+    /// Whether the total index is positive.
+    pub supersaturated: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BariteCelestiteSolidSolutionResult {
+    const CALC_ID: &'static str = "eos.barite_celestite_solid_solution";
+    const FIELDS: &'static [&'static str] = &[
+        "x_baso4",
+        "x_srso4",
+        "total_saturation_index",
+        "supersaturated",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_mass`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleMassResult {
+    /// The precipitated mass per litre of water.
+    pub precipitated_mass: MassDensity,
+    /// The precipitated moles per litre.
+    pub precipitated_moles: MolarConcentration,
+    /// `min(1 - 10^-SI, 0.99)`, or zero at or below saturation.
+    pub fraction_excess: f64,
+    /// `min(c_cation, c_anion)`.
+    pub limiting_concentration: MolarConcentration,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleMassResult {
+    const CALC_ID: &'static str = "eos.scale_mass";
+    const FIELDS: &'static [&'static str] = &[
+        "precipitated_mass",
+        "precipitated_moles",
+        "fraction_excess",
+        "limiting_concentration",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_prediction`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScalePredictionResult {

@@ -1141,6 +1141,59 @@ impl From<&azoth_eos::results::ArgonSolidPhaseResult> for PyArgonSolidPhaseResul
         }
     }
 }
+/// Result of `eos.barite_celestite_solid_solution`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BariteCelestiteSolidSolutionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBariteCelestiteSolidSolutionResult {
+    /// BaSO4's mole fraction in the solid.
+    #[pyo3(get)]
+    pub x_baso4: f64,
+    /// SrSO4's mole fraction.
+    #[pyo3(get)]
+    pub x_srso4: f64,
+    /// the Ba arm's saturation index; absent where the class reports `-infinity`.
+    #[pyo3(get)]
+    pub total_saturation_index: Option<f64>,
+    /// whether the index is positive.
+    #[pyo3(get)]
+    pub supersaturated: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBariteCelestiteSolidSolutionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BariteCelestiteSolidSolutionResult(x_baso4={:?}, x_srso4={:?}, total_saturation_index={:?}, supersaturated={:?}, {} warning(s))",
+            self.x_baso4,
+            self.x_srso4,
+            self.total_saturation_index,
+            self.supersaturated,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BariteCelestiteSolidSolutionResult>
+    for PyBariteCelestiteSolidSolutionResult
+{
+    fn from(r: &azoth_eos::results::BariteCelestiteSolidSolutionResult) -> Self {
+        Self {
+            x_baso4: r.x_baso4,
+            x_srso4: r.x_srso4,
+            total_saturation_index: r.total_saturation_index,
+            supersaturated: r.supersaturated,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.bubble_pressure`, transported.
 #[pyclass(
     frozen,
@@ -7206,6 +7259,66 @@ impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterR
             x: r.x.clone(),
             z_factor: r.z_factor.clone(),
             aqueous_present: r.aqueous_present,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_mass`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleMassResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleMassResult {
+    /// the precipitated mass per litre of water, converted from mg/L.
+    #[pyo3(get)]
+    pub precipitated_mass: PyQty,
+    /// the precipitated moles per litre, converted from mol/L.
+    #[pyo3(get)]
+    pub precipitated_moles: PyQty,
+    /// `min(1 - 10^-SI, 0.99)`, or zero at or below saturation.
+    #[pyo3(get)]
+    pub fraction_excess: f64,
+    /// `min(c_cation, c_anion)`, the concentration the precipitation is bounded by.
+    #[pyo3(get)]
+    pub limiting_concentration: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleMassResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleMassResult(precipitated_mass={:?}, precipitated_moles={:?}, fraction_excess={:?}, limiting_concentration={:?}, {} warning(s))",
+            self.precipitated_mass,
+            self.precipitated_moles,
+            self.fraction_excess,
+            self.limiting_concentration,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleMassResult> for PyScaleMassResult {
+    fn from(r: &azoth_eos::results::ScaleMassResult) -> Self {
+        Self {
+            precipitated_mass: PyQty {
+                magnitude_si: r.precipitated_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            precipitated_moles: PyQty {
+                magnitude_si: r.precipitated_moles.value,
+                unit: "mol/m**3".to_string(),
+            },
+            fraction_excess: r.fraction_excess,
+            limiting_concentration: PyQty {
+                magnitude_si: r.limiting_concentration.value,
+                unit: "mol/m**3".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

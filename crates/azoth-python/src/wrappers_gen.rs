@@ -11,7 +11,7 @@ use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole, joules_per_mole_kelvin,
     kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
-    meters_per_second, pascal_seconds, pascals, watts,
+    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, watts,
 };
 use pyo3::prelude::*;
 
@@ -367,6 +367,28 @@ pub fn argon_solid_phase(
     azoth_eos::argon_solid_phase::argon_solid_phase(kelvins(T), pascals(P))
         .map(|r| crate::transport_gen::PyArgonSolidPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Barite-celestite solid-solution composition and saturation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (margules, a_ba, a_sr, a_so4, ksp_baso4, ksp_srso4))]
+#[pyo3(text_signature = "(margules, a_ba, a_sr, a_so4, ksp_baso4, ksp_srso4)")]
+pub fn barite_celestite_solid_solution(
+    py: Python<'_>,
+    margules: f64,
+    a_ba: f64,
+    a_sr: f64,
+    a_so4: f64,
+    ksp_baso4: f64,
+    ksp_srso4: f64,
+) -> PyResult<crate::transport_gen::PyBariteCelestiteSolidSolutionResult> {
+    azoth_eos::barite_celestite_solid_solution::barite_celestite_solid_solution(
+        margules, a_ba, a_sr, a_so4, ksp_baso4, ksp_srso4,
+    )
+    .map(|r| crate::transport_gen::PyBariteCelestiteSolidSolutionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Bubble-point pressure.
@@ -2573,6 +2595,29 @@ pub fn salt_precipitation(
         &z,
     )
     .map(|r| crate::transport_gen::PySaltPrecipitationResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Scale mass precipitated from a supersaturation index.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mineral, cation_concentration, anion_concentration, saturation_index))]
+#[pyo3(text_signature = "(mineral, cation_concentration, anion_concentration, saturation_index)")]
+pub fn scale_mass(
+    py: Python<'_>,
+    mineral: &str,
+    cation_concentration: f64,
+    anion_concentration: f64,
+    saturation_index: f64,
+) -> PyResult<crate::transport_gen::PyScaleMassResult> {
+    azoth_eos::scale_mass::scale_mass(
+        mineral,
+        moles_per_cubic_meter(cation_concentration),
+        moles_per_cubic_meter(anion_concentration),
+        saturation_index,
+    )
+    .map(|r| crate::transport_gen::PyScaleMassResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

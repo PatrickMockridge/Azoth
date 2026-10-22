@@ -74,6 +74,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
+    BariteCelestiteSolidSolutionResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -180,6 +181,7 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleMassResult,
     ScalePredictionResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
@@ -2787,6 +2789,56 @@ def scale_prediction(
         ph=ph,
         auto_ph=auto_ph,
         second_order_pressure_correction=second_order_pressure_correction,
+    )
+
+
+def barite_celestite_solid_solution(
+    margules: float,
+    a_ba: float,
+    a_sr: float,
+    a_so4: float,
+    ksp_baso4: float,
+    ksp_srso4: float,
+) -> BariteCelestiteSolidSolutionResult:
+    """The composition of a barite-celestite solid solution and its saturation index.
+
+    A Margules one-parameter solid; the class's temperature setter is inert because the
+    end-member Ksp are the caller's. The reported index is the Ba arm's alone.
+
+    See :func:`azoth.eos.reference.barite_celestite_solid_solution`.
+    """
+    return resolve("eos.barite_celestite_solid_solution")(  # type: ignore[no-any-return]
+        margules=margules,
+        a_ba=a_ba,
+        a_sr=a_sr,
+        a_so4=a_so4,
+        ksp_baso4=ksp_baso4,
+        ksp_srso4=ksp_srso4,
+    )
+
+
+def scale_mass(
+    mineral: str,
+    cation_concentration: Q,
+    anion_concentration: Q,
+    saturation_index: float,
+) -> ScaleMassResult:
+    """The mass a supersaturated water precipitates, by the class's approximation.
+
+    The limiting ion's concentration times ``min(1 - 10^-SI, 0.99)``; the cap makes every
+    state above about SI 2 answer the same.
+
+    Raises:
+        InvalidInputError: for a mineral outside the five.
+        OutOfRangeError: if a concentration is negative.
+
+    See :func:`azoth.eos.reference.scale_mass`.
+    """
+    return resolve("eos.scale_mass")(  # type: ignore[no-any-return]
+        mineral=mineral,
+        cation_concentration=cation_concentration,
+        anion_concentration=anion_concentration,
+        saturation_index=saturation_index,
     )
 
 

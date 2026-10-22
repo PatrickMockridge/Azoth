@@ -441,6 +441,28 @@ class ArgonSolidPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BariteCelestiteSolidSolutionResult(_HasWarnings):
+    """Result of ``eos.barite_celestite_solid_solution``."""
+
+    CALC_ID: ClassVar[str] = "eos.barite_celestite_solid_solution"
+
+    #: BaSO4's mole fraction in the solid.
+    x_baso4: float
+
+    #: SrSO4's mole fraction.
+    x_srso4: float
+
+    #: the Ba arm's saturation index; absent where the class reports `-infinity`.
+    total_saturation_index: float | None
+
+    #: whether the index is positive.
+    supersaturated: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class BubblePressureResult(_HasWarnings):
     """Result of ``eos.bubble_pressure``."""
 
@@ -2803,6 +2825,28 @@ class SaturateWithWaterResult(_HasWarnings):
 
     #: whether flooding produced a free aqueous phase. **`false` means the feed was returned unchanged**, and the warnings say which recovery path fired.
     aqueous_present: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleMassResult(_HasWarnings):
+    """Result of ``eos.scale_mass``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_mass"
+
+    #: the precipitated mass per litre of water, converted from mg/L.
+    precipitated_mass: Q
+
+    #: the precipitated moles per litre, converted from mol/L.
+    precipitated_moles: Q
+
+    #: `min(1 - 10^-SI, 0.99)`, or zero at or below saturation.
+    fraction_excess: float
+
+    #: `min(c_cation, c_anion)`, the concentration the precipitation is bounded by.
+    limiting_concentration: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

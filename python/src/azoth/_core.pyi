@@ -425,6 +425,14 @@ class ArgonSolidPhaseResult:
     warnings: list[Warning]
 
 @final
+class BariteCelestiteSolidSolutionResult:
+    x_baso4: float
+    x_srso4: float
+    total_saturation_index: float | None
+    supersaturated: bool
+    warnings: list[Warning]
+
+@final
 class BubblePressureResult:
     pressure: Qty
     incipient: list[float]
@@ -1282,6 +1290,14 @@ class SaturateWithWaterResult:
     x: list[list[float]]
     z_factor: list[float]
     aqueous_present: bool
+    warnings: list[Warning]
+
+@final
+class ScaleMassResult:
+    precipitated_mass: Qty
+    precipitated_moles: Qty
+    fraction_excess: float
+    limiting_concentration: Qty
     warnings: list[Warning]
 
 @final
@@ -2598,6 +2614,14 @@ def aqueous_viscosity(
     alpha_params: list[list[float]] | None = None,
 ) -> AqueousViscosityResult: ...
 def argon_solid_phase(T: float, P: float) -> ArgonSolidPhaseResult: ...
+def barite_celestite_solid_solution(
+    margules: float,
+    a_ba: float,
+    a_sr: float,
+    a_so4: float,
+    ksp_baso4: float,
+    ksp_srso4: float,
+) -> BariteCelestiteSolidSolutionResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],
@@ -3441,6 +3465,12 @@ def saturate_with_water(
     eos: str,
     associating: bool | None = None,
 ) -> SaturateWithWaterResult: ...
+def scale_mass(
+    mineral: str,
+    cation_concentration: float,
+    anion_concentration: float,
+    saturation_index: float,
+) -> ScaleMassResult: ...
 def scale_prediction(
     calcium: float,
     barium: float,

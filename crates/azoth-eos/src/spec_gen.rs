@@ -42,6 +42,7 @@
 //!   - specs/calcs/eos/rackett_molar_volume.toml
 //!   - specs/calcs/eos/rk_alpha_ab.toml
 //!   - specs/calcs/eos/rk_departure.toml
+//!   - specs/calcs/eos/scale_mass.toml
 //!   - specs/calcs/eos/scale_prediction.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
@@ -5495,6 +5496,159 @@ pub static RK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
     tests: RK_DEPARTURE_TESTS,
 };
 
+/// Registry entry for `eos.scale_mass`.
+static SCALE_MASS_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "cation_concentration",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "anion_concentration",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+];
+
+static SCALE_MASS_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "baso4_below_the_cap",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("cation_concentration", 10.0),
+            ("anion_concentration", 20.0),
+            ("saturation_index", 2.5),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("mineral", "baso4")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("precipitated_mass", 2.310561),
+            ("precipitated_moles", 9.9),
+            ("fraction_excess", 0.99),
+            ("limiting_concentration", 10.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "under_saturation_precipitates_nothing",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("cation_concentration", 10.0),
+            ("anion_concentration", 20.0),
+            ("saturation_index", -1.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("mineral", "srso4")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("precipitated_mass", 0.0),
+            ("precipitated_moles", 0.0),
+            ("fraction_excess", 0.0),
+            ("limiting_concentration", 10.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registered spec for `eos.scale_mass`.
+///
+/// Public and addressable directly, so a calc can hold `&SCALE_MASS_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SCALE_MASS_SPEC: CalcSpec = CalcSpec {
+    id: "eos.scale_mass",
+    checks: SCALE_MASS_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "caco3_at_the_cap",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("cation_concentration", 10.0),
+            ("anion_concentration", 20.0),
+            ("saturation_index", 2.5),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("mineral", "caco3")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("precipitated_mass", 0.990891),
+            ("precipitated_moles", 9.9),
+            ("fraction_excess", 0.99),
+            ("limiting_concentration", 10.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    tests: SCALE_MASS_TESTS,
+};
+
 /// Registry entry for `eos.scale_prediction`.
 static SCALE_PREDICTION_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -8177,6 +8331,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &RACKETT_MOLAR_VOLUME_SPEC,
     &RK_ALPHA_AB_SPEC,
     &RK_DEPARTURE_SPEC,
+    &SCALE_MASS_SPEC,
     &SCALE_PREDICTION_SPEC,
     &SCALE_SATURATION_RATIO_SPEC,
     &SCHWARTZENTRUBER_ALPHA_SPEC,

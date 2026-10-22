@@ -142,6 +142,7 @@ Five sections, and the difference between them is the point:
 - [`eos.rackett_molar_volume`](./eos/rackett_molar_volume.md)
 - [`eos.rk_alpha_ab`](./eos/rk_alpha_ab.md)
 - [`eos.rk_departure`](./eos/rk_departure.md)
+- [`eos.scale_mass`](./eos/scale_mass.md)
 - [`eos.scale_prediction`](./eos/scale_prediction.md)
 - [`eos.scale_saturation_ratio`](./eos/scale_saturation_ratio.md)
 - [`eos.schwartzentruber_alpha`](./eos/schwartzentruber_alpha.md)
@@ -169,6 +170,7 @@ Five sections, and the difference between them is the point:
 - [`eos.ammonia_phase`](./eos/ammonia_phase.md) — Ammonia reference phase state
 - [`eos.aqueous_viscosity`](./eos/aqueous_viscosity.md) — Liquid viscosity of an aqueous phase
 - [`eos.argon_solid_phase`](./eos/argon_solid_phase.md) — Solid argon reference phase state
+- [`eos.barite_celestite_solid_solution`](./eos/barite_celestite_solid_solution.md) — Barite-celestite solid-solution composition and saturation
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
 - [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state

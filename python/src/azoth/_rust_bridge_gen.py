@@ -22,6 +22,7 @@ from azoth.core.result import (
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
     AssayMassFractionsResult,
+    BariteCelestiteSolidSolutionResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -178,6 +179,7 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleMassResult,
     ScalePredictionResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
@@ -291,6 +293,7 @@ __all__ = [
     "aqueous_viscosity",
     "argon_solid_phase",
     "assay_mass_fractions",
+    "barite_celestite_solid_solution",
     "bubble_pressure",
     "bubble_temperature",
     "bwrs_phase",
@@ -444,6 +447,7 @@ __all__ = [
     "saft_vr_mie_phase",
     "salt_precipitation",
     "saturate_with_water",
+    "scale_mass",
     "scale_prediction",
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
@@ -851,6 +855,25 @@ def argon_solid_phase(T: Q, P: Q) -> ArgonSolidPhaseResult:
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def barite_celestite_solid_solution(margules: float, a_ba: float, a_sr: float, a_so4: float, ksp_baso4: float, ksp_srso4: float) -> BariteCelestiteSolidSolutionResult:
+    """``eos.barite_celestite_solid_solution``, computed in Rust."""
+    result = _core.barite_celestite_solid_solution(
+        margules,
+        a_ba,
+        a_sr,
+        a_so4,
+        ksp_baso4,
+        ksp_srso4,
+    )
+    return BariteCelestiteSolidSolutionResult(
+        x_baso4=result.x_baso4,
+        x_srso4=result.x_srso4,
+        total_saturation_index=result.total_saturation_index,
+        supersaturated=result.supersaturated,
         warnings=_warnings(result.warnings),
     )
 
@@ -3004,6 +3027,24 @@ def saturate_with_water(components: list[str], moles: list[float], T: Q, P: Q, e
         x=tuple(tuple(row) for row in result.x),
         z_factor=tuple(result.z_factor),
         aqueous_present=result.aqueous_present,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_mass(mineral: str, cation_concentration: Q, anion_concentration: Q, saturation_index: float) -> ScaleMassResult:
+    """``eos.scale_mass``, computed in Rust."""
+    spec = _spec_for("eos.scale_mass")
+    result = _core.scale_mass(
+        mineral,
+        input_to_si(spec, "cation_concentration", cation_concentration),
+        input_to_si(spec, "anion_concentration", anion_concentration),
+        saturation_index,
+    )
+    return ScaleMassResult(
+        precipitated_mass=from_si(result.precipitated_mass.magnitude_si, result.precipitated_mass.unit),
+        precipitated_moles=from_si(result.precipitated_moles.magnitude_si, result.precipitated_moles.unit),
+        fraction_excess=result.fraction_excess,
+        limiting_concentration=from_si(result.limiting_concentration.magnitude_si, result.limiting_concentration.unit),
         warnings=_warnings(result.warnings),
     )
 

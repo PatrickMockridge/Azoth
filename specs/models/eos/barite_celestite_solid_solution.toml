@@ -1,0 +1,97 @@
+id = "eos.barite_celestite_solid_solution"
+name = "Barite-celestite solid-solution composition and saturation"
+kind = "procedure"
+assumptions = [
+    "the solid is a Margules one-parameter solution: `ln(gamma_i) = W (1 - x_i)^2`, and the two equilibrium conditions are `x_i gamma_i Ksp_i = a_i a_SO4` with `x_Ba + x_Sr = 1`.\n",
+    "**`setTemperature` is stored and never read**: the end-member Ksp are the caller's, so the model is isothermal in everything but its JSON report. There is no temperature input.\n",
+    "a cation activity at or below `1e-30` gives the pure end member (x = 1 or 0) and that member's own saturation index; both cations at or below zero give `x = 0.5` and no index, which is the class's `-infinity`.\n",
+    "the mixed arm bisects `x` in `[0.001, 0.999]`, stopping at `|F| < 1e-12` or a width below `1e-10` and taking the midpoint; it re-evaluates `F(x_lo)` every iteration rather than caching it, as the class does.\n",
+    "**the reported index is the Ba arm's**, `log10(a_Ba a_SO4 / (Ksp_Ba x gamma_Ba))` floored at `log10(1e-30)`, not an average and not the Sr arm.\n",
+    "the class mixes activities in mol/kg with Ksp in `(mol/L)^2`; the numbers are carried as stated, the same dimensional looseness `eos.scale_mass` has.\n",
+    "the class's lazy `calculated` flag and its Gson report are not a calculation; a stateless port recomputes.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/BariteCelestiteSolidSolution.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_family_probe.tsv` - both pure end members, the both-zero state, a trace cation, and the mixed state at three Margules parameters and two Ksp pairs.",
+    "Prieto, M.; Putnis, A.; Fernandez-Diaz, L. (1993). The (Ba,Sr)SO4 solid solution. Geochim. Cosmochim. Acta. The Margules parameter's typical range is 2.1-2.5.",
+]
+[source]
+standard = "NeqSim master `BariteCelestiteSolidSolution`"
+edition = "`calculate`, `objectiveFunction` and `solidActivityCoefficient`, ported. The temperature setter and the Gson report are not."
+[algorithm]
+scheme = "solid_mole_fraction_bisection"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 100
+[inputs]
+[inputs.margules]
+unit = "dimensionless"
+description = "the Margules interaction parameter `W/(RT)`; the class defaults it to 2.3.\n"
+[inputs.a_ba]
+unit = "dimensionless"
+description = "the aqueous Ba2+ activity.\n"
+[inputs.a_sr]
+unit = "dimensionless"
+description = "the aqueous Sr2+ activity.\n"
+[inputs.a_so4]
+unit = "dimensionless"
+description = "the aqueous SO4 2- activity.\n"
+[inputs.ksp_baso4]
+unit = "dimensionless"
+description = "the pure BaSO4 solubility product, in `(mol/L)^2`.\n"
+[inputs.ksp_srso4]
+unit = "dimensionless"
+description = "the pure SrSO4 solubility product.\n"
+[outputs]
+[outputs.x_baso4]
+unit = "dimensionless"
+description = "BaSO4's mole fraction in the solid.\n"
+[outputs.x_srso4]
+unit = "dimensionless"
+description = "SrSO4's mole fraction.\n"
+[outputs.total_saturation_index]
+unit = "dimensionless"
+optional = true
+description = "the Ba arm's saturation index; absent where the class reports `-infinity`.\n"
+[outputs.supersaturated]
+type = "boolean"
+description = "whether the index is positive.\n"
+[[valid_range]]
+quantity = "margules"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A negative interaction parameter is not the model's; zero is the ideal solution.\n"
+[[valid_range]]
+quantity = "a_ba"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "An activity cannot be negative.\n"
+[[valid_range]]
+quantity = "a_sr"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "An activity cannot be negative.\n"
+[[valid_range]]
+quantity = "a_so4"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "An activity cannot be negative.\n"
+[[valid_range]]
+quantity = "ksp_baso4"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "It is a divisor.\n"
+[[valid_range]]
+quantity = "ksp_srso4"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "It is a divisor.\n"
+[implementations]
+python = "azoth.eos.barite_celestite_solid_solution"
+rust = "azoth_eos::barite_celestite_solid_solution"
