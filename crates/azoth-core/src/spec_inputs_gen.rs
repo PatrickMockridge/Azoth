@@ -1630,6 +1630,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pressure",
     ),
     ("eos.stream_scale_analyzer", "ph", "dimensionless"),
+    ("eos.stream_scale_analyzer", "water_flow", "volume_rate"),
     ("eos.stream_scale_analyzer", "bdot_ion_size", "length"),
     ("eos.stream_scale_analyzer", "bdot_b", "molar_mass"),
     (
@@ -1637,7 +1638,6 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pitzer_ionic_strength_molal",
         "molality",
     ),
-    ("eos.stream_scale_analyzer", "water_flow", "volume_rate"),
     ("eos.tbp_fraction_properties", "molar_mass", "molar_mass"),
     ("eos.tbp_fraction_properties", "density", "mass_density"),
     ("eos.th_flash", "T", "thermodynamic_temperature"),

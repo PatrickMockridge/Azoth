@@ -29,10 +29,10 @@ fn call(case: &TestCase) -> StreamScaleAnalyzerResult {
         case.flag("second_order_pressure_correction")
             .expect("the case states second_order_pressure_correction"),
         common::input_str(case, "activity_model"),
+        cubic_meters_per_second(common::input(case, "water_flow")),
         case.input("bdot_ion_size"),
         case.input("bdot_b"),
         case.input("pitzer_ionic_strength_molal"),
-        cubic_meters_per_second(common::input(case, "water_flow")),
     )
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
@@ -122,10 +122,10 @@ fn the_rate_is_the_mass_times_the_flow() {
         false,
         false,
         "davies",
-        None,
-        None,
-        None,
         cubic_meters_per_second(0.0011574074074074073),
+        None,
+        None,
+        None,
     )
     .expect("the state runs");
     let flow = 0.0011574074074074073;
@@ -165,10 +165,10 @@ fn a_clean_water_has_no_dominant_mineral() {
         false,
         false,
         "davies",
-        None,
-        None,
-        None,
         cubic_meters_per_second(1.1574074074074073e-5),
+        None,
+        None,
+        None,
     )
     .expect("the state runs");
     assert!(result.minerals.is_empty());

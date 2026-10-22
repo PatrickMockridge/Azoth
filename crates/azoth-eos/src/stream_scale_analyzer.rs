@@ -45,10 +45,10 @@ use crate::results::{StreamScaleAnalyzerResult, StreamScaleMineralRow};
 ///     false,
 ///     false,
 ///     "davies",
-///     None,
-///     None,
-///     None,
 ///     cubic_meters_per_second(100000.0 / 86400.0 / 1000.0),
+///     None,
+///     None,
+///     None,
 /// )?;
 /// assert_eq!(r.dominant_scale, "BaSO4");
 /// # Ok::<(), azoth_core::AzothError>(())
@@ -71,10 +71,10 @@ pub fn stream_scale_analyzer(
     auto_ph: bool,
     second_order_pressure_correction: bool,
     activity_model: &str,
+    water_flow: VolumeRate,
     bdot_ion_size: Option<f64>,
     bdot_b: Option<f64>,
     pitzer_ionic_strength_molal: Option<f64>,
-    water_flow: VolumeRate,
 ) -> Result<StreamScaleAnalyzerResult> {
     let spec = &model_gen::STREAM_SCALE_ANALYZER_SPEC;
     let mut warnings = Vec::new();

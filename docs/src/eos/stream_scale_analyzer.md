@@ -35,10 +35,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `auto_ph` | - | whether to estimate the pH with the class's own Henry constant. |
 | `second_order_pressure_correction` | - | whether the Ksp pressure correction carries its compressibility term. |
 | `activity_model` | davies / bdot / pitzer_binary | the equilibrium's activity-coefficient model. |
+| `water_flow` | m**3/s | the aqueous volumetric throughput the per-litre masses are multiplied by. |
 | `bdot_ion_size` | angstrom | *Optional.* the B-dot model's effective ion size; absent takes the class's 5 Angstrom. |
 | `bdot_b` | kg/mol | *Optional.* the B-dot model's Helgeson coefficient; absent takes the class's 0.041. |
 | `pitzer_ionic_strength_molal` | mol/kg | *Optional.* the Pitzer model's ionic strength; absent uses the class's estimate. |
-| `water_flow` | m**3/s | the aqueous volumetric throughput the per-litre masses are multiplied by. |
 
 
 ## Outputs

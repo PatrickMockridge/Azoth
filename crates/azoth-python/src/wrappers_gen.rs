@@ -3430,9 +3430,9 @@ pub fn stability_test(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_flow))]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, water_flow, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal))]
 #[pyo3(
-    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_flow)"
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, water_flow, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn stream_scale_analyzer(
@@ -3453,10 +3453,10 @@ pub fn stream_scale_analyzer(
     auto_ph: bool,
     second_order_pressure_correction: bool,
     activity_model: &str,
+    water_flow: f64,
     bdot_ion_size: Option<f64>,
     bdot_b: Option<f64>,
     pitzer_ionic_strength_molal: Option<f64>,
-    water_flow: f64,
 ) -> PyResult<crate::transport_gen::PyStreamScaleAnalyzerResult> {
     azoth_eos::stream_scale_analyzer::stream_scale_analyzer(
         kilograms_per_cubic_meter(calcium),
@@ -3475,10 +3475,10 @@ pub fn stream_scale_analyzer(
         auto_ph,
         second_order_pressure_correction,
         activity_model,
+        cubic_meters_per_second(water_flow),
         bdot_ion_size,
         bdot_b,
         pitzer_ionic_strength_molal,
-        cubic_meters_per_second(water_flow),
     )
     .map(|r| crate::transport_gen::PyStreamScaleAnalyzerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

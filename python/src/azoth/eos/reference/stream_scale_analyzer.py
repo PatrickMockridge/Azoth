@@ -9,7 +9,6 @@ Spec: ``specs/models/eos/stream_scale_analyzer.toml``.
 
 from __future__ import annotations
 
-from azoth.core.errors import InvalidInputError
 from azoth.core.record_outputs_gen import StreamScaleMineralRow
 from azoth.core.result import StreamScaleAnalyzerResult
 from azoth.core.units import Q, from_si
@@ -37,10 +36,10 @@ def stream_scale_analyzer(
     auto_ph: bool,
     second_order_pressure_correction: bool,
     activity_model: str,
+    water_flow: Q,
     bdot_ion_size: float | None = None,
     bdot_b: float | None = None,
     pitzer_ionic_strength_molal: float | None = None,
-    water_flow: Q | None = None,
 ) -> StreamScaleAnalyzerResult:
     """The scale mass rates of an aqueous stream.
 
@@ -61,10 +60,10 @@ def stream_scale_analyzer(
         auto_ph: whether to estimate the pH with the class's own Henry constant.
         second_order_pressure_correction: whether the Ksp correction carries its term.
         activity_model: ``davies``, ``bdot`` or ``pitzer_binary``.
+        water_flow: the aqueous volumetric throughput.
         bdot_ion_size: the B-dot ion size; absent takes the class's 5 Angstrom.
         bdot_b: the B-dot Helgeson coefficient; absent takes 0.041.
         pitzer_ionic_strength_molal: the Pitzer strength; absent uses the class's estimate.
-        water_flow: the aqueous volumetric throughput.
 
     Returns:
         One row per registered mineral and the total mass, rate and dominant mineral.
@@ -85,9 +84,6 @@ def stream_scale_analyzer(
         >>> r.dominant_scale
         'BaSO4'
     """
-    if water_flow is None:
-        raise InvalidInputError("water_flow", "the aqueous throughput is required")
-
     volume = from_si(1.0e-3, "m**3")  # one litre
     equilibrium = multi_mineral_scale_equilibrium(
         calcium,

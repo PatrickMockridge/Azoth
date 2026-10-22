@@ -67,6 +67,9 @@ description = "whether the Ksp pressure correction carries its compressibility t
 type = "enum"
 values = ["davies", "bdot", "pitzer_binary"]
 description = "the equilibrium's activity-coefficient model.\n"
+[inputs.water_flow]
+unit = "m**3/s"
+description = "the aqueous volumetric throughput the per-litre masses are multiplied by.\n"
 [inputs.bdot_ion_size]
 unit = "angstrom"
 optional = true
@@ -79,9 +82,6 @@ description = "the B-dot model's Helgeson coefficient; absent takes the class's 
 unit = "mol/kg"
 optional = true
 description = "the Pitzer model's ionic strength; absent uses the class's estimate.\n"
-[inputs.water_flow]
-unit = "m**3/s"
-description = "the aqueous volumetric throughput the per-litre masses are multiplied by.\n"
 [outputs]
 [outputs.minerals]
 type = "record_list"

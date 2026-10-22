@@ -3684,10 +3684,10 @@ def stream_scale_analyzer(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesiu
         auto_ph,
         second_order_pressure_correction,
         activity_model,
+        input_to_si(spec, "water_flow", water_flow),
         None if bdot_ion_size is None else _si(spec, "bdot_ion_size", bdot_ion_size),
         None if bdot_b is None else _si(spec, "bdot_b", bdot_b),
         None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
-        input_to_si(spec, "water_flow", water_flow),
     )
     return StreamScaleAnalyzerResult(
         minerals=tuple(StreamScaleMineralRow(mineral=c.mineral, initial_si=c.initial_si, final_si=c.final_si, precipitated_mass=from_si(c.precipitated_mass.magnitude_si, c.precipitated_mass.unit), scale_rate=from_si(c.scale_rate.magnitude_si, c.scale_rate.unit)) for c in result.minerals),
