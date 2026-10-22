@@ -1269,6 +1269,18 @@ class PhaseTransportResult:
     warnings: list[Warning]
 
 @final
+class PipeBeggsAndBrillsResult:
+    pressure_profile: list[Qty]
+    pressure_drop_profile: list[Qty]
+    temperature_profile: list[Qty]
+    liquid_holdup_profile: list[float]
+    mixture_superficial_velocity_profile: list[Qty]
+    flow_regime_profile: list[str]
+    outlet_pressure: Qty
+    total_pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
 class PitzerHydrateFormationPressureResult:
     pressure: Qty
     structure: str
@@ -3722,6 +3734,19 @@ def phase_transport(
     P: float,
     z: list[float],
 ) -> PhaseTransportResult: ...
+def pipe_beggs_and_brills(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    elevation: float,
+    number_of_increments: float,
+    roughness: float,
+    eos: str | None = None,
+) -> PipeBeggsAndBrillsResult: ...
 def pitzer_hydrate_formation_pressure(
     components: list[str],
     moles: list[float],

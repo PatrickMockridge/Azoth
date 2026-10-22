@@ -2196,6 +2196,46 @@ pub fn ph_flash(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Segmented pipeline pressure and temperature profile by Beggs and Brill.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, elevation, number_of_increments, roughness, eos))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, elevation, number_of_increments, roughness, eos)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pipe_beggs_and_brills(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    elevation: f64,
+    number_of_increments: usize,
+    roughness: f64,
+    eos: Option<&str>,
+) -> PyResult<crate::transport_gen::PyPipeBeggsAndBrillsResult> {
+    azoth_eos::pipe_beggs_and_brills::pipe_beggs_and_brills(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(elevation),
+        number_of_increments,
+        meters(roughness),
+        eos,
+    )
+    .map(|r| crate::transport_gen::PyPipeBeggsAndBrillsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Hydrate formation pressure of a Pitzer brine.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -223,6 +223,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `salt` names the `compsalt` row and the three overrides, like `form` and `eos`:
         # a categorical input with no float-array column shape.
         "eos.scale_saturation_ratio",
+        # The inhibitor performance takes two categorical inputs - the mineral and the
+        # inhibitor family - for the same reason: a batch would compute one pair N times.
+        "eos.scale_inhibitor_performance",
         # The binary Pitzer model takes four categorical inputs - the salt, the ion whose
         # coefficient is reported, and the cation and anion of the product - so a batch has
         # no column to vary any of them down, the same reason as `salt` above.

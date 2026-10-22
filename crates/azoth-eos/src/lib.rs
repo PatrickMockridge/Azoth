@@ -163,6 +163,7 @@ pub mod pcsaft_rahmat_phase;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod phase_transport;
+pub mod pipe_beggs_and_brills;
 pub mod pitzer_catalog;
 pub mod pitzer_electrostatic;
 pub mod pitzer_hydrate;
@@ -404,12 +405,12 @@ pub use results::{
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
     MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PitzerDataset, PitzerPhaseResult,
-    Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    ProductionChemicalScaleScenarioResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvRefluxFlashResult,
+    ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PipeBeggsAndBrillsResult,
+    PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, ProductionChemicalScaleScenarioResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvRefluxFlashResult,
     PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
     RemediationOptionRow, RkAlphaAbResult, RkDepartureResult, RootStructure,
     ScaleControlAssessorResult, ScaleControlRiskRow, ScaleControlRow,

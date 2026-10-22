@@ -195,12 +195,12 @@ def _column_kinds(spec: Mapping[str, Any]) -> dict[str, str]:
             continue
         if get_origin(hint) in (tuple, list):
             continue
-        kinds[field.name] = "labels" if _is_enum_hint(hint) else "values"
+        kinds[field.name] = "labels" if _is_label_hint(hint) else "values"
     return kinds
 
 
-def _is_enum_hint(hint: object) -> bool:
-    """Whether a field's type is (or is an optional) enum.
+def _is_label_hint(hint: object) -> bool:
+    """Whether a field's type is a label: an enum, or a plain string.
 
     Any `Enum`, not one of them by name. This checked `FlowRegime` specifically until
     `eos.pr_z_factor`'s `root_structure` became the first enum output outside the
@@ -209,10 +209,17 @@ def _is_enum_hint(hint: object) -> bool:
     it as a string a caller could not read as a number. The paragraph above already
     stated the general rule; the code now implements it.
 
+    A plain `str` is the same claim with a thinner type: `eos.scale_kinetics`'s
+    `limiting_regime` is `REACTION`, `TRANSPORT` or `NONE`, and every string a result
+    carries is a name rather than a magnitude. It is classified here rather than in the
+    arm so a batch cannot disagree with the scalar result about that.
+
     `FlowRegime | None` is still the motivating case: an absent regime is not any of
     the three real ones, so it survives as `None` in the label column. So does an
     absent `RootStructure`.
     """
+    if hint is str:
+        return True
     return any(
         isinstance(argument, type) and issubclass(argument, Enum)
         for argument in (hint, *get_args(hint))

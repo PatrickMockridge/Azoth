@@ -155,6 +155,7 @@ from azoth.core.result import (
     PcsaftRahmatPhaseResult,
     PhaseTransportResult,
     PhFlashResult,
+    PipeBeggsAndBrillsResult,
     PitzerHydrateFormationPressureResult,
     PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
@@ -568,6 +569,52 @@ _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
 _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
+
+
+def pipe_beggs_and_brills(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    length: Q,
+    diameter: Q,
+    elevation: Q,
+    number_of_increments: int,
+    roughness: Q,
+    eos: str | None = None,
+) -> PipeBeggsAndBrillsResult:
+    """The isothermal pressure profile of a Beggs-and-Brills pipeline.
+
+    NeqSim's ``PipeBeggsAndBrills`` in its default isothermal march: each segment is flashed
+    at the inlet temperature and its own pressure, its phase densities and viscosities feed
+    the Beggs-and-Brill segment correlation, and the drop sets the next segment's pressure.
+    The class's profile shapes are reproduced - the temperature list is one value, and the
+    segment lists are one longer than the pressure profile's segments.
+
+    Args:
+        inlet_n: the inlet's molar flow.
+        eos: ``srk`` (the default) or ``pr``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if a segment's outlet pressure is not positive.
+
+    See :func:`azoth.eos.reference.pipe_beggs_and_brills`.
+    """
+    return resolve("eos.pipe_beggs_and_brills")(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        length=length,
+        diameter=diameter,
+        elevation=elevation,
+        number_of_increments=number_of_increments,
+        roughness=roughness,
+        eos=eos,
+    )
 
 
 def pr_kappa(omega: float) -> PrKappaResult:

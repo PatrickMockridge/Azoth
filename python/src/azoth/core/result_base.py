@@ -66,6 +66,22 @@ class FlowRegime(StrEnum):
         return self is FlowRegime.TRANSITIONAL
 
 
+class BeggsBrillRegime(StrEnum):
+    """The flow regime a Beggs-and-Brill pipe segment is in.
+
+    Five values rather than the four of the two-phase map: a segment carrying one phase
+    does not sit on the map at all, and which phase it is decides the no-slip properties.
+    ``TRANSITION`` is the band where the literature blends segregated and intermittent
+    holdups rather than a regime of its own.
+    """
+
+    SINGLE_PHASE = "single_phase"
+    SEGREGATED = "segregated"
+    TRANSITION = "transition"
+    INTERMITTENT = "intermittent"
+    DISTRIBUTED = "distributed"
+
+
 class RootStructure(StrEnum):
     """How many admissible real roots a cubic equation of state had.
 

@@ -59,8 +59,9 @@ unit = "m"
 description = "the pipe wall's absolute roughness, 10 um as 1e-5 m by default.\n"
 [outputs]
 [outputs.regime]
-type = "string"
-description = "`single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.\n"
+type = "enum"
+values = ["single_phase", "segregated", "transition", "intermittent", "distributed"]
+description = "The Beggs-and-Brill regime the segment's velocities put it in.\n"
 [outputs.liquid_holdup]
 unit = "dimensionless"
 description = "the liquid holdup after the inclination correction and the physical bound.\n"

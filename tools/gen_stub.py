@@ -417,6 +417,7 @@ EXCEPTIONS: tuple[tuple[str, str], ...] = (
 #: the stub says `list` - the shape a caller gets, not the shape the dataclass stores.
 SCALARS = {"float": "float", "int": "int", "bool": "bool", "str": "str", "Q": "Qty"}
 ENUMS = {
+    "BeggsBrillRegime",
     "Phase",
     "RootStructure",
     "StabilityVerdict",

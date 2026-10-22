@@ -10,7 +10,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::results::BeggsBrillSegmentResult;
+use crate::results::{BeggsBrillRegime, BeggsBrillSegmentResult};
 use crate::spec_gen;
 
 /// The class's field-unit constants: feet per metre, cubic feet per cubic metre, pounds per
@@ -56,7 +56,7 @@ const MINIMUM_SURFACE_TENSION_DYNE_CM: f64 = 1.0;
 ///     meters(0.0),
 ///     meters(1.0e-5),
 /// )?;
-/// assert_eq!(r.regime, "segregated");
+/// assert_eq!(r.regime.as_str(), "segregated");
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -117,10 +117,27 @@ pub fn beggs_brill_segment(
     let mu_g = gas_viscosity.value * CP_PER_PA_S;
     let mu_l = liquid_viscosity.value * CP_PER_PA_S;
 
+    #[allow(clippy::type_complexity)]
     let (regime, _lambda, el, rho_mix, rho_ns, mu_ns, s_multiplier) = if liquid_flow.value <= 0.0 {
-        ("single_phase", 0.0, 0.0, rho_g, rho_g, mu_g, 0.0)
+        (
+            BeggsBrillRegime::SinglePhase,
+            0.0,
+            0.0,
+            rho_g,
+            rho_g,
+            mu_g,
+            0.0,
+        )
     } else if gas_flow.value <= 0.0 {
-        ("single_phase", 1.0, 1.0, rho_l, rho_l, mu_l, 0.0)
+        (
+            BeggsBrillRegime::SinglePhase,
+            1.0,
+            1.0,
+            rho_l,
+            rho_l,
+            mu_l,
+            0.0,
+        )
     } else {
         let lambda = v_sl / v_mix;
         let froude = v_mix * v_mix / (FROUDE_G * d_ft);
@@ -129,15 +146,15 @@ pub fn beggs_brill_segment(
         let l3 = 0.1 * lambda.powf(-1.451_6);
         let l4 = 0.5 * lambda.powf(-6.738);
         let regime = if (lambda < 0.01 && froude < l1) || (lambda >= 0.01 && froude < l2) {
-            "segregated"
+            BeggsBrillRegime::Segregated
         } else if lambda >= 0.01 && froude >= l2 && froude <= l3 {
-            "transition"
+            BeggsBrillRegime::Transition
         } else if ((0.01..0.4).contains(&lambda) && froude > l3 && froude <= l1)
             || (lambda >= 0.4 && froude > l3 && froude <= l4)
         {
-            "intermittent"
+            BeggsBrillRegime::Intermittent
         } else if (lambda < 0.4 && froude >= l1) || (lambda >= 0.4 && froude > l4) {
-            "distributed"
+            BeggsBrillRegime::Distributed
         } else {
             return Err(AzothError::invalid_input(
                 "gas_flow",
@@ -150,10 +167,23 @@ pub fn beggs_brill_segment(
         let theta = (elevation.value / length.value).asin();
         let sin18 = (1.8 * theta).sin();
 
-        let holdup = if regime == "transition" {
-            a * inclination_corrected_holdup("segregated", lambda, froude, nvl, sin18, e_ft)
-                + (1.0 - a)
-                    * inclination_corrected_holdup("intermittent", lambda, froude, nvl, sin18, e_ft)
+        let holdup = if regime == BeggsBrillRegime::Transition {
+            a * inclination_corrected_holdup(
+                BeggsBrillRegime::Segregated,
+                lambda,
+                froude,
+                nvl,
+                sin18,
+                e_ft,
+            ) + (1.0 - a)
+                * inclination_corrected_holdup(
+                    BeggsBrillRegime::Intermittent,
+                    lambda,
+                    froude,
+                    nvl,
+                    sin18,
+                    e_ft,
+                )
         } else {
             inclination_corrected_holdup(regime, lambda, froude, nvl, sin18, e_ft)
         };
@@ -193,7 +223,7 @@ pub fn beggs_brill_segment(
     let to_pa = BAR_PER_IMPERIAL_DROP * 1.0e5;
 
     Ok(BeggsBrillSegmentResult {
-        regime: regime.to_owned(),
+        regime,
         liquid_holdup: el,
         superficial_gas_velocity: meters_per_second(v_sg / FEET_PER_METER),
         superficial_liquid_velocity: meters_per_second(v_sl / FEET_PER_METER),
@@ -241,7 +271,7 @@ fn liquid_velocity_number(
 }
 
 fn inclination_corrected_holdup(
-    regime: &str,
+    regime: BeggsBrillRegime,
     lambda: f64,
     froude: f64,
     nvl: f64,
@@ -249,14 +279,18 @@ fn inclination_corrected_holdup(
     elevation_ft: f64,
 ) -> f64 {
     let horizontal = match regime {
-        "segregated" => 0.98 * lambda.powf(0.4846) / froude.powf(0.0868),
-        "intermittent" => 0.845 * lambda.powf(0.5351) / froude.powf(0.0173),
+        BeggsBrillRegime::Segregated => 0.98 * lambda.powf(0.4846) / froude.powf(0.0868),
+        BeggsBrillRegime::Intermittent => 0.845 * lambda.powf(0.5351) / froude.powf(0.0173),
         _ => 1.065 * lambda.powf(0.5824) / froude.powf(0.0609),
     };
     let log_arg = if elevation_ft > 0.0 {
         match regime {
-            "segregated" => 0.011 * nvl.powf(3.539) / (lambda.powf(3.768) * froude.powf(1.614)),
-            "intermittent" => 2.96 * lambda.powf(0.305) * froude.powf(0.0978) / nvl.powf(0.4473),
+            BeggsBrillRegime::Segregated => {
+                0.011 * nvl.powf(3.539) / (lambda.powf(3.768) * froude.powf(1.614))
+            }
+            BeggsBrillRegime::Intermittent => {
+                2.96 * lambda.powf(0.305) * froude.powf(0.0978) / nvl.powf(0.4473)
+            }
             // The published distributed-uphill coefficient is zero.
             _ => f64::NAN,
         }

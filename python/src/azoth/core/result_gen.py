@@ -39,6 +39,7 @@ from azoth.core.record_outputs_gen import (
     WaterMixingResult,
 )
 from azoth.core.result_base import (
+    BeggsBrillRegime,
     FlowRegime,
     HenryStatus,
     HydrateStructure,
@@ -481,8 +482,8 @@ class BeggsBrillSegmentResult(_HasWarnings):
 
     CALC_ID: ClassVar[str] = "eos.beggs_brill_segment"
 
-    #: `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
-    regime: str
+    #: The Beggs-and-Brill regime the segment's velocities put it in.
+    regime: BeggsBrillRegime
 
     #: the liquid holdup after the inclination correction and the physical bound.
     liquid_holdup: float
@@ -2296,6 +2297,40 @@ class PhaseTransportResult(_HasWarnings):
 
     #: each component's effective coefficient, assembled from the binary matrix by `eos.effective_diffusion`.
     d_effective: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PipeBeggsAndBrillsResult(_HasWarnings):
+    """Result of ``eos.pipe_beggs_and_brills``."""
+
+    CALC_ID: ClassVar[str] = "eos.pipe_beggs_and_brills"
+
+    #: the pressure at the inlet and each segment's outlet.
+    pressure_profile: tuple[Q, ...]
+
+    #: each segment's drop; the inlet entry is zero.
+    pressure_drop_profile: tuple[Q, ...]
+
+    #: one value, the isothermal temperature, as the class's own profile list has.
+    temperature_profile: tuple[Q, ...]
+
+    #: the holdup at each segment, one entry per segment.
+    liquid_holdup_profile: tuple[float, ...]
+
+    #: the mixture superficial velocity at each segment.
+    mixture_superficial_velocity_profile: tuple[Q, ...]
+
+    #: each segment's flow regime.
+    flow_regime_profile: tuple[str, ...]
+
+    #: the pressure after the last segment.
+    outlet_pressure: Q
+
+    #: the inlet pressure minus the outlet's.
+    total_pressure_drop: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

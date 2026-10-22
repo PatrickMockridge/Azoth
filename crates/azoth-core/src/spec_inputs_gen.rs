@@ -100,6 +100,7 @@
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
+//!   - specs/models/eos/pipe_beggs_and_brills.toml
 //!   - specs/models/eos/pitzer_hydrate_formation_pressure.toml
 //!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
@@ -1313,6 +1314,23 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.phase_transport", "T", "thermodynamic_temperature"),
     ("eos.phase_transport", "P", "pressure"),
     ("eos.phase_transport", "z", "dimensionless"),
+    ("eos.pipe_beggs_and_brills", "inlet_n", "molar_flow"),
+    ("eos.pipe_beggs_and_brills", "inlet_z", "dimensionless"),
+    ("eos.pipe_beggs_and_brills", "inlet_p", "pressure"),
+    (
+        "eos.pipe_beggs_and_brills",
+        "inlet_t",
+        "thermodynamic_temperature",
+    ),
+    ("eos.pipe_beggs_and_brills", "length", "length"),
+    ("eos.pipe_beggs_and_brills", "diameter", "length"),
+    ("eos.pipe_beggs_and_brills", "elevation", "length"),
+    (
+        "eos.pipe_beggs_and_brills",
+        "number_of_increments",
+        "dimensionless",
+    ),
+    ("eos.pipe_beggs_and_brills", "roughness", "length"),
     ("eos.pitzer_hydrate_formation_pressure", "moles", "amount"),
     (
         "eos.pitzer_hydrate_formation_pressure",

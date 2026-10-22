@@ -19,7 +19,7 @@ import neqsim.thermo.system.SystemSrkEos;
 
 public class PipeBeggsAndBrillsProbe {
 
-  static PipeBeggsAndBrills pipe(String[] names, double[] fractions, double flowKgHr,
+  static PipeBeggsAndBrills pipe(String[] names, double[] fractions, double flowMolSec,
       double diameter, double length, double elevation, double roughness) {
     SystemSrkEos fluid = new SystemSrkEos(333.15, 100.0);
     for (int i = 0; i < names.length; i++) {
@@ -28,7 +28,7 @@ public class PipeBeggsAndBrillsProbe {
     fluid.setMixingRule("classic");
     fluid.setMultiPhaseCheck(true);
     Stream inlet = new Stream("inlet", fluid);
-    inlet.setFlowRate(flowKgHr, "kg/hr");
+    inlet.setFlowRate(flowMolSec, "mol/sec");
     inlet.setTemperature(60.0, "C");
     inlet.setPressure(100.0, "bara");
     inlet.run();
@@ -53,7 +53,7 @@ public class PipeBeggsAndBrillsProbe {
         + " outlet_temperature=" + pipe.getOutletStream().getTemperature("K")
         + " inlet_minus_outlet_bara=" + (pipe.getInletStream().getPressure("bara")
             - pipe.getOutletStream().getPressure("bara"))
-        + " outlet_flow=" + pipe.getOutletStream().getFlowRate("kg/hr"));
+        + " outlet_flow=" + pipe.getOutletStream().getFlowRate("mol/sec"));
     List<Double> pressures = pipe.getPressureProfileList();
     List<Double> temperatures = pipe.getTemperatureProfileList();
     List<Double> drops = pipe.getPressureDropProfile();
@@ -116,9 +116,9 @@ public class PipeBeggsAndBrillsProbe {
         + " diameter_m=" + pipe.getDiameter() + " length_m=" + pipe.getLength());
   }
 
-  static PipeBeggsAndBrills segment(String[] names, double[] fractions, double flowKgHr,
+  static PipeBeggsAndBrills segment(String[] names, double[] fractions, double flowMolSec,
       double diameter, double elevation, double roughness) {
-    PipeBeggsAndBrills pipe = pipe(names, fractions, flowKgHr, diameter, 1.0, elevation, roughness);
+    PipeBeggsAndBrills pipe = pipe(names, fractions, flowMolSec, diameter, 1.0, elevation, roughness);
     return pipe;
   }
 
@@ -129,46 +129,46 @@ public class PipeBeggsAndBrillsProbe {
     double[] wetFractions = {0.85, 0.05, 0.10};
 
     System.out.println(" horizontal");
-    row("two_phase_0.1m", pipe(wetGas, wetFractions, 5000.0, 0.1, 1000.0, 0.0, 1e-5));
-    row("two_phase_0.2m", pipe(wetGas, wetFractions, 5000.0, 0.2, 1000.0, 0.0, 1e-5));
+    row("two_phase_0.1m", pipe(wetGas, wetFractions, 80.0, 0.1, 1000.0, 0.0, 1e-5));
+    row("two_phase_0.2m", pipe(wetGas, wetFractions, 80.0, 0.2, 1000.0, 0.0, 1e-5));
 
     System.out.println(" inclined");
-    row("uphill_100m", pipe(wetGas, wetFractions, 5000.0, 0.1, 1000.0, 100.0, 1e-5));
-    row("downhill_100m", pipe(wetGas, wetFractions, 5000.0, 0.1, 1000.0, -100.0, 1e-5));
+    row("uphill_100m", pipe(wetGas, wetFractions, 80.0, 0.1, 1000.0, 100.0, 1e-5));
+    row("downhill_100m", pipe(wetGas, wetFractions, 80.0, 0.1, 1000.0, -100.0, 1e-5));
 
     System.out.println(" liquid_rich");
-    row("half_water", pipe(wetGas, new double[] {0.5, 0.05, 0.45}, 5000.0, 0.1, 1000.0, 0.0, 1e-5));
+    row("half_water", pipe(wetGas, new double[] {0.5, 0.05, 0.45}, 80.0, 0.1, 1000.0, 0.0, 1e-5));
 
     System.out.println(" three_phase");
     row("oil_water_gas", pipe(new String[] {"methane", "n-octane", "water"},
-        new double[] {0.5, 0.25, 0.25}, 5000.0, 0.1, 1000.0, 0.0, 1e-5));
+        new double[] {0.5, 0.25, 0.25}, 80.0, 0.1, 1000.0, 0.0, 1e-5));
 
     System.out.println(" single_phase");
-    row("gas_only", pipe(new String[] {"methane"}, new double[] {1.0}, 5000.0, 0.1, 1000.0, 0.0, 1e-5));
-    row("water_only", pipe(new String[] {"water"}, new double[] {1.0}, 5000.0, 0.1, 1000.0, 0.0, 1e-5));
+    row("gas_only", pipe(new String[] {"methane"}, new double[] {1.0}, 80.0, 0.1, 1000.0, 0.0, 1e-5));
+    row("water_only", pipe(new String[] {"water"}, new double[] {1.0}, 80.0, 0.1, 1000.0, 0.0, 1e-5));
 
     System.out.println(" rough_wall");
-    row("rough_1e-3", pipe(wetGas, wetFractions, 5000.0, 0.1, 1000.0, 0.0, 1e-3));
+    row("rough_1e-3", pipe(wetGas, wetFractions, 80.0, 0.1, 1000.0, 0.0, 1e-3));
 
     System.out.println(" correlation");
-    correlationRow("segment_two_phase", segment(wetGas, wetFractions, 5000.0, 0.1, 0.0, 1e-5));
-    correlationRow("segment_uphill", segment(wetGas, wetFractions, 5000.0, 0.1, 0.1, 1e-5));
-    correlationRow("segment_downhill", segment(wetGas, wetFractions, 5000.0, 0.1, -0.1, 1e-5));
+    correlationRow("segment_two_phase", segment(wetGas, wetFractions, 80.0, 0.1, 0.0, 1e-5));
+    correlationRow("segment_uphill", segment(wetGas, wetFractions, 80.0, 0.1, 0.1, 1e-5));
+    correlationRow("segment_downhill", segment(wetGas, wetFractions, 80.0, 0.1, -0.1, 1e-5));
     correlationRow("segment_gas_only", segment(new String[] {"methane"}, new double[] {1.0},
-        5000.0, 0.1, 0.0, 1e-5));
+        80.0, 0.1, 0.0, 1e-5));
     correlationRow("segment_water_only", segment(new String[] {"water"}, new double[] {1.0},
-        5000.0, 0.1, 0.0, 1e-5));
+        80.0, 0.1, 0.0, 1e-5));
     correlationRow("segment_three_phase", segment(new String[] {"methane", "n-octane", "water"},
-        new double[] {0.5, 0.25, 0.25}, 5000.0, 0.1, 0.0, 1e-5));
+        new double[] {0.5, 0.25, 0.25}, 80.0, 0.1, 0.0, 1e-5));
     correlationRow("segment_liquid_rich", segment(wetGas, new double[] {0.2, 0.05, 0.75},
-        20000.0, 0.1, 0.0, 1e-5));
+        320.0, 0.1, 0.0, 1e-5));
 
     System.out.println(" regime_branches");
     row("distributed_high_flow",
-        pipe(wetGas, wetFractions, 100000.0, 0.1, 1000.0, 0.0, 1e-5));
+        pipe(wetGas, wetFractions, 1600.0, 0.1, 1000.0, 0.0, 1e-5));
     row("intermittent_liquid_rich",
-        pipe(wetGas, new double[] {0.5, 0.05, 0.45}, 50000.0, 0.1, 1000.0, 0.0, 1e-5));
+        pipe(wetGas, new double[] {0.5, 0.05, 0.45}, 800.0, 0.1, 1000.0, 0.0, 1e-5));
     row("slug_liquid_dominant",
-        pipe(wetGas, new double[] {0.2, 0.05, 0.75}, 20000.0, 0.1, 1000.0, 0.0, 1e-5));
+        pipe(wetGas, new double[] {0.2, 0.05, 0.75}, 320.0, 0.1, 1000.0, 0.0, 1e-5));
   }
 }

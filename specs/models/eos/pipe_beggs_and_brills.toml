@@ -1,0 +1,125 @@
+id = "eos.pipe_beggs_and_brills"
+name = "Segmented pipeline pressure and temperature profile by Beggs and Brill"
+kind = "direct"
+assumptions = [
+    "**the pipe is isothermal**: the class's `runIsothermal` defaults true, so each segment is flashed at the inlet temperature and its own pressure.\n",
+    "**the temperature profile is a single value and the pressure profile has one entry per segment plus the inlet**, which is the class's own profile shape; the segmented consumers take the shorter of the two lists, so an isothermal pipe reads as one segment to them.\n",
+    "**the flash is `eos.pt_flash` at each segment**, and the phase densities are its molar volumes corrected by the databank's SRK Peneloux shift, as NeqSim's default volume correction does; the phase viscosities are `eos.phase_transport`'s dispatch by phase type.\n",
+    "**the phase type follows NeqSim's rule**: a phase with `V/b > 1.75` is gas, a liquid whose non-water mole fraction exceeds its water fraction is oil, otherwise aqueous; that choice decides the viscosity correlation.\n",
+    "**the drop at each segment is `eos.beggs_brill_segment`'s**, with the segment length and elevation the class's own division, and a negative outlet pressure is refused as the class refuses it.\n",
+    "the mole flows split by the flash's vapour fraction; a single-phase state puts the whole flow in that phase, and its surface tension still follows the class's liquid-gravity fit.\n",
+]
+references = [
+    "NeqSim master, `process/equipment/pipeline/PipeBeggsAndBrills.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/pipe_beggs_and_brills_probe.tsv` - the twelve line states with their pressure, regime, holdup, velocity and drop profiles; the refused high-flow state pins the negative-outlet refusal.",
+]
+[source]
+standard = "NeqSim master `PipeBeggsAndBrills`"
+edition = "`runWithSpecifiedFlowRate`'s isothermal branch and the profile lists it fills, ported over `eos.pt_flash`, `eos.phase_transport` and `eos.beggs_brill_segment`. The flow-rate and inlet-pressure solving modes, the low-flow bypass, the heat-transfer branch and the transient are not."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which the isothermal march holds.\n"
+[inputs.length]
+unit = "m"
+description = "the pipe's total length.\n"
+[inputs.diameter]
+unit = "m"
+description = "the pipe's internal diameter, 100 mm as 0.1 m.\n"
+[inputs.elevation]
+unit = "m"
+description = "the total elevation change, positive uphill.\n"
+[inputs.number_of_increments]
+unit = "dimensionless"
+description = "the number of segments the pipe is divided into.\n"
+[inputs.roughness]
+unit = "m"
+description = "the pipe wall's absolute roughness.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk"]
+optional = true
+description = "the cubic the flash runs; absent takes `srk`, the system the class's tests build.\n"
+[outputs]
+[outputs.pressure_profile]
+type = "vector"
+unit = "Pa"
+description = "the pressure at the inlet and each segment's outlet.\n"
+[outputs.pressure_drop_profile]
+type = "vector"
+unit = "Pa"
+description = "each segment's drop; the inlet entry is zero.\n"
+[outputs.temperature_profile]
+type = "vector"
+unit = "K"
+description = "one value, the isothermal temperature, as the class's own profile list has.\n"
+[outputs.liquid_holdup_profile]
+type = "vector"
+unit = "dimensionless"
+description = "the holdup at each segment, one entry per segment.\n"
+[outputs.mixture_superficial_velocity_profile]
+type = "vector"
+unit = "m/s"
+description = "the mixture superficial velocity at each segment.\n"
+[outputs.flow_regime_profile]
+type = "vector_string"
+description = "each segment's flow regime.\n"
+[outputs.outlet_pressure]
+unit = "Pa"
+description = "the pressure after the last segment.\n"
+[outputs.total_pressure_drop]
+unit = "Pa"
+description = "the inlet pressure minus the outlet's.\n"
+[[valid_range]]
+quantity = "inlet_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A flowing pipe has a positive molar flow.\n"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "inlet_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A segment has a length; the inclination is `asin(elevation/length)`.\n"
+[[valid_range]]
+quantity = "diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A pipe with no diameter has no area.\n"
+[[valid_range]]
+quantity = "number_of_increments"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "The class refuses a non-positive increment count.\n"
+[implementations]
+python = "azoth.eos.pipe_beggs_and_brills"
+rust = "azoth_eos::pipe_beggs_and_brills"

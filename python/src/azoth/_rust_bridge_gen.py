@@ -24,6 +24,7 @@ from azoth.core.result import (
     ArgonSolidPhaseResult,
     AssayMassFractionsResult,
     BariteCelestiteSolidSolutionResult,
+    BeggsBrillRegime,
     BeggsBrillSegmentResult,
     BrineMixingPointRow,
     BrineMixingScaleEvaluatorResult,
@@ -147,6 +148,7 @@ from azoth.core.result import (
     PedersenPlusSplitResult,
     PhaseTransportResult,
     PhFlashResult,
+    PipeBeggsAndBrillsResult,
     PipeResult,
     PitzerHydrateFormationPressureResult,
     PitzerHydrateFormationTemperatureResult,
@@ -441,6 +443,7 @@ __all__ = [
     "ph_flash",
     "phase_transport",
     "pipe",
+    "pipe_beggs_and_brills",
     "pitzer_hydrate_formation_pressure",
     "pitzer_hydrate_formation_temperature",
     "pitzer_phase",
@@ -943,7 +946,7 @@ def beggs_brill_segment(gas_flow: Q, liquid_flow: Q, gas_density: Q, liquid_dens
         input_to_si(spec, "roughness", roughness),
     )
     return BeggsBrillSegmentResult(
-        regime=result.regime,
+        regime=BeggsBrillRegime(result.regime),
         liquid_holdup=result.liquid_holdup,
         superficial_gas_velocity=from_si(result.superficial_gas_velocity.magnitude_si, result.superficial_gas_velocity.unit),
         superficial_liquid_velocity=from_si(result.superficial_liquid_velocity.magnitude_si, result.superficial_liquid_velocity.unit),
@@ -2647,6 +2650,35 @@ def phase_transport(components: Sequence[str], phase: str, T: Q, P: Q, z: Sequen
         k=from_si(result.k.magnitude_si, result.k.unit),
         d_binary=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.d_binary),
         d_effective=tuple(from_si(q.magnitude_si, q.unit) for q in result.d_effective),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pipe_beggs_and_brills(components: list[str], inlet_n: float, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, elevation: Q, number_of_increments: int, roughness: Q, eos: str | None=None) -> PipeBeggsAndBrillsResult:
+    """``eos.pipe_beggs_and_brills``, computed in Rust."""
+    spec = _models_gen.model("eos.pipe_beggs_and_brills")
+    result = _core.pipe_beggs_and_brills(
+        list(components),
+        _si(spec, "inlet_n", inlet_n),
+        list(inlet_z),
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "elevation", elevation),
+        _count("number_of_increments", number_of_increments),
+        input_to_si(spec, "roughness", roughness),
+        eos,
+    )
+    return PipeBeggsAndBrillsResult(
+        pressure_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_profile),
+        pressure_drop_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_drop_profile),
+        temperature_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.temperature_profile),
+        liquid_holdup_profile=tuple(result.liquid_holdup_profile),
+        mixture_superficial_velocity_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.mixture_superficial_velocity_profile),
+        flow_regime_profile=tuple(result.flow_regime_profile),
+        outlet_pressure=from_si(result.outlet_pressure.magnitude_si, result.outlet_pressure.unit),
+        total_pressure_drop=from_si(result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import BeggsBrillSegmentResult
+from azoth.core.result import BeggsBrillRegime, BeggsBrillSegmentResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 
@@ -262,7 +262,7 @@ def beggs_brill_segment(
     to_pa = BAR_PER_IMPERIAL_DROP * 1.0e5
 
     return BeggsBrillSegmentResult(
-        regime=regime,
+        regime=BeggsBrillRegime(regime),
         liquid_holdup=el,
         superficial_gas_velocity=from_si(v_sg / FEET_PER_METER, "m/s"),
         superficial_liquid_velocity=from_si(v_sl / FEET_PER_METER, "m/s"),

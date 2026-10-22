@@ -1208,7 +1208,7 @@ impl From<&azoth_eos::results::BariteCelestiteSolidSolutionResult>
 )]
 #[derive(Debug, Clone, PartialEq)]
 pub struct PyBeggsBrillSegmentResult {
-    /// `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
+    /// The Beggs-and-Brill regime the segment's velocities put it in.
     #[pyo3(get)]
     pub regime: String,
     /// the liquid holdup after the inclination correction and the physical bound.
@@ -1278,7 +1278,7 @@ impl PyBeggsBrillSegmentResult {
 impl From<&azoth_eos::results::BeggsBrillSegmentResult> for PyBeggsBrillSegmentResult {
     fn from(r: &azoth_eos::results::BeggsBrillSegmentResult) -> Self {
         Self {
-            regime: r.regime.clone(),
+            regime: r.regime.as_str().to_string(),
             liquid_holdup: r.liquid_holdup,
             superficial_gas_velocity: PyQty {
                 magnitude_si: r.superficial_gas_velocity.value,
@@ -5938,6 +5938,111 @@ impl From<&azoth_eos::results::PhaseTransportResult> for PyPhaseTransportResult 
                     unit: "m**2/s".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.pipe_beggs_and_brills`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PipeBeggsAndBrillsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPipeBeggsAndBrillsResult {
+    /// the pressure at the inlet and each segment's outlet.
+    #[pyo3(get)]
+    pub pressure_profile: Vec<PyQty>,
+    /// each segment's drop; the inlet entry is zero.
+    #[pyo3(get)]
+    pub pressure_drop_profile: Vec<PyQty>,
+    /// one value, the isothermal temperature, as the class's own profile list has.
+    #[pyo3(get)]
+    pub temperature_profile: Vec<PyQty>,
+    /// the holdup at each segment, one entry per segment.
+    #[pyo3(get)]
+    pub liquid_holdup_profile: Vec<f64>,
+    /// the mixture superficial velocity at each segment.
+    #[pyo3(get)]
+    pub mixture_superficial_velocity_profile: Vec<PyQty>,
+    /// each segment's flow regime.
+    #[pyo3(get)]
+    pub flow_regime_profile: Vec<String>,
+    /// the pressure after the last segment.
+    #[pyo3(get)]
+    pub outlet_pressure: PyQty,
+    /// the inlet pressure minus the outlet's.
+    #[pyo3(get)]
+    pub total_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPipeBeggsAndBrillsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PipeBeggsAndBrillsResult(pressure_profile={:?}, pressure_drop_profile={:?}, temperature_profile={:?}, liquid_holdup_profile={:?}, mixture_superficial_velocity_profile={:?}, flow_regime_profile={:?}, outlet_pressure={:?}, total_pressure_drop={:?}, {} warning(s))",
+            self.pressure_profile,
+            self.pressure_drop_profile,
+            self.temperature_profile,
+            self.liquid_holdup_profile,
+            self.mixture_superficial_velocity_profile,
+            self.flow_regime_profile,
+            self.outlet_pressure,
+            self.total_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PipeBeggsAndBrillsResult> for PyPipeBeggsAndBrillsResult {
+    fn from(r: &azoth_eos::results::PipeBeggsAndBrillsResult) -> Self {
+        Self {
+            pressure_profile: r
+                .pressure_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            pressure_drop_profile: r
+                .pressure_drop_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            temperature_profile: r
+                .temperature_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            liquid_holdup_profile: r.liquid_holdup_profile.clone(),
+            mixture_superficial_velocity_profile: r
+                .mixture_superficial_velocity_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m/s".to_string(),
+                })
+                .collect(),
+            flow_regime_profile: r.flow_regime_profile.clone(),
+            outlet_pressure: PyQty {
+                magnitude_si: r.outlet_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            total_pressure_drop: PyQty {
+                magnitude_si: r.total_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

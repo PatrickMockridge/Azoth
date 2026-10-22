@@ -53,7 +53,7 @@ dp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y -
 
 | Name | Unit | Description |
 |---|---|---|
-| `regime` | - | `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`. |
+| `regime` | single_phase / segregated / transition / intermittent / distributed | The Beggs-and-Brill regime the segment's velocities put it in. |
 | `liquid_holdup` | dimensionless | the liquid holdup after the inclination correction and the physical bound. |
 | `superficial_gas_velocity` | m/s | the gas superficial velocity. |
 | `superficial_liquid_velocity` | m/s | the liquid superficial velocity. |

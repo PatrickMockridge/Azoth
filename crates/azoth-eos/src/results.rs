@@ -1691,11 +1691,40 @@ impl CalcResult for ProductionChemicalScaleScenarioResult {
     }
 }
 
+/// The flow regime a Beggs-and-Brill segment is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BeggsBrillRegime {
+    /// One phase flows, and the correlation's two-phase map does not apply.
+    SinglePhase,
+    /// Segregated: stratified, wavy or annular.
+    Segregated,
+    /// The transition band between segregated and intermittent.
+    Transition,
+    /// Intermittent: plug or slug.
+    Intermittent,
+    /// Distributed: bubble or mist.
+    Distributed,
+}
+
+impl BeggsBrillRegime {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::SinglePhase => "single_phase",
+            Self::Segregated => "segregated",
+            Self::Transition => "transition",
+            Self::Intermittent => "intermittent",
+            Self::Distributed => "distributed",
+        }
+    }
+}
+
 /// Result of `eos.beggs_brill_segment`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BeggsBrillSegmentResult {
-    /// `single_phase`, `segregated`, `transition`, `intermittent` or `distributed`.
-    pub regime: String,
+    /// The regime the segment's velocities put it in.
+    pub regime: BeggsBrillRegime,
     /// The liquid holdup after the inclination correction and the physical bound.
     pub liquid_holdup: f64,
     /// The gas superficial velocity.
@@ -1740,6 +1769,48 @@ impl CalcResult for BeggsBrillSegmentResult {
         "hydrostatic_drop",
         "friction_drop",
         "total_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pipe_beggs_and_brills`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PipeBeggsAndBrillsResult {
+    /// The pressure at the inlet and each segment's outlet.
+    pub pressure_profile: Vec<f64>,
+    /// Each segment's drop; the inlet entry is zero.
+    pub pressure_drop_profile: Vec<f64>,
+    /// One value, the isothermal temperature, as the class's own profile list has.
+    pub temperature_profile: Vec<f64>,
+    /// The holdup at each segment, one entry per segment.
+    pub liquid_holdup_profile: Vec<f64>,
+    /// The mixture superficial velocity at each segment.
+    pub mixture_superficial_velocity_profile: Vec<f64>,
+    /// Each segment's flow regime.
+    pub flow_regime_profile: Vec<String>,
+    /// The pressure after the last segment.
+    pub outlet_pressure: Pressure,
+    /// The inlet pressure minus the outlet's.
+    pub total_pressure_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PipeBeggsAndBrillsResult {
+    const CALC_ID: &'static str = "eos.pipe_beggs_and_brills";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure_profile",
+        "pressure_drop_profile",
+        "temperature_profile",
+        "liquid_holdup_profile",
+        "mixture_superficial_velocity_profile",
+        "flow_regime_profile",
+        "outlet_pressure",
+        "total_pressure_drop",
         "warnings",
     ];
 

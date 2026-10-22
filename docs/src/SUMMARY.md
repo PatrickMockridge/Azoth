@@ -165,6 +165,7 @@
   - [PC-SAFT (Rahmat) phase state](./eos/pcsaft_rahmat_phase.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [A phase's transport properties, by NeqSim's phase-type dispatch](./eos/phase_transport.md)
+  - [Segmented pipeline pressure and temperature profile by Beggs and Brill](./eos/pipe_beggs_and_brills.md)
   - [Hydrate formation pressure of a Pitzer brine](./eos/pitzer_hydrate_formation_pressure.md)
   - [Hydrate formation temperature of a Pitzer brine](./eos/pitzer_hydrate_formation_temperature.md)
   - [Activity coefficients of a Pitzer electrolyte phase](./eos/pitzer_phase.md)

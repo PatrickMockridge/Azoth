@@ -47,7 +47,7 @@ fn every_case_in_the_spec() {
                 let result = call(case);
                 let context = &format!("{}::{}", spec.id, case.id);
                 if let Some(expected) = case.expected_string("regime") {
-                    assert_eq!(result.regime, expected, "{context}: the regime");
+                    assert_eq!(result.regime.as_str(), expected, "{context}: the regime");
                 }
                 for (field, value) in [
                     ("liquid_holdup", result.liquid_holdup),

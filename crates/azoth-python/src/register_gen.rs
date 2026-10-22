@@ -118,6 +118,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPcsaftRahmatPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyPhFlashResult>()?;
     m.add_class::<crate::transport_gen::PyPhaseTransportResult>()?;
+    m.add_class::<crate::transport_gen::PyPipeBeggsAndBrillsResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerHydrateFormationPressureResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerHydrateFormationTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerPhaseResult>()?;
@@ -547,6 +548,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::phase_transport, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::pipe_beggs_and_brills,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::pitzer_hydrate_formation_pressure,
         m
