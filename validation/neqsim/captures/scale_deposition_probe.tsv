@@ -1,0 +1,40 @@
+scale_deposition
+ profile
+  pipe diameter_m=0.1 length_m=1000.0 increments=10 profile_size=1 pressure_size=11
+    segment=0 temperature=333.15 pressure=100.0
+ accumulation
+  base total_mass_kg=5.112073003689538 max_thickness_mm=0.006026753244324614 time_to_blockage_years=4148.170496866197 segments=1
+    segment=0 si=0.013908764040233352 mass_kg=5.112073003689538 thickness_mm=0.006026753244324614
+  inhibitor_0.5 total_mass_kg=2.556036501844769 max_thickness_mm=0.003013376622162307 time_to_blockage_years=8296.340993732394 segments=1
+    segment=0 si=0.013908764040233352 mass_kg=2.556036501844769 thickness_mm=0.003013376622162307
+  service_5yr total_mass_kg=25.56036501844769 max_thickness_mm=0.030133766221623073 time_to_blockage_years=4148.170496866197 segments=1
+    segment=0 si=0.013908764040233352 mass_kg=25.56036501844769 thickness_mm=0.030133766221623073
+  base_rate_1.0 total_mass_kg=10.224146007379076 max_thickness_mm=0.012053506488649227 time_to_blockage_years=2074.0852484330985 segments=1
+    segment=0 si=0.013908764040233352 mass_kg=10.224146007379076 thickness_mm=0.012053506488649227
+ cooled_profile
+  profile_size=11 pressure_size=11
+    segment=0 temperature=333.15 pressure=100.0
+    segment=1 temperature=295.7630284790509 pressure=99.9607033961295
+    segment=2 temperature=293.18764045683355 pressure=99.93125976391863
+    segment=3 temperature=293.1423035510404 pressure=99.90247608621769
+    segment=4 temperature=293.1341132975394 pressure=99.87368993896372
+    segment=5 temperature=293.14159951262286 pressure=99.84489159378359
+    segment=6 temperature=293.13339840650065 pressure=99.81607692955471
+    segment=7 temperature=293.14157924182285 pressure=99.78725003532436
+    segment=8 temperature=293.13336715453545 pressure=99.75840660188211
+    segment=9 temperature=293.1415677292142 pressure=99.72955090610036
+    segment=10 temperature=293.13334463084226 pressure=99.7006786273677
+  cooled total_mass_kg=0.4647339094263216 max_thickness_mm=0.0060267532443246145 time_to_blockage_years=4148.170496866197 segments=11
+    segment=0 si=0.013908764040233352 mass_kg=0.4647339094263216 thickness_mm=0.0060267532443246145
+    segment=1 si=-0.3134979056496238 mass_kg=0.0 thickness_mm=0.0
+    segment=2 si=-0.3384900821623057 mass_kg=0.0 thickness_mm=0.0
+    segment=3 si=-0.33890580225081696 mass_kg=0.0 thickness_mm=0.0
+    segment=4 si=-0.33895637758087044 mass_kg=0.0 thickness_mm=0.0
+    segment=5 si=-0.33885280183028277 mass_kg=0.0 thickness_mm=0.0
+    segment=6 si=-0.33890345297006963 mass_kg=0.0 thickness_mm=0.0
+    segment=7 si=-0.3387930190702319 mass_kg=0.0 thickness_mm=0.0
+    segment=8 si=-0.33884374657876604 mass_kg=0.0 thickness_mm=0.0
+    segment=9 si=-0.33873309028626875 mass_kg=0.0 thickness_mm=0.0
+    segment=10 si=-0.33878389436663964 mass_kg=0.0 thickness_mm=0.0
+  no_calcite total_mass_kg=0.0 max_thickness_mm=0.0 time_to_blockage_years=Infinity segments=1
+    segment=0 si=-5.547666164411428 mass_kg=0.0 thickness_mm=0.0

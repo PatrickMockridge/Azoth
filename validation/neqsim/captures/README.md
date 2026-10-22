@@ -635,6 +635,18 @@ growth rate taken from the evaluated `ScaleKinetics`.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
 ```
 
+**The deposition probe** records `ScaleDepositionAccumulator` over a real Beggs-and-Brills
+pipe: the pipe's own segment temperatures and pressures (which are the state the port's model
+takes directly), then the accumulator's per-segment CaCO3 index, deposit mass and wall
+thickness, its total, its worst thickness and its time to half-block. Two profiles are run -
+an isothermal one whose temperature list is a single value, so the class evaluates one
+segment over the whole length, and a cooled one with eleven segments - across the inhibitor,
+five-year service, doubled base rate and no-calcite corners.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
