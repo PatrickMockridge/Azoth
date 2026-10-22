@@ -21,7 +21,7 @@ pub use uom::si::f64::{
     HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarConcentration, MolarEnergy,
     MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
     SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
-    ThermodynamicTemperature, Velocity, Volume, VolumeRate,
+    ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
@@ -40,8 +40,8 @@ pub use uom::si::{
     specific_heat_capacity::kilojoule_per_kilogram_kelvin, surface_tension::newton_per_meter,
     temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
     thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
-    thermodynamic_temperature::kelvin, time::hour, time::minute, velocity::foot_per_second,
-    velocity::meter_per_second, volume::cubic_meter, volume::liter,
+    thermodynamic_temperature::kelvin, time::hour, time::minute, time::second,
+    velocity::foot_per_second, velocity::meter_per_second, volume::cubic_meter, volume::liter,
     volume_rate::cubic_meter_per_hour, volume_rate::cubic_meter_per_second,
     volume_rate::liter_per_minute,
 };
@@ -134,6 +134,12 @@ pub fn pascals(value: f64) -> Pressure {
 #[must_use]
 pub fn kelvins(value: f64) -> ThermodynamicTemperature {
     ThermodynamicTemperature::new::<kelvin>(value)
+}
+
+/// A duration in seconds.
+#[must_use]
+pub fn seconds(value: f64) -> Time {
+    Time::new::<second>(value)
 }
 
 /// A temperature *interval* in kelvin: a difference between two temperatures,

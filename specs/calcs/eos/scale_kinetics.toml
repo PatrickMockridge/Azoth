@@ -1,0 +1,267 @@
+id = "eos.scale_kinetics"
+name = "Screening precipitation kinetics from a saturation index"
+equation = "S = 10^SI\n\nt_ind = k_n exp(B / (ln S)^2)\n\ng_rxn = k_r (S - 1)^n\n\ng_mt = k_m (c_bulk - c_eq) * 37e-6\n\nthe effective rate is the smaller of the two, or the reaction rate when no transport data are given"
+latex = '''S = 10^{\mathrm{SI}}, \qquad t_{\mathrm{ind}} = k_n \exp\left(\frac{B}{(\ln S)^2}\right), \qquad g_{\mathrm{rxn}} = k_r (S - 1)^n, \qquad g_{\mathrm{mt}} = k_m (c_{\mathrm{bulk}} - c_{\mathrm{eq}}) V_m'''
+assumptions = [
+    "the class works in hours, mm/yr and mol/L; this calc takes seconds, m/s and mol/m3 and converts at the boundary, keeping the class's year of `3.1536e7` seconds and its calcite molar volume of `37 cm3/mol`.\n",
+    "**below or at saturation nothing forms**: `S <= 1` gives an infinite induction time, zero growth and a regime of `NONE`, and the infinite value is not a number the result hulls.\n",
+    "**the induction time is classical nucleation**, `k_n exp(B/(ln S)^2)`, so it falls sharply with supersaturation and is undefined at S = 1.\n",
+    "the surface growth is `k_r (S - 1)^n` in mm/yr, the parabolic law with order two by default; the transport growth is `k_m (c_bulk - c_eq) * 37e-6` in m/s before the class multiplies it to mm/yr.\n",
+    "**the regime is the smaller growth rate**, and a transport rate of zero means the class has no transport data and reaction controls by default - not that transport is infinitely fast.\n",
+    "the setters clamp a negative constant, coefficient or concentration to zero, so a clamped row evaluates rather than refusing; the port does the same.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ScaleKinetics.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the `kinetics` rows: the subsaturated and saturated states, the supersaturation grid, both limiting regimes, custom nucleation and order, and the clamped setters.",
+]
+[source]
+standard = "NeqSim master `ScaleKinetics`"
+edition = "`evaluate` and the four setters' clamps, ported. The Gson report and the setters' storage are not."
+[inputs]
+[inputs.saturation_index]
+unit = "dimensionless"
+description = "the thermodynamic index, `log10(IAP/Ksp)`.\n"
+[inputs.nucleation_constant]
+unit = "s"
+description = "the nucleation pre-exponential constant, 0.001 h as 3.6 s by default.\n"
+[inputs.nucleation_shape_factor]
+unit = "dimensionless"
+description = "the nucleation exponential shape factor `B`.\n"
+[inputs.surface_rate_constant]
+unit = "m/s"
+description = "the surface-reaction rate constant, 5 mm/yr as 1.5854895991882293e-10 m/s by default.\n"
+[inputs.surface_reaction_order]
+unit = "dimensionless"
+description = "the reaction order in `S - 1`.\n"
+[inputs.mass_transfer_coefficient]
+unit = "m/s"
+description = "the mass-transfer coefficient; zero means no transport data.\n"
+[inputs.bulk_concentration]
+unit = "mol/m**3"
+description = "the bulk concentration of the limiting scaling ion.\n"
+[inputs.equilibrium_concentration]
+unit = "mol/m**3"
+description = "its equilibrium concentration.\n"
+[outputs]
+[outputs.supersaturation_ratio]
+unit = "dimensionless"
+description = "`S = 10^SI`.\n"
+[outputs.induction_time]
+unit = "s"
+description = "the nucleation induction time; infinite at or below saturation.\n"
+[outputs.surface_limited_growth]
+unit = "m/s"
+description = "the surface-reaction growth rate.\n"
+[outputs.transport_limited_growth]
+unit = "m/s"
+description = "the mass-transport growth rate; zero when no transport data are given.\n"
+[outputs.effective_growth_rate]
+unit = "m/s"
+description = "the rate-controlling growth rate.\n"
+[outputs.limiting_regime]
+type = "string"
+description = "`REACTION`, `TRANSPORT` or `NONE`, the class's own labels.\n"
+[[valid_range]]
+quantity = "nucleation_constant"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative duration is not a time; the class clamps it to zero and the arithmetic still runs."
+[[valid_range]]
+quantity = "surface_rate_constant"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative growth rate is not a rate; the class clamps it to zero and the arithmetic still runs."
+[[valid_range]]
+quantity = "mass_transfer_coefficient"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative coefficient is not a rate; the class clamps it to zero and the arithmetic still runs."
+[[valid_range]]
+quantity = "bulk_concentration"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A concentration cannot be negative; the class clamps it to zero and the arithmetic still runs."
+[[valid_range]]
+quantity = "equilibrium_concentration"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A concentration cannot be negative; the class clamps it to zero and the arithmetic still runs."
+[worked_example]
+source = "the capture's `si_1.0` row"
+derivation = "The class's default kinetics at SI 1.0: `k_n = 0.001 h`, `B = 3`, `k_r = 5 mm/yr`, `n = 2`, no transport data.\n\n  S = 10^1.0 = 10\n  t_ind = 0.001 exp(3 / (ln 10)^2) = 0.0017609176954614901 h = 6.339303703661365 s\n  g_rxn = 5 (10 - 1)^2 = 405 mm/yr = 1.2842465753424659e-8 m/s\n  g_mt = 0, so the reaction rate governs and the regime is REACTION\n"
+tolerance = 1e-12
+[worked_example.inputs]
+saturation_index = 1.0
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-5
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[worked_example.expected]
+supersaturation_ratio = 10.0
+induction_time = 6.339303703661365
+surface_limited_growth = 1.2842465753424659e-8
+transport_limited_growth = 0.0
+effective_growth_rate = 1.2842465753424659e-8
+limiting_regime = "REACTION"
+[[tests]]
+id = "kinetics_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "subsaturated"
+type = "reference"
+status = "active"
+source = "The capture's `si_minus_0.5` row: below saturation there is nothing to grow, and the induction time is infinite.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = -0.5
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-5
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 0.31622776601683794
+surface_limited_growth = 0.0
+transport_limited_growth = 0.0
+effective_growth_rate = 0.0
+limiting_regime = "NONE"
+[[tests]]
+id = "slightly_supersaturated"
+type = "reference"
+status = "active"
+source = "The capture's `si_0.3` row: at S = 2 the induction time is 0.538 h and the surface growth 4.953 mm/yr.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 0.3
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-5
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 1.9952623149688795
+induction_time = 1935.2473224500238
+surface_limited_growth = 1.5705020858656978e-10
+limiting_regime = "REACTION"
+[[tests]]
+id = "highly_supersaturated"
+type = "reference"
+status = "active"
+source = "The capture's `si_1.5` row: at S = 31.6 the induction time is 1.29e-3 h and the surface growth 4689 mm/yr.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 1.5
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-5
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 31.622776601683793
+induction_time = 4.629348327279107
+surface_limited_growth = 1.4867999219885724e-7
+[[tests]]
+id = "transport_limited"
+type = "reference"
+status = "active"
+source = "The capture's `transport_limited` row: 50 mm/yr surface against a 1 um/s mass-transfer coefficient moving 1 mol/m3, so transport governs at 3.7e-11 m/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 2.0
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882295e-9
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-6
+bulk_concentration = 1.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 100.0
+induction_time = 4.1470308411734145
+surface_limited_growth = 1.5539383561643836e-5
+transport_limited_growth = 3.7e-11
+effective_growth_rate = 3.7e-11
+limiting_regime = "TRANSPORT"
+[[tests]]
+id = "reaction_limited_with_transport"
+type = "reference"
+status = "active"
+source = "The capture's `reaction_limited` row: a fast mass-transfer coefficient gives 1166.8 mm/yr of transport potential against 405 mm/yr of surface growth, so reaction governs.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 1.0
+nucleation_constant = 3.6
+nucleation_shape_factor = 3.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 1.0e-3
+bulk_concentration = 1.0
+equilibrium_concentration = 0.0
+[tests.expected]
+surface_limited_growth = 1.2842465753424659e-8
+transport_limited_growth = 3.6999999999999994e-8
+effective_growth_rate = 1.2842465753424659e-8
+limiting_regime = "REACTION"
+[[tests]]
+id = "custom_nucleation"
+type = "reference"
+status = "active"
+source = "The capture's `custom_nucleation` row: a 0.01 h constant and B = 5 at SI 0.5.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 0.5
+nucleation_constant = 36.0
+nucleation_shape_factor = 5.0
+surface_rate_constant = 1.5854895991882293e-10
+surface_reaction_order = 2.0
+mass_transfer_coefficient = 0.0
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 3.1622776601683795
+induction_time = 1565.1749387693908
+surface_limited_growth = 7.412868911186013e-10
+[[tests]]
+id = "clamped_setters"
+type = "reference"
+status = "active"
+source = "The capture's `clamped_setters` row: negative constant, shape, rate and coefficient all clamp to zero, and the zero transport rate means reaction controls.\n"
+tolerance = 1e-12
+[tests.inputs]
+saturation_index = 1.0
+nucleation_constant = 0.0
+nucleation_shape_factor = 0.0
+surface_rate_constant = 0.0
+surface_reaction_order = -1.0
+mass_transfer_coefficient = 0.0
+bulk_concentration = 0.0
+equilibrium_concentration = 0.0
+[tests.expected]
+supersaturation_ratio = 10.0
+induction_time = 0.0
+surface_limited_growth = 0.0
+effective_growth_rate = 0.0
+limiting_regime = "REACTION"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.scale_kinetics"
+rust = "azoth_eos::scale_kinetics"

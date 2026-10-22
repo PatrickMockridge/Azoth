@@ -23,6 +23,9 @@ exponents = [0, 1, 0, 0, 0, 0, 0]
 id = "mass_rate"
 exponents = [0, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
+id = "time"
+exponents = [0, 0, 1, 0, 0, 0, 0]
+[[dimensions]]
 id = "amount"
 exponents = [0, 0, 0, 0, 0, 1, 0]
 [[dimensions]]
@@ -187,6 +190,12 @@ dimension = "pressure"
 pint = "pascal"
 uom = "pressure::pascal"
 rust_ctor = "pascals"
+[[units]]
+id = "s"
+dimension = "time"
+pint = "second"
+uom = "time::second"
+rust_ctor = "seconds"
 [[units]]
 id = "Pa*s"
 dimension = "dynamic_viscosity"

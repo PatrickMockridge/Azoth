@@ -8,7 +8,7 @@
 use azoth_core::units::{
     DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, Molality, MolarConcentration,
     MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
-    ThermodynamicTemperature, Velocity,
+    ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1309,6 +1309,84 @@ impl CalcResult for BrineMixingScaleEvaluatorResult {
         "worst_fraction_a",
         "worst_mineral",
         "worst_saturation_index",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_inhibitor_performance`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleInhibitorPerformanceResult {
+    /// The minimum inhibitor concentration the correlation returns.
+    pub minimum_inhibitor_concentration: MassDensity,
+    /// `1.5 * minimum_inhibitor_concentration`.
+    pub recommended_dose: MassDensity,
+    /// The efficiency at the supplied dose, 0..1.
+    pub efficiency: f64,
+    /// Whether the supplied dose meets the MIC.
+    pub adequate: bool,
+    /// Phosphonate above 175 C.
+    pub thermal_degradation_risk: bool,
+    /// Phosphonate with more than 2000 mg/L calcium.
+    pub calcium_phosphonate_precipitation_risk: bool,
+    /// A saturation ratio above 100.
+    pub extreme_supersaturation_risk: bool,
+    /// Phosphate ester below 40 C.
+    pub low_temperature_solubility_risk: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleInhibitorPerformanceResult {
+    const CALC_ID: &'static str = "eos.scale_inhibitor_performance";
+    const FIELDS: &'static [&'static str] = &[
+        "minimum_inhibitor_concentration",
+        "recommended_dose",
+        "efficiency",
+        "adequate",
+        "thermal_degradation_risk",
+        "calcium_phosphonate_precipitation_risk",
+        "extreme_supersaturation_risk",
+        "low_temperature_solubility_risk",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_kinetics`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleKineticsResult {
+    /// `S = 10^SI`.
+    pub supersaturation_ratio: f64,
+    /// The nucleation induction time; infinite at or below saturation.
+    pub induction_time: Time,
+    /// The surface-reaction growth rate.
+    pub surface_limited_growth: Velocity,
+    /// The mass-transport growth rate; zero when no transport data are given.
+    pub transport_limited_growth: Velocity,
+    /// The rate-controlling growth rate.
+    pub effective_growth_rate: Velocity,
+    /// `REACTION`, `TRANSPORT` or `NONE`.
+    pub limiting_regime: String,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleKineticsResult {
+    const CALC_ID: &'static str = "eos.scale_kinetics";
+    const FIELDS: &'static [&'static str] = &[
+        "supersaturation_ratio",
+        "induction_time",
+        "surface_limited_growth",
+        "transport_limited_growth",
+        "effective_growth_rate",
+        "limiting_regime",
         "warnings",
     ];
 

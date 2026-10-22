@@ -37,6 +37,7 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "m/s": "meter/second",
     "m**2/s": "meter**2/second",
     "Pa": "pascal",
+    "s": "second",
     "Pa*s": "pascal*second",
     "K": "kelvin",
     "W": "watt",

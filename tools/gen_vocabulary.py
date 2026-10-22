@@ -81,6 +81,7 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (3, 0, -1, 0, 0, 0, 0): "VolumeRate",
     (0, 1, -1, 0, 0, 0, 0): "MassRate",
     (0, 0, -1, 0, 0, 1, 0): None,  # MolarFlow: uom has no molar-flow quantity
+    (0, 0, 1, 0, 0, 0, 0): "Time",
     (-3, 1, 0, 0, 0, 0, 0): "MassDensity",
     (-3, 0, 0, 0, 0, 1, 0): "MolarConcentration",
     (1, 0, -1, 0, 0, 0, 0): "Velocity",
@@ -161,6 +162,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "m**3/s": "Dimension.Volume / Dimension.Time",
     "kg/s": "Dimension.Mass / Dimension.Time",
     "kg": "Dimension.Mass",
+    "s": "Dimension.Time",
     "mol": "Dimension.AmountOfSubstance",
     "mol/s": "Dimension.AmountOfSubstance / Dimension.Time",
     "kg/m**3": "Dimension.Mass / Dimension.Volume",

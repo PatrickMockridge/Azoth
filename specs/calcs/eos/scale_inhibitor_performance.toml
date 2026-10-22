@@ -1,0 +1,294 @@
+id = "eos.scale_inhibitor_performance"
+name = "Screening performance of an oilfield scale inhibitor"
+equation = "MIC = MIC_base * f_T(T) * f_TDS(TDS) * f_SR(SR) * f_Ca(Ca)\n\nf_T = 1 for T <= knee, exp(slope (T - knee)) above it\nf_TDS = max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))\nf_SR = max(0.5, 1 + 0.6 log10(max(1, SR)/5))\nf_Ca = 1 + 0.5 log10(Ca/1000) for phosphonate above 1000 mg/L Ca, else 1\n\nrecommended = 1.5 MIC\nratio = dose/MIC\nefficiency = 0.85 ratio below MIC, min(1, 0.85 + 0.15 (1 - exp(-(ratio - 1)))) at or above it"
+latex = '''C_{\mathrm{MIC}} = C_{\mathrm{base}}\,f_T(T)\,f_{\mathrm{TDS}}(\mathrm{TDS})\,f_{SR}(SR)\,f_{\mathrm{Ca}}(\mathrm{Ca}), \qquad C_{\mathrm{rec}} = 1.5\,C_{\mathrm{MIC}}
+\eta = 0.85\frac{C}{C_{\mathrm{MIC}}} \;\; (C < C_{\mathrm{MIC}}), \qquad \eta = \min\left(1, 0.85 + 0.15\left(1 - e^{-(C/C_{\mathrm{MIC}} - 1)}\right)\right)'''
+assumptions = [
+    "the class takes mg/L, degrees Celsius and the saturation *ratio* `SR = IAP/Ksp`; this calc takes kg/m3 and kelvin, and the ratio as stated.\n",
+    "**the base MIC is a table**: CaCO3 5, BaSO4 10, SrSO4 8, CaSO4 6, FeCO3 12 mg/L, times a chemistry factor (phosphonate 1.0, polymaleate 1.2, polyacrylate 1.4, phosphate ester 1.1, vinyl sulphonate 1.3), times 0.8 for barite on phosphonate and 0.9 for calcite on polymaleate.\n",
+    "**the temperature knee is per chemistry**: phosphonate and vinyl sulphonate 100 C at 0.015, polymaleate 130 C at 0.012, polyacrylate 120 C at 0.013, phosphate ester 150 C at 0.010; at or below the knee the factor is one.\n",
+    "the TDS factor is `max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))` and the saturation factor `max(0.5, 1 + 0.6 log10(max(1, SR)/5))`, so both floors are reachable and both clamps use a one mg/L or one ratio input.\n",
+    "**the calcium penalty applies to phosphonate alone** and only above 1000 mg/L: `1 + 0.5 log10(Ca/1000)`. A polyacrylate at the same calcium carries no penalty.\n",
+    "the recommended dose is 1.5 times the MIC, `efficiency` is 0 when no dose is stated, and `adequate` is `ratio >= 1`.\n",
+    "**the class's four warnings are predicates**: thermal degradation (phosphonate above 175 C), calcium-phosphonate precipitation (above 2000 mg/L Ca), extreme supersaturation (SR > 100) and cold phosphate-ester solubility (below 40 C), reported as flags.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ScaleInhibitorPerformance.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/process_scale_probe.tsv` - the `inhibitor` rows: every scale type and chemistry, both sides of the temperature knee, the TDS and saturation floors, the calcium penalty and the efficiency at half, at and above the MIC.",
+    "Kan, A. T.; Tomson, M. B. (2010). SPE 130901. Sorbie, K. S.; Mackay, E. J. (2000). SPE 169787. NACE TM0374.",
+]
+[source]
+standard = "NeqSim master `ScaleInhibitorPerformance`"
+edition = "`evaluate`, `baseMic`, `temperatureFactor`, `ionicStrengthFactor`, `saturationFactor`, `calciumFactor` and the warning predicates, ported. The enum setters' storage, the message strings and the Gson report are not."
+[inputs]
+[inputs.scale_type]
+type = "enum"
+values = ["caco3", "baso4", "srso4", "caso4", "feco3"]
+description = "the mineral the inhibitor is dosed against.\n"
+[inputs.inhibitor_chemistry]
+type = "enum"
+values = ["phosphonate", "polymaleate", "polyacrylate", "phosphate_ester", "vinyl_sulphonate"]
+description = "the inhibitor family.\n"
+[inputs.temperature]
+unit = "K"
+description = "the operating temperature.\n"
+[inputs.saturation_ratio]
+unit = "dimensionless"
+description = "`SR = IAP/Ksp`, a ratio and not its logarithm.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "the brine's total dissolved solids, 50000 mg/L as 50 kg/m3.\n"
+[inputs.calcium]
+unit = "kg/m**3"
+description = "calcium concentration, which carries the phosphonate penalty above 1000 mg/L.\n"
+[inputs.available_dose]
+unit = "kg/m**3"
+description = "the active inhibitor dose; zero reports zero efficiency rather than the MIC.\n"
+[outputs]
+[outputs.minimum_inhibitor_concentration]
+unit = "kg/m**3"
+description = "the MIC the correlation returns.\n"
+[outputs.recommended_dose]
+unit = "kg/m**3"
+description = "1.5 times the MIC.\n"
+[outputs.efficiency]
+unit = "dimensionless"
+description = "the efficiency at the supplied dose, 0..1; zero when no dose is stated.\n"
+[outputs.adequate]
+type = "boolean"
+description = "whether the supplied dose meets the MIC.\n"
+[outputs.thermal_degradation_risk]
+type = "boolean"
+description = "phosphonate above 175 C.\n"
+[outputs.calcium_phosphonate_precipitation_risk]
+type = "boolean"
+description = "phosphonate with more than 2000 mg/L calcium.\n"
+[outputs.extreme_supersaturation_risk]
+type = "boolean"
+description = "a saturation ratio above 100.\n"
+[outputs.low_temperature_solubility_risk]
+type = "boolean"
+description = "phosphate ester below 40 C.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "saturation_ratio"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "The class clamps a ratio below one in its saturation factor; a negative ratio is a caller's mistake rather than a state, and the arithmetic still runs.\n"
+[[valid_range]]
+quantity = "total_dissolved_solids"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "calcium"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A concentration cannot be negative.\n"
+[[valid_range]]
+quantity = "available_dose"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A dose cannot be negative.\n"
+[worked_example]
+source = "the capture's `caco3_phosphonate_default` row"
+derivation = "Calcite on phosphonate at the class's reference conditions: 60 C, SR 5, TDS 50000 mg/L, Ca 1000 mg/L, no dose.\n\n  base = 5.0 * 1.0 = 5 mg/L\n  f_T(60 C) = 1 (below the 100 C knee)\n  f_TDS = 1 + 0.2 log10(50000/50000) = 1\n  f_SR = 1 + 0.6 log10(5/5) = 1\n  f_Ca = 1 (1000 mg/L is not above the threshold)\n  MIC = 5 mg/L = 0.005 kg/m3,  recommended = 7.5 mg/L = 0.0075 kg/m3\n  no dose, so efficiency = 0 and adequate = false\n"
+tolerance = 1e-12
+[worked_example.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 5.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[worked_example.expected]
+minimum_inhibitor_concentration = 0.005
+recommended_dose = 0.0075
+efficiency = 0.0
+[[tests]]
+id = "inhibitor_default_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "barite_at_higher_saturation"
+type = "reference"
+status = "active"
+source = "The capture's `baso4_phosphonate_sr50` row: the barite base 10 mg/L with its 0.8 phosphonate preference, and the saturation factor at SR 50.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "baso4"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 50.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.0128
+recommended_dose = 0.0192
+[[tests]]
+id = "phosphonate_calcium_penalty"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_phosphonate_ca5000` row: 5000 mg/L calcium multiplies the MIC by 1 + 0.5 log10(5) and raises the precipitation warning.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 5.0
+total_dissolved_solids = 50.0
+calcium = 5.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.006747425010840047
+[[tests]]
+id = "efficiency_at_the_recommended_dose"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_at_recommended_dose` row: SR 10 gives 5.903 mg/L MIC, and the recommended dose is 1.5 times it, so ratio 1.5 and efficiency 0.909.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 10.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.008854634980487916
+[tests.expected]
+minimum_inhibitor_concentration = 0.005903089986991944
+recommended_dose = 0.008854634980487916
+efficiency = 0.909020401043105
+[[tests]]
+id = "barite_at_95c"
+type = "reference"
+status = "active"
+source = "The capture's `barite_95c` row: barite, phosphonate, 95 C, SR 12, TDS 90000, Ca 1200 and a 15 mg/L dose; efficiency 0.899.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "baso4"
+inhibitor_chemistry = "phosphonate"
+temperature = 368.15
+saturation_ratio = 12.0
+total_dissolved_solids = 90.0
+calcium = 1.2
+available_dose = 0.015
+[tests.expected]
+minimum_inhibitor_concentration = 0.010735462668718297
+recommended_dose = 0.016103194003077444
+efficiency = 0.899173929544252
+[[tests]]
+id = "phosphonate_thermal_limit"
+type = "reference"
+status = "active"
+source = "The capture's `phosphonate_180c` row: the 100 C knee gives exp(0.015 * 80) = 3.3201, and the degradation warning flags.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 453.15
+saturation_ratio = 5.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.016600584613682734
+[[tests]]
+id = "phosphate_ester_cold_limit"
+type = "reference"
+status = "active"
+source = "The capture's `phosphate_ester_30c` row: 5 * 1.1 = 5.5 mg/L below the 150 C knee, and the below-40-C solubility warning flags.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphate_ester"
+temperature = 303.15
+saturation_ratio = 5.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.0055
+[[tests]]
+id = "extreme_supersaturation"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_sr200` row: SR 200 raises both the saturation factor and the extreme-supersaturation flag.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 200.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.009806179973983886
+[[tests]]
+id = "tds_floor"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_tds1` row: one mg/L TDS would give a factor below the class's 0.5 floor, so the floor binds.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 5.0
+total_dissolved_solids = 0.001
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.0025
+[[tests]]
+id = "saturation_floor"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_sr0.5` row: a ratio below one takes the class's `max(1, SR)` and the saturation factor's 0.5 floor does not bind.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 0.5
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.0
+[tests.expected]
+minimum_inhibitor_concentration = 0.0029030899869919438
+[[tests]]
+id = "half_the_mic"
+type = "reference"
+status = "active"
+source = "The capture's `caco3_half_mic` row: half the MIC gives efficiency 0.85 * 0.5 = 0.425 and is not adequate.\n"
+tolerance = 1e-12
+[tests.inputs]
+scale_type = "caco3"
+inhibitor_chemistry = "phosphonate"
+temperature = 333.15
+saturation_ratio = 10.0
+total_dissolved_solids = 50.0
+calcium = 1.0
+available_dose = 0.002951544993495972
+[tests.expected]
+efficiency = 0.425
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[implementations]
+python = "azoth.eos.scale_inhibitor_performance"
+rust = "azoth_eos::scale_inhibitor_performance"

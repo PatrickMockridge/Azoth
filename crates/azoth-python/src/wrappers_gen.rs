@@ -2930,6 +2930,72 @@ pub fn salt_precipitation(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Screening performance of an oilfield scale inhibitor.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (scale_type, inhibitor_chemistry, temperature, saturation_ratio, total_dissolved_solids, calcium, available_dose))]
+#[pyo3(
+    text_signature = "(scale_type, inhibitor_chemistry, temperature, saturation_ratio, total_dissolved_solids, calcium, available_dose)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn scale_inhibitor_performance(
+    py: Python<'_>,
+    scale_type: &str,
+    inhibitor_chemistry: &str,
+    temperature: f64,
+    saturation_ratio: f64,
+    total_dissolved_solids: f64,
+    calcium: f64,
+    available_dose: f64,
+) -> PyResult<crate::transport_gen::PyScaleInhibitorPerformanceResult> {
+    azoth_eos::scale_inhibitor_performance::scale_inhibitor_performance(
+        scale_type,
+        inhibitor_chemistry,
+        kelvins(temperature),
+        saturation_ratio,
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(available_dose),
+    )
+    .map(|r| crate::transport_gen::PyScaleInhibitorPerformanceResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Screening precipitation kinetics from a saturation index.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (saturation_index, nucleation_constant, nucleation_shape_factor, surface_rate_constant, surface_reaction_order, mass_transfer_coefficient, bulk_concentration, equilibrium_concentration))]
+#[pyo3(
+    text_signature = "(saturation_index, nucleation_constant, nucleation_shape_factor, surface_rate_constant, surface_reaction_order, mass_transfer_coefficient, bulk_concentration, equilibrium_concentration)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn scale_kinetics(
+    py: Python<'_>,
+    saturation_index: f64,
+    nucleation_constant: f64,
+    nucleation_shape_factor: f64,
+    surface_rate_constant: f64,
+    surface_reaction_order: f64,
+    mass_transfer_coefficient: f64,
+    bulk_concentration: f64,
+    equilibrium_concentration: f64,
+) -> PyResult<crate::transport_gen::PyScaleKineticsResult> {
+    azoth_eos::scale_kinetics::scale_kinetics(
+        saturation_index,
+        nucleation_constant,
+        nucleation_shape_factor,
+        surface_rate_constant,
+        surface_reaction_order,
+        mass_transfer_coefficient,
+        moles_per_cubic_meter(bulk_concentration),
+        moles_per_cubic_meter(equilibrium_concentration),
+    )
+    .map(|r| crate::transport_gen::PyScaleKineticsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Scale mass precipitated from a supersaturation index.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

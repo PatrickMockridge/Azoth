@@ -3074,6 +3074,68 @@ class SaturateWithWaterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ScaleInhibitorPerformanceResult(_HasWarnings):
+    """Result of ``eos.scale_inhibitor_performance``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_inhibitor_performance"
+
+    #: the MIC the correlation returns.
+    minimum_inhibitor_concentration: Q
+
+    #: 1.5 times the MIC.
+    recommended_dose: Q
+
+    #: the efficiency at the supplied dose, 0..1; zero when no dose is stated.
+    efficiency: float
+
+    #: whether the supplied dose meets the MIC.
+    adequate: bool
+
+    #: phosphonate above 175 C.
+    thermal_degradation_risk: bool
+
+    #: phosphonate with more than 2000 mg/L calcium.
+    calcium_phosphonate_precipitation_risk: bool
+
+    #: a saturation ratio above 100.
+    extreme_supersaturation_risk: bool
+
+    #: phosphate ester below 40 C.
+    low_temperature_solubility_risk: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleKineticsResult(_HasWarnings):
+    """Result of ``eos.scale_kinetics``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_kinetics"
+
+    #: `S = 10^SI`.
+    supersaturation_ratio: float
+
+    #: the nucleation induction time; infinite at or below saturation.
+    induction_time: Q
+
+    #: the surface-reaction growth rate.
+    surface_limited_growth: Q
+
+    #: the mass-transport growth rate; zero when no transport data are given.
+    transport_limited_growth: Q
+
+    #: the rate-controlling growth rate.
+    effective_growth_rate: Q
+
+    #: `REACTION`, `TRANSPORT` or `NONE`, the class's own labels.
+    limiting_regime: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleMassResult(_HasWarnings):
     """Result of ``eos.scale_mass``."""
 

@@ -1461,6 +1461,28 @@ class SaturateWithWaterResult:
     warnings: list[Warning]
 
 @final
+class ScaleInhibitorPerformanceResult:
+    minimum_inhibitor_concentration: Qty
+    recommended_dose: Qty
+    efficiency: float
+    adequate: bool
+    thermal_degradation_risk: bool
+    calcium_phosphonate_precipitation_risk: bool
+    extreme_supersaturation_risk: bool
+    low_temperature_solubility_risk: bool
+    warnings: list[Warning]
+
+@final
+class ScaleKineticsResult:
+    supersaturation_ratio: float
+    induction_time: Qty
+    surface_limited_growth: Qty
+    transport_limited_growth: Qty
+    effective_growth_rate: Qty
+    limiting_regime: str
+    warnings: list[Warning]
+
+@final
 class ScaleMassResult:
     precipitated_mass: Qty
     precipitated_moles: Qty
@@ -3738,6 +3760,25 @@ def saturate_with_water(
     eos: str,
     associating: bool | None = None,
 ) -> SaturateWithWaterResult: ...
+def scale_inhibitor_performance(
+    scale_type: str,
+    inhibitor_chemistry: str,
+    temperature: float,
+    saturation_ratio: float,
+    total_dissolved_solids: float,
+    calcium: float,
+    available_dose: float,
+) -> ScaleInhibitorPerformanceResult: ...
+def scale_kinetics(
+    saturation_index: float,
+    nucleation_constant: float,
+    nucleation_shape_factor: float,
+    surface_rate_constant: float,
+    surface_reaction_order: float,
+    mass_transfer_coefficient: float,
+    bulk_concentration: float,
+    equilibrium_concentration: float,
+) -> ScaleKineticsResult: ...
 def scale_mass(
     mineral: str,
     cation_concentration: float,

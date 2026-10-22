@@ -7818,6 +7818,158 @@ impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterR
         }
     }
 }
+/// Result of `eos.scale_inhibitor_performance`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleInhibitorPerformanceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleInhibitorPerformanceResult {
+    /// the MIC the correlation returns.
+    #[pyo3(get)]
+    pub minimum_inhibitor_concentration: PyQty,
+    /// 1.5 times the MIC.
+    #[pyo3(get)]
+    pub recommended_dose: PyQty,
+    /// the efficiency at the supplied dose, 0..1; zero when no dose is stated.
+    #[pyo3(get)]
+    pub efficiency: f64,
+    /// whether the supplied dose meets the MIC.
+    #[pyo3(get)]
+    pub adequate: bool,
+    /// phosphonate above 175 C.
+    #[pyo3(get)]
+    pub thermal_degradation_risk: bool,
+    /// phosphonate with more than 2000 mg/L calcium.
+    #[pyo3(get)]
+    pub calcium_phosphonate_precipitation_risk: bool,
+    /// a saturation ratio above 100.
+    #[pyo3(get)]
+    pub extreme_supersaturation_risk: bool,
+    /// phosphate ester below 40 C.
+    #[pyo3(get)]
+    pub low_temperature_solubility_risk: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleInhibitorPerformanceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleInhibitorPerformanceResult(minimum_inhibitor_concentration={:?}, recommended_dose={:?}, efficiency={:?}, adequate={:?}, thermal_degradation_risk={:?}, calcium_phosphonate_precipitation_risk={:?}, extreme_supersaturation_risk={:?}, low_temperature_solubility_risk={:?}, {} warning(s))",
+            self.minimum_inhibitor_concentration,
+            self.recommended_dose,
+            self.efficiency,
+            self.adequate,
+            self.thermal_degradation_risk,
+            self.calcium_phosphonate_precipitation_risk,
+            self.extreme_supersaturation_risk,
+            self.low_temperature_solubility_risk,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleInhibitorPerformanceResult>
+    for PyScaleInhibitorPerformanceResult
+{
+    fn from(r: &azoth_eos::results::ScaleInhibitorPerformanceResult) -> Self {
+        Self {
+            minimum_inhibitor_concentration: PyQty {
+                magnitude_si: r.minimum_inhibitor_concentration.value,
+                unit: "kg/m**3".to_string(),
+            },
+            recommended_dose: PyQty {
+                magnitude_si: r.recommended_dose.value,
+                unit: "kg/m**3".to_string(),
+            },
+            efficiency: r.efficiency,
+            adequate: r.adequate,
+            thermal_degradation_risk: r.thermal_degradation_risk,
+            calcium_phosphonate_precipitation_risk: r.calcium_phosphonate_precipitation_risk,
+            extreme_supersaturation_risk: r.extreme_supersaturation_risk,
+            low_temperature_solubility_risk: r.low_temperature_solubility_risk,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_kinetics`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleKineticsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleKineticsResult {
+    /// `S = 10^SI`.
+    #[pyo3(get)]
+    pub supersaturation_ratio: f64,
+    /// the nucleation induction time; infinite at or below saturation.
+    #[pyo3(get)]
+    pub induction_time: PyQty,
+    /// the surface-reaction growth rate.
+    #[pyo3(get)]
+    pub surface_limited_growth: PyQty,
+    /// the mass-transport growth rate; zero when no transport data are given.
+    #[pyo3(get)]
+    pub transport_limited_growth: PyQty,
+    /// the rate-controlling growth rate.
+    #[pyo3(get)]
+    pub effective_growth_rate: PyQty,
+    /// `REACTION`, `TRANSPORT` or `NONE`, the class's own labels.
+    #[pyo3(get)]
+    pub limiting_regime: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleKineticsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleKineticsResult(supersaturation_ratio={:?}, induction_time={:?}, surface_limited_growth={:?}, transport_limited_growth={:?}, effective_growth_rate={:?}, limiting_regime={:?}, {} warning(s))",
+            self.supersaturation_ratio,
+            self.induction_time,
+            self.surface_limited_growth,
+            self.transport_limited_growth,
+            self.effective_growth_rate,
+            self.limiting_regime,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleKineticsResult> for PyScaleKineticsResult {
+    fn from(r: &azoth_eos::results::ScaleKineticsResult) -> Self {
+        Self {
+            supersaturation_ratio: r.supersaturation_ratio,
+            induction_time: PyQty {
+                magnitude_si: r.induction_time.value,
+                unit: "s".to_string(),
+            },
+            surface_limited_growth: PyQty {
+                magnitude_si: r.surface_limited_growth.value,
+                unit: "m/s".to_string(),
+            },
+            transport_limited_growth: PyQty {
+                magnitude_si: r.transport_limited_growth.value,
+                unit: "m/s".to_string(),
+            },
+            effective_growth_rate: PyQty {
+                magnitude_si: r.effective_growth_rate.value,
+                unit: "m/s".to_string(),
+            },
+            limiting_regime: r.limiting_regime.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.scale_mass`, transported.
 #[pyclass(
     frozen,

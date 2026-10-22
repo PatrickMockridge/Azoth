@@ -80,6 +80,8 @@
   - [Saturated liquid molar volume from the Rackett equation](./eos/rackett_molar_volume.md)
   - [Redlich-Kwong alpha function and reduced attraction parameters](./eos/rk_alpha_ab.md)
   - [Redlich-Kwong fugacity coefficient and departure functions](./eos/rk_departure.md)
+  - [Screening performance of an oilfield scale inhibitor](./eos/scale_inhibitor_performance.md)
+  - [Screening precipitation kinetics from a saturation index](./eos/scale_kinetics.md)
   - [Scale mass precipitated from a supersaturation index](./eos/scale_mass.md)
   - [Mineral-scale saturation indices from a water analysis](./eos/scale_prediction.md)
   - [Scale saturation ratio of one salt](./eos/scale_saturation_ratio.md)

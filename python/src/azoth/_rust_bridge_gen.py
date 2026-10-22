@@ -190,6 +190,8 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleInhibitorPerformanceResult,
+    ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
     ScaleSaturationRatioResult,
@@ -467,6 +469,8 @@ __all__ = [
     "saft_vr_mie_phase",
     "salt_precipitation",
     "saturate_with_water",
+    "scale_inhibitor_performance",
+    "scale_kinetics",
     "scale_mass",
     "scale_prediction",
     "scale_saturation_ratio",
@@ -3257,6 +3261,55 @@ def saturate_with_water(components: list[str], moles: list[float], T: Q, P: Q, e
         x=tuple(tuple(row) for row in result.x),
         z_factor=tuple(result.z_factor),
         aqueous_present=result.aqueous_present,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_inhibitor_performance(scale_type: str, inhibitor_chemistry: str, temperature: Q, saturation_ratio: float, total_dissolved_solids: Q, calcium: Q, available_dose: Q) -> ScaleInhibitorPerformanceResult:
+    """``eos.scale_inhibitor_performance``, computed in Rust."""
+    spec = _spec_for("eos.scale_inhibitor_performance")
+    result = _core.scale_inhibitor_performance(
+        scale_type,
+        inhibitor_chemistry,
+        input_to_si(spec, "temperature", temperature),
+        saturation_ratio,
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "available_dose", available_dose),
+    )
+    return ScaleInhibitorPerformanceResult(
+        minimum_inhibitor_concentration=from_si(result.minimum_inhibitor_concentration.magnitude_si, result.minimum_inhibitor_concentration.unit),
+        recommended_dose=from_si(result.recommended_dose.magnitude_si, result.recommended_dose.unit),
+        efficiency=result.efficiency,
+        adequate=result.adequate,
+        thermal_degradation_risk=result.thermal_degradation_risk,
+        calcium_phosphonate_precipitation_risk=result.calcium_phosphonate_precipitation_risk,
+        extreme_supersaturation_risk=result.extreme_supersaturation_risk,
+        low_temperature_solubility_risk=result.low_temperature_solubility_risk,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_kinetics(saturation_index: float, nucleation_constant: Q, nucleation_shape_factor: float, surface_rate_constant: Q, surface_reaction_order: float, mass_transfer_coefficient: Q, bulk_concentration: Q, equilibrium_concentration: Q) -> ScaleKineticsResult:
+    """``eos.scale_kinetics``, computed in Rust."""
+    spec = _spec_for("eos.scale_kinetics")
+    result = _core.scale_kinetics(
+        saturation_index,
+        input_to_si(spec, "nucleation_constant", nucleation_constant),
+        nucleation_shape_factor,
+        input_to_si(spec, "surface_rate_constant", surface_rate_constant),
+        surface_reaction_order,
+        input_to_si(spec, "mass_transfer_coefficient", mass_transfer_coefficient),
+        input_to_si(spec, "bulk_concentration", bulk_concentration),
+        input_to_si(spec, "equilibrium_concentration", equilibrium_concentration),
+    )
+    return ScaleKineticsResult(
+        supersaturation_ratio=result.supersaturation_ratio,
+        induction_time=from_si(result.induction_time.magnitude_si, result.induction_time.unit),
+        surface_limited_growth=from_si(result.surface_limited_growth.magnitude_si, result.surface_limited_growth.unit),
+        transport_limited_growth=from_si(result.transport_limited_growth.magnitude_si, result.transport_limited_growth.unit),
+        effective_growth_rate=from_si(result.effective_growth_rate.magnitude_si, result.effective_growth_rate.unit),
+        limiting_regime=result.limiting_regime,
         warnings=_warnings(result.warnings),
     )
 

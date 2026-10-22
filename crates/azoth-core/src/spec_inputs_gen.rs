@@ -133,6 +133,8 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/calcs/eos/scale_inhibitor_performance.toml
+//!   - specs/calcs/eos/scale_kinetics.toml
 //!   - specs/calcs/eos/scale_mass.toml
 //!   - specs/calcs/eos/scale_prediction.toml
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
@@ -1420,6 +1422,55 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.saturate_with_water", "moles", "amount"),
     ("eos.saturate_with_water", "T", "thermodynamic_temperature"),
     ("eos.saturate_with_water", "P", "pressure"),
+    (
+        "eos.scale_inhibitor_performance",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.scale_inhibitor_performance",
+        "saturation_ratio",
+        "dimensionless",
+    ),
+    (
+        "eos.scale_inhibitor_performance",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    ("eos.scale_inhibitor_performance", "calcium", "mass_density"),
+    (
+        "eos.scale_inhibitor_performance",
+        "available_dose",
+        "mass_density",
+    ),
+    ("eos.scale_kinetics", "saturation_index", "dimensionless"),
+    ("eos.scale_kinetics", "nucleation_constant", "time"),
+    (
+        "eos.scale_kinetics",
+        "nucleation_shape_factor",
+        "dimensionless",
+    ),
+    ("eos.scale_kinetics", "surface_rate_constant", "velocity"),
+    (
+        "eos.scale_kinetics",
+        "surface_reaction_order",
+        "dimensionless",
+    ),
+    (
+        "eos.scale_kinetics",
+        "mass_transfer_coefficient",
+        "velocity",
+    ),
+    (
+        "eos.scale_kinetics",
+        "bulk_concentration",
+        "amount_concentration",
+    ),
+    (
+        "eos.scale_kinetics",
+        "equilibrium_concentration",
+        "amount_concentration",
+    ),
     (
         "eos.scale_mass",
         "cation_concentration",

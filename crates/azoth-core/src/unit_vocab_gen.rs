@@ -21,6 +21,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "volume_rate",
     "mass",
     "mass_rate",
+    "time",
     "amount",
     "molar_flow",
     "mass_density",
@@ -62,6 +63,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("volume_rate", [3, 0, -1, 0, 0, 0, 0]),
     ("mass", [0, 1, 0, 0, 0, 0, 0]),
     ("mass_rate", [0, 1, -1, 0, 0, 0, 0]),
+    ("time", [0, 0, 1, 0, 0, 0, 0]),
     ("amount", [0, 0, 0, 0, 0, 1, 0]),
     ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
     ("mass_density", [-3, 1, 0, 0, 0, 0, 0]),
@@ -137,6 +139,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "m/s",
     "m**2/s",
     "Pa",
+    "s",
     "Pa*s",
     "K",
     "W",
@@ -213,6 +216,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("s", [0, 0, 1, 0, 0, 0, 0]),
     ("Pa*s", [-1, 1, -1, 0, 0, 0, 0]),
     ("K", [0, 0, 0, 0, 1, 0, 0]),
     ("W", [2, 1, -3, 0, 0, 0, 0]),
@@ -312,6 +316,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
         crate::units::square_meters_per_second(v).value
     }),
     ("Pa", |v| crate::units::pascals(v).value),
+    ("s", |v| crate::units::seconds(v).value),
     ("Pa*s", |v| crate::units::pascal_seconds(v).value),
     ("K", |v| crate::units::kelvins(v).value),
     ("W", |v| crate::units::watts(v).value),
@@ -559,6 +564,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
     let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
     let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
+    let _: uom::si::f64::Time = crate::units::seconds(1.0);
     let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
     let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);
     let _: uom::si::f64::Power = crate::units::watts(1.0);

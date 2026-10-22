@@ -188,6 +188,8 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleInhibitorPerformanceResult,
+    ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
     ScaleSaturationRatioResult,
@@ -2855,6 +2857,74 @@ def tp_solid_flash(
     """
     return resolve("eos.tp_solid_flash")(  # type: ignore[no-any-return]
         components=components, solid=solid, T=T, P=P, z=z, eos=eos
+    )
+
+
+def scale_inhibitor_performance(
+    scale_type: str,
+    inhibitor_chemistry: str,
+    temperature: Q,
+    saturation_ratio: float,
+    total_dissolved_solids: Q,
+    calcium: Q,
+    available_dose: Q,
+) -> ScaleInhibitorPerformanceResult:
+    """The screening performance of an inhibitor at the stated dose.
+
+    NeqSim's ``ScaleInhibitorPerformance``: a base MIC per mineral and chemistry, four
+    multiplicative factors over temperature, TDS, saturation ratio and calcium, and the
+    efficiency at the dose available. The class's four warnings are reported as flags -
+    thermal degradation, calcium-phosphonate precipitation, extreme supersaturation and
+    low-temperature phosphate-ester solubility.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+        InvalidInputError: for an unknown scale type or chemistry.
+
+    See :func:`azoth.eos.reference.scale_inhibitor_performance`.
+    """
+    return resolve("eos.scale_inhibitor_performance")(  # type: ignore[no-any-return]
+        scale_type=scale_type,
+        inhibitor_chemistry=inhibitor_chemistry,
+        temperature=temperature,
+        saturation_ratio=saturation_ratio,
+        total_dissolved_solids=total_dissolved_solids,
+        calcium=calcium,
+        available_dose=available_dose,
+    )
+
+
+def scale_kinetics(
+    saturation_index: float,
+    nucleation_constant: Q,
+    nucleation_shape_factor: float,
+    surface_rate_constant: Q,
+    surface_reaction_order: float,
+    mass_transfer_coefficient: Q,
+    bulk_concentration: Q,
+    equilibrium_concentration: Q,
+) -> ScaleKineticsResult:
+    """The screening kinetics of a supersaturated solution.
+
+    NeqSim's ``ScaleKinetics``: a classical-nucleation induction time, a parabolic
+    surface-growth rate and a mass-transport rate over ``S = 10^SI``, with the smaller
+    rate reported as effective and its regime named ``REACTION``, ``TRANSPORT`` or
+    ``NONE``. The class's setters clamp a negative rate to zero, and so does this.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.scale_kinetics`.
+    """
+    return resolve("eos.scale_kinetics")(  # type: ignore[no-any-return]
+        saturation_index=saturation_index,
+        nucleation_constant=nucleation_constant,
+        nucleation_shape_factor=nucleation_shape_factor,
+        surface_rate_constant=surface_rate_constant,
+        surface_reaction_order=surface_reaction_order,
+        mass_transfer_coefficient=mass_transfer_coefficient,
+        bulk_concentration=bulk_concentration,
+        equilibrium_concentration=equilibrium_concentration,
     )
 
 
