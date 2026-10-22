@@ -682,6 +682,19 @@ inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
 ```
 
+**The flow-assurance remainder probe** records the six reachable calculators of
+`pvtsimulation/flowassurance` outside the scale set: de Waard–Milliams CO2/H2S/S8 corrosion,
+the API RP 14E / DNV RP O501 erosion screen, the six emulsion-viscosity models and the inversion
+point, the lumped pipeline cooldown march (supplied U and layer resistances, a step that does not
+divide the horizon, target crossings), the hydrate risk map over four profile points (including a
+dry fluid and a zero-water fluid), and the surface cooldown no-touch analyser (required-time
+bands, an operating-temperature override, a seabed above the hydrate temperature, and the
+no-water refusal).
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
