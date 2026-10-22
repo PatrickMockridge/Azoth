@@ -154,3 +154,24 @@ fn a_percentage_outside_the_range_warns_and_still_mixes() {
             .any(|warning| warning.field.is_none())
     );
 }
+
+/// **A non-finite percentage is refused on both sides** rather than mixed into a NaN-filled
+/// answer: the class would carry the NaN, and the library refuses an input it cannot order.
+#[test]
+fn a_non_finite_percentage_is_refused() {
+    let spec = model_gen::model(MODEL_ID).expect("the model should be in its table");
+    let case = &spec.cases[0];
+    let formation: Vec<WaterAnalysis> = common::record_input(case, "formation_water")
+        .iter()
+        .map(|row| analysis(row))
+        .collect();
+    let injection: Vec<WaterAnalysis> = common::record_input(case, "injection_water")
+        .iter()
+        .map(|row| analysis(row))
+        .collect();
+    for percent in [f64::NAN, f64::INFINITY] {
+        let error = water_compatibility(&formation, &injection, &[percent])
+            .expect_err("a non-finite percentage is not a mixture");
+        assert!(error.to_string().contains("injection_water_percent"));
+    }
+}

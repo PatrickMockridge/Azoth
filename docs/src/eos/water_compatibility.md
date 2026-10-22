@@ -42,7 +42,7 @@ checked against one.
 
 - **the two waters mix linearly in every quantity** - the eight ions, TDS, temperature, pressure and CO2 partial pressure - weighted by the injection water's share.
 
-- **the percentage is the class's own convention**: 0 is all formation water and 100 all injection water; a value outside [0, 100] is mixed as stated and warned about rather than clamped.
+- **the percentage is the class's own convention**: 0 is all formation water and 100 all injection water; a finite value outside [0, 100] is mixed as stated and warned about rather than clamped, and a non-finite one is refused.
 
 - **neither water record carries a pH, because neither water's pH is read**: the class stores both and passes neither to a calculator. Every mixture runs with auto-pH on, and the calculator's 6.5 stands where auto-pH's gate fails.
 

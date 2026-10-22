@@ -4,7 +4,7 @@ kind = "direct"
 assumptions = [
     "**each water is a one-row record list**, the shape the record input type has; a list with any other length is refused rather than read for its first row.\n",
     "**the two waters mix linearly in every quantity** - the eight ions, TDS, temperature, pressure and CO2 partial pressure - weighted by the injection water's share.\n",
-    "**the percentage is the class's own convention**: 0 is all formation water and 100 all injection water; a value outside [0, 100] is mixed as stated and warned about rather than clamped.\n",
+    "**the percentage is the class's own convention**: 0 is all formation water and 100 all injection water; a finite value outside [0, 100] is mixed as stated and warned about rather than clamped, and a non-finite one is refused.\n",
     "**neither water record carries a pH, because neither water's pH is read**: the class stores both and passes neither to a calculator. Every mixture runs with auto-pH on, and the calculator's 6.5 stands where auto-pH's gate fails.\n",
     "**auto-pH is always on**, so the class's broken Henry constant is exercised: the carbonate indices sit near -52 and are reported as they are, not repaired.\n",
     "**the worst case is the largest defined index in mineral order** CaCO3, BaSO4, SrSO4, CaSO4, FeCO3, with a strict greater-than so a tie keeps the earlier percentage and mineral.\n",

@@ -104,6 +104,10 @@ def water_compatibility(
                 raise OutOfRangeError(f"{label}.{name}", value, "must be non-negative")
 
     for percent in injection_water_percent:
+        if not math.isfinite(percent):
+            raise InvalidInputError(
+                "injection_water_percent", f"`{percent}` is not a finite percentage"
+            )
         if not 0.0 <= percent <= 100.0:
             warnings.append(
                 Warning(

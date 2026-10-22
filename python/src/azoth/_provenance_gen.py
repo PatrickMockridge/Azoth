@@ -1910,8 +1910,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.water_compatibility': {
         "calc_id": 'eos.water_compatibility',
         "name": 'Scale risk of mixing a formation water with an injection water',
-        "spec": {'path': 'specs/models/eos/water_compatibility.toml', 'sha256': 'eafc31b1cde0e58bde7d20e089534fe336fae9f87dc289a57d434aab717cfd19'},
-        "code": [{'path': 'python/src/azoth/eos/reference/water_compatibility.py', 'sha256': 'd01325e1e9681b0a0ccfd5142e74a0ab4a232118680c88627f146e32269ce1fc'}, {'path': 'crates/azoth-eos/src/water_compatibility.rs', 'sha256': 'aad6ca2c272bff840c098abe5f27030d743c55e3d02b29f7397dec93311a4826'}],
+        "spec": {'path': 'specs/models/eos/water_compatibility.toml', 'sha256': '358d089bc810e9c596e76a85e639088e6f407e4127d20bd0f3adca7e3404a55d'},
+        "code": [{'path': 'python/src/azoth/eos/reference/water_compatibility.py', 'sha256': '975e62863c4415b09a73aa623047e290889848b85f25fbe3c1893c2745e3ba2f'}, {'path': 'crates/azoth-eos/src/water_compatibility.rs', 'sha256': '25a73239bfcf576d1b6e8189a6d01ea246827af82c78b68d73e1bf67a968e4cc'}],
         "source": 'NeqSim master `WaterCompatibilityScreener`',
         "verification": 'partially_verified',
         "validation_cases": 0,

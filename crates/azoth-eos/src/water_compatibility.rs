@@ -135,6 +135,12 @@ pub fn water_compatibility(
         }
     }
     for percent in injection_water_percent {
+        if !percent.is_finite() {
+            return Err(azoth_core::AzothError::invalid_input(
+                "injection_water_percent",
+                format!("`{percent}` is not a finite percentage"),
+            ));
+        }
         if !(0.0..=100.0).contains(percent) {
             warnings.push(azoth_core::Warning::new(
                 azoth_core::WarningCode::OutOfValidRange,
