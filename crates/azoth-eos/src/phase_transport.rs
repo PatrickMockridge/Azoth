@@ -71,19 +71,6 @@ impl std::str::FromStr for PhaseKind {
 /// reachable: the common-phase ladder answers **zero** for a component whose LIQVISC model is 2.
 const MIN_ETA_CP: f64 = 0.01;
 
-/// A phase's viscosity, thermal conductivity, binary diffusivity matrix and effective
-/// diffusivities - the four the segment model's transport snapshot reads.
-///
-/// **The dispatch is the answer, not a detail.** NeqSim's `PhysicalProperties` is created by
-/// phase type and each subclass assigns its own models, so the same fluid's gas and liquid answer
-/// their properties from *different correlations*. The capture holds both the values and the model
-/// classes per phase, which is what the cases are held to.
-///
-/// # Errors
-/// * [`azoth_core::AzothError::InvalidInput`] if `z` is not one entry per component, or if the
-///   phase has fewer than two components - the effective diffusivity divides by an empty sum
-///   there and NeqSim answers a `NaN`.
-/// * Whatever the composed correlations refuse.
 /// The phase's viscosity alone.
 ///
 /// `phase_transport` refuses a one-component mixture because its *effective diffusivity*
@@ -132,6 +119,19 @@ pub(crate) fn viscosity_only(
     }
 }
 
+/// A phase's viscosity, thermal conductivity, binary diffusivity matrix and effective
+/// diffusivities - the four the segment model's transport snapshot reads.
+///
+/// **The dispatch is the answer, not a detail.** NeqSim's `PhysicalProperties` is created by
+/// phase type and each subclass assigns its own models, so the same fluid's gas and liquid answer
+/// their properties from *different correlations*. The capture holds both the values and the model
+/// classes per phase, which is what the cases are held to.
+///
+/// # Errors
+/// * [`azoth_core::AzothError::InvalidInput`] if `z` is not one entry per component, or if the
+///   phase has fewer than two components - the effective diffusivity divides by an empty sum
+///   there and NeqSim answers a `NaN`.
+/// * Whatever the composed correlations refuse.
 pub fn phase_transport(
     mixture: &Mixture,
     ideal_gas: &IdealGasModel,

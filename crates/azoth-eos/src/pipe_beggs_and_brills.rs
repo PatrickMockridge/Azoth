@@ -112,7 +112,7 @@ pub fn pipe_beggs_and_brills(
 
     for _ in 0..number_of_increments {
         let properties =
-            phase_properties(&mixture, &components, inlet_n, inlet_t, pressure, inlet_z)?;
+            phase_properties(&mixture, components, inlet_n, inlet_t, pressure, inlet_z)?;
         let drop = segment_drop(
             &properties,
             inlet_t.value,
@@ -142,7 +142,7 @@ pub fn pipe_beggs_and_brills(
     // The class re-evaluates the correlation once after the loop, so its segment lists are
     // one longer than the pressure profile's segments.
     let outlet_properties =
-        phase_properties(&mixture, &components, inlet_n, inlet_t, pressure, inlet_z)?;
+        phase_properties(&mixture, components, inlet_n, inlet_t, pressure, inlet_z)?;
     let final_drop = segment_drop(
         &outlet_properties,
         inlet_t.value,
