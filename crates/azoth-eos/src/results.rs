@@ -6,9 +6,9 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate,
-    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
-    SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
+    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate, Molality,
+    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension,
+    ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
