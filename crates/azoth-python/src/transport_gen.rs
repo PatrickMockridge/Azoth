@@ -16,7 +16,7 @@
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyFlowlineScaleSegment, PyKComponent,
     PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
-    PySubFraction, PyWaterMixingResult,
+    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -8915,6 +8915,72 @@ impl From<&azoth_eos::results::StabilityTestResult> for PyStabilityTestResult {
             w: r.w.clone(),
             iterations: r.iterations.clone(),
             min_t_over_tc: r.min_t_over_tc,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.stream_scale_analyzer`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StreamScaleAnalyzerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStreamScaleAnalyzerResult {
+    /// One row per registered mineral, in the equilibrium's order.
+    #[pyo3(get)]
+    pub minerals: Vec<PyStreamScaleMineralRow>,
+    /// the total precipitated mass per cubic metre.
+    #[pyo3(get)]
+    pub total_scale_mass: PyQty,
+    /// the total mass rate.
+    #[pyo3(get)]
+    pub total_scale_rate: PyQty,
+    /// the mineral precipitating the greatest mass, or `none`.
+    #[pyo3(get)]
+    pub dominant_scale: String,
+    /// whether the total precipitated mass is positive.
+    #[pyo3(get)]
+    pub has_scaling: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyStreamScaleAnalyzerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "StreamScaleAnalyzerResult(minerals={:?}, total_scale_mass={:?}, total_scale_rate={:?}, dominant_scale={:?}, has_scaling={:?}, {} warning(s))",
+            self.minerals,
+            self.total_scale_mass,
+            self.total_scale_rate,
+            self.dominant_scale,
+            self.has_scaling,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::StreamScaleAnalyzerResult> for PyStreamScaleAnalyzerResult {
+    fn from(r: &azoth_eos::results::StreamScaleAnalyzerResult) -> Self {
+        Self {
+            minerals: r
+                .minerals
+                .iter()
+                .map(PyStreamScaleMineralRow::from)
+                .collect(),
+            total_scale_mass: PyQty {
+                magnitude_si: r.total_scale_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            total_scale_rate: PyQty {
+                magnitude_si: r.total_scale_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            dominant_scale: r.dominant_scale.clone(),
+            has_scaling: r.has_scaling,
             warnings: transport(&r.warnings),
         }
     }

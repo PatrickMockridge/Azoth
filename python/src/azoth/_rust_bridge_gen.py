@@ -217,6 +217,8 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     StirredTankReactorResult,
+    StreamScaleAnalyzerResult,
+    StreamScaleMineralRow,
     StrippingColumnResult,
     SubFraction,
     SwameeJainResult,
@@ -498,6 +500,7 @@ __all__ = [
     "srk_z_factor",
     "stability_test",
     "stirred_tank_reactor",
+    "stream_scale_analyzer",
     "stripping_column",
     "tank",
     "tbp_closure",
@@ -3657,6 +3660,41 @@ def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTes
         w=tuple(tuple(row) for row in result.w),
         iterations=tuple(result.iterations),
         min_t_over_tc=result.min_t_over_tc,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def stream_scale_analyzer(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, temperature: Q, pressure: Q, co2_partial_pressure: Q, ph: float, auto_ph: bool, second_order_pressure_correction: bool, activity_model: str, water_flow: Q, bdot_ion_size: float | None=None, bdot_b: float | None=None, pitzer_ionic_strength_molal: float | None=None) -> StreamScaleAnalyzerResult:
+    """``eos.stream_scale_analyzer``, computed in Rust."""
+    spec = _models_gen.model("eos.stream_scale_analyzer")
+    result = _core.stream_scale_analyzer(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+        activity_model,
+        None if bdot_ion_size is None else _si(spec, "bdot_ion_size", bdot_ion_size),
+        None if bdot_b is None else _si(spec, "bdot_b", bdot_b),
+        None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
+        input_to_si(spec, "water_flow", water_flow),
+    )
+    return StreamScaleAnalyzerResult(
+        minerals=tuple(StreamScaleMineralRow(mineral=c.mineral, initial_si=c.initial_si, final_si=c.final_si, precipitated_mass=from_si(c.precipitated_mass.magnitude_si, c.precipitated_mass.unit), scale_rate=from_si(c.scale_rate.magnitude_si, c.scale_rate.unit)) for c in result.minerals),
+        total_scale_mass=from_si(result.total_scale_mass.magnitude_si, result.total_scale_mass.unit),
+        total_scale_rate=from_si(result.total_scale_rate.magnitude_si, result.total_scale_rate.unit),
+        dominant_scale=result.dominant_scale,
+        has_scaling=result.has_scaling,
         warnings=_warnings(result.warnings),
     )
 

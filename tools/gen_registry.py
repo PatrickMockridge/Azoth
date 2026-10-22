@@ -224,6 +224,9 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `scale_control_assessor`'s verdict, read by the model's own test: the boolean is
         # `worst_kinetic_risk_index < 0.5`, and both the number and the verdict are pinned.
         "kinetically_controlled",
+        # `stream_scale_analyzer`'s flag, read by the model's own test: it is the total
+        # precipitated mass being positive, and the total is pinned beside it.
+        "has_scaling",
     }
 )
 

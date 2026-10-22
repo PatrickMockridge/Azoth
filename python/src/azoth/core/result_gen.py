@@ -30,6 +30,7 @@ from azoth.core.record_outputs_gen import (
     RemediationOptionRow,
     ScaleControlRiskRow,
     ScaleControlRow,
+    StreamScaleMineralRow,
     SubFraction,
     WaterMixingResult,
 )
@@ -3522,6 +3523,31 @@ class StabilityTestResult(_HasWarnings):
 
     #: The smallest `T / Tc_i` over the components; a minimum above 0.9 means no component is well below its critical temperature.
     min_t_over_tc: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class StreamScaleAnalyzerResult(_HasWarnings):
+    """Result of ``eos.stream_scale_analyzer``."""
+
+    CALC_ID: ClassVar[str] = "eos.stream_scale_analyzer"
+
+    #: One row per registered mineral, in the equilibrium's order.
+    minerals: tuple[StreamScaleMineralRow, ...]
+
+    #: the total precipitated mass per cubic metre.
+    total_scale_mass: Q
+
+    #: the total mass rate.
+    total_scale_rate: Q
+
+    #: the mineral precipitating the greatest mass, or `none`.
+    dominant_scale: str
+
+    #: whether the total precipitated mass is positive.
+    has_scaling: bool
 
     #: Caveats.
     warnings: tuple[Warning, ...]

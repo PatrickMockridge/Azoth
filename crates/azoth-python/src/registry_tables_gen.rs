@@ -171,6 +171,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.srk_peneloux_shift" => azoth_eos::results::SrkPenelouxShiftResult::FIELDS.to_vec(),
         "eos.srk_z_factor" => azoth_eos::results::SrkZFactorResult::FIELDS.to_vec(),
         "eos.stability_test" => azoth_eos::results::StabilityTestResult::FIELDS.to_vec(),
+        "eos.stream_scale_analyzer" => azoth_eos::results::StreamScaleAnalyzerResult::FIELDS.to_vec(),
         "eos.tbp_fraction_properties" => azoth_eos::results::TbpFractionPropertiesResult::FIELDS.to_vec(),
         "eos.th_flash" => azoth_eos::results::ThFlashResult::FIELDS.to_vec(),
         "eos.thermal_conductivity" => azoth_eos::results::ThermalConductivityResult::FIELDS.to_vec(),

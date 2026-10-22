@@ -176,6 +176,26 @@ class ScaleControlRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class StreamScaleMineralRow:
+    """One row per registered mineral, in the equilibrium's order."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the index before anything precipitated.
+    initial_si: float
+
+    #: the index at the answer.
+    final_si: float
+
+    #: the precipitated mass per cubic metre of water, 1699.4 mg/L as 1.6994 kg/m3.
+    precipitated_mass: Q
+
+    #: the precipitated mass times the aqueous throughput.
+    scale_rate: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SubFraction:
     """The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order."""
 

@@ -170,6 +170,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySrkPenelouxShiftResult>()?;
     m.add_class::<crate::transport_gen::PySrkZFactorResult>()?;
     m.add_class::<crate::transport_gen::PyStabilityTestResult>()?;
+    m.add_class::<crate::transport_gen::PyStreamScaleAnalyzerResult>()?;
     m.add_class::<crate::transport_gen::PyTbpFractionPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyThFlashResult>()?;
     m.add_class::<crate::transport_gen::PyThermalConductivityResult>()?;
@@ -269,6 +270,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRiskRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyStreamScaleMineralRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
     m.add_class::<crate::record_outputs_gen::PyWaterMixingResult>()?;
 
@@ -640,6 +642,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::srk_z_factor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::stability_test, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::stream_scale_analyzer,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::tbp_fraction_properties,
         m

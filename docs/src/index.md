@@ -252,6 +252,7 @@ Five sections, and the difference between them is the point:
 - [`eos.soreide_whitson_phase`](./eos/soreide_whitson_phase.md) — Phase state of a Soreide-Whitson fluid
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
+- [`eos.stream_scale_analyzer`](./eos/stream_scale_analyzer.md) — Scale mass rates of an aqueous stream from its coupled mineral equilibrium
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
 - [`eos.thermal_conductivity`](./eos/thermal_conductivity.md) — Liquid thermal conductivity from the Pedersen (PFCT) correlation
 - [`eos.tp_flash_saft`](./eos/tp_flash_saft.md) — SAFT-VR-Mie flash

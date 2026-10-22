@@ -185,6 +185,7 @@
   - [Phase state of a Soreide-Whitson fluid](./eos/soreide_whitson_phase.md)
   - [Soave-Redlich-Kwong CPA phase state](./eos/srk_cpa_phase.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
+  - [Scale mass rates of an aqueous stream from its coupled mineral equilibrium](./eos/stream_scale_analyzer.md)
   - [Temperature-enthalpy flash](./eos/th_flash.md)
   - [Liquid thermal conductivity from the Pedersen (PFCT) correlation](./eos/thermal_conductivity.md)
   - [SAFT-VR-Mie flash](./eos/tp_flash_saft.md)

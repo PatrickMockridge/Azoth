@@ -160,6 +160,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim master `SystemSoreideWhitson` |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
+| [`eos.stream_scale_analyzer`](./stream_scale_analyzer.md) | `direct composition` | NeqSim master `StreamScaleAnalyzer` |
 | [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.thermal_conductivity`](./thermal_conductivity.md) | `direct composition` | NeqSim master `PFCTConductivityMethodMod86` |
 | [`eos.tp_flash_saft`](./tp_flash_saft.md) | `successive_substitution_flash` | Lafitte, T. et al. (2013) |

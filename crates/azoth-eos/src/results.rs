@@ -6,9 +6,9 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, Molality, MolarConcentration,
-    MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
-    ThermodynamicTemperature, Time, Velocity,
+    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, MassRate, Molality,
+    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension,
+    ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1480,6 +1480,54 @@ impl CalcResult for ScaleControlAssessorResult {
         "kinetic_risk_index",
         "worst_kinetic_risk_index",
         "kinetically_controlled",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One mineral's precipitated mass and rate in a stream analysis.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamScaleMineralRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The index before anything precipitated.
+    pub initial_si: f64,
+    /// The index at the answer.
+    pub final_si: f64,
+    /// The precipitated mass per cubic metre of water.
+    pub precipitated_mass: MassDensity,
+    /// The precipitated mass times the aqueous throughput.
+    pub scale_rate: MassRate,
+}
+
+/// Result of `eos.stream_scale_analyzer`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamScaleAnalyzerResult {
+    /// One row per registered mineral, in the equilibrium's order.
+    pub minerals: Vec<StreamScaleMineralRow>,
+    /// The total precipitated mass per cubic metre.
+    pub total_scale_mass: MassDensity,
+    /// The total mass rate.
+    pub total_scale_rate: MassRate,
+    /// The mineral precipitating the greatest mass, or `none`.
+    pub dominant_scale: String,
+    /// Whether the total precipitated mass is positive.
+    pub has_scaling: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for StreamScaleAnalyzerResult {
+    const CALC_ID: &'static str = "eos.stream_scale_analyzer";
+    const FIELDS: &'static [&'static str] = &[
+        "minerals",
+        "total_scale_mass",
+        "total_scale_rate",
+        "dominant_scale",
+        "has_scaling",
         "warnings",
     ];
 

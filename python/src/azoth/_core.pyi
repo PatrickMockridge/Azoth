@@ -389,6 +389,16 @@ class RemediationOptionRow:
     standard: str
 
 @final
+class StreamScaleMineralRow:
+    """One row per registered mineral, in the equilibrium's order."""
+
+    mineral: str
+    initial_si: float
+    final_si: float
+    precipitated_mass: Qty
+    scale_rate: Qty
+
+@final
 class WaterMixingResult:
     """One row per requested percentage, in the caller's order; an index is absent where its ions are."""
 
@@ -1661,6 +1671,15 @@ class StabilityTestResult:
     w: list[list[float]]
     iterations: list[int]
     min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
+class StreamScaleAnalyzerResult:
+    minerals: list[StreamScaleMineralRow]
+    total_scale_mass: Qty
+    total_scale_rate: Qty
+    dominant_scale: str
+    has_scaling: bool
     warnings: list[Warning]
 
 @final
@@ -3957,6 +3976,28 @@ def stability_test(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
+def stream_scale_analyzer(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: str,
+    water_flow: float,
+    bdot_ion_size: float | None = None,
+    bdot_b: float | None = None,
+    pitzer_ionic_strength_molal: float | None = None,
+) -> StreamScaleAnalyzerResult: ...
 def tbp_fraction_properties(molar_mass: float, density: float) -> TbpFractionPropertiesResult: ...
 def th_flash(
     Tc: list[float],

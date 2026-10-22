@@ -1,0 +1,142 @@
+id = "eos.stream_scale_analyzer"
+name = "Scale mass rates of an aqueous stream from its coupled mineral equilibrium"
+kind = "direct"
+assumptions = [
+    "**the analysis is the coupled equilibrium at exactly one litre**, then a conversion to a mass rate: `rate = precipitated mass per volume * aqueous volumetric flow`, so the class's `mg/L * L/day / 1e6` and this SI identity are the same number.\n",
+    "**the model's boundary is the water analysis and the throughput**: extracting ions from a process stream is a process boundary this library does not carry, so the `fromStream` adapter is outside it.\n",
+    "**auto-pH is an input, not forced**: the class's constructor path leaves the predictor configured as the caller set it, and only `fromStream` enables it. Where it is on, the class's broken Henry constant removes the carbonate row rather than moving it.\n",
+    "the mineral rows are the equilibrium's registered order (barite, celestite, anhydrite, calcite, siderite); a mineral whose ions are below the `1e-18` mol/L floor has no row rather than a zero row.\n",
+    "**the dominant mineral is the largest precipitated mass with a strict greater-than**, starting from zero, so a tie keeps the earlier mineral and nothing precipitated reports `none`; `has_scaling` is the total being positive.\n",
+    "the water volume is fixed at one litre and is not an input; the class's `setWaterVolume` is reachable on the wrapped equilibrium but the analyser never calls it with anything else.\n",
+    "the class's Gson report is not a calculation, and the per-mineral rate is the same quantity `toMap` states.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/StreamScaleAnalyzer.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/stream_scale_analyzer_probe.tsv` - the equilibrium's own brines in Davies and B-dot, the co-precipitating water, the zero-flow, no-mineral, absent-barium and auto-pH corners, with each mineral's indices, mass and rate.",
+]
+[source]
+standard = "NeqSim master `StreamScaleAnalyzer`"
+edition = "`analyze`, `getScaleRateKgPerDay`, `getTotalScaleRateKgPerDay`, `getTotalScaleMassMgPerL`, `getDominantScale` and `hasScaling`, ported over `eos.multi_mineral_scale_equilibrium`. `fromStream`, `getEquilibrium`/`getPredictor`, the Gson report and the `ensureAnalyzed` flag are not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "the calcium ion's mass concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "the barium ion's mass concentration.\n"
+[inputs.strontium]
+unit = "kg/m**3"
+description = "the strontium ion's mass concentration.\n"
+[inputs.iron]
+unit = "kg/m**3"
+description = "the ferrous iron's mass concentration.\n"
+[inputs.magnesium]
+unit = "kg/m**3"
+description = "the magnesium ion's mass concentration, read by the predictor's ion pairing.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "the sodium ion's mass concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate ion's mass concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "the sulphate ion's mass concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "TDS, which sets the predictor's ionic strength.\n"
+[inputs.temperature]
+unit = "K"
+description = "absolute temperature.\n"
+[inputs.pressure]
+unit = "Pa"
+description = "absolute pressure.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "CO2 partial pressure, read by the auto-pH path.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the water's pH, ignored when `auto_ph` is on and its gate holds.\n"
+[inputs.auto_ph]
+type = "boolean"
+description = "whether to estimate the pH with the class's own Henry constant.\n"
+[inputs.second_order_pressure_correction]
+type = "boolean"
+description = "whether the Ksp pressure correction carries its compressibility term.\n"
+[inputs.activity_model]
+type = "enum"
+values = ["davies", "bdot", "pitzer_binary"]
+description = "the equilibrium's activity-coefficient model.\n"
+[inputs.bdot_ion_size]
+unit = "angstrom"
+optional = true
+description = "the B-dot model's effective ion size; absent takes the class's 5 Angstrom.\n"
+[inputs.bdot_b]
+unit = "kg/mol"
+optional = true
+description = "the B-dot model's Helgeson coefficient; absent takes the class's 0.041.\n"
+[inputs.pitzer_ionic_strength_molal]
+unit = "mol/kg"
+optional = true
+description = "the Pitzer model's ionic strength; absent uses the class's estimate.\n"
+[inputs.water_flow]
+unit = "m**3/s"
+description = "the aqueous volumetric throughput the per-litre masses are multiplied by.\n"
+[outputs]
+[outputs.minerals]
+type = "record_list"
+description = "One row per registered mineral, in the equilibrium's order.\n"
+[outputs.minerals.fields.mineral]
+type = "string"
+description = "the mineral's formula.\n"
+[outputs.minerals.fields.initial_si]
+unit = "dimensionless"
+description = "the index before anything precipitated.\n"
+[outputs.minerals.fields.final_si]
+unit = "dimensionless"
+description = "the index at the answer.\n"
+[outputs.minerals.fields.precipitated_mass]
+unit = "kg/m**3"
+description = "the precipitated mass per cubic metre of water, 1699.4 mg/L as 1.6994 kg/m3.\n"
+[outputs.minerals.fields.scale_rate]
+unit = "kg/s"
+description = "the precipitated mass times the aqueous throughput.\n"
+[outputs.total_scale_mass]
+unit = "kg/m**3"
+description = "the total precipitated mass per cubic metre.\n"
+[outputs.total_scale_rate]
+unit = "kg/s"
+description = "the total mass rate.\n"
+[outputs.dominant_scale]
+type = "string"
+description = "the mineral precipitating the greatest mass, or `none`.\n"
+[outputs.has_scaling]
+type = "boolean"
+description = "whether the total precipitated mass is positive.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A state has a positive pressure.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative.\n"
+[[valid_range]]
+quantity = "water_flow"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A throughput cannot be negative.\n"
+[implementations]
+python = "azoth.eos.stream_scale_analyzer"
+rust = "azoth_eos::stream_scale_analyzer"

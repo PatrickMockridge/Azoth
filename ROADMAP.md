@@ -335,14 +335,15 @@ reaches equilibrium through.
   named in Tier 1's flow-assurance bullet: the water-analysis screen, its Pitzer coefficients,
   the solid solution, the mass estimate, the coupled equilibrium and the two composers.
   **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`, and
-  five of the eleven `process/chemistry/scale/` classes - `ClosedLoopDepositionSolver`,
-  `ProductionChemicalScaleScenario`, `ScaleDepositionAccumulator`, `StreamScaleAnalyzer` and
-  `ValveScaleDrift`. **The other six are ported**, each with the id that carries it:
+  four of the eleven `process/chemistry/scale/` classes - `ClosedLoopDepositionSolver`,
+  `ProductionChemicalScaleScenario`, `ScaleDepositionAccumulator` and `ValveScaleDrift`.
+  **The other seven are ported**, each with the id that carries it:
   `ElectrolyteScaleCalculator` (`eos.electrolyte_scale_calculator`),
   `BrineMixingScaleEvaluator` (`eos.brine_mixing_scale_evaluator`),
   `ScaleInhibitorPerformance` (`eos.scale_inhibitor_performance`), `ScaleKinetics`
-  (`eos.scale_kinetics`), `ScaleRemediationAdvisor` (`eos.scale_remediation_advisor`) and
-  `ScaleControlAssessor` (`eos.scale_control_assessor`).
+  (`eos.scale_kinetics`), `ScaleRemediationAdvisor` (`eos.scale_remediation_advisor`),
+  `ScaleControlAssessor` (`eos.scale_control_assessor`) and `StreamScaleAnalyzer`
+  (`eos.stream_scale_analyzer`).
 - **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on **both**
   of its routes. The Helmholtz one needs a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for
   the fluid and `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the

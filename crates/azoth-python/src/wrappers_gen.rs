@@ -3426,6 +3426,64 @@ pub fn stability_test(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Scale mass rates of an aqueous stream from its coupled mineral equilibrium.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_flow))]
+#[pyo3(
+    text_signature = "(calcium, barium, strontium, iron, magnesium, sodium, bicarbonate, sulphate, total_dissolved_solids, temperature, pressure, co2_partial_pressure, ph, auto_ph, second_order_pressure_correction, activity_model, bdot_ion_size, bdot_b, pitzer_ionic_strength_molal, water_flow)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn stream_scale_analyzer(
+    py: Python<'_>,
+    calcium: f64,
+    barium: f64,
+    strontium: f64,
+    iron: f64,
+    magnesium: f64,
+    sodium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    total_dissolved_solids: f64,
+    temperature: f64,
+    pressure: f64,
+    co2_partial_pressure: f64,
+    ph: f64,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: &str,
+    bdot_ion_size: Option<f64>,
+    bdot_b: Option<f64>,
+    pitzer_ionic_strength_molal: Option<f64>,
+    water_flow: f64,
+) -> PyResult<crate::transport_gen::PyStreamScaleAnalyzerResult> {
+    azoth_eos::stream_scale_analyzer::stream_scale_analyzer(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(strontium),
+        kilograms_per_cubic_meter(iron),
+        kilograms_per_cubic_meter(magnesium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        kelvins(temperature),
+        pascals(pressure),
+        pascals(co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+        activity_model,
+        bdot_ion_size,
+        bdot_b,
+        pitzer_ionic_strength_molal,
+        cubic_meters_per_second(water_flow),
+    )
+    .map(|r| crate::transport_gen::PyStreamScaleAnalyzerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// TBP pseudo-component properties.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

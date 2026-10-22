@@ -1676,6 +1676,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 2,
         "tests_skipped": 0,
     },
+    'eos.stream_scale_analyzer': {
+        "calc_id": 'eos.stream_scale_analyzer',
+        "name": 'Scale mass rates of an aqueous stream from its coupled mineral equilibrium',
+        "spec": {'path': 'specs/models/eos/stream_scale_analyzer.toml', 'sha256': '7d2c330a34420ef2244f2b70f5ae27eb9ff25d6788838f6f37b3b3c471907de2'},
+        "code": [{'path': 'python/src/azoth/eos/reference/stream_scale_analyzer.py', 'sha256': '097c47d685dbfdb4fc16673fa60ef7ab14b6f4797c2a3c4004a32991de7b1b0f'}, {'path': 'crates/azoth-eos/src/stream_scale_analyzer.rs', 'sha256': '523c1dc4b36af051132cd472ac6a06fcce0e4a1fd577701a095fd572211aaf1d'}],
+        "source": 'NeqSim master `StreamScaleAnalyzer`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 7,
+        "tests_skipped": 0,
+    },
     'eos.tbp_fraction_properties': {
         "calc_id": 'eos.tbp_fraction_properties',
         "name": 'TBP pseudo-component properties',

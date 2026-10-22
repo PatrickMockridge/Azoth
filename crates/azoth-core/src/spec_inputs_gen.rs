@@ -152,6 +152,7 @@
 //!   - specs/calcs/eos/srk_peneloux_shift.toml
 //!   - specs/calcs/eos/srk_z_factor.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/stream_scale_analyzer.toml
 //!   - specs/calcs/eos/tbp_fraction_properties.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
@@ -1604,6 +1605,39 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.stability_test", "T", "thermodynamic_temperature"),
     ("eos.stability_test", "P", "pressure"),
     ("eos.stability_test", "z", "dimensionless"),
+    ("eos.stream_scale_analyzer", "calcium", "mass_density"),
+    ("eos.stream_scale_analyzer", "barium", "mass_density"),
+    ("eos.stream_scale_analyzer", "strontium", "mass_density"),
+    ("eos.stream_scale_analyzer", "iron", "mass_density"),
+    ("eos.stream_scale_analyzer", "magnesium", "mass_density"),
+    ("eos.stream_scale_analyzer", "sodium", "mass_density"),
+    ("eos.stream_scale_analyzer", "bicarbonate", "mass_density"),
+    ("eos.stream_scale_analyzer", "sulphate", "mass_density"),
+    (
+        "eos.stream_scale_analyzer",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    (
+        "eos.stream_scale_analyzer",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.stream_scale_analyzer", "pressure", "pressure"),
+    (
+        "eos.stream_scale_analyzer",
+        "co2_partial_pressure",
+        "pressure",
+    ),
+    ("eos.stream_scale_analyzer", "ph", "dimensionless"),
+    ("eos.stream_scale_analyzer", "bdot_ion_size", "length"),
+    ("eos.stream_scale_analyzer", "bdot_b", "molar_mass"),
+    (
+        "eos.stream_scale_analyzer",
+        "pitzer_ionic_strength_molal",
+        "molality",
+    ),
+    ("eos.stream_scale_analyzer", "water_flow", "volume_rate"),
     ("eos.tbp_fraction_properties", "molar_mass", "molar_mass"),
     ("eos.tbp_fraction_properties", "density", "mass_density"),
     ("eos.th_flash", "T", "thermodynamic_temperature"),

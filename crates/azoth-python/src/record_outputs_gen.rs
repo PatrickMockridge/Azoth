@@ -443,6 +443,60 @@ impl From<&azoth_eos::results::ScaleControlRow> for PyScaleControlRow {
     }
 }
 
+/// One row per registered mineral, in the equilibrium's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StreamScaleMineralRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStreamScaleMineralRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the index before anything precipitated.
+    #[pyo3(get)]
+    pub initial_si: f64,
+    /// the index at the answer.
+    #[pyo3(get)]
+    pub final_si: f64,
+    /// the precipitated mass per cubic metre of water, 1699.4 mg/L as 1.6994 kg/m3.
+    #[pyo3(get)]
+    pub precipitated_mass: PyQty,
+    /// the precipitated mass times the aqueous throughput.
+    #[pyo3(get)]
+    pub scale_rate: PyQty,
+}
+
+#[pymethods]
+impl PyStreamScaleMineralRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "StreamScaleMineralRow(mineral={}, initial_si={}, final_si={}, precipitated_mass={:?}, scale_rate={:?})",
+            self.mineral, self.initial_si, self.final_si, self.precipitated_mass, self.scale_rate
+        )
+    }
+}
+
+impl From<&azoth_eos::results::StreamScaleMineralRow> for PyStreamScaleMineralRow {
+    fn from(row: &azoth_eos::results::StreamScaleMineralRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
+            initial_si: row.initial_si,
+            final_si: row.final_si,
+            precipitated_mass: PyQty {
+                magnitude_si: row.precipitated_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            scale_rate: PyQty {
+                magnitude_si: row.scale_rate.value,
+                unit: "kg/s".to_string(),
+            },
+        }
+    }
+}
+
 /// The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.
 #[pyclass(
     frozen,

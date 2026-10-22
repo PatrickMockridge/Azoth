@@ -82,6 +82,7 @@
 //!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/stream_scale_analyzer.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
 //!   - specs/models/eos/tp_flash_saft.toml
@@ -16949,6 +16950,844 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     cases: STABILITY_TEST_CASES,
 };
 
+static STREAM_SCALE_ANALYZER_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "co2_partial_pressure",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A partial pressure cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "water_flow",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A throughput cannot be negative.",
+        },
+    },
+];
+
+static STREAM_SCALE_ANALYZER_CASES: &[TestCase] = &[
+    TestCase {
+        id: "sulphate_limited_davies",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154926),
+            ("total_scale_rate", 0.001966920916916079),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696794577),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.355304428255001e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154926),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.001966920916916079),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.6239941092936203),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773607350038),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.13128801940699758),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "sulphate_limited_bdot",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "bdot")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6977826379846324),
+            ("total_scale_rate", 0.001965026201371102),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(3.6375202399726745),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(4.841367472462266e-11),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6977826379846324),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.001965026201371102),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-0.615413347528282),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-1.2625284691246774),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-0.7221385933279296),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-1.369253714924325),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-8.216991736405584),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-8.216991736405584),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "co_precipitation",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.5),
+            ("barium", 0.1),
+            ("strontium", 2.5),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.1),
+            ("sulphate", 4.0),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0028935185185185184),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 4.292748019675318),
+            ("total_scale_rate", 0.012421145890264228),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "SrSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.445020684845298),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(3.5926079406150245e-09),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.16993331841713222),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.000491705203753276),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(1.112905851296717),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-9.575771742875196e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(4.00233592985708),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.011580833130373494),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.562231451720118),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.688590473644248e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.12047877140110569),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0003486075561374586),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-7.377023818186227),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-7.452860219247141),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "zero_flow",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154926),
+            ("total_scale_rate", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696794577),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.355304428255001e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154926),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.6239941092936203),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773607350038),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.13128801940699758),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "no_minerals",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.0),
+            ("barium", 0.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.0),
+            ("sulphate", 0.0),
+            ("total_dissolved_solids", 0.001),
+            ("temperature", 298.15),
+            ("pressure", 101300.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 7.0),
+            ("water_flow", 1.1574074074074073e-05),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_scale_mass", 0.0), ("total_scale_rate", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "none")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "absent_barium",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 0.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 0.7303150836515322),
+            ("total_scale_rate", 0.0008452720875596437),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "CaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.601801001654469e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.7303150836515322),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0008452720875596437),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-7.127062544742807),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "auto_ph",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 6.5),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", true),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154904),
+            ("total_scale_rate", 0.0019669209169160765),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696792897),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.354946662765598e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154904),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0019669209169160765),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.623994109291941),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773614825117),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634965064),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.1312880194102597),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.stream_scale_analyzer`.
+pub static STREAM_SCALE_ANALYZER_SPEC: ModelSpec = ModelSpec {
+    id: "eos.stream_scale_analyzer",
+    kind: "direct",
+    algorithm: None,
+    checks: STREAM_SCALE_ANALYZER_CHECKS,
+    cases: STREAM_SCALE_ANALYZER_CASES,
+};
+
 static TH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -20719,6 +21558,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,
+    &STREAM_SCALE_ANALYZER_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,
     &TP_FLASH_SAFT_SPEC,

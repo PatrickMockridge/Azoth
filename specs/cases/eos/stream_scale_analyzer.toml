@@ -1,0 +1,234 @@
+model = "eos.stream_scale_analyzer"
+
+# The capture's `stream_scale_analyzer` rows. mg/L to kg/m3 by 1e-3, C to K by +273.15,
+# bara to Pa by 1e5, litres/day to m3/s by 1/1000/86400. The mass rate is the precipitated
+# mass per cubic metre times the volumetric flow.
+
+[[cases]]
+id = "sulphate_limited_davies"
+tolerance = 1.0e-09
+source = "The capture's `sulphate_limited davies` row: the equilibrium's sulphate-limited brine at 70 C and 100 bara, with 100000 L/day and barite as the only precipitate.\n"
+[cases.inputs]
+calcium = 1.0
+barium = 1.0
+strontium = 3.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.2
+sulphate = 1.5
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 0.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 0.0011574074074074073
+[cases.expected]
+total_scale_mass = 1.6994196722154927
+total_scale_rate = 0.001966920916916079
+dominant_scale = "BaSO4"
+has_scaling = true
+minerals = [
+    { mineral = "BaSO4", initial_si = 4.876927696794577, final_si = 8.355304428255001e-10, precipitated_mass = 1.6994196722154927, scale_rate = 0.001966920916916079 },
+    { mineral = "SrSO4", initial_si = 0.6239941092936203, final_si = -0.024562773607350038, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaSO4", initial_si = 0.5172688634939727, final_si = -0.13128801940699758, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaCO3", initial_si = -6.977584279583682, final_si = -6.977584279583682, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
+
+[[cases]]
+id = "sulphate_limited_bdot"
+tolerance = 1.0e-09
+source = "The capture's `sulphate_limited bdot` row: the same brine with the B-dot activity model, which changes every index and leaves barite the only precipitate.\n"
+[cases.inputs]
+calcium = 1.0
+barium = 1.0
+strontium = 3.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.2
+sulphate = 1.5
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 0.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "bdot"
+water_flow = 0.0011574074074074073
+[cases.expected]
+total_scale_mass = 1.6977826379846324
+total_scale_rate = 0.001965026201371102
+dominant_scale = "BaSO4"
+has_scaling = true
+minerals = [
+    { mineral = "BaSO4", initial_si = 3.6375202399726745, final_si = 4.841367472462266e-11, precipitated_mass = 1.6977826379846324, scale_rate = 0.001965026201371102 },
+    { mineral = "SrSO4", initial_si = -0.615413347528282, final_si = -1.2625284691246774, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaSO4", initial_si = -0.7221385933279296, final_si = -1.369253714924325, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaCO3", initial_si = -8.216991736405584, final_si = -8.216991736405584, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
+
+[[cases]]
+id = "co_precipitation"
+tolerance = 1.0e-09
+source = "The capture's `co_precipitation davies` row: a brine where barite, celestite and anhydrite all precipitate, celestite in the greatest mass, at 250000 L/day.\n"
+[cases.inputs]
+calcium = 0.5
+barium = 0.1
+strontium = 2.5
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.1
+sulphate = 4.0
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 0.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 0.0028935185185185184
+[cases.expected]
+total_scale_mass = 4.292748019675318
+total_scale_rate = 0.012421145890264228
+dominant_scale = "SrSO4"
+has_scaling = true
+minerals = [
+    { mineral = "BaSO4", initial_si = 4.445020684845298, final_si = 3.5926079406150245e-9, precipitated_mass = 0.16993331841713223, scale_rate = 0.000491705203753276 },
+    { mineral = "SrSO4", initial_si = 1.112905851296717, final_si = -9.575771742875196e-14, precipitated_mass = 4.00233592985708, scale_rate = 0.011580833130373494 },
+    { mineral = "CaSO4", initial_si = 0.562231451720118, final_si = 8.688590473644248e-14, precipitated_mass = 0.12047877140110569, scale_rate = 0.0003486075561374586 },
+    { mineral = "CaCO3", initial_si = -7.377023818186227, final_si = -7.452860219247141, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
+
+[[cases]]
+id = "zero_flow"
+tolerance = 1.0e-09
+source = "The capture's `zero_flow` row: the same brine with no throughput, so every rate is zero while the masses and the dominant mineral are unchanged.\n"
+[cases.inputs]
+calcium = 1.0
+barium = 1.0
+strontium = 3.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.2
+sulphate = 1.5
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 0.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 0.0
+[cases.expected]
+total_scale_mass = 1.6994196722154927
+total_scale_rate = 0.0
+dominant_scale = "BaSO4"
+has_scaling = true
+minerals = [
+    { mineral = "BaSO4", initial_si = 4.876927696794577, final_si = 8.355304428255001e-10, precipitated_mass = 1.6994196722154927, scale_rate = 0.0 },
+    { mineral = "SrSO4", initial_si = 0.6239941092936203, final_si = -0.024562773607350038, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaSO4", initial_si = 0.5172688634939727, final_si = -0.13128801940699758, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaCO3", initial_si = -6.977584279583682, final_si = -6.977584279583682, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
+
+[[cases]]
+id = "no_minerals"
+tolerance = 1.0e-09
+source = "The capture's `no_minerals` row: pure water with no ions above the floor, so the result has no mineral rows, no mass, and `none` as the dominant mineral.\n"
+[cases.inputs]
+calcium = 0.0
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.0
+sulphate = 0.0
+total_dissolved_solids = 0.001
+temperature = 298.15
+pressure = 1.013e5
+co2_partial_pressure = 1.0e5
+ph = 7.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 1.1574074074074073e-5
+[cases.expected]
+total_scale_mass = 0.0
+total_scale_rate = 0.0
+dominant_scale = "none"
+has_scaling = false
+
+[[cases]]
+id = "absent_barium"
+tolerance = 1.0e-09
+source = "The capture's `absent_barium` row: with no barium the barite row is absent rather than zero, and anhydrite becomes the only precipitate.\n"
+[cases.inputs]
+calcium = 1.0
+barium = 0.0
+strontium = 0.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.2
+sulphate = 1.5
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 0.0
+auto_ph = false
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 0.0011574074074074073
+[cases.expected]
+total_scale_mass = 0.7303150836515322
+total_scale_rate = 0.0008452720875596437
+dominant_scale = "CaSO4"
+has_scaling = true
+minerals = [
+    { mineral = "CaSO4", initial_si = 0.5172688634939727, final_si = 8.601801001654469e-14, precipitated_mass = 0.7303150836515322, scale_rate = 0.0008452720875596437 },
+    { mineral = "CaCO3", initial_si = -6.977584279583682, final_si = -7.127062544742807, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
+
+[[cases]]
+id = "auto_ph"
+tolerance = 1.0e-09
+source = "The capture's `auto_ph` row: the class's broken Henry constant drops the carbonate below its floor, so the calcite row disappears and the sulphate rows move in the last digits only.\n"
+[cases.inputs]
+calcium = 1.0
+barium = 1.0
+strontium = 3.0
+iron = 0.0
+magnesium = 0.0
+sodium = 0.0
+bicarbonate = 0.2
+sulphate = 1.5
+total_dissolved_solids = 60.0
+temperature = 343.15
+pressure = 1.0e7
+co2_partial_pressure = 1.0e5
+ph = 6.5
+auto_ph = true
+second_order_pressure_correction = false
+activity_model = "davies"
+water_flow = 0.0011574074074074073
+[cases.expected]
+total_scale_mass = 1.6994196722154904
+total_scale_rate = 0.0019669209169160765
+dominant_scale = "BaSO4"
+has_scaling = true
+minerals = [
+    { mineral = "BaSO4", initial_si = 4.876927696792897, final_si = 8.354946662765598e-10, precipitated_mass = 1.6994196722154904, scale_rate = 0.0019669209169160765 },
+    { mineral = "SrSO4", initial_si = 0.623994109291941, final_si = -0.024562773614825117, precipitated_mass = 0.0, scale_rate = 0.0 },
+    { mineral = "CaSO4", initial_si = 0.5172688634965064, final_si = -0.1312880194102597, precipitated_mass = 0.0, scale_rate = 0.0 },
+]
