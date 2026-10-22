@@ -36,6 +36,9 @@ uom_absent = "uom has no molar-flow quantity, and no crate outside uom can add o
 id = "mass_density"
 exponents = [-3, 1, 0, 0, 0, 0, 0]
 [[dimensions]]
+id = "mass_flux"
+exponents = [-2, 1, -1, 0, 0, 0, 0]
+[[dimensions]]
 id = "velocity"
 exponents = [1, 0, -1, 0, 0, 0, 0]
 [[dimensions]]
@@ -172,6 +175,12 @@ dimension = "mass_density"
 pint = "kilogram/meter**3"
 uom = "mass_density::kilogram_per_cubic_meter"
 rust_ctor = "kilograms_per_cubic_meter"
+[[units]]
+id = "kg/(m**2*s)"
+dimension = "mass_flux"
+pint = "kilogram/second/meter**2"
+uom = "mass_flux::kilogram_per_square_meter_second"
+rust_ctor = "kilograms_per_square_meter_second"
 [[units]]
 id = "m/s"
 dimension = "velocity"

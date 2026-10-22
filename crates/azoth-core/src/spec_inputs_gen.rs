@@ -134,6 +134,7 @@
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
 //!   - specs/models/eos/scale_control_assessor.toml
+//!   - specs/models/eos/scale_deposition_accumulator.toml
 //!   - specs/calcs/eos/scale_inhibitor_performance.toml
 //!   - specs/calcs/eos/scale_kinetics.toml
 //!   - specs/calcs/eos/scale_mass.toml
@@ -1451,6 +1452,53 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pressure",
     ),
     ("eos.scale_control_assessor", "ph", "dimensionless"),
+    (
+        "eos.scale_deposition_accumulator",
+        "calcium",
+        "mass_density",
+    ),
+    (
+        "eos.scale_deposition_accumulator",
+        "bicarbonate",
+        "mass_density",
+    ),
+    (
+        "eos.scale_deposition_accumulator",
+        "sulphate",
+        "mass_density",
+    ),
+    ("eos.scale_deposition_accumulator", "barium", "mass_density"),
+    ("eos.scale_deposition_accumulator", "sodium", "mass_density"),
+    (
+        "eos.scale_deposition_accumulator",
+        "total_dissolved_solids",
+        "mass_density",
+    ),
+    ("eos.scale_deposition_accumulator", "ph", "dimensionless"),
+    ("eos.scale_deposition_accumulator", "diameter", "length"),
+    ("eos.scale_deposition_accumulator", "length", "length"),
+    (
+        "eos.scale_deposition_accumulator",
+        "segment_temperatures",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.scale_deposition_accumulator",
+        "segment_pressures",
+        "pressure",
+    ),
+    ("eos.scale_deposition_accumulator", "service_time", "time"),
+    (
+        "eos.scale_deposition_accumulator",
+        "scale_density",
+        "mass_density",
+    ),
+    ("eos.scale_deposition_accumulator", "base_rate", "mass_flux"),
+    (
+        "eos.scale_deposition_accumulator",
+        "inhibitor_efficiency",
+        "dimensionless",
+    ),
     (
         "eos.scale_inhibitor_performance",
         "temperature",

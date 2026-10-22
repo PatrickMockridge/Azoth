@@ -24,6 +24,7 @@ from typing import ClassVar
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
     BrineMixingPointRow,
+    DepositionSegmentRow,
     FlowlineScaleSegment,
     KComponent,
     MineralEquilibriumRow,
@@ -3094,6 +3095,28 @@ class ScaleControlAssessorResult(_HasWarnings):
 
     #: whether the worst index is below the class's 0.5 threshold.
     kinetically_controlled: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleDepositionAccumulatorResult(_HasWarnings):
+    """Result of ``eos.scale_deposition_accumulator``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_deposition_accumulator"
+
+    #: One row per evaluated segment, in the profile's order.
+    segments: tuple[DepositionSegmentRow, ...]
+
+    #: the mass summed over the segments.
+    total_deposition_mass: Q
+
+    #: the thickest segment, which sets the blockage time.
+    max_thickness: Q
+
+    #: the time until the worst segment occludes half the pipe cross-section.
+    time_to_blockage: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

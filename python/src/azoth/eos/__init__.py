@@ -189,6 +189,7 @@ from azoth.core.result import (
     SaltPrecipitationResult,
     SaturateWithWaterResult,
     ScaleControlAssessorResult,
+    ScaleDepositionAccumulatorResult,
     ScaleInhibitorPerformanceResult,
     ScaleKineticsResult,
     ScaleMassResult,
@@ -2943,6 +2944,55 @@ def scale_control_assessor(
         co2_partial_pressure=co2_partial_pressure,
         ph=ph,
         inhibitors=inhibitors,
+    )
+
+
+def scale_deposition_accumulator(
+    calcium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    barium: Q,
+    sodium: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    diameter: Q,
+    length: Q,
+    segment_temperatures: list[Q],
+    segment_pressures: list[Q],
+    service_time: Q,
+    scale_density: Q,
+    base_rate: Q,
+    inhibitor_efficiency: float,
+) -> ScaleDepositionAccumulatorResult:
+    """The segmented deposition of a pipeline temperature and pressure profile.
+
+    NeqSim's ``ScaleDepositionAccumulator``: the CaCO3 index at each segment, a deposit mass
+    from ``max(0, 10^SI - 1)`` times the base rate and the inhibitor's complement, its
+    thickness over the segment's wall area, the total, and the time for the worst segment to
+    occlude half the pipe cross-section. The pipe is its profile: the segment temperatures
+    and pressures are stated directly, and the shorter list governs.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.scale_deposition_accumulator`.
+    """
+    return resolve("eos.scale_deposition_accumulator")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        barium=barium,
+        sodium=sodium,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        diameter=diameter,
+        length=length,
+        segment_temperatures=segment_temperatures,
+        segment_pressures=segment_pressures,
+        service_time=service_time,
+        scale_density=scale_density,
+        base_rate=base_rate,
+        inhibitor_efficiency=inhibitor_efficiency,
     )
 
 

@@ -14,9 +14,10 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyBrineMixingPointRow, PyFlowlineScaleSegment, PyKComponent,
-    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
-    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyActivityCoefficientRow, PyBrineMixingPointRow, PyDepositionSegmentRow,
+    PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow,
+    PyScaleControlRiskRow, PyScaleControlRow, PyStreamScaleMineralRow, PySubFraction,
+    PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -7874,6 +7875,72 @@ impl From<&azoth_eos::results::ScaleControlAssessorResult> for PyScaleControlAss
                 .collect(),
             worst_kinetic_risk_index: r.worst_kinetic_risk_index,
             kinetically_controlled: r.kinetically_controlled,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_deposition_accumulator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleDepositionAccumulatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleDepositionAccumulatorResult {
+    /// One row per evaluated segment, in the profile's order.
+    #[pyo3(get)]
+    pub segments: Vec<PyDepositionSegmentRow>,
+    /// the mass summed over the segments.
+    #[pyo3(get)]
+    pub total_deposition_mass: PyQty,
+    /// the thickest segment, which sets the blockage time.
+    #[pyo3(get)]
+    pub max_thickness: PyQty,
+    /// the time until the worst segment occludes half the pipe cross-section.
+    #[pyo3(get)]
+    pub time_to_blockage: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleDepositionAccumulatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleDepositionAccumulatorResult(segments={:?}, total_deposition_mass={:?}, max_thickness={:?}, time_to_blockage={:?}, {} warning(s))",
+            self.segments,
+            self.total_deposition_mass,
+            self.max_thickness,
+            self.time_to_blockage,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleDepositionAccumulatorResult>
+    for PyScaleDepositionAccumulatorResult
+{
+    fn from(r: &azoth_eos::results::ScaleDepositionAccumulatorResult) -> Self {
+        Self {
+            segments: r
+                .segments
+                .iter()
+                .map(PyDepositionSegmentRow::from)
+                .collect(),
+            total_deposition_mass: PyQty {
+                magnitude_si: r.total_deposition_mass.value,
+                unit: "kg".to_string(),
+            },
+            max_thickness: PyQty {
+                magnitude_si: r.max_thickness.value,
+                unit: "m".to_string(),
+            },
+            time_to_blockage: PyQty {
+                magnitude_si: r.time_to_blockage.value,
+                unit: "s".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

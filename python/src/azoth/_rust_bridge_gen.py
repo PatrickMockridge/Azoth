@@ -52,6 +52,7 @@ from azoth.core.result import (
     CriticalPointResult,
     DarcyWeisbachResult,
     DelumpingResult,
+    DepositionSegmentRow,
     DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
@@ -194,6 +195,7 @@ from azoth.core.result import (
     ScaleControlAssessorResult,
     ScaleControlRiskRow,
     ScaleControlRow,
+    ScaleDepositionAccumulatorResult,
     ScaleInhibitorPerformanceResult,
     ScaleKineticsResult,
     ScaleMassResult,
@@ -478,6 +480,7 @@ __all__ = [
     "salt_precipitation",
     "saturate_with_water",
     "scale_control_assessor",
+    "scale_deposition_accumulator",
     "scale_inhibitor_performance",
     "scale_kinetics",
     "scale_mass",
@@ -3301,6 +3304,35 @@ def scale_control_assessor(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesi
         kinetic_risk_index=tuple(ScaleControlRiskRow(scale=c.scale, risk_index=c.risk_index) for c in result.kinetic_risk_index),
         worst_kinetic_risk_index=result.worst_kinetic_risk_index,
         kinetically_controlled=result.kinetically_controlled,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_deposition_accumulator(calcium: Q, bicarbonate: Q, sulphate: Q, barium: Q, sodium: Q, total_dissolved_solids: Q, ph: float, diameter: Q, length: Q, segment_temperatures: list[Q], segment_pressures: list[Q], service_time: Q, scale_density: Q, base_rate: Q, inhibitor_efficiency: float) -> ScaleDepositionAccumulatorResult:
+    """``eos.scale_deposition_accumulator``, computed in Rust."""
+    spec = _models_gen.model("eos.scale_deposition_accumulator")
+    result = _core.scale_deposition_accumulator(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "length", length),
+        [input_to_si(spec, "segment_temperatures", v) for v in segment_temperatures],
+        [input_to_si(spec, "segment_pressures", v) for v in segment_pressures],
+        input_to_si(spec, "service_time", service_time),
+        input_to_si(spec, "scale_density", scale_density),
+        input_to_si(spec, "base_rate", base_rate),
+        inhibitor_efficiency,
+    )
+    return ScaleDepositionAccumulatorResult(
+        segments=tuple(DepositionSegmentRow(saturation_index=c.saturation_index, deposition_mass=from_si(c.deposition_mass.magnitude_si, c.deposition_mass.unit), thickness=from_si(c.thickness.magnitude_si, c.thickness.unit)) for c in result.segments),
+        total_deposition_mass=from_si(result.total_deposition_mass.magnitude_si, result.total_deposition_mass.unit),
+        max_thickness=from_si(result.max_thickness.magnitude_si, result.max_thickness.unit),
+        time_to_blockage=from_si(result.time_to_blockage.magnitude_si, result.time_to_blockage.unit),
         warnings=_warnings(result.warnings),
     )
 

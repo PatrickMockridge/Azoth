@@ -25,6 +25,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "amount",
     "molar_flow",
     "mass_density",
+    "mass_flux",
     "velocity",
     "pressure",
     "dynamic_viscosity",
@@ -67,6 +68,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("amount", [0, 0, 0, 0, 0, 1, 0]),
     ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
     ("mass_density", [-3, 1, 0, 0, 0, 0, 0]),
+    ("mass_flux", [-2, 1, -1, 0, 0, 0, 0]),
     ("velocity", [1, 0, -1, 0, 0, 0, 0]),
     ("pressure", [-1, 1, -2, 0, 0, 0, 0]),
     ("dynamic_viscosity", [-1, 1, -1, 0, 0, 0, 0]),
@@ -136,6 +138,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "mol",
     "kg",
     "kg/m**3",
+    "kg/(m**2*s)",
     "m/s",
     "m**2/s",
     "Pa",
@@ -213,6 +216,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("mol", [0, 0, 0, 0, 0, 1, 0]),
     ("kg", [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("kg/(m**2*s)", [-2, 1, -1, 0, 0, 0, 0]),
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
@@ -310,6 +314,9 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("kg", |v| crate::units::kilograms(v).value),
     ("kg/m**3", |v| {
         crate::units::kilograms_per_cubic_meter(v).value
+    }),
+    ("kg/(m**2*s)", |v| {
+        crate::units::kilograms_per_square_meter_second(v).value
     }),
     ("m/s", |v| crate::units::meters_per_second(v).value),
     ("m**2/s", |v| {
@@ -561,6 +568,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);
     let _: uom::si::f64::Mass = crate::units::kilograms(1.0);
     let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
+    let _: uom::si::f64::MassFlux = crate::units::kilograms_per_square_meter_second(1.0);
     let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
     let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
     let _: uom::si::f64::Pressure = crate::units::pascals(1.0);

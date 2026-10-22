@@ -18,7 +18,8 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
-    HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarConcentration, MolarEnergy,
+    HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate, Molality, MolarConcentration,
+    MolarEnergy,
     MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
     SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
     ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
@@ -30,6 +31,7 @@ pub use uom::si::{
     energy::kilojoule, energy::megajoule, heat_transfer::watt_per_square_meter_kelvin,
     length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
     length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
+    mass_flux::kilogram_per_square_meter_second,
     mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
     molality::mole_per_kilogram, molar_concentration::kilomole_per_cubic_meter,
     molar_concentration::mole_per_cubic_meter, molar_energy::joule_per_mole,
@@ -99,6 +101,12 @@ pub fn square_meters_per_second(value: f64) -> DiffusionCoefficient {
 #[must_use]
 pub fn kilograms_per_cubic_meter(value: f64) -> MassDensity {
     MassDensity::new::<kilogram_per_cubic_meter>(value)
+}
+
+/// A mass flux in kilograms per square metre second.
+#[must_use]
+pub fn kilograms_per_square_meter_second(value: f64) -> MassFlux {
+    MassFlux::new::<kilogram_per_square_meter_second>(value)
 }
 
 /// A mass in kilograms.

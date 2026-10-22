@@ -374,6 +374,14 @@ class ScaleControlRiskRow:
     risk_index: float | None
 
 @final
+class DepositionSegmentRow:
+    """One row per evaluated segment, in the profile's order."""
+
+    saturation_index: float
+    deposition_mass: Qty
+    thickness: Qty
+
+@final
 class RemediationOptionRow:
     """The candidate remedies, ordered by descending effectiveness."""
 
@@ -1516,6 +1524,14 @@ class ScaleControlAssessorResult:
     kinetic_risk_index: list[ScaleControlRiskRow]
     worst_kinetic_risk_index: float | None
     kinetically_controlled: bool
+    warnings: list[Warning]
+
+@final
+class ScaleDepositionAccumulatorResult:
+    segments: list[DepositionSegmentRow]
+    total_deposition_mass: Qty
+    max_thickness: Qty
+    time_to_blockage: Qty
     warnings: list[Warning]
 
 @final
@@ -3861,6 +3877,23 @@ def scale_control_assessor(
     ph: float,
     inhibitors: list[ScaleInhibitor],
 ) -> ScaleControlAssessorResult: ...
+def scale_deposition_accumulator(
+    calcium: float,
+    bicarbonate: float,
+    sulphate: float,
+    barium: float,
+    sodium: float,
+    total_dissolved_solids: float,
+    ph: float,
+    diameter: float,
+    length: float,
+    segment_temperatures: list[float],
+    segment_pressures: list[float],
+    service_time: float,
+    scale_density: float,
+    base_rate: float,
+    inhibitor_efficiency: float,
+) -> ScaleDepositionAccumulatorResult: ...
 def scale_inhibitor_performance(
     scale_type: str,
     inhibitor_chemistry: str,

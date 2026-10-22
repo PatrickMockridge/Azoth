@@ -6,9 +6,9 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate, Molality,
-    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension,
-    ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
+    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate,
+    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
+    SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1570,6 +1570,47 @@ impl CalcResult for ValveScaleDriftResult {
         "time_to_plug",
         "opening_percent",
         "time_to_pin",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One evaluated pipe segment's deposition.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DepositionSegmentRow {
+    /// The CaCO3 index at the segment.
+    pub saturation_index: f64,
+    /// The deposit mass over the segment's wall area and the service time.
+    pub deposition_mass: Mass,
+    /// The deposit thickness over the segment.
+    pub thickness: Length,
+}
+
+/// Result of `eos.scale_deposition_accumulator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleDepositionAccumulatorResult {
+    /// One row per evaluated segment, in the profile's order.
+    pub segments: Vec<DepositionSegmentRow>,
+    /// The mass summed over the segments.
+    pub total_deposition_mass: Mass,
+    /// The thickest segment, which sets the blockage time.
+    pub max_thickness: Length,
+    /// The time until the worst segment occludes half the pipe cross-section.
+    pub time_to_blockage: Time,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleDepositionAccumulatorResult {
+    const CALC_ID: &'static str = "eos.scale_deposition_accumulator";
+    const FIELDS: &'static [&'static str] = &[
+        "segments",
+        "total_deposition_mass",
+        "max_thickness",
+        "time_to_blockage",
         "warnings",
     ];
 

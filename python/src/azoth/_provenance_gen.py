@@ -1478,6 +1478,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.scale_deposition_accumulator': {
+        "calc_id": 'eos.scale_deposition_accumulator',
+        "name": 'Segmented pipeline scale deposition from a temperature and pressure profile',
+        "spec": {'path': 'specs/models/eos/scale_deposition_accumulator.toml', 'sha256': '4883e23b0f37bf392e5243e744428ec44eafe87844c918156b0ba934ae7d0fa2'},
+        "code": [{'path': 'python/src/azoth/eos/reference/scale_deposition_accumulator.py', 'sha256': '1feed22d2b8f41beb21551f1e8e7880f6cd7d6bd00693d34545c0cafee221908'}, {'path': 'crates/azoth-eos/src/scale_deposition_accumulator.rs', 'sha256': '3e83ecd0813c2958ccc6a54aabd361a728b742c918a4415c0183cfebdce9e06c'}],
+        "source": 'NeqSim master `ScaleDepositionAccumulator`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
+        "tests_skipped": 0,
+    },
     'eos.scale_inhibitor_performance': {
         "calc_id": 'eos.scale_inhibitor_performance',
         "name": 'Screening performance of an oilfield scale inhibitor',

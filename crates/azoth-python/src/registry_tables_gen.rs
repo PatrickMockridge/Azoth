@@ -153,6 +153,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.salt_precipitation" => azoth_eos::results::SaltPrecipitationResult::FIELDS.to_vec(),
         "eos.saturate_with_water" => azoth_eos::results::SaturateWithWaterResult::FIELDS.to_vec(),
         "eos.scale_control_assessor" => azoth_eos::results::ScaleControlAssessorResult::FIELDS.to_vec(),
+        "eos.scale_deposition_accumulator" => azoth_eos::results::ScaleDepositionAccumulatorResult::FIELDS.to_vec(),
         "eos.scale_inhibitor_performance" => azoth_eos::results::ScaleInhibitorPerformanceResult::FIELDS.to_vec(),
         "eos.scale_kinetics" => azoth_eos::results::ScaleKineticsResult::FIELDS.to_vec(),
         "eos.scale_mass" => azoth_eos::results::ScaleMassResult::FIELDS.to_vec(),

@@ -94,6 +94,52 @@ impl From<&azoth_eos::results::BrineMixingPointRow> for PyBrineMixingPointRow {
     }
 }
 
+/// One row per evaluated segment, in the profile's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DepositionSegmentRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDepositionSegmentRow {
+    /// the CaCO3 index at the segment's temperature and pressure.
+    #[pyo3(get)]
+    pub saturation_index: f64,
+    /// the deposit mass over the segment's wall area and the service time.
+    #[pyo3(get)]
+    pub deposition_mass: PyQty,
+    /// the deposit thickness over the segment.
+    #[pyo3(get)]
+    pub thickness: PyQty,
+}
+
+#[pymethods]
+impl PyDepositionSegmentRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "DepositionSegmentRow(saturation_index={}, deposition_mass={:?}, thickness={:?})",
+            self.saturation_index, self.deposition_mass, self.thickness
+        )
+    }
+}
+
+impl From<&azoth_eos::results::DepositionSegmentRow> for PyDepositionSegmentRow {
+    fn from(row: &azoth_eos::results::DepositionSegmentRow) -> Self {
+        Self {
+            saturation_index: row.saturation_index,
+            deposition_mass: PyQty {
+                magnitude_si: row.deposition_mass.value,
+                unit: "kg".to_string(),
+            },
+            thickness: PyQty {
+                magnitude_si: row.thickness.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
 /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
 #[pyclass(
     frozen,

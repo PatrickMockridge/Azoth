@@ -154,7 +154,7 @@ describe("the catalogue", () => {
     // offer them, and merged into this map because a display looks a unit up by name and does not
     // care which table it came from.
     const units = catalogue.units ?? {};
-    expect(Object.keys(units)).toHaveLength(75);
+    expect(Object.keys(units)).toHaveLength(76);
     expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1, offset: 0 });
     expect(units["psi"]?.dimension).toBe("pressure");
     expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);

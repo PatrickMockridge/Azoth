@@ -11,8 +11,8 @@ use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole,
     joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter, kilograms_per_mole,
-    kilograms_per_second, meters, meters_per_second, moles_per_cubic_meter, pascal_seconds,
-    pascals, seconds, watts,
+    kilograms_per_second, kilograms_per_square_meter_second, meters, meters_per_second,
+    moles_per_cubic_meter, pascal_seconds, pascals, seconds, watts,
 };
 use pyo3::prelude::*;
 
@@ -2985,6 +2985,54 @@ pub fn scale_control_assessor(
         &inhibitors_records,
     )
     .map(|r| crate::transport_gen::PyScaleControlAssessorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Segmented pipeline scale deposition from a temperature and pressure profile.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (calcium, bicarbonate, sulphate, barium, sodium, total_dissolved_solids, ph, diameter, length, segment_temperatures, segment_pressures, service_time, scale_density, base_rate, inhibitor_efficiency))]
+#[pyo3(
+    text_signature = "(calcium, bicarbonate, sulphate, barium, sodium, total_dissolved_solids, ph, diameter, length, segment_temperatures, segment_pressures, service_time, scale_density, base_rate, inhibitor_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn scale_deposition_accumulator(
+    py: Python<'_>,
+    calcium: f64,
+    bicarbonate: f64,
+    sulphate: f64,
+    barium: f64,
+    sodium: f64,
+    total_dissolved_solids: f64,
+    ph: f64,
+    diameter: f64,
+    length: f64,
+    segment_temperatures: Vec<f64>,
+    segment_pressures: Vec<f64>,
+    service_time: f64,
+    scale_density: f64,
+    base_rate: f64,
+    inhibitor_efficiency: f64,
+) -> PyResult<crate::transport_gen::PyScaleDepositionAccumulatorResult> {
+    azoth_eos::scale_deposition_accumulator::scale_deposition_accumulator(
+        kilograms_per_cubic_meter(calcium),
+        kilograms_per_cubic_meter(bicarbonate),
+        kilograms_per_cubic_meter(sulphate),
+        kilograms_per_cubic_meter(barium),
+        kilograms_per_cubic_meter(sodium),
+        kilograms_per_cubic_meter(total_dissolved_solids),
+        ph,
+        meters(diameter),
+        meters(length),
+        &segment_temperatures,
+        &segment_pressures,
+        seconds(service_time),
+        kilograms_per_cubic_meter(scale_density),
+        kilograms_per_square_meter_second(base_rate),
+        inhibitor_efficiency,
+    )
+    .map(|r| crate::transport_gen::PyScaleDepositionAccumulatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

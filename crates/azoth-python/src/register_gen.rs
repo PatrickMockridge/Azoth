@@ -152,6 +152,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySaltPrecipitationResult>()?;
     m.add_class::<crate::transport_gen::PySaturateWithWaterResult>()?;
     m.add_class::<crate::transport_gen::PyScaleControlAssessorResult>()?;
+    m.add_class::<crate::transport_gen::PyScaleDepositionAccumulatorResult>()?;
     m.add_class::<crate::transport_gen::PyScaleInhibitorPerformanceResult>()?;
     m.add_class::<crate::transport_gen::PyScaleKineticsResult>()?;
     m.add_class::<crate::transport_gen::PyScaleMassResult>()?;
@@ -265,6 +266,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
@@ -599,6 +601,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::eos::saturate_with_water, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::scale_control_assessor,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::scale_deposition_accumulator,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(

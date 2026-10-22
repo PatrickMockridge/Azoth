@@ -78,6 +78,7 @@
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
 //!   - specs/models/eos/scale_control_assessor.toml
+//!   - specs/models/eos/scale_deposition_accumulator.toml
 //!   - specs/models/eos/scale_remediation_advisor.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
@@ -16152,6 +16153,570 @@ pub static SCALE_CONTROL_ASSESSOR_SPEC: ModelSpec = ModelSpec {
     cases: SCALE_CONTROL_ASSESSOR_CASES,
 };
 
+static SCALE_DEPOSITION_ACCUMULATOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "diameter",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pipe with no diameter has no wall area for the class to deposit on; the arithmetic still runs and the result is empty.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "length",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pipe with no length has no wall area; the arithmetic still runs and the result is empty.",
+        },
+    },
+];
+
+static SCALE_DEPOSITION_ACCUMULATOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "base",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 5.112073003689538),
+            ("max_thickness", 6.026753244324613e-06),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(5.112073003689538),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(6.026753244324613e-06),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "inhibitor_half",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.5),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 2.556036501844769),
+            ("max_thickness", 3.0133766221623067e-06),
+            ("time_to_blockage", 261812610543.8094),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(2.556036501844769),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(3.0133766221623067e-06),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "service_5yr",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 157788000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 25.56036501844769),
+            ("max_thickness", 3.0133766221623074e-05),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(25.56036501844769),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(3.0133766221623074e-05),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "base_rate_doubled",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 3.168808781402895e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 10.224146007379076),
+            ("max_thickness", 1.2053506488649227e-05),
+            ("time_to_blockage", 65453152635.95235),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(10.224146007379076),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(1.2053506488649227e-05),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "cooled_profile",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            (
+                "segment_temperatures",
+                &[
+                    333.15,
+                    295.7630284790509,
+                    293.18764045683355,
+                    293.1423035510404,
+                    293.1341132975394,
+                    293.14159951262286,
+                    293.13339840650065,
+                    293.14157924182285,
+                    293.13336715453545,
+                    293.1415677292142,
+                    293.13334463084226,
+                ],
+            ),
+            (
+                "segment_pressures",
+                &[
+                    10000000.0,
+                    9996070.33961295,
+                    9993125.976391863,
+                    9990247.608621769,
+                    9987368.993896373,
+                    9984489.15937836,
+                    9981607.692955472,
+                    9978725.003532436,
+                    9975840.660188211,
+                    9972955.090610037,
+                    9970067.86273677,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 0.4647339094263216),
+            ("max_thickness", 6.026753244324614e-06),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(0.013908764040233352),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.4647339094263216),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(6.026753244324614e-06),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3134979056496238),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3384900821623057),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33890580225081696),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33895637758087044),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33885280183028277),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33890345297006963),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3387930190702319),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33884374657876604),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33873309028626875),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33878389436663964),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "no_calcite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.01),
+            ("bicarbonate", 0.01),
+            ("sulphate", 0.1),
+            ("barium", 0.0),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 4.0),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[("total_deposition_mass", 0.0), ("max_thickness", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(-5.547666164411428),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_deposition_accumulator`.
+pub static SCALE_DEPOSITION_ACCUMULATOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_deposition_accumulator",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_DEPOSITION_ACCUMULATOR_CHECKS,
+    cases: SCALE_DEPOSITION_ACCUMULATOR_CASES,
+};
+
 static SCALE_REMEDIATION_ADVISOR_CHECKS: &[SpecCheck] = &[];
 
 static SCALE_REMEDIATION_ADVISOR_CASES: &[TestCase] = &[
@@ -21906,6 +22471,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SALT_PRECIPITATION_SPEC,
     &SATURATE_WITH_WATER_SPEC,
     &SCALE_CONTROL_ASSESSOR_SPEC,
+    &SCALE_DEPOSITION_ACCUMULATOR_SPEC,
     &SCALE_REMEDIATION_ADVISOR_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,

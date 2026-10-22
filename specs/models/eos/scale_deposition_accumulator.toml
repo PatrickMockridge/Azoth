@@ -1,0 +1,112 @@
+id = "eos.scale_deposition_accumulator"
+name = "Segmented pipeline scale deposition from a temperature and pressure profile"
+kind = "direct"
+assumptions = [
+    "**the pipe is its profile**: the model takes the segment temperatures and pressures the class reads from `PipeBeggsAndBrills`; the count is the shorter list, and a single temperature - the isothermal pipe's one-value profile - evaluates one segment over the whole length.\n",
+    "**the driving force is `max(0, 10^SI - 1)`** on the CaCO3 index, times the base rate and `(1 - inhibitor efficiency)`; the class's kg/(m2 yr) crosses as a mass flux over its 365.25-day year, and the service time as seconds, so `rate * area * time` is the same mass.\n",
+    "**the thickness is the deposit spread over the segment's cylindrical wall**, `mass / (density * pi * d * L_seg)`, which is the class's volume-over-area division written directly.\n",
+    "**the time to blockage is half the inner radius at the worst segment**, extrapolated linearly as `threshold * service / max thickness`; it does not depend on the service chosen, and is infinite when nothing deposits.\n",
+    "the setters clamp the inhibitor efficiency to `[0, 1]` and the service time at zero; the scale density and base rate are taken as stated.\n",
+    "**the CO2 partial pressure is not an input**: the accumulator sets it on the predictor but never enables auto-pH, so it is stored and not read; the pH is the manual one.\n",
+    "the class's `getNumberOfIncrements` gate is outside this model - the profile length is the segment count - and an empty profile gives an empty result rather than a refusal.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ScaleDepositionAccumulator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/scale_deposition_probe.tsv` - a real Beggs-and-Brills pipe's one-segment and eleven-segment profiles, then the accumulator's per-segment indices, masses and thicknesses across the inhibitor, five-year service, doubled base rate and no-calcite corners.",
+]
+[source]
+standard = "NeqSim master `ScaleDepositionAccumulator`"
+edition = "`evaluate` and its getters, ported over `eos.scale_prediction`. The bound `PipeBeggsAndBrills` and its profile lists, the `StandardsRegistry` report and the Gson report are not."
+[inputs]
+[inputs.calcium]
+unit = "kg/m**3"
+description = "the calcium ion's mass concentration.\n"
+[inputs.bicarbonate]
+unit = "kg/m**3"
+description = "the bicarbonate ion's mass concentration.\n"
+[inputs.sulphate]
+unit = "kg/m**3"
+description = "the sulphate ion's mass concentration.\n"
+[inputs.barium]
+unit = "kg/m**3"
+description = "the barium ion's mass concentration.\n"
+[inputs.sodium]
+unit = "kg/m**3"
+description = "the sodium ion's mass concentration.\n"
+[inputs.total_dissolved_solids]
+unit = "kg/m**3"
+description = "TDS, which sets the predictor's ionic strength.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the aqueous phase's pH.\n"
+[inputs.diameter]
+unit = "m"
+description = "the pipe's internal diameter, 100 mm as 0.1 m.\n"
+[inputs.length]
+unit = "m"
+description = "the pipe's length.\n"
+[inputs.segment_temperatures]
+type = "vector"
+unit = "K"
+description = "the segment temperatures the pipe's profile carries, one per segment.\n"
+[inputs.segment_pressures]
+type = "vector"
+unit = "Pa"
+description = "the segment pressures; the count is the shorter list.\n"
+[inputs.service_time]
+unit = "s"
+description = "the exposure time the masses are scaled by; the class's service years as seconds.\n"
+[inputs.scale_density]
+unit = "kg/m**3"
+description = "the assumed deposit density, 2700 kg/m3 for calcite.\n"
+[inputs.base_rate]
+unit = "kg/(m**2*s)"
+description = "the deposition rate at SI = 1, 0.5 kg/(m2 yr) as 1.5844043908606944e-8 kg/(m2 s) over the class's year.\n"
+[inputs.inhibitor_efficiency]
+unit = "dimensionless"
+description = "the uniform fractional efficiency reducing the deposition rate, 0..1.\n"
+[outputs]
+[outputs.segments]
+type = "record_list"
+description = "One row per evaluated segment, in the profile's order.\n"
+[outputs.segments.fields.saturation_index]
+unit = "dimensionless"
+description = "the CaCO3 index at the segment's temperature and pressure.\n"
+[outputs.segments.fields.deposition_mass]
+unit = "kg"
+description = "the deposit mass over the segment's wall area and the service time.\n"
+[outputs.segments.fields.thickness]
+unit = "m"
+description = "the deposit thickness over the segment.\n"
+[outputs.total_deposition_mass]
+unit = "kg"
+description = "the mass summed over the segments.\n"
+[outputs.max_thickness]
+unit = "m"
+description = "the thickest segment, which sets the blockage time.\n"
+[outputs.time_to_blockage]
+unit = "s"
+description = "the time until the worst segment occludes half the pipe cross-section.\n"
+[[valid_range]]
+quantity = "ph"
+min = 0
+max = 14
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.\n"
+[[valid_range]]
+quantity = "diameter"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A pipe with no diameter has no wall area for the class to deposit on; the arithmetic still runs and the result is empty.\n"
+[[valid_range]]
+quantity = "length"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A pipe with no length has no wall area; the arithmetic still runs and the result is empty.\n"
+[implementations]
+python = "azoth.eos.scale_deposition_accumulator"
+rust = "azoth_eos::scale_deposition_accumulator"

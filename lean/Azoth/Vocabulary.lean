@@ -34,6 +34,7 @@ def units : List (String × Units.Dimension) :=
     ("mol", Dim.ofExponents [0, 0, 0, 0, 0, 1, 0]),
     ("kg", Dim.ofExponents [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", Dim.ofExponents [-3, 1, 0, 0, 0, 0, 0]),
+    ("kg/(m**2*s)", Dim.ofExponents [-2, 1, -1, 0, 0, 0, 0]),
     ("m/s", Dim.ofExponents [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", Dim.ofExponents [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", Dim.ofExponents [-1, 1, -2, 0, 0, 0, 0]),
@@ -119,6 +120,7 @@ def exponents : List (String × List Int) :=
     ("mol", [0, 0, 0, 0, 0, 1, 0]),
     ("kg", [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("kg/(m**2*s)", [-2, 1, -1, 0, 0, 0, 0]),
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
@@ -266,6 +268,12 @@ theorem u_kg_dimension :
     `Dimension.Mass / Dimension.Volume`. -/
 theorem u_kg_per_m_pow_3_dimension :
     dimOf "kg/m**3" = some (Dimension.Mass / Dimension.Volume) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "kg/(m**2*s)" carries the dimension `lean-units` calls
+    `Dimension.Mass / (Dimension.Area * Dimension.Time)`. -/
+theorem u_kg_per__m_pow_2_times_s_dimension :
+    dimOf "kg/(m**2*s)" = some (Dimension.Mass / (Dimension.Area * Dimension.Time)) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "m/s" carries the dimension `lean-units` calls

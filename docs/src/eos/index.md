@@ -156,6 +156,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.salt_precipitation`](./salt_precipitation.md) | `removal_extent_bisection` | NeqSim master `MultiSaltPrecipitation` |
 | [`eos.saturate_with_water`](./saturate_with_water.md) | `water_flood_then_dissolved_amount` | NeqSim master `SaturateWithWater` |
 | [`eos.scale_control_assessor`](./scale_control_assessor.md) | `direct composition` | NeqSim master `ScaleControlAssessor` |
+| [`eos.scale_deposition_accumulator`](./scale_deposition_accumulator.md) | `direct composition` | NeqSim master `ScaleDepositionAccumulator` |
 | [`eos.scale_remediation_advisor`](./scale_remediation_advisor.md) | `direct composition` | NeqSim master `ScaleRemediationAdvisor` |
 | [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim master `SystemSoreideWhitson` |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |

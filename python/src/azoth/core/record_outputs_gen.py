@@ -44,6 +44,20 @@ class BrineMixingPointRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class DepositionSegmentRow:
+    """One row per evaluated segment, in the profile's order."""
+
+    #: the CaCO3 index at the segment's temperature and pressure.
+    saturation_index: float
+
+    #: the deposit mass over the segment's wall area and the service time.
+    deposition_mass: Q
+
+    #: the deposit thickness over the segment.
+    thickness: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 
