@@ -8187,6 +8187,11 @@
       "factor": 6894.757293168361,
       "offset": 0.0
     },
+    "s": {
+      "dimension": "time",
+      "factor": 1.0,
+      "offset": 0.0
+    },
     "t": {
       "dimension": "mass",
       "factor": 1000.0,
