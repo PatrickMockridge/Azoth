@@ -598,6 +598,20 @@ PHREEQC CO2-chloride parameters at its zero zeta map.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
 ```
 
+**The process-scale group's probe** records the five process-chemistry scale calculators:
+the activity-corrected `ElectrolyteScaleCalculator` over the upstream brucite seawater and
+advanced-models brines, the pH and temperature grid, the Debye-Hueckel floor, the absent-ion
+state and the 50-bar pressure correction; the `BrineMixingScaleEvaluator` over the two
+upstream formation/seawater pairs and its steps floor; the `ScaleInhibitorPerformance` MIC
+grid with every warning and the efficiency on both sides of the MIC; the `ScaleKinetics`
+supersaturation grid with the transport and reaction branches and the clamped setters; and
+the `ScaleControlAssessor` over the RCA and skill states, the absent-scale NaN, the zero-dose
+identity and the 0.999 efficiency cap.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessScaleProbe > captures/process_scale_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
