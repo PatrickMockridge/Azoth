@@ -162,8 +162,8 @@ fn alkalinity(total_carbon: f64, ph: f64, k1: f64, k2: f64) -> f64 {
 ///     kelvins(333.15),
 ///     pascals(1.0e7),
 ///     "davies",
-///     None,
 ///     &[caustic],
+///     None,
 /// )?;
 /// assert!((r.treated_ph - 6.612286718254484).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())

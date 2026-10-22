@@ -38,7 +38,7 @@ const MINIMUM_SURFACE_TENSION_DYNE_CM: f64 = 1.0;
 /// ```
 /// use azoth_core::units::{
 ///     cubic_meters_per_second, kelvins,
-///     kilograms_per_cubic_meter, meters, pascals,
+///     kilograms_per_cubic_meter, meters, pascal_seconds, pascals,
 /// };
 /// use azoth_eos::beggs_brill_segment::beggs_brill_segment;
 ///
