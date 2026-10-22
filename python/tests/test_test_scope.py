@@ -20,6 +20,7 @@ import sys
 import time
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 TOOLS = Path(__file__).resolve().parents[2] / "tools"
 
@@ -669,7 +670,7 @@ def test_the_lane_budget_can_only_be_lowered() -> None:
     assert "watchdog" in zero.stderr
 
 
-def test_a_push_lane_refuses_a_dirty_tree(monkeypatch) -> None:
+def test_a_push_lane_refuses_a_dirty_tree(monkeypatch: Any) -> None:
     """A lane tests a commit, not a work in progress."""
     module = tool()
     dirty = subprocess.CompletedProcess([], 0, " M slice.rs\n", "")
