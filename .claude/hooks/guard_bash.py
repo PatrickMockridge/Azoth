@@ -82,6 +82,14 @@ JVM_PROGRAMS = {"java", "javac"}
 #: through the first version of this guard.
 LAUNCHERS = {"env", "nice", "nohup", "time", "timeout", "stdbuf", "command", "exec", "sudo"}
 RUNNERS = {"uv", "uvx", "poetry", "pipenv", "pdm", "hatch", "rye"}
+#: Package runners whose next word is the program they run (`npx cargo test`).
+PACKAGE_RUNNERS = {"npx"}
+#: Flags of a package runner that consume the following word.
+PACKAGE_RUNNER_VALUE_FLAGS = {"-p", "--package", "--prefix", "--npm", "--node-options", "--cache"}
+#: The longest a single heavy command may run, in seconds. The tranche lane is 20 minutes.
+CEILING_SECONDS = 1800
+#: A sentinel a forwarder's segment carries when the script it runs names a heavy program.
+HEAVY_SCRIPT = "the-script-runs-heavy"
 #: Runners whose next word is the subcommand to drop (`uv run`, `poetry run`).
 RUNNER_VERBS = {"run", "tool", "exec"}
 
@@ -178,6 +186,11 @@ def strip_launchers(tokens: list[str]) -> list[str]:
             if name == "timeout" and tokens:
                 tokens = tokens[1:]
             continue
+        if name in PACKAGE_RUNNERS:
+            tokens = tokens[1:]
+            while tokens and tokens[0].startswith("-"):
+                tokens = tokens[2:] if tokens[0] in PACKAGE_RUNNER_VALUE_FLAGS else tokens[1:]
+            continue
         if name in RUNNERS:
             tokens = tokens[1:]
             while tokens and (tokens[0].startswith("-") or tokens[0] in RUNNER_VERBS):
@@ -229,6 +242,27 @@ def wrapper_inner(tokens: list[str]) -> list[str] | None:
     return None
 
 
+def script_runs_heavy(arguments: list[str]) -> bool:
+    """Whether a shell script the command names contains a heavy program.
+
+    A file that cannot be read is not refused here: the shell will fail on it, and guessing
+    at an unreadable path would block a command for a reason the caller cannot act on.
+    """
+    for argument in arguments:
+        if argument.startswith("-"):
+            continue
+        path = Path(argument)
+        try:
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")[:65536]
+        except OSError:
+            continue
+        if HEAVY_WORDS.search(text):
+            return True
+    return False
+
+
 def expand(
     tokens: list[str], wrapped_so_far: bool, gate: bool
 ) -> list[tuple[list[str], bool, bool]]:
@@ -240,15 +274,22 @@ def expand(
     if name in FORWARDERS:
         if name in ("bash", "sh", "zsh", "dash", "ksh") and "-c" in rest:
             out.extend(candidates(" ".join(rest[rest.index("-c") + 1 :]), is_wrapped, gate))
+        elif name in ("bash", "sh", "zsh", "dash", "ksh"):
+            # **A script file is a command the guard cannot otherwise read.** If it names a
+            # heavy program, the segment is refused; a script with nothing heavy in it passes.
+            if script_runs_heavy(rest):
+                out.append(([HEAVY_SCRIPT], is_wrapped, gate))
         elif name == "xargs":
             out.extend(candidates(" ".join(rest), is_wrapped, gate))
     elif name in BUILD_TOOLS:
         # **A recipe this guard cannot read is the sweep until proven otherwise.** There is
         # no Makefile in this tree, so an unreadable target is a command nobody can check.
         out.append(([name, "the sweep"], is_wrapped, gate))
+    if name == "find" and "-exec" in tokens and HEAVY_WORDS.search(" ".join(tokens)):
+        out.append(([HEAVY_SCRIPT], is_wrapped, gate))
     inner = wrapper_inner(tokens)
     if inner:
-        out.extend(expand(inner, True, gate))
+        out.extend(expand(inner, wrapped(tokens), gate))
     return out
 
 
@@ -272,6 +313,37 @@ def candidates(
     return out
 
 
+#: A `timeout` duration: seconds by default, with an optional s/m/h suffix.
+DURATION = re.compile(r"^(\d+(?:\.\d+)?)([smh]?)$")
+
+
+def _seconds(text: str) -> float | None:
+    match = DURATION.fullmatch(text)
+    if match is None:
+        return None
+    value = float(match.group(1))
+    return value * {"": 1.0, "s": 1.0, "m": 60.0, "h": 3600.0}[match.group(2)]
+
+
+def timeout_refusal(cmd: str) -> str | None:
+    """Refuse a `timeout` longer than the per-command ceiling in front of a heavy program."""
+    for raw in segments(cmd):
+        for index, token in enumerate(raw):
+            if Path(token).name != "timeout" or index + 1 >= len(raw):
+                continue
+            seconds = _seconds(raw[index + 1])
+            if seconds is None or seconds <= CEILING_SECONDS:
+                continue
+            rest = strip_launchers(raw[index + 2 :])
+            if rest and is_heavy(rest):
+                return (
+                    f"No single heavy command runs longer than {CEILING_SECONDS // 60} "
+                    f"minutes, and this one asks for {seconds:.0f} seconds. Lanes are bounded "
+                    "by their own budgets; the longer surface is CI's nightly."
+                )
+    return None
+
+
 def test_scope_refusal(cmd: str) -> str | None:
     """Refuse a local run of the whole tree through the scoped runner."""
     for tokens, _, gate in candidates(cmd):
@@ -292,6 +364,34 @@ def test_scope_refusal(cmd: str) -> str | None:
                 "edit lane (budget 5 min) or `--lane tranche --run` at close-out; for the "
                 f"whole tree, prefix `{FULL_GATE_TOKEN}`."
             )
+        if "--run" in tokens:
+            budget = None
+            for index, token in enumerate(tokens):
+                if token == "--max-minutes" and index + 1 < len(tokens):
+                    try:
+                        budget = int(tokens[index + 1])
+                    except ValueError:
+                        budget = None
+                elif token.startswith("--max-minutes="):
+                    try:
+                        budget = int(token.split("=", 1)[1])
+                    except ValueError:
+                        budget = None
+            if budget is not None:
+                lane_budget = {"iterate": 5, "push": 15, "tranche": 20, "nightly": 45}.get(
+                    lane or "iterate", 5
+                )
+                if budget <= 0:
+                    return (
+                        "`--max-minutes 0` disables the watchdog and every per-command "
+                        "timeout. A lane runs to its budget or not at all."
+                    )
+                if budget > lane_budget:
+                    return (
+                        f"The {lane or 'iterate'} lane's budget is {lane_budget} minutes and "
+                        f"`--max-minutes` may only lower it. A diff too wide for it is "
+                        "`--lane tranche` (20 min) or CI, never a longer run."
+                    )
     return None
 
 
@@ -356,6 +456,8 @@ def is_wide(tokens: list[str]) -> bool:
 
 
 def is_heavy(tokens: list[str]) -> bool:
+    if HEAVY_SCRIPT in tokens:
+        return True
     prog = program(tokens)
     if prog == "cargo":
         return bool(HEAVY_CARGO_SUBCOMMANDS & set(tokens))
@@ -369,10 +471,26 @@ def is_heavy(tokens: list[str]) -> bool:
 
 
 def wrapped(tokens: list[str]) -> bool:
-    """A segment that *is* the wrapper, or a `systemd-run --scope` scope of its own."""
+    """A segment that *is* the wrapper, or a `systemd-run --scope` scope that caps memory.
+
+    **A scope without a `MemoryMax` is not the wrapper.** `systemd-run --user --scope java`
+    runs uncapped, which is the failure the wrapper exists to prevent; only a scope carrying
+    the property the wrapper passes counts.
+    """
     if program(tokens) in ("gated.sh", WRAPPER):
         return True
-    return "systemd-run" in tokens and "--scope" in tokens
+    if "systemd-run" not in tokens or "--scope" not in tokens:
+        return False
+    for index, token in enumerate(tokens):
+        if "MemoryMax=" in token:
+            return True
+        if (
+            token in ("-p", "--property")
+            and index + 1 < len(tokens)
+            and tokens[index + 1].startswith("MemoryMax=")
+        ):
+            return True
+    return False
 
 
 def decide(cmd: str) -> tuple[bool, str]:
@@ -396,7 +514,7 @@ def decide(cmd: str) -> tuple[bool, str]:
             "checkout. Format only your own files: "
             "`rustfmt --edition 2024 <files>`."
         )
-    refusal = test_scope_refusal(cmd)
+    refusal = test_scope_refusal(cmd) or timeout_refusal(cmd)
     if refusal:
         return False, refusal
     for tokens, is_wrapped, full_gate in candidates(cmd):
@@ -438,7 +556,9 @@ def emit_deny(reason: str) -> None:
 SELFTEST: list[tuple[str, bool]] = [
     # **the wrapper satisfies the wrap rule, not the wide rule.** These were the bypass.
     ("tools/gated.sh cargo test --workspace -j 10", False),
-    ("systemd-run --user --scope -q cargo build -j 10", True),
+    # **a bare scope is not the wrapper**: without a MemoryMax it runs uncapped
+    ("systemd-run --user --scope -q cargo build -j 10", False),
+    ("systemd-run --user --scope -q -p MemoryMax=12G cargo build -j 10", True),
     ("systemd-run --user --scope -q pytest python/tests", False),
     # wide -> denied
     ("cargo test --workspace --all-targets", False),
@@ -517,7 +637,32 @@ SELFTEST: list[tuple[str, bool]] = [
     # whole-tree escape still works on the wrapped forms
     ("AZOTH_FULL_GATE=1 tools/gated.sh cargo test --workspace -j 10", True),
     ("AZOTH_FULL_GATE=1 tools/gated.sh pytest python/tests", True),
-    ("AZOTH_FULL_GATE=1 systemd-run --user --scope -q cargo test --workspace", True),
+    ("AZOTH_FULL_GATE=1 systemd-run --user --scope -q cargo test --workspace", False),
+    (
+        "AZOTH_FULL_GATE=1 systemd-run --user --scope -q -p MemoryMax=12G cargo test --workspace",
+        True,
+    ),
+    # **the spellings that ran on 2026-10-22.** `timeout` must not hide the JVM, and the
+    # per-command ceiling refuses an hour even when it is written down.
+    ("timeout 900 java -cp .:neqsim-f0c7436.jar Probe", False),
+    ("timeout 3600 java -cp .:neqsim-f0c7436.jar Probe", False),
+    ("tools/gated.sh timeout 3600 java -cp .:neqsim-f0c7436.jar Probe", False),
+    # a bare scope is uncapped, so it is not the wrapper
+    ("systemd-run --user --scope java -cp .:neqsim-f0c7436.jar Probe", False),
+    (
+        "systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0 "
+        "java -cp .:neqsim-f0c7436.jar Probe",
+        True,
+    ),
+    # package runners resolve to the program they run
+    ("npx cargo test", False),
+    ("npx -y pytest python/tests", False),
+    # the lane budget may only be lowered, and zero is not a budget
+    ("python tools/test_scope.py --lane push --run --max-minutes 35", False),
+    ("python tools/test_scope.py --lane push --run --max-minutes 0", False),
+    ("python tools/test_scope.py --lane push --run --max-minutes 15", True),
+    ("python tools/test_scope.py --lane tranche --run --max-minutes 21", False),
+    ("python tools/test_scope.py --lane tranche --run --max-minutes 20", True),
     # `timeout` is resolved past its duration, wrapped or not
     ("timeout 300 pytest python/tests", False),
     (

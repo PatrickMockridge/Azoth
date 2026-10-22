@@ -83,6 +83,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip jsonschema
+      # **The guard that enforces every other rule below.** A checkout whose
+      # `.claude/hooks/guard_bash.py` differs from HEAD runs an older policy and fails
+      # open; on 2026-10-22 a stale eight-kilobyte copy let an ungated JVM run for two
+      # hours. This is the check that makes that a red gate rather than a silent one.
+      - run: python tools/check_guard.py
       # Every spec under specs/ must validate against the schema, and must
       # satisfy the semantic rules the schema cannot express. Also prints the
       # count of estimated-dummy data rows, so placeholder data is visible in

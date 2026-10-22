@@ -6,8 +6,8 @@
 // upstream `PitzerHydrateSalinityValidationTest` walks a CSV of experimental points; this
 // probe walks the concentration grid itself, so the suppression is a curve in the capture.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar PitzerHydrateSalinityProbe.java
-//   java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar PitzerHydrateSalinityProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
 
 import java.util.LinkedHashMap;
 import java.util.Map;

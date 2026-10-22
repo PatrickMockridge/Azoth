@@ -150,11 +150,14 @@ One gate, scoped to what the diff reaches, with a wall-clock budget per lane:
 | close-out | `python tools/test_scope.py --lane tranche --run` | 20 min | the push set, each reached sweep narrowed to the selected ids |
 | nightly | CI only (`--lane nightly` prints it) | 45 min | the whole tree |
 
-`--estimate` prints the minutes before they are spent and `--max-minutes` overrides the
-budget. The Rust extension is built with `maturin develop`; `AZOTH_REQUIRE_RUST=1` makes a
-run without it an error rather than a silent Python-only pass. **Do not run
-`pytest python/tests`**: it is the nightly's, and the guard refuses it. Heavy commands run
-under `tools/gated.sh` (12 GiB, no swap).
+`--estimate` prints the minutes before they are spent, and every `--run` prints them first.
+**The budgets are ceilings: `--max-minutes` may only lower one** — a wide diff is the
+tranche lane or CI. A push or tranche lane refuses a dirty tree: commit the slice, run its
+lane, and report the result. No heavy command runs longer than 30 minutes. The Rust
+extension is built with `maturin develop`; `AZOTH_REQUIRE_RUST=1` makes a run without it an
+error rather than a silent Python-only pass. **Do not run `pytest python/tests`**: it is the
+nightly's, and the guard refuses it. Heavy commands run under `tools/gated.sh` (12 GiB, no
+swap).
 
 ## Quick start
 

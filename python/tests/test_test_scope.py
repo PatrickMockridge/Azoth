@@ -642,6 +642,48 @@ def test_full_forces_the_nightly_render() -> None:
     assert f'-m "not {tool().MARKER}"' not in result.stdout
 
 
+def test_the_lane_budget_can_only_be_lowered() -> None:
+    """2026-10-22: seven push lanes ran at 35 minutes against a 15-minute budget."""
+    over = _cli(
+        "--paths",
+        f"{tool().TESTS}/test_guard_bash.py",
+        "--lane",
+        "push",
+        "--run",
+        "--max-minutes",
+        "16",
+    )
+    assert over.returncode == 2, over.stdout
+    assert "may only lower" in over.stderr
+
+    zero = _cli(
+        "--paths",
+        f"{tool().TESTS}/test_guard_bash.py",
+        "--lane",
+        "push",
+        "--run",
+        "--max-minutes",
+        "0",
+    )
+    assert zero.returncode == 2, zero.stdout
+    assert "watchdog" in zero.stderr
+
+
+def test_a_push_lane_refuses_a_dirty_tree(monkeypatch) -> None:
+    """A lane tests a commit, not a work in progress."""
+    module = tool()
+    dirty = subprocess.CompletedProcess([], 0, " M slice.rs\n", "")
+    clean = subprocess.CompletedProcess([], 0, "", "")
+    monkeypatch.setattr(module.subprocess, "run", lambda *_args, **_kwargs: dirty)
+    assert module.dirty_tree_refusal("push", True, None, False) is not None
+    assert module.dirty_tree_refusal("tranche", True, None, False) is not None
+    assert module.dirty_tree_refusal("iterate", True, None, False) is None
+    assert module.dirty_tree_refusal("push", False, None, False) is None
+    assert module.dirty_tree_refusal("push", True, ["a"], False) is None
+    monkeypatch.setattr(module.subprocess, "run", lambda *_args, **_kwargs: clean)
+    assert module.dirty_tree_refusal("push", True, None, False) is None
+
+
 def test_a_working_lane_refuses_the_nightly_run() -> None:
     result = _cli("--lane", "nightly", "--run")
     assert result.returncode == 2

@@ -7,8 +7,8 @@
 // excess guest, ions in mol per kilogram, the classic mixing rule, multiphase on, and for a
 // CO2 + chloride brine the PHREEQC CO2-chloride parameters with the test's zero zeta map.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar PitzerHydrateProbe.java
-//   java -cp .:neqsim-f0c7436.jar PitzerHydrateProbe > captures/pitzer_hydrate_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar PitzerHydrateProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateProbe > captures/pitzer_hydrate_probe.tsv
 
 import java.util.LinkedHashMap;
 import java.util.Map;

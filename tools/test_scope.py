@@ -142,6 +142,10 @@ ALWAYS_JOBS = (
 #: test beside it reads `ci.yml` and refuses a step in either direction, the same hand-list-plus-
 #: guard shape `generator_sweep()` and `discovered_namespaces()` use.
 CLOSE_OUT: tuple[Command, ...] = (
+    # **First, because every command after it is enforced by this file.** A checkout whose
+    # `.claude/hooks/guard_bash.py` is stale runs an older policy, and the gate must say so
+    # before a lane spends its budget under the wrong rules.
+    Command("the guard in the working tree", SCRIPT, "python tools/check_guard.py"),
     Command("the schemas and the semantic rules", SCRIPT, "python tools/spec_lint.py"),
     Command("the prose standard", SCRIPT, "python tools/prose_lint.py"),
     Command("duplicate JSON keys", SCRIPT, "python tools/check_json_keys.py"),
@@ -1965,6 +1969,27 @@ def nightly(gate: bool) -> list[str]:
     return [render(entry, "nightly", gate) for entry in full_surface()]
 
 
+def dirty_tree_refusal(lane: str, run: bool, paths: list[str] | None, staged: bool) -> str | None:
+    """Refuse a push or tranche lane on a work in progress.
+
+    **A lane tests a commit, not an uncommitted slice.** The user's complaint on 2026-10-22
+    was two hours of lanes on an uncommitted, silently growing slice; this is the enforceable
+    half of "commit the slice, then run its lane". ``--paths`` and ``--staged`` are a
+    developer's narrow probe and keep their dirty-tree run.
+    """
+    if not (run and lane in ("push", "tranche") and not (paths or staged)):
+        return None
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=False
+    )
+    if not status.stdout.strip():
+        return None
+    return (
+        "test_scope: the working tree is dirty; commit the slice before a "
+        f"{lane} lane. `--lane iterate` is the dirty-tree lane (5 min)."
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base", default="origin/main", help="what to diff against")
@@ -2043,6 +2068,29 @@ def main() -> int:
         for line in nightly(gate=not args.no_gate):
             print(line)
         return 0
+
+    if args.run and args.max_minutes is not None:
+        lane_budget = LANE_BUDGET_MINUTES[lane]
+        if args.max_minutes <= 0:
+            print(
+                "test_scope: `--max-minutes 0` disables the watchdog and every per-command "
+                "timeout. A lane runs to its budget or not at all.",
+                file=sys.stderr,
+            )
+            return 2
+        if args.max_minutes > lane_budget:
+            print(
+                f"test_scope: the {lane} lane's budget is {lane_budget} minutes and "
+                "`--max-minutes` may only lower it. A diff too wide for it is "
+                "`--lane tranche` (20 min) or CI, never a longer run.",
+                file=sys.stderr,
+            )
+            return 2
+
+    refusal = dirty_tree_refusal(lane, args.run, args.paths, args.staged)
+    if refusal:
+        print(refusal, file=sys.stderr)
+        return 2
 
     if args.full:
         # **`--full` is the command set, not a permission for a job to start.** `--job` then
@@ -2140,7 +2188,9 @@ def main() -> int:
         if marked:
             labelled.append((f"the reached ids inside {entry.command}", marked))
 
-    if args.estimate:
+    if args.estimate or args.run:
+        # **A run always shows its estimate first**, so the transcript carries the minutes
+        # before the budget is spent.
         minutes = sum(estimate_seconds(entry) for entry in commands) / 60
         print(f"# estimated: {minutes:.1f} min against a {budget}-minute {lane} lane")
         if budget and minutes > budget:

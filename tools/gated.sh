@@ -19,4 +19,9 @@ if [ -z "${JAVA_TOOL_OPTIONS:-}" ] && [[ " $* " == *java* ]]; then
   export JAVA_TOOL_OPTIONS=-Xmx2g
 fi
 
-exec systemd-run --user --scope -q -p "MemoryMax=$mem" -p MemorySwapMax=0 "$@"
+# **No single heavy command runs longer than 30 minutes.** The lane budgets are tighter
+# (iterate 5, push 15, tranche 20); this ceiling is the backstop for a command run outside a
+# lane, so an hour-long test is not something a caller can start by writing a longer
+# `timeout` in front of it. The nightly's 45 minutes is CI's, not this box's.
+exec systemd-run --user --scope -q -p "MemoryMax=$mem" -p MemorySwapMax=0 \
+  timeout --signal=TERM --kill-after=30s 1800s "$@"

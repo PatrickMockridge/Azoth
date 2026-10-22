@@ -63,6 +63,48 @@ def test_the_scoped_runner_refuses_its_own_whole_tree_modes() -> None:
     assert _allowed("AZOTH_FULL_GATE=1 python tools/test_scope.py --full --run")
 
 
+def test_a_scope_without_a_memory_cap_is_not_the_wrapper() -> None:
+    """A bare `systemd-run --scope` runs uncapped, which is what the wrapper prevents."""
+    assert not _allowed("systemd-run --user --scope -q java -cp .:neqsim.jar Probe")
+    assert _allowed(
+        "systemd-run --user --scope -q -p MemoryMax=12G -p MemorySwapMax=0 "
+        "java -cp .:neqsim.jar Probe"
+    )
+
+
+def test_a_package_runner_resolves_to_the_program_it_runs() -> None:
+    assert not _allowed("npx cargo test")
+    assert not _allowed("npx -y pytest python/tests")
+
+
+def test_the_lane_budget_can_only_be_lowered() -> None:
+    """The 2026-10-22 bypass: `--max-minutes 35` against a 15-minute push lane."""
+    assert not _allowed("python tools/test_scope.py --lane push --run --max-minutes 35")
+    assert not _allowed("python tools/test_scope.py --lane tranche --run --max-minutes 21")
+    assert not _allowed("python tools/test_scope.py --lane push --run --max-minutes 0")
+    assert _allowed("python tools/test_scope.py --lane push --run --max-minutes 15")
+    assert _allowed("python tools/test_scope.py --lane tranche --run --max-minutes 20")
+
+
+def test_an_hour_long_heavy_command_is_refused() -> None:
+    """The per-command ceiling is 30 minutes, whatever a `timeout` in front says."""
+    assert not _allowed("timeout 3600 java -cp .:neqsim.jar Probe")
+    assert not _allowed(
+        "tools/gated.sh timeout 3600 python -m pytest "
+        "python/tests/models/test_model_cases.py -k flash"
+    )
+    assert _allowed("tools/gated.sh timeout 900 java -cp .:neqsim.jar Probe")
+
+
+def test_a_script_that_runs_a_heavy_program_is_refused(tmp_path: Path) -> None:
+    heavy = tmp_path / "probe.sh"
+    heavy.write_text("java -cp x Probe\n", encoding="utf-8")
+    assert not _allowed(f"bash {heavy}")
+    clean = tmp_path / "clean.sh"
+    clean.write_text("echo hello\n", encoding="utf-8")
+    assert _allowed(f"bash {clean}")
+
+
 def test_read_only_commands_that_name_tests_are_allowed() -> None:
     """A quoted pattern is not an operator; a mention is not a run."""
     assert _allowed('grep -n -E "cargo test|pytest" .github/workflows/ci.yml')

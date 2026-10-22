@@ -45,8 +45,8 @@ rebuilding it is this recipe.
 
 ```bash
 cd validation/neqsim
-javac -proc:none -cp neqsim-f0c7436.jar HybridEosGeReactiveProbe.java
-java -cp .:neqsim-f0c7436.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar HybridEosGeReactiveProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
 ```
 
 The captures are committed and CI reads them, so a new one is a capture file plus the

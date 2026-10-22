@@ -31,10 +31,17 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   CI's scoped lane and also deselects them, 15 minutes. `tranche` is the close-out: the push
   set with each reached sweep narrowed to the ids the scope selected, 20 minutes. `nightly`
   is the whole tree, 45 minutes, and it is CI's — `--lane nightly --run` is refused and
-  `--full` forces that render. `--estimate` prints the minutes before they are spent;
-  `--max-minutes` overrides; a local run that spends its budget kills the whole process
+  `--full` forces that render. `--estimate` prints the minutes before they are spent, and
+  every `--run` prints the estimate first. **The budgets are ceilings: `--max-minutes` may
+  only lower one** — a diff too wide for the push lane is `--lane tranche` (20 minutes) or
+  CI, never a longer push. A local run that spends its budget kills the whole process
   group. **Never run `pytest python/tests`; it is nightly-only and the guard refuses it.**
   `AZOTH_PYTEST_WORKERS` (`0` disables) sets the xdist worker count.
+- **A push or tranche lane runs against a commit.** `--lane push|tranche --run` refuses a
+  dirty tree; `--lane iterate` (5 minutes) is the dirty-tree lane. Commit the slice, run its
+  one lane, and report the elapsed time and result in the next message. **No single heavy
+  command runs longer than 30 minutes** — `tools/gated.sh` enforces that ceiling and the
+  lane budgets are tighter. An hour-long test is not something an agent starts on its own.
 - **Three checks say whether the scoped set is worth trusting.** `--audit` walks every
   tracked path through the table, so the day a directory is added and no rule knows it the
   gate says so; `--verify-selection` collects every emitted target and refuses one that
@@ -74,5 +81,10 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   repo-wide test run. **It resolves the command inside the wrapper**, because the wrapper
   satisfies the memory cap and not the width rule; `timeout` is resolved past its duration
   for the same reason. `AZOTH_FULL_GATE=1`, visible in the transcript, is the only way past
-  that refusal — for the rare local full run, not for a push.
+  that refusal — for the rare local full run, not for a push. **The hook is tracked, and a
+  checkout whose copy differs from `HEAD` runs an older policy.** `tools/check_guard.py`
+  fails the gate on it: on 2026-10-22 a stale eight-kilobyte copy let `timeout 900 java …`
+  run ungated and a push lane run at 35 minutes. If `git ls-files .claude/hooks/guard_bash.py`
+  prints nothing or the file differs from `HEAD`, stop and restore it
+  (`rm .claude/hooks/guard_bash.py && git checkout -- .claude/hooks/guard_bash.py`).
 
