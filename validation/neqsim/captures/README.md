@@ -658,6 +658,19 @@ treated indices and their change, and the warning map with its messages.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
 ```
 
+**The Beggs-and-Brills probe** records the pipe's per-segment state: the pressure, the flow
+regime, the liquid holdup, the three superficial velocities, the no-slip density and
+viscosity, the Reynolds number and the pressure drop, plus the outlet and the total drop.
+The states are a horizontal wet-gas line at two diameters, an uphill and a downhill leg, a
+liquid-rich line, a three-phase oil/water/gas line, single-phase gas and liquid, a rough
+wall, and the three liquid-rich or high-flow states that reach the INTERMITTENT and
+DISTRIBUTED branches the others do not; one high-flow state is refused upstream for a
+negative outlet pressure and is recorded as such.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
