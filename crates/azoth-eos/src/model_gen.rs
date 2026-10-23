@@ -438,6 +438,25 @@ static AQUEOUS_VISCOSITY_CASES: &[TestCase] = &[
         records: &[],
         expected_records: &[],
     },
+    TestCase {
+        id: "water_teg_mixture_at_300_k_and_5_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "TEG"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("viscosity", 0.027140221192857243)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
 ];
 
 /// Registry entry for `eos.aqueous_viscosity`.

@@ -366,6 +366,12 @@ pub struct Entry {
     /// for the interface tension the wetted area is built from. The manifest carried the
     /// column whole and nothing read it until the segment model needed it.
     pub parachor: f64,
+    /// The parachor a **CPA component** reads: NeqSim's `PARACHOR_CPA`.
+    ///
+    /// `Component.createComponent` selects this column for `ComponentSrkCPA` and every
+    /// subclass of it (upstream PR #4004), and the ordinary `PARACHOR` for the rest; the
+    /// two differ where the associative fluid's surface tension was fitted separately.
+    pub parachor_cpa: f64,
     /// Heat of fusion, in J/mol: NeqSim's `HEATOFFUSION`, read into `Component` for **every**
     /// substance and not only the solids - the wax probe's capture prints methane at
     /// `941.0` J/mol, which is its own.
@@ -1138,6 +1144,10 @@ struct Interaction {
     /// NeqSim's `KIJSRK`, the column its Soave-Redlich-Kwong phase and every other cubic
     /// reads. See [`Self::kij_pr`] for why the two are not interchangeable.
     kij_srk: f64,
+    /// NeqSim's `GIJVISC`, the liquid viscosity's Grunberg-Nissan interaction, symmetric and
+    /// zero where the pair has none. `PhysicalPropertyMixingRule.initMixingRules` loads it
+    /// since upstream PR #4003; before that its loop never ran and every pair was zero.
+    gij_visc: f64,
     /// NeqSim's `cpakij_SRK`, the interaction parameter its **CPA** mixing rule reads for
     /// the Soave family.
     ///
@@ -1515,6 +1525,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "hydrateformer",
         "waxformer",
         "parachor",
+        "parachor_cpa",
         "heatoffusion",
         "triplepointtemperature",
         "meltingpointtemperature",
@@ -1731,6 +1742,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .is_some_and(|value| value == 1.0),
                 heat_of_fusion: number(&record, index["heatoffusion"], "heatoffusion", row)?,
                 parachor: number(&record, index["parachor"], "parachor", row)?,
+                parachor_cpa: number(&record, index["parachor_cpa"], "parachor_cpa", row)?,
                 cp_solid: {
                     let mut fitted = [0.0; 4];
                     for (k, slot) in fitted.iter_mut().enumerate() {
@@ -1850,6 +1862,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "component_b",
         "kij_pr",
         "kijsrk",
+        "gijvisc",
         "nrtlalpha",
         "nrtlgij",
         "nrtlgji",
@@ -1924,6 +1937,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let ws_dji_t = optional_number(&record, index["wsgjit"], "wsgjit", row)?;
         let kij_ws = optional_number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
         let kij_srk = optional_number(&record, index["kijsrk"], "kijsrk", row)?;
+        let gij_visc = optional_number(&record, index["gijvisc"], "gijvisc", row)?;
         let cpa_kij_srk = optional_number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
         let cpa_kij_t_srk = optional_number(&record, index["cpakijt_srk"], "cpakijt_srk", row)?;
         let cpa_kij_pr = optional_number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
@@ -1961,6 +1975,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
             Interaction {
                 kij_pr: value,
                 kij_srk,
+                gij_visc,
                 cpa_kij_srk,
                 cpa_kij_t_srk,
                 cpa_kij_pr,
@@ -1991,6 +2006,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
             Interaction {
                 kij_pr: value,
                 kij_srk,
+                gij_visc,
                 cpa_kij_srk,
                 cpa_kij_t_srk,
                 cpa_kij_pr,
@@ -2154,6 +2170,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 hydrate_former: false,
                 wax_former: over.wax_former.unwrap_or_default(),
                 parachor: over.parachor.unwrap_or_default(),
+                parachor_cpa: over.parachor.unwrap_or_default(),
                 heat_of_fusion: over.heat_of_fusion.unwrap_or_default(),
                 triple_point_temperature: over.triple_point_temperature.unwrap_or_default(),
                 // A card states no melting point, so a substance that exists only as a
@@ -2252,6 +2269,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             hydrate_former: base.hydrate_former,
             wax_former: over.wax_former.unwrap_or(base.wax_former),
             parachor: over.parachor.unwrap_or(base.parachor),
+            parachor_cpa: over.parachor.unwrap_or(base.parachor_cpa),
             heat_of_fusion: over.heat_of_fusion.unwrap_or(base.heat_of_fusion),
             triple_point_temperature: over
                 .triple_point_temperature
@@ -2381,6 +2399,22 @@ pub fn kij(first: &str, second: &str, cubic: Cubic, overlay: Option<&Overlay>) -
             Cubic::Pr => interaction.kij_pr,
             _ => interaction.kij_srk,
         })
+}
+
+/// The liquid-viscosity interaction `Gij` for a pair, symmetric and zero where absent.
+///
+/// `PhysicalPropertyMixingRule.initMixingRules`, after upstream PR #4003: the class looks a
+/// pair up in `INTER.csv` in either order, takes `GIJVISC` where the row carries it and zero
+/// otherwise, and skips an ion or a TBP fraction rather than the pairs around it. Every pair
+/// was zero at the pin because the loop's inner bound began at `k = l` and broke on it.
+#[must_use]
+pub fn viscosity_gij(first: &str, second: &str) -> f64 {
+    let key = |a: &str, b: &str| (a.trim().to_lowercase(), b.trim().to_lowercase());
+    let table = &tables().1;
+    table
+        .get(&key(first, second))
+        .or_else(|| table.get(&key(second, first)))
+        .map_or(0.0, |interaction| interaction.gij_visc)
 }
 
 /// A component's normal liquid density in g/cm**3, from the table's `liqdens` column or the
@@ -3076,6 +3110,7 @@ pub fn associating_mixture_of(
 ) -> Result<(Mixture, IdealGasModel)> {
     let family = AssociationCubic::of(cubic);
     let (mixture, ideal_gas) = mixture_of(names, cubic, overlay)?;
+    let mixture = with_cpa_parachors(mixture, names, overlay)?;
     let mixture = mixture
         // **The rule is temperature-dependent, not constant.** NeqSim's rule 10 reads
         // `cpakijT_SRK` beside `cpakij_SRK` and adds them as `kij + kijT * T`, and the
@@ -3096,6 +3131,26 @@ pub fn associating_mixture_of(
         // CR-1 and every other is the Elliott rule this leaves in place.
         .with_cross(cpa_cross(names));
     Ok((mixture, ideal_gas))
+}
+
+/// Replace every component's parachor with its **CPA** column.
+///
+/// `Component.createComponent` tests `this instanceof ComponentSrkCPA`, so a CPA component -
+/// including the electrolyte and UMR subclasses - reads `PARACHOR_CPA` and every other
+/// component reads `PARACHOR`. This library has one `Component` type and states CPA-ness on
+/// the mixture, so the selection is made where the mixture is built.
+///
+/// # Errors
+/// As [`entry`].
+fn with_cpa_parachors(
+    mut mixture: Mixture,
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<Mixture> {
+    for (index, name) in names.iter().enumerate() {
+        mixture = mixture.with_parachor_at(index, entry(name, overlay)?.parachor_cpa);
+    }
+    Ok(mixture)
 }
 
 /// The UMR-CPA fluid: Peng-Robinson, the UMR mixing rule and the association.
@@ -3121,6 +3176,7 @@ pub fn associating_mixture_of(
 ///   decomposition, which the rule cannot mix without.
 pub fn umr_cpa_mixture_of(names: &[&str]) -> Result<(Mixture, IdealGasModel)> {
     let (base, ideal_gas) = mixture_of(names, Cubic::Pr, None)?;
+    let base = with_cpa_parachors(base, names, None)?;
     let n = names.len();
     // **Every component needs its `UMRCPA_MC` set, and one without is refused.** NeqSim's
     // `ComponentUMRCPA.setAttractiveTerm` falls back to term 19 seeded with `MCPR1..3`

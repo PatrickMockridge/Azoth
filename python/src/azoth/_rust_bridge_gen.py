@@ -984,6 +984,7 @@ def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousVi
         _molar_masses(mixture, 'a card-added component needs its own molar mass: the mixing rule weights by mass fraction'),
         [value for c in mixture.components for value in c.liqvisc],
         [c.liqvisc_model for c in mixture.components],
+        list(mixture.names) if mixture.names is not None else [],
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),

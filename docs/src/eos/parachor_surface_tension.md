@@ -62,6 +62,8 @@ satisfy for the result to mean what it says.
 
 - the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which NeqSim's `calcSurfaceTension` adds as a per-component sum.
 
+- **a CPA mixture reads `PARACHOR_CPA`** and every other mixture reads `PARACHOR` (upstream PR #4004); the associating, UMR-CPA and electrolyte CPA builders select it, so the input here is whichever column the caller's mixture carries.
+
 
 
 

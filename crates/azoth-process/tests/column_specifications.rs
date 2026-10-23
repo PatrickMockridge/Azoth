@@ -168,45 +168,27 @@ fn a_duty_specification_is_applied_to_the_end() {
     relative(out.distillate.n, 3.8249569643784094, 1.0e-5, "distillate");
 }
 
-/// **A duty specification under a temperature pin is inert, and the capture measures it.**
-/// The condenser's own `outTemperature` is stated, so its flash is a `TPflash` and
-/// `setHeatInput` is never read: the row reports `-21323.04` W for a specification of `-20000`.
+/// **A duty specification under a temperature pin is refused, and upstream PR #4127 is why.**
 ///
-/// **Nothing in the class reports this.** A `DUTY` is not *adjusted*, so
-/// `needsAdjustment` is false, no error is evaluated and `getLastTopSpecificationResidual`
-/// returns `0.0` - a zero that means "not checked" rather than "satisfied". The port reproduces
-/// the silence: its duty is the state's, and the specification's target is unreachable.
+/// The condenser's own `outTemperature` is stated, so its flash is a `TPflash` and the heat
+/// input the specification wrote is never read: the state's duty is `-21323.04` W for a target
+/// of `-20000`, a residual of `1323` W. **Before the fix nothing evaluated it** - a `DUTY` is
+/// not *adjusted*, so `needsAdjustment` was false and `getLastTopSpecificationResidual`
+/// returned `0.0`, a zero that meant "not checked" while reading as "satisfied". The published
+/// residual now refuses the state, which is this port's form of the class reporting it
+/// unsolved.
 #[test]
-fn a_duty_specification_under_a_pin_moves_nothing() {
-    let out = distillation_column(&column(
+fn a_duty_specification_under_a_pin_is_refused() {
+    let error = distillation_column(&column(
         spec(SpecificationKind::Duty, -20000.0, None),
         None,
         true,
     ))
-    .expect("the column solves");
-
-    absolute(
-        out.condenser_duty.value,
-        -21323.042789303567,
-        5.0,
-        "the pinned duty",
-    );
-    relative(
-        out.distillate.n,
-        3.7914997294607584,
-        1.0e-5,
-        "the unsold column's distillate",
-    );
-    // **The pin wins, and that is NeqSim's own order of tests.** `SimpleTray.run` checks its
-    // stated outlet temperature before anything else and takes a `TPflash` there, so the heat
-    // input a `DUTY` specification wrote is never read. Reproducing the silence is the port
-    // rule; honouring the duty here would be an improvement NeqSim does not make.
-    // And the specification's own target is *not* met, which is the finding: a value nine per
-    // cent away reads as satisfied because nothing evaluates it.
+    .expect_err("the pinned duty misses its target");
+    let message = error.to_string();
     assert!(
-        (out.condenser_duty.value - (-20000.0)).abs() > 1000.0,
-        "the duty is {} W against a target of -20000",
-        out.condenser_duty.value
+        message.contains("1323") || message.contains("1.323e3"),
+        "the refusal carries the residual: {message}"
     );
 }
 

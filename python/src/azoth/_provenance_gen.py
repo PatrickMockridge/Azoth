@@ -238,12 +238,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.aqueous_viscosity': {
         "calc_id": 'eos.aqueous_viscosity',
         "name": 'Liquid viscosity of an aqueous phase',
-        "spec": {'path': 'specs/models/eos/aqueous_viscosity.toml', 'sha256': '051baeab55e11525b7fa73894605074459a503b3b15143b07a745ae64d623ea6'},
-        "code": [{'path': 'python/src/azoth/eos/reference/aqueous_viscosity.py', 'sha256': '89a29a754855dd9e569ac8facb801549ec1668188495b1a52d4151d63308fc14'}, {'path': 'crates/azoth-eos/src/aqueous_viscosity.rs', 'sha256': '7a6f22236bfef4c395fe700901152155144f9657cb99585cf05fe74db4a4c6f0'}],
+        "spec": {'path': 'specs/models/eos/aqueous_viscosity.toml', 'sha256': '93c4282ec26f868e606dc003cf9439beb57b1da7f828f7cadb57dcb6bbc66254'},
+        "code": [{'path': 'python/src/azoth/eos/reference/aqueous_viscosity.py', 'sha256': '53504e1b8cf6eaeb41ac35d604673685af8d73202030e4da6535c5afaec30835'}, {'path': 'crates/azoth-eos/src/aqueous_viscosity.rs', 'sha256': '044ee1f6039c6ab7870118c607a0f0477e2e06fefb61a60d59b37ee5096b1298'}],
         "source": 'NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 7,
+        "tests_active": 8,
         "tests_skipped": 0,
     },
     'eos.argon_solid_phase': {
@@ -1151,7 +1151,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.parachor_surface_tension': {
         "calc_id": 'eos.parachor_surface_tension',
         "name": 'Surface tension from the parachor (Macleod-Sugden)',
-        "spec": {'path': 'specs/calcs/eos/parachor_surface_tension.toml', 'sha256': 'fe8f5a56b46ce639caa5f943503d7e9df2a6f94dd8588ad41d18445085043170'},
+        "spec": {'path': 'specs/calcs/eos/parachor_surface_tension.toml', 'sha256': '83f9534cb60dc44d0d886a3d42b5648b9300497d9d4723dfafe68284ce36bc45'},
         "code": [{'path': 'python/src/azoth/eos/reference/parachor_surface_tension.py', 'sha256': '2041dc232651bdac6c1c2eaaa913e63a936ef1634a07622ce479c0dc3851e235'}, {'path': 'crates/azoth-eos/src/parachor_surface_tension.rs', 'sha256': 'df5a5cff44c22742a0dec4c813716f47724e47cca93c9467a258b40e892875a3'}],
         "source": 'NeqSim master `ParachorSurfaceTension`',
         "verification": 'partially_verified',

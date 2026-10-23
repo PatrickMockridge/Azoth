@@ -82,6 +82,25 @@ liqviscmodel_TEG=3
 correction_TEG=0.9974220603210703
 gij_0_0=0.0
 
+water_teg_300K_5bar
+T_K=300.0
+P_bara=5.0
+phase_type=AQUEOUS
+viscosity_model=Viscosity
+viscosity_Pa_s=0.027140221192857243
+pure_water_cP=0.8551044828231577
+weight_water=0.10711100541054759
+liqviscmodel_water=3
+correction_water=1.001021286376188
+pure_TEG_cP=34.619145438106855
+weight_TEG=0.8928889945894524
+liqviscmodel_TEG=3
+correction_TEG=0.9974220603210703
+gij_0_0=0.0
+gij_0_1=0.8
+gij_1_0=0.8
+gij_1_1=0.0
+
 water_methanol_300K_5bar
 T_K=300.0
 P_bara=5.0

@@ -143,6 +143,11 @@ MIXTURE_EXPANSION: dict[str, str] = {
     # reconcile - the polynomial is flattened component-major and the model is one number each.
     "liqvisc": "[value for c in mixture.components for value in c.liqvisc]",
     "liqvisc_model": "[c.liqvisc_model for c in mixture.components]",
+    # The names, for a model whose arithmetic is keyed by them: `eos.aqueous_viscosity`'s
+    # Grunberg-Nissan interaction is a pair lookup in `INTER.csv`. A boundary that handed the
+    # extension component vectors alone would give it a mixture with no names and therefore no
+    # interactions - which is the pre-#4003 answer, not this one.
+    "component_names": "list(mixture.names) if mixture.names is not None else []",
 }
 
 #: The parameters an `IdealGasModel` resolves into, one column per coefficient.

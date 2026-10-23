@@ -40,7 +40,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - **this is what NeqSim gives an aqueous phase.** `getPhysicalProperties()` dispatches on the phase type: `AQUEOUS` takes `WaterPhysicalProperties`, whose viscosity model is the liquid `Viscosity` (the `polynom` one). A gas or a hydrocarbon liquid takes the PFCT form `eos.viscosity` ports.
 - each component's viscosity is a pure correlation chosen by its `LIQVISCMODEL`: `1` is `L1 T^L2`, `2` is `exp(L1 + L2/T)`, `3` is `exp(L1 + L2/T + L3 T + L4 T^2)`, `4` is `10^(L1 (1/T - 1/L2))`. **Zero names none** - NeqSim's default branch, `0.7` cP; above `Tc`, `0.5` cP.
-- **Grunberg-Nissan with its interaction term zero**: `mu = exp(sum_i w_i ln mu_i)` over **mass** fractions. `PhysicalPropertyMixingRule.initMixingRules` never fills `Gij` - its inner loop starts at `k = l` and breaks on `k == l` - so every pair measures `0.0`.
+- **Grunberg-Nissan with the table's interaction**: `mu = exp(sum_i w_i ln mu_i + sum_i sum_{j != i} w_i w_j G_ij)` over **mass** fractions. `initMixingRules` reads `GIJVISC` per pair since upstream PR #4003; an absent pair is zero.
+
 - the pressure correction is NeqSim's own: `(corr + 1)/2` multiplying each pure viscosity, with `corr = (1 + D (P/Pc/2.118)^A) / (1 + C omega P/Pc)` and `A`, `C`, `D` functions of `T/Tc`. It is `1.0002` at 1 bar and `1.0010` at 5 bar for water at 300 K.
 - **a phase carrying an ion is refused.** NeqSim's own `LIQVISC` rows for `na+` and `cl-` are the four numbers methanol *used to* carry, and a 2 mol% NaCl brine comes out `8.4026e-4` against pure water's `8.5510e-4` Pa s - the wrong direction.
 - the fluid is resolved against the databank with the keycard's overrides applied, as `eos.viscosity` is.
@@ -57,11 +58,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `water_at_350_k` | components = ['water'], T = 350.0, P = 500000.0, z = [1.0] | viscosity = 0.00036479710612851546 |
 | `methanol_at_300_k_and_5_bar` | components = ['methanol'], T = 300.0, P = 500000.0, z = [1.0] | viscosity = 0.0005305720894530389 |
 | `teg_at_300_k_and_5_bar` | components = ['TEG'], T = 300.0, P = 500000.0, z = [1.0] | viscosity = 0.03461914543810686 |
+| `water_teg_mixture_at_300_k_and_5_bar` | components = ['water', 'TEG'], T = 300.0, P = 500000.0, z = [0.5, 0.5] | viscosity = 0.027140221192857243 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 7 declared, every one run
+- Tests: 8 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

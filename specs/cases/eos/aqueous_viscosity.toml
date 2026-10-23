@@ -76,3 +76,14 @@ P = 500000.0
 z = [1.0]
 [cases.expected]
 viscosity = 3.461914543810686e-02
+[[cases]]
+id = "water_teg_mixture_at_300_k_and_5_bar"
+tolerance = 1e-09
+source = "An equimolar water/TEG mixture, which is **the one pair in the table with a non-zero `GIJVISC`** - `0.8`, the number the class's own `PhysicalPropertyMixingRuleDatabaseTest` asserts. Grunberg-Nissan is `exp(sum_i w_i ln mu_i + sum_i sum_{j != i} w_i w_j G_ij)`, so the interaction moves the answer from `exp(sum_i w_i ln mu_i)`; before upstream PR #4003 the matrix was zero and the second sum vanished.\n"
+[cases.inputs]
+components = ["water", "TEG"]
+T = 300.0
+P = 500000.0
+z = [0.5, 0.5]
+[cases.expected]
+viscosity = 0.027140221192857243

@@ -87,3 +87,16 @@ fn a_brine_is_refused_with_the_reason() {
         "and says whose numbers the row carries: {message}"
     );
 }
+
+/// **The interaction term is the table's** (upstream PR #4003): water/TEG is `0.8`, the
+/// pair the class's own test names, and the matrix is symmetric. Every other pair the
+/// probe prints is zero - which is the table's answer and not the old loop's.
+#[test]
+fn the_viscosity_interaction_comes_from_the_pair_table() {
+    assert!((databank::viscosity_gij("water", "TEG") - 0.8).abs() < 1e-12);
+    assert_eq!(
+        databank::viscosity_gij("water", "TEG"),
+        databank::viscosity_gij("TEG", "water")
+    );
+    assert_eq!(databank::viscosity_gij("water", "methanol"), 0.0);
+}

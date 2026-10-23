@@ -1084,10 +1084,9 @@ unit = "dimensionless"
 reason = "unreachable-upstream: the Mathias-Copeman alpha; NeqSim's `SystemPrMathiasCopeman` and `SystemSrkMathiasCopeman` are the only classes that mention it and neither is constructed anywhere in the checkout, and `mcpr1` appears in no source file at all."
 [[upstreams.files.columns]]
 name = "PARACHOR_CPA"
-disposition = "vendored"
+disposition = "used"
 as = "parachor_cpa"
 unit = "parachor"
-reason = "not-ported: surface tension; NeqSim's `ParachorSurfaceTension`"
 [[upstreams.files.columns]]
 name = "lambdaRSAFTVRMie"
 disposition = "used"
@@ -1345,14 +1344,9 @@ as = "nrtlgji"
 unit = "K"
 [[upstreams.files.columns]]
 name = "GIJVISC"
-disposition = "vendored"
+disposition = "used"
 as = "gijvisc"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: NRTL's mixing rule inside a viscosity model; NeqSim's `PhaseGENRTL` \
-    with `physicalproperties/`, which the `eos.viscosity` port does not use - this \
-    library's liquid viscosity is the Pedersen correlation, not a friction-theory \
-    model over NRTL."""
 [[upstreams.files.columns]]
 name = "HVGIJT"
 disposition = "used"
