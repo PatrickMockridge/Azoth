@@ -48,7 +48,7 @@ description = "the pipe's length.\n"
 [inputs.segment_temperatures]
 type = "vector"
 unit = "K"
-description = "the segment temperatures the pipe's profile carries, one per segment.\n"
+description = "the segment temperatures the pipe's profile carries, one per segment; each is an absolute temperature, and a non-positive one is refused.\n"
 [inputs.segment_pressures]
 type = "vector"
 unit = "Pa"

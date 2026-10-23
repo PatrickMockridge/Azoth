@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.record_outputs_gen import DepositionSegmentRow
 from azoth.core.result import ScaleDepositionAccumulatorResult
@@ -118,6 +119,13 @@ def scale_deposition_accumulator(
             max_thickness=from_si(0.0, "m"),
             time_to_blockage=from_si(math.inf, "s"),
             warnings=tuple(warnings),
+        )
+
+    if any(temperature <= 0.0 for temperature in temperatures[:count]):
+        raise InvalidInputError(
+            "segment_temperatures",
+            "each segment temperature is an absolute temperature; a non-positive one is "
+            "not a state",
         )
 
     segment_length = values["length"] / count

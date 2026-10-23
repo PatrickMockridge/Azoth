@@ -4,9 +4,8 @@
 //! CaCO3 index per segment, its deposit mass and wall thickness, the total, and the time to
 //! half-block the worst segment.
 
-use azoth_core::Result;
-use azoth_core::apply_checks;
 use azoth_core::units::{Length, MassDensity, MassFlux, Time, kilograms, meters, seconds};
+use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::model_gen;
 use crate::results::{DepositionSegmentRow, ScaleDepositionAccumulatorResult};
@@ -88,6 +87,17 @@ pub fn scale_deposition_accumulator(
             time_to_blockage: seconds(f64::INFINITY),
             warnings,
         });
+    }
+
+    if segment_temperatures[..count]
+        .iter()
+        .any(|temperature| *temperature <= 0.0)
+    {
+        return Err(AzothError::invalid_input(
+            "segment_temperatures",
+            "each segment temperature is an absolute temperature; a non-positive one is \
+             not a state",
+        ));
     }
 
     let segment_length = length.value / count as f64;

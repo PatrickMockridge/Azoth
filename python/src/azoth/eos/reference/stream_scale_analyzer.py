@@ -12,6 +12,7 @@ from __future__ import annotations
 from azoth.core.record_outputs_gen import StreamScaleMineralRow
 from azoth.core.result import StreamScaleAnalyzerResult
 from azoth.core.units import Q, from_si
+from azoth.core.warnings import WarningCode
 from azoth.eos.reference.multi_mineral_scale_equilibrium import (
     multi_mineral_scale_equilibrium,
 )
@@ -134,5 +135,9 @@ def stream_scale_analyzer(
         total_scale_rate=from_si(total_mass * flow, "kg/s"),
         dominant_scale=dominant,
         has_scaling=total_mass > 0.0,
-        warnings=tuple(equilibrium.warnings),
+        warnings=tuple(
+            warning
+            for warning in equilibrium.warnings
+            if warning.code is not WarningCode.RANGE_CHECK_SKIPPED
+        ),
     )

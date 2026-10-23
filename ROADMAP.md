@@ -339,18 +339,17 @@ reaches equilibrium through.
   `pvtsimulation/flowassurance/` scale set is the other route and is ported too, its seven ids
   named in Tier 1's flow-assurance bullet: the water-analysis screen, its Pitzer coefficients,
   the solid solution, the mass estimate, the coupled equilibrium and the two composers.
-  **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`, and
-  one of the eleven `process/chemistry/scale/` classes - `ClosedLoopDepositionSolver`, which
-  needs a working Beggs-and-Brills re-run at each reduced diameter.
-  **The other ten are ported**, each with the id that carries it:
+  **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`.
+  **All eleven `process/chemistry/scale/` classes are ported**, each with the id that carries it:
   `ElectrolyteScaleCalculator` (`eos.electrolyte_scale_calculator`),
   `BrineMixingScaleEvaluator` (`eos.brine_mixing_scale_evaluator`),
   `ScaleInhibitorPerformance` (`eos.scale_inhibitor_performance`), `ScaleKinetics`
   (`eos.scale_kinetics`), `ScaleRemediationAdvisor` (`eos.scale_remediation_advisor`),
   `ScaleControlAssessor` (`eos.scale_control_assessor`), `StreamScaleAnalyzer`
   (`eos.stream_scale_analyzer`), `ValveScaleDrift` (`eos.valve_scale_drift`) and
-  `ScaleDepositionAccumulator` (`eos.scale_deposition_accumulator`) and
-  `ProductionChemicalScaleScenario` (`eos.production_chemical_scale_scenario`).
+  `ScaleDepositionAccumulator` (`eos.scale_deposition_accumulator`),
+  `ProductionChemicalScaleScenario` (`eos.production_chemical_scale_scenario`) and
+  `ClosedLoopDepositionSolver` (`eos.closed_loop_deposition_solver`).
 - **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on **both**
   of its routes. The Helmholtz one needs a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for
   the fluid and `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the

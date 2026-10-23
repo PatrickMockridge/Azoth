@@ -118,7 +118,15 @@ pub fn stream_scale_analyzer(
         None,
         None,
     )?;
-    warnings.extend(equilibrium.warnings.iter().cloned());
+    // A skipped bound is the inner model's own optional-input check; the outer model neither
+    // declares those bounds nor exposes two of the inputs, so it cannot report them.
+    warnings.extend(
+        equilibrium
+            .warnings
+            .iter()
+            .filter(|warning| warning.code != azoth_core::WarningCode::RangeCheckSkipped)
+            .cloned(),
+    );
 
     let minerals: Vec<StreamScaleMineralRow> = equilibrium
         .minerals

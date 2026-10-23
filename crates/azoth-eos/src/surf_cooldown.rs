@@ -120,6 +120,16 @@ pub fn surf_cooldown(
     )?;
 
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    if z.len() != names.len() {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "the composition has {} entries for {} components",
+                z.len(),
+                names.len()
+            ),
+        ));
+    }
     for name in &names {
         databank::entry(name, None)?;
     }

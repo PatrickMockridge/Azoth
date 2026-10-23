@@ -135,3 +135,36 @@ fn an_absent_water_is_refused_when_required() {
     .expect_err("a dry fluid is refused when water is required");
     assert!(error.to_string().contains("water"));
 }
+
+/// **A composition of the wrong length is refused** rather than indexed past.
+#[test]
+fn a_composition_of_the_wrong_length_is_refused() {
+    let components: Vec<String> = ["methane", "ethane", "propane", "water"]
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect();
+    let error = surf_cooldown(
+        &components,
+        &[],
+        pascals(1.2e7),
+        kelvins(338.15),
+        meters(0.254),
+        meters(0.0159),
+        meters(0.06),
+        meters(0.006),
+        watts_per_meter_kelvin(0.22),
+        kelvins(277.15),
+        None,
+        Some(watts_per_square_meter_kelvin(2.5)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("srk"),
+        Some("pvtsim"),
+    )
+    .expect_err("the composition is empty");
+    assert!(error.to_string().contains("z"));
+}

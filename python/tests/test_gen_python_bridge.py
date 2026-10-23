@@ -20,6 +20,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 
@@ -55,6 +57,7 @@ def _hand_written() -> list[str]:
     return [name for name in found if name in registered]
 
 
+@pytest.mark.slow_sweep
 def test_the_committed_adapters_are_current() -> None:
     """The drift gate `docs-drift` runs, run here so it fails in the suite too."""
     result = subprocess.run(

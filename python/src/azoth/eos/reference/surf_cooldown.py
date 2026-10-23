@@ -165,6 +165,11 @@ def surf_cooldown(
             values[name] = input_to_si(spec, name, value)
     apply_checks(checks.on_input, values.get, warnings)
 
+    if len(z) != len(components):
+        raise InvalidInputError(
+            "z",
+            f"the composition has {len(z)} entries for {len(components)} components",
+        )
     water_index = next(
         (index for index, name in enumerate(components) if name.lower() == "water"), None
     )

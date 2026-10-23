@@ -28,7 +28,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `ph` | dimensionless | the aqueous phase's pH. |
 | `diameter` | m | the pipe's internal diameter, 100 mm as 0.1 m. |
 | `length` | m | the pipe's length. |
-| `segment_temperatures` | K | the segment temperatures the pipe's profile carries, one per segment. |
+| `segment_temperatures` | K | the segment temperatures the pipe's profile carries, one per segment; each is an absolute temperature, and a non-positive one is refused. |
 | `segment_pressures` | Pa | the segment pressures; the count is the shorter list. |
 | `service_time` | s | the exposure time the masses are scaled by; the class's service years as seconds. |
 | `scale_density` | kg/m**3 | the assumed deposit density, 2700 kg/m3 for calcite. |
