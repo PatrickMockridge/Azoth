@@ -1385,7 +1385,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     .filter(|(spec, _)| spec.as_ref().is_some_and(|spec| !spec.kind.is_adjusted()))
     .map(|(_, residual)| residual.abs())
     .fold(0.0_f64, f64::max);
-    if !(direct_residual <= SPECIFICATION_TOLERANCE) {
+    if direct_residual.is_nan() || direct_residual > SPECIFICATION_TOLERANCE {
         return Err(AzothError::SolverNotConverged {
             iterations,
             residual: direct_residual,

@@ -3202,6 +3202,7 @@ def aqueous_viscosity(
     molar_mass: list[float],
     liqvisc: list[float],
     liqvisc_model: list[int],
+    component_names: list[str],
     T: float,
     P: float,
     z: list[float],

@@ -716,6 +716,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             if model["id"] in LIQUID_VISCOSITY_MODELS:
                 params.append(f"{prefix}liqvisc: list[float]")
                 params.append(f"{prefix}liqvisc_model: list[int]")
+                # **The names cross too**, because the Grunberg-Nissan interaction is a pair
+                # lookup in `INTER.csv`: a component vector alone gives the extension a
+                # mixture with no names and therefore no `G_ij` (upstream PR #4003).
+                params.append(f"{prefix}component_names: list[str]")
             if "params" in taken:
                 # A model that takes both a mixture and a parameter record - the
                 # gamma-phi flash, whose vapour is a cubic and whose liquid is an

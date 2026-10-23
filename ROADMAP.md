@@ -134,7 +134,8 @@ process model needs.
   model 2's `LGTSurfaceTension` in every slot, and model 4's
   `GTSurfaceTensionSimple`/`LGTSurfaceTension`/Parachor, from the flashed pair and the
   profile parameters. Its Parachor and Firozabadi slots read the databank's `parachor`
-  and `tc`, and both phases' translated densities - the SRK Peneloux shift, which the
+  (the `parachor_cpa` column for a CPA mixture, per upstream PR #4004) and `tc`, and both
+  phases' translated densities - the SRK Peneloux shift, which the
   databank now carries beside the Peng-Robinson one, is what makes those densities
   NeqSim's rather than the untranslated cubic's. `FrictionTheoryConductivityMethod` is
   `eos.friction_theory_conductivity`, reached the only way the class reaches it - an
