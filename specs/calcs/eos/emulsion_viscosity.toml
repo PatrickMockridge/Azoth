@@ -1,0 +1,599 @@
+id = "eos.emulsion_viscosity"
+name = "Oil-water emulsion viscosity and phase inversion point"
+equation = "WC_inv = 1 / (1 + (mu_o/mu_w)^0.25 (rho_w/rho_o)^0.5), clamped to [0.20, 0.90], shifted by 0.10 (t - 0.5), clamped to [0.15, 0.95]\n\nW/O below WC_inv: mu_c = mu_o, mu_d = mu_w, phi = WC\nO/W at or above:   mu_c = mu_w, mu_d = mu_o, phi = 1 - WC\n\nmu_eff = mu_c * mu_r\nmu_r: Einstein 1 + 2.5 phi; Taylor 1 + 2.5 phi (mu_d + 0.4 mu_c)/(mu_d + mu_c)\n      Brinkman (1 - phi)^-2.5; Pal-Rhodes (1 - phi/phi_max)^(-2.5 phi_max)\n      Woelflin exp(k phi), k 2.5 | 4 | 6; Richardson exp((2.5 + 5 t) phi)\n\nmu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is present"
+latex = '''WC_{\mathrm{inv}} = \frac{1}{1 + (\mu_o/\mu_w)^{1/4}(\rho_w/\rho_o)^{1/2}}, \qquad \mu_{\mathrm{eff}} = \mu_c\,\mu_r\,f_{\mathrm{tight}}\,f_{\mathrm{demul}}}'''
+assumptions = [
+    "the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.\n",
+    "**the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.\n",
+    "**the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.\n",
+    "**the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.\n",
+    "**the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.\n",
+    "the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.\n",
+    "the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/EmulsionViscosityCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the nineteen states: all six models, the jammed packing fraction, Woelflin's three bands, both inversion clamps, the two water-cut ends, both tightness multipliers and two demulsifier efficiencies.",
+    "Arirachakaran, S.; Ogbe, D. O.; Economides, M. J. (1989). An analysis of oil/water flow phenomena in horizontal pipes. SPE 18836.",
+]
+[source]
+standard = "NeqSim master `EmulsionViscosityCalculator`"
+edition = "`calculate`, `calculateInversionPoint`, the six relative-viscosity models and the tightness and demulsifier corrections. The viscosity-curve sweep and the Gson report are compositions, and the unused setters are stored only."
+[inputs]
+[inputs.oil_viscosity]
+unit = "Pa*s"
+description = "the oil phase's dynamic viscosity.\n"
+[inputs.water_viscosity]
+unit = "Pa*s"
+description = "the water phase's dynamic viscosity.\n"
+[inputs.oil_density]
+unit = "kg/m**3"
+description = "the oil phase's density.\n"
+[inputs.water_density]
+unit = "kg/m**3"
+description = "the water phase's density.\n"
+[inputs.water_cut]
+unit = "dimensionless"
+description = "the water volume fraction.\n"
+[inputs.max_packing_fraction]
+unit = "dimensionless"
+description = "the maximum dispersed-phase packing fraction, 0.74 as the class's default.\n"
+[inputs.model]
+type = "enum"
+values = ["einstein", "taylor", "brinkman", "pal_rhodes", "woelflin", "richardson"]
+description = "the relative-viscosity model.\n"
+[inputs.tightness_factor]
+unit = "dimensionless"
+description = "the emulsion tightness, which shifts the inversion point and scales the viscosity above 0.5.\n"
+[inputs.demulsifier_present]
+type = "boolean"
+description = "whether a demulsifier is dosed.\n"
+[inputs.demulsifier_efficiency]
+unit = "dimensionless"
+description = "the demulsifier efficiency, which halves its effect on the viscosity.\n"
+[outputs]
+[outputs.effective_viscosity]
+unit = "Pa*s"
+description = "the effective emulsion viscosity.\n"
+[outputs.relative_viscosity]
+unit = "dimensionless"
+description = "the model's relative viscosity before the tightness and demulsifier corrections.\n"
+[outputs.viscosity_ratio]
+unit = "dimensionless"
+description = "the effective viscosity over the continuous phase's.\n"
+[outputs.inversion_water_cut]
+unit = "dimensionless"
+description = "the water cut at which the phases invert.\n"
+[outputs.emulsion_type]
+type = "enum"
+values = ["water_in_oil", "oil_in_water"]
+description = "which phase is continuous at the stated water cut.\n"
+[outputs.is_inverted]
+type = "boolean"
+description = "whether the water cut is at or above the inversion point.\n"
+[[valid_range]]
+quantity = "oil_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A viscosity is positive.\n"
+[[valid_range]]
+quantity = "water_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A viscosity is positive, and the inversion correlation divides by it.\n"
+[[valid_range]]
+quantity = "oil_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A density is positive.\n"
+[[valid_range]]
+quantity = "water_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A density is positive.\n"
+[[valid_range]]
+quantity = "water_cut"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "A volume fraction lies in [0, 1].\n"
+[[valid_range]]
+quantity = "max_packing_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "A packing fraction lies in (0, 1].\n"
+[worked_example]
+source = "the capture's `default_pal` row"
+derivation = "The class's default state: 10 cP oil, 0.5 cP water, densities 850 and 1020, a 0.30 water cut, Pal-Rhodes at a 0.74 packing fraction and a 0.5 tightness.\n\n  WC_inv = 1 / (1 + (10/0.5)^0.25 (1020/850)^0.5) = 0.30152\n  the 0.30 cut is below it, so W/O with phi = 0.30\n  mu_r = (1 - 0.30/0.74)^(-2.5*0.74) = 2.61632\n  mu_eff = 10 cP * 2.61632 = 26.1632 cP\n"
+tolerance = 1e-09
+[worked_example.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850.0
+water_density = 1020.0
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0.0
+[worked_example.expected]
+effective_viscosity = 0.026163222223187113
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 2.6163222223187113
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "default_pal"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `default_pal` row: the class's default state: 10 cP oil, 0.5 cP water, a 0.30 water cut and Pal-Rhodes at a 0.74 packing fraction."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.02616322222318711
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 2.6163222223187113
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "einstein"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `einstein` row: Einstein's dilute-suspension limit at a 0.01 water cut."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.01
+max_packing_fraction = 0.74
+model = "einstein"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.01025
+relative_viscosity = 1.025
+viscosity_ratio = 1.025
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "taylor"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `taylor` row: Taylor's internal-circulation correction at the same dilute cut."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.01
+max_packing_fraction = 0.74
+model = "taylor"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.010107142857142858
+relative_viscosity = 1.0107142857142857
+viscosity_ratio = 1.0107142857142857
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "brinkman"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `brinkman` row: Brinkman's moderate-concentration form at a 0.30 cut."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "brinkman"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.0243924205986611
+relative_viscosity = 2.43924205986611
+viscosity_ratio = 2.43924205986611
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "pal_jammed"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `pal_jammed` row: Pal-Rhodes at a packing fraction above the maximum: the 1e6 jam."
+[tests.inputs]
+oil_viscosity = 1e-06
+water_viscosity = 0.001
+oil_density = 1500
+water_density = 500
+water_cut = 0.8
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.0
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 1.0
+relative_viscosity = 1000000.0
+viscosity_ratio = 1000000.0
+inversion_water_cut = 0.85
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "woelflin_loose"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `woelflin_loose` row: Woelflin's loose-emulsion coefficient 2.5 below a tightness of 0.33."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "woelflin"
+tightness_factor = 0.2
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.0028773013380028654
+relative_viscosity = 5.754602676005731
+viscosity_ratio = 5.754602676005731
+inversion_water_cut = 0.2715150191478968
+emulsion_type = "oil_in_water"
+
+[[tests]]
+id = "woelflin_medium"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `woelflin_medium` row: Woelflin's medium coefficient 4.0."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "woelflin"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.03320116922736547
+relative_viscosity = 3.3201169227365472
+viscosity_ratio = 3.320116922736547
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "woelflin_tight"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `woelflin_tight` row: Woelflin's tight coefficient 6.0."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "woelflin"
+tightness_factor = 0.8
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.09679435943060713
+relative_viscosity = 6.049647464412945
+viscosity_ratio = 9.679435943060714
+inversion_water_cut = 0.3315150191478968
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "richardson_low"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `richardson_low` row: Richardson's exponential at a tightness of 0.2."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "richardson"
+tightness_factor = 0.2
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.005794173359611693
+relative_viscosity = 11.588346719223386
+viscosity_ratio = 11.588346719223386
+inversion_water_cut = 0.2715150191478968
+emulsion_type = "oil_in_water"
+
+[[tests]]
+id = "richardson_high"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `richardson_high` row: Richardson's exponential at a tightness of 1.0."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "richardson"
+tightness_factor = 1.0
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.1897547167271705
+relative_viscosity = 9.487735836358526
+viscosity_ratio = 18.975471672717052
+inversion_water_cut = 0.35151501914789673
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "inverted"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `inverted` row: a 0.5 water cut above the 0.30 inversion point: oil-in-water."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.5
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.004014744286069768
+relative_viscosity = 8.029488572139536
+viscosity_ratio = 8.029488572139536
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "oil_in_water"
+
+[[tests]]
+id = "low_clamp"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `low_clamp` row: a 1000 cP oil whose correlation would invert below 0.20, clamped there."
+[tests.inputs]
+oil_viscosity = 1.0
+water_viscosity = 0.0005
+oil_density = 500
+water_density = 1000
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.0
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.11046830793422396
+relative_viscosity = 220.93661586844792
+viscosity_ratio = 220.93661586844792
+inversion_water_cut = 0.15000000000000002
+emulsion_type = "oil_in_water"
+
+[[tests]]
+id = "high_clamp"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `high_clamp` row: a 0.001 cP oil whose correlation would invert above 0.90, clamped there."
+[tests.inputs]
+oil_viscosity = 1e-06
+water_viscosity = 0.001
+oil_density = 1500
+water_density = 500
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 1.0
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 5.232644444637422e-06
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 5.2326444446374225
+inversion_water_cut = 0.95
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "wc_zero"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `wc_zero` row: no water: the oil's own viscosity."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.0
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.01
+relative_viscosity = 1.0
+viscosity_ratio = 1.0
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "wc_one"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `wc_one` row: all water: the water's own viscosity, in the inverted O/W branch."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 1.0
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.0005
+relative_viscosity = 1.0
+viscosity_ratio = 1.0
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "oil_in_water"
+
+[[tests]]
+id = "tight_0_75"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `tight_0_75` row: the tightness multiplier 1.5 above 0.5."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.75
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.03924483333478067
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 3.9244833334780664
+inversion_water_cut = 0.32651501914789677
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "tight_1"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `tight_1` row: the tightness multiplier 2.0 at its maximum."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 1.0
+demulsifier_present = false
+demulsifier_efficiency = 0
+[tests.expected]
+effective_viscosity = 0.05232644444637422
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 5.2326444446374225
+inversion_water_cut = 0.35151501914789673
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "demulsifier_0_6"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `demulsifier_0_6` row: a demulsifier at 0.6 efficiency, which halves its effect to a 0.7 factor."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = true
+demulsifier_efficiency = 0.6
+[tests.expected]
+effective_viscosity = 0.01831425555623098
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 1.8314255556230978
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "demulsifier_zero_eff"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `demulsifier_zero_eff` row: a demulsifier present at zero efficiency: no correction."
+[tests.inputs]
+oil_viscosity = 0.01
+water_viscosity = 0.0005
+oil_density = 850
+water_density = 1020
+water_cut = 0.3
+max_packing_fraction = 0.74
+model = "pal_rhodes"
+tightness_factor = 0.5
+demulsifier_present = true
+demulsifier_efficiency = 0.0
+[tests.expected]
+effective_viscosity = 0.02616322222318711
+relative_viscosity = 2.6163222223187113
+viscosity_ratio = 2.6163222223187113
+inversion_water_cut = 0.30151501914789675
+emulsion_type = "water_in_oil"
+
+[[tests]]
+id = "default_pal_worked_example"
+type = "worked_example"
+status = "active"
+
+[implementations]
+python = "azoth.eos.emulsion_viscosity"
+rust = "azoth_eos::emulsion_viscosity"

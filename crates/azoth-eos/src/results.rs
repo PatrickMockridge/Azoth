@@ -1699,6 +1699,130 @@ impl CalcResult for DeWaardMilliamsCorrosionResult {
     }
 }
 
+/// The erosion risk band the rate and velocity ratio put a line in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErosionRiskLevel {
+    /// Rate at most 0.1 mm/yr and ratio at most 0.8.
+    Low,
+    /// Rate above 0.1 mm/yr or ratio above 0.8.
+    Medium,
+    /// Rate above 0.5 mm/yr or ratio above 1.0.
+    High,
+    /// Rate above 1.0 mm/yr or ratio above 1.5.
+    Critical,
+}
+
+impl ErosionRiskLevel {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+}
+
+/// Result of `eos.erosion_prediction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ErosionPredictionResult {
+    /// The API RP 14E erosional velocity at the mixture density.
+    pub erosional_velocity: Velocity,
+    /// The actual velocity over the erosional one.
+    pub velocity_ratio: f64,
+    /// The DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    pub erosion_rate: Velocity,
+    /// The rate over the design life.
+    pub cumulative_erosion: Length,
+    /// The wall less the cumulative erosion and the corrosion allowance.
+    pub remaining_wall_thickness: Length,
+    /// Whether the velocity ratio is at most one.
+    pub within_api_limits: bool,
+    /// Whether the remaining wall is positive.
+    pub within_erosion_limits: bool,
+    /// The rate-and-ratio risk band.
+    pub risk_level: ErosionRiskLevel,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ErosionPredictionResult {
+    const CALC_ID: &'static str = "eos.erosion_prediction";
+    const FIELDS: &'static [&'static str] = &[
+        "erosional_velocity",
+        "velocity_ratio",
+        "erosion_rate",
+        "cumulative_erosion",
+        "remaining_wall_thickness",
+        "within_api_limits",
+        "within_erosion_limits",
+        "risk_level",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Which phase is continuous in an emulsion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EmulsionType {
+    /// Water droplets in oil, below the inversion water cut.
+    WaterInOil,
+    /// Oil droplets in water, at or above the inversion water cut.
+    OilInWater,
+}
+
+impl EmulsionType {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::WaterInOil => "water_in_oil",
+            Self::OilInWater => "oil_in_water",
+        }
+    }
+}
+
+/// Result of `eos.emulsion_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EmulsionViscosityResult {
+    /// The effective emulsion viscosity.
+    pub effective_viscosity: DynamicViscosity,
+    /// The model's relative viscosity before the tightness and demulsifier corrections.
+    pub relative_viscosity: f64,
+    /// The effective viscosity over the continuous phase's.
+    pub viscosity_ratio: f64,
+    /// The water cut at which the phases invert.
+    pub inversion_water_cut: f64,
+    /// Which phase is continuous at the stated water cut.
+    pub emulsion_type: EmulsionType,
+    /// Whether the water cut is at or above the inversion point.
+    pub is_inverted: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for EmulsionViscosityResult {
+    const CALC_ID: &'static str = "eos.emulsion_viscosity";
+    const FIELDS: &'static [&'static str] = &[
+        "effective_viscosity",
+        "relative_viscosity",
+        "viscosity_ratio",
+        "inversion_water_cut",
+        "emulsion_type",
+        "is_inverted",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One evaluated pipe segment's deposition.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DepositionSegmentRow {

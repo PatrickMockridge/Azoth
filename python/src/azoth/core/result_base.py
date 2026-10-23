@@ -91,6 +91,22 @@ class CorrosionSeverity(StrEnum):
     VERY_HIGH = "very_high"
 
 
+class EmulsionType(StrEnum):
+    """Which phase is continuous in an oil-water emulsion."""
+
+    WATER_IN_OIL = "water_in_oil"
+    OIL_IN_WATER = "oil_in_water"
+
+
+class ErosionRiskLevel(StrEnum):
+    """The rate-and-ratio risk band an erosion screen reports."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 class FeSMorphology(StrEnum):
     """The iron-sulfide morphology the temperature band predicts.
 

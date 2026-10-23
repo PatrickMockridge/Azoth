@@ -82,9 +82,11 @@ pub mod effective_diffusion;
 pub mod electrolyte;
 pub mod electrolyte_cpa_statoil_phase;
 pub mod electrolyte_scale_calculator;
+pub mod emulsion_viscosity;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
+pub mod erosion_prediction;
 pub mod filippov_conductivity;
 pub mod firozabadi_ramley_interface_tension;
 pub mod flash_iteration;
@@ -303,7 +305,9 @@ pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
 pub use effective_diffusion::effective_diffusion;
 pub use electrolyte_cpa_statoil_phase::electrolyte_cpa_statoil_phase;
+pub use emulsion_viscosity::emulsion_viscosity;
 pub use eos_cg_phase::eos_cg_phase;
+pub use erosion_prediction::erosion_prediction;
 pub use filippov_conductivity::filippov_conductivity;
 pub use firozabadi_ramley_interface_tension::firozabadi_ramley_interface_tension;
 pub use freezing_point::freezing_point;
@@ -394,21 +398,22 @@ pub use results::{
     Co2PhaseResult, Co2WaterDiffusivityResult, CorrosionSeverity, CostaldMolarVolumeResult,
     CriticalPointResult, DeWaardMilliamsCorrosionResult, DepositionSegmentRow,
     DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
-    ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult, EosCgPhaseResult,
-    FeSMorphology, FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult,
-    FreezingPointResult, FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
-    FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
-    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
-    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
-    Gerg2008PhaseResult, GtSurfaceTensionResult, GtSurfaceTensionSimpleResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
-    HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult,
-    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
-    LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult, EmulsionType,
+    EmulsionViscosityResult, EosCgPhaseResult, FeSMorphology, FilippovConductivityResult,
+    FirozabadiRamleyInterfaceTensionResult, FreezingPointResult, FrictionTheoryConductivityResult,
+    FrictionTheoryViscosityResult, FullerSchettlerGiddingsDiffusivityResult,
+    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
+    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult, GtSurfaceTensionResult,
+    GtSurfaceTensionSimpleResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
+    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
+    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
+    IapwsSaturationPressureResult, IdealGasCpResult, InterfacePropertiesResult,
+    KentEisenbergPhaseResult, LgtSurfaceTensionResult, LiquidConductivityPolynomResult,
+    LiquidHeatCapacityResult, LiquidViscosityPureResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PipeBeggsAndBrillsResult,
     PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,

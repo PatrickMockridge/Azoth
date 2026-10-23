@@ -67,8 +67,12 @@ from azoth.core.result import (
     EjectorResult,
     ElectrolyteCpaStatoilPhaseResult,
     ElectrolyteScaleCalculatorResult,
+    EmulsionType,
+    EmulsionViscosityResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
+    ErosionPredictionResult,
+    ErosionRiskLevel,
     ExpanderResult,
     FeSMorphology,
     FilippovConductivityResult,
@@ -368,8 +372,10 @@ __all__ = [
     "ejector",
     "electrolyte_cpa_statoil_phase",
     "electrolyte_scale_calculator",
+    "emulsion_viscosity",
     "eos_cg_phase",
     "equilibrium_constant",
+    "erosion_prediction",
     "expander",
     "filippov_conductivity",
     "filter",
@@ -1504,6 +1510,32 @@ def electrolyte_scale_calculator(calcium: Q, barium: Q, strontium: Q, magnesium:
     )
 
 
+def emulsion_viscosity(oil_viscosity: Q, water_viscosity: Q, oil_density: Q, water_density: Q, water_cut: float, max_packing_fraction: float, model: str, tightness_factor: float, demulsifier_present: bool, demulsifier_efficiency: float) -> EmulsionViscosityResult:
+    """``eos.emulsion_viscosity``, computed in Rust."""
+    spec = _spec_for("eos.emulsion_viscosity")
+    result = _core.emulsion_viscosity(
+        input_to_si(spec, "oil_viscosity", oil_viscosity),
+        input_to_si(spec, "water_viscosity", water_viscosity),
+        input_to_si(spec, "oil_density", oil_density),
+        input_to_si(spec, "water_density", water_density),
+        water_cut,
+        max_packing_fraction,
+        model,
+        tightness_factor,
+        demulsifier_present,
+        demulsifier_efficiency,
+    )
+    return EmulsionViscosityResult(
+        effective_viscosity=from_si(result.effective_viscosity.magnitude_si, result.effective_viscosity.unit),
+        relative_viscosity=result.relative_viscosity,
+        viscosity_ratio=result.viscosity_ratio,
+        inversion_water_cut=result.inversion_water_cut,
+        emulsion_type=EmulsionType(result.emulsion_type),
+        is_inverted=result.is_inverted,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhaseResult:
     """``eos.eos_cg_phase``, computed in Rust."""
     spec = _models_gen.model("eos.eos_cg_phase")
@@ -1521,6 +1553,38 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def erosion_prediction(mixture_density: Q, mixture_velocity: Q, pipe_diameter: Q, wall_thickness: Q, sand_rate: Q, sand_particle_diameter: Q, sand_particle_density: Q, mixture_viscosity: Q, geometry: str, bend_radius_ratio: float, pipe_material: str, api_c_factor: float, corrosion_allowance: Q, design_life: Q) -> ErosionPredictionResult:
+    """``eos.erosion_prediction``, computed in Rust."""
+    spec = _spec_for("eos.erosion_prediction")
+    result = _core.erosion_prediction(
+        input_to_si(spec, "mixture_density", mixture_density),
+        input_to_si(spec, "mixture_velocity", mixture_velocity),
+        input_to_si(spec, "pipe_diameter", pipe_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "sand_rate", sand_rate),
+        input_to_si(spec, "sand_particle_diameter", sand_particle_diameter),
+        input_to_si(spec, "sand_particle_density", sand_particle_density),
+        input_to_si(spec, "mixture_viscosity", mixture_viscosity),
+        geometry,
+        bend_radius_ratio,
+        pipe_material,
+        api_c_factor,
+        input_to_si(spec, "corrosion_allowance", corrosion_allowance),
+        input_to_si(spec, "design_life", design_life),
+    )
+    return ErosionPredictionResult(
+        erosional_velocity=from_si(result.erosional_velocity.magnitude_si, result.erosional_velocity.unit),
+        velocity_ratio=result.velocity_ratio,
+        erosion_rate=from_si(result.erosion_rate.magnitude_si, result.erosion_rate.unit),
+        cumulative_erosion=from_si(result.cumulative_erosion.magnitude_si, result.cumulative_erosion.unit),
+        remaining_wall_thickness=from_si(result.remaining_wall_thickness.magnitude_si, result.remaining_wall_thickness.unit),
+        within_api_limits=result.within_api_limits,
+        within_erosion_limits=result.within_erosion_limits,
+        risk_level=ErosionRiskLevel(result.risk_level),
         warnings=_warnings(result.warnings),
     )
 

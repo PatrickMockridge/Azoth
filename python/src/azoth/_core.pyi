@@ -839,6 +839,16 @@ class ElectrolyteScaleCalculatorResult:
     warnings: list[Warning]
 
 @final
+class EmulsionViscosityResult:
+    effective_viscosity: Qty
+    relative_viscosity: float
+    viscosity_ratio: float
+    inversion_water_cut: float
+    emulsion_type: str
+    is_inverted: bool
+    warnings: list[Warning]
+
+@final
 class EosCgPhaseResult:
     z_factor: float
     u: Qty
@@ -847,6 +857,18 @@ class EosCgPhaseResult:
     cv: Qty
     cp: Qty
     g: Qty
+    warnings: list[Warning]
+
+@final
+class ErosionPredictionResult:
+    erosional_velocity: Qty
+    velocity_ratio: float
+    erosion_rate: Qty
+    cumulative_erosion: Qty
+    remaining_wall_thickness: Qty
+    within_api_limits: bool
+    within_erosion_limits: bool
+    risk_level: str
     warnings: list[Warning]
 
 @final
@@ -3264,7 +3286,35 @@ def electrolyte_scale_calculator(
     pressure: float,
     ph: float,
 ) -> ElectrolyteScaleCalculatorResult: ...
+def emulsion_viscosity(
+    oil_viscosity: float,
+    water_viscosity: float,
+    oil_density: float,
+    water_density: float,
+    water_cut: float,
+    max_packing_fraction: float,
+    model: str,
+    tightness_factor: float,
+    demulsifier_present: bool,
+    demulsifier_efficiency: float,
+) -> EmulsionViscosityResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def erosion_prediction(
+    mixture_density: float,
+    mixture_velocity: float,
+    pipe_diameter: float,
+    wall_thickness: float,
+    sand_rate: float,
+    sand_particle_diameter: float,
+    sand_particle_density: float,
+    mixture_viscosity: float,
+    geometry: str,
+    bend_radius_ratio: float,
+    pipe_material: str,
+    api_c_factor: float,
+    corrosion_allowance: float,
+    design_life: float,
+) -> ErosionPredictionResult: ...
 def filippov_conductivity(
     liquid_conductivity: list[list[float]],
     molar_mass: list[float],

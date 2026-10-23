@@ -62,7 +62,9 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyEffectiveDiffusionResult>()?;
     m.add_class::<crate::transport_gen::PyElectrolyteCpaStatoilPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyElectrolyteScaleCalculatorResult>()?;
+    m.add_class::<crate::transport_gen::PyEmulsionViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyErosionPredictionResult>()?;
     m.add_class::<crate::transport_gen::PyFilippovConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
     m.add_class::<crate::transport_gen::PyFlowlineScaleProfileResult>()?;
@@ -410,7 +412,15 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::electrolyte_scale_calculator,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::emulsion_viscosity,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::eos_cg_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::erosion_prediction,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::filippov_conductivity,
         m

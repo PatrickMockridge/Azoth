@@ -2808,6 +2808,70 @@ impl From<&azoth_eos::results::ElectrolyteScaleCalculatorResult>
         }
     }
 }
+/// Result of `eos.emulsion_viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EmulsionViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEmulsionViscosityResult {
+    /// the effective emulsion viscosity.
+    #[pyo3(get)]
+    pub effective_viscosity: PyQty,
+    /// the model's relative viscosity before the tightness and demulsifier corrections.
+    #[pyo3(get)]
+    pub relative_viscosity: f64,
+    /// the effective viscosity over the continuous phase's.
+    #[pyo3(get)]
+    pub viscosity_ratio: f64,
+    /// the water cut at which the phases invert.
+    #[pyo3(get)]
+    pub inversion_water_cut: f64,
+    /// which phase is continuous at the stated water cut.
+    #[pyo3(get)]
+    pub emulsion_type: String,
+    /// whether the water cut is at or above the inversion point.
+    #[pyo3(get)]
+    pub is_inverted: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEmulsionViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EmulsionViscosityResult(effective_viscosity={:?}, relative_viscosity={:?}, viscosity_ratio={:?}, inversion_water_cut={:?}, emulsion_type={:?}, is_inverted={:?}, {} warning(s))",
+            self.effective_viscosity,
+            self.relative_viscosity,
+            self.viscosity_ratio,
+            self.inversion_water_cut,
+            self.emulsion_type,
+            self.is_inverted,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EmulsionViscosityResult> for PyEmulsionViscosityResult {
+    fn from(r: &azoth_eos::results::EmulsionViscosityResult) -> Self {
+        Self {
+            effective_viscosity: PyQty {
+                magnitude_si: r.effective_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            relative_viscosity: r.relative_viscosity,
+            viscosity_ratio: r.viscosity_ratio,
+            inversion_water_cut: r.inversion_water_cut,
+            emulsion_type: r.emulsion_type.as_str().to_string(),
+            is_inverted: r.is_inverted,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.eos_cg_phase`, transported.
 #[pyclass(
     frozen,
@@ -2888,6 +2952,89 @@ impl From<&azoth_eos::results::EosCgPhaseResult> for PyEosCgPhaseResult {
                 magnitude_si: r.g.value,
                 unit: "J/mol".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.erosion_prediction`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ErosionPredictionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyErosionPredictionResult {
+    /// the API RP 14E erosional velocity at the mixture density.
+    #[pyo3(get)]
+    pub erosional_velocity: PyQty,
+    /// the actual velocity over the erosional one.
+    #[pyo3(get)]
+    pub velocity_ratio: f64,
+    /// the DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    #[pyo3(get)]
+    pub erosion_rate: PyQty,
+    /// the rate over the design life.
+    #[pyo3(get)]
+    pub cumulative_erosion: PyQty,
+    /// the wall less the cumulative erosion and the corrosion allowance.
+    #[pyo3(get)]
+    pub remaining_wall_thickness: PyQty,
+    /// whether the velocity ratio is at most one.
+    #[pyo3(get)]
+    pub within_api_limits: bool,
+    /// whether the remaining wall is positive.
+    #[pyo3(get)]
+    pub within_erosion_limits: bool,
+    /// the rate-and-ratio risk band.
+    #[pyo3(get)]
+    pub risk_level: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyErosionPredictionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ErosionPredictionResult(erosional_velocity={:?}, velocity_ratio={:?}, erosion_rate={:?}, cumulative_erosion={:?}, remaining_wall_thickness={:?}, within_api_limits={:?}, within_erosion_limits={:?}, risk_level={:?}, {} warning(s))",
+            self.erosional_velocity,
+            self.velocity_ratio,
+            self.erosion_rate,
+            self.cumulative_erosion,
+            self.remaining_wall_thickness,
+            self.within_api_limits,
+            self.within_erosion_limits,
+            self.risk_level,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ErosionPredictionResult> for PyErosionPredictionResult {
+    fn from(r: &azoth_eos::results::ErosionPredictionResult) -> Self {
+        Self {
+            erosional_velocity: PyQty {
+                magnitude_si: r.erosional_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            velocity_ratio: r.velocity_ratio,
+            erosion_rate: PyQty {
+                magnitude_si: r.erosion_rate.value,
+                unit: "m/s".to_string(),
+            },
+            cumulative_erosion: PyQty {
+                magnitude_si: r.cumulative_erosion.value,
+                unit: "m".to_string(),
+            },
+            remaining_wall_thickness: PyQty {
+                magnitude_si: r.remaining_wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            within_api_limits: r.within_api_limits,
+            within_erosion_limits: r.within_erosion_limits,
+            risk_level: r.risk_level.as_str().to_string(),
             warnings: transport(&r.warnings),
         }
     }

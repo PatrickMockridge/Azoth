@@ -99,7 +99,9 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     ElectrolyteCpaStatoilPhaseResult,
     ElectrolyteScaleCalculatorResult,
+    EmulsionViscosityResult,
     EosCgPhaseResult,
+    ErosionPredictionResult,
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
     FlowlineScaleProfileResult,
@@ -671,6 +673,82 @@ def de_waard_milliams_corrosion(
         inhibitor_efficiency=inhibitor_efficiency,
         glycol_fraction=glycol_fraction,
         sulfur_deposition_rate=sulfur_deposition_rate,
+        design_life=design_life,
+    )
+
+
+def emulsion_viscosity(
+    oil_viscosity: Q,
+    water_viscosity: Q,
+    oil_density: Q,
+    water_density: Q,
+    water_cut: float,
+    max_packing_fraction: float,
+    model: str,
+    tightness_factor: float,
+    demulsifier_present: bool,
+    demulsifier_efficiency: float,
+) -> EmulsionViscosityResult:
+    """The oil-water emulsion viscosity and its inversion point.
+
+    NeqSim's ``EmulsionViscosityCalculator``: the Arirachakaran inversion correlation with
+    the class's two clamps, one of six relative-viscosity models, and the tightness and
+    demulsifier corrections.
+
+    See :func:`azoth.eos.reference.emulsion_viscosity`.
+    """
+    return resolve("eos.emulsion_viscosity")(  # type: ignore[no-any-return]
+        oil_viscosity=oil_viscosity,
+        water_viscosity=water_viscosity,
+        oil_density=oil_density,
+        water_density=water_density,
+        water_cut=water_cut,
+        max_packing_fraction=max_packing_fraction,
+        model=model,
+        tightness_factor=tightness_factor,
+        demulsifier_present=demulsifier_present,
+        demulsifier_efficiency=demulsifier_efficiency,
+    )
+
+
+def erosion_prediction(
+    mixture_density: Q,
+    mixture_velocity: Q,
+    pipe_diameter: Q,
+    wall_thickness: Q,
+    sand_rate: Q,
+    sand_particle_diameter: Q,
+    sand_particle_density: Q,
+    mixture_viscosity: Q,
+    geometry: str,
+    bend_radius_ratio: float,
+    pipe_material: str,
+    api_c_factor: float,
+    corrosion_allowance: Q,
+    design_life: Q,
+) -> ErosionPredictionResult:
+    """The API RP 14E erosional velocity and DNV RP O501 sand-erosion screen.
+
+    NeqSim's ``ErosionPredictionCalculator``: the erosional velocity at the mixture density,
+    the sand-erosion rate at the chosen geometry and material, the cumulative wall loss over
+    the design life, the remaining wall and the rate-and-ratio risk band.
+
+    See :func:`azoth.eos.reference.erosion_prediction`.
+    """
+    return resolve("eos.erosion_prediction")(  # type: ignore[no-any-return]
+        mixture_density=mixture_density,
+        mixture_velocity=mixture_velocity,
+        pipe_diameter=pipe_diameter,
+        wall_thickness=wall_thickness,
+        sand_rate=sand_rate,
+        sand_particle_diameter=sand_particle_diameter,
+        sand_particle_density=sand_particle_density,
+        mixture_viscosity=mixture_viscosity,
+        geometry=geometry,
+        bend_radius_ratio=bend_radius_ratio,
+        pipe_material=pipe_material,
+        api_c_factor=api_c_factor,
+        corrosion_allowance=corrosion_allowance,
         design_life=design_life,
     )
 

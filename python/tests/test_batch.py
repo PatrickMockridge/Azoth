@@ -250,6 +250,12 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",
+        # `geometry` and `pipe_material` name the fitting and the wall material, and the
+        # arithmetic changes with both: a categorical input with no float-array column.
+        "eos.erosion_prediction",
+        # `model` names one of six relative-viscosity expressions, and a demulsifier is a
+        # flag rather than a column: a batch would compute one pair N times.
+        "eos.emulsion_viscosity",
         # `source` picks one of three reaction tables and `reaction` names a row in it.
         # The second is not an enum at all, and both select *which arithmetic* runs
         # rather than scaling it, so there is no column to vary them down: a batch would

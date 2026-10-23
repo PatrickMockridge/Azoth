@@ -44,7 +44,9 @@
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/calcs/eos/electrolyte_scale_calculator.toml
+//!   - specs/calcs/eos/emulsion_viscosity.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/calcs/eos/erosion_prediction.toml
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
 //!   - specs/models/eos/flowline_scale_profile.toml
@@ -790,9 +792,61 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("eos.electrolyte_scale_calculator", "pressure", "pressure"),
     ("eos.electrolyte_scale_calculator", "ph", "dimensionless"),
+    (
+        "eos.emulsion_viscosity",
+        "oil_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "eos.emulsion_viscosity",
+        "water_viscosity",
+        "dynamic_viscosity",
+    ),
+    ("eos.emulsion_viscosity", "oil_density", "mass_density"),
+    ("eos.emulsion_viscosity", "water_density", "mass_density"),
+    ("eos.emulsion_viscosity", "water_cut", "dimensionless"),
+    (
+        "eos.emulsion_viscosity",
+        "max_packing_fraction",
+        "dimensionless",
+    ),
+    (
+        "eos.emulsion_viscosity",
+        "tightness_factor",
+        "dimensionless",
+    ),
+    (
+        "eos.emulsion_viscosity",
+        "demulsifier_efficiency",
+        "dimensionless",
+    ),
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),
+    ("eos.erosion_prediction", "mixture_density", "mass_density"),
+    ("eos.erosion_prediction", "mixture_velocity", "velocity"),
+    ("eos.erosion_prediction", "pipe_diameter", "length"),
+    ("eos.erosion_prediction", "wall_thickness", "length"),
+    ("eos.erosion_prediction", "sand_rate", "mass_flux"),
+    ("eos.erosion_prediction", "sand_particle_diameter", "length"),
+    (
+        "eos.erosion_prediction",
+        "sand_particle_density",
+        "mass_density",
+    ),
+    (
+        "eos.erosion_prediction",
+        "mixture_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "eos.erosion_prediction",
+        "bend_radius_ratio",
+        "dimensionless",
+    ),
+    ("eos.erosion_prediction", "api_c_factor", "dimensionless"),
+    ("eos.erosion_prediction", "corrosion_allowance", "length"),
+    ("eos.erosion_prediction", "design_life", "time"),
     (
         "eos.filippov_conductivity",
         "liquid_conductivity",

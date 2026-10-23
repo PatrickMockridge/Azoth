@@ -419,6 +419,8 @@ SCALARS = {"float": "float", "int": "int", "bool": "bool", "str": "str", "Q": "Q
 ENUMS = {
     "BeggsBrillRegime",
     "CorrosionSeverity",
+    "EmulsionType",
+    "ErosionRiskLevel",
     "FeSMorphology",
     "Phase",
     "RootStructure",

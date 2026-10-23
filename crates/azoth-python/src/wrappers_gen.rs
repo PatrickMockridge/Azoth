@@ -1161,6 +1161,44 @@ pub fn electrolyte_scale_calculator(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Oil-water emulsion viscosity and phase inversion point.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (oil_viscosity, water_viscosity, oil_density, water_density, water_cut, max_packing_fraction, model, tightness_factor, demulsifier_present, demulsifier_efficiency))]
+#[pyo3(
+    text_signature = "(oil_viscosity, water_viscosity, oil_density, water_density, water_cut, max_packing_fraction, model, tightness_factor, demulsifier_present, demulsifier_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn emulsion_viscosity(
+    py: Python<'_>,
+    oil_viscosity: f64,
+    water_viscosity: f64,
+    oil_density: f64,
+    water_density: f64,
+    water_cut: f64,
+    max_packing_fraction: f64,
+    model: &str,
+    tightness_factor: f64,
+    demulsifier_present: bool,
+    demulsifier_efficiency: f64,
+) -> PyResult<crate::transport_gen::PyEmulsionViscosityResult> {
+    azoth_eos::emulsion_viscosity::emulsion_viscosity(
+        pascal_seconds(oil_viscosity),
+        pascal_seconds(water_viscosity),
+        kilograms_per_cubic_meter(oil_density),
+        kilograms_per_cubic_meter(water_density),
+        water_cut,
+        max_packing_fraction,
+        model,
+        tightness_factor,
+        demulsifier_present,
+        demulsifier_efficiency,
+    )
+    .map(|r| crate::transport_gen::PyEmulsionViscosityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// EOS-CG phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1178,6 +1216,52 @@ pub fn eos_cg_phase(
     azoth_eos::eos_cg_phase::eos_cg_phase(&components, kelvins(T), pascals(P), &z)
         .map(|r| crate::transport_gen::PyEosCgPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// API RP 14E erosional velocity and DNV RP O501 sand erosion.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mixture_density, mixture_velocity, pipe_diameter, wall_thickness, sand_rate, sand_particle_diameter, sand_particle_density, mixture_viscosity, geometry, bend_radius_ratio, pipe_material, api_c_factor, corrosion_allowance, design_life))]
+#[pyo3(
+    text_signature = "(mixture_density, mixture_velocity, pipe_diameter, wall_thickness, sand_rate, sand_particle_diameter, sand_particle_density, mixture_viscosity, geometry, bend_radius_ratio, pipe_material, api_c_factor, corrosion_allowance, design_life)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn erosion_prediction(
+    py: Python<'_>,
+    mixture_density: f64,
+    mixture_velocity: f64,
+    pipe_diameter: f64,
+    wall_thickness: f64,
+    sand_rate: f64,
+    sand_particle_diameter: f64,
+    sand_particle_density: f64,
+    mixture_viscosity: f64,
+    geometry: &str,
+    bend_radius_ratio: f64,
+    pipe_material: &str,
+    api_c_factor: f64,
+    corrosion_allowance: f64,
+    design_life: f64,
+) -> PyResult<crate::transport_gen::PyErosionPredictionResult> {
+    azoth_eos::erosion_prediction::erosion_prediction(
+        kilograms_per_cubic_meter(mixture_density),
+        meters_per_second(mixture_velocity),
+        meters(pipe_diameter),
+        meters(wall_thickness),
+        kilograms_per_square_meter_second(sand_rate),
+        meters(sand_particle_diameter),
+        kilograms_per_cubic_meter(sand_particle_density),
+        pascal_seconds(mixture_viscosity),
+        geometry,
+        bend_radius_ratio,
+        pipe_material,
+        api_c_factor,
+        meters(corrosion_allowance),
+        seconds(design_life),
+    )
+    .map(|r| crate::transport_gen::PyErosionPredictionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Liquid thermal conductivity from the Filippov mixing rule.

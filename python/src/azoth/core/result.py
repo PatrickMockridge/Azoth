@@ -23,6 +23,8 @@ from azoth.core.result_base import LAMINAR_MAX as LAMINAR_MAX
 from azoth.core.result_base import TURBULENT_MIN as TURBULENT_MIN
 from azoth.core.result_base import BeggsBrillRegime as BeggsBrillRegime
 from azoth.core.result_base import CorrosionSeverity as CorrosionSeverity
+from azoth.core.result_base import EmulsionType as EmulsionType
+from azoth.core.result_base import ErosionRiskLevel as ErosionRiskLevel
 from azoth.core.result_base import FeSMorphology as FeSMorphology
 from azoth.core.result_base import FlowRegime as FlowRegime
 from azoth.core.result_base import HenryStatus as HenryStatus

@@ -41,6 +41,8 @@ from azoth.core.record_outputs_gen import (
 from azoth.core.result_base import (
     BeggsBrillRegime,
     CorrosionSeverity,
+    EmulsionType,
+    ErosionRiskLevel,
     FeSMorphology,
     FlowRegime,
     HenryStatus,
@@ -1127,6 +1129,34 @@ class ElectrolyteScaleCalculatorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class EmulsionViscosityResult(_HasWarnings):
+    """Result of ``eos.emulsion_viscosity``."""
+
+    CALC_ID: ClassVar[str] = "eos.emulsion_viscosity"
+
+    #: the effective emulsion viscosity.
+    effective_viscosity: Q
+
+    #: the model's relative viscosity before the tightness and demulsifier corrections.
+    relative_viscosity: float
+
+    #: the effective viscosity over the continuous phase's.
+    viscosity_ratio: float
+
+    #: the water cut at which the phases invert.
+    inversion_water_cut: float
+
+    #: which phase is continuous at the stated water cut.
+    emulsion_type: EmulsionType
+
+    #: whether the water cut is at or above the inversion point.
+    is_inverted: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class EosCgPhaseResult(_HasWarnings):
     """Result of ``eos.eos_cg_phase``."""
 
@@ -1152,6 +1182,40 @@ class EosCgPhaseResult(_HasWarnings):
 
     #: the Gibbs energy, `h - T s`
     g: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ErosionPredictionResult(_HasWarnings):
+    """Result of ``eos.erosion_prediction``."""
+
+    CALC_ID: ClassVar[str] = "eos.erosion_prediction"
+
+    #: the API RP 14E erosional velocity at the mixture density.
+    erosional_velocity: Q
+
+    #: the actual velocity over the erosional one.
+    velocity_ratio: float
+
+    #: the DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    erosion_rate: Q
+
+    #: the rate over the design life.
+    cumulative_erosion: Q
+
+    #: the wall less the cumulative erosion and the corrosion allowance.
+    remaining_wall_thickness: Q
+
+    #: whether the velocity ratio is at most one.
+    within_api_limits: bool
+
+    #: whether the remaining wall is positive.
+    within_erosion_limits: bool
+
+    #: the rate-and-ratio risk band.
+    risk_level: ErosionRiskLevel
 
     #: Caveats.
     warnings: tuple[Warning, ...]

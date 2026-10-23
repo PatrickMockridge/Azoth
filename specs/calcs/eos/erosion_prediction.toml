@@ -1,0 +1,722 @@
+id = "eos.erosion_prediction"
+name = "API RP 14E erosional velocity and DNV RP O501 sand erosion"
+equation = "Ve = C / sqrt(rho_lb_ft3), ft/s -> m/s by 0.3048, rho_lb_ft3 = rho_kg_m3 * 0.062428\n\nE = K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)   [kg sand per kg sand]\nVp = V * (0.9 | 0.8 | 0.7) from the Stokes number\nrate = E * sand_rate * year / rho_wall / A_eroded\n\nrisk: rate > 1.0 mm/yr or ratio > 1.5 critical; > 0.5 or > 1.0 high; > 0.1 or > 0.8 medium"
+latex = '''V_e = \frac{C}{\sqrt{\rho}}, \qquad E = K\,F(\alpha)\,V_p^{n}\left(\frac{d_p}{d_{p,\mathrm{ref}}}\right)^{0.2} G\,F_g\,\frac{\rho_p}{\rho_{p,\mathrm{ref}}}\quad [\mathrm{kg/kg}]'''
+assumptions = [
+    "the class takes mm, kg/day, mm/yr and years; this calc takes metres, kg/s, seconds and returns SI rates, with the class's 365.25-day year converting the wall loss.\n",
+    "**the erosional velocity is API RP 14E**: `C / sqrt(rho)` in the class's lb/ft3 and ft/s, converted back by 0.3048; a zero mixture density gives zero rather than an infinity.\n",
+    "**the sand rate is DNV RP O501**: `K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)`, with K 2e-9 for the steels and 1e-9 or 5e-10 for Inconel, titanium and tungsten carbide, and n 2.6 or 2.3.\n",
+    "**the geometry enters three ways**: its factor, its impact angle and its eroded area - elbow `pi D^2 * 0.1`, tee and blind tee half the bore, reducer 0.3, choke 0.2, weld a thin ring and straight the unit length.\n",
+    "**the particle velocity is the mixture velocity times 0.9, 0.8 or 0.7**, chosen by a Stokes number of 10 or 1; the straight pipe takes the class's empirical `K Vp^n sand 0.01` branch instead.\n",
+    "the wall density is 7850 kg/m3 except titanium's 4500 and Inconel's 8440; the erosion rate is `mm/yr` and the remaining wall subtracts the cumulative loss and the corrosion allowance.\n",
+    "**the geometry and material names are the enum values**; the class's `bend`, `contraction`, `valve`, `22cr`, `25cr` and `inconel_625` aliases fold into them and are not separately named.\n",
+    "the class's gas and liquid densities and velocities have setters and are read by nothing, so they are not inputs; its maximum-velocity helper and sand-load defaults are separate surfaces.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/ErosionPredictionCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the twenty-eight states: the API ratio bands, every geometry factor and impact angle, both Stokes bands, every material, the straight branch, an eroded-through wall and the rate-driven bands.",
+    "API RP 14E and DNV-RP-O501.",
+]
+[source]
+standard = "NeqSim master `ErosionPredictionCalculator`"
+edition = "`calculate`, the material constants and densities, the geometry factors and areas, the impact-angle function, the particle-velocity estimate and `assessRisk`. The corrosion-protection velocity helper, the sand-load defaults and the Gson report are separate surfaces."
+[inputs]
+[inputs.mixture_density]
+unit = "kg/m**3"
+description = "the flowing mixture's density.\n"
+[inputs.mixture_velocity]
+unit = "m/s"
+description = "the mixture velocity.\n"
+[inputs.pipe_diameter]
+unit = "m"
+description = "the pipe's internal diameter.\n"
+[inputs.wall_thickness]
+unit = "m"
+description = "the clean wall thickness.\n"
+[inputs.sand_rate]
+unit = "kg/(m**2*s)"
+description = "the produced sand rate, which the class states in kg/day.\n"
+[inputs.sand_particle_diameter]
+unit = "m"
+description = "the sand particle diameter, which the class states in mm.\n"
+[inputs.sand_particle_density]
+unit = "kg/m**3"
+description = "the sand particle density.\n"
+[inputs.mixture_viscosity]
+unit = "Pa*s"
+description = "the mixture's dynamic viscosity, for the Stokes number.\n"
+[inputs.geometry]
+type = "enum"
+values = ["straight", "elbow", "tee", "blind_tee", "reducer", "choke", "weld"]
+description = "the fitting the erosion is assessed at.\n"
+[inputs.bend_radius_ratio]
+unit = "dimensionless"
+description = "the bend radius over the diameter, which sets an elbow's factor and impact angle.\n"
+[inputs.pipe_material]
+type = "enum"
+values = ["carbon_steel", "duplex_steel", "super_duplex", "13cr", "inconel", "titanium", "tungsten_carbide"]
+description = "the wall material, for its erosion constant, exponent and density.\n"
+[inputs.api_c_factor]
+unit = "dimensionless"
+description = "the API RP 14E C factor, 100 as the class's default.\n"
+[inputs.corrosion_allowance]
+unit = "m"
+description = "the corrosion allowance the remaining wall subtracts.\n"
+[inputs.design_life]
+unit = "s"
+description = "the exposure time the cumulative loss is scaled by.\n"
+[outputs]
+[outputs.erosional_velocity]
+unit = "m/s"
+description = "the API RP 14E erosional velocity at the mixture density.\n"
+[outputs.velocity_ratio]
+unit = "dimensionless"
+description = "the actual velocity over the erosional one.\n"
+[outputs.erosion_rate]
+unit = "m/s"
+description = "the DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.\n"
+[outputs.cumulative_erosion]
+unit = "m"
+description = "the rate over the design life.\n"
+[outputs.remaining_wall_thickness]
+unit = "m"
+description = "the wall less the cumulative erosion and the corrosion allowance.\n"
+[outputs.within_api_limits]
+type = "boolean"
+description = "whether the velocity ratio is at most one.\n"
+[outputs.within_erosion_limits]
+type = "boolean"
+description = "whether the remaining wall is positive.\n"
+[outputs.risk_level]
+type = "enum"
+values = ["low", "medium", "high", "critical"]
+description = "the rate-and-ratio risk band.\n"
+[[valid_range]]
+quantity = "mixture_density"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A density cannot be negative; zero is the class's own no-velocity guard.\n"
+[[valid_range]]
+quantity = "mixture_velocity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The screen is written for a flowing velocity's magnitude.\n"
+[[valid_range]]
+quantity = "pipe_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The Stokes number and the eroded area divide by the diameter.\n"
+[[valid_range]]
+quantity = "wall_thickness"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A wall thickness cannot be negative.\n"
+[[valid_range]]
+quantity = "sand_rate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A produced sand rate cannot be negative; zero is a clean line.\n"
+[[valid_range]]
+quantity = "sand_particle_diameter"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A particle diameter cannot be negative.\n"
+[[valid_range]]
+quantity = "sand_particle_density"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A particle density cannot be negative.\n"
+[[valid_range]]
+quantity = "mixture_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The Stokes number divides by the viscosity.\n"
+[[valid_range]]
+quantity = "bend_radius_ratio"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The elbow impact angle divides by the ratio.\n"
+[[valid_range]]
+quantity = "api_c_factor"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The API constant is a non-negative empirical factor.\n"
+[[valid_range]]
+quantity = "corrosion_allowance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "An allowance cannot be negative.\n"
+[[valid_range]]
+quantity = "design_life"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A design life is a duration, not a signed quantity.\n"
+[worked_example]
+source = "the capture's `api_base` row"
+derivation = "The class's default state: 100 kg/m3, 10 m/s, a 152.4 mm elbow at R/D 1.5, a 10 mm wall, no sand, a 3 mm allowance and a 25-year life.\n\n  rho_lb_ft3 = 100 * 0.062428 = 6.2428\n  Ve = 100 / sqrt(6.2428) = 40.02 ft/s = 12.199 m/s\n  ratio = 10 / 12.199 = 0.81974, inside the API limit but above the 0.8 medium band\n  no sand, so the erosion rate, cumulative loss and remaining wall are 0, 0 and 7 mm.\n"
+tolerance = 1e-09
+[worked_example.inputs]
+mixture_density = 100.0
+mixture_velocity = 10.0
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650.0
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100.0
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[worked_example.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 0.0
+cumulative_erosion = 0.0
+remaining_wall_thickness = 0.007
+risk_level = "medium"
+
+[[tests]]
+id = "api_base"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `api_base` row: the class's own default state: 100 kg/m3, 10 m/s, a 6-inch elbow at R/D 1.5, no sand, and the ratio 0.82 that puts it in the medium band."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 0.0
+cumulative_erosion = 0.0
+remaining_wall_thickness = 0.007
+risk_level = "medium"
+
+[[tests]]
+id = "api_c150"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `api_c150` row: the API C factor raised to 150, which halves the ratio and drops the risk to low."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 150
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 18.298542998025276
+velocity_ratio = 0.5464915977779854
+erosion_rate = 0.0
+cumulative_erosion = 0.0
+remaining_wall_thickness = 0.007
+risk_level = "low"
+
+[[tests]]
+id = "api_v20"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `api_v20` row: 20 m/s on the same line: a ratio of 1.64, outside the API limit and critical."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 20
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 1.6394747933339562
+erosion_rate = 0.0
+cumulative_erosion = 0.0
+remaining_wall_thickness = 0.007
+risk_level = "critical"
+
+[[tests]]
+id = "density_zero"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `density_zero` row: the density guard: a zero mixture density gives a zero erosional velocity and a zero ratio."
+[tests.inputs]
+mixture_density = 0
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 0.0
+velocity_ratio = 0.0
+erosion_rate = 0.0
+cumulative_erosion = 0.0
+remaining_wall_thickness = 0.007
+risk_level = "low"
+
+[[tests]]
+id = "elbow_rd1"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `elbow_rd1` row: a tight elbow at R/D 1: the largest geometry factor and impact angle."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.0
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 2.6457359043146408e-12
+cumulative_erosion = 0.002087326884349993
+remaining_wall_thickness = 0.004912673115650007
+risk_level = "medium"
+
+[[tests]]
+id = "tee"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `tee` row: a tee's geometry factor 0.6 and 45-degree impact."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "tee"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 1.2699532340710275e-12
+cumulative_erosion = 0.0010019169044879963
+remaining_wall_thickness = 0.005998083095512003
+risk_level = "medium"
+
+[[tests]]
+id = "blind_tee"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `blind_tee` row: a blind tee's 90-degree impact and geometry factor 0.3."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "blind_tee"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 7.637706050351114e-13
+cumulative_erosion = 0.0006025691811364008
+remaining_wall_thickness = 0.006397430818863599
+risk_level = "medium"
+
+[[tests]]
+id = "choke"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `choke` row: a choke's geometry factor 2 and 30-degree impact."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "choke"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 8.274181554547037e-12
+cumulative_erosion = 0.00652783279564434
+remaining_wall_thickness = 0.00047216720435566017
+risk_level = "medium"
+
+[[tests]]
+id = "weld"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `weld` row: a weld's thin-ring eroded area."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "weld"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 5.552745476363844e-12
+cumulative_erosion = 0.0043807830161224914
+remaining_wall_thickness = 0.002619216983877509
+risk_level = "medium"
+
+[[tests]]
+id = "straight"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `straight` row: the straight-pipe empirical branch, which does not use the DNV geometry or impact angle."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "straight"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 1.822808988843587e-15
+cumulative_erosion = 1.4380869236582595e-06
+remaining_wall_thickness = 0.006998561913076342
+risk_level = "medium"
+
+[[tests]]
+id = "dp_1_5"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `dp_1_5` row: a 1.5 mm particle, whose Stokes number crosses the 0.9 velocity-ratio band."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.0015
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 4.551566709800617e-12
+cumulative_erosion = 0.0035909130400300984
+remaining_wall_thickness = 0.0034090869599699013
+risk_level = "medium"
+
+[[tests]]
+id = "inconel"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `inconel` row: Inconel's lower erosion constant and higher wall density."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "inconel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 7.695773128340552e-13
+cumulative_erosion = 0.0006071503251872995
+remaining_wall_thickness = 0.0063928496748127004
+risk_level = "medium"
+
+[[tests]]
+id = "titanium"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `titanium` row: titanium's lower erosion constant and 4500 kg/m3 wall density."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "titanium"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 1.4433850045154276e-12
+cumulative_erosion = 0.0011387441654624015
+remaining_wall_thickness = 0.005861255834537598
+risk_level = "medium"
+
+[[tests]]
+id = "tungsten_carbide"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `tungsten_carbide` row: tungsten carbide's 5e-10 constant and 2.3 velocity exponent."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "tungsten_carbide"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 2.307627141919066e-13
+cumulative_erosion = 0.0001820579357345628
+remaining_wall_thickness = 0.006817942064265438
+risk_level = "medium"
+
+[[tests]]
+id = "eroded"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `eroded` row: a 1 mm wall, 500 kg/day of sand and a choke: the remaining wall goes negative."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.001
+sand_rate = 0.005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "choke"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 8.274181554547037e-11
+cumulative_erosion = 0.0652783279564434
+remaining_wall_thickness = -0.0672783279564434
+risk_level = "critical"
+
+[[tests]]
+id = "life_50"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `life_50` row: the same rate over a fifty-year life, doubling the cumulative loss."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 10
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.0005787037037037037
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 1577880000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.8197373966669781
+erosion_rate = 1.6548363109094078e-12
+cumulative_erosion = 0.0026111331182577364
+remaining_wall_thickness = 0.004388866881742263
+risk_level = "medium"
+
+[[tests]]
+id = "rate_high"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `rate_high` row: a rate-driven high band at 2000 kg/day of sand."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 5
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.023148148148148147
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.40986869833348905
+erosion_rate = 1.0917848016395981e-11
+cumulative_erosion = 0.008613527014055447
+remaining_wall_thickness = -0.001613527014055446
+risk_level = "medium"
+
+[[tests]]
+id = "rate_critical"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `rate_critical` row: a rate-driven critical band at 4000 kg/day of sand."
+[tests.inputs]
+mixture_density = 100
+mixture_velocity = 5
+pipe_diameter = 0.1524
+wall_thickness = 0.01
+sand_rate = 0.046296296296296294
+sand_particle_diameter = 0.00025
+sand_particle_density = 2650
+mixture_viscosity = 0.001
+geometry = "elbow"
+bend_radius_ratio = 1.5
+pipe_material = "carbon_steel"
+api_c_factor = 100
+corrosion_allowance = 0.003
+design_life = 788940000.0
+[tests.expected]
+erosional_velocity = 12.199028665350184
+velocity_ratio = 0.40986869833348905
+erosion_rate = 2.1835696032791962e-11
+cumulative_erosion = 0.017227054028110894
+remaining_wall_thickness = -0.010227054028110893
+risk_level = "high"
+
+[[tests]]
+id = "api_base_worked_example"
+type = "worked_example"
+status = "active"
+
+[implementations]
+python = "azoth.eos.erosion_prediction"
+rust = "azoth_eos::erosion_prediction"

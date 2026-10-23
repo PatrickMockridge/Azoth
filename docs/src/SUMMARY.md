@@ -47,6 +47,8 @@
   - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
   - [De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate](./eos/de_waard_milliams_corrosion.md)
   - [Activity-corrected mineral-scale saturation indices from a brine analysis](./eos/electrolyte_scale_calculator.md)
+  - [Oil-water emulsion viscosity and phase inversion point](./eos/emulsion_viscosity.md)
+  - [API RP 14E erosional velocity and DNV RP O501 sand erosion](./eos/erosion_prediction.md)
   - [Interface tension from the Firoozabadi-Ramey correlation](./eos/firozabadi_ramley_interface_tension.md)
   - [Gas binary diffusivity from the Fuller-Schettler-Giddings correlation](./eos/fuller_schettler_giddings_diffusivity.md)
   - [Liquid binary diffusivity from the Hayduk-Minhas correlation](./eos/hayduk_minhas_diffusivity.md)
