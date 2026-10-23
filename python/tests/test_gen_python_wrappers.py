@@ -83,7 +83,10 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 59 -> 60 when `eos.interface_properties` moved: its kernel now takes a `Mixture` and
 #: the interaction matrix, the same two reasons as LGT, so the generated wrapper it had
 #: could no longer be derived.
-KNOWN_HAND_WRITTEN = 60
+#: 60 -> 59 when the generator learned an `interval = true` input:
+#: `thermal.conduction_plane_wall`'s `dT` is a `TemperatureInterval` it had refused, so
+#: that binding - and the hand-written `thermal.rs` module with it - could go.
+KNOWN_HAND_WRITTEN = 59
 
 
 def _tools_module(name: str) -> ModuleType:

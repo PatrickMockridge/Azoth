@@ -347,9 +347,13 @@ def _wrapper_counts() -> tuple[int, int]:
         "process",
         "characterization",
     ):
-        source = (ROOT / "crates" / "azoth-python" / "src" / f"{module}.rs").read_text(
-            encoding="utf-8"
-        )
+        path = ROOT / "crates" / "azoth-python" / "src" / f"{module}.rs"
+        if not path.exists():
+            # A namespace the generator covers entirely has no hand-written module left, and
+            # its zero is the count rather than an error - `thermal` after the interval input
+            # let `conduction_plane_wall` move into `wrappers_gen.rs`.
+            continue
+        source = path.read_text(encoding="utf-8")
         hand += len(
             [
                 name
