@@ -129,6 +129,7 @@ pub mod hydrate_formation_temperature;
 pub mod hydrate_fraction;
 pub mod hydrate_inhibitor_concentration;
 pub mod hydrate_inhibitor_wt;
+pub mod hydrate_risk_map;
 pub mod hydrogen_phase;
 pub mod iapws_henry_law;
 pub mod iapws_if97;
@@ -237,6 +238,7 @@ pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
 pub mod stream_scale_analyzer;
+pub mod surf_cooldown;
 pub mod th_flash;
 pub mod thermal_conductivity;
 pub mod tp_flash_saft;
@@ -396,25 +398,26 @@ pub use results::{
     BubbleTemperatureResult, BwrsPhaseResult, CalcIonicCompositionResult, CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult, ChemicalWarningRow, ChungConductivityResult,
     ChungViscosityResult, ClosedLoopDepositionSolverResult, Co2BrinePhaseEquilibriumResult,
-    Co2PhaseResult, Co2WaterDiffusivityResult, CorrosionSeverity, CostaldMolarVolumeResult,
-    CriticalPointResult, DeWaardMilliamsCorrosionResult, DepositionSegmentRow,
-    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
-    ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult, EmulsionType,
-    EmulsionViscosityResult, EosCgPhaseResult, FeSMorphology, FilippovConductivityResult,
-    FirozabadiRamleyInterfaceTensionResult, FreezingPointResult, FrictionTheoryConductivityResult,
-    FrictionTheoryViscosityResult, FullerSchettlerGiddingsDiffusivityResult,
-    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult, GtSurfaceTensionResult,
-    GtSurfaceTensionSimpleResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
-    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
-    IapwsSaturationPressureResult, IdealGasCpResult, InterfacePropertiesResult,
-    KentEisenbergPhaseResult, LgtSurfaceTensionResult, LiquidConductivityPolynomResult,
-    LiquidHeatCapacityResult, LiquidViscosityPureResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    Co2PhaseResult, Co2WaterDiffusivityResult, CooldownVerdict, CorrosionSeverity,
+    CostaldMolarVolumeResult, CriticalPointResult, DeWaardMilliamsCorrosionResult,
+    DepositionSegmentRow, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
+    EffectiveDiffusionResult, ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult,
+    EmulsionType, EmulsionViscosityResult, EosCgPhaseResult, FeSMorphology,
+    FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult, FreezingPointResult,
+    FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
+    FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
+    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
+    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
+    Gerg2008PhaseResult, GtSurfaceTensionResult, GtSurfaceTensionSimpleResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
+    HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
+    HydrateRiskLevel, HydrateRiskMapResult, HydrateRiskPoint, HydrateStructure,
+    HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult, IdealGasCpResult,
+    InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
+    LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PipeBeggsAndBrillsResult,
     PipelineCooldownResult, PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
@@ -430,14 +433,15 @@ pub use results::{
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict,
-    StreamScaleAnalyzerResult, StreamScaleMineralRow, ThFlashResult, ThermalConductivityResult,
-    TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
-    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    ValveScaleDriftResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    StreamScaleAnalyzerResult, StreamScaleMineralRow, SurfCooldownResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
+    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
+    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, ValveScaleDriftResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

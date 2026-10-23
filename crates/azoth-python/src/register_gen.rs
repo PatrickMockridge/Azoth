@@ -94,6 +94,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyHydrateFractionResult>()?;
     m.add_class::<crate::transport_gen::PyHydrateInhibitorConcentrationResult>()?;
     m.add_class::<crate::transport_gen::PyHydrateInhibitorWtResult>()?;
+    m.add_class::<crate::transport_gen::PyHydrateRiskMapResult>()?;
     m.add_class::<crate::transport_gen::PyHydrogenPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyIapwsHenryLawResult>()?;
     m.add_class::<crate::transport_gen::PyIapwsSaturationPressureResult>()?;
@@ -180,6 +181,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySrkZFactorResult>()?;
     m.add_class::<crate::transport_gen::PyStabilityTestResult>()?;
     m.add_class::<crate::transport_gen::PyStreamScaleAnalyzerResult>()?;
+    m.add_class::<crate::transport_gen::PySurfCooldownResult>()?;
     m.add_class::<crate::transport_gen::PyTbpFractionPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyThFlashResult>()?;
     m.add_class::<crate::transport_gen::PyThermalConductivityResult>()?;
@@ -277,6 +279,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
+    m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
     m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
@@ -490,6 +493,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::hydrate_inhibitor_wt, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::hydrate_risk_map, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::iapws_henry_law, m)?)?;
     m.add_function(wrap_pyfunction!(
@@ -693,6 +697,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::stream_scale_analyzer,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::surf_cooldown, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::tbp_fraction_properties,
         m
@@ -865,6 +870,9 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::reactions::reactive_tp_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::reactions::reference_potentials, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::iso6976, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::thermal::conduction_plane_wall, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::conduction_plane_wall,
+        m
+    )?)?;
     Ok(())
 }

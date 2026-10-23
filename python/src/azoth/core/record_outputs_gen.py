@@ -98,6 +98,29 @@ class FlowlineScaleSegment:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateRiskPoint:
+    """One row per profile point, in the order the points were given."""
+
+    #: the point's distance from the inlet.
+    distance: Q
+
+    #: the point's pressure.
+    pressure: Q
+
+    #: the point's actual temperature.
+    actual_temperature: Q
+
+    #: the hydrate formation temperature, absent where the solve failed.
+    hydrate_temperature: Q | None
+
+    #: the actual temperature less the hydrate one, absent where it is.
+    subcooling: Q | None
+
+    #: the point's band: critical, high, medium, low or unknown.
+    risk_level: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
 

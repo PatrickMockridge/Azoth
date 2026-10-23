@@ -27,6 +27,7 @@ from azoth.core.record_outputs_gen import (
     ChemicalWarningRow,
     DepositionSegmentRow,
     FlowlineScaleSegment,
+    HydrateRiskPoint,
     KComponent,
     MineralEquilibriumRow,
     RemediationOptionRow,
@@ -40,12 +41,14 @@ from azoth.core.record_outputs_gen import (
 )
 from azoth.core.result_base import (
     BeggsBrillRegime,
+    CooldownVerdict,
     CorrosionSeverity,
     EmulsionType,
     ErosionRiskLevel,
     FeSMorphology,
     FlowRegime,
     HenryStatus,
+    HydrateRiskLevel,
     HydrateStructure,
     MultiflashSeedPath,
     Phase,
@@ -1890,6 +1893,37 @@ class HydrateInhibitorWtResult(_HasWarnings):
 
     #: `-(wtp - wt_target)` at the answer, the sign the operation's own residual carries.
     residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HydrateRiskMapResult(_HasWarnings):
+    """Result of ``eos.hydrate_risk_map``."""
+
+    CALC_ID: ClassVar[str] = "eos.hydrate_risk_map"
+
+    #: One row per profile point, in the order the points were given.
+    points: tuple[HydrateRiskPoint, ...]
+
+    #: the worst band, with unknown outranking everything but a confirmed critical.
+    overall_risk: HydrateRiskLevel
+
+    #: the smallest subcooling over the evaluated points, absent when none was.
+    minimum_subcooling: Q | None
+
+    #: the number of points inside the hydrate region.
+    critical_point_count: int
+
+    #: the number of points whose hydrate temperature could not be computed.
+    unknown_point_count: int
+
+    #: the number of profile points.
+    total_points: int
+
+    #: whether every point produced a hydrate temperature.
+    all_points_evaluated: bool
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -3878,6 +3912,58 @@ class StreamScaleAnalyzerResult(_HasWarnings):
 
     #: whether the total precipitated mass is positive.
     has_scaling: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SurfCooldownResult(_HasWarnings):
+    """Result of ``eos.surf_cooldown``."""
+
+    CALC_ID: ClassVar[str] = "eos.surf_cooldown"
+
+    #: the screening verdict.
+    verdict: CooldownVerdict
+
+    #: whether the fluid carries a water component above the class's floor.
+    water_present: bool
+
+    #: the water's mole fraction.
+    water_mole_fraction: float
+
+    #: the time to reach the hydrate temperature plus the margin, absent where the class returns positive infinity.
+    no_touch_time: Q | None
+
+    #: the initial temperature the cooldown ran from.
+    initial_fluid_temperature: Q
+
+    #: the hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    hydrate_equilibrium_temperature: Q | None
+
+    #: the margin added above the hydrate temperature, an echo of the input.
+    hydrate_margin: Q
+
+    #: the ambient temperature, an echo of the input.
+    seabed_temperature: Q
+
+    #: the U value the cooldown ran with.
+    overall_u_value: Q
+
+    #: the thermal mass over the per-length conductance.
+    time_constant: Q
+
+    #: the density the cooldown used.
+    fluid_density: Q
+
+    #: the specific heat the cooldown used.
+    fluid_specific_heat: Q
+
+    #: the pipe's internal diameter, an echo of the input.
+    internal_diameter: Q
+
+    #: the insulation thickness, an echo of the input.
+    insulation_thickness: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

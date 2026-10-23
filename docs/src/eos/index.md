@@ -129,6 +129,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.hydrate_fraction`](./hydrate_fraction.md) | `hydrate_bound_fixed_point` | NeqSim master `TPHydrateFlash`, with the composition and the bound corrected |
 | [`eos.hydrate_inhibitor_concentration`](./hydrate_inhibitor_concentration.md) | `inhibitor_moles_secant` | NeqSim master `HydrateInhibitorConcentrationFlash` |
 | [`eos.hydrate_inhibitor_wt`](./hydrate_inhibitor_wt.md) | `inhibitor_moles_secant` | NeqSim master `HydrateInhibitorwtFlash` |
+| [`eos.hydrate_risk_map`](./hydrate_risk_map.md) | `direct composition` | NeqSim master `HydrateRiskMapper` |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.interface_properties`](./interface_properties.md) | `direct composition` | NeqSim master `InterfaceProperties` |
 | [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim master `PhaseKentEisenberg` |
@@ -170,6 +171,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
 | [`eos.stream_scale_analyzer`](./stream_scale_analyzer.md) | `direct composition` | NeqSim master `StreamScaleAnalyzer` |
+| [`eos.surf_cooldown`](./surf_cooldown.md) | `direct composition` | NeqSim master `SurfCooldownAnalyzer` |
 | [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.thermal_conductivity`](./thermal_conductivity.md) | `direct composition` | NeqSim master `PFCTConductivityMethodMod86` |
 | [`eos.tp_flash_saft`](./tp_flash_saft.md) | `successive_substitution_flash` | Lafitte, T. et al. (2013) |

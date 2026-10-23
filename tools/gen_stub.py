@@ -429,6 +429,8 @@ ENUMS = {
     "MultiflashSeedPath",
     "FlowRegime",
     "HenryStatus",
+    "CooldownVerdict",
+    "HydrateRiskLevel",
     "HydrateStructure",
 }
 

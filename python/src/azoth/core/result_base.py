@@ -91,6 +91,25 @@ class CorrosionSeverity(StrEnum):
     VERY_HIGH = "very_high"
 
 
+class CooldownVerdict(StrEnum):
+    """The screening verdict a surface-cooldown analysis reports."""
+
+    OK = "ok"
+    MARGINAL = "marginal"
+    CRITICAL = "critical"
+    NO_HYDRATE_RISK = "no_hydrate_risk"
+
+
+class HydrateRiskLevel(StrEnum):
+    """The hydrate risk band one profile point falls in."""
+
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNKNOWN = "unknown"
+
+
 class EmulsionType(StrEnum):
     """Which phase is continuous in an oil-water emulsion."""
 

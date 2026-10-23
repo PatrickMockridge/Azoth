@@ -51,6 +51,7 @@ from azoth.core.result import (
     CompressorResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
+    CooldownVerdict,
     CoolerResult,
     CorrosionSeverity,
     CostaldMolarVolumeResult,
@@ -113,6 +114,9 @@ from azoth.core.result import (
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult,
+    HydrateRiskLevel,
+    HydrateRiskMapResult,
+    HydrateRiskPoint,
     HydrateStructure,
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
@@ -239,6 +243,7 @@ from azoth.core.result import (
     StreamScaleMineralRow,
     StrippingColumnResult,
     SubFraction,
+    SurfCooldownResult,
     SwameeJainResult,
     TankResult,
     TbpClosureResult,
@@ -416,6 +421,7 @@ __all__ = [
     "hydrate_fraction",
     "hydrate_inhibitor_concentration",
     "hydrate_inhibitor_wt",
+    "hydrate_risk_map",
     "iapws_henry_law",
     "iapws_saturation_pressure",
     "ideal_gas_cp",
@@ -530,6 +536,7 @@ __all__ = [
     "stirred_tank_reactor",
     "stream_scale_analyzer",
     "stripping_column",
+    "surf_cooldown",
     "tank",
     "tbp_closure",
     "tbp_cut_boundaries",
@@ -2256,6 +2263,32 @@ def hydrate_inhibitor_wt(components: list[str], moles: list[Q], inhibitor: str, 
         phases=result.phases,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hydrate_risk_map(components: list[str], z: list[float], distances: Sequence[Q], pressures: Sequence[Q], temperatures: Sequence[Q], eos: str | None=None, hydrate_model: str | None=None, high_risk_subcooling: Q | None=None, medium_risk_subcooling: Q | None=None) -> HydrateRiskMapResult:
+    """``eos.hydrate_risk_map``, computed in Rust."""
+    spec = _models_gen.model("eos.hydrate_risk_map")
+    result = _core.hydrate_risk_map(
+        list(components),
+        list(z),
+        [input_to_si(spec, "distances", v) for v in distances],
+        [input_to_si(spec, "pressures", v) for v in pressures],
+        [input_to_si(spec, "temperatures", v) for v in temperatures],
+        eos,
+        hydrate_model,
+        None if high_risk_subcooling is None else input_to_si(spec, "high_risk_subcooling", high_risk_subcooling),
+        None if medium_risk_subcooling is None else input_to_si(spec, "medium_risk_subcooling", medium_risk_subcooling),
+    )
+    return HydrateRiskMapResult(
+        points=tuple(HydrateRiskPoint(distance=from_si(c.distance.magnitude_si, c.distance.unit), pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), actual_temperature=from_si(c.actual_temperature.magnitude_si, c.actual_temperature.unit), hydrate_temperature=None if c.hydrate_temperature is None else from_si(c.hydrate_temperature.magnitude_si, c.hydrate_temperature.unit), subcooling=None if c.subcooling is None else from_si(c.subcooling.magnitude_si, c.subcooling.unit), risk_level=c.risk_level) for c in result.points),
+        overall_risk=HydrateRiskLevel(result.overall_risk),
+        minimum_subcooling=None if result.minimum_subcooling is None else from_si(result.minimum_subcooling.magnitude_si, result.minimum_subcooling.unit),
+        critical_point_count=result.critical_point_count,
+        unknown_point_count=result.unknown_point_count,
+        total_points=result.total_points,
+        all_points_evaluated=result.all_points_evaluated,
         warnings=_warnings(result.warnings),
     )
 
@@ -4019,6 +4052,50 @@ def stream_scale_analyzer(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesiu
         total_scale_rate=from_si(result.total_scale_rate.magnitude_si, result.total_scale_rate.unit),
         dominant_scale=result.dominant_scale,
         has_scaling=result.has_scaling,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def surf_cooldown(components: list[str], z: list[float], operating_pressure: Q, flash_temperature: Q, internal_diameter: Q, wall_thickness: Q, insulation_thickness: Q, coating_thickness: Q, insulation_conductivity: Q, seabed_temperature: Q, operating_temperature: Q | None=None, overall_u_value: Q | None=None, external_htc: Q | None=None, hydrate_margin: Q | None=None, required_no_touch_time: Q | None=None, total_time: Q | None=None, time_step: Q | None=None, require_water: bool | None=None, eos: str | None=None, hydrate_model: str | None=None) -> SurfCooldownResult:
+    """``eos.surf_cooldown``, computed in Rust."""
+    spec = _models_gen.model("eos.surf_cooldown")
+    result = _core.surf_cooldown(
+        list(components),
+        list(z),
+        input_to_si(spec, "operating_pressure", operating_pressure),
+        input_to_si(spec, "flash_temperature", flash_temperature),
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "insulation_thickness", insulation_thickness),
+        input_to_si(spec, "coating_thickness", coating_thickness),
+        input_to_si(spec, "insulation_conductivity", insulation_conductivity),
+        input_to_si(spec, "seabed_temperature", seabed_temperature),
+        None if operating_temperature is None else input_to_si(spec, "operating_temperature", operating_temperature),
+        None if overall_u_value is None else input_to_si(spec, "overall_u_value", overall_u_value),
+        None if external_htc is None else input_to_si(spec, "external_htc", external_htc),
+        None if hydrate_margin is None else input_to_si(spec, "hydrate_margin", hydrate_margin),
+        None if required_no_touch_time is None else input_to_si(spec, "required_no_touch_time", required_no_touch_time),
+        None if total_time is None else input_to_si(spec, "total_time", total_time),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        require_water,
+        eos,
+        hydrate_model,
+    )
+    return SurfCooldownResult(
+        verdict=CooldownVerdict(result.verdict),
+        water_present=result.water_present,
+        water_mole_fraction=result.water_mole_fraction,
+        no_touch_time=None if result.no_touch_time is None else from_si(result.no_touch_time.magnitude_si, result.no_touch_time.unit),
+        initial_fluid_temperature=from_si(result.initial_fluid_temperature.magnitude_si, result.initial_fluid_temperature.unit),
+        hydrate_equilibrium_temperature=None if result.hydrate_equilibrium_temperature is None else from_si(result.hydrate_equilibrium_temperature.magnitude_si, result.hydrate_equilibrium_temperature.unit),
+        hydrate_margin=from_si(result.hydrate_margin.magnitude_si, result.hydrate_margin.unit),
+        seabed_temperature=from_si(result.seabed_temperature.magnitude_si, result.seabed_temperature.unit),
+        overall_u_value=from_si(result.overall_u_value.magnitude_si, result.overall_u_value.unit),
+        time_constant=from_si(result.time_constant.magnitude_si, result.time_constant.unit),
+        fluid_density=from_si(result.fluid_density.magnitude_si, result.fluid_density.unit),
+        fluid_specific_heat=from_si(result.fluid_specific_heat.magnitude_si, result.fluid_specific_heat.unit),
+        internal_diameter=from_si(result.internal_diameter.magnitude_si, result.internal_diameter.unit),
+        insulation_thickness=from_si(result.insulation_thickness.magnitude_si, result.insulation_thickness.unit),
         warnings=_warnings(result.warnings),
     )
 

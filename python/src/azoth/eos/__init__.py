@@ -131,6 +131,7 @@ from azoth.core.result import (
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult,
+    HydrateRiskMapResult,
     HydrogenPhaseResult,
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
@@ -217,6 +218,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     StreamScaleAnalyzerResult,
+    SurfCooldownResult,
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
@@ -3731,6 +3733,38 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
     )
 
 
+def hydrate_risk_map(
+    components: list[str],
+    z: list[float],
+    distances: Sequence[Q],
+    pressures: Sequence[Q],
+    temperatures: Sequence[Q],
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+    high_risk_subcooling: Q | None = None,
+    medium_risk_subcooling: Q | None = None,
+) -> HydrateRiskMapResult:
+    """The hydrate risk along a pipeline profile.
+
+    NeqSim's ``HydrateRiskMapper``: the hydrate formation temperature at each profile point,
+    its subcooling against the point's actual temperature, and the band the two decide, with
+    the class's UNKNOWN-outranks-all-but-a-confirmed-CRITICAL rule.
+
+    See :func:`azoth.eos.reference.hydrate_risk_map`.
+    """
+    return resolve("eos.hydrate_risk_map")(  # type: ignore[no-any-return]
+        components=components,
+        z=z,
+        distances=list(distances),
+        pressures=list(pressures),
+        temperatures=list(temperatures),
+        eos=eos,
+        hydrate_model=hydrate_model,
+        high_risk_subcooling=high_risk_subcooling,
+        medium_risk_subcooling=medium_risk_subcooling,
+    )
+
+
 def hybrid_eos_ge_flash(
     components: Sequence[str],
     cubic: str,
@@ -4838,6 +4872,60 @@ def stream_scale_analyzer(
         bdot_b=bdot_b,
         pitzer_ionic_strength_molal=pitzer_ionic_strength_molal,
         water_flow=water_flow,
+    )
+
+
+def surf_cooldown(
+    components: list[str],
+    z: list[float],
+    operating_pressure: Q,
+    flash_temperature: Q,
+    internal_diameter: Q,
+    wall_thickness: Q,
+    insulation_thickness: Q,
+    coating_thickness: Q,
+    insulation_conductivity: Q,
+    seabed_temperature: Q,
+    operating_temperature: Q | None = None,
+    overall_u_value: Q | None = None,
+    external_htc: Q | None = None,
+    hydrate_margin: Q | None = None,
+    required_no_touch_time: Q | None = None,
+    total_time: Q | None = None,
+    time_step: Q | None = None,
+    require_water: bool | None = None,
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+) -> SurfCooldownResult:
+    """The surface flowline cooldown and no-touch time.
+
+    NeqSim's ``SurfCooldownAnalyzer``: the hydrate equilibrium temperature at the operating
+    pressure, the fluid's flashed density and specific heat, the lumped cooldown, and the
+    crossing of the hydrate temperature plus the margin as the no-touch time.
+
+    See :func:`azoth.eos.reference.surf_cooldown`.
+    """
+    return resolve("eos.surf_cooldown")(  # type: ignore[no-any-return]
+        components=components,
+        z=z,
+        operating_pressure=operating_pressure,
+        flash_temperature=flash_temperature,
+        internal_diameter=internal_diameter,
+        wall_thickness=wall_thickness,
+        insulation_thickness=insulation_thickness,
+        coating_thickness=coating_thickness,
+        insulation_conductivity=insulation_conductivity,
+        seabed_temperature=seabed_temperature,
+        operating_temperature=operating_temperature,
+        overall_u_value=overall_u_value,
+        external_htc=external_htc,
+        hydrate_margin=hydrate_margin,
+        required_no_touch_time=required_no_touch_time,
+        total_time=total_time,
+        time_step=time_step,
+        require_water=require_water,
+        eos=eos,
+        hydrate_model=hydrate_model,
     )
 
 

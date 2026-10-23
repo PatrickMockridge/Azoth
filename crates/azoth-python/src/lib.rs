@@ -47,7 +47,6 @@ mod register_gen;
 mod registry_tables_gen;
 mod results;
 mod standards;
-mod thermal;
 mod transport_gen;
 mod wrappers_gen;
 

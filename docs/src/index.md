@@ -221,6 +221,7 @@ Five sections, and the difference between them is the point:
 - [`eos.hydrate_fraction`](./eos/hydrate_fraction.md) — Hydrate fraction
 - [`eos.hydrate_inhibitor_concentration`](./eos/hydrate_inhibitor_concentration.md) — Hydrate inhibitor concentration
 - [`eos.hydrate_inhibitor_wt`](./eos/hydrate_inhibitor_wt.md) — Hydrate inhibitor weight fraction
+- [`eos.hydrate_risk_map`](./eos/hydrate_risk_map.md) — Hydrate risk map along a pipeline profile
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
 - [`eos.interface_properties`](./eos/interface_properties.md) — Interface tension by NeqSim's phase-pair dispatch
 - [`eos.kent_eisenberg_phase`](./eos/kent_eisenberg_phase.md) — Fugacity coefficients of a Kent-Eisenberg phase
@@ -262,6 +263,7 @@ Five sections, and the difference between them is the point:
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.stream_scale_analyzer`](./eos/stream_scale_analyzer.md) — Scale mass rates of an aqueous stream from its coupled mineral equilibrium
+- [`eos.surf_cooldown`](./eos/surf_cooldown.md) — Surface flowline cooldown and no-touch time
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
 - [`eos.thermal_conductivity`](./eos/thermal_conductivity.md) — Liquid thermal conductivity from the Pedersen (PFCT) correlation
 - [`eos.tp_flash_saft`](./eos/tp_flash_saft.md) — SAFT-VR-Mie flash

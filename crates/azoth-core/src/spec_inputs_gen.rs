@@ -76,6 +76,7 @@
 //!   - specs/models/eos/hydrate_fraction.toml
 //!   - specs/models/eos/hydrate_inhibitor_concentration.toml
 //!   - specs/models/eos/hydrate_inhibitor_wt.toml
+//!   - specs/models/eos/hydrate_risk_map.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/calcs/eos/iapws_henry_law.toml
 //!   - specs/calcs/eos/iapws_saturation_pressure.toml
@@ -162,6 +163,7 @@
 //!   - specs/calcs/eos/srk_z_factor.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/stream_scale_analyzer.toml
+//!   - specs/models/eos/surf_cooldown.toml
 //!   - specs/calcs/eos/tbp_fraction_properties.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
@@ -1140,6 +1142,24 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.hydrate_inhibitor_wt", "wt_target", "dimensionless"),
     ("eos.hydrate_inhibitor_wt", "T", "thermodynamic_temperature"),
     ("eos.hydrate_inhibitor_wt", "P", "pressure"),
+    ("eos.hydrate_risk_map", "z", "dimensionless"),
+    ("eos.hydrate_risk_map", "distances", "length"),
+    ("eos.hydrate_risk_map", "pressures", "pressure"),
+    (
+        "eos.hydrate_risk_map",
+        "temperatures",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.hydrate_risk_map",
+        "high_risk_subcooling",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.hydrate_risk_map",
+        "medium_risk_subcooling",
+        "thermodynamic_temperature",
+    ),
     ("eos.hydrogen_phase", "T", "thermodynamic_temperature"),
     ("eos.hydrogen_phase", "P", "pressure"),
     ("eos.iapws_henry_law", "T", "thermodynamic_temperature"),
@@ -2009,6 +2029,42 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pitzer_ionic_strength_molal",
         "molality",
     ),
+    ("eos.surf_cooldown", "z", "dimensionless"),
+    ("eos.surf_cooldown", "operating_pressure", "pressure"),
+    (
+        "eos.surf_cooldown",
+        "flash_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.surf_cooldown", "internal_diameter", "length"),
+    ("eos.surf_cooldown", "wall_thickness", "length"),
+    ("eos.surf_cooldown", "insulation_thickness", "length"),
+    ("eos.surf_cooldown", "coating_thickness", "length"),
+    (
+        "eos.surf_cooldown",
+        "insulation_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "eos.surf_cooldown",
+        "seabed_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.surf_cooldown",
+        "operating_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.surf_cooldown", "overall_u_value", "heat_transfer"),
+    ("eos.surf_cooldown", "external_htc", "heat_transfer"),
+    (
+        "eos.surf_cooldown",
+        "hydrate_margin",
+        "thermodynamic_temperature",
+    ),
+    ("eos.surf_cooldown", "required_no_touch_time", "time"),
+    ("eos.surf_cooldown", "total_time", "time"),
+    ("eos.surf_cooldown", "time_step", "time"),
     ("eos.tbp_fraction_properties", "molar_mass", "molar_mass"),
     ("eos.tbp_fraction_properties", "density", "mass_density"),
     ("eos.th_flash", "T", "thermodynamic_temperature"),

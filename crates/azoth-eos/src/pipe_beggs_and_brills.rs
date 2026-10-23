@@ -198,7 +198,11 @@ fn segment_drop(
     )
 }
 
-fn molar_mass(composition: &[f64], components: &[Component], names: &[String]) -> Result<f64> {
+pub(crate) fn molar_mass(
+    composition: &[f64],
+    components: &[Component],
+    names: &[String],
+) -> Result<f64> {
     let mut total = 0.0;
     for ((fraction, component), name) in composition.iter().zip(components).zip(names) {
         let mass = component.molar_mass.ok_or_else(|| {
@@ -212,7 +216,7 @@ fn molar_mass(composition: &[f64], components: &[Component], names: &[String]) -
     Ok(total)
 }
 
-fn corrected_molar_volume(
+pub(crate) fn corrected_molar_volume(
     z_factor: f64,
     temperature_k: f64,
     pressure_pa: f64,

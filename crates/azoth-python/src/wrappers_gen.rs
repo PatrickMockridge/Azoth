@@ -10,10 +10,10 @@ use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_kilogram_kelvin,
-    joules_per_mole, joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter,
+    joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms_per_cubic_meter,
     kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
-    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, seconds, watts,
-    watts_per_meter_kelvin, watts_per_square_meter_kelvin,
+    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, seconds, square_meters,
+    watts, watts_per_meter_kelvin, watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -1715,6 +1715,42 @@ pub fn hybrid_eos_ge_flash(
         &moles,
     )
     .map(|r| crate::transport_gen::PyHybridEosGeFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Hydrate risk map along a pipeline profile.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, z, distances, pressures, temperatures, eos, hydrate_model, high_risk_subcooling, medium_risk_subcooling))]
+#[pyo3(
+    text_signature = "(components, z, distances, pressures, temperatures, eos, hydrate_model, high_risk_subcooling, medium_risk_subcooling)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn hydrate_risk_map(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    distances: Vec<f64>,
+    pressures: Vec<f64>,
+    temperatures: Vec<f64>,
+    eos: Option<&str>,
+    hydrate_model: Option<&str>,
+    high_risk_subcooling: Option<f64>,
+    medium_risk_subcooling: Option<f64>,
+) -> PyResult<crate::transport_gen::PyHydrateRiskMapResult> {
+    azoth_eos::hydrate_risk_map::hydrate_risk_map(
+        &components,
+        &z,
+        &distances,
+        &pressures,
+        &temperatures,
+        eos,
+        hydrate_model,
+        high_risk_subcooling.map(kelvin_intervals),
+        medium_risk_subcooling.map(kelvin_intervals),
+    )
+    .map(|r| crate::transport_gen::PyHydrateRiskMapResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3916,6 +3952,64 @@ pub fn stream_scale_analyzer(
         pitzer_ionic_strength_molal,
     )
     .map(|r| crate::transport_gen::PyStreamScaleAnalyzerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Surface flowline cooldown and no-touch time.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, z, operating_pressure, flash_temperature, internal_diameter, wall_thickness, insulation_thickness, coating_thickness, insulation_conductivity, seabed_temperature, operating_temperature, overall_u_value, external_htc, hydrate_margin, required_no_touch_time, total_time, time_step, require_water, eos, hydrate_model))]
+#[pyo3(
+    text_signature = "(components, z, operating_pressure, flash_temperature, internal_diameter, wall_thickness, insulation_thickness, coating_thickness, insulation_conductivity, seabed_temperature, operating_temperature, overall_u_value, external_htc, hydrate_margin, required_no_touch_time, total_time, time_step, require_water, eos, hydrate_model)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn surf_cooldown(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    operating_pressure: f64,
+    flash_temperature: f64,
+    internal_diameter: f64,
+    wall_thickness: f64,
+    insulation_thickness: f64,
+    coating_thickness: f64,
+    insulation_conductivity: f64,
+    seabed_temperature: f64,
+    operating_temperature: Option<f64>,
+    overall_u_value: Option<f64>,
+    external_htc: Option<f64>,
+    hydrate_margin: Option<f64>,
+    required_no_touch_time: Option<f64>,
+    total_time: Option<f64>,
+    time_step: Option<f64>,
+    require_water: Option<bool>,
+    eos: Option<&str>,
+    hydrate_model: Option<&str>,
+) -> PyResult<crate::transport_gen::PySurfCooldownResult> {
+    azoth_eos::surf_cooldown::surf_cooldown(
+        &components,
+        &z,
+        pascals(operating_pressure),
+        kelvins(flash_temperature),
+        meters(internal_diameter),
+        meters(wall_thickness),
+        meters(insulation_thickness),
+        meters(coating_thickness),
+        watts_per_meter_kelvin(insulation_conductivity),
+        kelvins(seabed_temperature),
+        operating_temperature.map(kelvins),
+        overall_u_value.map(watts_per_square_meter_kelvin),
+        external_htc.map(watts_per_square_meter_kelvin),
+        hydrate_margin.map(kelvin_intervals),
+        required_no_touch_time.map(seconds),
+        total_time.map(seconds),
+        time_step.map(seconds),
+        require_water,
+        eos,
+        hydrate_model,
+    )
+    .map(|r| crate::transport_gen::PySurfCooldownResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -6208,5 +6302,29 @@ pub fn iso6976(
         kelvins(energy_reference_temperature),
     )
     .map(|r| crate::transport_gen::PyIso6976Result::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Steady conduction through a plane wall.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (k, A, dT, L))]
+#[pyo3(text_signature = "(k, A, dT, L)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn conduction_plane_wall(
+    py: Python<'_>,
+    k: f64,
+    A: f64,
+    dT: f64,
+    L: f64,
+) -> PyResult<crate::transport_gen::PyConductionPlaneWallResult> {
+    azoth_thermal::conduction_plane_wall::conduction_plane_wall(
+        watts_per_meter_kelvin(k),
+        square_meters(A),
+        kelvin_intervals(dT),
+        meters(L),
+    )
+    .map(|r| crate::transport_gen::PyConductionPlaneWallResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

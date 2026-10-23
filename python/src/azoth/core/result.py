@@ -22,12 +22,14 @@ from azoth.core.record_outputs_gen import *  # noqa: F403
 from azoth.core.result_base import LAMINAR_MAX as LAMINAR_MAX
 from azoth.core.result_base import TURBULENT_MIN as TURBULENT_MIN
 from azoth.core.result_base import BeggsBrillRegime as BeggsBrillRegime
+from azoth.core.result_base import CooldownVerdict as CooldownVerdict
 from azoth.core.result_base import CorrosionSeverity as CorrosionSeverity
 from azoth.core.result_base import EmulsionType as EmulsionType
 from azoth.core.result_base import ErosionRiskLevel as ErosionRiskLevel
 from azoth.core.result_base import FeSMorphology as FeSMorphology
 from azoth.core.result_base import FlowRegime as FlowRegime
 from azoth.core.result_base import HenryStatus as HenryStatus
+from azoth.core.result_base import HydrateRiskLevel as HydrateRiskLevel
 from azoth.core.result_base import HydrateStructure as HydrateStructure
 from azoth.core.result_base import MultiflashSeedPath as MultiflashSeedPath
 from azoth.core.result_base import Phase as Phase

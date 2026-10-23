@@ -8,7 +8,8 @@
 use azoth_core::units::{
     DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, Mass, MassDensity, MassRate,
     Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
-    SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
+    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
+    ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1851,6 +1852,177 @@ impl CalcResult for PipelineCooldownResult {
         "calculated_u_value",
         "effective_u_value",
         "time_to_reach_target",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The hydrate risk band one profile point falls in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HydrateRiskLevel {
+    /// Inside the hydrate region: a negative subcooling.
+    Critical,
+    /// Below the high-risk subcooling.
+    High,
+    /// Below the medium-risk subcooling.
+    Medium,
+    /// Outside the medium band.
+    Low,
+    /// No hydrate temperature could be computed.
+    Unknown,
+}
+
+impl HydrateRiskLevel {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Critical => "critical",
+            Self::High => "high",
+            Self::Medium => "medium",
+            Self::Low => "low",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// One profile point's hydrate risk.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateRiskPoint {
+    /// The distance from the inlet.
+    pub distance: Length,
+    /// The point's pressure.
+    pub pressure: Pressure,
+    /// The point's actual temperature.
+    pub actual_temperature: ThermodynamicTemperature,
+    /// The hydrate formation temperature, absent where the solve failed.
+    pub hydrate_temperature: Option<ThermodynamicTemperature>,
+    /// The actual temperature less the hydrate one, absent where it is.
+    pub subcooling: Option<TemperatureInterval>,
+    /// The risk band's spelling, `unknown` where the point could not be evaluated.
+    pub risk_level: String,
+}
+
+/// Result of `eos.hydrate_risk_map`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateRiskMapResult {
+    /// One row per profile point, in the order the points were given.
+    pub points: Vec<HydrateRiskPoint>,
+    /// The worst risk, with UNKNOWN outranking everything but a confirmed CRITICAL.
+    pub overall_risk: HydrateRiskLevel,
+    /// The smallest subcooling over the evaluated points, absent when none was.
+    pub minimum_subcooling: Option<TemperatureInterval>,
+    /// The number of points inside the hydrate region.
+    pub critical_point_count: u32,
+    /// The number of points whose hydrate temperature could not be computed.
+    pub unknown_point_count: u32,
+    /// The number of profile points.
+    pub total_points: u32,
+    /// Whether every point produced a hydrate temperature.
+    pub all_points_evaluated: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateRiskMapResult {
+    const CALC_ID: &'static str = "eos.hydrate_risk_map";
+    const FIELDS: &'static [&'static str] = &[
+        "points",
+        "overall_risk",
+        "minimum_subcooling",
+        "critical_point_count",
+        "unknown_point_count",
+        "total_points",
+        "all_points_evaluated",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The screening verdict a surface-cooldown analysis reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CooldownVerdict {
+    /// The no-touch time meets the requirement, or no hydrate risk exists.
+    Ok,
+    /// The no-touch time is at least three-quarters of the requirement, or at least six hours.
+    Marginal,
+    /// The no-touch time is below the marginal band.
+    Critical,
+    /// The hydrate temperature is absent or no colder than the seabed, so no touch is bounded.
+    NoHydrateRisk,
+}
+
+impl CooldownVerdict {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Marginal => "marginal",
+            Self::Critical => "critical",
+            Self::NoHydrateRisk => "no_hydrate_risk",
+        }
+    }
+}
+
+/// Result of `eos.surf_cooldown`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SurfCooldownResult {
+    /// The screening verdict.
+    pub verdict: CooldownVerdict,
+    /// Whether the fluid carries a water component above the class's floor.
+    pub water_present: bool,
+    /// The water's mole fraction.
+    pub water_mole_fraction: f64,
+    /// The no-touch time, absent where the class returns positive infinity.
+    pub no_touch_time: Option<Time>,
+    /// The initial fluid temperature the cooldown ran from.
+    pub initial_fluid_temperature: ThermodynamicTemperature,
+    /// The hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    pub hydrate_equilibrium_temperature: Option<ThermodynamicTemperature>,
+    /// The margin added above the hydrate temperature.
+    pub hydrate_margin: TemperatureInterval,
+    /// The ambient temperature.
+    pub seabed_temperature: ThermodynamicTemperature,
+    /// The U value the cooldown ran with.
+    pub overall_u_value: HeatTransfer,
+    /// The thermal mass over the per-length conductance.
+    pub time_constant: Time,
+    /// The fluid density the cooldown used.
+    pub fluid_density: MassDensity,
+    /// The fluid specific heat the cooldown used.
+    pub fluid_specific_heat: SpecificHeatCapacity,
+    /// The pipe's internal diameter, an echo of the input.
+    pub internal_diameter: Length,
+    /// The insulation thickness, an echo of the input.
+    pub insulation_thickness: Length,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SurfCooldownResult {
+    const CALC_ID: &'static str = "eos.surf_cooldown";
+    const FIELDS: &'static [&'static str] = &[
+        "verdict",
+        "water_present",
+        "water_mole_fraction",
+        "no_touch_time",
+        "initial_fluid_temperature",
+        "hydrate_equilibrium_temperature",
+        "hydrate_margin",
+        "seabed_temperature",
+        "overall_u_value",
+        "time_constant",
+        "fluid_density",
+        "fluid_specific_heat",
+        "internal_diameter",
+        "insulation_thickness",
         "warnings",
     ];
 

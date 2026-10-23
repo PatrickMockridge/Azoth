@@ -249,6 +249,78 @@ impl From<&azoth_eos::results::FlowlineScaleSegment> for PyFlowlineScaleSegment 
     }
 }
 
+/// One row per profile point, in the order the points were given.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateRiskPoint"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateRiskPoint {
+    /// the point's distance from the inlet.
+    #[pyo3(get)]
+    pub distance: PyQty,
+    /// the point's pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the point's actual temperature.
+    #[pyo3(get)]
+    pub actual_temperature: PyQty,
+    /// the hydrate formation temperature, absent where the solve failed.
+    #[pyo3(get)]
+    pub hydrate_temperature: Option<PyQty>,
+    /// the actual temperature less the hydrate one, absent where it is.
+    #[pyo3(get)]
+    pub subcooling: Option<PyQty>,
+    /// the point's band: critical, high, medium, low or unknown.
+    #[pyo3(get)]
+    pub risk_level: String,
+}
+
+#[pymethods]
+impl PyHydrateRiskPoint {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateRiskPoint(distance={:?}, pressure={:?}, actual_temperature={:?}, hydrate_temperature={:?}, subcooling={:?}, risk_level={})",
+            self.distance,
+            self.pressure,
+            self.actual_temperature,
+            self.hydrate_temperature,
+            self.subcooling,
+            self.risk_level
+        )
+    }
+}
+
+impl From<&azoth_eos::results::HydrateRiskPoint> for PyHydrateRiskPoint {
+    fn from(row: &azoth_eos::results::HydrateRiskPoint) -> Self {
+        Self {
+            distance: PyQty {
+                magnitude_si: row.distance.value,
+                unit: "m".to_string(),
+            },
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            actual_temperature: PyQty {
+                magnitude_si: row.actual_temperature.value,
+                unit: "K".to_string(),
+            },
+            hydrate_temperature: row.hydrate_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            subcooling: row.subcooling.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            risk_level: row.risk_level.clone(),
+        }
+    }
+}
+
 /// one row per fitting supplied, in the order they were listed
 #[pyclass(
     frozen,

@@ -350,6 +350,17 @@ class FlowlineScaleSegment:
     si_feco3: float | None
 
 @final
+class HydrateRiskPoint:
+    """One row per profile point, in the order the points were given."""
+
+    distance: Qty
+    pressure: Qty
+    actual_temperature: Qty
+    hydrate_temperature: Qty | None
+    subcooling: Qty | None
+    risk_level: str
+
+@final
 class MineralEquilibriumRow:
     """The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero."""
 
@@ -1116,6 +1127,17 @@ class HydrateInhibitorWtResult:
     warnings: list[Warning]
 
 @final
+class HydrateRiskMapResult:
+    points: list[HydrateRiskPoint]
+    overall_risk: str
+    minimum_subcooling: Qty | None
+    critical_point_count: int
+    unknown_point_count: int
+    total_points: int
+    all_points_evaluated: bool
+    warnings: list[Warning]
+
+@final
 class HydrogenPhaseResult:
     z_factor: float
     u: Qty
@@ -1833,6 +1855,24 @@ class StreamScaleAnalyzerResult:
     total_scale_rate: Qty
     dominant_scale: str
     has_scaling: bool
+    warnings: list[Warning]
+
+@final
+class SurfCooldownResult:
+    verdict: str
+    water_present: bool
+    water_mole_fraction: float
+    no_touch_time: Qty | None
+    initial_fluid_temperature: Qty
+    hydrate_equilibrium_temperature: Qty | None
+    hydrate_margin: Qty
+    seabed_temperature: Qty
+    overall_u_value: Qty
+    time_constant: Qty
+    fluid_density: Qty
+    fluid_specific_heat: Qty
+    internal_diameter: Qty
+    insulation_thickness: Qty
     warnings: list[Warning]
 
 @final
@@ -3631,6 +3671,17 @@ def hydrate_inhibitor_wt(
     P: float,
     eos: str,
 ) -> HydrateInhibitorWtResult: ...
+def hydrate_risk_map(
+    components: list[str],
+    z: list[float],
+    distances: list[float],
+    pressures: list[float],
+    temperatures: list[float],
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+    high_risk_subcooling: float | None = None,
+    medium_risk_subcooling: float | None = None,
+) -> HydrateRiskMapResult: ...
 def hydrogen_phase(
     T: float,
     P: float,
@@ -4309,6 +4360,28 @@ def stream_scale_analyzer(
     bdot_b: float | None = None,
     pitzer_ionic_strength_molal: float | None = None,
 ) -> StreamScaleAnalyzerResult: ...
+def surf_cooldown(
+    components: list[str],
+    z: list[float],
+    operating_pressure: float,
+    flash_temperature: float,
+    internal_diameter: float,
+    wall_thickness: float,
+    insulation_thickness: float,
+    coating_thickness: float,
+    insulation_conductivity: float,
+    seabed_temperature: float,
+    operating_temperature: float | None = None,
+    overall_u_value: float | None = None,
+    external_htc: float | None = None,
+    hydrate_margin: float | None = None,
+    required_no_touch_time: float | None = None,
+    total_time: float | None = None,
+    time_step: float | None = None,
+    require_water: bool | None = None,
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+) -> SurfCooldownResult: ...
 def tbp_fraction_properties(molar_mass: float, density: float) -> TbpFractionPropertiesResult: ...
 def th_flash(
     Tc: list[float],

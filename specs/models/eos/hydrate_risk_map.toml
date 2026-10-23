@@ -1,0 +1,108 @@
+id = "eos.hydrate_risk_map"
+name = "Hydrate risk map along a pipeline profile"
+kind = "direct"
+assumptions = [
+    "the class takes distance in km, pressure in bara and temperature in C; this model takes metres, pascal and kelvin, and the profile's three vectors are read point by point.\n",
+    "**each point's hydrate temperature is `eos.hydrate_formation_temperature` at that point's pressure**, on the overall composition; the actual temperature enters only the subcooling, never the solve.\n",
+    "**a fluid with no water or no hydrate former makes every point unknown**, and a per-point solve failure is unknown with the hydrate temperature and subcooling absent rather than a refusal.\n",
+    "**the bands are subcooling below zero critical, below the high threshold high, below the medium one medium**, else low; the critical threshold is fixed at zero and the two thresholds default to 3 and 6 K.\n",
+    "**the overall risk is the worst band**, except that an unknown point outranks everything but a confirmed critical: a failed point can hide the hydrate region, and a confirmed one outranks a missing answer.\n",
+    "the minimum subcooling ignores unknown points and is absent when none was evaluated; the counts report the critical and unknown points over the total.\n",
+    "the class's failure-reason strings are exception messages, so the counts and the unknown band are what this model reports; the Gson report is a composition.\n",
+    "**the class's hydrate flash converges on the water fugacity residual (1e-6), not on temperature**, so its temperature carries about 1e-4 K of its own precision; the cases use a 1e-3 relative tolerance here and the hydrate arithmetic is pinned by that model's own 1e-8 cases.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/HydrateRiskMapper.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the six profiles: four wet-gas points across the bands, a profile chosen for one point per band, tightened thresholds, a single point, a dry fluid and a zero-water fluid.",
+]
+[source]
+standard = "NeqSim master `HydrateRiskMapper`"
+edition = "`calculate` and the `RiskProfile` getters. The failure-reason strings have no counterpart here, and the Gson report is a composition."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions.\n"
+[inputs.distances]
+type = "vector"
+unit = "m"
+description = "each profile point's distance from the inlet.\n"
+[inputs.pressures]
+type = "vector"
+unit = "Pa"
+description = "each point's pressure.\n"
+[inputs.temperatures]
+type = "vector"
+unit = "K"
+description = "each point's actual temperature.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+optional = true
+description = "the cubic the hydrate reference water phase is built from; absent takes srk.\n"
+[inputs.hydrate_model]
+type = "enum"
+values = ["pvtsim", "guo_finch"]
+optional = true
+description = "which fitted component model fills the cages; absent takes pvtsim.\n"
+[inputs.high_risk_subcooling]
+unit = "K"
+optional = true
+interval = true
+description = "the subcooling below which a point is high risk; absent takes 3 K.\n"
+[inputs.medium_risk_subcooling]
+unit = "K"
+optional = true
+interval = true
+description = "the subcooling below which a point is medium risk; absent takes 6 K.\n"
+[outputs]
+[outputs.points]
+type = "record_list"
+description = "One row per profile point, in the order the points were given.\n"
+[outputs.points.fields.distance]
+unit = "m"
+description = "the point's distance from the inlet.\n"
+[outputs.points.fields.pressure]
+unit = "Pa"
+description = "the point's pressure.\n"
+[outputs.points.fields.actual_temperature]
+unit = "K"
+description = "the point's actual temperature.\n"
+[outputs.points.fields.hydrate_temperature]
+unit = "K"
+optional = true
+description = "the hydrate formation temperature, absent where the solve failed.\n"
+[outputs.points.fields.subcooling]
+unit = "K"
+optional = true
+description = "the actual temperature less the hydrate one, absent where it is.\n"
+[outputs.points.fields.risk_level]
+type = "string"
+description = "the point's band: critical, high, medium, low or unknown.\n"
+[outputs.overall_risk]
+type = "enum"
+values = ["critical", "high", "medium", "low", "unknown"]
+description = "the worst band, with unknown outranking everything but a confirmed critical.\n"
+[outputs.minimum_subcooling]
+unit = "K"
+optional = true
+description = "the smallest subcooling over the evaluated points, absent when none was.\n"
+[outputs.critical_point_count]
+unit = "dimensionless"
+description = "the number of points inside the hydrate region.\n"
+[outputs.unknown_point_count]
+unit = "dimensionless"
+description = "the number of points whose hydrate temperature could not be computed.\n"
+[outputs.total_points]
+unit = "dimensionless"
+description = "the number of profile points.\n"
+[outputs.all_points_evaluated]
+type = "boolean"
+description = "whether every point produced a hydrate temperature.\n"
+[implementations]
+python = "azoth.eos.hydrate_risk_map"
+rust = "azoth_eos::hydrate_risk_map"

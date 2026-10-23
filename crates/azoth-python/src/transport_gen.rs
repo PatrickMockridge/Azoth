@@ -15,9 +15,9 @@
 
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyChemicalWarningRow, PyDepositionSegmentRow,
-    PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow,
-    PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow,
-    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyFlowlineScaleSegment, PyHydrateRiskPoint, PyKComponent, PyMineralEquilibriumRow,
+    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
+    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -4786,6 +4786,75 @@ impl From<&azoth_eos::results::HydrateInhibitorWtResult> for PyHydrateInhibitorW
             phases: r.phases,
             iterations: r.iterations,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.hydrate_risk_map`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateRiskMapResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateRiskMapResult {
+    /// One row per profile point, in the order the points were given.
+    #[pyo3(get)]
+    pub points: Vec<PyHydrateRiskPoint>,
+    /// the worst band, with unknown outranking everything but a confirmed critical.
+    #[pyo3(get)]
+    pub overall_risk: String,
+    /// the smallest subcooling over the evaluated points, absent when none was.
+    #[pyo3(get)]
+    pub minimum_subcooling: Option<PyQty>,
+    /// the number of points inside the hydrate region.
+    #[pyo3(get)]
+    pub critical_point_count: u32,
+    /// the number of points whose hydrate temperature could not be computed.
+    #[pyo3(get)]
+    pub unknown_point_count: u32,
+    /// the number of profile points.
+    #[pyo3(get)]
+    pub total_points: u32,
+    /// whether every point produced a hydrate temperature.
+    #[pyo3(get)]
+    pub all_points_evaluated: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateRiskMapResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateRiskMapResult(points={:?}, overall_risk={:?}, minimum_subcooling={:?}, critical_point_count={:?}, unknown_point_count={:?}, total_points={:?}, all_points_evaluated={:?}, {} warning(s))",
+            self.points,
+            self.overall_risk,
+            self.minimum_subcooling,
+            self.critical_point_count,
+            self.unknown_point_count,
+            self.total_points,
+            self.all_points_evaluated,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::HydrateRiskMapResult> for PyHydrateRiskMapResult {
+    fn from(r: &azoth_eos::results::HydrateRiskMapResult) -> Self {
+        Self {
+            points: r.points.iter().map(PyHydrateRiskPoint::from).collect(),
+            overall_risk: r.overall_risk.as_str().to_string(),
+            minimum_subcooling: r.minimum_subcooling.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            critical_point_count: r.critical_point_count,
+            unknown_point_count: r.unknown_point_count,
+            total_points: r.total_points,
+            all_points_evaluated: r.all_points_evaluated,
             warnings: transport(&r.warnings),
         }
     }
@@ -9827,6 +9896,140 @@ impl From<&azoth_eos::results::StreamScaleAnalyzerResult> for PyStreamScaleAnaly
             },
             dominant_scale: r.dominant_scale.clone(),
             has_scaling: r.has_scaling,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.surf_cooldown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SurfCooldownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySurfCooldownResult {
+    /// the screening verdict.
+    #[pyo3(get)]
+    pub verdict: String,
+    /// whether the fluid carries a water component above the class's floor.
+    #[pyo3(get)]
+    pub water_present: bool,
+    /// the water's mole fraction.
+    #[pyo3(get)]
+    pub water_mole_fraction: f64,
+    /// the time to reach the hydrate temperature plus the margin, absent where the class returns positive infinity.
+    #[pyo3(get)]
+    pub no_touch_time: Option<PyQty>,
+    /// the initial temperature the cooldown ran from.
+    #[pyo3(get)]
+    pub initial_fluid_temperature: PyQty,
+    /// the hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    #[pyo3(get)]
+    pub hydrate_equilibrium_temperature: Option<PyQty>,
+    /// the margin added above the hydrate temperature, an echo of the input.
+    #[pyo3(get)]
+    pub hydrate_margin: PyQty,
+    /// the ambient temperature, an echo of the input.
+    #[pyo3(get)]
+    pub seabed_temperature: PyQty,
+    /// the U value the cooldown ran with.
+    #[pyo3(get)]
+    pub overall_u_value: PyQty,
+    /// the thermal mass over the per-length conductance.
+    #[pyo3(get)]
+    pub time_constant: PyQty,
+    /// the density the cooldown used.
+    #[pyo3(get)]
+    pub fluid_density: PyQty,
+    /// the specific heat the cooldown used.
+    #[pyo3(get)]
+    pub fluid_specific_heat: PyQty,
+    /// the pipe's internal diameter, an echo of the input.
+    #[pyo3(get)]
+    pub internal_diameter: PyQty,
+    /// the insulation thickness, an echo of the input.
+    #[pyo3(get)]
+    pub insulation_thickness: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySurfCooldownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SurfCooldownResult(verdict={:?}, water_present={:?}, water_mole_fraction={:?}, no_touch_time={:?}, initial_fluid_temperature={:?}, hydrate_equilibrium_temperature={:?}, hydrate_margin={:?}, seabed_temperature={:?}, overall_u_value={:?}, time_constant={:?}, fluid_density={:?}, fluid_specific_heat={:?}, internal_diameter={:?}, insulation_thickness={:?}, {} warning(s))",
+            self.verdict,
+            self.water_present,
+            self.water_mole_fraction,
+            self.no_touch_time,
+            self.initial_fluid_temperature,
+            self.hydrate_equilibrium_temperature,
+            self.hydrate_margin,
+            self.seabed_temperature,
+            self.overall_u_value,
+            self.time_constant,
+            self.fluid_density,
+            self.fluid_specific_heat,
+            self.internal_diameter,
+            self.insulation_thickness,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SurfCooldownResult> for PySurfCooldownResult {
+    fn from(r: &azoth_eos::results::SurfCooldownResult) -> Self {
+        Self {
+            verdict: r.verdict.as_str().to_string(),
+            water_present: r.water_present,
+            water_mole_fraction: r.water_mole_fraction,
+            no_touch_time: r.no_touch_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            initial_fluid_temperature: PyQty {
+                magnitude_si: r.initial_fluid_temperature.value,
+                unit: "K".to_string(),
+            },
+            hydrate_equilibrium_temperature: r.hydrate_equilibrium_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            hydrate_margin: PyQty {
+                magnitude_si: r.hydrate_margin.value,
+                unit: "K".to_string(),
+            },
+            seabed_temperature: PyQty {
+                magnitude_si: r.seabed_temperature.value,
+                unit: "K".to_string(),
+            },
+            overall_u_value: PyQty {
+                magnitude_si: r.overall_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            time_constant: PyQty {
+                magnitude_si: r.time_constant.value,
+                unit: "s".to_string(),
+            },
+            fluid_density: PyQty {
+                magnitude_si: r.fluid_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            fluid_specific_heat: PyQty {
+                magnitude_si: r.fluid_specific_heat.value,
+                unit: "J/(kg*K)".to_string(),
+            },
+            internal_diameter: PyQty {
+                magnitude_si: r.internal_diameter.value,
+                unit: "m".to_string(),
+            },
+            insulation_thickness: PyQty {
+                magnitude_si: r.insulation_thickness.value,
+                unit: "m".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
