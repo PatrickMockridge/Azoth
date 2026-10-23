@@ -80,7 +80,7 @@ pub struct AssayCutDerivation {
 ///
 /// g/cm3, which is the scale every correlation in the class is in and the scale the API relation
 /// is written in. `None` where the cut states neither, which the derivation refuses.
-fn specific_gravity(cut: &AssayCutDerivation) -> Option<f64> {
+pub(crate) fn specific_gravity(cut: &AssayCutDerivation) -> Option<f64> {
     if let Some(density) = cut.density {
         return Some(density.value / 1000.0);
     }

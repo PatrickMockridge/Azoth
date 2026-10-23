@@ -127,7 +127,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         python_path: "python/src/azoth/characterization/reference/oil_assay_derivation.py",
         python_sha256: "b4533a6b5edde491b320e6ef9e089558d9bad035e3523c2c516e0f75b44e9e93",
         rust_path: "crates/azoth-characterization/src/oil_assay_derivation.rs",
-        rust_sha256: "525355577559c47462764c954dba44887911210b4dd54be6fb31987f7a0cecd5",
+        rust_sha256: "c4263710d7f5c938c90449184539abcc5d7418916febddb611392d77bb1c3bdb",
         source: "NeqSim master `OilAssayCharacterisation.apply`",
         verification: VerificationStatus::PartiallyVerified,
         validation_cases: 0,

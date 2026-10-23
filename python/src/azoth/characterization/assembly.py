@@ -16,7 +16,7 @@ derives it - it is a function of ``racket_z`` and not a field.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
 from typing import Any, cast
 
@@ -73,6 +73,13 @@ def _q(row: Any, name: str) -> Q | None:
     return cast("Q", ureg.Quantity(value, UNITS[name]))
 
 
+def _scalar(value: Any) -> float:
+    """One row field as a plain number, converting a quantity through its SI magnitude."""
+    if isinstance(value, pint.Quantity):
+        return float(value.to_base_units().magnitude)
+    return float(value)
+
+
 def _required(row: Any, name: str, index: int) -> Any:
     value = _field(row, name)
     if value is None:
@@ -100,10 +107,10 @@ def _pseudo_component(row: Any, index: int, cubic: str) -> Component:
     """One pseudo-component as a ``Component``, its fitted alpha coefficient and shifts."""
     tc = _quantity(row, "critical_temperature", index)
     pc = _quantity(row, "critical_pressure", index)
-    omega = float(_required(row, "acentric_factor", index))
+    omega = _scalar(_required(row, "acentric_factor", index))
     molar_mass = _quantity(row, "molar_mass", index)
     rackett_z = _field(row, "racket_z")
-    rackett_z = None if rackett_z is None else float(rackett_z)
+    rackett_z = None if rackett_z is None else _scalar(rackett_z)
     pr_shift = pr_peneloux_shift(omega, tc, pc, rackett_z)
     srk_shift = srk_peneloux_shift(omega, tc, pc, rackett_z)
     parachor = _field(row, "parachor")
@@ -125,9 +132,9 @@ def _pseudo_component(row: Any, index: int, cubic: str) -> Component:
         molar_mass=molar_mass,
         alpha_params=params,
         component_class="hc",
-        parachor=0.0 if parachor is None else float(parachor),
-        heat_of_fusion=0.0 if heat_of_fusion is None else float(heat_of_fusion),
-        triple_point_temperature=0.0 if triple_point is None else float(triple_point),
+        parachor=0.0 if parachor is None else _scalar(parachor),
+        heat_of_fusion=0.0 if heat_of_fusion is None else _scalar(heat_of_fusion),
+        triple_point_temperature=0.0 if triple_point is None else _scalar(triple_point),
     )
 
 
@@ -235,3 +242,108 @@ def mixture_from_characterization(
         cp_e=tuple(row[4] for row in cp),
     )
     return fluid, ideal_gas
+
+
+def oil_assay_to_mixture(
+    basis: str,
+    cuts: Sequence[Mapping[str, Any]],
+    total_assay_mass: Q,
+    *,
+    eos: str = "srk",
+) -> tuple[Any, IdealGasModel]:
+    """An oil assay as the mixture its cuts describe - ``OilAssayCharacterisation.apply``.
+
+    ``basis``, ``cuts`` and ``total_assay_mass`` are
+    :func:`azoth.characterization.oil_assay_derivation`'s own: each cut is a mapping that states
+    its yield and the routes to its molar mass and gravity. The derivation resolves each cut's
+    molar mass and mole amount, the cut's card comes from
+    :func:`azoth.characterization.tbp_fraction_component`, and the mixture is built by
+    :func:`mixture_from_characterization`.
+
+    A cut the assay gives as a standard substance is a base component - its constants are the
+    databank's - and no card is built for it. The density a pseudo-component's card is built from
+    is the one the derivation resolved, stated or implied by the cut's API gravity.
+
+    **The fluid is constructed rather than mutated**, which is the one place this differs from
+    the class's ``addTBPfraction``/``addComponent`` sequence.
+    """
+    from azoth import _models_gen
+    from azoth.characterization.reference.oil_assay_derivation import (
+        oil_assay_derivation,
+        specific_gravity,
+    )
+    from azoth.characterization.reference.tbp_fraction_component import (
+        tbp_fraction_component as card_of,
+    )
+    from azoth.core.units import input_records_to_si
+
+    spec = _models_gen.model("characterization.oil_assay_derivation")
+    converted: list[dict[str, Any]] = input_records_to_si(spec, "cuts", cuts)
+    derived = oil_assay_derivation(basis, cuts, total_assay_mass)
+
+    keys = [
+        (
+            str(row["standard_component_name"])
+            if row["standard_component_name"] is not None
+            else f"{row['name']}_PC"
+        ).lower()
+        for row in converted
+    ]
+    if len(set(keys)) != len(keys):
+        raise InvalidInputError(
+            "cuts", "two cuts name one component once the pseudo-component suffix is added"
+        )
+
+    rows: list[dict[str, Any]] = []
+    for index, name in enumerate(derived.component_name):
+        key = str(name).lower()
+        if key not in keys:
+            raise InvalidInputError(
+                "cuts", f"the derivation answered `{name}`, which no cut describes"
+            )
+        cut = converted[keys.index(key)]
+        moles = derived.moles[index]
+        if cut["standard_component_name"] is not None:
+            rows.append(
+                {
+                    "fluid": 0.0,
+                    "name": str(name),
+                    "pseudo_component": False,
+                    "moles": moles,
+                }
+            )
+            continue
+        gravity = specific_gravity(cut)
+        if gravity is None:
+            raise InvalidInputError(
+                "cuts", f"`{cut['name']}` states neither a density nor an API gravity"
+            )
+        card = card_of(derived.molar_mass[index], ureg.Quantity(gravity * 1000.0, "kg/m**3"))
+        rows.append(
+            {
+                "fluid": 0.0,
+                "name": str(name),
+                "pseudo_component": True,
+                "moles": moles,
+                "molar_mass": derived.molar_mass[index],
+                "density": ureg.Quantity(gravity * 1000.0, "kg/m**3"),
+                "normal_boiling_point": card.boiling_temperature,
+                "critical_temperature": card.critical_temperature,
+                "critical_pressure": card.critical_pressure,
+                "acentric_factor": card.acentric_factor,
+                "critical_volume": card.critical_volume,
+                "racket_z": card.racket_z,
+                "racket_z_cpa": card.racket_z_cpa,
+                "parachor": card.parachor,
+                "critical_viscosity": card.critical_viscosity,
+                "triple_point_temperature": card.triple_point_temperature,
+                "heat_of_fusion": card.heat_of_fusion,
+                "ideal_gas_enthalpy_of_formation": card.ideal_gas_enthalpy_of_formation,
+                "cp_a": card.cp_a,
+                "cp_b": card.cp_b,
+                "cp_c": card.cp_c,
+                "cp_d": card.cp_d,
+                "attractive_m": card.attraction_exponent,
+            }
+        )
+    return mixture_from_characterization(rows, eos=eos)

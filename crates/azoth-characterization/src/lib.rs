@@ -13,6 +13,7 @@
 //! * [`tbp_cut_properties`] — a cut's critical properties, by any of NeqSim's ten models
 
 pub mod assay_mass_fractions;
+pub mod assay_to_mixture;
 pub mod assembly;
 pub mod characterise_plus_fraction;
 pub mod characterize_to_common_slate;
@@ -40,6 +41,7 @@ pub mod unported_gen;
 pub mod whitson_gamma_split;
 
 pub use assay_mass_fractions::{AssayBasis, AssayCut, assay_mass_fractions};
+pub use assay_to_mixture::oil_assay_to_mixture;
 pub use assembly::mixture_from_characterization;
 pub use characterise_plus_fraction::{PlusModel, characterise_plus_fraction};
 pub use characterize_to_common_slate::characterize_to_common_slate;

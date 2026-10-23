@@ -390,10 +390,10 @@ The specialist physics.
   `transfer_binary_interaction_parameters` moves an interaction table between two, and
   `tbp_fraction_component` is `addTBPfraction`'s card for one cut - the Rackett compressibility
   among it, from the reference SRK phase's liquid root. `mixture_from_characterization` turns the
-  rows any of them answers with into a `Mixture` and its ideal-gas model. **What is owed is
-  `OilAssayCharacterisation.apply`'s composition of those cards into a fluid** - the assay-to-
-  mixture helper - and `Recombine`, whose constructor is empty and whose `runRecombination`
-  returns null.
+  rows any of them answers with into a `Mixture` and its ideal-gas model, and
+  `oil_assay_to_mixture` is `OilAssayCharacterisation.apply`'s composition - an assay's cuts
+  derived, carded and built into a fluid. What is owed of the class is only its parts that build
+  nothing: `Recombine`, whose constructor is empty and whose `runRecombination` returns null.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
@@ -793,12 +793,12 @@ a claim nothing holds.
   acentric factor `setm` rewrites, and the coefficient `init` then re-derives from it.
   `characterization.characterize_to_reference` carries all four of the class's own options -
   `inheritReferenceProperties`, `delumpBeforeRecharacterization` with its resolution, and
-  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. **What is owed is
-  `OilAssayCharacterisation.apply`'s composition of those cards into a fluid** - the
-  assay-to-mixture helper over the cards and `mixture_from_characterization`. **`Recombine` is
-  unreachable**: its constructor is empty and `runRecombination` returns null.
-  `normalizeComposition` computes a total and never uses it, and `generateValidationReport`
-  reports on data; neither is an id.
+  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. They are
+  composed into a fluid by `mixture_from_characterization`, and an assay reaches it through
+  `oil_assay_to_mixture` - the derivation, the cards and the assembler in that order. **What is
+  left of the subsystem is what builds nothing**: `Recombine` is unreachable (its constructor is
+  empty and `runRecombination` returns null), `normalizeComposition` computes a total and never
+  uses it, and `generateValidationReport` reports on data; none is an id.
 
 ## Beyond the port
 

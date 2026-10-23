@@ -22,6 +22,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`characterize_to_common_slate` - several fluids re-characterized onto one shared slate
 * :func:`transfer_binary_interaction_parameters` - an interaction table moved between two slates
 * :func:`mixture_from_characterization` - the table rebuilt as a mixture a flash can take
+* :func:`oil_assay_to_mixture` - an assay's cuts derived, carded and built into a fluid
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
 # Which implementation answers
@@ -61,6 +62,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 from .assembly import mixture_from_characterization as mixture_from_characterization
+from .assembly import oil_assay_to_mixture as oil_assay_to_mixture
 
 if TYPE_CHECKING:
     from azoth import keycard
