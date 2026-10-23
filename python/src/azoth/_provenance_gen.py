@@ -415,7 +415,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'eos.de_waard_milliams_corrosion',
         "name": 'De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate',
         "spec": {'path': 'specs/calcs/eos/de_waard_milliams_corrosion.toml', 'sha256': '994da6058b10e6fc8f242ec6e57abe9e73f4b4c35c19a56c2fb3ac816e9ca5b0'},
-        "code": [{'path': 'python/src/azoth/eos/reference/de_waard_milliams_corrosion.py', 'sha256': '8a7e3676204ee9cb6021c76c799b19644472216854aa0b04586c6485aae39f26'}, {'path': 'crates/azoth-eos/src/de_waard_milliams_corrosion.rs', 'sha256': 'a23aceaeee6890e44b88852c5f92289755391474f30b116ceeb9a1dc9636e345'}],
+        "code": [{'path': 'python/src/azoth/eos/reference/de_waard_milliams_corrosion.py', 'sha256': '8a7e3676204ee9cb6021c76c799b19644472216854aa0b04586c6485aae39f26'}, {'path': 'crates/azoth-eos/src/de_waard_milliams_corrosion.rs', 'sha256': 'aaee715f2336acdeb70eb2a9457708776683864a5175b3b3cc1d1fb0eb36ef29'}],
         "source": 'NeqSim master `DeWaardMilliamsCorrosion`',
         "verification": 'partially_verified',
         "validation_cases": 0,

@@ -78,6 +78,8 @@ pub fn de_waard_milliams_corrosion(
     let pco2 = co2_partial_pressure.value * BAR_PER_PASCAL;
     let ph2s = h2s_partial_pressure.value * BAR_PER_PASCAL;
     let velocity = flow_velocity.value;
+    // numerics-ok: the class's setters clamp the efficiency and the glycol fraction to
+    // [0, 1], so the clamp is the class's transcription rather than a default.
     let inhibitor = inhibitor_efficiency.clamp(0.0, 1.0);
     let glycol = glycol_fraction.clamp(0.0, 1.0);
     let sulfur_kg_m2_yr = sulfur_deposition_rate.value.max(0.0) * SECONDS_PER_YEAR;
