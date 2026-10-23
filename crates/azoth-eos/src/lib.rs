@@ -168,6 +168,7 @@ pub mod ph_flash;
 pub mod phase_boundary;
 pub mod phase_transport;
 pub mod pipe_beggs_and_brills;
+pub mod pipeline_cooldown;
 pub mod pitzer_catalog;
 pub mod pitzer_electrostatic;
 pub mod pitzer_hydrate;
@@ -416,14 +417,14 @@ pub use results::{
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PipeBeggsAndBrillsResult,
-    PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
-    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, ProductionChemicalScaleScenarioResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvRefluxFlashResult,
-    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
-    RemediationOptionRow, RkAlphaAbResult, RkDepartureResult, RootStructure,
-    ScaleControlAssessorResult, ScaleControlRiskRow, ScaleControlRow,
+    PipelineCooldownResult, PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, ProductionChemicalScaleScenarioResult, PrsvKappaResult,
+    PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
+    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RemediationOptionRow, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, ScaleControlAssessorResult, ScaleControlRiskRow, ScaleControlRow,
     ScaleDepositionAccumulatorResult, ScaleInhibitorPerformanceResult, ScaleKineticsResult,
     ScaleRemediationAdvisorResult, ScenarioChangeRow, ScenarioIndexRow,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,

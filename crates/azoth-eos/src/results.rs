@@ -6,9 +6,9 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate, Molality,
-    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension,
-    ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
+    DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, Mass, MassDensity, MassRate,
+    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
+    SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1815,6 +1815,42 @@ impl CalcResult for EmulsionViscosityResult {
         "inversion_water_cut",
         "emulsion_type",
         "is_inverted",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pipeline_cooldown`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PipelineCooldownResult {
+    /// The time at each march step, the first at zero.
+    pub time: Vec<f64>,
+    /// The lumped fluid-and-steel temperature at each step.
+    pub fluid_temperature: Vec<f64>,
+    /// The thermal mass over the per-length conductance.
+    pub time_constant: Time,
+    /// The layer-resistance U value, which the class's getter always recomputes.
+    pub calculated_u_value: HeatTransfer,
+    /// The U value the march ran with: the supplied one, or the layer value.
+    pub effective_u_value: HeatTransfer,
+    /// The interpolated crossing of the target temperature, absent when not reached.
+    pub time_to_reach_target: Option<Time>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PipelineCooldownResult {
+    const CALC_ID: &'static str = "eos.pipeline_cooldown";
+    const FIELDS: &'static [&'static str] = &[
+        "time",
+        "fluid_temperature",
+        "time_constant",
+        "calculated_u_value",
+        "effective_u_value",
+        "time_to_reach_target",
         "warnings",
     ];
 

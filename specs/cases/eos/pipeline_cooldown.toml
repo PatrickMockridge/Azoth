@@ -1,0 +1,334 @@
+model = "eos.pipeline_cooldown"
+
+[[cases]]
+id = "u3_default"
+tolerance = 1e-09
+source = "The capture's `u3_default` row: the class's default state: a supplied U of 3, a five-minute step and a 48-hour horizon.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+overall_u_value = 3.0
+[cases.expected]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+
+[[cases]]
+id = "u1_5"
+tolerance = 1e-09
+source = "The capture's `u1_5` row: U 1.5, which doubles the time constant.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+overall_u_value = 1.5
+[cases.expected]
+time_constant = 96587.59708737861
+calculated_u_value = 2.8097392102987873
+effective_u_value = 1.5
+
+[[cases]]
+id = "u6"
+tolerance = 1e-09
+source = "The capture's `u6` row: U 6, which halves it.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+overall_u_value = 6.0
+[cases.expected]
+time_constant = 24146.899271844653
+calculated_u_value = 2.8097392102987873
+effective_u_value = 6.0
+
+[[cases]]
+id = "layers_ins50"
+tolerance = 1e-09
+source = "The capture's `layers_ins50` row: the layer U from a 50 mm insulation at an external coefficient of 300.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+use_layer_calculation = true
+external_htc = 300.0
+[cases.expected]
+time_constant = 51564.00106459035
+calculated_u_value = 2.8097392102987873
+effective_u_value = 2.8097392102987873
+
+[[cases]]
+id = "layers_bare"
+tolerance = 1e-09
+source = "The capture's `layers_bare` row: the layer U with no insulation: the bare-pipe time constant is minutes.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.0
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+use_layer_calculation = true
+external_htc = 300.0
+[cases.expected]
+time_constant = 494.53501137510625
+calculated_u_value = 276.92644455699184
+effective_u_value = 276.92644455699184
+
+[[cases]]
+id = "layers_htc500"
+tolerance = 1e-09
+source = "The capture's `layers_htc500` row: the layer U at an external coefficient of 500.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 300.0
+total_time = 172800.0
+use_layer_calculation = true
+external_htc = 500.0
+[cases.expected]
+time_constant = 51370.82587041561
+calculated_u_value = 2.8203049722528393
+effective_u_value = 2.8203049722528393
+
+[[cases]]
+id = "ceil_steps"
+tolerance = 1e-09
+source = "The capture's `ceil_steps` row: a 10-hour horizon in 3-hour steps: the class's array runs to 12 hours.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 10800.0
+total_time = 36000.0
+overall_u_value = 3.0
+[cases.expected]
+time = [0.0,10800.0,21600.0,32400.0,43200.0]
+fluid_temperature = [353.15,336.15402899023445,322.9588873300056,312.7145910003952,304.76123892648883]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+
+[[cases]]
+id = "target_exact"
+tolerance = 1e-09
+source = "The capture's `target_exact` row: a target at the initial temperature, which the first node already meets.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+target_temperature = 353.15
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [353.15,347.4846763300781,342.24166703232703,337.3894912171571,332.8990146979912,328.74327505926294,324.8973197644994,321.3380563324317,318.0441136815374,314.9957138104783,312.1745530439574]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+time_to_reach_target = 0.0
+
+[[cases]]
+id = "target_unreached"
+tolerance = 1e-09
+source = "The capture's `target_unreached` row: a 270 K target the march never reaches.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+target_temperature = 270.0
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [353.15,347.4846763300781,342.24166703232703,337.3894912171571,332.8990146979912,328.74327505926294,324.8973197644994,321.3380563324317,318.0441136815374,314.9957138104783,312.1745530439574]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+
+[[cases]]
+id = "heat_up"
+tolerance = 1e-09
+source = "The capture's `heat_up` row: a fluid colder than its ambient, which warms rather than cools.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 277.15
+ambient_temperature = 300.0
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+target_temperature = 300.0
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [277.15,278.8533242876015,280.429676425149,281.888521390631,283.23861860724867,284.48807453810315,285.64439136027875,286.71451201057806,287.70486187337985,288.6213873609285,289.46959161770485]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+
+[[cases]]
+id = "steel_8000_450"
+tolerance = 1e-09
+source = "The capture's `steel_8000_450` row: non-default steel density and specific heat.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 8000.0
+steel_specific_heat = 450.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [353.15,347.37252228698406,342.0342452150786,337.10178099592105,332.5442799622428,328.3332376213162,324.4423163760905,320.8471807989884,317.5253454280965,314.4560341338051,311.6200501763173]
+time_constant = 47356.3055697496
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0
+
+[[cases]]
+id = "coating_20mm"
+tolerance = 1e-09
+source = "The capture's `coating_20mm` row: a 20 mm coating, whose radius enters the outer area but adds no resistance.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.02
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [353.15,347.07939001746234,341.4936787922943,336.35413433453516,331.62511842797295,327.2738395104891,323.2701252934432,319.5862135434134,316.19655957554835,313.0776591236658,310.2078853588588]
+time_constant = 45069.6059847401
+calculated_u_value = 2.623795892344959
+effective_u_value = 3.0
+
+[[cases]]
+id = "coarse_1h"
+tolerance = 1e-09
+source = "The capture's `coarse_1h` row: a one-hour step over ten hours, the state the cases pin in full.\n"
+[cases.inputs]
+internal_diameter = 0.254
+wall_thickness = 0.0127
+insulation_thickness = 0.05
+coating_thickness = 0.006
+steel_density = 7850.0
+steel_specific_heat = 500.0
+insulation_conductivity = 0.17
+fluid_density = 750.0
+fluid_specific_heat = 2200.0
+initial_fluid_temperature = 353.15
+ambient_temperature = 277.15
+time_step = 3600.0
+total_time = 36000.0
+overall_u_value = 3.0
+[cases.expected]
+time = [0.0,3600.0,7200.0,10800.0,14400.0,18000.0,21600.0,25200.0,28800.0,32400.0,36000.0]
+fluid_temperature = [353.15,347.4846763300781,342.24166703232703,337.3894912171571,332.8990146979912,328.74327505926294,324.8973197644994,321.3380563324317,318.0441136815374,314.9957138104783,312.1745530439574]
+time_constant = 48293.79854368931
+calculated_u_value = 2.8097392102987873
+effective_u_value = 3.0

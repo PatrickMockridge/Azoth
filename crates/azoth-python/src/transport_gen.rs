@@ -6420,6 +6420,93 @@ impl From<&azoth_eos::results::PipeBeggsAndBrillsResult> for PyPipeBeggsAndBrill
         }
     }
 }
+/// Result of `eos.pipeline_cooldown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PipelineCooldownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPipelineCooldownResult {
+    /// the time at each march step, the first at zero.
+    #[pyo3(get)]
+    pub time: Vec<PyQty>,
+    /// the lumped fluid-and-steel temperature at each step.
+    #[pyo3(get)]
+    pub fluid_temperature: Vec<PyQty>,
+    /// the thermal mass over the per-length conductance.
+    #[pyo3(get)]
+    pub time_constant: PyQty,
+    /// the layer-resistance U value, which the class's getter always recomputes.
+    #[pyo3(get)]
+    pub calculated_u_value: PyQty,
+    /// the U value the march ran with: the supplied one, or the layer value.
+    #[pyo3(get)]
+    pub effective_u_value: PyQty,
+    /// the interpolated crossing of the target temperature, absent when not reached.
+    #[pyo3(get)]
+    pub time_to_reach_target: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPipelineCooldownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PipelineCooldownResult(time={:?}, fluid_temperature={:?}, time_constant={:?}, calculated_u_value={:?}, effective_u_value={:?}, time_to_reach_target={:?}, {} warning(s))",
+            self.time,
+            self.fluid_temperature,
+            self.time_constant,
+            self.calculated_u_value,
+            self.effective_u_value,
+            self.time_to_reach_target,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PipelineCooldownResult> for PyPipelineCooldownResult {
+    fn from(r: &azoth_eos::results::PipelineCooldownResult) -> Self {
+        Self {
+            time: r
+                .time
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "s".to_string(),
+                })
+                .collect(),
+            fluid_temperature: r
+                .fluid_temperature
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            time_constant: PyQty {
+                magnitude_si: r.time_constant.value,
+                unit: "s".to_string(),
+            },
+            calculated_u_value: PyQty {
+                magnitude_si: r.calculated_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            effective_u_value: PyQty {
+                magnitude_si: r.effective_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            time_to_reach_target: r.time_to_reach_target.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.pitzer_hydrate_formation_pressure`, transported.
 #[pyclass(
     frozen,

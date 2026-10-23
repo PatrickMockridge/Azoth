@@ -1334,6 +1334,16 @@ class PipeBeggsAndBrillsResult:
     warnings: list[Warning]
 
 @final
+class PipelineCooldownResult:
+    time: list[Qty]
+    fluid_temperature: list[Qty]
+    time_constant: Qty
+    calculated_u_value: Qty
+    effective_u_value: Qty
+    time_to_reach_target: Qty | None
+    warnings: list[Warning]
+
+@final
 class PitzerHydrateFormationPressureResult:
     pressure: Qty
     structure: str
@@ -3865,6 +3875,25 @@ def pipe_beggs_and_brills(
     roughness: float,
     eos: str | None = None,
 ) -> PipeBeggsAndBrillsResult: ...
+def pipeline_cooldown(
+    internal_diameter: float,
+    wall_thickness: float,
+    insulation_thickness: float,
+    coating_thickness: float,
+    steel_density: float,
+    steel_specific_heat: float,
+    insulation_conductivity: float,
+    fluid_density: float,
+    fluid_specific_heat: float,
+    initial_fluid_temperature: float,
+    ambient_temperature: float,
+    time_step: float,
+    total_time: float,
+    overall_u_value: float | None = None,
+    use_layer_calculation: bool | None = None,
+    external_htc: float | None = None,
+    target_temperature: float | None = None,
+) -> PipelineCooldownResult: ...
 def pitzer_hydrate_formation_pressure(
     components: list[str],
     moles: list[float],

@@ -105,6 +105,7 @@
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
 //!   - specs/models/eos/pipe_beggs_and_brills.toml
+//!   - specs/models/eos/pipeline_cooldown.toml
 //!   - specs/models/eos/pitzer_hydrate_formation_pressure.toml
 //!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
@@ -1498,6 +1499,46 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("eos.pipe_beggs_and_brills", "roughness", "length"),
+    ("eos.pipeline_cooldown", "internal_diameter", "length"),
+    ("eos.pipeline_cooldown", "wall_thickness", "length"),
+    ("eos.pipeline_cooldown", "insulation_thickness", "length"),
+    ("eos.pipeline_cooldown", "coating_thickness", "length"),
+    ("eos.pipeline_cooldown", "steel_density", "mass_density"),
+    (
+        "eos.pipeline_cooldown",
+        "steel_specific_heat",
+        "specific_heat_capacity",
+    ),
+    (
+        "eos.pipeline_cooldown",
+        "insulation_conductivity",
+        "thermal_conductivity",
+    ),
+    ("eos.pipeline_cooldown", "fluid_density", "mass_density"),
+    (
+        "eos.pipeline_cooldown",
+        "fluid_specific_heat",
+        "specific_heat_capacity",
+    ),
+    (
+        "eos.pipeline_cooldown",
+        "initial_fluid_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.pipeline_cooldown",
+        "ambient_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("eos.pipeline_cooldown", "time_step", "time"),
+    ("eos.pipeline_cooldown", "total_time", "time"),
+    ("eos.pipeline_cooldown", "overall_u_value", "heat_transfer"),
+    ("eos.pipeline_cooldown", "external_htc", "heat_transfer"),
+    (
+        "eos.pipeline_cooldown",
+        "target_temperature",
+        "thermodynamic_temperature",
+    ),
     ("eos.pitzer_hydrate_formation_pressure", "moles", "amount"),
     (
         "eos.pitzer_hydrate_formation_pressure",

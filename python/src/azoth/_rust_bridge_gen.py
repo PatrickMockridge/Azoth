@@ -157,6 +157,7 @@ from azoth.core.result import (
     PhaseTransportResult,
     PhFlashResult,
     PipeBeggsAndBrillsResult,
+    PipelineCooldownResult,
     PipeResult,
     PitzerHydrateFormationPressureResult,
     PitzerHydrateFormationTemperatureResult,
@@ -456,6 +457,7 @@ __all__ = [
     "phase_transport",
     "pipe",
     "pipe_beggs_and_brills",
+    "pipeline_cooldown",
     "pitzer_hydrate_formation_pressure",
     "pitzer_hydrate_formation_temperature",
     "pitzer_phase",
@@ -2825,6 +2827,39 @@ def pipe_beggs_and_brills(components: list[str], inlet_n: float, inlet_z: list[f
         flow_regime_profile=tuple(result.flow_regime_profile),
         outlet_pressure=from_si(result.outlet_pressure.magnitude_si, result.outlet_pressure.unit),
         total_pressure_drop=from_si(result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pipeline_cooldown(internal_diameter: Q, wall_thickness: Q, insulation_thickness: Q, coating_thickness: Q, steel_density: Q, steel_specific_heat: Q, insulation_conductivity: Q, fluid_density: Q, fluid_specific_heat: Q, initial_fluid_temperature: Q, ambient_temperature: Q, time_step: Q, total_time: Q, overall_u_value: Q | None=None, use_layer_calculation: bool | None=None, external_htc: Q | None=None, target_temperature: Q | None=None) -> PipelineCooldownResult:
+    """``eos.pipeline_cooldown``, computed in Rust."""
+    spec = _models_gen.model("eos.pipeline_cooldown")
+    result = _core.pipeline_cooldown(
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "insulation_thickness", insulation_thickness),
+        input_to_si(spec, "coating_thickness", coating_thickness),
+        input_to_si(spec, "steel_density", steel_density),
+        input_to_si(spec, "steel_specific_heat", steel_specific_heat),
+        input_to_si(spec, "insulation_conductivity", insulation_conductivity),
+        input_to_si(spec, "fluid_density", fluid_density),
+        input_to_si(spec, "fluid_specific_heat", fluid_specific_heat),
+        input_to_si(spec, "initial_fluid_temperature", initial_fluid_temperature),
+        input_to_si(spec, "ambient_temperature", ambient_temperature),
+        input_to_si(spec, "time_step", time_step),
+        input_to_si(spec, "total_time", total_time),
+        None if overall_u_value is None else input_to_si(spec, "overall_u_value", overall_u_value),
+        use_layer_calculation,
+        None if external_htc is None else input_to_si(spec, "external_htc", external_htc),
+        None if target_temperature is None else input_to_si(spec, "target_temperature", target_temperature),
+    )
+    return PipelineCooldownResult(
+        time=tuple(from_si(q.magnitude_si, q.unit) for q in result.time),
+        fluid_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.fluid_temperature),
+        time_constant=from_si(result.time_constant.magnitude_si, result.time_constant.unit),
+        calculated_u_value=from_si(result.calculated_u_value.magnitude_si, result.calculated_u_value.unit),
+        effective_u_value=from_si(result.effective_u_value.magnitude_si, result.effective_u_value.unit),
+        time_to_reach_target=None if result.time_to_reach_target is None else from_si(result.time_to_reach_target.magnitude_si, result.time_to_reach_target.unit),
         warnings=_warnings(result.warnings),
     )
 

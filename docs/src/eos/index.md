@@ -145,6 +145,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.phase_transport`](./phase_transport.md) | `direct composition` | NeqSim master `PhysicalProperties` and its per-phase subclasses |
 | [`eos.pipe_beggs_and_brills`](./pipe_beggs_and_brills.md) | `direct composition` | NeqSim master `PipeBeggsAndBrills` |
+| [`eos.pipeline_cooldown`](./pipeline_cooldown.md) | `direct composition` | NeqSim master `PipelineCooldownCalculator` |
 | [`eos.pitzer_hydrate_formation_pressure`](./pitzer_hydrate_formation_pressure.md) | `pitzer_hydrate_scan_bisection` | NeqSim master `PitzerHydrateFlash` |
 | [`eos.pitzer_hydrate_formation_temperature`](./pitzer_hydrate_formation_temperature.md) | `pitzer_hydrate_scan_bisection` | NeqSim master `PitzerHydrateFlash` |
 | [`eos.pitzer_phase`](./pitzer_phase.md) | `direct composition` | NeqSim master `PhasePitzer` |

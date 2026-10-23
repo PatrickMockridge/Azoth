@@ -2492,6 +2492,34 @@ class PipeBeggsAndBrillsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PipelineCooldownResult(_HasWarnings):
+    """Result of ``eos.pipeline_cooldown``."""
+
+    CALC_ID: ClassVar[str] = "eos.pipeline_cooldown"
+
+    #: the time at each march step, the first at zero.
+    time: tuple[Q, ...]
+
+    #: the lumped fluid-and-steel temperature at each step.
+    fluid_temperature: tuple[Q, ...]
+
+    #: the thermal mass over the per-length conductance.
+    time_constant: Q
+
+    #: the layer-resistance U value, which the class's getter always recomputes.
+    calculated_u_value: Q
+
+    #: the U value the march ran with: the supplied one, or the layer value.
+    effective_u_value: Q
+
+    #: the interpolated crossing of the target temperature, absent when not reached.
+    time_to_reach_target: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PitzerHydrateFormationPressureResult(_HasWarnings):
     """Result of ``eos.pitzer_hydrate_formation_pressure``."""
 

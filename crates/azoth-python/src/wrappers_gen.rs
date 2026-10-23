@@ -9,10 +9,11 @@
 use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
-    cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole,
-    joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter, kilograms_per_mole,
-    kilograms_per_second, kilograms_per_square_meter_second, meters, meters_per_second,
-    moles_per_cubic_meter, pascal_seconds, pascals, seconds, watts,
+    cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_kilogram_kelvin,
+    joules_per_mole, joules_per_mole_kelvin, kelvins, kilograms_per_cubic_meter,
+    kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
+    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, seconds, watts,
+    watts_per_meter_kelvin, watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -2419,6 +2420,58 @@ pub fn pipe_beggs_and_brills(
         eos,
     )
     .map(|r| crate::transport_gen::PyPipeBeggsAndBrillsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Lumped pipeline cooldown after shutdown.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (internal_diameter, wall_thickness, insulation_thickness, coating_thickness, steel_density, steel_specific_heat, insulation_conductivity, fluid_density, fluid_specific_heat, initial_fluid_temperature, ambient_temperature, time_step, total_time, overall_u_value, use_layer_calculation, external_htc, target_temperature))]
+#[pyo3(
+    text_signature = "(internal_diameter, wall_thickness, insulation_thickness, coating_thickness, steel_density, steel_specific_heat, insulation_conductivity, fluid_density, fluid_specific_heat, initial_fluid_temperature, ambient_temperature, time_step, total_time, overall_u_value, use_layer_calculation, external_htc, target_temperature)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pipeline_cooldown(
+    py: Python<'_>,
+    internal_diameter: f64,
+    wall_thickness: f64,
+    insulation_thickness: f64,
+    coating_thickness: f64,
+    steel_density: f64,
+    steel_specific_heat: f64,
+    insulation_conductivity: f64,
+    fluid_density: f64,
+    fluid_specific_heat: f64,
+    initial_fluid_temperature: f64,
+    ambient_temperature: f64,
+    time_step: f64,
+    total_time: f64,
+    overall_u_value: Option<f64>,
+    use_layer_calculation: Option<bool>,
+    external_htc: Option<f64>,
+    target_temperature: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPipelineCooldownResult> {
+    azoth_eos::pipeline_cooldown::pipeline_cooldown(
+        meters(internal_diameter),
+        meters(wall_thickness),
+        meters(insulation_thickness),
+        meters(coating_thickness),
+        kilograms_per_cubic_meter(steel_density),
+        joules_per_kilogram_kelvin(steel_specific_heat),
+        watts_per_meter_kelvin(insulation_conductivity),
+        kilograms_per_cubic_meter(fluid_density),
+        joules_per_kilogram_kelvin(fluid_specific_heat),
+        kelvins(initial_fluid_temperature),
+        kelvins(ambient_temperature),
+        seconds(time_step),
+        seconds(total_time),
+        overall_u_value.map(watts_per_square_meter_kelvin),
+        use_layer_calculation,
+        external_htc.map(watts_per_square_meter_kelvin),
+        target_temperature.map(kelvins),
+    )
+    .map(|r| crate::transport_gen::PyPipelineCooldownResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

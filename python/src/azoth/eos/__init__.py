@@ -160,6 +160,7 @@ from azoth.core.result import (
     PhaseTransportResult,
     PhFlashResult,
     PipeBeggsAndBrillsResult,
+    PipelineCooldownResult,
     PitzerHydrateFormationPressureResult,
     PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
@@ -796,6 +797,54 @@ def pipe_beggs_and_brills(
         number_of_increments=number_of_increments,
         roughness=roughness,
         eos=eos,
+    )
+
+
+def pipeline_cooldown(
+    internal_diameter: Q,
+    wall_thickness: Q,
+    insulation_thickness: Q,
+    coating_thickness: Q,
+    steel_density: Q,
+    steel_specific_heat: Q,
+    insulation_conductivity: Q,
+    fluid_density: Q,
+    fluid_specific_heat: Q,
+    initial_fluid_temperature: Q,
+    ambient_temperature: Q,
+    time_step: Q,
+    total_time: Q,
+    overall_u_value: Q | None = None,
+    use_layer_calculation: bool | None = None,
+    external_htc: Q | None = None,
+    target_temperature: Q | None = None,
+) -> PipelineCooldownResult:
+    """The lumped pipeline cooldown march after shutdown.
+
+    NeqSim's ``PipelineCooldownCalculator``: an explicit-Euler march over one thermal mass,
+    with the U value supplied or computed from the steel, insulation and external-convection
+    layers, and the optional target crossing interpolated between nodes.
+
+    See :func:`azoth.eos.reference.pipeline_cooldown`.
+    """
+    return resolve("eos.pipeline_cooldown")(  # type: ignore[no-any-return]
+        internal_diameter=internal_diameter,
+        wall_thickness=wall_thickness,
+        insulation_thickness=insulation_thickness,
+        coating_thickness=coating_thickness,
+        steel_density=steel_density,
+        steel_specific_heat=steel_specific_heat,
+        insulation_conductivity=insulation_conductivity,
+        fluid_density=fluid_density,
+        fluid_specific_heat=fluid_specific_heat,
+        initial_fluid_temperature=initial_fluid_temperature,
+        ambient_temperature=ambient_temperature,
+        time_step=time_step,
+        total_time=total_time,
+        overall_u_value=overall_u_value,
+        use_layer_calculation=use_layer_calculation,
+        external_htc=external_htc,
+        target_temperature=target_temperature,
     )
 
 

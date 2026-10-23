@@ -123,6 +123,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPhFlashResult>()?;
     m.add_class::<crate::transport_gen::PyPhaseTransportResult>()?;
     m.add_class::<crate::transport_gen::PyPipeBeggsAndBrillsResult>()?;
+    m.add_class::<crate::transport_gen::PyPipelineCooldownResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerHydrateFormationPressureResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerHydrateFormationTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyPitzerPhaseResult>()?;
@@ -572,6 +573,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::pipe_beggs_and_brills,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pipeline_cooldown, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::pitzer_hydrate_formation_pressure,
         m

@@ -1159,6 +1159,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 11,
         "tests_skipped": 0,
     },
+    'eos.pipeline_cooldown': {
+        "calc_id": 'eos.pipeline_cooldown',
+        "name": 'Lumped pipeline cooldown after shutdown',
+        "spec": {'path': 'specs/models/eos/pipeline_cooldown.toml', 'sha256': '66175a8c62b86d390a410150aab5965869c4513343f516a92661d99943d68048'},
+        "code": [{'path': 'python/src/azoth/eos/reference/pipeline_cooldown.py', 'sha256': '6aa1cdec865902078827a02b6126cca774dcd36ef10cd78a320fdffb34fa2a4b'}, {'path': 'crates/azoth-eos/src/pipeline_cooldown.rs', 'sha256': '36b263f182e62aada0844281e4e084cc0690dacf9572bb28a1676bd94b034f3c'}],
+        "source": 'NeqSim master `PipelineCooldownCalculator`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 13,
+        "tests_skipped": 0,
+    },
     'eos.pitzer_hydrate_formation_pressure': {
         "calc_id": 'eos.pitzer_hydrate_formation_pressure',
         "name": 'Hydrate formation pressure of a Pitzer brine',
