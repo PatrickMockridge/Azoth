@@ -22,6 +22,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyAssayMassFractionsResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterisePlusFractionResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterizeToReferenceResult>()?;
+    m.add_class::<crate::transport_gen::PyCombineReservoirFluidsResult>()?;
     m.add_class::<crate::transport_gen::PyDelumpingResult>()?;
     m.add_class::<crate::transport_gen::PyLumpingResult>()?;
     m.add_class::<crate::transport_gen::PyOilAssayDerivationResult>()?;
@@ -276,6 +277,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyCharacterizationComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
@@ -302,6 +304,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::characterize_to_reference,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::combine_reservoir_fluids,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::delumping, m)?)?;

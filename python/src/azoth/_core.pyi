@@ -236,6 +236,33 @@ class ReferenceRow(TypedDict):
     moles: float | None
     density: float | None
 
+class FluidComponent(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    fluid: float
+    name: str
+    pseudo_component: bool
+    moles: float
+    molar_mass: float | None
+    density: float | None
+    normal_boiling_point: float | None
+    critical_temperature: float | None
+    critical_pressure: float | None
+    acentric_factor: float | None
+    critical_volume: float | None
+    racket_z: float | None
+    racket_z_cpa: float | None
+    parachor: float | None
+    critical_viscosity: float | None
+    triple_point_temperature: float | None
+    heat_of_fusion: float | None
+    ideal_gas_enthalpy_of_formation: float | None
+    cp_a: float | None
+    cp_b: float | None
+    cp_c: float | None
+    cp_d: float | None
+    attractive_m: float | None
+
 class Lump(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -315,6 +342,33 @@ class KComponent:
     fitting_id: str
     n_ld: float
     k: float
+
+@final
+class CharacterizationComponent:
+    """The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on."""
+
+    name: str
+    pseudo_component: bool
+    moles: Qty
+    molar_mass: Qty | None
+    density: Qty | None
+    normal_boiling_point: Qty | None
+    critical_temperature: Qty | None
+    critical_pressure: Qty | None
+    acentric_factor: float | None
+    critical_volume: Qty | None
+    racket_z: float | None
+    racket_z_cpa: float | None
+    parachor: float | None
+    critical_viscosity: Qty | None
+    triple_point_temperature: Qty | None
+    heat_of_fusion: Qty | None
+    ideal_gas_enthalpy_of_formation: Qty | None
+    cp_a: Qty | None
+    cp_b: Qty | None
+    cp_c: Qty | None
+    cp_d: Qty | None
+    attractive_m: float | None
 
 @final
 class SubFraction:
@@ -485,6 +539,12 @@ class CharacterizeToReferenceResult:
     group_moles: list[Qty]
     group_molar_mass: list[Qty]
     group_density: list[Qty]
+    warnings: list[Warning]
+
+@final
+class CombineReservoirFluidsResult:
+    components: list[CharacterizationComponent]
+    total_moles: Qty
     warnings: list[Warning]
 
 @final
@@ -2998,6 +3058,10 @@ def characterize_to_reference(
     delump_resolution: float | None = None,
     shared_imaginary_boundaries: bool | None = None,
 ) -> CharacterizeToReferenceResult: ...
+def combine_reservoir_fluids(
+    target_pseudo_components: float,
+    components: list[FluidComponent],
+) -> CombineReservoirFluidsResult: ...
 def delumping(lumps: list[Lump], resolution: float) -> DelumpingResult: ...
 def lumping(
     molar_mass: float,

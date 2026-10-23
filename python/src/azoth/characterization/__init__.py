@@ -17,6 +17,8 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`whitson_gamma_split` - the same, on Whitson's three-parameter gamma
 * :func:`lumping` - a cut table grouped into equal-mass lumps
 * :func:`delumping` - the same table rebuilt as a finer grid, lumping's inverse
+* :func:`combine_reservoir_fluids` - several fluids blended onto one pseudo-component slate
+* :func:`mixture_from_characterization` - the table rebuilt as a mixture a flash can take
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
 # Which implementation answers
@@ -37,6 +39,7 @@ from azoth.core.result import (
     AssayMassFractionsResult,
     CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
+    CombineReservoirFluidsResult,
     DelumpingResult,
     LumpingResult,
     OilAssayDerivationResult,
@@ -50,6 +53,8 @@ from azoth.core.result import (
     WhitsonGammaSplitResult,
 )
 from azoth.core.units import Q
+
+from .assembly import mixture_from_characterization as mixture_from_characterization
 
 if TYPE_CHECKING:
     from azoth import keycard
@@ -147,6 +152,7 @@ _SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
 _OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
 _TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
 _DELUMPING = "characterization.delumping"
+_COMBINE_RESERVOIR_FLUIDS = "characterization.combine_reservoir_fluids"
 
 
 def tbp_cut_boundaries(
@@ -238,6 +244,42 @@ def delumping(
     return resolve(_DELUMPING)(  # type: ignore[no-any-return]
         lumps=lumps,
         resolution=resolution,
+    )
+
+
+def combine_reservoir_fluids(
+    target_pseudo_components: int,
+    components: Sequence[Mapping[str, Any]],
+) -> CombineReservoirFluidsResult:
+    """Several reservoir fluids blended into one fluid with a common pseudo-component slate.
+
+    Each fluid's base components merge by name; its pseudo-components are pooled and the pooled
+    mass is cut into ``target_pseudo_components`` equal-mass groups, by the class's own quantile
+    rule - a boundary is the sorting key of the row whose running mass first reaches its target,
+    not an interpolation. Each fluid's own list is then distributed onto those groups and the
+    per-fluid groups blended.
+
+    ``components`` is a list of records, one per component of every fluid, keyed by the field
+    names the spec declares. A row states its fluid's index, whether it is a pseudo-component,
+    its name and its mole amount; a pseudo-component states its molar mass, density and the
+    properties the blend averages, and a base component states none of them - its constants are
+    the databank's at assembly.
+
+    The answer renames the combined pseudo-components ``PC1_PC``, ``PC2_PC`` and so on, over the
+    cuts that survive. A pool with no pseudo-component is the class's early return: the merged
+    base components and nothing else. Hand the answer to
+    :func:`mixture_from_characterization` for the fluid itself.
+
+    Raises:
+        OutOfRangeError: if ``target_pseudo_components`` is not a positive integer.
+        InvalidInputError: if a pseudo-component row states no molar mass or density, or a row's
+            fluid index is not a whole number from zero.
+
+    See :func:`azoth.characterization.reference.combine_reservoir_fluids`.
+    """
+    return resolve(_COMBINE_RESERVOIR_FLUIDS)(  # type: ignore[no-any-return]
+        target_pseudo_components=target_pseudo_components,
+        components=components,
     )
 
 

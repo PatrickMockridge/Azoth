@@ -14,10 +14,11 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyBrineMixingPointRow, PyChemicalWarningRow, PyDepositionSegmentRow,
-    PyFlowlineScaleSegment, PyHydrateRiskPoint, PyKComponent, PyMineralEquilibriumRow,
-    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
-    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
+    PyChemicalWarningRow, PyDepositionSegmentRow, PyFlowlineScaleSegment, PyHydrateRiskPoint,
+    PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
+    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
+    PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -210,6 +211,56 @@ impl From<&azoth_characterization::results::CharacterizeToReferenceResult>
                     unit: "kg/m**3".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `characterization.combine_reservoir_fluids`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CombineReservoirFluidsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCombineReservoirFluidsResult {
+    /// The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+    #[pyo3(get)]
+    pub components: Vec<PyCharacterizationComponent>,
+    /// The blended fluid's total mole amount: the merged base components' and the surviving cuts', which is the fluids' own total wherever every amount was positive.
+    #[pyo3(get)]
+    pub total_moles: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCombineReservoirFluidsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CombineReservoirFluidsResult(components={:?}, total_moles={:?}, {} warning(s))",
+            self.components,
+            self.total_moles,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CombineReservoirFluidsResult>
+    for PyCombineReservoirFluidsResult
+{
+    fn from(r: &azoth_characterization::results::CombineReservoirFluidsResult) -> Self {
+        Self {
+            components: r
+                .components
+                .iter()
+                .map(PyCharacterizationComponent::from)
+                .collect(),
+            total_moles: PyQty {
+                magnitude_si: r.total_moles,
+                unit: "mol".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

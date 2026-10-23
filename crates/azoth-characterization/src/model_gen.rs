@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/assay_mass_fractions.toml
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
+//!   - specs/models/characterization/combine_reservoir_fluids.toml
 //!   - specs/models/characterization/delumping.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/oil_assay_derivation.toml
@@ -2432,6 +2433,4097 @@ pub static CHARACTERIZE_TO_REFERENCE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: CHARACTERIZE_TO_REFERENCE_CHECKS,
     cases: CHARACTERIZE_TO_REFERENCE_CASES,
+};
+
+static COMBINE_RESERVOIR_FLUIDS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "target_pseudo_components",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a blended slate needs at least one pseudo-component",
+    },
+}];
+
+static COMBINE_RESERVOIR_FLUIDS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "two_fluids_four_cuts",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("target_pseudo_components", 4.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 31.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(10.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.095),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051677),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999998),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.121),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(790.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(414.475922),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(578.641215550352),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2727988.9774208274),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5399541584555858),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00042502314845048727),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(342.43999999999994),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7446930499949723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.9558261983471),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15239.835034109987),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-224540.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.3133187408154905),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6747448607644219),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00026982974186723975),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2785749585999997),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C10_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.134),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(810.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(435.346408),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(597.8421627041819),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2551653.650134722),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5765608817424321),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004583916865867946),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(372.86),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7475359045069125e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(227.46946656716418),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(18198.3192235634),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-243554.40000000002),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-4.336827930467438),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.740940411430583),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0002998119993919837),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.3290004766000008),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C12_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.161),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(475.81136200000003),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(632.6196888504257),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2268553.2412916385),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6506415507280492),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005139838892178307),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(436.03999999999996),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7584347940335684e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(253.42144453416148),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(24359.737806870566),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-283044.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-5.402299515365091),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8824225815375625),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003620111382431618),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.4296029416000007),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C15_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.206),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(860.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(535.159432),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(679.2025078436714),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1908280.7281481067),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7679332683757067),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005806612863974778),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(541.3399999999999),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.747701117336101e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(281.9686899029126),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(34679.39227160711),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-348861.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.4035909830104136),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.1329390772896282),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00046528902165658676),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5849359796),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(14.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC1_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(6.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.1046923076923077),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(754.6548438353944),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(388.40722321381344),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(551.8925016161036),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2981737.1474411204),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4958050449120961),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00038038503378737894),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2727222243088313),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2727222243088313),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(306.65742836149894),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.733786695716487e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(184.58747371785452),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(11768.308845064763),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-202174.96355620868),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.1204423750352168),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5993696757987125),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023519435985652),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.217132355601029),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC2_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.134),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(810.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(435.346408),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(597.8421627041819),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2551653.650134722),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5765608817424326),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004583916865867946),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(372.86),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7475359045069125e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(227.46946656716418),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(18198.3192235634),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-243554.40000000002),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-4.336827930467438),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.740940411430583),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0002998119993919837),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.3290004766000012),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC3_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.161),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0000000000001),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(475.81136200000003),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(632.6196888504257),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2268553.2412916385),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6506415507280492),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005139838892178307),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(436.03999999999996),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7584347940335684e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(253.42144453416148),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(24359.737806870566),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-283044.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-5.402299515365092),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8824225815375625),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003620111382431618),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.4296029416000007),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC4_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.206),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(860.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(535.159432),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(679.2025078436714),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1908280.7281481067),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7679332683757067),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005806612863974778),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(541.3399999999999),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.747701117336101e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(281.9686899029126),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(34679.39227160711),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-348861.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.4035909830104136),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.1329390772896282),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00046528902165658676),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5849359796),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "three_fluids_two_cuts",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("target_pseudo_components", 2.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 39.5)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(10.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.095),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051677),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999998),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.121),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(790.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(414.475922),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(578.641215550352),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2727988.9774208274),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5399541584555858),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00042502314845048727),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(342.43999999999994),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7446930499949723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.9558261983471),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15239.835034109987),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-224540.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.3133187408154905),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6747448607644219),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00026982974186723975),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2785749585999997),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C10_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.134),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(810.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(435.346408),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(597.8421627041819),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2551653.650134722),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5765608817424321),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004583916865867946),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(372.86),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7475359045069125e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(227.46946656716418),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(18198.3192235634),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-243554.40000000002),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-4.336827930467438),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.740940411430583),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0002998119993919837),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.3290004766000008),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C12_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.161),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(475.81136200000003),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(632.6196888504257),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2268553.2412916385),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6506415507280492),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005139838892178307),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(436.03999999999996),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7584347940335684e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(253.42144453416148),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(24359.737806870566),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-283044.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-5.402299515365091),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8824225815375625),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003620111382431618),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.4296029416000007),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C15_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.206),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(860.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(535.159432),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(679.2025078436714),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1908280.7281481067),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7679332683757067),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005806612863974778),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(541.3399999999999),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.747701117336101e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(281.9686899029126),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(34679.39227160711),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-348861.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.4035909830104136),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.1329390772896282),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00046528902165658676),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5849359796),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(5.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C11_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.147),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(455.305646),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(614.3319263860552),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2367234.5896631326),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6125183807858234),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004936172454586138),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.262768697570616),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.262768697570616),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(403.28),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.724958771537212e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(241.12250020408163),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(21162.084505758965),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-262568.19999999995),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.5391284892232604),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8113402649839278),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003297726101711889),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.3780724684000003),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C14_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.19),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(850.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(515.165),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(662.8903628259752),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1993534.2096324991),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7270963212337263),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005671583858376384),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26190397053276543),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26190397053276543),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(503.90000000000003),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7278881681382097e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(273.30387894736845),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(31002.932011136938),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-325460.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.768328927231521),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.0454830613570605),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00042860779838662175),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5314038550000004),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(14.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(5.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC1_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(12.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.12084),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(785.8993998796728),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(419.96512963023036),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(582.1728293212011),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2692276.135966299),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5468816201864919),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004301048855793881),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26818893928959403),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26818893928959403),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(348.95574975173787),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7369473486148396e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.8079609433962),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15878.375450241438),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-228613.22204568025),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-2.7325419283506456),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6908633980887726),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00027653236739278033),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2.0000000000000003e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2881536770299251),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC2_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(6.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.18153846153846157),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(849.3095384615385),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(505.99392832436666),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(656.1631581614789),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2076737.0671680723),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.709703183329363),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005501074647895763),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2631169355863779),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2631169355863779),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(489.19567796610164),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7473093167627767e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(268.1909012288135),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(29567.37169474121),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-316269.17033898295),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.1284439789683156),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.0092743044175692),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.000414155660367922),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1.9999999999999998e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5084253754771189),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "target_beyond_the_pool",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("target_pseudo_components", 9.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 31.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(10.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.095),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051677),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999998),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.121),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(790.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(414.475922),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(578.641215550352),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2727988.9774208274),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5399541584555858),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00042502314845048727),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(342.43999999999994),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7446930499949723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.9558261983471),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15239.835034109987),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-224540.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.3133187408154905),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6747448607644219),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00026982974186723975),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2785749585999997),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C10_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(4.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.134),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(810.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(435.346408),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(597.8421627041819),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2551653.650134722),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5765608817424321),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0004583916865867946),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2654065710242743),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(372.86),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7475359045069125e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(227.46946656716418),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(18198.3192235634),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-243554.40000000002),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-4.336827930467438),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.740940411430583),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0002998119993919837),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.3290004766000008),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C12_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.161),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(475.81136200000003),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(632.6196888504257),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2268553.2412916385),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6506415507280492),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005139838892178307),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(436.03999999999996),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7584347940335684e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(253.42144453416148),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(24359.737806870566),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-283044.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-5.402299515365091),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8824225815375625),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003620111382431618),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.4296029416000007),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C15_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.206),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(860.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(535.159432),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(679.2025078436714),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1908280.7281481067),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7679332683757067),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005806612863974778),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(541.3399999999999),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.747701117336101e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(281.9686899029126),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(34679.39227160711),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-348861.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.4035909830104136),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.1329390772896282),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00046528902165658676),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5849359796),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(14.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC1_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.09500000000000001),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC2_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051673),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999995),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC3_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(5.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.13045454545454546),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(804.8456933500452),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(431.2136084297977),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(594.0399672907724),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2586571.790748193),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5672683539087084),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00044995072537182626),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26600426909670655),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26600426909670655),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(365.164905923345),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7468167712749723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(223.29214848083623),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(17449.93611501177),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-238744.6373519164),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-4.077919334060708),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.7241954742237422),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0002922276373839823),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2.0000000000000003e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.316244753231359),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC4_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.161),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0000000000001),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(475.81136200000003),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(632.6196888504257),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2268553.2412916385),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.6506415507280492),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005139838892178307),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2635756798222246),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(436.03999999999996),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7584347940335684e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(253.42144453416148),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(24359.737806870566),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-283044.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-5.402299515365092),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.8824225815375625),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.0003620111382431618),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.4296029416000007),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC5_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.206),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(860.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(535.159432),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(679.2025078436714),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(1908280.7281481067),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.7679332683757067),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.0005806612863974778),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26341820154357604),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(541.3399999999999),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.747701117336101e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(281.9686899029126),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(34679.39227160711),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-348861.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.4035909830104136),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(1.1329390772896282),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00046528902165658676),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.5849359796),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "base_components_only",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("target_pseudo_components", 3.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 11.5)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(5.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("propane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.5),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(7.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("CO2"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("propane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.5),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "one_fluid_without_pseudo_components",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("target_pseudo_components", 3.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 24.5)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(10.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.095),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051677),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999998),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.121),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(790.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(414.475922),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(578.641215550352),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2727988.9774208274),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5399541584555858),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00042502314845048727),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(342.43999999999994),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7446930499949723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.9558261983471),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15239.835034109987),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-224540.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.3133187408154905),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6747448607644219),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00026982974186723975),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(1e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2785749585999997),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(5.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fluid",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "components",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("methane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(15.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("ethane"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(false),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC1_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.09500000000000001),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(730.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(369.89575),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(532.4869590128519),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(3175587.5890185838),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.4649331015568601),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00034747431090007935),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.27686767147391916),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(281.6),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7287722379654753e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(164.64930789473686),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(9338.709933429633),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-186513.0),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(0.4575842778133502),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.5464061380584477),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00021114887891555186),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.1737600510000004),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC2_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.9999999999999998),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.107),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(760.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(390.950686),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(555.0499224705925),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2938783.4886051677),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.49984490317144825),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.000386355773093576),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.2714020853468077),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(309.68),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7312148132748654e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(188.77682551401867),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(12059.681211907304),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-204064.19999999995),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-1.3621738501413942),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.605977209372073),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00023784221141367085),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2227831704),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("PC3_PC"),
+                    },
+                    RecordField {
+                        name: "pseudo_component",
+                        value: FieldValue::Flag(true),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.121),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(790.0),
+                    },
+                    RecordField {
+                        name: "normal_boiling_point",
+                        value: FieldValue::Number(414.4759220000001),
+                    },
+                    RecordField {
+                        name: "critical_temperature",
+                        value: FieldValue::Number(578.641215550352),
+                    },
+                    RecordField {
+                        name: "critical_pressure",
+                        value: FieldValue::Number(2727988.9774208274),
+                    },
+                    RecordField {
+                        name: "acentric_factor",
+                        value: FieldValue::Number(0.5399541584555858),
+                    },
+                    RecordField {
+                        name: "critical_volume",
+                        value: FieldValue::Number(0.00042502314845048727),
+                    },
+                    RecordField {
+                        name: "racket_z",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "racket_z_cpa",
+                        value: FieldValue::Number(0.26776937194421985),
+                    },
+                    RecordField {
+                        name: "parachor",
+                        value: FieldValue::Number(342.43999999999994),
+                    },
+                    RecordField {
+                        name: "critical_viscosity",
+                        value: FieldValue::Number(2.7446930499949723e-05),
+                    },
+                    RecordField {
+                        name: "triple_point_temperature",
+                        value: FieldValue::Number(210.95582619834713),
+                    },
+                    RecordField {
+                        name: "heat_of_fusion",
+                        value: FieldValue::Number(15239.835034109987),
+                    },
+                    RecordField {
+                        name: "ideal_gas_enthalpy_of_formation",
+                        value: FieldValue::Number(-224540.6),
+                    },
+                    RecordField {
+                        name: "cp_a",
+                        value: FieldValue::Number(-3.31331874081549),
+                    },
+                    RecordField {
+                        name: "cp_b",
+                        value: FieldValue::Number(0.6747448607644219),
+                    },
+                    RecordField {
+                        name: "cp_c",
+                        value: FieldValue::Number(-0.00026982974186723975),
+                    },
+                    RecordField {
+                        name: "cp_d",
+                        value: FieldValue::Number(2e-10),
+                    },
+                    RecordField {
+                        name: "attractive_m",
+                        value: FieldValue::Number(1.2785749585999997),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `characterization.combine_reservoir_fluids`.
+pub static COMBINE_RESERVOIR_FLUIDS_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.combine_reservoir_fluids",
+    kind: "direct",
+    algorithm: None,
+    checks: COMBINE_RESERVOIR_FLUIDS_CHECKS,
+    cases: COMBINE_RESERVOIR_FLUIDS_CASES,
 };
 
 static DELUMPING_CHECKS: &[SpecCheck] = &[];
@@ -8532,6 +12624,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &ASSAY_MASS_FRACTIONS_SPEC,
     &CHARACTERISE_PLUS_FRACTION_SPEC,
     &CHARACTERIZE_TO_REFERENCE_SPEC,
+    &COMBINE_RESERVOIR_FLUIDS_SPEC,
     &DELUMPING_SPEC,
     &LUMPING_SPEC,
     &OIL_ASSAY_DERIVATION_SPEC,

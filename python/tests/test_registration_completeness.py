@@ -492,7 +492,9 @@ def _record_output_from_fields() -> dict[str, tuple[str, ...]]:
     """
     text = RECORD_OUTPUTS_GEN.read_text(encoding="utf-8")
     out: dict[str, tuple[str, ...]] = {}
-    for match in re.finditer(r"impl From<&[\w:]+> for Py(\w+) \{", text):
+    # **The header may be wrapped by rustfmt** once the kernel path is long enough, so the
+    # whitespace between the path and `for` is not part of the declaration.
+    for match in re.finditer(r"impl From<&[\w:]+>\s+for Py(\w+)\s*\{", text):
         body = _struct_body(text, match)
         # **Anchored to the start of a line**, because the signature above it ends in
         # `-> Self {` - an unanchored search takes that brace for the initialiser's and reads

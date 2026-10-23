@@ -8,6 +8,7 @@
 use azoth_core::{CalcResult, Warning};
 
 use crate::characterise_plus_fraction::PlusModel;
+use crate::component_row::CharacterizationComponent;
 use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
 
 /// Result of `characterization.characterise_plus_fraction`.
@@ -439,6 +440,27 @@ pub struct DelumpingResult {
 impl CalcResult for DelumpingResult {
     const CALC_ID: &'static str = "characterization.delumping";
     const FIELDS: &'static [&'static str] = &["fractions", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.combine_reservoir_fluids`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CombineReservoirFluidsResult {
+    /// The blended fluid's components: its merged base components first, then the combined
+    /// pseudo-components in ascending cut order, renamed `PC1_PC`, `PC2_PC` and so on.
+    pub components: Vec<CharacterizationComponent>,
+    /// The blended fluid's total mole amount, base and pseudo.
+    pub total_moles: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CombineReservoirFluidsResult {
+    const CALC_ID: &'static str = "characterization.combine_reservoir_fluids";
+    const FIELDS: &'static [&'static str] = &["components", "total_moles", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

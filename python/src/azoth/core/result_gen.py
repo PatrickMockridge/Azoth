@@ -24,6 +24,7 @@ from typing import ClassVar
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
     BrineMixingPointRow,
+    CharacterizationComponent,
     ChemicalWarningRow,
     DepositionSegmentRow,
     FlowlineScaleSegment,
@@ -120,6 +121,22 @@ class CharacterizeToReferenceResult(_HasWarnings):
 
     #: Each group's density, the mass over the volume its rows occupy.
     group_density: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CombineReservoirFluidsResult(_HasWarnings):
+    """Result of ``characterization.combine_reservoir_fluids``."""
+
+    CALC_ID: ClassVar[str] = "characterization.combine_reservoir_fluids"
+
+    #: The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+    components: tuple[CharacterizationComponent, ...]
+
+    #: The blended fluid's total mole amount: the merged base components' and the surviving cuts', which is the fluids' own total wherever every amount was positive.
+    total_moles: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

@@ -1,0 +1,227 @@
+id = "characterization.combine_reservoir_fluids"
+name = "Several reservoir fluids blended onto one pseudo-component slate"
+kind = "direct"
+assumptions = [
+    "**this is Pedersen's Chapter 5.5 blend.** Several reservoir fluids, each cut into its own pseudo-components, become one fluid on a shared slate, so a single equation of state can span a field whose fluids were not characterised alike.",
+    "**the base components merge by name, in the fluids' own order.** Two fluids both carrying methane give one methane at the sum of the amounts, and the first fluid to name a component decides where it sits in the answer.",
+    "**the cut points are equal-mass quantiles of the pooled pseudo-components, and they are keys.** A boundary is the sorting key of the row whose running mass first reaches its target, not an interpolation between two rows.",
+    "**a target nothing reaches is an infinity**, so a slate larger than the pool still has its groups: the pool fills the cuts it can, and the remaining groups are empty rather than the request being refused.",
+    "**each fluid is cut on the pooled boundaries, not on its own.** The same keys bin every fluid, and a fluid's cut is then weighted by that fluid's share of the pooled mass and by the cut's mole fraction within the fluid.",
+    "**four properties are weighted that way - the boiling point, Tc, Pc and omega - and thirteen are mass-weighted.** A group's molar mass is its mass over its moles, and its density the mass over the volume its rows occupy.",
+    "**a density of zero is a row that takes part in neither the volume nor the density-sum.** A group whose rows leave both at nothing has no density, and a cut without one is not a component.",
+    "**the density decides whether a cut survives.** A profile whose moles, molar mass or density is not positive is dropped, and the survivors are renamed `PC1_PC`, `PC2_PC` - positions in the answer rather than in the slate.",
+    "**a row whose mole amount is not positive is not on the grid.** `extractComponents` skips it for a base component and a pseudo-component alike, so a zero amount is an absence rather than a contribution of nothing.",
+    "**a pseudo row must state its molar mass and its density.** The class reads both from a `SystemInterface` and has no absent spelling for either; a record can leave a field out, and one that does is refused rather than defaulted.",
+    "**the other properties may be absent, and absent is left out of the weighted mean.** That is the class's `isFinite` test: a row that states no value neither contributes to the mean nor drags it to zero.",
+    "**`cp_d` is the number `getCpD()` states, and that getter adds `1e-10` to the stored coefficient.** The class reads sources through the getter and assigns through the setter, so the answer's getter adds the offset a second time - reproduced, not corrected.",
+    "**the fitted `m` rewrites the acentric factor.** `applyTo` assigns the averaged omega and then `setm`, whose side effect solves `-0.176 w**2 + 1.574 w + (0.48 - m)` from a 0.25 seed - so a cut's omega is the one its `m` implies, not the mean.",
+    "**the empty pool is the class's early return.** No pseudo-component in any fluid means the answer is the merged base components, and the requested slate never appears in it.",
+    "**base rows carry no properties.** Their constants are the databank's when a mixture is assembled, and a row that restated them would be a second home for numbers the table already holds.",
+    "**the answer is a table, not a fluid.** `mixture_from_characterization` turns these rows into a mixture: base names resolved from the databank, pseudo-components built from exactly these numbers.",
+    "the blend is a bookkeeping choice and not a measurement: one fluid and one equation of state, the same mass either way.",
+]
+references = [
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5.5, the mixing of several fluids onto one pseudo-component slate.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `combineReservoirFluids`, with its extraction, boundary, distribution and blend helpers, is the port source.",
+    "`validation/neqsim/captures/characterization_fluid_rebuild_probe.tsv` - five blends from `validation/neqsim/CharacterizationFluidRebuildProbe.java`: two and three fluids, a target beyond the pool, a pool of base components only, and one fluid without a pseudo-component.",
+]
+[source]
+standard = "NeqSim master `PseudoComponentCombiner.combineReservoirFluids`"
+edition = "Its `combineReservoirFluids(Collection)` and the helpers it reaches. The class returns a `SystemInterface`; the rows it would have read out of one are this id's input, and the fluid is rebuilt from them by `mixture_from_characterization`."
+[inputs]
+[inputs.target_pseudo_components]
+unit = "dimensionless"
+description = "How many pseudo-components the blended fluid has. A group nothing reaches is empty, so a target beyond the pool is a smaller answer rather than a refusal.\n"
+[inputs.components]
+type = "record_list"
+row_type = "FluidComponent"
+description = "The fluids' components, one record each, in the order the fluids carry them. A record with a positive mole amount in the same fluid twice is one component at the summed amount; a non-positive amount is a row the class skips.\n"
+[inputs.components.fields.fluid]
+unit = "dimensionless"
+description = "Which fluid the row belongs to, 0-based. Fluids are ordered by first appearance, and a whole number from zero is required: a fractional or negative index is not a fluid.\n"
+[inputs.components.fields.name]
+type = "string"
+description = "The component's name. A base component merges by it across the fluids; a pseudo-component's is its own fluid's name and does not survive into the answer.\n"
+[inputs.components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the row is a TBP or plus fraction rather than a base component. A base row's properties are absent and are the databank's at assembly.\n"
+[inputs.components.fields.moles]
+unit = "mol"
+description = "The component's mole amount. Only a positive one is read; a zero or negative amount is a row that is not on the grid.\n"
+[inputs.components.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "The pseudo-component's molar mass, which is what the row's mass is and what its sorting key falls back to. Required on a pseudo row and ignored on a base row.\n"
+[inputs.components.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The pseudo-component's normal liquid density, which a group's volume is the mass over. Required on a pseudo row and ignored on a base row.\n"
+[inputs.components.fields.normal_boiling_point]
+unit = "K"
+optional = true
+description = "The pseudo-component's normal boiling point, its sorting key where it states a finite positive one. A row without one sorts by its molar mass.\n"
+[inputs.components.fields.critical_temperature]
+unit = "K"
+optional = true
+description = "The pseudo-component's critical temperature, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.critical_pressure]
+unit = "Pa"
+optional = true
+description = "The pseudo-component's critical pressure, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.acentric_factor]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's acentric factor, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.critical_volume]
+unit = "m**3/mol"
+optional = true
+description = "The pseudo-component's critical molar volume, mass-weighted into the group's.\n"
+[inputs.components.fields.racket_z]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's Rackett compressibility, mass-weighted into the group's and read again when the row becomes a component.\n"
+[inputs.components.fields.racket_z_cpa]
+unit = "dimensionless"
+optional = true
+description = "The same compressibility on the CPA basis, mass-weighted into the group's.\n"
+[inputs.components.fields.parachor]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's parachor, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`, mass-weighted into the group's.\n"
+[inputs.components.fields.critical_viscosity]
+unit = "Pa*s"
+optional = true
+description = "The pseudo-component's critical viscosity, mass-weighted into the group's.\n"
+[inputs.components.fields.triple_point_temperature]
+unit = "K"
+optional = true
+description = "The pseudo-component's triple-point temperature, mass-weighted into the group's.\n"
+[inputs.components.fields.heat_of_fusion]
+unit = "J/mol"
+optional = true
+description = "The pseudo-component's heat of fusion, mass-weighted into the group's.\n"
+[inputs.components.fields.ideal_gas_enthalpy_of_formation]
+unit = "J/mol"
+optional = true
+description = "The pseudo-component's ideal-gas enthalpy of formation, mass-weighted into the group's. It has no home on a `Component` and is dropped when a mixture is assembled.\n"
+[inputs.components.fields.cp_a]
+unit = "J/(mol*K)"
+optional = true
+description = "The constant term of the pseudo-component's ideal-gas heat capacity, mass-weighted into the group's.\n"
+[inputs.components.fields.cp_b]
+unit = "J/(mol*K**2)"
+optional = true
+description = "The coefficient of `T` in the pseudo-component's ideal-gas heat capacity.\n"
+[inputs.components.fields.cp_c]
+unit = "J/(mol*K**3)"
+optional = true
+description = "The coefficient of `T**2` in the pseudo-component's ideal-gas heat capacity.\n"
+[inputs.components.fields.cp_d]
+unit = "J/(mol*K**4)"
+optional = true
+description = "The coefficient of `T**3` in the pseudo-component's ideal-gas heat capacity, as `getCpD()` states it: the stored coefficient plus `1e-10`.\n"
+[inputs.components.fields.attractive_m]
+unit = "dimensionless"
+optional = true
+description = "The fitted coefficient of the pseudo-component's Soave alpha function, which NeqSim's `addTBPfraction` installs in place of the acentric factor's correlation.\n"
+[outputs]
+[outputs.components]
+type = "record_list"
+description = "The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.\n"
+[outputs.components.fields.name]
+type = "string"
+description = "The component's name: a base component's own, or the cut's position in the answer.\n"
+[outputs.components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the row is a pseudo-component. A base row carries its name and amount and no properties.\n"
+[outputs.components.fields.moles]
+unit = "mol"
+description = "The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.\n"
+[outputs.components.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "The cut's molar mass, its accumulated mass over its accumulated moles.\n"
+[outputs.components.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The cut's normal liquid density, the mass over the volume its rows occupy.\n"
+[outputs.components.fields.normal_boiling_point]
+unit = "K"
+optional = true
+description = "The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.\n"
+[outputs.components.fields.critical_temperature]
+unit = "K"
+optional = true
+description = "The cut's critical temperature, weighted the same way.\n"
+[outputs.components.fields.critical_pressure]
+unit = "Pa"
+optional = true
+description = "The cut's critical pressure, weighted the same way.\n"
+[outputs.components.fields.acentric_factor]
+unit = "dimensionless"
+optional = true
+description = "The cut's acentric factor, weighted the same way.\n"
+[outputs.components.fields.critical_volume]
+unit = "m**3/mol"
+optional = true
+description = "The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.\n"
+[outputs.components.fields.racket_z]
+unit = "dimensionless"
+optional = true
+description = "The cut's Rackett compressibility, mass-weighted.\n"
+[outputs.components.fields.racket_z_cpa]
+unit = "dimensionless"
+optional = true
+description = "The cut's CPA Rackett compressibility, mass-weighted.\n"
+[outputs.components.fields.parachor]
+unit = "dimensionless"
+optional = true
+description = "The cut's parachor, mass-weighted.\n"
+[outputs.components.fields.critical_viscosity]
+unit = "Pa*s"
+optional = true
+description = "The cut's critical viscosity, mass-weighted.\n"
+[outputs.components.fields.triple_point_temperature]
+unit = "K"
+optional = true
+description = "The cut's triple-point temperature, mass-weighted.\n"
+[outputs.components.fields.heat_of_fusion]
+unit = "J/mol"
+optional = true
+description = "The cut's heat of fusion, mass-weighted.\n"
+[outputs.components.fields.ideal_gas_enthalpy_of_formation]
+unit = "J/mol"
+optional = true
+description = "The cut's ideal-gas enthalpy of formation, mass-weighted.\n"
+[outputs.components.fields.cp_a]
+unit = "J/(mol*K)"
+optional = true
+description = "The constant term of the cut's ideal-gas heat capacity, mass-weighted.\n"
+[outputs.components.fields.cp_b]
+unit = "J/(mol*K**2)"
+optional = true
+description = "The coefficient of `T` in the cut's ideal-gas heat capacity.\n"
+[outputs.components.fields.cp_c]
+unit = "J/(mol*K**3)"
+optional = true
+description = "The coefficient of `T**2` in the cut's ideal-gas heat capacity.\n"
+[outputs.components.fields.cp_d]
+unit = "J/(mol*K**4)"
+optional = true
+description = "The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.\n"
+[outputs.components.fields.attractive_m]
+unit = "dimensionless"
+optional = true
+description = "The fitted Soave coefficient of the cut's alpha function, mass-weighted.\n"
+[outputs.total_moles]
+unit = "mol"
+description = "The blended fluid's total mole amount: the merged base components' and the surviving cuts', which is the fluids' own total wherever every amount was positive.\n"
+[[valid_range]]
+quantity = "target_pseudo_components"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a blended slate needs at least one pseudo-component\n"
+[implementations]
+python = "azoth.characterization.combine_reservoir_fluids"
+rust = "azoth_characterization::combine_reservoir_fluids"

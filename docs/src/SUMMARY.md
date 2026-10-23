@@ -27,6 +27,7 @@
   - [An oil assay's declared fractions resolved to a mass basis](./characterization/assay_mass_fractions.md)
   - [A C7+ end characterised end to end: model, split and lumps](./characterization/characterise_plus_fraction.md)
   - [A fluid's pseudo-components re-cut onto another fluid's slate](./characterization/characterize_to_reference.md)
+  - [Several reservoir fluids blended onto one pseudo-component slate](./characterization/combine_reservoir_fluids.md)
   - [A lumped pseudo-component table split into a finer grid](./characterization/delumping.md)
   - [A cut table grouped into equal-mass lumps](./characterization/lumping.md)
   - [An assay's cuts derived to molar masses and moles, one component each](./characterization/oil_assay_derivation.md)

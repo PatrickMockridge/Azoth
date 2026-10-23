@@ -532,7 +532,9 @@ def record_rows_argument(
     for field, kernel_type in fields:
         optional = kernel_type.startswith("Option<")
         inner = kernel_type[len("Option<") : -1] if optional else kernel_type
-        if inner in ("f64", "String"):
+        # A flag and a name cross as themselves, like a magnitude: only a dimensioned field
+        # needs a constructor, and a `bool` has no unit to read one from.
+        if inner in ("f64", "String", "bool"):
             arms.append(f"{field}: row.{field}")
             continue
         ctor = base_ctor((declared.get(field) or {}).get("unit"))

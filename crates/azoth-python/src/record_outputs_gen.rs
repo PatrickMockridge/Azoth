@@ -94,6 +94,190 @@ impl From<&azoth_eos::results::BrineMixingPointRow> for PyBrineMixingPointRow {
     }
 }
 
+/// The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterizationComponent"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterizationComponent {
+    /// The component's name: a base component's own, or the cut's position in the answer.
+    #[pyo3(get)]
+    pub name: String,
+    /// Whether the row is a pseudo-component. A base row carries its name and amount and no properties.
+    #[pyo3(get)]
+    pub pseudo_component: bool,
+    /// The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.
+    #[pyo3(get)]
+    pub moles: PyQty,
+    /// The cut's molar mass, its accumulated mass over its accumulated moles.
+    #[pyo3(get)]
+    pub molar_mass: Option<PyQty>,
+    /// The cut's normal liquid density, the mass over the volume its rows occupy.
+    #[pyo3(get)]
+    pub density: Option<PyQty>,
+    /// The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.
+    #[pyo3(get)]
+    pub normal_boiling_point: Option<PyQty>,
+    /// The cut's critical temperature, weighted the same way.
+    #[pyo3(get)]
+    pub critical_temperature: Option<PyQty>,
+    /// The cut's critical pressure, weighted the same way.
+    #[pyo3(get)]
+    pub critical_pressure: Option<PyQty>,
+    /// The cut's acentric factor, weighted the same way.
+    #[pyo3(get)]
+    pub acentric_factor: Option<f64>,
+    /// The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.
+    #[pyo3(get)]
+    pub critical_volume: Option<PyQty>,
+    /// The cut's Rackett compressibility, mass-weighted.
+    #[pyo3(get)]
+    pub racket_z: Option<f64>,
+    /// The cut's CPA Rackett compressibility, mass-weighted.
+    #[pyo3(get)]
+    pub racket_z_cpa: Option<f64>,
+    /// The cut's parachor, mass-weighted.
+    #[pyo3(get)]
+    pub parachor: Option<f64>,
+    /// The cut's critical viscosity, mass-weighted.
+    #[pyo3(get)]
+    pub critical_viscosity: Option<PyQty>,
+    /// The cut's triple-point temperature, mass-weighted.
+    #[pyo3(get)]
+    pub triple_point_temperature: Option<PyQty>,
+    /// The cut's heat of fusion, mass-weighted.
+    #[pyo3(get)]
+    pub heat_of_fusion: Option<PyQty>,
+    /// The cut's ideal-gas enthalpy of formation, mass-weighted.
+    #[pyo3(get)]
+    pub ideal_gas_enthalpy_of_formation: Option<PyQty>,
+    /// The constant term of the cut's ideal-gas heat capacity, mass-weighted.
+    #[pyo3(get)]
+    pub cp_a: Option<PyQty>,
+    /// The coefficient of `T` in the cut's ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_b: Option<PyQty>,
+    /// The coefficient of `T**2` in the cut's ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_c: Option<PyQty>,
+    /// The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.
+    #[pyo3(get)]
+    pub cp_d: Option<PyQty>,
+    /// The fitted Soave coefficient of the cut's alpha function, mass-weighted.
+    #[pyo3(get)]
+    pub attractive_m: Option<f64>,
+}
+
+#[pymethods]
+impl PyCharacterizationComponent {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterizationComponent(name={}, pseudo_component={:?}, moles={:?}, molar_mass={:?}, density={:?}, normal_boiling_point={:?}, critical_temperature={:?}, critical_pressure={:?}, acentric_factor={:?}, critical_volume={:?}, racket_z={:?}, racket_z_cpa={:?}, parachor={:?}, critical_viscosity={:?}, triple_point_temperature={:?}, heat_of_fusion={:?}, ideal_gas_enthalpy_of_formation={:?}, cp_a={:?}, cp_b={:?}, cp_c={:?}, cp_d={:?}, attractive_m={:?})",
+            self.name,
+            self.pseudo_component,
+            self.moles,
+            self.molar_mass,
+            self.density,
+            self.normal_boiling_point,
+            self.critical_temperature,
+            self.critical_pressure,
+            self.acentric_factor,
+            self.critical_volume,
+            self.racket_z,
+            self.racket_z_cpa,
+            self.parachor,
+            self.critical_viscosity,
+            self.triple_point_temperature,
+            self.heat_of_fusion,
+            self.ideal_gas_enthalpy_of_formation,
+            self.cp_a,
+            self.cp_b,
+            self.cp_c,
+            self.cp_d,
+            self.attractive_m
+        )
+    }
+}
+
+impl From<&azoth_characterization::component_row::CharacterizationComponent>
+    for PyCharacterizationComponent
+{
+    fn from(row: &azoth_characterization::component_row::CharacterizationComponent) -> Self {
+        Self {
+            name: row.name.clone(),
+            pseudo_component: row.pseudo_component,
+            moles: PyQty {
+                magnitude_si: row.moles,
+                unit: "mol".to_string(),
+            },
+            molar_mass: row.molar_mass.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg/mol".to_string(),
+            }),
+            density: row.density.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg/m**3".to_string(),
+            }),
+            normal_boiling_point: row.normal_boiling_point.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            critical_temperature: row.critical_temperature.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            critical_pressure: row.critical_pressure.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            acentric_factor: row.acentric_factor,
+            critical_volume: row.critical_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/mol".to_string(),
+            }),
+            racket_z: row.racket_z,
+            racket_z_cpa: row.racket_z_cpa,
+            parachor: row.parachor,
+            critical_viscosity: row.critical_viscosity.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa*s".to_string(),
+            }),
+            triple_point_temperature: row.triple_point_temperature.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            heat_of_fusion: row.heat_of_fusion.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/mol".to_string(),
+            }),
+            ideal_gas_enthalpy_of_formation: row.ideal_gas_enthalpy_of_formation.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/mol".to_string(),
+            }),
+            cp_a: row.cp_a.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K)".to_string(),
+            }),
+            cp_b: row.cp_b.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**2)".to_string(),
+            }),
+            cp_c: row.cp_c.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**3)".to_string(),
+            }),
+            cp_d: row.cp_d.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**4)".to_string(),
+            }),
+            attractive_m: row.attractive_m,
+        }
+    }
+}
+
 /// The class's warning map, in insertion order.
 #[pyclass(
     frozen,

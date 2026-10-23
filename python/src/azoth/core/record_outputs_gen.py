@@ -44,6 +44,77 @@ class BrineMixingPointRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CharacterizationComponent:
+    """The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on."""
+
+    #: The component's name: a base component's own, or the cut's position in the answer.
+    name: str
+
+    #: Whether the row is a pseudo-component. A base row carries its name and amount and no properties.
+    pseudo_component: bool
+
+    #: The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.
+    moles: Q
+
+    #: The cut's molar mass, its accumulated mass over its accumulated moles.
+    molar_mass: Q | None
+
+    #: The cut's normal liquid density, the mass over the volume its rows occupy.
+    density: Q | None
+
+    #: The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.
+    normal_boiling_point: Q | None
+
+    #: The cut's critical temperature, weighted the same way.
+    critical_temperature: Q | None
+
+    #: The cut's critical pressure, weighted the same way.
+    critical_pressure: Q | None
+
+    #: The cut's acentric factor, weighted the same way.
+    acentric_factor: float | None
+
+    #: The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.
+    critical_volume: Q | None
+
+    #: The cut's Rackett compressibility, mass-weighted.
+    racket_z: float | None
+
+    #: The cut's CPA Rackett compressibility, mass-weighted.
+    racket_z_cpa: float | None
+
+    #: The cut's parachor, mass-weighted.
+    parachor: float | None
+
+    #: The cut's critical viscosity, mass-weighted.
+    critical_viscosity: Q | None
+
+    #: The cut's triple-point temperature, mass-weighted.
+    triple_point_temperature: Q | None
+
+    #: The cut's heat of fusion, mass-weighted.
+    heat_of_fusion: Q | None
+
+    #: The cut's ideal-gas enthalpy of formation, mass-weighted.
+    ideal_gas_enthalpy_of_formation: Q | None
+
+    #: The constant term of the cut's ideal-gas heat capacity, mass-weighted.
+    cp_a: Q | None
+
+    #: The coefficient of `T` in the cut's ideal-gas heat capacity.
+    cp_b: Q | None
+
+    #: The coefficient of `T**2` in the cut's ideal-gas heat capacity.
+    cp_c: Q | None
+
+    #: The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.
+    cp_d: Q | None
+
+    #: The fitted Soave coefficient of the cut's alpha function, mass-weighted.
+    attractive_m: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ChemicalWarningRow:
     """The class's warning map, in insertion order."""
 

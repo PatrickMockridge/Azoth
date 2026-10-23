@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/assay_mass_fractions.toml
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
+//!   - specs/models/characterization/combine_reservoir_fluids.toml
 //!   - specs/models/characterization/delumping.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/oil_assay_derivation.toml
@@ -297,6 +298,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "characterization.characterize_to_reference",
         "delump_resolution",
+        "dimensionless",
+    ),
+    (
+        "characterization.combine_reservoir_fluids",
+        "target_pseudo_components",
         "dimensionless",
     ),
     ("characterization.delumping", "resolution", "dimensionless"),

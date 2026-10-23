@@ -64,6 +64,57 @@ pub struct BrineAnalysis {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FluidComponent {
+    #[pyo3(item)]
+    pub fluid: f64,
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub pseudo_component: bool,
+    #[pyo3(item)]
+    pub moles: f64,
+    #[pyo3(item)]
+    pub molar_mass: Option<f64>,
+    #[pyo3(item)]
+    pub density: Option<f64>,
+    #[pyo3(item)]
+    pub normal_boiling_point: Option<f64>,
+    #[pyo3(item)]
+    pub critical_temperature: Option<f64>,
+    #[pyo3(item)]
+    pub critical_pressure: Option<f64>,
+    #[pyo3(item)]
+    pub acentric_factor: Option<f64>,
+    #[pyo3(item)]
+    pub critical_volume: Option<f64>,
+    #[pyo3(item)]
+    pub racket_z: Option<f64>,
+    #[pyo3(item)]
+    pub racket_z_cpa: Option<f64>,
+    #[pyo3(item)]
+    pub parachor: Option<f64>,
+    #[pyo3(item)]
+    pub critical_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub triple_point_temperature: Option<f64>,
+    #[pyo3(item)]
+    pub heat_of_fusion: Option<f64>,
+    #[pyo3(item)]
+    pub ideal_gas_enthalpy_of_formation: Option<f64>,
+    #[pyo3(item)]
+    pub cp_a: Option<f64>,
+    #[pyo3(item)]
+    pub cp_b: Option<f64>,
+    #[pyo3(item)]
+    pub cp_c: Option<f64>,
+    #[pyo3(item)]
+    pub cp_d: Option<f64>,
+    #[pyo3(item)]
+    pub attractive_m: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct Lump {
     #[pyo3(item)]
     pub name: String,

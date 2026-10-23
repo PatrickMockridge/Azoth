@@ -23,6 +23,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "characterization.assay_mass_fractions" => azoth_characterization::results::AssayMassFractionsResult::FIELDS.to_vec(),
         "characterization.characterise_plus_fraction" => azoth_characterization::results::CharacterisePlusFractionResult::FIELDS.to_vec(),
         "characterization.characterize_to_reference" => azoth_characterization::results::CharacterizeToReferenceResult::FIELDS.to_vec(),
+        "characterization.combine_reservoir_fluids" => azoth_characterization::results::CombineReservoirFluidsResult::FIELDS.to_vec(),
         "characterization.delumping" => azoth_characterization::results::DelumpingResult::FIELDS.to_vec(),
         "characterization.lumping" => azoth_characterization::results::LumpingResult::FIELDS.to_vec(),
         "characterization.oil_assay_derivation" => azoth_characterization::results::OilAssayDerivationResult::FIELDS.to_vec(),

@@ -12,8 +12,12 @@
 //! * [`tbp_cut_properties`] — a cut's critical properties, by any of NeqSim's ten models
 
 pub mod assay_mass_fractions;
+pub mod assembly;
 pub mod characterise_plus_fraction;
 pub mod characterize_to_reference;
+pub mod combine_reservoir_fluids;
+mod combiner;
+pub mod component_row;
 pub mod delumping;
 pub mod lumping;
 pub mod model_gen;
@@ -32,17 +36,21 @@ pub mod unported_gen;
 pub mod whitson_gamma_split;
 
 pub use assay_mass_fractions::{AssayBasis, AssayCut, assay_mass_fractions};
+pub use assembly::mixture_from_characterization;
 pub use characterise_plus_fraction::{PlusModel, characterise_plus_fraction};
 pub use characterize_to_reference::{ReferenceRow, SourceRow, characterize_to_reference};
+pub use combine_reservoir_fluids::combine_reservoir_fluids;
+pub use component_row::{CharacterizationComponent, FluidComponent};
 pub use delumping::{Lump, delumping};
 pub use lumping::lumping;
 pub use oil_assay_derivation::{AssayCutDerivation, oil_assay_derivation};
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
     AssayMassFractionsResult, CharacterisePlusFractionResult, CharacterizeToReferenceResult,
-    DelumpingResult, LumpingResult, OilAssayDerivationResult, PedersenPlusSplitResult,
-    SetHeavyTbpToPlusResult, SubFraction, TbpClosureResult, TbpCutBoundariesResult,
-    TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
+    CombineReservoirFluidsResult, DelumpingResult, LumpingResult, OilAssayDerivationResult,
+    PedersenPlusSplitResult, SetHeavyTbpToPlusResult, SubFraction, TbpClosureResult,
+    TbpCutBoundariesResult, TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult,
+    WhitsonGammaSplitResult,
 };
 pub use set_heavy_tbp_to_plus::set_heavy_tbp_to_plus;
 pub use tbp_closure::{TbpClosureKind, tbp_closure};

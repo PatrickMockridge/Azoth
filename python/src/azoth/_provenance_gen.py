@@ -48,6 +48,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 12,
         "tests_skipped": 0,
     },
+    'characterization.combine_reservoir_fluids': {
+        "calc_id": 'characterization.combine_reservoir_fluids',
+        "name": 'Several reservoir fluids blended onto one pseudo-component slate',
+        "spec": {'path': 'specs/models/characterization/combine_reservoir_fluids.toml', 'sha256': '6c4d396e5ef790039d07c77a0649079803d88d567abb37d60d847a91cbb7ddf6'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/combine_reservoir_fluids.py', 'sha256': '62d0d5f6178b6104199ed1fdf0b238c870c0572c0983f22d289ee6b548525e79'}, {'path': 'crates/azoth-characterization/src/combine_reservoir_fluids.rs', 'sha256': '87f97f6522a3c17caaf4a8511558708b656b7b515eca51e9a0944647dbfba1be'}],
+        "source": 'NeqSim master `PseudoComponentCombiner.combineReservoirFluids`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'characterization.delumping': {
         "calc_id": 'characterization.delumping',
         "name": 'A lumped pseudo-component table split into a finer grid',
