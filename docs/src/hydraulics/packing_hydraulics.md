@@ -28,7 +28,7 @@ DOI: [10.1252/jcej.1.56](https://doi.org/10.1252/jcej.1.56)
 
 | Name | Unit | Description |
 |---|---|---|
-| `packing` | - | the packing's name or an alias, which the library resolves; a name nothing matches is `Pall-Ring-50`. |
+| `packing` | - | the packing's name or an alias, which the library resolves; an unknown name is refused, as the class's `require` does since upstream PR #4405. |
 | `column_diameter` | m | the column's internal diameter, which every velocity is per unit area of. |
 | `packed_height` | m | the packed height, which the total pressure drop and the theoretical-stage count read. |
 | `vapor_mass_flow` | kg/s | the vapour's mass flow. |
@@ -97,7 +97,7 @@ These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the packing resolves by name and the file wins.** `PackingSpecificationLibrary` registers its 22 built-ins and *then* loads `Packing.csv`, so a row with the same key replaces one: `Pall-Ring-50` is the file's **plastic** row - 111.1 m**2/m**3, void 0.919, factor 180 - not the built-in's.
+- **the packing resolves by name; an unknown name is refused.** The 22 built-ins are the reference, and `Packing.csv` adds material-qualified rows beside them (`Pall-Ring-50-plastic`) without replacing one. A `placeholder` row is not a packing (upstream PR #4405).
 
 - **the normalisation is the class's**: lowercased with every non-alphanumeric removed, so `Pall-Ring-50`, `pallring 50` and `PALL_RING_50` are one key.
 
@@ -107,14 +107,14 @@ satisfy for the result to mean what it says.
 
 - **the wetting check and the design verdict are the class's own thresholds**: a minimum wetting rate of `5e-5` m**3/(m**2 s) for a random packing and `2.5e-5` for a structured one, and a design window of 40 to 80 per cent of flood. Both captured random rows fall below the minimum.
 
-- the vapour film coefficient depends on the vapour side alone, so the two rows that differ only in liquid load answer the same `kGa` (\(1966.158\) against \(1966.158\)) while their `kLa` differ three-fold.
+- the vapour film coefficient depends on the vapour side alone, so the two rows that differ only in liquid load answer the same `kGa` (\(3.6836\) against \(3.6836\)) while their `kLa` differ two-and-a-half-fold.
 
 
 
 
 ## Worked example
 
-Source: the capture's `pall_ring_50_absorber` row, which is the class's own default packing at an absorber's state
+Source: the capture's `pall_ring_50_absorber` row at NeqSim `834b5c4f`, the packing fix, where the built-in is the default packing at an absorber's state
 
 
 | Input | Value |
@@ -135,24 +135,24 @@ Source: the capture's `pall_ring_50_absorber` row, which is the class's own defa
 
 | Output | Expected |
 |---|---|
-| `flooding_velocity` | 0.10238615607703111 |
-| `percent_flood` | 9.672180904397324 |
+| `flooding_velocity` | 0.16908517183707505 |
+| `percent_flood` | 5.8567963880187115 |
 | `f_factor` | 0.06643117071893652 |
-| `pressure_drop_per_meter` | 0.01193754053378731 |
-| `wetted_area` | 47.63208581918636 |
-| `k_ga` | 3.599419640508678 |
-| `k_la` | 0.013258884318763363 |
-| `htu_g` | 0.0027512697117554018 |
-| `htu_l` | 336.1020655611773 |
+| `pressure_drop_per_meter` | 0.0038398930172455154 |
+| `wetted_area` | 76.24118539046381 |
+| `k_ga` | 3.6836014751798056 |
+| `k_la` | 0.015995231735252323 |
+| `htu_g` | 0.002688394578934643 |
+| `htu_l` | 278.6041790661667 |
 | `hetp` | 1.44 |
 | `theoretical_stages` | 3.4722222222222223 |
-| `specific_surface_area` | 111.1 |
-| `void_fraction` | 0.919 |
-| `packing_factor` | 180.0 |
+| `specific_surface_area` | 120.0 |
+| `void_fraction` | 0.96 |
+| `packing_factor` | 66.0 |
 
 Relative tolerance: `1e-09`
 
-a 1 m column, a 5 m bed, 0.35 kg/s of vapour at 45 kg/m**3 and 3.5 kg/s of liquid at 990 kg/m**3, with the vapour at 1.8e-5 Pa*s and the liquid at 6.5e-4, a surface tension of 0.072 N/m and diffusivities of 3.3e-7 and 1.9e-9 m**2/s. The name resolves to the **file's** Pall-Ring-50 row - 111.1 m**2/m**3, void 0.919, factor 180 - and not the built-in's: area = pi/4 = 0.7853981633974483 m**2 FLV = (3.5/0.35) sqrt(45/990) = 10 sqrt(0.045454545454545456) = 2.1319599588345023, inside [0.005, 5] x = log10(FLV) = 0.3287474770297418 Y = 10**(-1.668 - 1.085 x - 0.297 x*x) = 10**(-2.0537450855116917) = 0.008837... u_fl = sqrt(Y / (180 * 45/(9.81 (990 - 45)) * (6.5e-4/0.001)**0.1)) = 0.10238615607703111 m/s u_v = (0.35/45)/0.7853981633974483 = 0.009901... m/s flood = 9.672180904397324 per cent, F-factor = 0.06643117071893652 Pa**0.5 dp/dz = 180 * 45 * u_v**2 / 0.919**3 * 0.01 * 10**(0.015 L) = 0.01193754053378731 Pa/m a_w = 1 - exp(-1.45 (0.075/0.072)**0.75 Re_l**0.1 Fr_l**-0.05 We_l**0.2) = 47.63208581918636 m**2/m**3 kGa = 5.23 (a D_G/dp**2) Re_v**0.7 Sc_v**(1/3) = 3.599419640508678 1/s kLa = 0.0051 Re_l2**(2/3) Sc_l**-0.5 (a dp)**0.4 / (rho_l/(mu_l g))**(1/3) a_w = 0.013258884318763363 1/s HTU_G = 0.35/0.7853981633974483 / (3.599419640508678 * 45) = 0.0027512697117554018 m HTU_L = 3.5/0.7853981633974483 / 0.013258884318763363 = 336.1020655611773 m HETP = min(HTU_G + HTU_L, 2 (0.12 + 0.012 * 50)) = 1.44 m stages = 5/1.44 = 3.4722222222222223 The HETP is the **upper clamp** and not the HTU sum, which is `336` m: the class refuses to report a bed whose transfer units are that tall.
+a 1 m column, a 5 m bed, 0.35 kg/s of vapour at 45 kg/m**3 and 3.5 kg/s of liquid at 990 kg/m**3, with the vapour at 1.8e-5 Pa*s and the liquid at 6.5e-4, a surface tension of 0.072 N/m and diffusivities of 3.3e-7 and 1.9e-9 m**2/s. The name resolves to the **built-in** Pall-Ring-50 row - 120.0 m**2/m**3, void 0.96, factor 66 - because the file's material-qualified rows never replace a built-in: area = pi/4 = 0.7853981633974483 m**2 FLV = (3.5/0.35) sqrt(45/990) = 10 sqrt(0.045454545454545456) = 2.1320071635561044, inside [0.005, 5] x = log10(FLV) = 0.3287886595888969 Y = 10**(-1.668 - 1.085 x - 0.297 x*x) = 10**(-2.0568422502721505) = 0.008773199707888516 u_fl = sqrt(Y / (66 * 45/(9.81 (990 - 45)) * (6.5e-4/0.001)**0.1)) = 0.16908517183707505 m/s u_v = (0.35/45)/0.7853981633974483 = 0.009902974236829043 m/s flood = 5.8567963880187115 per cent, F-factor = 0.06643117071893652 Pa**0.5 dp/dz = 66 * 45 * u_v**2 / 0.96**3 * 0.01 * 10**(0.015 L) = 0.0038398930172455154 Pa/m, with L = 4.45633840657307 kg/(m**2 s) a_w = 1 - exp(-1.45 (0.075/0.072)**0.75 Re_l**0.1 Fr_l**-0.05 We_l**0.2) = 76.24118539046381 m**2/m**3 kGa = 5.23 (a D_G/dp**2) Re_v**0.7 Sc_v**(1/3) = 3.6836014751798056 1/s kLa = 0.0051 Re_l2**(2/3) Sc_l**-0.5 (a dp)**0.4 / (rho_l/(mu_l g))**(1/3) a_w = 0.015995231735252323 1/s HTU_G = 0.35/0.7853981633974483 / (3.6836014751798056 * 45) = 0.002688394578934643 m HTU_L = 3.5/0.7853981633974483 / 0.015995231735252323 = 278.6041790661667 m HETP = min(HTU_G + HTU_L, 2 (0.12 + 0.012 * 50)) = 1.44 m stages = 5/1.44 = 3.4722222222222223 The HETP is the **upper clamp** and not the HTU sum, which is `278.6` m: the class refuses to report a bed whose transfer units are that tall.
 
 
 ## Tests
@@ -160,7 +160,7 @@ a 1 m column, a 5 m bed, 0.35 kg/s of vapour at 45 kg/m**3 and 3.5 kg/s of liqui
 | Test | Type | What it does |
 |---|---|---|
 | `pall_ring_50_absorber_worked_example` | `worked_example` | the example above; active |
-| `the_file_row_replaces_the_built_in` | `reference` | an independent value; active |
+| `the_built_in_is_the_reference_and_the_file_is_material_qualified` | `reference` | an independent value; active |
 | `a_structured_packing_takes_its_own_coefficients` | `reference` | an independent value; active |
 | `more_liquid_moves_the_wetting_not_the_gas_film` | `reference` | an independent value; active |
 | `a_taller_bed_changes_only_the_stage_count` | `reference` | an independent value; active |

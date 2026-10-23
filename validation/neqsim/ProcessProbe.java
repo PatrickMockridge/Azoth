@@ -4078,13 +4078,20 @@ public class ProcessProbe {
 
   /// **`BILLET_SCHULTES_1999` in one capture, beside its own `ONDA_1968` baseline.** The class's
   /// second "correlation" is not one: it multiplies the two film coefficients by constants taken
-  /// off the packing row, so one state run twice is the whole measurement. `Pall-Ring-50`
-  /// resolves to the plastic row, `cp = 0.698` and `ch = 2.725`, so the pair is `1.1354166` on
-  /// `kGa` and `0.698` on `kLa` - neither floored at the class's `0.1`.
+  /// off the packing row, so one state run twice is the whole measurement. **Two rows of packings
+  /// are needed since upstream PR #4405**: on the built-in `Pall-Ring-50` the constants are `1.0`
+  /// and `0.40`, so the two correlations are the identity, while `Pall-Ring-50-plastic` carries
+  /// `cp = 0.698` and `ch = 2.725` - the pair is `1.1354166` on `kGa` and `0.698` on `kLa`,
+  /// neither floored at the class's `0.1`. The plastic pair is the state the pin's `Pall-Ring-50`
+  /// resolved to.
   static void rateBasedBilletRows() {
     rateBasedCo2WaterRow("billet_onda", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
     rateBasedCo2WaterRow("billet_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
+    rateBasedCo2WaterRow("plastic_onda", 0.10, 0.0, 6.0, "Pall-Ring-50-plastic", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
+    rateBasedCo2WaterRow("plastic_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50-plastic", true, false,
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
   }
 
@@ -4224,7 +4231,8 @@ public class ProcessProbe {
     column.setColumnDiameter(1.0);
     column.setPackedHeight(height);
     column.setNumberOfSegments(4);
-    column.setMaxIterations(20);
+    // 60 rather than the class's 20: the packing fix moves the stripper to 21 passes.
+    column.setMaxIterations(60);
     column.setPackingType(packing);
     column.setTransferComponents("CO2");
     column.setMassTransferCorrectionFactor(3.0);
@@ -4267,7 +4275,8 @@ public class ProcessProbe {
     column.setColumnDiameter(1.2);
     column.setPackedHeight(height);
     column.setNumberOfSegments(segments);
-    column.setMaxIterations(25);
+    // 60 rather than the class's 25: the packing fix moves this profile to 33 passes.
+    column.setMaxIterations(60);
     column.setPackingType("Mellapak-250Y");
     column.setTransferComponents("water");
     column.setMassTransferCorrectionFactor(correction);

@@ -39,7 +39,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PackingSizingResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
-from azoth.hydraulics.packing import packing_or_default
+from azoth.hydraulics.packing import required_packing
 from azoth.hydraulics.reference.packing_hydraulics import eckert_flooding_velocity
 
 CALC_ID = "hydraulics.packing_sizing"
@@ -113,7 +113,7 @@ def packing_sizing(
     """The internal diameter a packed bed needs at a chosen fraction of flood.
 
     Args:
-        packing: the packing's name or an alias; a name nothing matches is ``Pall-Ring-50``.
+        packing: the packing's name or an alias; an unknown name is refused.
             Only its factor is read here.
         design_flood_fraction: the fraction of the flooding velocity to design at.
         vapor_mass_flow: the vapour's mass flow at the sizing state.
@@ -139,9 +139,9 @@ def packing_sizing(
         ...     q(45.0, "kg/m**3"), q(990.0, "kg/m**3"), q(6.5e-4, "Pa*s"), 1.0,
         ... )
         >>> round(r.required_diameter.magnitude, 6)
-        0.371718
+        0.289255
         >>> round(r.column_diameter.magnitude, 6)
-        0.4
+        0.3
     """
     spec = _spec_for(CALC_ID)
     checks = checks_for(spec)
@@ -164,7 +164,7 @@ def packing_sizing(
         warnings,
     )
 
-    resolved = packing_or_default(packing)
+    resolved = required_packing(packing)
 
     flooding_velocity = eckert_flooding_velocity(
         resolved.packing_factor,

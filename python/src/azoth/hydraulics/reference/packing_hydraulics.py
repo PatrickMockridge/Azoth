@@ -11,15 +11,15 @@ stripping factor of one.
 
 # The packing table
 
-The library registers 22 built-ins and *then* loads ``designdata/Packing.csv``, so a row whose
-normalized name collides replaces the earlier registration: ``Pall-Ring-50`` resolves to the
-file's **plastic** row (111.1 m**2/m**3, void 0.919, factor 180) rather than to the built-in metal
-one (120.0, 0.96, 66). Both are in :mod:`azoth.hydraulics.packing`.
+The library registers 22 built-ins and *then* loads ``designdata/Packing.csv``, whose rows are
+material-qualified and never replace a built-in (upstream PR #4405): ``Pall-Ring-50`` is the
+built-in metal estimate (120.0 m**2/m**3, void 0.96, factor 66) and ``Pall-Ring-50-plastic`` the
+file's plastic row (111.1, 0.919, 180). Both are in :mod:`azoth.hydraulics.packing`.
 
 # The HETP is clamped, and on these states the clamp is what answers
 
 The two-resistance combination gives transfer units that can be hundreds of metres tall - the
-captured absorber states measure `336` m and `203` m - and the class reports the empirical
+captured absorber states measure `278.6` m and `202.9` m - and the class reports the empirical
 estimate's two-fold band instead: `1.44` m and `1.0` m. A port that published the HTU sum would be
 answering a different question.
 """
@@ -34,7 +34,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PackingHydraulicsResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
-from azoth.hydraulics.packing import PackingSpecification, packing_or_default
+from azoth.hydraulics.packing import PackingSpecification, required_packing
 
 CALC_ID = "hydraulics.packing_hydraulics"
 
@@ -103,7 +103,7 @@ def packing_hydraulics(
     """A packed bed's hydraulics at a stated state.
 
     Args:
-        packing: the packing's name or an alias; a name nothing matches is ``Pall-Ring-50``.
+        packing: the packing's name or an alias; an unknown name is refused.
         column_diameter: the column's internal diameter.
         packed_height: the packed height.
         vapor_mass_flow: the vapour's mass flow.
@@ -133,7 +133,7 @@ def packing_hydraulics(
         ...     q(45.0, "kg/m**3"), q(990.0, "kg/m**3"), q(1.8e-5, "Pa*s"), q(6.5e-4, "Pa*s"),
         ...     q(0.072, "N/m"), q(3.3e-7, "m**2/s"), q(1.9e-9, "m**2/s"), 1.0)
         >>> round(r.wetted_area, 10)
-        47.6320858192
+        76.2411853905
     """
     return _packing_hydraulics(
         packing,
@@ -202,7 +202,7 @@ def _packing_hydraulics(
         warnings,
     )
 
-    resolved = packing_or_default(packing)
+    resolved = required_packing(packing)
     # **The category override, which the four reads below all branch on.** `setStructuredPacking`
     # states it on the column rather than selecting a differently-named row by it, so a caller
     # that has stated one must reach the wetting minimum, the Leva exponent, the HETP estimate

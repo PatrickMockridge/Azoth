@@ -5264,7 +5264,7 @@ class PackingSizingResult(_HasWarnings):
 
     CALC_ID: ClassVar[str] = "hydraulics.packing_sizing"
 
-    #: the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent.
+    #: the packing the name resolved to; a misspelt packing is refused rather than defaulted.
     packing_name: str
 
     #: the resolved packing factor in 1/m, the only geometry this calculation reads. Reported as `dimensionless` because the vocabulary has no `1/m`; `hydraulics.packing_hydraulics` declares the same field the same way.

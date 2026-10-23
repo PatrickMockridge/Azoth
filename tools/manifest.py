@@ -63,7 +63,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "databank" / "manifest.toml"
 SOURCES = Path("databank") / "sources"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 #: The closed reason vocabulary. A reason is `<prefix>: <free text>`, and the prefix
 #: is what makes the list countable. See the module docstring.
@@ -178,6 +178,15 @@ class UpstreamFile:
     #: implicit, because the compiled header is checked against the manifest in both
     #: directions and an unlisted column would read as one nobody decided about.
     generated: tuple[str, ...] = ()
+    #: The revision **this file's bytes** came from, when it is not the upstream's commit.
+    #:
+    #: **Bumped to schema 2 for exactly this.** A fix upstream can move one vendored file
+    #: without moving the pin the code is ported from, and forcing the whole upstream to
+    #: the newer revision would make every spec's citation claim a code port that did not
+    #: happen. A file states the revision it was taken at; the upstream states the pin.
+    commit: str = ""
+    #: When this file was taken, when it is not the upstream's retrieval date.
+    retrieved: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -297,8 +306,15 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
     )
 
 
-def _upstream_file(raw: dict[str, Any], problems: list[str]) -> UpstreamFile:
+def _upstream_file(
+    raw: dict[str, Any], problems: list[str], commit: str = "", retrieved: str = ""
+) -> UpstreamFile:
     file_id = str(raw.get("id") or "?")
+    own_commit = str(raw.get("commit") or commit)
+    if own_commit and not re.fullmatch(r"[0-9a-f]{40}", own_commit):
+        problems.append(
+            f"{file_id}: commit {own_commit!r} is not a full 40-character git object name"
+        )
     return UpstreamFile(
         id=file_id,
         upstream_path=str(raw.get("upstream_path") or ""),
@@ -313,6 +329,8 @@ def _upstream_file(raw: dict[str, Any], problems: list[str]) -> UpstreamFile:
             for r in (raw.get("rows") or ())
         ),
         generated=tuple(str(g) for g in (raw.get("generated") or ())),
+        commit=own_commit,
+        retrieved=str(raw.get("retrieved") or retrieved),
     )
 
 
@@ -355,7 +373,15 @@ def read(path: Path = MANIFEST) -> tuple[Manifest, list[str]]:
                 licence=str(raw.get("licence") or ""),
                 retrieved=str(raw.get("retrieved") or ""),
                 notice=str(raw.get("notice") or ""),
-                files=tuple(_upstream_file(f, problems) for f in (raw.get("files") or ())),
+                files=tuple(
+                    _upstream_file(
+                        f,
+                        problems,
+                        str(raw.get("commit") or ""),
+                        str(raw.get("retrieved") or ""),
+                    )
+                    for f in (raw.get("files") or ())
+                ),
             )
             for raw in (document.get("upstreams") or ())
         ),

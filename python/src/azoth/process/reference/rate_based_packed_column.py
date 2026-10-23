@@ -51,7 +51,7 @@ from azoth.eos.reference.phase_transport import phase_transport
 from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
 from azoth.eos.reference.pt_flash import pt_flash
-from azoth.hydraulics.packing import packing_or_default
+from azoth.hydraulics.packing import required_packing
 from azoth.hydraulics.reference.packing_hydraulics import packing_hydraulics
 from azoth.process.reference import _unported
 
@@ -671,7 +671,7 @@ def _transport_snapshot(
     # **`billet_schultes_1999` is a constant of the packing, not a correlation.** The class
     # takes two numbers off the packing specification and floors each at `0.1`; both are on
     # the registry row already, and `onda_1968` leaves the pair at one.
-    packing = packing_or_default(settings["packing_type"])
+    packing = required_packing(settings["packing_type"])
     if settings["billet_schultes"]:
         gas_multiplier = max(packing.billet_gas_constant / 0.4, 0.1)
         liquid_multiplier = max(packing.billet_liquid_constant, 0.1)

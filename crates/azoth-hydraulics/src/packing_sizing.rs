@@ -28,9 +28,9 @@
 //! instead of it.
 
 use azoth_core::units::{DynamicViscosity, MassDensity, MassRate, meters};
-use azoth_core::{Result, apply_checks};
+use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::packing::packing_or_default;
+use crate::packing::packing;
 use crate::packing_hydraulics::eckert_flooding_velocity;
 use crate::results::PackingSizingResult;
 use crate::spec_gen;
@@ -98,8 +98,8 @@ pub struct PackingSizingState {
 ///     liquid_viscosity: pascal_seconds(6.5e-4),
 ///     hydraulic_capacity_factor: 1.0,
 /// })?;
-/// assert!((r.required_diameter.value - 0.371_717_652_150_071_8).abs() < 1e-12);
-/// assert!((r.column_diameter.value - 0.4).abs() < 1e-12);
+/// assert!((r.required_diameter.value - 0.289_255_112_018_506_5).abs() < 1e-12);
+/// assert!((r.column_diameter.value - 0.3).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn packing_sizing(name: &str, state: PackingSizingState) -> Result<PackingSizingResult> {
@@ -121,7 +121,15 @@ pub fn packing_sizing(name: &str, state: PackingSizingState) -> Result<PackingSi
         &mut warnings,
     )?;
 
-    let packing = packing_or_default(name);
+    let Some(packing) = packing(name) else {
+        return Err(AzothError::invalid_input(
+            "packing",
+            format!(
+                "`{name}` is not a registered packing. NeqSim's calculator now requires a known \
+                 preset (upstream PR #4405) and no longer falls back to `Pall-Ring-50`"
+            ),
+        ));
+    };
 
     let flooding_velocity = eckert_flooding_velocity(
         packing.packing_factor,

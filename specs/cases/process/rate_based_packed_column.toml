@@ -2,7 +2,7 @@ model = "process.rate_based_packed_column"
 [[cases]]
 id = "co2_water_absorber"
 tolerance = 0.0001
-source = "`RateBasedPackedColumnTest.configuredColumn`'s own state, re-cased on PR, from `validation/neqsim/captures/process_rate_based_packed_column.tsv`. The class's own test runs SRK; this library's process layer resolves PR, so the capture holds the state on **both** cubics and this case is the PR row - the class's SRK row differs by three-fold on the transfer. **The convergence pair is the sharpest thing here**: NeqSim stops after fifteen passes at `6.009670053264138e-10` mol/s, and the port lands on the same fifteen and the same residual to four figures. The tolerance is the `1e-4` band the hydraulics and the heat rate are reproduced inside; the products and the transport quantities agree to `1e-6` or better.\n"
+source = "`RateBasedPackedColumnTest.configuredColumn`'s own state, re-cased on PR, from `validation/neqsim/captures/process_rate_based_packed_column.tsv`. The class's own test runs SRK; this library's process layer resolves PR, so the capture holds the state on **both** cubics and this case is the PR row - the class's SRK row differs by three-fold on the transfer. **The convergence pair is the sharpest thing here**: NeqSim stops after fifteen passes at `6.770219315721526e-10` mol/s, and the port lands on the same fifteen and the same residual to four figures. The tolerance is the `1e-4` band the hydraulics and the heat rate are reproduced inside; the products and the transport quantities agree to `1e-6` or better.\n"
 [cases.inputs]
 gas_components = ["methane", "CO2"]
 gas_n = 14.744278187963598
@@ -29,18 +29,18 @@ segment_solver = "sequential_explicit"
 column_solver = "fixed_point_profile"
 [cases.expected]
 iterations = 15
-convergence_residual = 6.009670053264138e-10
+convergence_residual = 6.770219315721526e-10
 converged = true
-total_absolute_molar_transfer = 0.021771811808519004
-gas_out_n = 14.74081280540249
-gas_out_z = [0.900211578855669, 0.09978842114433098]
-liquid_out_n = 30.841964163798856
-liquid_out_z = [0.9998876406865285, 0.00011235931347143501]
-segment_gas_temperature = [308.7440274651043, 306.2281774135255, 304.7912613020779, 303.97063065103896]
-segment_k_ga = [135.79988356254145, 135.40532946699855, 135.18635521597457, 135.08218563019824]
-segment_k_la = [0.009432860559780317, 0.009313075941948846, 0.009252184910419781, 0.00922515474948599]
-segment_wetted_area = [57.01800105586562, 56.95831167563964, 56.927194082018914, 56.90788895496918]
-segment_net_molar_transfer = [-0.0018659748797604063, -0.0028707307673891567, -0.004416508976555226, 0.012618597184814215]
+total_absolute_molar_transfer = 0.025846775244300083
+gas_out_n = 14.740164200367678
+gas_out_z = [0.9002511904742714, 0.09974880952572864]
+liquid_out_n = 30.842612768752357
+liquid_out_z = [0.999866613541988, 0.00013338645801194666]
+segment_gas_temperature = [308.74413554097646, 306.2282564923705, 304.79129250460346, 303.9706462523017]
+segment_k_ga = [138.97591872603377, 138.57527821768343, 138.3559707881975, 138.25671456700022]
+segment_k_la = [0.011209042099418165, 0.011066985320574114, 0.010995184081562897, 0.010963418987031579]
+segment_wetted_area = [87.20366010445194, 87.13727028512417, 87.10322450830841, 87.08210249266754]
+segment_net_molar_transfer = [-0.0022152237008773393, -0.0034080366692362824, -0.005243133454076207, 0.014980381420110253]
 [[cases]]
 id = "heat_transfer_disabled"
 tolerance = 0.0001
@@ -101,7 +101,7 @@ segment_net_molar_transfer = [0.0, 0.0, 0.0, 0.0]
 [[cases]]
 id = "billet_schultes"
 tolerance = 0.0001
-source = "`RateBasedPackedColumnTest.configuredColumn`'s own state at `BILLET_SCHULTES_1999`, from `validation/neqsim/captures/process_rate_based_billet.tsv`. **The other mass-transfer value, carried by both implementations** - it is not a correlation: it multiplies `kGa` by `max(0.1, Ch/0.4)` and `kLa` by `max(0.1, Cp)`, the two constants the packing's own row carries, so the pair is this state beside `co2_water_absorber`'s. NeqSim stops after sixteen passes at `1.4863066333248298e-10` mol/s where the Onda row takes fifteen, and the transfer is smaller - less liquid-film capacity retains less CO2.\n"
+source = "`RateBasedPackedColumnTest.configuredColumn`'s own state at `BILLET_SCHULTES_1999`, from `validation/neqsim/captures/process_rate_based_billet.tsv`. **The other mass-transfer value, carried by both implementations** - it is not a correlation: it multiplies `kGa` by `max(0.1, Ch/6/0.4)` and `kLa` by `max(0.1, Cp)`, the two constants the packing's own row carries, so the pair is this state beside `co2_water_absorber`'s. **The packing is named `Pall-Ring-50-plastic`**: before upstream PR #4405 the class's `Pall-Ring-50` resolved to that row by the file's order, and the fix made the built-in row the reference, whose constants are `1.0` and `0.40` - the multipliers are then the identity. Naming the plastic row keeps this case the distinct measurement it was: NeqSim stops after sixteen passes at `1.4863066333248298e-10` mol/s where the Onda row takes fifteen, and the transfer is smaller - less liquid-film capacity retains less CO2. **The port's own gate is met one pass earlier**, at `4.96e-10` mol/s, where the class takes sixteen; the converged state below is the class's.\n"
 [cases.inputs]
 gas_components = ["methane", "CO2"]
 gas_n = 14.744278187963598
@@ -117,7 +117,7 @@ transfer_components = ["CO2"]
 column_diameter = 1.0
 packed_height = 6.0
 number_of_segments = 4
-packing_type = "Pall-Ring-50"
+packing_type = "Pall-Ring-50-plastic"
 max_iterations = 20
 convergence_tolerance = 1e-09
 mass_transfer_correction = 3.0
@@ -127,7 +127,7 @@ heat_transfer_model = "chilton_colburn_analogy"
 segment_solver = "sequential_explicit"
 column_solver = "fixed_point_profile"
 [cases.expected]
-iterations = 16
+iterations = 15
 convergence_residual = 1.4863066333248298e-10
 converged = true
 total_absolute_molar_transfer = 0.015261699063210652

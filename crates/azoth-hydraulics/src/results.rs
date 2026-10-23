@@ -49,7 +49,7 @@ impl CalcResult for ReynoldsNumberResult {
 /// Result of `hydraulics.packing_hydraulics`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackingHydraulicsResult {
-    /// The packing the name resolved to, which is `Pall-Ring-50` where nothing matched.
+    /// The packing the name resolved to.
     pub packing_name: String,
     /// `random` or `structured`, which several coefficients branch on.
     pub packing_category: String,
@@ -145,7 +145,7 @@ impl CalcResult for PackingHydraulicsResult {
 /// hide that a `0.1195` m requirement and a `0.2973` m one both answer `0.3` m.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackingSizingResult {
-    /// The packing the name resolved to, which is `Pall-Ring-50` where nothing matched.
+    /// The packing the name resolved to.
     pub packing_name: String,
     /// The resolved packing factor, in 1/m - the only geometry this calculation reads.
     pub packing_factor: f64,

@@ -10,6 +10,16 @@ cd validation/neqsim
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
+**Six captures are run against the pin plus one fix.** `packing_probe`, `packing_sizing_probe`,
+`process_packed_column`, `process_rate_based_packed_column`, `process_rate_based_billet` and
+`process_rate_based_solvers` were taken from a jar built at `f0c7436c` with only the packing fix
+`834b5c4f` applied: its `Packing.csv`, `PackingSpecificationLibrary.java`,
+`PackingHydraulicsCalculator.java`, and the single `getOrDefault` -> `require` line of
+`RateBasedPackedColumn.java`. Everything else is the pin, so each capture's delta is that fix
+rather than the five hundred commits between the two revisions. The built-in packing rows are
+the reference after the fix: `Pall-Ring-50` is `120.0`, `0.96`, factor `66`, and the file's
+plastic ring is reachable as `Pall-Ring-50-plastic` (`111.1`, `0.919`, `180`).
+
 **A probe that declares NeqSim's own package compiles with `-d .` and runs under that
 package's name**, because what it needs is package-private; `WaxReferenceProbe`,
 `PcsaftCompositionProbe` and `WaterDewPointSeedProbe` are the three, and each says in its
@@ -238,9 +248,9 @@ the column's `isHydraulicsOk()` are three predicates that all read as "the hydra
 and on these rows **all three are false**, so the row alone cannot tell them apart - which is
 what makes publishing one under another's name a way to reproduce every row while answering a
 different question. `getPressureDropPerMeter()` beside the column's `getPackingPressureDrop()`
-settles a name that does not say which it is: on the 2.3 m row they are `0.27862153390634686` and
-`0.6408295279845977`, **a ratio of exactly the bed height**, so the column's is the total.
-`resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `180.0`) and
+settles a name that does not say which it is: on the 2.3 m row they are `0.08962289003108304` and
+`0.20613264707149095`, **a ratio of exactly the bed height**, so the column's is the total.
+`resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `66.0`) and
 `calculated_diameter_m` (`0.3`) are the geometry and the sized diameter the report used.
 
 **And `interphase_surface_tension_N_per_m` is `0.0` on every tray**, which is the measurement
@@ -266,7 +276,7 @@ from `designFloodFraction`, the area from the vapour's volumetric flow, and the 
 class's standard-diameter table - was measured by nothing. Five states: the absorber, structured
 packing, a high liquid load, a light load that reaches the table's **0.3 m floor**, and the
 absorber again at a `0.5` flood fraction. **That last pair is the measurement of the one claim** -
-the flood fraction moves the sized diameter from `0.4` to `0.5` m and leaves the calculation
+the flood fraction moves the sized diameter from `0.3` to `0.4` m and leaves the calculation
 untouched - and **the light and high-liquid rows share a flooding velocity to the last digit**,
 which is the Eckert fit's `FLV` clamped at its ceiling of `5` on both.
 
@@ -500,7 +510,9 @@ inside them, and its capture is the sorted list of the names that match.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar WaterCpSentinel > captures/water_cp_sentinel.tsv
 ```
 
-**`ProcessProbe rate_based` runs every state on two cubics.** `RateBasedPackedColumnTest` uses
+**`ProcessProbe rate_based` runs every state on two cubics.** The probe states an iteration cap
+of 60 rather than the class's 20 because the packing fix moves the stripper to 21 passes and the
+TEG profile to 33; every row's converged state is independent of the cap. `RateBasedPackedColumnTest` uses
 SRK and this library's process layer resolves PR, so each state is run on both and the pair
 measures what the cubic moved; the PR rows are the ones the port is held to. `teg_dehydration`
 and `teg_circulation` are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot
@@ -511,13 +523,14 @@ represent, so they are evidence for a refusal rather than an oracle for a state.
   > captures/process_rate_based_packed_column.tsv
 ```
 
-**`ProcessProbe rate_based_billet` is the same absorber state run twice**, once at each
-`MassTransferCorrelation`, because that parameter is not a correlation: it scales the two film
-coefficients by constants the packing row carries, so one state at each value is the whole
-measurement. `Pall-Ring-50` resolves to the file's plastic row, `cp = 0.698` and `ch = 2.725`,
-so the pair is `1.1354166...` on `kGa` and `0.698` on `kLa`; the capture's own two ratios are
-what the port's test reads, and the liquid one is `0.6978956` rather than `0.698` because the
-base `kLa` moved `1.495e-4` between the two converged states.
+**`ProcessProbe rate_based_billet` runs the same absorber state twice at each
+`MassTransferCorrelation`, on two packings.** That parameter is not a correlation: it scales the
+two film coefficients by constants the packing row carries. On the built-in `Pall-Ring-50` those
+constants are `1.0` and `0.40`, so the pair is the identity; on `Pall-Ring-50-plastic` (`cp =
+0.698`, `ch = 2.725`) it is `1.1354166...` on `kGa` and `0.698` on `kLa` - the state the pin's
+`Pall-Ring-50` resolved to. The capture's own two ratios are what the port's test reads, and the
+liquid one is `0.6978956` rather than `0.698` because the base `kLa` moved `1.495e-4` between the
+two converged states.
 
 ```bash
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
@@ -529,11 +542,11 @@ class's own absorber state - the PR row `process_rate_based_packed_column.tsv` h
 reproduces to `1e-4` - five ways: the pair this port carries as the control, then
 `SegmentSolver.SIMULTANEOUS_RESIDUAL` and `ColumnSolver.EQUATION_ORIENTED` alone, then both, then
 `EQUATION_ORIENTED` at the settings of the class's own test for it. **No refused row converges**,
-and the control reproduces the baseline exactly (fifteen passes at `6.009670053264138e-10` mol/s),
+and the control reproduces the baseline exactly (fifteen passes at `6.770219315721526e-10` mol/s),
 which is what makes the rest a reading rather than a mis-set-up state. The segment solve takes the
-full 20-pass cap at a `1.76` mol/s outlet residual against a `1e-9` gate and publishes a vapour at
-`2.2e-29` K; the column-wide Newton stalls after two passes at a residual of `65.9` against its own
-`1e-6` gate and publishes a `153` K vapour beside a `454` K liquid, and at its own test's settings
+full 20-pass cap at a `0.25` mol/s outlet residual against a `1e-9` gate and publishes a vapour at
+`4.3e-31` K; the column-wide Newton stalls after two passes at a residual of `118.6` against its own
+`1e-6` gate and publishes a `300` K vapour beside a `463` K liquid, and at its own test's settings
 the norm is `30.5` against `1e-5`. **That test asserts finiteness and never convergence** - it caps
 the Newton at two iterations and removes the homotopy - and its companion caps them at one.
 

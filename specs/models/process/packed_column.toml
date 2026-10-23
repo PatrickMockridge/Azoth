@@ -85,7 +85,7 @@ description = "the condenser's temperature, which pins the top tray's flash. Abs
 [inputs.packing_type]
 type = "string"
 optional = true
-description = "the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads. **It does not enter the solve.** The class defaults it to Pall-Ring-50.\n"
+description = "the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads. **It does not enter the solve.** An unknown name is refused, as the class's `require` now does (upstream PR #4405); the class defaults it to Pall-Ring-50.\n"
 [inputs.structured_packing]
 type = "boolean"
 optional = true

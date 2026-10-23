@@ -13202,7 +13202,7 @@ impl From<&azoth_hydraulics::results::PackingHydraulicsResult> for PyPackingHydr
 )]
 #[derive(Debug, Clone, PartialEq)]
 pub struct PyPackingSizingResult {
-    /// the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent.
+    /// the packing the name resolved to; a misspelt packing is refused rather than defaulted.
     #[pyo3(get)]
     pub packing_name: String,
     /// the resolved packing factor in 1/m, the only geometry this calculation reads. Reported as `dimensionless` because the vocabulary has no `1/m`; `hydraulics.packing_hydraulics` declares the same field the same way.

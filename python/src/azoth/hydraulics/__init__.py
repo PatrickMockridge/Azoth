@@ -277,8 +277,9 @@ def packing_hydraulics(
 
     **Onda's three correlations for the films, Leva's for the pressure drop, Eckert's for the
     flood**, and a HETP that is a two-resistance combination clamped to the empirical estimate's
-    own band. The packing resolves by name - a name nothing carries is ``Pall-Ring-50`` - and the
-    compiled table's rows replace the built-ins on a name collision.
+    own band. The packing resolves by name and an unknown name is refused, as the class's
+    ``require`` does since upstream PR #4405; the built-in table is the reference and the
+    compiled file adds material-qualified rows beside it.
 
     Raises:
         OutOfRangeError: if the diameter, either mass flow, either density or either viscosity is

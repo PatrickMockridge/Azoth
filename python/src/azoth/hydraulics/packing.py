@@ -3,12 +3,16 @@
 The Python twin of ``crates/azoth-hydraulics/src/packing.rs``, mirroring
 ``PackingSpecificationLibrary``.
 
-# The file wins a collision
+# The built-ins are the reference; the file adds material-qualified rows
 
-The library registers its 22 built-ins and **then** loads ``designdata/Packing.csv``, so a row
-whose normalized name matches an earlier registration replaces it. Measured, ``Pall-Ring-50``
-resolves to the file's *plastic* row - 111.1 m**2/m**3, void 0.919, factor 180 - and not to the
-built-in's metal one (120.0, 0.96, 66), because both normalize to ``pallring50``.
+The library registers its 22 built-ins under their name and a ``name-material`` alias, and then
+loads ``designdata/Packing.csv``. A file row's display name carries its material -
+``Pall-Ring-50-plastic`` - and a qualified name that already exists is skipped, so the file's
+metal 50 mm ring (112.6 m**2/m**3, void 0.951, factor 85) does not displace the built-in metal
+estimate (120.0, 0.96, 66). A qualified name that is new is also reachable unqualified unless
+that name exists, which is how ``Pall-Ring-35`` and ``Pall-Ring-15`` resolve. Before upstream
+PR #4405 (#4380) the file was keyed by display name alone, so the plastic 50 mm row's later line
+overwrote the built-in's geometry. A ``placeholder`` row is not a packing at all.
 
 The file is ``data/packing/packing.csv``, compiled from NeqSim's ``designdata/Packing.csv``;
 ``databank/manifest.toml`` records all twelve of its columns and which three were dropped.
@@ -132,12 +136,29 @@ _STRUCTURED = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class _Registry:
+    """The lookup table and the display names `getPackingNames` lists."""
+
+    by_key: dict[str, PackingSpecification]
+    display_names: tuple[str, ...]
+
+
 @cache
-def _table() -> dict[str, PackingSpecification]:
-    """The registry: the built-ins first, then the file, which is what lets a file row replace."""
+def _registry() -> _Registry:
+    """The registry: the built-ins first, then the file, which never replaces one of them."""
     table: dict[str, PackingSpecification] = {}
+    display: list[str] = []
+
+    def register(specification: PackingSpecification) -> None:
+        table[normalize(specification.name)] = specification
+        display.append(specification.name)
+
+    def register_alias(alias: str, specification: PackingSpecification) -> None:
+        table[normalize(alias)] = specification
+
     for name, material, size, area, void, factor, liquid, gas in _RANDOM:
-        table[normalize(name)] = PackingSpecification(
+        specification = PackingSpecification(
             name=name,
             category="random",
             material=material,
@@ -149,8 +170,10 @@ def _table() -> dict[str, PackingSpecification]:
             billet_liquid_constant=liquid,
             billet_gas_constant=gas,
         )
+        register(specification)
+        register_alias(f"{name}-{material}", specification)
     for name, material, area, void, factor, liquid, gas in _STRUCTURED:
-        table[normalize(name)] = PackingSpecification(
+        specification = PackingSpecification(
             name=name,
             category="structured",
             material=material,
@@ -162,20 +185,28 @@ def _table() -> dict[str, PackingSpecification]:
             billet_liquid_constant=liquid,
             billet_gas_constant=gas,
         )
+        register(specification)
+        register_alias(f"{name}-{material}", specification)
     for row in csv.DictReader(io.StringIO(find(PACKING_CSV).read_text(encoding="utf-8"))):
+        category = row["type"]
+        if category.lower() not in ("random", "structured"):
+            # A `placeholder` row is a stand-in geometry, not a packing.
+            continue
+        material = row["material"].lower()
         size = float(row["size_mm"])
         area = float(row["surface_area_pr_volume"])
         void = float(row["void_fraction"])
         factor = float(row["packing_factor"])
-        # A row whose geometry is not positive is skipped, which is `parseCsvLine`'s own check.
         if area <= 0.0 or void <= 0.0 or factor <= 0.0:
             continue
-        category = row["type"]
-        material = row["material"]
-        cp = float(row["cp"])
-        ch = float(row["ch"])
-        name = display_name(row["name"], category, size)
-        table[normalize(name)] = PackingSpecification(
+        cp = float(row["cp"]) if row["cp"] else 1.0
+        ch = float(row["ch"]) if row["ch"] else 0.4
+        name = f"{display_name(row['name'], category, size)}-{material}"
+        if normalize(name) in table:
+            # The built-ins are the reference: a qualified row that already exists does not
+            # replace one.
+            continue
+        specification = PackingSpecification(
             name=name,
             category=category,
             material=material,
@@ -187,30 +218,38 @@ def _table() -> dict[str, PackingSpecification]:
             billet_liquid_constant=cp if cp > 0.0 else 1.0,
             billet_gas_constant=ch / 6.0 if ch > 0.0 else 0.4,
         )
-    return table
+        register(specification)
+        legacy = name[: -len(f"-{material}")]
+        if normalize(legacy) not in table:
+            register_alias(legacy, specification)
+    return _Registry(by_key=table, display_names=tuple(display))
 
 
 def packing(name: str) -> PackingSpecification | None:
     """A packing by name or alias, or ``None``."""
-    return _table().get(normalize(name))
+    return _registry().by_key.get(normalize(name))
 
 
-def packing_or_default(name: str) -> PackingSpecification:
-    """A packing by name, falling back to ``Pall-Ring-50``, which is the class's own default.
+def required_packing(name: str) -> PackingSpecification:
+    """A packing by name, or the refusal the class now makes.
 
-    Example:
-        >>> packing_or_default("nothing-like-this").name
-        'Pall-Ring-50'
+    NeqSim's ``getOrDefault`` used to answer an unknown preset with ``Pall-Ring-50``; upstream
+    PR #4405 (#4380) replaced it with ``require``, whose ``IllegalArgumentException`` this
+    raises. A default would turn a misspelt packing into a silent geometry change.
+
+    Raises:
+        InvalidInputError: if no registered packing carries the name.
     """
-    found = packing(name) or packing("Pall-Ring-50")
+    found = packing(name)
     if found is None:
         raise InvalidInputError(
             "packing_type",
-            "`Pall-Ring-50` is the class's built-in default and this table does not carry it",
+            f"`{name}` is not a registered packing. NeqSim's calculator now requires a known "
+            "preset (upstream PR #4405) and no longer falls back to `Pall-Ring-50`",
         )
     return found
 
 
 def packing_names() -> tuple[str, ...]:
-    """Every registered packing's name, sorted."""
-    return tuple(sorted(specification.name for specification in _table().values()))
+    """Every registered packing's display name, in registration order."""
+    return _registry().display_names
