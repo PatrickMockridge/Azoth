@@ -514,7 +514,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'eos.erosion_prediction',
         "name": 'API RP 14E erosional velocity and DNV RP O501 sand erosion',
         "spec": {'path': 'specs/calcs/eos/erosion_prediction.toml', 'sha256': '9e548a08018d37f9fb61844124080024cfd8caac410ca7977855645dc329b3d4'},
-        "code": [{'path': 'python/src/azoth/eos/reference/erosion_prediction.py', 'sha256': 'ec015d1602b1f7f4105c14e5200cb340140fc56a4f12eec21e1d735753a1d9aa'}, {'path': 'crates/azoth-eos/src/erosion_prediction.rs', 'sha256': 'bdd1c7f268a5825f545e9bdfa4e576c9526b8717837e91e17fbdc55282aa5c50'}],
+        "code": [{'path': 'python/src/azoth/eos/reference/erosion_prediction.py', 'sha256': 'b1969b3d3e93432587ed910c557eec2ebb22fc40908bc8d4f32d4a5d37daafd8'}, {'path': 'crates/azoth-eos/src/erosion_prediction.rs', 'sha256': 'bdd1c7f268a5825f545e9bdfa4e576c9526b8717837e91e17fbdc55282aa5c50'}],
         "source": 'NeqSim master `ErosionPredictionCalculator`',
         "verification": 'partially_verified',
         "validation_cases": 0,

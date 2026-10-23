@@ -695,7 +695,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         spec_path: "specs/calcs/eos/erosion_prediction.toml",
         spec_sha256: "9e548a08018d37f9fb61844124080024cfd8caac410ca7977855645dc329b3d4",
         python_path: "python/src/azoth/eos/reference/erosion_prediction.py",
-        python_sha256: "ec015d1602b1f7f4105c14e5200cb340140fc56a4f12eec21e1d735753a1d9aa",
+        python_sha256: "b1969b3d3e93432587ed910c557eec2ebb22fc40908bc8d4f32d4a5d37daafd8",
         rust_path: "crates/azoth-eos/src/erosion_prediction.rs",
         rust_sha256: "bdd1c7f268a5825f545e9bdfa4e576c9526b8717837e91e17fbdc55282aa5c50",
         source: "NeqSim master `ErosionPredictionCalculator`",

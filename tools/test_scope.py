@@ -1035,13 +1035,15 @@ def declared_id(path: Path) -> list[str]:
 
     A case file under `specs/cases/` has an `id` of its own - the *case's* name, which is not
     a registered id at all - and names its model on a `model = ` line. So that line is asked
-    for first: reading `id` first put case names into the `-k` expression, where they select
-    nothing.
+    for first, and only there: the path decides, because a calc's own inputs may be named
+    `model` (`eos.emulsion_viscosity`'s is), and a line-based test read one of those as the
+    spec's id.
     """
     text = path.read_text(encoding="utf-8")
-    match = re.search(r'^model = "([^"]+)"', text, re.M)
-    if match:
-        return [match.group(1)]
+    if path.is_relative_to(SPECS / "cases"):
+        match = re.search(r'^model = "([^"]+)"', text, re.M)
+        if match:
+            return [match.group(1)]
     match = re.search(r'^id = "([^"]+)"', text, re.M)
     return [match.group(1)] if match else []
 

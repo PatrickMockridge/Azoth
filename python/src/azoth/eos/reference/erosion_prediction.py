@@ -232,9 +232,7 @@ def erosion_prediction(
 
     cumulative_mm = rate_mm_yr * values["design_life"] / SECONDS_PER_YEAR
     remaining_mm = (
-        values["wall_thickness"] * 1000.0
-        - cumulative_mm
-        - values["corrosion_allowance"] * 1000.0
+        values["wall_thickness"] * 1000.0 - cumulative_mm - values["corrosion_allowance"] * 1000.0
     )
 
     if rate_mm_yr > 1.0 or ratio > 1.5:
