@@ -105,6 +105,28 @@ class CharacterisePlusFractionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CharacterizeToCommonSlateResult(_HasWarnings):
+    """Result of ``characterization.characterize_to_common_slate``."""
+
+    CALC_ID: ClassVar[str] = "characterization.characterize_to_common_slate"
+
+    #: Every fluid's components in order - its own base components, then the shared cuts named by their slate position. A cut invalid in any fluid is dropped from every fluid, so a name can be absent from one fluid's run.
+    components: tuple[CharacterizationComponent, ...]
+
+    #: Which fluid each row belongs to. The row is the component's, and the fluid is a fact about the answer rather than the component, so it travels beside the row.
+    fluid_index: tuple[float, ...]
+
+    #: Each fluid's total mole amount after re-characterization. A fluid keeps its own moles and takes the slate's molar mass, so its mass can move from the input's.
+    fluid_moles: tuple[Q, ...]
+
+    #: How many shared cuts the answer has: the requested count, or the largest pseudo-component count among the fluids when none was requested.
+    resolved_pseudo_components: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CharacterizeToReferenceResult(_HasWarnings):
     """Result of ``characterization.characterize_to_reference``."""
 

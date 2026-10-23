@@ -33,7 +33,7 @@ pub(crate) const CP_D_GETTER_OFFSET: f64 = 1.0e-10;
 
 /// `!(value > tolerance)`, NaN included: the class's own comparison drops an accumulation it
 /// cannot order rather than keeping it, where `value <= tolerance` would keep the NaN.
-fn below(value: f64, tolerance: f64) -> bool {
+pub(crate) fn below(value: f64, tolerance: f64) -> bool {
     value.is_nan() || value <= tolerance
 }
 
@@ -84,6 +84,48 @@ impl Properties {
             cp_c: value(row.cp_c),
             cp_d: value(row.cp_d),
             attractive_m: value(row.attractive_m),
+        }
+    }
+
+    /// The properties an array in [`Self::row_values`]'s order states.
+    fn from_values(values: [f64; 17]) -> Self {
+        let [
+            normal_boiling_point,
+            critical_temperature,
+            critical_pressure,
+            acentric_factor,
+            critical_volume,
+            racket_z,
+            racket_z_cpa,
+            parachor,
+            critical_viscosity,
+            triple_point_temperature,
+            heat_of_fusion,
+            ideal_gas_enthalpy_of_formation,
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            attractive_m,
+        ] = values;
+        Self {
+            normal_boiling_point,
+            critical_temperature,
+            critical_pressure,
+            acentric_factor,
+            critical_volume,
+            racket_z,
+            racket_z_cpa,
+            parachor,
+            critical_viscosity,
+            triple_point_temperature,
+            heat_of_fusion,
+            ideal_gas_enthalpy_of_formation,
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            attractive_m,
         }
     }
 
@@ -148,6 +190,19 @@ impl Contribution {
             properties: Properties::from_row(row),
             mass: row.moles * molar_mass,
         })
+    }
+
+    /// The contribution with its mole amount - and hence its mass - scaled, its position on the
+    /// grid unchanged. The common slate's weighted imaginary pool is built from these.
+    pub(crate) fn scaled_by_mass(&self, factor: f64) -> Self {
+        let moles = self.moles * factor;
+        Self {
+            moles,
+            molar_mass: self.molar_mass,
+            density: self.density,
+            properties: self.properties,
+            mass: moles * self.molar_mass,
+        }
     }
 
     /// `PseudoComponentContribution.sortingKey`: the boiling point, or the molar mass without a
@@ -276,6 +331,7 @@ pub(crate) fn quantile_boundaries(contributions: &[Contribution], target: usize)
 #[derive(Debug, Clone, Copy, Default)]
 struct Weighted {
     sum: f64,
+    weight: f64,
     any: bool,
 }
 
@@ -283,6 +339,7 @@ impl Weighted {
     fn add(&mut self, weight: f64, value: f64) {
         if value.is_finite() {
             self.sum += weight * value;
+            self.weight += weight;
             self.any = true;
         }
     }
@@ -290,6 +347,16 @@ impl Weighted {
     /// The mean, or a NaN where no sample was finite - `hasX ? sum / mass : NaN`.
     fn mean(&self, mass: f64) -> f64 {
         if self.any { self.sum / mass } else { f64::NAN }
+    }
+
+    /// The weighted mean of the samples themselves, `sum(w X) / sum(w)`, or a NaN below the
+    /// tolerance - `WeightedMean.mean()`.
+    fn weighted_mean(&self) -> f64 {
+        if self.weight > MASS_TOLERANCE {
+            self.sum / self.weight
+        } else {
+            f64::NAN
+        }
     }
 }
 
@@ -657,6 +724,73 @@ fn implied_acentric_factor(m: f64) -> f64 {
         }
     }
     next
+}
+
+/// `computeCommonSlate`: the shared slate, by Pedersen's Chapter 5.6 weighting.
+///
+/// Each fluid's cut contributes weighted by the fluid's slate weight times the cut's mole
+/// fraction **of that fluid's total** - base components included, which is what makes a dilute
+/// fluid's pseudo-components count for less than its weight alone would say. The molar mass is
+/// the weighted mean of the cuts' own; the density is that mean over the weighted mean of their
+/// molar volumes, so a cut that states no positive density contributes to neither.
+pub(crate) fn compute_common_slate(
+    per_fluid_profiles: &[Vec<Profile>],
+    fluid_mole_totals: &[f64],
+    weights: &[f64],
+    target: usize,
+) -> Vec<Profile> {
+    let mut slate = Vec::with_capacity(target);
+    for index in 0..target {
+        let mut molar_mass = Weighted::default();
+        let mut molar_volume = Weighted::default();
+        let mut properties = [Weighted::default(); 17];
+        let mut slate_moles = 0.0;
+        for (fluid, profiles) in per_fluid_profiles.iter().enumerate() {
+            let profile = profiles[index];
+            if !profile.is_valid() {
+                continue;
+            }
+            let total = fluid_mole_totals[fluid];
+            let mole_fraction = if total > MASS_TOLERANCE {
+                profile.moles / total
+            } else {
+                0.0
+            };
+            let weight = weights[fluid] * mole_fraction;
+            if below(weight, 0.0) {
+                continue;
+            }
+            slate_moles += profile.moles;
+            molar_mass.add(weight, profile.molar_mass);
+            if profile.density > 0.0 {
+                molar_volume.add(weight, profile.molar_mass / profile.density);
+            }
+            for (slot, value) in properties.iter_mut().zip(profile.properties.row_values()) {
+                slot.add(weight, value);
+            }
+        }
+        let mean_molar_mass = molar_mass.weighted_mean();
+        let mean_molar_volume = molar_volume.weighted_mean();
+        let density = if mean_molar_mass.is_finite()
+            && mean_molar_volume.is_finite()
+            && mean_molar_volume > 0.0
+        {
+            mean_molar_mass / mean_molar_volume
+        } else {
+            f64::NAN
+        };
+        slate.push(Profile {
+            moles: slate_moles,
+            molar_mass: if mean_molar_mass.is_finite() {
+                mean_molar_mass
+            } else {
+                0.0
+            },
+            density,
+            properties: Properties::from_values(properties.map(|slot| slot.weighted_mean())),
+        });
+    }
+    slate
 }
 
 /// A profile as a result row, a finite property present and an absent one left out.

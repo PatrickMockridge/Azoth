@@ -220,22 +220,6 @@ class AssayCut(TypedDict):
     declared_fraction: float
     density: float | None
 
-class SourceRow(TypedDict):
-    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
-
-    moles: float
-    molar_mass: float
-    density: float | None
-    boiling_point: float | None
-
-class ReferenceRow(TypedDict):
-    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
-
-    molar_mass: float
-    boiling_point: float | None
-    moles: float | None
-    density: float | None
-
 class FluidComponent(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -262,6 +246,22 @@ class FluidComponent(TypedDict):
     cp_c: float | None
     cp_d: float | None
     attractive_m: float | None
+
+class SourceRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    moles: float
+    molar_mass: float
+    density: float | None
+    boiling_point: float | None
+
+class ReferenceRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    molar_mass: float
+    boiling_point: float | None
+    moles: float | None
+    density: float | None
 
 class Lump(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
@@ -531,6 +531,14 @@ class CharacterisePlusFractionResult:
     fraction_of_heavy_end: list[float]
     lump_molar_mass: list[Qty]
     lump_density: list[Qty]
+    warnings: list[Warning]
+
+@final
+class CharacterizeToCommonSlateResult:
+    components: list[CharacterizationComponent]
+    fluid_index: list[float]
+    fluid_moles: list[Qty]
+    resolved_pseudo_components: int
     warnings: list[Warning]
 
 @final
@@ -3050,6 +3058,11 @@ def characterise_plus_fraction(
     plus_model: str | None = None,
     number_of_lumps: float | None = None,
 ) -> CharacterisePlusFractionResult: ...
+def characterize_to_common_slate(
+    components: list[FluidComponent],
+    weights: list[float] | None = None,
+    target_pseudo_components: float | None = None,
+) -> CharacterizeToCommonSlateResult: ...
 def characterize_to_reference(
     source: list[SourceRow],
     reference: list[ReferenceRow],

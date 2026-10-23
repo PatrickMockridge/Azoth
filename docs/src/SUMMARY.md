@@ -26,6 +26,7 @@
   - [TBP cut properties by any of NeqSim's ten models](./characterization/tbp_cut_properties.md)
   - [An oil assay's declared fractions resolved to a mass basis](./characterization/assay_mass_fractions.md)
   - [A C7+ end characterised end to end: model, split and lumps](./characterization/characterise_plus_fraction.md)
+  - [Several fluids re-characterized onto one shared pseudo-component slate](./characterization/characterize_to_common_slate.md)
   - [A fluid's pseudo-components re-cut onto another fluid's slate](./characterization/characterize_to_reference.md)
   - [Several reservoir fluids blended onto one pseudo-component slate](./characterization/combine_reservoir_fluids.md)
   - [A lumped pseudo-component table split into a finer grid](./characterization/delumping.md)

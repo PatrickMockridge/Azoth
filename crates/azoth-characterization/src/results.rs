@@ -466,3 +466,38 @@ impl CalcResult for CombineReservoirFluidsResult {
         &self.warnings
     }
 }
+
+/// Result of `characterization.characterize_to_common_slate`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharacterizeToCommonSlateResult {
+    /// Every fluid's components, one fluid after another: its own base components, then the
+    /// shared slate's cuts in ascending order, named `PC1_PC`, `PC2_PC` and so on by their
+    /// position in the slate rather than by how many survived.
+    pub components: Vec<CharacterizationComponent>,
+    /// Which fluid each row belongs to, aligned with [`Self::components`]. A record's fields are
+    /// the component's, so the fluid is stated beside the row rather than on it.
+    pub fluid_index: Vec<f64>,
+    /// Each fluid's total mole amount after re-characterization, one per fluid in input order.
+    /// **A fluid's mass can move**: it keeps its own moles and takes the slate's molar mass.
+    pub fluid_moles: Vec<f64>,
+    /// How many shared cuts the answer has: the requested count, or the largest pseudo-component
+    /// count among the fluids when none was requested.
+    pub resolved_pseudo_components: u32,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CharacterizeToCommonSlateResult {
+    const CALC_ID: &'static str = "characterization.characterize_to_common_slate";
+    const FIELDS: &'static [&'static str] = &[
+        "components",
+        "fluid_index",
+        "fluid_moles",
+        "resolved_pseudo_components",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

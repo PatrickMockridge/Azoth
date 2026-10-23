@@ -16,6 +16,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 |---|---|---|
 | [`characterization.assay_mass_fractions`](./assay_mass_fractions.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.resolveMassFractions` |
 | [`characterization.characterise_plus_fraction`](./characterise_plus_fraction.md) | `direct composition` | NeqSim master `Characterise.characterisePlusFraction` |
+| [`characterization.characterize_to_common_slate`](./characterize_to_common_slate.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToCommonSlate` |
 | [`characterization.characterize_to_reference`](./characterize_to_reference.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToReference` |
 | [`characterization.combine_reservoir_fluids`](./combine_reservoir_fluids.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.combineReservoirFluids` |
 | [`characterization.delumping`](./delumping.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.delumpContributions` |

@@ -44,6 +44,57 @@ pub fn assay_mass_fractions(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Several fluids re-characterized onto one shared pseudo-component slate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, weights, target_pseudo_components))]
+#[pyo3(text_signature = "(components, weights, target_pseudo_components)")]
+pub fn characterize_to_common_slate(
+    py: Python<'_>,
+    components: Vec<crate::records_gen::FluidComponent>,
+    weights: Option<Vec<f64>>,
+    target_pseudo_components: Option<i64>,
+) -> PyResult<crate::transport_gen::PyCharacterizeToCommonSlateResult> {
+    let components_records: Vec<azoth_characterization::component_row::FluidComponent> = components
+        .into_iter()
+        .map(
+            |row| azoth_characterization::component_row::FluidComponent {
+                fluid: row.fluid,
+                name: row.name,
+                pseudo_component: row.pseudo_component,
+                moles: row.moles,
+                molar_mass: row.molar_mass,
+                density: row.density,
+                normal_boiling_point: row.normal_boiling_point,
+                critical_temperature: row.critical_temperature,
+                critical_pressure: row.critical_pressure,
+                acentric_factor: row.acentric_factor,
+                critical_volume: row.critical_volume,
+                racket_z: row.racket_z,
+                racket_z_cpa: row.racket_z_cpa,
+                parachor: row.parachor,
+                critical_viscosity: row.critical_viscosity,
+                triple_point_temperature: row.triple_point_temperature,
+                heat_of_fusion: row.heat_of_fusion,
+                ideal_gas_enthalpy_of_formation: row.ideal_gas_enthalpy_of_formation,
+                cp_a: row.cp_a,
+                cp_b: row.cp_b,
+                cp_c: row.cp_c,
+                cp_d: row.cp_d,
+                attractive_m: row.attractive_m,
+            },
+        )
+        .collect();
+    azoth_characterization::characterize_to_common_slate::characterize_to_common_slate(
+        &components_records,
+        weights.as_deref(),
+        target_pseudo_components,
+    )
+    .map(|r| crate::transport_gen::PyCharacterizeToCommonSlateResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A fluid's pseudo-components re-cut onto another fluid's slate.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

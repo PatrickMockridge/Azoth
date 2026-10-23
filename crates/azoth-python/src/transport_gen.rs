@@ -141,6 +141,70 @@ impl From<&azoth_characterization::results::CharacterisePlusFractionResult>
         }
     }
 }
+/// Result of `characterization.characterize_to_common_slate`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterizeToCommonSlateResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterizeToCommonSlateResult {
+    /// Every fluid's components in order - its own base components, then the shared cuts named by their slate position. A cut invalid in any fluid is dropped from every fluid, so a name can be absent from one fluid's run.
+    #[pyo3(get)]
+    pub components: Vec<PyCharacterizationComponent>,
+    /// Which fluid each row belongs to. The row is the component's, and the fluid is a fact about the answer rather than the component, so it travels beside the row.
+    #[pyo3(get)]
+    pub fluid_index: Vec<f64>,
+    /// Each fluid's total mole amount after re-characterization. A fluid keeps its own moles and takes the slate's molar mass, so its mass can move from the input's.
+    #[pyo3(get)]
+    pub fluid_moles: Vec<PyQty>,
+    /// How many shared cuts the answer has: the requested count, or the largest pseudo-component count among the fluids when none was requested.
+    #[pyo3(get)]
+    pub resolved_pseudo_components: u32,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCharacterizeToCommonSlateResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterizeToCommonSlateResult(components={:?}, fluid_index={:?}, fluid_moles={:?}, resolved_pseudo_components={:?}, {} warning(s))",
+            self.components,
+            self.fluid_index,
+            self.fluid_moles,
+            self.resolved_pseudo_components,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CharacterizeToCommonSlateResult>
+    for PyCharacterizeToCommonSlateResult
+{
+    fn from(r: &azoth_characterization::results::CharacterizeToCommonSlateResult) -> Self {
+        Self {
+            components: r
+                .components
+                .iter()
+                .map(PyCharacterizationComponent::from)
+                .collect(),
+            fluid_index: r.fluid_index.clone(),
+            fluid_moles: r
+                .fluid_moles
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            resolved_pseudo_components: r.resolved_pseudo_components,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.characterize_to_reference`, transported.
 #[pyclass(
     frozen,

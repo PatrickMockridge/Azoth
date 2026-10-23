@@ -37,6 +37,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 7,
         "tests_skipped": 0,
     },
+    'characterization.characterize_to_common_slate': {
+        "calc_id": 'characterization.characterize_to_common_slate',
+        "name": 'Several fluids re-characterized onto one shared pseudo-component slate',
+        "spec": {'path': 'specs/models/characterization/characterize_to_common_slate.toml', 'sha256': 'e139b0d7d743e5fdd4889568cec5c20367d2a7d9279b077640400f22f2622d0b'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_common_slate.py', 'sha256': '445ee13c83ad04eaf84e0a48efc2c22d8ff87fdfc90b2d2fd5a5366531466750'}, {'path': 'crates/azoth-characterization/src/characterize_to_common_slate.rs', 'sha256': '7d817cea61910208ad7c95d458ee33cd635bfe9bb1ca25006560eeeabcc0f74a'}],
+        "source": 'NeqSim master `PseudoComponentCombiner.characterizeToCommonSlate`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'characterization.characterize_to_reference': {
         "calc_id": 'characterization.characterize_to_reference',
         "name": "A fluid's pseudo-components re-cut onto another fluid's slate",

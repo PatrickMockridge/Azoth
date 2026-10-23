@@ -18,6 +18,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`lumping` - a cut table grouped into equal-mass lumps
 * :func:`delumping` - the same table rebuilt as a finer grid, lumping's inverse
 * :func:`combine_reservoir_fluids` - several fluids blended onto one pseudo-component slate
+* :func:`characterize_to_common_slate` - several fluids re-characterized onto one shared slate
 * :func:`mixture_from_characterization` - the table rebuilt as a mixture a flash can take
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
@@ -38,6 +39,7 @@ from azoth.core.errors import InvalidInputError
 from azoth.core.result import (
     AssayMassFractionsResult,
     CharacterisePlusFractionResult,
+    CharacterizeToCommonSlateResult,
     CharacterizeToReferenceResult,
     CombineReservoirFluidsResult,
     DelumpingResult,
@@ -153,6 +155,7 @@ _OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
 _TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
 _DELUMPING = "characterization.delumping"
 _COMBINE_RESERVOIR_FLUIDS = "characterization.combine_reservoir_fluids"
+_CHARACTERIZE_TO_COMMON_SLATE = "characterization.characterize_to_common_slate"
 
 
 def tbp_cut_boundaries(
@@ -280,6 +283,44 @@ def combine_reservoir_fluids(
     return resolve(_COMBINE_RESERVOIR_FLUIDS)(  # type: ignore[no-any-return]
         target_pseudo_components=target_pseudo_components,
         components=components,
+    )
+
+
+def characterize_to_common_slate(
+    components: Sequence[Mapping[str, Any]],
+    weights: Sequence[float] | None = None,
+    target_pseudo_components: int | None = None,
+) -> CharacterizeToCommonSlateResult:
+    """Several reservoir fluids re-characterized onto one shared pseudo-component slate.
+
+    Each fluid comes back separate, with its **own** mole amounts but an identical set of
+    pseudo-component properties - Pedersen's "common EoS" slate, so one equation of state spans
+    fluids that were cut differently. The cuts are placed on a weighted imaginary pool, and each
+    fluid's contribution to a cut is its weight times that cut's mole fraction of the fluid.
+
+    ``components`` is a list of records, one per component of every fluid, keyed by the field
+    names the spec declares - the same row :func:`combine_reservoir_fluids` takes. ``weights`` is
+    one non-negative weight per fluid, in first-appearance order; absent is equal weighting, and
+    at least one must be positive. ``target_pseudo_components`` is the slate's size; absent takes
+    the largest pseudo-component count among the fluids, and at least one.
+
+    **A fluid keeps its own moles and takes the slate's molar mass**, so its mass can move from
+    the input's; ``fluid_moles`` reports each fluid's total. A cut invalid in any fluid is dropped
+    from every fluid, and the names keep their slate positions, so the same name is the same cut
+    across the fluids.
+
+    Raises:
+        OutOfRangeError: if ``target_pseudo_components`` is not positive.
+        InvalidInputError: if ``weights`` is not one per fluid, is negative anywhere, has no
+            positive entry, if a pseudo-component row states no molar mass or density, or if a
+            row's fluid index is not a whole number from zero.
+
+    See :func:`azoth.characterization.reference.characterize_to_common_slate`.
+    """
+    return resolve(_CHARACTERIZE_TO_COMMON_SLATE)(  # type: ignore[no-any-return]
+        components=components,
+        weights=weights,
+        target_pseudo_components=target_pseudo_components,
     )
 
 

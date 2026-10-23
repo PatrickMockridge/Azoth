@@ -88,6 +88,7 @@ Five sections, and the difference between them is the point:
 
 - [`characterization.assay_mass_fractions`](./characterization/assay_mass_fractions.md) — An oil assay's declared fractions resolved to a mass basis
 - [`characterization.characterise_plus_fraction`](./characterization/characterise_plus_fraction.md) — A C7+ end characterised end to end: model, split and lumps
+- [`characterization.characterize_to_common_slate`](./characterization/characterize_to_common_slate.md) — Several fluids re-characterized onto one shared pseudo-component slate
 - [`characterization.characterize_to_reference`](./characterization/characterize_to_reference.md) — A fluid's pseudo-components re-cut onto another fluid's slate
 - [`characterization.combine_reservoir_fluids`](./characterization/combine_reservoir_fluids.md) — Several reservoir fluids blended onto one pseudo-component slate
 - [`characterization.delumping`](./characterization/delumping.md) — A lumped pseudo-component table split into a finer grid

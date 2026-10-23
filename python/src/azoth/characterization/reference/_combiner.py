@@ -97,6 +97,11 @@ class Properties:
 PROPERTY_FIELDS: tuple[str, ...] = tuple(field.name for field in fields(Properties))
 
 
+def _properties_from_values(values: Sequence[float]) -> Properties:
+    """The properties an iterable in :data:`PROPERTY_FIELDS`' order states."""
+    return Properties(**dict(zip(PROPERTY_FIELDS, values, strict=True)))
+
+
 @dataclass(frozen=True, slots=True)
 class Contribution:
     """One pseudo-component, as ``extractComponents`` lifts it."""
@@ -134,6 +139,17 @@ class Contribution:
     def sorting_key(self) -> float:
         """The boiling point, or the molar mass without a finite positive one."""
         return sorting_key(self.properties.normal_boiling_point, self.molar_mass)
+
+    def scaled_by_mass(self, factor: float) -> Contribution:
+        """The contribution with its mole amount - and hence its mass - scaled."""
+        moles = self.moles * factor
+        return Contribution(
+            moles=moles,
+            molar_mass=self.molar_mass,
+            density=self.density,
+            properties=self.properties,
+            mass=moles * self.molar_mass,
+        )
 
 
 @dataclass(slots=True)
@@ -248,19 +264,25 @@ class Profile:
 class _Weighted:
     """A weighted mean that ignores a non-finite sample, as the class's accumulators do."""
 
-    __slots__ = ("any", "sum")
+    __slots__ = ("any", "sum", "weight")
 
     def __init__(self) -> None:
         self.sum = 0.0
+        self.weight = 0.0
         self.any = False
 
     def add(self, weight: float, value: float) -> None:
         if math.isfinite(value):
             self.sum += weight * value
+            self.weight += weight
             self.any = True
 
     def mean(self, mass: float) -> float:
         return self.sum / mass if self.any else math.nan
+
+    def weighted_mean(self) -> float:
+        """``sum(w X) / sum(w)``, or a NaN below the tolerance - ``WeightedMean.mean()``."""
+        return self.sum / self.weight if self.weight > MASS_TOLERANCE else math.nan
 
 
 class GroupBuilder:
@@ -418,6 +440,63 @@ def combine_profiles(
             )
         )
     return combined
+
+
+def compute_common_slate(
+    per_fluid_profiles: Sequence[Sequence[Profile]],
+    fluid_mole_totals: Sequence[float],
+    weights: Sequence[float],
+    target: int,
+) -> list[Profile]:
+    """``computeCommonSlate``: the shared slate, by Pedersen's Chapter 5.6 weighting.
+
+    Each fluid's cut contributes weighted by the fluid's slate weight times the cut's mole
+    fraction **of that fluid's total** - base components included, which is what makes a dilute
+    fluid's pseudo-components count for less than its weight alone would say. The molar mass is
+    the weighted mean of the cuts' own; the density is that mean over the weighted mean of their
+    molar volumes, so a cut that states no positive density contributes to neither.
+    """
+    slate: list[Profile] = []
+    for index in range(target):
+        molar_mass = _Weighted()
+        molar_volume = _Weighted()
+        sums = {name: _Weighted() for name in PROPERTY_FIELDS}
+        slate_moles = 0.0
+        for fluid, profiles in enumerate(per_fluid_profiles):
+            profile = profiles[index]
+            if not profile.is_valid():
+                continue
+            total = fluid_mole_totals[fluid]
+            mole_fraction = profile.moles / total if total > MASS_TOLERANCE else 0.0
+            weight = weights[fluid] * mole_fraction
+            if not weight > 0.0:
+                continue
+            slate_moles += profile.moles
+            molar_mass.add(weight, profile.molar_mass)
+            if profile.density > 0.0:
+                molar_volume.add(weight, profile.molar_mass / profile.density)
+            for name in PROPERTY_FIELDS:
+                sums[name].add(weight, getattr(profile.properties, name))
+        mean_molar_mass = molar_mass.weighted_mean()
+        mean_molar_volume = molar_volume.weighted_mean()
+        density = (
+            mean_molar_mass / mean_molar_volume
+            if math.isfinite(mean_molar_mass)
+            and math.isfinite(mean_molar_volume)
+            and mean_molar_volume > 0.0
+            else math.nan
+        )
+        slate.append(
+            Profile(
+                moles=slate_moles,
+                molar_mass=mean_molar_mass if math.isfinite(mean_molar_mass) else 0.0,
+                density=density,
+                properties=_properties_from_values(
+                    [sums[name].weighted_mean() for name in PROPERTY_FIELDS]
+                ),
+            )
+        )
+    return slate
 
 
 def implied_acentric_factor(m: float) -> float:

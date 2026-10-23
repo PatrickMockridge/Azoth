@@ -37,6 +37,7 @@ from azoth.core.result import (
     ChapmanEnskogDiffusivityResult,
     CharacterisePlusFractionResult,
     CharacterizationComponent,
+    CharacterizeToCommonSlateResult,
     CharacterizeToReferenceResult,
     ChemicalEquilibriumResult,
     ChemicalWarningRow,
@@ -352,6 +353,7 @@ __all__ = [
     "cdft_surface_tension",
     "chapman_enskog_diffusivity",
     "characterise_plus_fraction",
+    "characterize_to_common_slate",
     "characterize_to_reference",
     "chemical_equilibrium",
     "choked_flow_area",
@@ -623,6 +625,23 @@ def characterise_plus_fraction(molar_mass: Q, density: Q, mole_fraction: float, 
         fraction_of_heavy_end=tuple(result.fraction_of_heavy_end),
         lump_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_molar_mass),
         lump_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_density),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def characterize_to_common_slate(components: Sequence[Mapping[str, Any]], weights: Sequence[float] | None=None, target_pseudo_components: int | None=None) -> CharacterizeToCommonSlateResult:
+    """``characterization.characterize_to_common_slate``, computed in Rust."""
+    spec = _models_gen.model("characterization.characterize_to_common_slate")
+    result = _core.characterize_to_common_slate(
+        input_records_to_si(spec, "components", components),
+        None if weights is None else list(weights),
+        None if target_pseudo_components is None else _count("target_pseudo_components", target_pseudo_components),
+    )
+    return CharacterizeToCommonSlateResult(
+        components=tuple(CharacterizationComponent(name=c.name, pseudo_component=c.pseudo_component, moles=from_si(c.moles.magnitude_si, c.moles.unit), molar_mass=None if c.molar_mass is None else from_si(c.molar_mass.magnitude_si, c.molar_mass.unit), density=None if c.density is None else from_si(c.density.magnitude_si, c.density.unit), normal_boiling_point=None if c.normal_boiling_point is None else from_si(c.normal_boiling_point.magnitude_si, c.normal_boiling_point.unit), critical_temperature=None if c.critical_temperature is None else from_si(c.critical_temperature.magnitude_si, c.critical_temperature.unit), critical_pressure=None if c.critical_pressure is None else from_si(c.critical_pressure.magnitude_si, c.critical_pressure.unit), acentric_factor=c.acentric_factor, critical_volume=None if c.critical_volume is None else from_si(c.critical_volume.magnitude_si, c.critical_volume.unit), racket_z=c.racket_z, racket_z_cpa=c.racket_z_cpa, parachor=c.parachor, critical_viscosity=None if c.critical_viscosity is None else from_si(c.critical_viscosity.magnitude_si, c.critical_viscosity.unit), triple_point_temperature=None if c.triple_point_temperature is None else from_si(c.triple_point_temperature.magnitude_si, c.triple_point_temperature.unit), heat_of_fusion=None if c.heat_of_fusion is None else from_si(c.heat_of_fusion.magnitude_si, c.heat_of_fusion.unit), ideal_gas_enthalpy_of_formation=None if c.ideal_gas_enthalpy_of_formation is None else from_si(c.ideal_gas_enthalpy_of_formation.magnitude_si, c.ideal_gas_enthalpy_of_formation.unit), cp_a=None if c.cp_a is None else from_si(c.cp_a.magnitude_si, c.cp_a.unit), cp_b=None if c.cp_b is None else from_si(c.cp_b.magnitude_si, c.cp_b.unit), cp_c=None if c.cp_c is None else from_si(c.cp_c.magnitude_si, c.cp_c.unit), cp_d=None if c.cp_d is None else from_si(c.cp_d.magnitude_si, c.cp_d.unit), attractive_m=c.attractive_m) for c in result.components),
+        fluid_index=tuple(result.fluid_index),
+        fluid_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.fluid_moles),
+        resolved_pseudo_components=result.resolved_pseudo_components,
         warnings=_warnings(result.warnings),
     )
 

@@ -21,6 +21,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // The result class each registered id answers with.
     m.add_class::<crate::transport_gen::PyAssayMassFractionsResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterisePlusFractionResult>()?;
+    m.add_class::<crate::transport_gen::PyCharacterizeToCommonSlateResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterizeToReferenceResult>()?;
     m.add_class::<crate::transport_gen::PyCombineReservoirFluidsResult>()?;
     m.add_class::<crate::transport_gen::PyDelumpingResult>()?;
@@ -300,6 +301,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(
         crate::characterization::characterise_plus_fraction,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::characterize_to_common_slate,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(
