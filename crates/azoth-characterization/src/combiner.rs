@@ -688,7 +688,7 @@ pub(crate) fn combine_profiles(
 /// 0.25 seed. `applyTo` assigns the averaged acentric factor first and `m` last, so where the row
 /// carries an `m` the answer's omega is this root and not the average - and it is the solver's
 /// number rather than a closed-form root.
-fn implied_acentric_factor(m: f64) -> f64 {
+pub(crate) fn implied_acentric_factor(m: f64) -> f64 {
     const EPS: f64 = 1.0e-10;
     let value = |x: f64| -0.176 * x * x + 1.574 * x + (0.48 - m);
     let derivative = |x: f64| -0.352 * x + 1.574;

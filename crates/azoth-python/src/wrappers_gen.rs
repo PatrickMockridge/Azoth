@@ -377,6 +377,25 @@ pub fn tbp_cut_boundaries(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The component card NeqSim builds from a TBP cut.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, density))]
+#[pyo3(text_signature = "(molar_mass, density)")]
+pub fn tbp_fraction_component(
+    py: Python<'_>,
+    molar_mass: f64,
+    density: f64,
+) -> PyResult<crate::transport_gen::PyTbpFractionComponentResult> {
+    azoth_characterization::tbp_fraction_component::tbp_fraction_component(
+        kilograms_per_mole(molar_mass),
+        kilograms_per_cubic_meter(density),
+    )
+    .map(|r| crate::transport_gen::PyTbpFractionComponentResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A fluid's components grouped into boiling-point bins.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

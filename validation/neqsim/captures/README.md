@@ -710,6 +710,17 @@ cannot leak into a row.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CharacterizationFluidRebuildProbe > captures/characterization_fluid_rebuild_probe.tsv
 ```
 
+**The TBP fraction component probe** records what `SystemThermo.addTBPfraction` makes of one
+cut: the component's own getters after the call, and the intermediates that are not on it - the
+model's Edmister acentric factor and the fitted `m`, and the molar volume of the one-component
+SRK reference phase `calcRacketZ` flashes at 15 C and one atmosphere. Six cuts span the
+boiling-point switch at 540 g/mol and the heavy coefficient switch at 1120, and the last one
+pins the class's clamp on a fitted `m` whose root runs past -0.99.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,

@@ -11,6 +11,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`characterise_plus_fraction` - the whole chain, from a C7+ end to lumps
 * :func:`characterize_to_reference` - a fluid re-cut onto another's cut slate
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
+* :func:`tbp_fraction_component` - the component `addTBPfraction` builds from a cut
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
 * :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
 * :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
@@ -52,6 +53,7 @@ from azoth.core.result import (
     TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    TbpFractionComponentResult,
     TbpGroupingResult,
     TransferBinaryInteractionParametersResult,
     WhitsonGammaSplitResult,
@@ -143,6 +145,7 @@ __all__ = [
 ]
 
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
+_TBP_FRACTION_COMPONENT = "characterization.tbp_fraction_component"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
 _TBP_GROUPING = "characterization.tbp_grouping"
@@ -562,6 +565,34 @@ def tbp_cut_properties(
     """
     return resolve(_TBP_CUT_PROPERTIES)(  # type: ignore[no-any-return]
         model=model, molar_mass=molar_mass, density=density, boiling_point=boiling_point
+    )
+
+
+def tbp_fraction_component(
+    molar_mass: Q,
+    density: Q,
+) -> TbpFractionComponentResult:
+    """The component ``addTBPfraction`` builds from a cut, by NeqSim's default TBP model.
+
+    ``molar_mass`` is the cut's molar mass and ``density`` its normal liquid density at 15 C and
+    1 atm. The answer is the card a cubic reads: the critical constants, the fitted alpha
+    coefficient, the Peneloux Rackett compressibility, the critical volume and viscosity, the
+    parachor, the triple point and heat of fusion, the formation enthalpy, the ideal-gas
+    heat-capacity polynomial and the Lennard-Jones pair.
+
+    **The acentric factor is the one the fitted ``m`` implies**, which is not the model's own
+    Edmister value; the critical volume is built from the model's, as the class does. The Rackett
+    compressibility is not a correlation: it is the liquid root of a one-component SRK phase at
+    15 C and one atmosphere.
+
+    Raises:
+        OutOfRangeError: if ``molar_mass`` or ``density`` is not positive.
+
+    See :func:`azoth.characterization.reference.tbp_fraction_component`.
+    """
+    return resolve(_TBP_FRACTION_COMPONENT)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        density=density,
     )
 
 

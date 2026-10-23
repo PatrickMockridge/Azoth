@@ -372,6 +372,73 @@ class TbpDensityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpFractionComponentResult(_HasWarnings):
+    """Result of ``characterization.tbp_fraction_component``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_fraction_component"
+
+    #: Critical temperature, from the TBP model's correlation.
+    critical_temperature: Q
+
+    #: Critical pressure. The correlation is written in bar and this states pascals.
+    critical_pressure: Q
+
+    #: Normal boiling point, from the model's two-branch correlation.
+    boiling_temperature: Q
+
+    #: The acentric factor the component carries: the root `AttractiveTermSrk.setm` solves from the fitted `m`, not the model's Edmister value.
+    acentric_factor: float
+
+    #: The fitted coefficient of the Soave alpha function, `0.7431 + 0.0048122 M + 0.0096707 SG - 3.7184e-6 M**2` in g/mol and g/cm3.
+    attraction_exponent: float
+
+    #: Critical volume, `(0.2918 - 0.0928 w_model) R Tc/Pc`, from the **model's** acentric factor. The class's own unit is cm3/mol and this is the same volume in SI.
+    critical_volume: Q
+
+    #: The Peneloux Rackett compressibility, from the reference SRK phase's liquid root at 15 C and one atmosphere.
+    racket_z: float
+
+    #: The same compressibility on the CPA basis, which the class sets to the same number.
+    racket_z_cpa: float
+
+    #: The parachor, `59.3 + 2.34 M` in g/mol, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    parachor: float
+
+    #: Critical viscosity, `7.94830 sqrt(M) Pc^(2/3) / Tc^(1/6) 1e-7` with `M` in g/mol and `Pc` in bar.
+    critical_viscosity: Q
+
+    #: The triple-point temperature, `374.5 + 0.02617 M - 20172/M` in g/mol.
+    triple_point_temperature: Q
+
+    #: The heat of fusion, `0.1426/0.238845 M Ttrip` in g/mol.
+    heat_of_fusion: Q
+
+    #: The ideal-gas enthalpy of formation, `-1462600 M - 47566` with `M` in kg/mol.
+    ideal_gas_enthalpy_of_formation: Q
+
+    #: The constant term of the ideal-gas heat capacity.
+    cp_a: Q
+
+    #: The coefficient of `T`.
+    cp_b: Q
+
+    #: The coefficient of `T**2`.
+    cp_c: Q
+
+    #: The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    cp_d: Q
+
+    #: The Lennard-Jones collision diameter, Tee-Gotoh-Stewart's correlation on the critical constants.
+    lennard_jones_diameter: Q
+
+    #: The Lennard-Jones energy over Boltzmann's constant, in kelvin.
+    lennard_jones_energy: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpGroupingResult(_HasWarnings):
     """Result of ``characterization.tbp_grouping``."""
 

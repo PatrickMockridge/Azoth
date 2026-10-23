@@ -169,6 +169,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'characterization.tbp_fraction_component': {
+        "calc_id": 'characterization.tbp_fraction_component',
+        "name": 'The component card NeqSim builds from a TBP cut',
+        "spec": {'path': 'specs/models/characterization/tbp_fraction_component.toml', 'sha256': 'f01abd879cf0704d3160af97aea022975e531122fe683c14233e40b421bf1f8a'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_fraction_component.py', 'sha256': 'fb5e1b884514dd5d153838b0d52b5cb750911beb50fbbdf59a5ef99bf4b23521'}, {'path': 'crates/azoth-characterization/src/tbp_fraction_component.rs', 'sha256': 'f9e1d711978095131f721904c86327ebc744c706779384e697459ef18bde18f8'}],
+        "source": 'NeqSim master `SystemThermo.addTBPfraction`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
+        "tests_skipped": 0,
+    },
     'characterization.tbp_grouping': {
         "calc_id": 'characterization.tbp_grouping',
         "name": "A fluid's components grouped into boiling-point bins",

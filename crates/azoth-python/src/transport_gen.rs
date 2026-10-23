@@ -898,6 +898,176 @@ impl From<&azoth_characterization::results::TbpDensityResult> for PyTbpDensityRe
         }
     }
 }
+/// Result of `characterization.tbp_fraction_component`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpFractionComponentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpFractionComponentResult {
+    /// Critical temperature, from the TBP model's correlation.
+    #[pyo3(get)]
+    pub critical_temperature: PyQty,
+    /// Critical pressure. The correlation is written in bar and this states pascals.
+    #[pyo3(get)]
+    pub critical_pressure: PyQty,
+    /// Normal boiling point, from the model's two-branch correlation.
+    #[pyo3(get)]
+    pub boiling_temperature: PyQty,
+    /// The acentric factor the component carries: the root `AttractiveTermSrk.setm` solves from the fitted `m`, not the model's Edmister value.
+    #[pyo3(get)]
+    pub acentric_factor: f64,
+    /// The fitted coefficient of the Soave alpha function, `0.7431 + 0.0048122 M + 0.0096707 SG - 3.7184e-6 M**2` in g/mol and g/cm3.
+    #[pyo3(get)]
+    pub attraction_exponent: f64,
+    /// Critical volume, `(0.2918 - 0.0928 w_model) R Tc/Pc`, from the **model's** acentric factor. The class's own unit is cm3/mol and this is the same volume in SI.
+    #[pyo3(get)]
+    pub critical_volume: PyQty,
+    /// The Peneloux Rackett compressibility, from the reference SRK phase's liquid root at 15 C and one atmosphere.
+    #[pyo3(get)]
+    pub racket_z: f64,
+    /// The same compressibility on the CPA basis, which the class sets to the same number.
+    #[pyo3(get)]
+    pub racket_z_cpa: f64,
+    /// The parachor, `59.3 + 2.34 M` in g/mol, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    #[pyo3(get)]
+    pub parachor: f64,
+    /// Critical viscosity, `7.94830 sqrt(M) Pc^(2/3) / Tc^(1/6) 1e-7` with `M` in g/mol and `Pc` in bar.
+    #[pyo3(get)]
+    pub critical_viscosity: PyQty,
+    /// The triple-point temperature, `374.5 + 0.02617 M - 20172/M` in g/mol.
+    #[pyo3(get)]
+    pub triple_point_temperature: PyQty,
+    /// The heat of fusion, `0.1426/0.238845 M Ttrip` in g/mol.
+    #[pyo3(get)]
+    pub heat_of_fusion: PyQty,
+    /// The ideal-gas enthalpy of formation, `-1462600 M - 47566` with `M` in kg/mol.
+    #[pyo3(get)]
+    pub ideal_gas_enthalpy_of_formation: PyQty,
+    /// The constant term of the ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_a: PyQty,
+    /// The coefficient of `T`.
+    #[pyo3(get)]
+    pub cp_b: PyQty,
+    /// The coefficient of `T**2`.
+    #[pyo3(get)]
+    pub cp_c: PyQty,
+    /// The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    #[pyo3(get)]
+    pub cp_d: PyQty,
+    /// The Lennard-Jones collision diameter, Tee-Gotoh-Stewart's correlation on the critical constants.
+    #[pyo3(get)]
+    pub lennard_jones_diameter: PyQty,
+    /// The Lennard-Jones energy over Boltzmann's constant, in kelvin.
+    #[pyo3(get)]
+    pub lennard_jones_energy: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpFractionComponentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpFractionComponentResult(critical_temperature={:?}, critical_pressure={:?}, boiling_temperature={:?}, acentric_factor={:?}, attraction_exponent={:?}, critical_volume={:?}, racket_z={:?}, racket_z_cpa={:?}, parachor={:?}, critical_viscosity={:?}, triple_point_temperature={:?}, heat_of_fusion={:?}, ideal_gas_enthalpy_of_formation={:?}, cp_a={:?}, cp_b={:?}, cp_c={:?}, cp_d={:?}, lennard_jones_diameter={:?}, lennard_jones_energy={:?}, {} warning(s))",
+            self.critical_temperature,
+            self.critical_pressure,
+            self.boiling_temperature,
+            self.acentric_factor,
+            self.attraction_exponent,
+            self.critical_volume,
+            self.racket_z,
+            self.racket_z_cpa,
+            self.parachor,
+            self.critical_viscosity,
+            self.triple_point_temperature,
+            self.heat_of_fusion,
+            self.ideal_gas_enthalpy_of_formation,
+            self.cp_a,
+            self.cp_b,
+            self.cp_c,
+            self.cp_d,
+            self.lennard_jones_diameter,
+            self.lennard_jones_energy,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpFractionComponentResult>
+    for PyTbpFractionComponentResult
+{
+    fn from(r: &azoth_characterization::results::TbpFractionComponentResult) -> Self {
+        Self {
+            critical_temperature: PyQty {
+                magnitude_si: r.critical_temperature.value,
+                unit: "K".to_string(),
+            },
+            critical_pressure: PyQty {
+                magnitude_si: r.critical_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            boiling_temperature: PyQty {
+                magnitude_si: r.boiling_temperature.value,
+                unit: "K".to_string(),
+            },
+            acentric_factor: r.acentric_factor,
+            attraction_exponent: r.attraction_exponent,
+            critical_volume: PyQty {
+                magnitude_si: r.critical_volume.value,
+                unit: "m**3/mol".to_string(),
+            },
+            racket_z: r.racket_z,
+            racket_z_cpa: r.racket_z_cpa,
+            parachor: r.parachor,
+            critical_viscosity: PyQty {
+                magnitude_si: r.critical_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            triple_point_temperature: PyQty {
+                magnitude_si: r.triple_point_temperature.value,
+                unit: "K".to_string(),
+            },
+            heat_of_fusion: PyQty {
+                magnitude_si: r.heat_of_fusion.value,
+                unit: "J/mol".to_string(),
+            },
+            ideal_gas_enthalpy_of_formation: PyQty {
+                magnitude_si: r.ideal_gas_enthalpy_of_formation.value,
+                unit: "J/mol".to_string(),
+            },
+            cp_a: PyQty {
+                magnitude_si: r.cp_a,
+                unit: "J/(mol*K)".to_string(),
+            },
+            cp_b: PyQty {
+                magnitude_si: r.cp_b,
+                unit: "J/(mol*K**2)".to_string(),
+            },
+            cp_c: PyQty {
+                magnitude_si: r.cp_c,
+                unit: "J/(mol*K**3)".to_string(),
+            },
+            cp_d: PyQty {
+                magnitude_si: r.cp_d,
+                unit: "J/(mol*K**4)".to_string(),
+            },
+            lennard_jones_diameter: PyQty {
+                magnitude_si: r.lennard_jones_diameter.value,
+                unit: "angstrom".to_string(),
+            },
+            lennard_jones_energy: PyQty {
+                magnitude_si: r.lennard_jones_energy.value,
+                unit: "K".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_grouping`, transported.
 #[pyclass(
     frozen,

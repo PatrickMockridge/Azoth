@@ -9,7 +9,10 @@ use azoth_core::{CalcResult, Warning};
 
 use crate::characterise_plus_fraction::PlusModel;
 use crate::component_row::CharacterizationComponent;
-use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
+use uom::si::f64::{
+    DynamicViscosity, Length, MassDensity, MolarEnergy, MolarMass, MolarVolume, Pressure,
+    ThermodynamicTemperature,
+};
 
 /// Result of `characterization.characterise_plus_fraction`.
 #[derive(Debug, Clone, PartialEq)]
@@ -515,6 +518,82 @@ pub struct TransferBinaryInteractionParametersResult {
 impl CalcResult for TransferBinaryInteractionParametersResult {
     const CALC_ID: &'static str = "characterization.transfer_binary_interaction_parameters";
     const FIELDS: &'static [&'static str] = &["target_kij", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.tbp_fraction_component`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpFractionComponentResult {
+    /// Critical temperature.
+    pub critical_temperature: ThermodynamicTemperature,
+    /// Critical pressure, in pascals; the class's correlation is written in bar.
+    pub critical_pressure: Pressure,
+    /// Normal boiling point.
+    pub boiling_temperature: ThermodynamicTemperature,
+    /// The acentric factor the component carries: the root its fitted `m` implies, not the
+    /// model's own Edmister value.
+    pub acentric_factor: f64,
+    /// The fitted coefficient of the Soave alpha function.
+    pub attraction_exponent: f64,
+    /// Critical volume, from the **model's** acentric factor.
+    pub critical_volume: MolarVolume,
+    /// The Peneloux Rackett compressibility, from the reference SRK phase's liquid root.
+    pub racket_z: f64,
+    /// The same compressibility on the CPA basis, which the class sets to the same number.
+    pub racket_z_cpa: f64,
+    /// The parachor, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    pub parachor: f64,
+    /// The critical viscosity.
+    pub critical_viscosity: DynamicViscosity,
+    /// The triple-point temperature.
+    pub triple_point_temperature: ThermodynamicTemperature,
+    /// The heat of fusion.
+    pub heat_of_fusion: MolarEnergy,
+    /// The ideal-gas enthalpy of formation.
+    pub ideal_gas_enthalpy_of_formation: MolarEnergy,
+    /// The constant term of the ideal-gas heat-capacity polynomial.
+    pub cp_a: f64,
+    /// The coefficient of `T`.
+    pub cp_b: f64,
+    /// The coefficient of `T**2`.
+    pub cp_c: f64,
+    /// The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    pub cp_d: f64,
+    /// The Lennard-Jones collision diameter.
+    pub lennard_jones_diameter: Length,
+    /// The Lennard-Jones energy over Boltzmann's constant, as a temperature.
+    pub lennard_jones_energy: ThermodynamicTemperature,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpFractionComponentResult {
+    const CALC_ID: &'static str = "characterization.tbp_fraction_component";
+    const FIELDS: &'static [&'static str] = &[
+        "critical_temperature",
+        "critical_pressure",
+        "boiling_temperature",
+        "acentric_factor",
+        "attraction_exponent",
+        "critical_volume",
+        "racket_z",
+        "racket_z_cpa",
+        "parachor",
+        "critical_viscosity",
+        "triple_point_temperature",
+        "heat_of_fusion",
+        "ideal_gas_enthalpy_of_formation",
+        "cp_a",
+        "cp_b",
+        "cp_c",
+        "cp_d",
+        "lennard_jones_diameter",
+        "lennard_jones_energy",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

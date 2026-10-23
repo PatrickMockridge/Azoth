@@ -253,6 +253,7 @@ from azoth.core.result import (
     TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    TbpFractionComponentResult,
     TbpFractionPropertiesResult,
     TbpGroupingResult,
     ThermalConductivityResult,
@@ -548,6 +549,7 @@ __all__ = [
     "tbp_cut_boundaries",
     "tbp_cut_properties",
     "tbp_density",
+    "tbp_fraction_component",
     "tbp_fraction_properties",
     "tbp_grouping",
     "th_flash",
@@ -842,6 +844,37 @@ def tbp_density(boiling_point: Q, molar_mass: Q, closure: str | None=None) -> Tb
     )
     return TbpDensityResult(
         density=from_si(result.density.magnitude_si, result.density.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tbp_fraction_component(molar_mass: Q, density: Q) -> TbpFractionComponentResult:
+    """``characterization.tbp_fraction_component``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_fraction_component")
+    result = _core.tbp_fraction_component(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+    )
+    return TbpFractionComponentResult(
+        critical_temperature=from_si(result.critical_temperature.magnitude_si, result.critical_temperature.unit),
+        critical_pressure=from_si(result.critical_pressure.magnitude_si, result.critical_pressure.unit),
+        boiling_temperature=from_si(result.boiling_temperature.magnitude_si, result.boiling_temperature.unit),
+        acentric_factor=result.acentric_factor,
+        attraction_exponent=result.attraction_exponent,
+        critical_volume=from_si(result.critical_volume.magnitude_si, result.critical_volume.unit),
+        racket_z=result.racket_z,
+        racket_z_cpa=result.racket_z_cpa,
+        parachor=result.parachor,
+        critical_viscosity=from_si(result.critical_viscosity.magnitude_si, result.critical_viscosity.unit),
+        triple_point_temperature=from_si(result.triple_point_temperature.magnitude_si, result.triple_point_temperature.unit),
+        heat_of_fusion=from_si(result.heat_of_fusion.magnitude_si, result.heat_of_fusion.unit),
+        ideal_gas_enthalpy_of_formation=from_si(result.ideal_gas_enthalpy_of_formation.magnitude_si, result.ideal_gas_enthalpy_of_formation.unit),
+        cp_a=from_si(result.cp_a.magnitude_si, result.cp_a.unit),
+        cp_b=from_si(result.cp_b.magnitude_si, result.cp_b.unit),
+        cp_c=from_si(result.cp_c.magnitude_si, result.cp_c.unit),
+        cp_d=from_si(result.cp_d.magnitude_si, result.cp_d.unit),
+        lennard_jones_diameter=from_si(result.lennard_jones_diameter.magnitude_si, result.lennard_jones_diameter.unit),
+        lennard_jones_energy=from_si(result.lennard_jones_energy.magnitude_si, result.lennard_jones_energy.unit),
         warnings=_warnings(result.warnings),
     )
 

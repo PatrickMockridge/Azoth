@@ -27,6 +27,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |
 | [`characterization.tbp_cut_boundaries`](./tbp_cut_boundaries.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.addTBPCutBoundariesKelvin` |
 | [`characterization.tbp_density`](./tbp_density.md) | `direct composition` | NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` |
+| [`characterization.tbp_fraction_component`](./tbp_fraction_component.md) | `direct composition` | NeqSim master `SystemThermo.addTBPfraction` |
 | [`characterization.tbp_grouping`](./tbp_grouping.md) | `direct composition` | NeqSim master `Phase.groupTBPfractions` |
 | [`characterization.transfer_binary_interaction_parameters`](./transfer_binary_interaction_parameters.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.transferBinaryInteractionParameters` |
 | [`characterization.whitson_gamma_split`](./whitson_gamma_split.md) | `direct composition` | NeqSim master `PlusFractionModel.WhitsonGammaModel` |

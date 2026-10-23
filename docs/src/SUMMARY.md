@@ -37,6 +37,7 @@
   - [TBP cut molar mass from its normal boiling point and specific gravity](./characterization/tbp_closure.md)
   - [A cumulative TBP curve cut into an assay, one row per interval](./characterization/tbp_cut_boundaries.md)
   - [TBP cut specific gravity from its boiling point and molar mass](./characterization/tbp_density.md)
+  - [The component card NeqSim builds from a TBP cut](./characterization/tbp_fraction_component.md)
   - [A fluid's components grouped into boiling-point bins](./characterization/tbp_grouping.md)
   - [A fluid's interaction table written onto another fluid's slate](./characterization/transfer_binary_interaction_parameters.md)
   - [A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma](./characterization/whitson_gamma_split.md)

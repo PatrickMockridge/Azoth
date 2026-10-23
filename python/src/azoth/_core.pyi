@@ -637,6 +637,29 @@ class TbpDensityResult:
     warnings: list[Warning]
 
 @final
+class TbpFractionComponentResult:
+    critical_temperature: Qty
+    critical_pressure: Qty
+    boiling_temperature: Qty
+    acentric_factor: float
+    attraction_exponent: float
+    critical_volume: Qty
+    racket_z: float
+    racket_z_cpa: float
+    parachor: float
+    critical_viscosity: Qty
+    triple_point_temperature: Qty
+    heat_of_fusion: Qty
+    ideal_gas_enthalpy_of_formation: Qty
+    cp_a: Qty
+    cp_b: Qty
+    cp_c: Qty
+    cp_d: Qty
+    lennard_jones_diameter: Qty
+    lennard_jones_energy: Qty
+    warnings: list[Warning]
+
+@final
 class TbpGroupingResult:
     group_fraction: list[float]
     warnings: list[Warning]
@@ -3136,6 +3159,7 @@ def tbp_density(
     molar_mass: float,
     closure: str | None = None,
 ) -> TbpDensityResult: ...
+def tbp_fraction_component(molar_mass: float, density: float) -> TbpFractionComponentResult: ...
 def tbp_grouping(boiling_point: list[float], mole_fraction: list[float]) -> TbpGroupingResult: ...
 def transfer_binary_interaction_parameters(
     reference_components: list[InteractionComponent],

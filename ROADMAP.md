@@ -374,7 +374,7 @@ The specialist physics.
   and `TBPfractionModel`'s eight cut models, `PlusCharacterize`, `PedersenPlusModelSolver`,
   `LumpingModel`, `Recombine`, and the assay and refinery-blend machinery around them. A wax
   or asphaltene fluid is built from TBP and plus fractions, so this is what those models
-  stand on. **The subsystem is ported, as seventeen ids over the tables it works on**:
+  stand on. **The subsystem is ported, as eighteen ids over the tables it works on**:
   `characterization.pedersen_plus_split` and `whitson_gamma_split` divide a plus fraction into
   carbon-number cuts, `lumping` groups a cut table into equal-mass lumps and `delumping` splits
   one back into a finer grid,
@@ -386,13 +386,14 @@ The specialist physics.
   phase by boiling point, `set_heavy_tbp_to_plus` picks the row a plus end begins at,
   `characterise_plus_fraction` is the chain from a C7+ end to lumps,
   `combine_reservoir_fluids` blends several fluids onto one slate,
-  `characterize_to_common_slate` re-characterizes several onto a shared one, and
-  `transfer_binary_interaction_parameters` moves an interaction table between two.
-  `mixture_from_characterization` turns the rows any of them answers with into a `Mixture` and
-  its ideal-gas model. **What is owed is `OilAssayCharacterisation.apply`'s `addTBPfraction`
-  loop**, which needs the fifteen derived properties - the Rackett Z from an SRK liquid-root
-  solve among them - as its own table→table id first, and `Recombine`, whose constructor is
-  empty and whose `runRecombination` returns null.
+  `characterize_to_common_slate` re-characterizes several onto a shared one,
+  `transfer_binary_interaction_parameters` moves an interaction table between two, and
+  `tbp_fraction_component` is `addTBPfraction`'s card for one cut - the Rackett compressibility
+  among it, from the reference SRK phase's liquid root. `mixture_from_characterization` turns the
+  rows any of them answers with into a `Mixture` and its ideal-gas model. **What is owed is
+  `OilAssayCharacterisation.apply`'s composition of those cards into a fluid** - the assay-to-
+  mixture helper - and `Recombine`, whose constructor is empty and whose `runRecombination`
+  returns null.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
@@ -784,18 +785,20 @@ a claim nothing holds.
   ported and the fluid is built from it: `PseudoComponentCombiner`'s `combineReservoirFluids`,
   `characterizeToCommonSlate` and `transferBinaryInteractionParameters` are
   `characterization.combine_reservoir_fluids`, `characterization.characterize_to_common_slate`
-  and `characterization.transfer_binary_interaction_parameters`, each over rows, and
-  `mixture_from_characterization` turns those rows into a `Mixture` and its ideal-gas model. So
-  the rows are the whole of the fluid's description, and two engine-side quirks travel with
-  them: `getCpD`'s `1e-10` offset and the acentric factor `setm` rewrites.
+  and `characterization.transfer_binary_interaction_parameters`, each over rows;
+  `characterization.tbp_fraction_component` is `addTBPfraction`'s card for one cut, its Rackett
+  compressibility a reference SRK liquid root; and `mixture_from_characterization` turns rows
+  into a `Mixture` and its ideal-gas model. So the rows are the whole of the fluid's
+  description, and three engine-side quirks travel with them: `getCpD`'s `1e-10` offset, the
+  acentric factor `setm` rewrites, and the coefficient `init` then re-derives from it.
   `characterization.characterize_to_reference` carries all four of the class's own options -
   `inheritReferenceProperties`, `delumpBeforeRecharacterization` with its resolution, and
-  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. **What is owed
-  is `OilAssayCharacterisation.apply`'s `addTBPfraction` loop**, which needs the fifteen derived
-  properties its TBP model sets - including the Rackett Z from an SRK liquid-root solve - as a
-  table→table id before a mixture can be built from an assay. **`Recombine` is unreachable**: its
-  constructor is empty and `runRecombination` returns null. `normalizeComposition` computes a
-  total and never uses it, and `generateValidationReport` reports on data; neither is an id.
+  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. **What is owed is
+  `OilAssayCharacterisation.apply`'s composition of those cards into a fluid** - the
+  assay-to-mixture helper over the cards and `mixture_from_characterization`. **`Recombine` is
+  unreachable**: its constructor is empty and `runRecombination` returns null.
+  `normalizeComposition` computes a total and never uses it, and `generateValidationReport`
+  reports on data; neither is an id.
 
 ## Beyond the port
 

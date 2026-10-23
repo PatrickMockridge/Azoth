@@ -32,6 +32,7 @@ pub mod tbp_closure;
 pub mod tbp_cut_boundaries;
 pub mod tbp_cut_properties;
 pub mod tbp_density;
+pub mod tbp_fraction_component;
 pub mod tbp_grouping;
 pub mod transfer_binary_interaction_parameters;
 pub mod unported;
@@ -54,13 +55,15 @@ pub use results::{
     CharacterizeToReferenceResult, CombineReservoirFluidsResult, DelumpingResult, LumpingResult,
     OilAssayDerivationResult, PedersenPlusSplitResult, SetHeavyTbpToPlusResult, SubFraction,
     TbpClosureResult, TbpCutBoundariesResult, TbpCutPropertiesResult, TbpDensityResult,
-    TbpGroupingResult, WhitsonGammaSplitResult,
+    TbpFractionComponentResult, TbpGroupingResult, TransferBinaryInteractionParametersResult,
+    WhitsonGammaSplitResult,
 };
 pub use set_heavy_tbp_to_plus::set_heavy_tbp_to_plus;
 pub use tbp_closure::{TbpClosureKind, tbp_closure};
 pub use tbp_cut_boundaries::tbp_cut_boundaries;
 pub use tbp_cut_properties::{TbpModel, tbp_cut_properties};
 pub use tbp_density::tbp_density;
+pub use tbp_fraction_component::tbp_fraction_component;
 pub use tbp_grouping::tbp_grouping;
 pub use transfer_binary_interaction_parameters::transfer_binary_interaction_parameters;
 pub use whitson_gamma_split::{WhitsonDensityModel, gamma, p0_p1, whitson_gamma_split};

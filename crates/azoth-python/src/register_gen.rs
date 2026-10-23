@@ -33,6 +33,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTbpCutBoundariesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpCutPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpDensityResult>()?;
+    m.add_class::<crate::transport_gen::PyTbpFractionComponentResult>()?;
     m.add_class::<crate::transport_gen::PyTbpGroupingResult>()?;
     m.add_class::<crate::transport_gen::PyTransferBinaryInteractionParametersResult>()?;
     m.add_class::<crate::transport_gen::PyWhitsonGammaSplitResult>()?;
@@ -340,6 +341,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::characterization::tbp_density, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::tbp_fraction_component,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tbp_grouping, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::transfer_binary_interaction_parameters,

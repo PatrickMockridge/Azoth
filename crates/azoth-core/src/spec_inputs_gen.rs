@@ -15,6 +15,7 @@
 //!   - specs/models/characterization/tbp_cut_boundaries.toml
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
+//!   - specs/models/characterization/tbp_fraction_component.toml
 //!   - specs/models/characterization/tbp_grouping.toml
 //!   - specs/models/characterization/transfer_binary_interaction_parameters.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
@@ -415,6 +416,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("characterization.tbp_density", "molar_mass", "molar_mass"),
+    (
+        "characterization.tbp_fraction_component",
+        "molar_mass",
+        "molar_mass",
+    ),
+    (
+        "characterization.tbp_fraction_component",
+        "density",
+        "mass_density",
+    ),
     (
         "characterization.tbp_grouping",
         "boiling_point",
