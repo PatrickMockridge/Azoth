@@ -8,26 +8,24 @@ the mapping, so an agent can tell "validated" from "placeholder" at a glance.
 
 ## What is `azoth`-basis, and what is still a placeholder
 
-A skill whose `calculation_basis` is `azoth` drives the validated library. Seventeen
+A skill whose `calculation_basis` is `azoth` drives the validated library. Nineteen
 are: the four `library/` skills, four under `eos/`, four under `flow-assurance/`,
 two under `hydraulics/`, two under `process/` and one under `thermal/`, driving the
 86 calculations and 169 models the library implements.
 
-The remaining 73 are placeholders — 44 `screening`, 18 `advisory`, 10
-`data-retrieval` and 1 `hybrid` — and each `screening` one names **what would back it**,
+The remaining 71 are placeholders — 43 `screening`, 18 `advisory` and 10
+`data-retrieval` — and each `screening` one names **what would back it**,
 which is a tranche where a tranche covers the physics and a named family where none does:
 
 - **What a tranche covers** — 7 skills under P4 (six under `pvt/`,
-  `azoth-near-well-and-injectivity` under `subsurface/`); `azoth-surf-cooldown-screening`
-  under P9, which it keeps for the hydrate temperature it compares against, the cooldown
-  itself being Tier 4 long-tail rather than a tranche's; and
+  `azoth-near-well-and-injectivity` under `subsurface/`); and
   `azoth-water-dewpoint-dehydration-screening` under P1, whose correlation P1's tree
   covers and did not port.
 - **What no tranche covers** — the specification puts **mechanical design**, `safety/`,
   `statistics/`, `automation`, `standards/` and `fluidmechanics/` *beyond* P12, so a skill
   whose physics belongs to one of those names the family rather than the nearest
-  P-number. 17 are mechanical design (vibration, noise, wall thickness, flexibility,
-  erosion, seals, turbines, vessel sizing), 9 are `safety/`, 3 `statistics/`, 3
+  P-number. 16 are mechanical design (vibration, noise, wall thickness, flexibility,
+  seals, turbines, vessel sizing), 9 are `safety/`, 3 `statistics/`, 3
   `automation`, 2 `standards/` and 1 `fluidmechanics/`.
 - **What is a unit operation and a flowsheet away** — `azoth-teg-dehydration-modeling`
   keeps the P11 label, because P11's palette is the tranche that built the absorber,

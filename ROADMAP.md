@@ -162,12 +162,17 @@ process model needs.
   `BariteCelestiteSolidSolution` (`eos.barite_celestite_solid_solution`),
   `MultiMineralScaleEquilibrium` (`eos.multi_mineral_scale_equilibrium`),
   `FlowlineScaleProfile` (`eos.flowline_scale_profile`) and `WaterCompatibilityScreener`
-  (`eos.water_compatibility`). The six asphaltene screens stay carried on NeqSim defect
-  `#3913`, and the one wax (`WaxCurveCalculator`), two corrosion (`CO2CorrosionAnalyzer`,
-  `DeWaardMilliamsCorrosion`) and five generic flow-assurance calculators
-  (`HydrateRiskMapper`, `PipelineCooldownCalculator`, `SurfCooldownAnalyzer`,
-  `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`) are the group's remainder, in
-  Tier 4. **The rest of `pvtsimulation/` is not here**: the simulation suite,
+  (`eos.water_compatibility`). **The remaining reachable calculators are ported too**:
+  `DeWaardMilliamsCorrosion` (`eos.de_waard_milliams_corrosion`),
+  `ErosionPredictionCalculator` (`eos.erosion_prediction`),
+  `EmulsionViscosityCalculator` (`eos.emulsion_viscosity`),
+  `PipelineCooldownCalculator` (`eos.pipeline_cooldown`),
+  `HydrateRiskMapper` (`eos.hydrate_risk_map`) and `SurfCooldownAnalyzer`
+  (`eos.surf_cooldown`). **One class is left**: `CO2CorrosionAnalyzer`, whose pH comes from an
+  electrolyte-CPA flash this tree does not carry the system route for; it is Tier 4's alone.
+  The six asphaltene screens stay carried on NeqSim defect `#3913`, and the one wax
+  (`WaxCurveCalculator`) belongs to Tier 3's wax bullet. **The rest of `pvtsimulation/` is not
+  here**: the simulation suite,
   the model tuning and the reservoir properties are engineering deliverables, and
   [the specification](docs/src/architecture/specification.md) puts them beyond the port.
 
@@ -487,19 +492,15 @@ Port on demand, as a caller needs them:
   `thermo/util/spanwagner/`, `thermo/util/Vega/`.
 - **UMR.** `ComponentUMRCPA`, `ComponentUMRCPAvolcor`, `ComponentGEUnifacUMRPRU`,
   `AttractiveTermUMRPRU`, `SystemUMRPRUEos`, `SystemUMRPRUMCEos`.
-- **Flow assurance with no tranche behind it.** The rest of `pvtsimulation/flowassurance/`:
-  corrosion (`DeWaardMilliamsCorrosion`, the de Waard-Williams correlation NORSOK M-506
-  references, and `CO2CorrosionAnalyzer`, which couples it to an **electrolyte-CPA flash for
-  pH** - so the coupled one has no route even upstream, Electrolyte-CPA being carried as
-  unreachable), cooldown (`PipelineCooldownCalculator`, a lumped-parameter thermal transient,
-  and `SurfCooldownAnalyzer`, which composes it with `eos.hydrate_formation_temperature` to
-  give a no-touch time), `ErosionPredictionCalculator` (API RP 14E and DNV RP O501) and
-  `EmulsionViscosityCalculator` (oil-water viscosity correlations and the inversion point).
-  The specification assigns `flowassurance/` to "the tranche that backs each" and **no tranche
-  backs these four** - so they are here, in the long tail, rather than behind a P-number that
-  no page defines. The seven scale calculations in the same directory are ported (Tier 2's
-  salts bullet) and the six asphaltene screens belong to Tier 3's asphaltene bullet; neither
-  is here.
+- **Flow assurance's one remainder.** `CO2CorrosionAnalyzer` couples the de Waard-Williams
+  correlation to an **electrolyte-CPA flash for pH**, and this tree carries the
+  electrolyte-CPA phase without the system route that solves an aqueous pH - so the coupled
+  analyzer has no route here. **Everything else in `pvtsimulation/flowassurance/` is ported**:
+  the seven scale calculations (Tier 2's salts bullet), `DeWaardMilliamsCorrosion`,
+  `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`, `PipelineCooldownCalculator`,
+  `HydrateRiskMapper` and `SurfCooldownAnalyzer` (Tier 1's flow-assurance bullet). The six
+  asphaltene screens belong to Tier 3's asphaltene bullet and `WaxCurveCalculator` to its
+  wax bullet; neither is here.
 - **Solids.** Ported, each with the id that carries it: `ComponentSolid`
   (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
   (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the
