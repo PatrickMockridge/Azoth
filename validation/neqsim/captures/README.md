@@ -695,6 +695,21 @@ no-water refusal).
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
 ```
 
+**The characterization fluid-rebuild probe** records `PseudoComponentCombiner`'s two fluid
+builders and its binary-interaction transfer: two and three unequal reservoir fluids combined at
+a target pseudo-component count, a target beyond the pool, base-only fluids and a base-only fluid
+beside a pseudo one; the common slate at equal and weighted settings, an inferred and an explicit
+count, a zero-weight fluid and the no-pseudo clone path; and the BIP transfer from a reference to
+a target with different pseudo names, fewer pseudo components, and a missing base name. Each
+component is one wide row (`fluid|name|pseudo|` then the nineteen pseudo fields), and the BIP
+rows print the reference's and the target's initial matrices beside the transferred one. Every
+source is a real TBP fraction, so the properties are finite and the TBP model's own defaults
+cannot leak into a row.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CharacterizationFluidRebuildProbe > captures/characterization_fluid_rebuild_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
