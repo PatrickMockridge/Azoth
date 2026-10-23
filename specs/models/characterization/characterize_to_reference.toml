@@ -16,10 +16,10 @@ assumptions = [
     "**a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.",
     "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row that states no density, or one at zero, contributes to neither sum.",
     "**`inheritReferenceProperties` is a variant of this walk and not a second one.** With it set, each group keeps its own moles and takes the *reference row's* molar mass and density - Pedersen's common-EoS slate. The boundaries and the binning are the same either way.",
-    "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool *before* cutting, and so need the multi-fluid weighting and a `SystemInterface`. The delumping is not among them: it is a function of a table, and it is here.",
+    "**the multi-fluid methods are their own ids.** `combineReservoirFluids` and `characterizeToCommonSlate` are `characterization.combine_reservoir_fluids` and `characterization.characterize_to_common_slate`; the delumping was never one of them, being a function of a table.",
     "**the source rows carry no name, so a split's sub-fractions are not named.** `characterization.delumping` names each after its parent and this walk reads no name at all; a caller that wants them asks that id rather than this one. The split is otherwise the same arithmetic.",
-    "**and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.",
-    "**all of those rebuild a fluid and not a table.** Every public method of the class takes or returns a `SystemInterface`, and the cards a pseudo-component needs to enter a `Mixture` are not the whole of it - the fluid has to be one a component can be added to.",
+    "**and what remains owed is two report-like methods**: `normalizeComposition`, which computes a total and never uses it, and `generateValidationReport`, which reports on data. The interaction table is `characterization.transfer_binary_interaction_parameters`.",
+    "**the class's methods take or return a `SystemInterface`; the ids here take rows.** A blend or a slate is a table, and `mixture_from_characterization` rebuilds the fluid from it, so the arithmetic needed no fluid to add components to.",
     "**and the rows are twenty fields wide where this id reads four.** The rest join the row when a ported method reads one, which is the rule the row was built under.",
     "the result is a bookkeeping choice and not a measurement: the same source re-cut onto two different references gives two fluids with the same mass and different components.",
 ]
@@ -30,7 +30,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `PseudoComponentCombiner.characterizeToReference`"
-edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries`, `determineReferenceEqualMassBoundaries` and `distributeToProfiles`, with the class's own delumping and shared-boundary options as inputs. `combineReservoirFluids` and `characterizeToCommonSlate` still need a `SystemInterface`."
+edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries`, `determineReferenceEqualMassBoundaries` and `distributeToProfiles`, with the class's own delumping and shared-boundary options as inputs. The class's multi-fluid methods are their own ids."
 [inputs]
 [inputs.source]
 type = "record_list"

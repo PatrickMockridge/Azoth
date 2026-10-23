@@ -7,7 +7,8 @@
 //!
 //! It is a namespace of its own rather than a family under `eos`, mirroring NeqSim's own
 //! package split: what is here is not an equation of state and is not reached from one. A cut
-//! is characterised first and *then* handed to a mixture, which is the caller's step.
+//! is characterised first and *then* handed to a mixture - [`mixture_from_characterization`] is
+//! that step, from the rows the fluid-rebuild methods answer with.
 //!
 //! * [`tbp_cut_properties`] — a cut's critical properties, by any of NeqSim's ten models
 

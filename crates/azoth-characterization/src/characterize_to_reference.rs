@@ -38,13 +38,15 @@
 //! `sharedImaginaryBoundaries`. The first reads the reference's densities, the last its mole
 //! amounts, and the middle is [`crate::delumping`]'s arithmetic run over the source first.
 //!
-//! # What is not here
+//! # The class's other methods are their own ids
 //!
-//! `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one
-//! imaginary pool *before* cutting; `transferBinaryInteractionParameters`; `normalizeComposition`;
-//! and `generateValidationReport`. **Every one of them takes or returns a `SystemInterface`**, and
-//! `Mixture` has no `add_component` - the delumping was on that list too and is not, because it is
-//! a function of a table.
+//! `combineReservoirFluids` and `characterizeToCommonSlate` weight several fluids before cutting,
+//! and `transferBinaryInteractionParameters` moves their interaction tables;
+//! [`crate::combine_reservoir_fluids`], [`crate::characterize_to_common_slate`] and
+//! [`crate::transfer_binary_interaction_parameters`] are those, over rows rather than a
+//! `SystemInterface`. What is not here is the two report-like methods: `normalizeComposition`,
+//! which computes a total and never uses it, and `generateValidationReport`, which reports on
+//! data.
 
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
 use azoth_core::{AzothError, Result, apply_checks};
