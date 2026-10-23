@@ -5610,6 +5610,8 @@ def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], f
         temperature_residual=result.temperature_residual,
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
+        top_specification_residual=result.top_specification_residual,
+        bottom_specification_residual=result.bottom_specification_residual,
         fs_factor=result.fs_factor,
         fs_factor_utilization=result.fs_factor_utilization,
         fs_factor_within_design_limit=result.fs_factor_within_design_limit,

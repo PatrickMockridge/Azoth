@@ -104,6 +104,10 @@ pub struct DistillationColumnResult {
     pub mass_residual: f64,
     /// The enthalpy closure.
     pub energy_residual: f64,
+    /// The top specification's residual from the published state, in its type's own unit.
+    pub top_specification_residual: f64,
+    /// The bottom specification's residual, as the top's.
+    pub bottom_specification_residual: f64,
     /// `getFsFactor`: the gas load factor over the **total** cross-section, `u·sqrt(rho_g)`.
     pub fs_factor: f64,
     /// `getFsFactorUtilization`: the factor over `max_allowable_fs_factor`.
@@ -230,6 +234,8 @@ impl DistillationColumnResult {
             temperature_residual: outcome.temperature_residual,
             mass_residual: outcome.mass_residual,
             energy_residual: outcome.energy_residual,
+            top_specification_residual: outcome.top_specification_residual,
+            bottom_specification_residual: outcome.bottom_specification_residual,
             fs_factor: limits.fs_factor,
             fs_factor_utilization: limits.fs_factor_utilization,
             fs_factor_within_design_limit: limits.fs_factor_within_design_limit,

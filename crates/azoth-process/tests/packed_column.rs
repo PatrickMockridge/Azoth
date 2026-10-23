@@ -243,6 +243,23 @@ fn the_packed_binary_row_reaches_neqsims_profile() {
         6,
         "four middle trays and two ends"
     );
+    // **The HETP is the hydraulics' and not the constructor's `0.5` m guess**, and the two stage
+    // counts are different columns: four middle trays were solved, and the hydraulic HETP answers
+    // `2 / 1.44 = 1.389` equivalent stages. Upstream PR #4126 made that provenance explicit
+    // rather than reconciling the two counts. A port reporting the guess would answer `0.5` m and
+    // `4` stages.
+    relative(out.hetp.value, 1.44, 1.0e-12, "the hydraulic HETP");
+    relative(
+        out.theoretical_stages,
+        1.388_888_888_888_888_8,
+        1.0e-12,
+        "the hydraulic stage equivalent",
+    );
+    assert_ne!(
+        out.theoretical_stages.round() as i64,
+        4,
+        "the hydraulic stage equivalent is not the solved topology"
+    );
     // NeqSim takes 15 iterations at this gate and the port 14: where a solve stops is its own.
     assert!(out.iterations <= 25, "in {} iterations", out.iterations);
     let temperatures = [

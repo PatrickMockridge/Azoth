@@ -10,13 +10,15 @@ cd validation/neqsim
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
-**Six captures are run against the pin plus one fix.** `packing_probe`, `packing_sizing_probe`,
-`process_packed_column`, `process_rate_based_packed_column`, `process_rate_based_billet` and
+**Seven captures are run against the pin plus the two fixes that moved them.**
+`packing_probe`, `packing_sizing_probe`, `process_packed_column`,
+`process_rate_based_packed_column`, `process_rate_based_billet` and
 `process_rate_based_solvers` were taken from a jar built at `f0c7436c` with only the packing fix
 `834b5c4f` applied: its `Packing.csv`, `PackingSpecificationLibrary.java`,
 `PackingHydraulicsCalculator.java`, and the single `getOrDefault` -> `require` line of
-`RateBasedPackedColumn.java`. Everything else is the pin, so each capture's delta is that fix
-rather than the five hundred commits between the two revisions. The built-in packing rows are
+`RateBasedPackedColumn.java`. `process_shortcut_distillation_column` adds the Kirkbride fix
+`1f7581f9`'s `ShortcutDistillationColumn.java`. Everything else is the pin, so each capture's
+delta is those fixes rather than the five hundred commits between the revisions. The built-in packing rows are
 the reference after the fix: `Pall-Ring-50` is `120.0`, `0.96`, factor `66`, and the file's
 plastic ring is reachable as `Pall-Ring-50-plastic` (`111.1`, `0.919`, `180`).
 

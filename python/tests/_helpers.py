@@ -63,6 +63,11 @@ __all__ = [
 #: kernels to each other at that magnitude compares rounding, not the claim.
 _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
     {
+        # `process.distillation_column`'s specification residuals, measured on the published
+        # terminal state: differences of near-equal products, so of order `1e-6` on a converged
+        # solve and compared at the model's own declared tolerance.
+        "top_specification_residual",
+        "bottom_specification_residual",
         "balance_error",
         "residual",
         "tm",

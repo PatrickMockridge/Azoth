@@ -2549,6 +2549,8 @@ class DistillationColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    top_specification_residual: float
+    bottom_specification_residual: float
     fs_factor: float
     fs_factor_utilization: float
     fs_factor_within_design_limit: bool

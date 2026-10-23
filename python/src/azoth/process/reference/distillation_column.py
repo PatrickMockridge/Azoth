@@ -192,6 +192,63 @@ def _component_index(product: StreamRecord, name: str | None) -> int:
     return list(product["components"]).index(name)
 
 
+def _published_residual(
+    specification: Specification,
+    is_top: bool,
+    distillate: StreamRecord,
+    bottoms: StreamRecord,
+    reflux: StreamRecord | None,
+    boilup: StreamRecord | None,
+    condenser_duty: float,
+    reboiler_duty: float,
+    feeds: list[StreamRecord],
+) -> float:
+    """A specification's residual from the published terminal state, ``nan`` where unreadable.
+
+    ``DistillationColumn.evaluateSpecError`` after upstream PR #4127: a direct specification is
+    measured on the streams the solve published rather than reporting its own target back. The
+    ratio is ``L/D`` at the top and ``V/B`` at the bottom; a dry terminal with a positive
+    numerator is infinite, and one with neither is unavailable.
+    """
+    product = distillate if is_top else bottoms
+    if specification.kind == "product_purity":
+        if specification.component is None or specification.component not in product["components"]:
+            return float("nan")
+        index = list(product["components"]).index(specification.component)
+        return float(product["z"][index]) - specification.target
+    if specification.kind == "component_recovery":
+        name = specification.component
+        if name is None or name not in product["components"]:
+            return float("nan")
+        index = list(product["components"]).index(name)
+        supplied = sum(
+            float(feed["n"]) * float(feed["z"][list(feed["components"]).index(name)])
+            for feed in feeds
+            if name in feed["components"]
+        )
+        if supplied <= 1.0e-12:
+            return -specification.target
+        return float(product["n"] * product["z"][index] / supplied) - specification.target
+    if specification.kind == "product_flow_rate":
+        # In SI, as every dimensioned scalar crosses: the target is the class's mol/hr.
+        return float(product["n"]) - specification.target / 3600.0
+    if specification.kind == "reflux_ratio":
+        numerator = reflux if is_top else boilup
+        denominator = distillate if is_top else bottoms
+        if numerator is None:
+            return float("nan")
+        n = float(numerator["n"])
+        d = float(denominator["n"])
+        if n < 0.0 or d < 0.0:
+            return float("nan")
+        if d <= 1.0e-20:
+            return float("nan") if n <= 1.0e-20 else float("inf")
+        return n / d - specification.target
+    if specification.kind == "duty":
+        return (condenser_duty if is_top else reboiler_duty) - specification.target
+    return float("nan")
+
+
 class _States(NamedTuple):
     """The solved column, in SI magnitudes - the profile and both products."""
 
@@ -248,6 +305,10 @@ class _States(NamedTuple):
     mass_residual: float
     #: The enthalpy closure.
     energy_residual: float
+    #: The top specification's residual from the published state, in its type's own unit.
+    top_specification_residual: float
+    #: The bottom specification's residual, as the top's.
+    bottom_specification_residual: float
 
 
 def _distillation_column_states(
@@ -658,6 +719,8 @@ def _record(
         temperature_residual=states.temperature_residual,
         mass_residual=states.mass_residual,
         energy_residual=states.energy_residual,
+        top_specification_residual=states.top_specification_residual,
+        bottom_specification_residual=states.bottom_specification_residual,
         fs_factor=limits["fs_factor"],
         fs_factor_utilization=limits["fs_factor_utilization"],
         fs_factor_within_design_limit=limits["fs_factor_within_design_limit"],
@@ -1680,6 +1743,59 @@ def _states(
             else 0.0
         )
 
+    # **Every specification is measured on the published state**, direct ones included, as
+    # `DistillationColumn.specificationsSatisfied` now does (upstream PR #4127).
+    feed_record = _feed(components, feed_n, feed_z, feed_t, feed_p)
+    feeds = [feed_record] + ([top_feed] if top_feed is not None else [])
+    top_specification_residual = (
+        0.0
+        if top_specification is None
+        else _published_residual(
+            top_specification,
+            True,
+            distillate,
+            bottoms,
+            liquid[tray_count - 1] if has_condenser else None,
+            gas[0] if has_reboiler else None,
+            condenser_duty,
+            reboiler_duty,
+            feeds,
+        )
+    )
+    bottom_specification_residual = (
+        0.0
+        if bottom_specification is None
+        else _published_residual(
+            bottom_specification,
+            False,
+            distillate,
+            bottoms,
+            liquid[tray_count - 1] if has_condenser else None,
+            gas[0] if has_reboiler else None,
+            condenser_duty,
+            reboiler_duty,
+            feeds,
+        )
+    )
+    # **A direct specification is gated on its published residual**; an adjusted one was already
+    # gated by the outer loop, and the class's guarded mesh polish is not ported.
+    direct_residuals = [
+        residual
+        for specification, residual in (
+            (top_specification, top_specification_residual),
+            (bottom_specification, bottom_specification_residual),
+        )
+        if specification is not None and specification.kind in DIRECT_KINDS
+    ]
+    if direct_residuals and not max(abs(r) for r in direct_residuals) <= SPECIFICATION_TOLERANCE:
+        from azoth.core.errors import SolverNotConvergedError
+
+        raise SolverNotConvergedError(
+            iterations,
+            max(abs(r) for r in direct_residuals),
+            SPECIFICATION_TOLERANCE,
+        )
+
     return _States(
         warnings=tuple(collected_warnings),
         gas_side_draw_n=tuple(draw["n"] if draw is not None else 0.0 for draw in drawn[0]),
@@ -1716,6 +1832,8 @@ def _states(
         temperature_residual=temperature_residual,
         mass_residual=mass_residual,
         energy_residual=energy_residual,
+        top_specification_residual=top_specification_residual,
+        bottom_specification_residual=bottom_specification_residual,
     )
 
 

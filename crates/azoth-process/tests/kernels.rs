@@ -577,6 +577,10 @@ fn absolute(a: f64, b: f64, tolerance: f64, what: &str) {
 /// J/mol below NeqSim on the distillate at 300 K, which is that offset to three figures.
 /// `reboiler_duty` inherits a thousandth of it, because the class's own estimate adds one per
 /// cent of the feed's enthalpy.
+///
+/// **The feed tray is the fix's**: the class's Kirkbride argument squared `B/D` and left the
+/// composition ratio linear, which answered `14`; upstream PR #4108 squares the composition
+/// ratio on product mole fractions and enters `B/D` once, which answers `13`.
 #[test]
 fn a_shortcut_column_splits_a_four_component_feed() {
     let out = shortcut_distillation_column(
@@ -616,7 +620,7 @@ fn a_shortcut_column_splits_a_four_component_feed() {
         "actual_reflux_ratio",
     );
     relative(out.actual_stages, 20.510953860048968, 1e-6, "actual_stages");
-    assert_eq!(out.feed_tray_number, 14, "the feed tray, which is a count");
+    assert_eq!(out.feed_tray_number, 13, "the feed tray, which is a count");
     relative(
         out.condenser_duty.value,
         -36472.85166598551,

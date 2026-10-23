@@ -1247,8 +1247,8 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         model="process.rate_based_packed_column",
         case="billet_schultes",
         capture="process_rate_based_billet.tsv",
-        block=1,
-        identified_by=("#label", "billet_schultes"),
+        block=3,
+        identified_by=("#label", "plastic_schultes"),
         # The same band the Onda row takes and for the same reason, measured on this row:
         # the four segments differ from the capture by between `1.6e-4` and `6.1e-4`
         # relative - the largest of any dumped key - because the heat step's capacity rates
@@ -1368,9 +1368,9 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         identified_by=("split_factors", "1.0 0.5 0.0"),
         divergence=_COMPONENT_SPLITTER_SEPARATION_DIVERGENCE,
     ),
-    # The shortcut column's four rows. **Their block order is the probe's**, and the two
-    # degenerate rows are the gap between the fourth and the fifth: `UNCASED_ROWS` declares
-    # them, and this tuple names the other four by position.
+    # The shortcut column's five rows. **Their block order is the probe's**, and the two
+    # degenerate rows are blocks 2 and 6: `UNCASED_ROWS` declares them, and this tuple names
+    # the other five by position.
     LayerCase(
         model="process.shortcut_distillation_column",
         case="propane_nbutane_split",
@@ -1398,6 +1398,15 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_shortcut_distillation_column.tsv",
         block=4,
         identified_by=("#label", "binary_methane_nbutane"),
+    ),
+    # **The Kirkbride fix's own regression state**, whose material balance the class's test
+    # writes by hand; its feed tray is `4` from the corrected product-basis correlation.
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="asymmetric_kirkbride_regression",
+        capture="process_shortcut_distillation_column.tsv",
+        block=5,
+        identified_by=("#label", "asymmetric_kirkbride_regression"),
     ),
     # The isentropic pair. **Both rows of each are cases, and the efficiency-of-one row is
     # the one that matters**: its reversible step *is* its answer, so the capture states the
@@ -1765,10 +1774,11 @@ UNCASED_ROWS: dict[str, int] = {
     # three remaining CO2/water rows are the stripper and the two heights, which the port's own
     # test asserts as *directions* rather than as digits.
     "process_rate_based_packed_column.tsv": 7,
-    # And the correlation capture's one: `billet_onda` is `co2_water_absorber`'s state
-    # again, kept beside `billet_schultes` so the pair measures the multiplier, and it is
-    # evidence rather than an oracle because the port already reaches that state.
-    "process_rate_based_billet.tsv": 1,
+    # And the correlation capture's three: `billet_onda` is `co2_water_absorber`'s state
+    # again and `billet_schultes` on the built-in is the identity (its constants are `1.0` and
+    # `0.40`), so neither is an oracle for a state the port does not already reach; the
+    # `plastic_onda` baseline is the pair's control. The case reads `plastic_schultes`.
+    "process_rate_based_billet.tsv": 3,
     "process_heat_exchanger.tsv": 2,
     # The shortcut column's two degenerate rows. **Both are evidence rather than oracles**:
     # a reflux multiplier of exactly one leaves Gilliland's `X` at zero and the class returns

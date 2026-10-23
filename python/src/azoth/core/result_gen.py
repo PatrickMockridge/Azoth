@@ -5692,6 +5692,12 @@ class DistillationColumnResult(_HasWarnings):
     #: `|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.
     energy_residual: float
 
+    #: the top specification's residual on the published products (upstream PR #4127): `L/D - target` for a ratio, actual less stated duty for a duty, in SI where dimensioned (mol/s, W). Zero with no specification; unavailable, not zero, on a dry terminal.
+    top_specification_residual: float
+
+    #: the bottom specification's residual, `V/B - target` for a ratio; as the top's.
+    bottom_specification_residual: float
+
     #: `getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**.
     fs_factor: float
 
@@ -6555,7 +6561,7 @@ class ShortcutDistillationColumnResult(_HasWarnings):
     #: the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.
     actual_reflux_ratio: float
 
-    #: the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.
+    #: the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages kirkbride_ratio / (1 + kirkbride_ratio)`.
     feed_tray_number: int
 
     #: the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.

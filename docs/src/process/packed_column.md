@@ -129,7 +129,8 @@ not an equation, and both implementations read it from here.
 - **what the packing changes is the stage count, at construction**: `estimateStages(packed_height, 0.5)` is `ceil(packed_height / 0.5)` floored at two, so `packed_height` replaces `number_of_stages` here.
 - **the floor is reached rather than refused.** The capture's stage-count rows report two middle trays for `0.2` m, `0.0` m and `-1.0` m alike, because `estimateStages` and `setPackedHeight` have no domain check.
 - **the five packing parameters reach the report and not the solve.** `ColumnInternalsDesigner` reads them after the column has converged, so `PackedColumn.run` is `super.run(id)` then a report: the last seven `[outputs]` are it.
-- **the class's report describes a different column from the one it solved.** The constructor fixes the stage count on a `0.5` m HETP guess and the hydraulics computes the real one afterwards: the capture's own case solves ten middle trays and reports `1.597` theoretical stages.
+- **the class's report describes a different column from the one it solved.** The constructor fixes the stage count on a `0.5` m HETP guess; the hydraulics computes the real one afterwards (upstream PR #4126). The capture's case solves ten middle trays and reports `1.597` theoretical stages.
+
 - **`packing_hydraulic_capacity_factor` is refused where the class refuses it**: `setPackingHydraulicCapacityFactor` throws for a value that is not positive and finite, so the port holds to that rather than carrying it inertly.
 - **the contactor constructor is not this id.** `PackedColumn(name, gasInStream)` fixes ten middle trays with no ends and never reads the height, so that machine is `process.absorption_column` at `number_of_stages = 10`.
 - **`has_condenser` and `has_reboiler` are the base's**, because two of the class's three constructors take them and the class adds no end of its own.

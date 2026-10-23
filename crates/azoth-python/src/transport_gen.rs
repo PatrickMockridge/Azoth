@@ -14181,6 +14181,12 @@ pub struct PyDistillationColumnResult {
     /// `|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// the top specification's residual on the published products (upstream PR #4127): `L/D - target` for a ratio, actual less stated duty for a duty, in SI where dimensioned (mol/s, W). Zero with no specification; unavailable, not zero, on a dry terminal.
+    #[pyo3(get)]
+    pub top_specification_residual: f64,
+    /// the bottom specification's residual, `V/B - target` for a ratio; as the top's.
+    #[pyo3(get)]
+    pub bottom_specification_residual: f64,
     /// `getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**.
     #[pyo3(get)]
     pub fs_factor: f64,
@@ -14268,7 +14274,7 @@ pub struct PyDistillationColumnResult {
 impl PyDistillationColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "DistillationColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, required_diameter={:?}, controlling_tray_index={:?}, internals_design_ok={:?}, max_percent_flood={:?}, min_percent_flood={:?}, average_tray_efficiency={:?}, total_pressure_drop={:?}, total_pressure_drop_mbar={:?}, tray_percent_flood={:?}, tray_pressure_drop={:?}, tray_efficiency={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
+            "DistillationColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, top_specification_residual={:?}, bottom_specification_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, required_diameter={:?}, controlling_tray_index={:?}, internals_design_ok={:?}, max_percent_flood={:?}, min_percent_flood={:?}, average_tray_efficiency={:?}, total_pressure_drop={:?}, total_pressure_drop_mbar={:?}, tray_percent_flood={:?}, tray_pressure_drop={:?}, tray_efficiency={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -14292,6 +14298,8 @@ impl PyDistillationColumnResult {
             self.temperature_residual,
             self.mass_residual,
             self.energy_residual,
+            self.top_specification_residual,
+            self.bottom_specification_residual,
             self.fs_factor,
             self.fs_factor_utilization,
             self.fs_factor_within_design_limit,
@@ -14430,6 +14438,8 @@ impl From<&azoth_process::models::distillation_column::DistillationColumnResult>
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            top_specification_residual: r.top_specification_residual,
+            bottom_specification_residual: r.bottom_specification_residual,
             fs_factor: r.fs_factor,
             fs_factor_utilization: r.fs_factor_utilization,
             fs_factor_within_design_limit: r.fs_factor_within_design_limit,
@@ -16573,7 +16583,7 @@ pub struct PyShortcutDistillationColumnResult {
     /// the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.
     #[pyo3(get)]
     pub actual_reflux_ratio: f64,
-    /// the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.
+    /// the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages kirkbride_ratio / (1 + kirkbride_ratio)`.
     #[pyo3(get)]
     pub feed_tray_number: i64,
     /// the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.

@@ -1158,6 +1158,10 @@ impl Mesh {
             temperature_residual: residual,
             mass_residual,
             energy_residual,
+            // This solver's path does not evaluate the end specifications on the published
+            // state; the kernel's fixed-point path is the one that reports them.
+            top_specification_residual: 0.0,
+            bottom_specification_residual: 0.0,
         })
     }
 

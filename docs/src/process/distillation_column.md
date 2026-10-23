@@ -115,6 +115,8 @@ not an equation, and both implementations read it from here.
 | `iterations` | dimensionless | the iterations taken. **One apart from NeqSim's on the captured row** - 14 against 15 - because where a solve stops is where its answer is. |
 | `temperature_residual` | dimensionless | the mean tray-temperature change at the last iteration, in K - the gate the solve was held to. **Under `naphtali_sandholm` it is the scaled MESH norm** instead, which is that solver's own measure; NeqSim reports a `NaN` in this field there. |
 | `mass_residual` | dimensionless | the products' worst component imbalance against the feed, relative. **The closure and not the class's MESH norm** - see the assumptions. |
+| `top_specification_residual` | dimensionless | the top specification's residual on the published products (upstream PR #4127): `L/D - target` for a ratio, actual less stated duty for a duty, in SI where dimensioned (mol/s, W). Zero with no specification; unavailable, not zero, on a dry terminal. |
+| `bottom_specification_residual` | dimensionless | the bottom specification's residual, `V/B - target` for a ratio; as the top's. |
 | `energy_residual` | dimensionless | `|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm. |
 | `fs_factor` | dimensionless | `getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**. |
 | `fs_factor_utilization` | dimensionless | `getFsFactorUtilization`: the factor over the limit, and **zero where the limit is not positive** rather than an infinity. |
@@ -191,7 +193,8 @@ holds the declaration and the two languages to each other.
 - **that secant takes two guesses five kelvin apart**, then steps capped at 50 K and clamped to `[100, 1000]` K, and it converges when the product's value is within `1e-4` of the target.
 - **there is no specification homotopy here, and that is a measurement.** `getEffectiveSpecificationHomotopySteps` returns three staged targets only when the solver is `AUTO`, and the field it otherwise reads is one - so the continuation the class carries belongs to the solver this port refuses.
 - **a pin wins over a directly-applied duty.** The tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a `DUTY` wrote is never read: the capture's inert row reports `-21323.04` W for a target of `-20000`.
-- **nothing reports that gap**: a `DUTY` is not *adjusted*, so its residual is zero by construction - a zero that means "not checked" rather than "satisfied".
+- **every specification's residual is measured on the published state** (upstream PR #4127): `L/D` or `V/B` less its target, a duty actual less target, and a dry terminal unavailable rather than zero. A direct specification that misses `1e-4` is refused (`0ec1d63f`).
+
 - **a reflux-ratio specification is not reproduced, and the reason is measured.** The end's `PVrefluxflash` searches for the state whose vapour fraction is `1/(1 + ratio)`; NeqSim lands on `402.24` K, past the dew point of the captured mixture.
 - **this port's flash refuses to converge there** rather than landing on a state its own equations do not place.
 - **`murphree_efficiency` is ported for the sequential solve**: each interior stage's vapour is blended as `y_in + E(y_eq - y_in)`, clamped and renormalised. The ends and an ideal stage are never corrected, a gas draw on a corrected stage is refused, and the products are reconciled against the feed.

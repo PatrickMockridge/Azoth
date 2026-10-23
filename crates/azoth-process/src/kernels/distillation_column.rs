@@ -254,6 +254,11 @@ pub struct ColumnOutcome {
     pub mass_residual: f64,
     /// `|H_feed + duties - H_products| / |H_feed|`.
     pub energy_residual: f64,
+    /// The top specification's residual from the published state, in its type's own unit;
+    /// zero where the end carries no specification.
+    pub top_specification_residual: f64,
+    /// The bottom specification's residual, as the top's.
+    pub bottom_specification_residual: f64,
     /// The vapour each tray withdrew as a gas side draw, one entry per tray and `None` where it
     /// drew none.
     pub gas_side_draws: Vec<Option<Stream>>,
@@ -639,6 +644,90 @@ impl Specification {
                 Ok(MolarFlow::from_si(product.n).as_moles_per_hour())
             }
             SpecificationKind::RefluxRatio | SpecificationKind::Duty => Ok(0.0),
+        }
+    }
+}
+
+/// A specification's residual from the published terminal state, `NaN` where it cannot be read.
+///
+/// `DistillationColumn.evaluateSpecError` after upstream PR #4127: a direct specification is
+/// measured on the streams the solve published rather than reporting its own target back, so an
+/// unachieved ratio is visible. The ratio is `L/D` at the top and `V/B` at the bottom; a dry
+/// terminal with a positive numerator is infinite, and one with neither is unavailable.
+#[allow(clippy::too_many_arguments)]
+fn published_residual(
+    spec: &Specification,
+    is_top: bool,
+    distillate: &Stream,
+    bottoms: &Stream,
+    reflux: Option<&Stream>,
+    boilup: Option<&Stream>,
+    condenser_duty: f64,
+    reboiler_duty: f64,
+    feeds: &[&Stream],
+) -> f64 {
+    let product = if is_top { distillate } else { bottoms };
+    match spec.kind {
+        SpecificationKind::ProductPurity => spec
+            .component
+            .as_ref()
+            .and_then(|name| product.components.iter().position(|c| c == name))
+            .map_or(f64::NAN, |i| product.z[i] - spec.target),
+        SpecificationKind::ComponentRecovery => {
+            let Some(name) = spec.component.as_ref() else {
+                return f64::NAN;
+            };
+            let Some(index) = product.components.iter().position(|c| c == name) else {
+                return f64::NAN;
+            };
+            let supplied: f64 = feeds
+                .iter()
+                .map(|feed| {
+                    feed.components
+                        .iter()
+                        .position(|c| c == name)
+                        .map_or(0.0, |i| feed.n * feed.z[i])
+                })
+                .sum();
+            if supplied <= 1.0e-12 {
+                -spec.target
+            } else {
+                product.n * product.z[index] / supplied - spec.target
+            }
+        }
+        // **In SI**, as every dimensioned scalar crosses: the target is the class's mol/hr and
+        // the product's traffic is mol/s, so the target is converted rather than the product.
+        SpecificationKind::ProductFlowRate => product.n - spec.target / 3600.0,
+        SpecificationKind::RefluxRatio => {
+            let numerator = if is_top { reflux } else { boilup };
+            let denominator = if is_top {
+                Some(distillate)
+            } else {
+                Some(bottoms)
+            };
+            let (Some(numerator), Some(denominator)) = (numerator, denominator) else {
+                return f64::NAN;
+            };
+            let (n, d) = (numerator.n, denominator.n);
+            if !n.is_finite() || !d.is_finite() || n < 0.0 || d < 0.0 {
+                return f64::NAN;
+            }
+            if d <= 1.0e-20 {
+                return if n <= 1.0e-20 {
+                    f64::NAN
+                } else {
+                    f64::INFINITY
+                };
+            }
+            n / d - spec.target
+        }
+        SpecificationKind::Duty => {
+            let actual = if is_top {
+                condenser_duty
+            } else {
+                reboiler_duty
+            };
+            actual - spec.target
         }
     }
 }
@@ -1246,6 +1335,68 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             (reboiler_duty, condenser_duty)
         };
 
+    // **Every specification is measured on the published state**, direct ones included, as
+    // `DistillationColumn.specificationsSatisfied` now does (upstream PR #4127). An adjusted
+    // specification was already gated by the outer loop; a direct one was applied and never
+    // checked, and reporting a zero there said "not checked" while reading as "satisfied".
+    let feeds: Vec<&Stream> = std::iter::once(&setup.feed)
+        .chain(setup.top_feed.as_ref())
+        .collect();
+    let top_specification_residual = setup.top_specification.as_ref().map_or(0.0, |spec| {
+        published_residual(
+            spec,
+            true,
+            &distillate,
+            &bottoms,
+            net.liquid[tray_count - 1].as_ref(),
+            net.gas[0].as_ref(),
+            condenser_duty,
+            reboiler_duty,
+            &feeds,
+        )
+    });
+    let bottom_specification_residual = setup.bottom_specification.as_ref().map_or(0.0, |spec| {
+        published_residual(
+            spec,
+            false,
+            &distillate,
+            &bottoms,
+            net.liquid[tray_count - 1].as_ref(),
+            net.gas[0].as_ref(),
+            condenser_duty,
+            reboiler_duty,
+            &feeds,
+        )
+    });
+    let specification_residual = top_specification_residual
+        .abs()
+        .max(bottom_specification_residual.abs());
+
+    // **A direct specification is gated on its published residual.** An adjusted one was already
+    // gated by the outer loop against the products that solve published; a direct one was applied
+    // and never checked, and reporting a zero there said "not checked" while reading as
+    // "satisfied". The class's guarded mesh polish, which follows an unsatisfied specification,
+    // is not ported - so an adjusted residual that reconciliation moved just outside `1e-4` is
+    // reported rather than silently polished.
+    let direct_residual = [
+        (setup.top_specification.as_ref(), top_specification_residual),
+        (
+            setup.bottom_specification.as_ref(),
+            bottom_specification_residual,
+        ),
+    ]
+    .into_iter()
+    .filter(|(spec, _)| spec.as_ref().is_some_and(|spec| !spec.kind.is_adjusted()))
+    .map(|(_, residual)| residual.abs())
+    .fold(0.0_f64, f64::max);
+    if !(direct_residual <= SPECIFICATION_TOLERANCE) {
+        return Err(AzothError::SolverNotConverged {
+            iterations,
+            residual: direct_residual,
+            tolerance: SPECIFICATION_TOLERANCE,
+        });
+    }
+
     let trays: Vec<TrayProfile> = (0..tray_count)
         .map(|i| TrayProfile {
             temperature: kelvins(net.temperature(i)),
@@ -1269,6 +1420,8 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         temperature_residual,
         mass_residual,
         energy_residual,
+        top_specification_residual,
+        bottom_specification_residual,
         warnings: net.warnings.clone(),
         tear: None,
         pumparound: None,
@@ -1803,4 +1956,93 @@ fn no_product() -> AzothError {
         "column",
         "an end has no product, which is a column whose ends did not solve",
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use azoth_core::units::{joules_per_mole, kelvins, pascals};
+
+    /// A terminal stream carrying only what the residual reads.
+    fn terminal(n: f64) -> Stream {
+        Stream {
+            components: vec!["propane".to_string()],
+            z: vec![1.0],
+            n,
+            p: pascals(10.0e5),
+            t: kelvins(300.0),
+            h: joules_per_mole(0.0),
+            vapour_fraction: Some(0.0),
+        }
+    }
+
+    fn specification(kind: SpecificationKind, target: f64) -> Specification {
+        Specification {
+            kind,
+            target,
+            component: None,
+        }
+    }
+
+    /// **The residual is measured on the published streams, and the three branches are the
+    /// class's own.** `DirectTerminalSpecificationResidualTest`, ported: a top ratio is
+    /// `L/D - target` (`20/10` against `1.8` is `0.2`), a bottom one `V/B - target`
+    /// (`30/10` against `1.2` is `1.8`), a duty is `actual - target` (`-80` against `-100` is
+    /// `+20`, `175` against `200` is `-25`), and a dry terminal is unavailable rather than an
+    /// achieved ratio: `0/0` is `NaN` and a positive numerator over zero is infinite.
+    #[test]
+    fn the_residual_is_the_published_terminal_state() {
+        let distillate = terminal(10.0);
+        let bottoms = terminal(10.0);
+        let reflux = terminal(20.0);
+        let boilup = terminal(30.0);
+        let feeds = [&distillate];
+        let residual = |kind, target, is_top| {
+            published_residual(
+                &specification(kind, target),
+                is_top,
+                &distillate,
+                &bottoms,
+                Some(&reflux),
+                Some(&boilup),
+                -80.0,
+                175.0,
+                &feeds,
+            )
+        };
+        assert!((residual(SpecificationKind::RefluxRatio, 1.8, true) - 0.2).abs() < 1.0e-12);
+        assert!((residual(SpecificationKind::RefluxRatio, 1.2, false) - 1.8).abs() < 1.0e-12);
+        assert!((residual(SpecificationKind::Duty, -100.0, true) - 20.0).abs() < 1.0e-12);
+        assert!((residual(SpecificationKind::Duty, 200.0, false) + 25.0).abs() < 1.0e-12);
+
+        let dry = terminal(0.0);
+        assert!(
+            published_residual(
+                &specification(SpecificationKind::RefluxRatio, 1.8),
+                true,
+                &dry,
+                &bottoms,
+                Some(&dry),
+                None,
+                0.0,
+                0.0,
+                &feeds,
+            )
+            .is_nan()
+        );
+        assert!(
+            published_residual(
+                &specification(SpecificationKind::RefluxRatio, 1.8),
+                true,
+                &dry,
+                &bottoms,
+                Some(&terminal(10.0)),
+                None,
+                0.0,
+                0.0,
+                &feeds,
+            )
+            .is_infinite()
+        );
+    }
 }

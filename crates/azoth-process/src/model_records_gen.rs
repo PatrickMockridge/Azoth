@@ -163,6 +163,8 @@ impl CalcResult for DistillationColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "top_specification_residual",
+        "bottom_specification_residual",
         "fs_factor",
         "fs_factor_utilization",
         "fs_factor_within_design_limit",

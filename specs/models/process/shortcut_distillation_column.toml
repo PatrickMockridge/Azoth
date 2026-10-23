@@ -12,9 +12,9 @@ assumptions = [
     "**Gilliland is Molokanov's fit**, `Y = 1 - exp[((1 + 54.4X)/(11 + 117.2X))((X - 1)/sqrt(X))]` with `X = (R - Rmin)/(R + 1)`, inverted by `N = (Y + Nmin)/(1 - Y)`.",
     "**a reflux multiplier at or below one is refused.** At one, `X` is zero and the class returns `actual_stages = Infinity` with the feed tray at `(int) Math.round(Infinity) + 1`, which is zero.",
     "**below one it silently takes its `Y = 0.5` fallback.** Both are degenerate, and neither is a column.",
-    "**the Kirkbride argument is not the correlation's as usually quoted.** The class computes `((z_HK,F/z_LK,F)(xLK_bottoms/xHK_distillate)(B/D)^2)^0.206` - the square on `B/D`, where the correlation squares the composition ratio.",
-    "**`xLK_bottoms` and `xHK_distillate` are the class's own**, `(1 - r_LK) z_LK,F` and `(1 - r_HK) z_HK,F`: recovery-weighted feed fractions rather than the product mole fractions the correlation is written in.",
-    "**NeqSim wins where the two disagree**, so this reproduces the class and says which expression the feed tray came from.",
+    "**the Kirkbride argument is the correlation's own**: `r = [(z_HK,F/z_LK,F)(x_LK,B/x_HK,D)^2 (B/D)]^0.206`, with the composition ratio squared and `B/D` to the first power. Upstream PR #4108 corrected the class's inverse pairing.",
+    "**`x_LK,B` and `x_HK,D` are product mole fractions.** The split gives the key amounts per feed mole, `(1 - r_LK) z_LK,F` and `(1 - r_HK) z_HK,F`, which the class normalises by `D/(B+D)` and `B/(B+D)`.",
+    "**the rectifying count is `N r/(1 + r)`**, and the reported tray is `round(N_rectifying) + 1`, one-based from the top; the class had divided by `1 + r` instead of multiplying.",
     "**the duties are estimates and not an energy balance.** `D = n_feed clamp(sum_i z_i s_i, 0.001, 0.999)`, `V = D (R + 1)`, and a hard-coded **`avgHvap = 30000` J/mol** gives `condenser_duty = -V avgHvap`.",
     "**the reboiler's is `-condenser_duty + 0.01 h_feed`**, a per cent of the feed's total enthalpy. The condenser's figure does not depend on the fluid, and both are reported as the class reports them.",
     "**the split fractions are the class's own estimate, and its constants are kept.** The light key takes `light_key_recovery_distillate`, the heavy key `1 - heavy_key_recovery_bottoms`, anything lighter than the light key **0.999**, anything heavier than the heavy key **0.001**.",
@@ -131,7 +131,7 @@ unit = "dimensionless"
 description = "the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.\n"
 [outputs.feed_tray_number]
 unit = "dimensionless"
-description = "the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.\n"
+description = "the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages kirkbride_ratio / (1 + kirkbride_ratio)`.\n"
 [outputs.condenser_duty]
 unit = "W"
 description = "the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.\n"

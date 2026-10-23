@@ -2644,6 +2644,11 @@ public class ProcessProbe {
     shortcutColumnRow("binary_methane_nbutane", new String[] { "methane", "n-butane" },
         new double[] { 0.5, 0.5 }, 300.0, 20.0, 1.0, "methane", "n-butane", 0.99, 0.99, 1.2,
         null, null);
+    // **The fix's own regression state**: an asymmetric ethane/propane split whose material
+    // balance the class's test writes out by hand (D = 32.9, B = 67.1 kmol/h).
+    shortcutColumnRow("asymmetric_kirkbride_regression", new String[] { "ethane", "propane" },
+        new double[] { 0.3, 0.7 }, 303.15, 20.0, 100.0 / 3.6, "ethane", "propane", 0.98, 0.95,
+        1.5, null, null);
     // **The refusal**: the light key is the heavy component, so `alpha_LK/HK` is below one.
     shortcutColumnRow("light_key_heavier_than_heavy_key", names, z, 300.0, 20.0, 1.0,
         "n-butane", "propane", 0.98, 0.98, 1.2, null, null);
