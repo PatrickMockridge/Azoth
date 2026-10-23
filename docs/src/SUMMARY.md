@@ -45,6 +45,7 @@
   - [Gas viscosity from the Chung correlation](./eos/chung_viscosity.md)
   - [CO2-in-water binary diffusivity from the Tammi correlation](./eos/co2_water_diffusivity.md)
   - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
+  - [De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate](./eos/de_waard_milliams_corrosion.md)
   - [Activity-corrected mineral-scale saturation indices from a brine analysis](./eos/electrolyte_scale_calculator.md)
   - [Interface tension from the Firoozabadi-Ramey correlation](./eos/firozabadi_ramley_interface_tension.md)
   - [Gas binary diffusivity from the Fuller-Schettler-Giddings correlation](./eos/fuller_schettler_giddings_diffusivity.md)

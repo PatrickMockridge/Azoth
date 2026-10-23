@@ -1,0 +1,700 @@
+id = "eos.de_waard_milliams_corrosion"
+name = "De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate"
+equation = "log10(V_cor) = 5.8 - 1710/T + 0.67 log10(pCO2)\n\nV = V_cor f_pH f_scale f_glycol f_flow (1 - IE) + V_sulfur\n\nf_pH = 10^(0.32(pH_sat - pH)) above pH_sat, else 1\npH_sat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C\nf_scale = 1 below 60 C; above 80 C with pH > 5, max(0.1, 1 - min(0.7, (T_C - 80) 0.01 (pH - 4)))\nf_glycol = 1 at zero, 0.05 above 0.8, else 1 - x\nf_flow = min(v^0.8, 5) above 1 m/s, else 1\nV_sulfur = S8 rate 1.74 / 7850\nV_FeS = min(exp(7.96 - 2320/T + 0.67 ln pH2S), 100) mm/yr"
+latex = '''V = V_{\mathrm{cor}}\,f_{\mathrm{pH}}\,f_{\mathrm{scale}}\,f_{\mathrm{glycol}}\,f_{\mathrm{flow}}\,(1-\eta)\quad [\mathrm{mm/yr}]'''
+assumptions = [
+    "the class takes C, bar, kg/(m2 yr) and mm/yr; this calc takes kelvin, pascal, kg/(m2 s) and returns m/s over the class's 365.25-day year.\n",
+    "**the baseline is de Waard-Milliams 1991**, `log10(V) = 5.8 - 1710/T_K + 0.67 log10(pCO2)` mm/yr, zero at or below a zero pCO2.\n",
+    "**the pH correction is de Waard-Lotz**, `10^(0.32(pHsat - pH))` at or above the saturation pH and one below it; `pHsat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C`.\n",
+    "**the scale correction** is one below 60 C; above 80 C and pH 5 it is `max(0.1, 1 - min(0.7, (T_C-80)*0.01*(pH-4)))`, whose 0.1 floor the 0.7 cap keeps out of reach.\n",
+    "the glycol factor is one at zero, 0.05 above 0.8 and `1-x` between; the flow factor is one to 1 m/s and `min(v^0.8, 5)` above; the inhibitor factor is one minus the efficiency clamped to `[0, 1]`.\n",
+    "**sulfur and H2S add to the CO2 rate**: sulfur as 1.74 kg Fe per kg S8 over steel's 7850 kg/m3, FeS as `min(exp(7.96 - 2320/T_K + 0.67 ln pH2S), 100)` mm/yr.\n",
+    "the severity bands are NORSOK M-001 on the corrected CO2-plus-sulfur rate; the FeCO3 index and the morphology are the class's estimates; sour service is H2S above 0.003 bar.\n",
+    "the class's total-pressure and pipe-diameter setters reach only its JSON and no arithmetic, and the three correction flags have no setters, so neither becomes an input.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/DeWaardMilliamsCorrosion.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the thirty-one states: the four severity bands, both sides of the pH saturation, the scale and glycol and flow branches, both inhibitor clamps, the sulfur and FeS contributions and the FeS cap, and the four morphologies.",
+    "NORSOK M-506 and NACE MR0175 / ISO 15156.",
+]
+[source]
+standard = "NeqSim master `DeWaardMilliamsCorrosion`"
+edition = "`calculateBaselineRate`, the four correction factors, `getSulfurCorrosionRate`, `getFeSCorrosionRate`, `getFeCO3SaturationIndex`, `getCorrosionSeverity`, `getFeSScaleMorphology` and `estimateCorrosionAllowance`. The comprehensive map, the temperature sweep and the Gson report are compositions."
+[inputs]
+[inputs.temperature]
+unit = "K"
+description = "the operating temperature.\n"
+[inputs.co2_partial_pressure]
+unit = "Pa"
+description = "the CO2 partial pressure, zero when no CO2 is present.\n"
+[inputs.ph]
+unit = "dimensionless"
+description = "the aqueous phase's pH.\n"
+[inputs.h2s_partial_pressure]
+unit = "Pa"
+description = "the H2S partial pressure, zero for a sweet service.\n"
+[inputs.flow_velocity]
+unit = "m/s"
+description = "the bulk flow velocity.\n"
+[inputs.inhibitor_efficiency]
+unit = "dimensionless"
+description = "the film-forming inhibitor efficiency, clamped to 0..1.\n"
+[inputs.glycol_fraction]
+unit = "dimensionless"
+description = "the glycol weight fraction in the aqueous phase, clamped to 0..1.\n"
+[inputs.sulfur_deposition_rate]
+unit = "kg/(m**2*s)"
+description = "the elemental-sulfur deposition rate on the wall.\n"
+[inputs.design_life]
+unit = "s"
+description = "the exposure time the corrosion allowance is scaled by.\n"
+[outputs]
+[outputs.baseline_rate]
+unit = "m/s"
+description = "the uncorrected de Waard-Milliams 1991 rate.\n"
+[outputs.ph_correction_factor]
+unit = "dimensionless"
+description = "the de Waard-Lotz pH factor, at most one where the film protects.\n"
+[outputs.scale_correction_factor]
+unit = "dimensionless"
+description = "the protective-scale factor above 80 C and pH 5.\n"
+[outputs.glycol_correction_factor]
+unit = "dimensionless"
+description = "the glycol factor on the aqueous phase's water activity.\n"
+[outputs.flow_correction_factor]
+unit = "dimensionless"
+description = "the mass-transfer factor above 1 m/s, capped at five.\n"
+[outputs.inhibitor_factor]
+unit = "dimensionless"
+description = "one minus the clamped inhibitor efficiency.\n"
+[outputs.corrected_rate]
+unit = "m/s"
+description = "the CO2 rate with every factor and the sulfur contribution.\n"
+[outputs.sulfur_rate]
+unit = "m/s"
+description = "the elemental-sulfur contribution.\n"
+[outputs.fes_rate]
+unit = "m/s"
+description = "the H2S/FeS contribution, capped at 100 mm/yr.\n"
+[outputs.co2_corrected_rate]
+unit = "m/s"
+description = "the corrected rate less the sulfur contribution.\n"
+[outputs.total_corrosion_rate]
+unit = "m/s"
+description = "the corrected rate plus the FeS contribution.\n"
+[outputs.feco3_saturation_index]
+unit = "dimensionless"
+description = "the FeCO3 saturation index, above one where scale forms.\n"
+[outputs.feco3_scale_forming]
+type = "boolean"
+description = "whether the FeCO3 index exceeds one.\n"
+[outputs.is_sour_service]
+type = "boolean"
+description = "NACE MR0175 sour service: H2S above 0.003 bar.\n"
+[outputs.corrosion_severity]
+type = "enum"
+values = ["low", "medium", "high", "very_high"]
+description = "the NORSOK M-001 severity band.\n"
+[outputs.fes_morphology]
+type = "enum"
+values = ["none", "mackinawite", "cubic_fes_troilite", "pyrrhotite"]
+description = "the FeS morphology and protectiveness the temperature band predicts.\n"
+[outputs.corrosion_allowance]
+unit = "m"
+description = "the corrected rate times the design life.\n"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "co2_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative; zero is the class's own no-CO2 guard.\n"
+[[valid_range]]
+quantity = "h2s_partial_pressure"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A partial pressure cannot be negative; zero is a sweet service.\n"
+[[valid_range]]
+quantity = "flow_velocity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "The correlation is written for the magnitude of a flowing bulk velocity.\n"
+[[valid_range]]
+quantity = "design_life"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "A design life is a duration, not a signed quantity.\n"
+[worked_example]
+source = "the capture's `default` row"
+derivation = "The class's own default state: 60 C, 2 bar CO2, pH 4.5, 2 m/s, no inhibitor, glycol or sulfur, over a 25-year life.\n\n  T_K = 333.15, pHsat = 3.71 - 0.5 log10(2) + 0.00133*60 = 3.6395\n  f_pH = 10^(0.32*(3.6395 - 4.5)) = 0.53036\n  baseline = 10^(5.8 - 1710/333.15 + 0.67 log10(2)) = 7.3938 mm/yr\n  f_flow = 2^0.8 = 1.74110\n  corrected = 7.3938 * 0.53036 * 1.74110 = 6.8275 mm/yr\n  FeCO3 index = 10^(2*(4.5-7) + log10(2) - (-10.5 + 2000/333.15)) = 0.62767\n  allowance = 6.8275 mm/yr * 25 yr = 0.17069 m\n"
+tolerance = 1e-09
+[worked_example.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[worked_example.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 2.1635068498737286e-10
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 2.1635068498737286e-10
+total_corrosion_rate = 2.1635068498737286e-10
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.17068770941393796
+
+[[tests]]
+id = "co2_zero"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `co2_zero` row: the pCO2 guard: a zero partial pressure gives a zero baseline and a pH below saturation still multiplies it by one."
+[tests.inputs]
+temperature = 298.15
+co2_partial_pressure = 0.0
+ph = 3.0
+h2s_partial_pressure = 0.0
+flow_velocity = 1.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 0.0
+ph_correction_factor = 1.0
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.0
+inhibitor_factor = 1.0
+corrected_rate = 0.0
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 0.0
+total_corrosion_rate = 0.0
+feco3_saturation_index = 6.193941947623216E-8
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "low"
+fes_morphology = "none"
+corrosion_allowance = 0.0
+
+[[tests]]
+id = "severity_medium"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `severity_medium` row: the NORSOK M-001 medium band at 0.05 bar CO2."
+[tests.inputs]
+temperature = 298.15
+co2_partial_pressure = 5000.0
+ph = 3.0
+h2s_partial_pressure = 0.0
+flow_velocity = 1.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 4.94126143642933e-12
+ph_correction_factor = 1.0
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.0
+inhibitor_factor = 1.0
+corrected_rate = 4.94126143642933e-12
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 4.94126143642933e-12
+total_corrosion_rate = 4.94126143642933e-12
+feco3_saturation_index = 3.0969709738116073E-6
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "medium"
+fes_morphology = "none"
+corrosion_allowance = 0.003898358797656556
+
+[[tests]]
+id = "severity_high"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `severity_high` row: the high band at 0.5 bar CO2."
+[tests.inputs]
+temperature = 298.15
+co2_partial_pressure = 50000.0
+ph = 3.0
+h2s_partial_pressure = 0.0
+flow_velocity = 1.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.3112016161052568e-11
+ph_correction_factor = 1.0
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.0
+inhibitor_factor = 1.0
+corrected_rate = 2.3112016161052568e-11
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 2.3112016161052568e-11
+total_corrosion_rate = 2.3112016161052568e-11
+feco3_saturation_index = 3.096970973811607E-5
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "high"
+fes_morphology = "none"
+corrosion_allowance = 0.018233994030100814
+
+[[tests]]
+id = "ph_above_sat"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `ph_above_sat` row: the film-protected branch: pH 6 at 60 C is above pHsat, so the pH factor is 0.1756."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 6.0
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.1756188790122235
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 7.164044495339555e-11
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 7.164044495339555e-11
+total_corrosion_rate = 7.164044495339555e-11
+feco3_saturation_index = 627.6653867033486
+feco3_scale_forming = true
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.05652001264153189
+
+[[tests]]
+id = "scale_160_ph7"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `scale_160_ph7` row: the protective-scale floor: 160 C at pH 7 caps the reduction at 0.7, so the factor is 0.3."
+[tests.inputs]
+temperature = 433.15
+co2_partial_pressure = 200000.0
+ph = 7.0
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 3.5872533562478873e-09
+ph_correction_factor = 0.09271098616726721
+scale_correction_factor = 0.30000000000000004
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 1.737154727398069e-10
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 1.737154727398069e-10
+total_corrosion_rate = 1.737154727398069e-10
+feco3_saturation_index = 1526482.715408346
+feco3_scale_forming = true
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.13705108506334326
+
+[[tests]]
+id = "glycol_0_81"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `glycol_0_81` row: the glycol step above 0.8, where the correction drops from 1-x to 0.05."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.81
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 0.05
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 1.0817534249368643e-11
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 1.0817534249368643e-11
+total_corrosion_rate = 1.0817534249368643e-11
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "high"
+fes_morphology = "none"
+corrosion_allowance = 0.008534385470696898
+
+[[tests]]
+id = "velocity_10"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `velocity_10` row: the mass-transfer cap: 10 m/s is 10^0.8, under the factor-of-five ceiling."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 10.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 5.0
+inhibitor_factor = 1.0
+corrected_rate = 6.213041898686923e-10
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 6.213041898686923e-10
+total_corrosion_rate = 6.213041898686923e-10
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.49017172755500615
+
+[[tests]]
+id = "inhibitor_1_5"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `inhibitor_1_5` row: the inhibitor clamp at one: an efficiency of 1.5 removes the whole CO2 rate."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 1.5
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 0.0
+corrected_rate = 0.0
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 0.0
+total_corrosion_rate = 0.0
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "low"
+fes_morphology = "none"
+corrosion_allowance = 0.0
+
+[[tests]]
+id = "inhibitor_negative"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `inhibitor_negative` row: the inhibitor clamp at zero: a negative efficiency is no inhibition."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = -0.5
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 2.1635068498737286e-10
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 2.1635068498737286e-10
+total_corrosion_rate = 2.1635068498737286e-10
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.17068770941393796
+
+[[tests]]
+id = "sulfur"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `sulfur` row: the elemental-sulfur contribution: 0.5 kg/(m2 yr) over 1.74 kg Fe per kg S8."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 1.5844043907014474e-08
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 2.1986261319096587e-10
+sulfur_rate = 3.5119282035930175e-12
+fes_rate = 0.0
+co2_corrected_rate = 2.1635068498737286e-10
+total_corrosion_rate = 2.1986261319096587e-10
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "cubic_fes_troilite"
+corrosion_allowance = 0.1734584100508806
+
+[[tests]]
+id = "sour_threshold_above"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `sour_threshold_above` row: NACE MR0175 sour service at 0.0031 bar H2S, just above the 0.003 bar threshold."
+[tests.inputs]
+temperature = 333.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 310.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.342950306142579e-10
+ph_correction_factor = 0.5303605358080379
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 2.1635068498737286e-10
+sulfur_rate = 0.0
+fes_rate = 1.7895319455835943e-12
+co2_corrected_rate = 2.1635068498737286e-10
+total_corrosion_rate = 2.1814021693295647e-10
+feco3_saturation_index = 0.6276653867033487
+feco3_scale_forming = false
+is_sour_service = true
+corrosion_severity = "very_high"
+fes_morphology = "cubic_fes_troilite"
+corrosion_allowance = 0.17068770941393796
+
+[[tests]]
+id = "fes_cap"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `fes_cap` row: the FeS ceiling: 100 bar H2S at 200 C would exceed 100 mm/yr, and the class caps it there."
+[tests.inputs]
+temperature = 473.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 10000000.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 7.735889463047422e-09
+ph_correction_factor = 0.6083523649444443
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 8.193877233864158e-09
+sulfur_rate = 0.0
+fes_rate = 3.168808781402895e-09
+co2_corrected_rate = 8.193877233864158e-09
+total_corrosion_rate = 1.1362686015267054e-08
+feco3_saturation_index = 37.50081176365838
+feco3_scale_forming = true
+is_sour_service = true
+corrosion_severity = "very_high"
+fes_morphology = "pyrrhotite"
+corrosion_allowance = 6.464477504884789
+
+[[tests]]
+id = "morph_50"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `morph_50` row: the mackinawite morphology below 60 C with H2S present."
+[tests.inputs]
+temperature = 323.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 10000.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 1.6252714642896659e-10
+ph_correction_factor = 0.5251884913837914
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 1.486158423934747e-10
+sulfur_rate = 0.0
+fes_rate = 1.478895079425758e-11
+co2_corrected_rate = 1.486158423934747e-10
+total_corrosion_rate = 1.634047931877323e-10
+feco3_saturation_index = 0.4092170453191225
+feco3_scale_forming = false
+is_sour_service = true
+corrosion_severity = "very_high"
+fes_morphology = "mackinawite"
+corrosion_allowance = 0.11724898269790797
+
+[[tests]]
+id = "morph_150"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `morph_150` row: the pyrrhotite morphology above 120 C."
+[tests.inputs]
+temperature = 423.15
+co2_partial_pressure = 200000.0
+ph = 4.5
+h2s_partial_pressure = 10000.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 2.8937829925234218e-09
+ph_correction_factor = 0.5792622151256726
+scale_correction_factor = 1.0
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 2.9185366881568167e-09
+sulfur_rate = 0.0
+fes_rate = 8.068231978297913e-11
+co2_corrected_rate = 2.9185366881568167e-09
+total_corrosion_rate = 2.9992190079397957e-09
+feco3_saturation_index = 11.873360560547498
+feco3_scale_forming = true
+is_sour_service = true
+corrosion_severity = "very_high"
+fes_morphology = "pyrrhotite"
+corrosion_allowance = 2.302550334754439
+
+[[tests]]
+id = "feco3_high_ph"
+type = "reference"
+status = "active"
+tolerance = 1e-09
+source = "the capture's `feco3_high_ph` row: the FeCO3 saturation index at 90 C and pH 7, above one."
+[tests.inputs]
+temperature = 363.15
+co2_partial_pressure = 100000.0
+ph = 7.0
+h2s_partial_pressure = 0.0
+flow_velocity = 2.0
+inhibitor_efficiency = 0.0
+glycol_fraction = 0.0
+sulfur_deposition_rate = 0.0
+design_life = 788940000.0
+[tests.expected]
+baseline_rate = 3.909291143092542e-10
+ph_correction_factor = 0.09671726345981589
+scale_correction_factor = 0.7
+glycol_correction_factor = 1.0
+flow_correction_factor = 1.7411011265922482
+inhibitor_factor = 1.0
+corrected_rate = 4.6081228870569327e-11
+sulfur_rate = 0.0
+fes_rate = 0.0
+co2_corrected_rate = 4.6081228870569327e-11
+total_corrosion_rate = 4.6081228870569327e-11
+feco3_saturation_index = 98318.19522509407
+feco3_scale_forming = true
+is_sour_service = false
+corrosion_severity = "very_high"
+fes_morphology = "none"
+corrosion_allowance = 0.03635532470514697
+
+[[tests]]
+id = "default_worked_example"
+type = "worked_example"
+status = "active"
+
+[implementations]
+python = "azoth.eos.de_waard_milliams_corrosion"
+rust = "azoth_eos::de_waard_milliams_corrosion"

@@ -935,6 +935,42 @@ pub fn critical_point(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (temperature, co2_partial_pressure, ph, h2s_partial_pressure, flow_velocity, inhibitor_efficiency, glycol_fraction, sulfur_deposition_rate, design_life))]
+#[pyo3(
+    text_signature = "(temperature, co2_partial_pressure, ph, h2s_partial_pressure, flow_velocity, inhibitor_efficiency, glycol_fraction, sulfur_deposition_rate, design_life)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn de_waard_milliams_corrosion(
+    py: Python<'_>,
+    temperature: f64,
+    co2_partial_pressure: f64,
+    ph: f64,
+    h2s_partial_pressure: f64,
+    flow_velocity: f64,
+    inhibitor_efficiency: f64,
+    glycol_fraction: f64,
+    sulfur_deposition_rate: f64,
+    design_life: f64,
+) -> PyResult<crate::transport_gen::PyDeWaardMilliamsCorrosionResult> {
+    azoth_eos::de_waard_milliams_corrosion::de_waard_milliams_corrosion(
+        kelvins(temperature),
+        pascals(co2_partial_pressure),
+        ph,
+        pascals(h2s_partial_pressure),
+        meters_per_second(flow_velocity),
+        inhibitor_efficiency,
+        glycol_fraction,
+        kilograms_per_square_meter_second(sulfur_deposition_rate),
+        seconds(design_life),
+    )
+    .map(|r| crate::transport_gen::PyDeWaardMilliamsCorrosionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Activity coefficients of a Desmukh-Mather electrolyte phase.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

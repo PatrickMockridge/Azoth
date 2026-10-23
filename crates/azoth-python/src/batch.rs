@@ -26,9 +26,9 @@
 use azoth_core::Warning;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvin_intervals,
-    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
-    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, square_meters,
-    watts_per_meter_kelvin,
+    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second,
+    kilograms_per_square_meter_second, meters, meters_per_second, moles_per_cubic_meter,
+    pascal_seconds, pascals, seconds, square_meters, watts_per_meter_kelvin,
 };
 use azoth_eos as eos;
 use azoth_hydraulics as hyd;
@@ -536,6 +536,127 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "hydrostatic_drop", "Pa", hydrostatic);
             push_values(&mut columns, "friction_drop", "Pa", friction_drop);
             push_values(&mut columns, "total_drop", "Pa", total);
+        }
+
+        "eos.de_waard_milliams_corrosion" => {
+            let (temperature, co2, ph, h2s, velocity) = (
+                take(&inputs, "temperature")?,
+                take(&inputs, "co2_partial_pressure")?,
+                take(&inputs, "ph")?,
+                take(&inputs, "h2s_partial_pressure")?,
+                take(&inputs, "flow_velocity")?,
+            );
+            let (inhibitor, glycol) = (
+                take(&inputs, "inhibitor_efficiency")?,
+                take(&inputs, "glycol_fraction")?,
+            );
+            let (sulfur, life) = (
+                take(&inputs, "sulfur_deposition_rate")?,
+                take(&inputs, "design_life")?,
+            );
+            let mut baseline = Vec::with_capacity(n);
+            let mut ph_factor = Vec::with_capacity(n);
+            let mut scale_factor = Vec::with_capacity(n);
+            let mut glycol_factor = Vec::with_capacity(n);
+            let mut flow_factor = Vec::with_capacity(n);
+            let mut inhibitor_factor = Vec::with_capacity(n);
+            let mut corrected = Vec::with_capacity(n);
+            let mut sulfur_rate = Vec::with_capacity(n);
+            let mut fes_rate = Vec::with_capacity(n);
+            let mut co2_corrected = Vec::with_capacity(n);
+            let mut total = Vec::with_capacity(n);
+            let mut feco3_si = Vec::with_capacity(n);
+            let mut feco3_forming = Vec::with_capacity(n);
+            let mut sour = Vec::with_capacity(n);
+            let mut severity = Vec::with_capacity(n);
+            let mut morphology = Vec::with_capacity(n);
+            let mut allowance = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::de_waard_milliams_corrosion::de_waard_milliams_corrosion(
+                        kelvins(temperature[i]),
+                        pascals(co2[i]),
+                        ph[i],
+                        pascals(h2s[i]),
+                        meters_per_second(velocity[i]),
+                        inhibitor[i],
+                        glycol[i],
+                        kilograms_per_square_meter_second(sulfur[i]),
+                        seconds(life[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                baseline.push(r.baseline_rate.value);
+                ph_factor.push(r.ph_correction_factor);
+                scale_factor.push(r.scale_correction_factor);
+                glycol_factor.push(r.glycol_correction_factor);
+                flow_factor.push(r.flow_correction_factor);
+                inhibitor_factor.push(r.inhibitor_factor);
+                corrected.push(r.corrected_rate.value);
+                sulfur_rate.push(r.sulfur_rate.value);
+                fes_rate.push(r.fes_rate.value);
+                co2_corrected.push(r.co2_corrected_rate.value);
+                total.push(r.total_corrosion_rate.value);
+                feco3_si.push(r.feco3_saturation_index);
+                feco3_forming.push(flag(r.feco3_scale_forming));
+                sour.push(flag(r.is_sour_service));
+                severity.push(Some(r.corrosion_severity.as_str().to_string()));
+                morphology.push(Some(r.fes_morphology.as_str().to_string()));
+                allowance.push(r.corrosion_allowance.value);
+            }
+            push_values(&mut columns, "baseline_rate", "m/s", baseline);
+            push_values(
+                &mut columns,
+                "ph_correction_factor",
+                "dimensionless",
+                ph_factor,
+            );
+            push_values(
+                &mut columns,
+                "scale_correction_factor",
+                "dimensionless",
+                scale_factor,
+            );
+            push_values(
+                &mut columns,
+                "glycol_correction_factor",
+                "dimensionless",
+                glycol_factor,
+            );
+            push_values(
+                &mut columns,
+                "flow_correction_factor",
+                "dimensionless",
+                flow_factor,
+            );
+            push_values(
+                &mut columns,
+                "inhibitor_factor",
+                "dimensionless",
+                inhibitor_factor,
+            );
+            push_values(&mut columns, "corrected_rate", "m/s", corrected);
+            push_values(&mut columns, "sulfur_rate", "m/s", sulfur_rate);
+            push_values(&mut columns, "fes_rate", "m/s", fes_rate);
+            push_values(&mut columns, "co2_corrected_rate", "m/s", co2_corrected);
+            push_values(&mut columns, "total_corrosion_rate", "m/s", total);
+            push_values(
+                &mut columns,
+                "feco3_saturation_index",
+                "dimensionless",
+                feco3_si,
+            );
+            push_values(
+                &mut columns,
+                "feco3_scale_forming",
+                "dimensionless",
+                feco3_forming,
+            );
+            push_values(&mut columns, "is_sour_service", "dimensionless", sour);
+            push_labels(&mut columns, "corrosion_severity", severity);
+            push_labels(&mut columns, "fes_morphology", morphology);
+            push_values(&mut columns, "corrosion_allowance", "m", allowance);
         }
 
         "eos.electrolyte_scale_calculator" => {

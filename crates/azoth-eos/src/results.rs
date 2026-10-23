@@ -1578,6 +1578,127 @@ impl CalcResult for ValveScaleDriftResult {
     }
 }
 
+/// The corrosion severity band a corrected rate falls in, per NORSOK M-001.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CorrosionSeverity {
+    /// Below 0.1 mm/yr.
+    Low,
+    /// 0.1 to 0.3 mm/yr.
+    Medium,
+    /// 0.3 to 1.0 mm/yr.
+    High,
+    /// Above 1.0 mm/yr.
+    VeryHigh,
+}
+
+impl CorrosionSeverity {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::VeryHigh => "very_high",
+        }
+    }
+}
+
+/// The iron-sulfide morphology the temperature band predicts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FeSMorphology {
+    /// No H2S and no elemental sulfur, so no FeS forms.
+    None,
+    /// Below 60 C: porous and non-protective.
+    Mackinawite,
+    /// 60 to 120 C: partially protective.
+    CubicFesTroilite,
+    /// Above 120 C: dense and protective.
+    Pyrrhotite,
+}
+
+impl FeSMorphology {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Mackinawite => "mackinawite",
+            Self::CubicFesTroilite => "cubic_fes_troilite",
+            Self::Pyrrhotite => "pyrrhotite",
+        }
+    }
+}
+
+/// Result of `eos.de_waard_milliams_corrosion`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeWaardMilliamsCorrosionResult {
+    /// The uncorrected de Waard-Milliams 1991 rate.
+    pub baseline_rate: Velocity,
+    /// De Waard-Lotz pH correction, at most one where the film protects.
+    pub ph_correction_factor: f64,
+    /// Protective-scale correction above 80 C and pH 5.
+    pub scale_correction_factor: f64,
+    /// Glycol correction on the aqueous phase's water activity.
+    pub glycol_correction_factor: f64,
+    /// Mass-transfer correction above 1 m/s, capped at five.
+    pub flow_correction_factor: f64,
+    /// `1 - inhibitor_efficiency`, after the class's clamp.
+    pub inhibitor_factor: f64,
+    /// CO2 rate with every correction and the sulfur contribution.
+    pub corrected_rate: Velocity,
+    /// The elemental-sulfur contribution.
+    pub sulfur_rate: Velocity,
+    /// The H2S/FeS contribution, capped at 100 mm/yr.
+    pub fes_rate: Velocity,
+    /// `corrected_rate` less the sulfur contribution.
+    pub co2_corrected_rate: Velocity,
+    /// `corrected_rate` plus the FeS contribution.
+    pub total_corrosion_rate: Velocity,
+    /// The FeCO3 saturation index, above one where scale forms.
+    pub feco3_saturation_index: f64,
+    /// Whether the FeCO3 index exceeds one.
+    pub feco3_scale_forming: bool,
+    /// NACE MR0175 sour service: H2S partial pressure above 0.003 bar.
+    pub is_sour_service: bool,
+    /// The NORSOK M-001 severity band.
+    pub corrosion_severity: CorrosionSeverity,
+    /// The FeS morphology the temperature band predicts.
+    pub fes_morphology: FeSMorphology,
+    /// The corrected rate times the design life.
+    pub corrosion_allowance: Length,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DeWaardMilliamsCorrosionResult {
+    const CALC_ID: &'static str = "eos.de_waard_milliams_corrosion";
+    const FIELDS: &'static [&'static str] = &[
+        "baseline_rate",
+        "ph_correction_factor",
+        "scale_correction_factor",
+        "glycol_correction_factor",
+        "flow_correction_factor",
+        "inhibitor_factor",
+        "corrected_rate",
+        "sulfur_rate",
+        "fes_rate",
+        "co2_corrected_rate",
+        "total_corrosion_rate",
+        "feco3_saturation_index",
+        "feco3_scale_forming",
+        "is_sour_service",
+        "corrosion_severity",
+        "fes_morphology",
+        "corrosion_allowance",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One evaluated pipe segment's deposition.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DepositionSegmentRow {

@@ -52,12 +52,14 @@ from azoth.core.result import (
     ConductionPlaneWallResult,
     ControlValveCvResult,
     CoolerResult,
+    CorrosionSeverity,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
     DelumpingResult,
     DepositionSegmentRow,
     DesmukhMatherPhaseResult,
+    DeWaardMilliamsCorrosionResult,
     DewPressureResult,
     DewTemperatureResult,
     DistillationColumnResult,
@@ -68,6 +70,7 @@ from azoth.core.result import (
     EosCgPhaseResult,
     EquilibriumConstantResult,
     ExpanderResult,
+    FeSMorphology,
     FilippovConductivityResult,
     FilterResult,
     FirozabadiRamleyInterfaceTensionResult,
@@ -355,6 +358,7 @@ __all__ = [
     "crane_k_factors",
     "critical_point",
     "darcy_weisbach",
+    "de_waard_milliams_corrosion",
     "delumping",
     "desmukh_mather_phase",
     "dew_pressure",
@@ -1318,6 +1322,42 @@ def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
         z_c=result.z_c,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def de_waard_milliams_corrosion(temperature: Q, co2_partial_pressure: Q, ph: float, h2s_partial_pressure: Q, flow_velocity: Q, inhibitor_efficiency: float, glycol_fraction: float, sulfur_deposition_rate: Q, design_life: Q) -> DeWaardMilliamsCorrosionResult:
+    """``eos.de_waard_milliams_corrosion``, computed in Rust."""
+    spec = _spec_for("eos.de_waard_milliams_corrosion")
+    result = _core.de_waard_milliams_corrosion(
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        input_to_si(spec, "h2s_partial_pressure", h2s_partial_pressure),
+        input_to_si(spec, "flow_velocity", flow_velocity),
+        inhibitor_efficiency,
+        glycol_fraction,
+        input_to_si(spec, "sulfur_deposition_rate", sulfur_deposition_rate),
+        input_to_si(spec, "design_life", design_life),
+    )
+    return DeWaardMilliamsCorrosionResult(
+        baseline_rate=from_si(result.baseline_rate.magnitude_si, result.baseline_rate.unit),
+        ph_correction_factor=result.ph_correction_factor,
+        scale_correction_factor=result.scale_correction_factor,
+        glycol_correction_factor=result.glycol_correction_factor,
+        flow_correction_factor=result.flow_correction_factor,
+        inhibitor_factor=result.inhibitor_factor,
+        corrected_rate=from_si(result.corrected_rate.magnitude_si, result.corrected_rate.unit),
+        sulfur_rate=from_si(result.sulfur_rate.magnitude_si, result.sulfur_rate.unit),
+        fes_rate=from_si(result.fes_rate.magnitude_si, result.fes_rate.unit),
+        co2_corrected_rate=from_si(result.co2_corrected_rate.magnitude_si, result.co2_corrected_rate.unit),
+        total_corrosion_rate=from_si(result.total_corrosion_rate.magnitude_si, result.total_corrosion_rate.unit),
+        feco3_saturation_index=result.feco3_saturation_index,
+        feco3_scale_forming=result.feco3_scale_forming,
+        is_sour_service=result.is_sour_service,
+        corrosion_severity=CorrosionSeverity(result.corrosion_severity),
+        fes_morphology=FeSMorphology(result.fes_morphology),
+        corrosion_allowance=from_si(result.corrosion_allowance.magnitude_si, result.corrosion_allowance.unit),
         warnings=_warnings(result.warnings),
     )
 

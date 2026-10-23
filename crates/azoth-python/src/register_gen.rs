@@ -55,6 +55,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyCo2WaterDiffusivityResult>()?;
     m.add_class::<crate::transport_gen::PyCostaldMolarVolumeResult>()?;
     m.add_class::<crate::transport_gen::PyCriticalPointResult>()?;
+    m.add_class::<crate::transport_gen::PyDeWaardMilliamsCorrosionResult>()?;
     m.add_class::<crate::transport_gen::PyDesmukhMatherPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyDewPressureResult>()?;
     m.add_class::<crate::transport_gen::PyDewTemperatureResult>()?;
@@ -387,6 +388,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::critical_point, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::de_waard_milliams_corrosion,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::desmukh_mather_phase,
         m

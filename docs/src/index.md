@@ -109,6 +109,7 @@ Five sections, and the difference between them is the point:
 - [`eos.chung_viscosity`](./eos/chung_viscosity.md)
 - [`eos.co2_water_diffusivity`](./eos/co2_water_diffusivity.md)
 - [`eos.costald_molar_volume`](./eos/costald_molar_volume.md)
+- [`eos.de_waard_milliams_corrosion`](./eos/de_waard_milliams_corrosion.md)
 - [`eos.electrolyte_scale_calculator`](./eos/electrolyte_scale_calculator.md)
 - [`eos.firozabadi_ramley_interface_tension`](./eos/firozabadi_ramley_interface_tension.md)
 - [`eos.fuller_schettler_giddings_diffusivity`](./eos/fuller_schettler_giddings_diffusivity.md)

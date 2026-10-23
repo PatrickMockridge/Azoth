@@ -2275,6 +2275,145 @@ impl From<&azoth_eos::results::CriticalPointResult> for PyCriticalPointResult {
         }
     }
 }
+/// Result of `eos.de_waard_milliams_corrosion`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DeWaardMilliamsCorrosionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDeWaardMilliamsCorrosionResult {
+    /// the uncorrected de Waard-Milliams 1991 rate.
+    #[pyo3(get)]
+    pub baseline_rate: PyQty,
+    /// the de Waard-Lotz pH factor, at most one where the film protects.
+    #[pyo3(get)]
+    pub ph_correction_factor: f64,
+    /// the protective-scale factor above 80 C and pH 5.
+    #[pyo3(get)]
+    pub scale_correction_factor: f64,
+    /// the glycol factor on the aqueous phase's water activity.
+    #[pyo3(get)]
+    pub glycol_correction_factor: f64,
+    /// the mass-transfer factor above 1 m/s, capped at five.
+    #[pyo3(get)]
+    pub flow_correction_factor: f64,
+    /// one minus the clamped inhibitor efficiency.
+    #[pyo3(get)]
+    pub inhibitor_factor: f64,
+    /// the CO2 rate with every factor and the sulfur contribution.
+    #[pyo3(get)]
+    pub corrected_rate: PyQty,
+    /// the elemental-sulfur contribution.
+    #[pyo3(get)]
+    pub sulfur_rate: PyQty,
+    /// the H2S/FeS contribution, capped at 100 mm/yr.
+    #[pyo3(get)]
+    pub fes_rate: PyQty,
+    /// the corrected rate less the sulfur contribution.
+    #[pyo3(get)]
+    pub co2_corrected_rate: PyQty,
+    /// the corrected rate plus the FeS contribution.
+    #[pyo3(get)]
+    pub total_corrosion_rate: PyQty,
+    /// the FeCO3 saturation index, above one where scale forms.
+    #[pyo3(get)]
+    pub feco3_saturation_index: f64,
+    /// whether the FeCO3 index exceeds one.
+    #[pyo3(get)]
+    pub feco3_scale_forming: bool,
+    /// NACE MR0175 sour service: H2S above 0.003 bar.
+    #[pyo3(get)]
+    pub is_sour_service: bool,
+    /// the NORSOK M-001 severity band.
+    #[pyo3(get)]
+    pub corrosion_severity: String,
+    /// the FeS morphology and protectiveness the temperature band predicts.
+    #[pyo3(get)]
+    pub fes_morphology: String,
+    /// the corrected rate times the design life.
+    #[pyo3(get)]
+    pub corrosion_allowance: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyDeWaardMilliamsCorrosionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "DeWaardMilliamsCorrosionResult(baseline_rate={:?}, ph_correction_factor={:?}, scale_correction_factor={:?}, glycol_correction_factor={:?}, flow_correction_factor={:?}, inhibitor_factor={:?}, corrected_rate={:?}, sulfur_rate={:?}, fes_rate={:?}, co2_corrected_rate={:?}, total_corrosion_rate={:?}, feco3_saturation_index={:?}, feco3_scale_forming={:?}, is_sour_service={:?}, corrosion_severity={:?}, fes_morphology={:?}, corrosion_allowance={:?}, {} warning(s))",
+            self.baseline_rate,
+            self.ph_correction_factor,
+            self.scale_correction_factor,
+            self.glycol_correction_factor,
+            self.flow_correction_factor,
+            self.inhibitor_factor,
+            self.corrected_rate,
+            self.sulfur_rate,
+            self.fes_rate,
+            self.co2_corrected_rate,
+            self.total_corrosion_rate,
+            self.feco3_saturation_index,
+            self.feco3_scale_forming,
+            self.is_sour_service,
+            self.corrosion_severity,
+            self.fes_morphology,
+            self.corrosion_allowance,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::DeWaardMilliamsCorrosionResult>
+    for PyDeWaardMilliamsCorrosionResult
+{
+    fn from(r: &azoth_eos::results::DeWaardMilliamsCorrosionResult) -> Self {
+        Self {
+            baseline_rate: PyQty {
+                magnitude_si: r.baseline_rate.value,
+                unit: "m/s".to_string(),
+            },
+            ph_correction_factor: r.ph_correction_factor,
+            scale_correction_factor: r.scale_correction_factor,
+            glycol_correction_factor: r.glycol_correction_factor,
+            flow_correction_factor: r.flow_correction_factor,
+            inhibitor_factor: r.inhibitor_factor,
+            corrected_rate: PyQty {
+                magnitude_si: r.corrected_rate.value,
+                unit: "m/s".to_string(),
+            },
+            sulfur_rate: PyQty {
+                magnitude_si: r.sulfur_rate.value,
+                unit: "m/s".to_string(),
+            },
+            fes_rate: PyQty {
+                magnitude_si: r.fes_rate.value,
+                unit: "m/s".to_string(),
+            },
+            co2_corrected_rate: PyQty {
+                magnitude_si: r.co2_corrected_rate.value,
+                unit: "m/s".to_string(),
+            },
+            total_corrosion_rate: PyQty {
+                magnitude_si: r.total_corrosion_rate.value,
+                unit: "m/s".to_string(),
+            },
+            feco3_saturation_index: r.feco3_saturation_index,
+            feco3_scale_forming: r.feco3_scale_forming,
+            is_sour_service: r.is_sour_service,
+            corrosion_severity: r.corrosion_severity.as_str().to_string(),
+            fes_morphology: r.fes_morphology.as_str().to_string(),
+            corrosion_allowance: PyQty {
+                magnitude_si: r.corrosion_allowance.value,
+                unit: "m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.desmukh_mather_phase`, transported.
 #[pyclass(
     frozen,

@@ -93,6 +93,7 @@ from azoth.core.result import (
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DesmukhMatherPhaseResult,
+    DeWaardMilliamsCorrosionResult,
     DewPressureResult,
     DewTemperatureResult,
     EffectiveDiffusionResult,
@@ -639,6 +640,38 @@ def closed_loop_deposition_solver(
         tolerance=tolerance,
         max_iterations=max_iterations,
         eos=eos,
+    )
+
+
+def de_waard_milliams_corrosion(
+    temperature: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    h2s_partial_pressure: Q,
+    flow_velocity: Q,
+    inhibitor_efficiency: float,
+    glycol_fraction: float,
+    sulfur_deposition_rate: Q,
+    design_life: Q,
+) -> DeWaardMilliamsCorrosionResult:
+    """The de Waard-Milliams CO2/H2S/S8 corrosion rate and its corrections.
+
+    NeqSim's ``DeWaardMilliamsCorrosion``: the 1991 CO2 baseline with the de Waard-Lotz pH,
+    protective-scale, glycol and flow corrections, the elemental-sulfur and FeS contributions,
+    the FeCO3 index, the NORSOK M-001 severity band and the design-life allowance.
+
+    See :func:`azoth.eos.reference.de_waard_milliams_corrosion`.
+    """
+    return resolve("eos.de_waard_milliams_corrosion")(  # type: ignore[no-any-return]
+        temperature=temperature,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        h2s_partial_pressure=h2s_partial_pressure,
+        flow_velocity=flow_velocity,
+        inhibitor_efficiency=inhibitor_efficiency,
+        glycol_fraction=glycol_fraction,
+        sulfur_deposition_rate=sulfur_deposition_rate,
+        design_life=design_life,
     )
 
 

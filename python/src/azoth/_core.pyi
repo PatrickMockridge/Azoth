@@ -759,6 +759,27 @@ class CriticalPointResult:
     warnings: list[Warning]
 
 @final
+class DeWaardMilliamsCorrosionResult:
+    baseline_rate: Qty
+    ph_correction_factor: float
+    scale_correction_factor: float
+    glycol_correction_factor: float
+    flow_correction_factor: float
+    inhibitor_factor: float
+    corrected_rate: Qty
+    sulfur_rate: Qty
+    fes_rate: Qty
+    co2_corrected_rate: Qty
+    total_corrosion_rate: Qty
+    feco3_saturation_index: float
+    feco3_scale_forming: bool
+    is_sour_service: bool
+    corrosion_severity: str
+    fes_morphology: str
+    corrosion_allowance: Qty
+    warnings: list[Warning]
+
+@final
 class DesmukhMatherPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -3173,6 +3194,17 @@ def critical_point(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> CriticalPointResult: ...
+def de_waard_milliams_corrosion(
+    temperature: float,
+    co2_partial_pressure: float,
+    ph: float,
+    h2s_partial_pressure: float,
+    flow_velocity: float,
+    inhibitor_efficiency: float,
+    glycol_fraction: float,
+    sulfur_deposition_rate: float,
+    design_life: float,
+) -> DeWaardMilliamsCorrosionResult: ...
 def desmukh_mather_phase(
     components: list[str],
     T: float,

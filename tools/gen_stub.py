@@ -418,6 +418,8 @@ EXCEPTIONS: tuple[tuple[str, str], ...] = (
 SCALARS = {"float": "float", "int": "int", "bool": "bool", "str": "str", "Q": "Qty"}
 ENUMS = {
     "BeggsBrillRegime",
+    "CorrosionSeverity",
+    "FeSMorphology",
     "Phase",
     "RootStructure",
     "StabilityVerdict",

@@ -40,6 +40,8 @@ from azoth.core.record_outputs_gen import (
 )
 from azoth.core.result_base import (
     BeggsBrillRegime,
+    CorrosionSeverity,
+    FeSMorphology,
     FlowRegime,
     HenryStatus,
     HydrateStructure,
@@ -893,6 +895,67 @@ class CriticalPointResult(_HasWarnings):
 
     #: the convergence residual at the returned state, against `algorithm.tolerance`
     residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DeWaardMilliamsCorrosionResult(_HasWarnings):
+    """Result of ``eos.de_waard_milliams_corrosion``."""
+
+    CALC_ID: ClassVar[str] = "eos.de_waard_milliams_corrosion"
+
+    #: the uncorrected de Waard-Milliams 1991 rate.
+    baseline_rate: Q
+
+    #: the de Waard-Lotz pH factor, at most one where the film protects.
+    ph_correction_factor: float
+
+    #: the protective-scale factor above 80 C and pH 5.
+    scale_correction_factor: float
+
+    #: the glycol factor on the aqueous phase's water activity.
+    glycol_correction_factor: float
+
+    #: the mass-transfer factor above 1 m/s, capped at five.
+    flow_correction_factor: float
+
+    #: one minus the clamped inhibitor efficiency.
+    inhibitor_factor: float
+
+    #: the CO2 rate with every factor and the sulfur contribution.
+    corrected_rate: Q
+
+    #: the elemental-sulfur contribution.
+    sulfur_rate: Q
+
+    #: the H2S/FeS contribution, capped at 100 mm/yr.
+    fes_rate: Q
+
+    #: the corrected rate less the sulfur contribution.
+    co2_corrected_rate: Q
+
+    #: the corrected rate plus the FeS contribution.
+    total_corrosion_rate: Q
+
+    #: the FeCO3 saturation index, above one where scale forms.
+    feco3_saturation_index: float
+
+    #: whether the FeCO3 index exceeds one.
+    feco3_scale_forming: bool
+
+    #: NACE MR0175 sour service: H2S above 0.003 bar.
+    is_sour_service: bool
+
+    #: the NORSOK M-001 severity band.
+    corrosion_severity: CorrosionSeverity
+
+    #: the FeS morphology and protectiveness the temperature band predicts.
+    fes_morphology: FeSMorphology
+
+    #: the corrected rate times the design life.
+    corrosion_allowance: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

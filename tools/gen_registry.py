@@ -227,6 +227,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `stream_scale_analyzer`'s flag, read by the model's own test: it is the total
         # precipitated mass being positive, and the total is pinned beside it.
         "has_scaling",
+        # `de_waard_milliams_corrosion`'s two flags, read by the calc's own test: the FeCO3
+        # index crossing one, and NACE MR0175 sour service at 0.003 bar H2S.
+        "feco3_scale_forming",
+        "is_sour_service",
     }
 )
 

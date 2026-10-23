@@ -19,7 +19,12 @@ from dataclasses import dataclass
 
 from azoth.batch._core import run, sequence
 from azoth.batch._result import BatchResult
-from azoth.core.result import BeggsBrillRegime, RootStructure
+from azoth.core.result import (
+    BeggsBrillRegime,
+    CorrosionSeverity,
+    FeSMorphology,
+    RootStructure,
+)
 from azoth.core.warnings import Warning
 
 __all__ = [
@@ -29,6 +34,7 @@ __all__ = [
     "ChungViscosityBatch",
     "Co2WaterDiffusivityBatch",
     "CostaldMolarVolumeBatch",
+    "DeWaardMilliamsCorrosionBatch",
     "ElectrolyteScaleCalculatorBatch",
     "FullerSchettlerGiddingsDiffusivityBatch",
     "HeatOfVaporizationBatch",
@@ -82,6 +88,7 @@ __all__ = [
     "chung_viscosity",
     "co2_water_diffusivity",
     "costald_molar_volume",
+    "de_waard_milliams_corrosion",
     "fuller_schettler_giddings_diffusivity",
     "heat_of_vaporization",
     "iapws_saturation_pressure",
@@ -322,6 +329,122 @@ def beggs_brill_segment(
             }.items()
         },
         _build_beggs_brill,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class DeWaardMilliamsCorrosionBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.de_waard_milliams_corrosion`."""
+
+    #: The uncorrected de Waard-Milliams rate per element.
+    baseline_rate: array[float]
+    #: The de Waard-Lotz pH factor per element. Dimensionless.
+    ph_correction_factor: array[float]
+    #: The protective-scale factor per element. Dimensionless.
+    scale_correction_factor: array[float]
+    #: The glycol factor per element. Dimensionless.
+    glycol_correction_factor: array[float]
+    #: The mass-transfer factor per element. Dimensionless.
+    flow_correction_factor: array[float]
+    #: One minus the clamped inhibitor efficiency per element. Dimensionless.
+    inhibitor_factor: array[float]
+    #: The corrected rate per element.
+    corrected_rate: array[float]
+    #: The elemental-sulfur contribution per element.
+    sulfur_rate: array[float]
+    #: The H2S/FeS contribution per element.
+    fes_rate: array[float]
+    #: The corrected rate less the sulfur contribution per element.
+    co2_corrected_rate: array[float]
+    #: The corrected rate plus the FeS contribution per element.
+    total_corrosion_rate: array[float]
+    #: The FeCO3 saturation index per element. Dimensionless.
+    feco3_saturation_index: array[float]
+    #: Whether the FeCO3 index exceeds one, as ``1.0`` or ``0.0``.
+    feco3_scale_forming: array[float]
+    #: NACE MR0175 sour service, as ``1.0`` or ``0.0``.
+    is_sour_service: array[float]
+    #: The NORSOK M-001 severity band per element.
+    corrosion_severity: tuple[CorrosionSeverity, ...]
+    #: The FeS morphology per element.
+    fes_morphology: tuple[FeSMorphology, ...]
+    #: The corrected rate times the design life per element.
+    corrosion_allowance: array[float]
+
+
+def _corrosion_severities(labels: Sequence[str]) -> tuple[CorrosionSeverity, ...]:
+    """The severity column's labels, as the enum the scalar result carries."""
+    return tuple(CorrosionSeverity(label) for label in labels)
+
+
+def _corrosion_morphologies(labels: Sequence[str]) -> tuple[FeSMorphology, ...]:
+    """The morphology column's labels, as the enum the scalar result carries."""
+    return tuple(FeSMorphology(label) for label in labels)
+
+
+def _build_de_waard(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> DeWaardMilliamsCorrosionBatch:
+    return DeWaardMilliamsCorrosionBatch(
+        warnings=warnings,
+        units=units,
+        baseline_rate=columns["baseline_rate"],  # type: ignore[arg-type]
+        ph_correction_factor=columns["ph_correction_factor"],  # type: ignore[arg-type]
+        scale_correction_factor=columns["scale_correction_factor"],  # type: ignore[arg-type]
+        glycol_correction_factor=columns["glycol_correction_factor"],  # type: ignore[arg-type]
+        flow_correction_factor=columns["flow_correction_factor"],  # type: ignore[arg-type]
+        inhibitor_factor=columns["inhibitor_factor"],  # type: ignore[arg-type]
+        corrected_rate=columns["corrected_rate"],  # type: ignore[arg-type]
+        sulfur_rate=columns["sulfur_rate"],  # type: ignore[arg-type]
+        fes_rate=columns["fes_rate"],  # type: ignore[arg-type]
+        co2_corrected_rate=columns["co2_corrected_rate"],  # type: ignore[arg-type]
+        total_corrosion_rate=columns["total_corrosion_rate"],  # type: ignore[arg-type]
+        feco3_saturation_index=columns["feco3_saturation_index"],  # type: ignore[arg-type]
+        feco3_scale_forming=columns["feco3_scale_forming"],  # type: ignore[arg-type]
+        is_sour_service=columns["is_sour_service"],  # type: ignore[arg-type]
+        corrosion_severity=_corrosion_severities(columns["corrosion_severity"]),  # type: ignore[arg-type]
+        fes_morphology=_corrosion_morphologies(columns["fes_morphology"]),  # type: ignore[arg-type]
+        corrosion_allowance=columns["corrosion_allowance"],  # type: ignore[arg-type]
+    )
+
+
+def de_waard_milliams_corrosion(
+    *,
+    temperature: Sequence[float],
+    co2_partial_pressure: Sequence[float],
+    ph: Sequence[float],
+    h2s_partial_pressure: Sequence[float],
+    flow_velocity: Sequence[float],
+    inhibitor_efficiency: Sequence[float],
+    glycol_fraction: Sequence[float],
+    sulfur_deposition_rate: Sequence[float],
+    design_life: Sequence[float],
+) -> DeWaardMilliamsCorrosionBatch:
+    """The de Waard-Milliams corrosion rate and its corrections, over arrays.
+
+    Inputs in the spec's canonical units (K, Pa, m/s, kg/(m**2*s), s). See
+    :func:`azoth.eos.de_waard_milliams_corrosion` for the calculation itself.
+    """
+    result: DeWaardMilliamsCorrosionBatch = run(
+        "eos.de_waard_milliams_corrosion",
+        {
+            name: sequence(values, name)
+            for name, values in {
+                "temperature": temperature,
+                "co2_partial_pressure": co2_partial_pressure,
+                "ph": ph,
+                "h2s_partial_pressure": h2s_partial_pressure,
+                "flow_velocity": flow_velocity,
+                "inhibitor_efficiency": inhibitor_efficiency,
+                "glycol_fraction": glycol_fraction,
+                "sulfur_deposition_rate": sulfur_deposition_rate,
+                "design_life": design_life,
+            }.items()
+        },
+        _build_de_waard,
     )
     return result
 

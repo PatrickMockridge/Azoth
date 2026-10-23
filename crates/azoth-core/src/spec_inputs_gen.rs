@@ -37,6 +37,7 @@
 //!   - specs/calcs/eos/co2_water_diffusivity.toml
 //!   - specs/calcs/eos/costald_molar_volume.toml
 //!   - specs/models/eos/critical_point.toml
+//!   - specs/calcs/eos/de_waard_milliams_corrosion.toml
 //!   - specs/models/eos/desmukh_mather_phase.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
@@ -682,6 +683,43 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.costald_molar_volume", "rho_normal", "mass_density"),
     ("eos.costald_molar_volume", "T", "thermodynamic_temperature"),
     ("eos.critical_point", "z", "dimensionless"),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "co2_partial_pressure",
+        "pressure",
+    ),
+    ("eos.de_waard_milliams_corrosion", "ph", "dimensionless"),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "h2s_partial_pressure",
+        "pressure",
+    ),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "flow_velocity",
+        "velocity",
+    ),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "inhibitor_efficiency",
+        "dimensionless",
+    ),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "glycol_fraction",
+        "dimensionless",
+    ),
+    (
+        "eos.de_waard_milliams_corrosion",
+        "sulfur_deposition_rate",
+        "mass_flux",
+    ),
+    ("eos.de_waard_milliams_corrosion", "design_life", "time"),
     ("eos.desmukh_mather_phase", "T", "thermodynamic_temperature"),
     ("eos.desmukh_mather_phase", "P", "pressure"),
     ("eos.desmukh_mather_phase", "x", "dimensionless"),
