@@ -10,7 +10,7 @@ cd validation/neqsim
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
-**Seven captures are run against the pin plus the two fixes that moved them.**
+**Eight captures are run against the pin plus the fixes that moved them.**
 `packing_probe`, `packing_sizing_probe`, `process_packed_column`,
 `process_rate_based_packed_column`, `process_rate_based_billet` and
 `process_rate_based_solvers` were taken from a jar built at `f0c7436c` with only the packing fix
@@ -21,7 +21,10 @@ cd validation/neqsim
 
 **The same jar carries the re-vendored `COMP.csv`** (upstream `8bb7bace`), because the port's
 component data is that file: `ge_henry_probe`, `ge_electrolyte_probe`, `pitzer_fugacity_probe`,
-`pitzer_hydrate_probe` and `aqueous_viscosity_probe` are taken with it. Everything else is the pin, so each capture's delta is those changes rather than the
+`pitzer_hydrate_probe` and `aqueous_viscosity_probe` are taken with it.
+`pseudo_component_combiner_probe` adds the characterization fix `c93c8153`'s one hunk: the
+mass-quantile candidate is projected into `nextUp`/`nextDown` of the reference gap rather than
+discarded for the midpoint (upstream PR #4330). Everything else is the pin, so each capture's delta is those changes rather than the
 five hundred commits between the revisions. The built-in packing rows are
 the reference after the fix: `Pall-Ring-50` is `120.0`, `0.96`, factor `66`, and the file's
 plastic ring is reachable as `Pall-Ring-50-plastic` (`111.1`, `0.919`, `180`).

@@ -99,13 +99,14 @@ def _quantile_boundaries(rows: Sequence[Mapping[str, Any]], count: int) -> list[
 
 
 def equal_mass_boundaries(reference: Sequence[Mapping[str, Any]], resolution: int) -> list[float]:
-    """``determineReferenceEqualMassBoundaries``: the cuts placed equally by mass.
+    """``determineReferenceEqualMassBoundaries``: the cuts placed by constrained mass quantiles.
 
-    The slate is delumped into its imaginary fine composition, equal-mass quantiles are placed on
-    it, and each cut is then **clamped strictly inside the gap between the two rows it separates** -
-    falling back to the midpoint where no quantile falls in the gap. The clamp is what keeps every
-    reference row inside its own cut, which the property inheritance needs, so the two rules can
-    only ever differ for a cut that lands between them.
+    The slate is delumped into its imaginary fine composition and equal-mass quantiles are placed
+    on it. Each finite candidate is **projected into the representable interior of the gap
+    between the two rows it separates** - ``nextafter(lower, +inf)`` where it falls below the gap,
+    ``nextafter(upper, -inf)`` where it falls above, unchanged where it is already inside. Upstream
+    PR #4330 replaced the older rule, which discarded an out-of-gap candidate for the midpoint;
+    the midpoint remains the fallback for a non-finite candidate or a gap with no interior.
 
     A ``resolution`` of one or less has nothing to delump and gives back the midpoints, which is the
     class's own fall-through.
@@ -123,9 +124,12 @@ def equal_mass_boundaries(reference: Sequence[Mapping[str, Any]], resolution: in
             out.append(midpoint)
             continue
         candidate = equal_mass[index] if index < len(equal_mass) else float("nan")
-        out.append(
-            candidate if math.isfinite(candidate) and lower < candidate < upper else midpoint
-        )
+        first_interior = math.nextafter(lower, math.inf)
+        last_interior = math.nextafter(upper, -math.inf)
+        if math.isfinite(candidate) and first_interior <= last_interior:
+            out.append(max(first_interior, min(candidate, last_interior)))
+        else:
+            out.append(midpoint)
     return out
 
 

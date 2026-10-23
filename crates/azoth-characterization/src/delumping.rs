@@ -196,13 +196,39 @@ fn quantile_boundaries(rows: &[SubFraction], count: usize) -> Vec<f64> {
     boundaries
 }
 
-/// `determineReferenceEqualMassBoundaries`: the cuts placed equally by mass.
+/// The next representable `f64` above `value`: `Math.nextUp`.
 ///
-/// The reference is delumped into its imaginary fine composition, equal-mass quantiles are placed
-/// on it, and each cut is then **clamped strictly inside the gap between the two rows it
-/// separates** - falling back to the midpoint where no quantile falls in the gap. The clamp is
-/// what keeps every reference row inside its own cut, which the property inheritance needs, so the
-/// two rules can only ever differ for a cut that lands between them.
+/// Written out because the workspace's MSRV predates `f64::next_up`, and the projection needs
+/// the class's own adjacent-value rule rather than a tolerance.
+fn next_up(value: f64) -> f64 {
+    if value.is_nan() || value == f64::INFINITY {
+        return value;
+    }
+    if value == 0.0 {
+        return f64::from_bits(1);
+    }
+    let bits = value.to_bits();
+    if value > 0.0 {
+        f64::from_bits(bits + 1)
+    } else {
+        f64::from_bits(bits - 1)
+    }
+}
+
+/// The next representable `f64` below `value`: `Math.nextDown`.
+fn next_down(value: f64) -> f64 {
+    -next_up(-value)
+}
+
+/// `determineReferenceEqualMassBoundaries`: the cuts placed by constrained mass quantiles.
+///
+/// The reference is delumped into its imaginary fine composition and equal-mass quantiles are
+/// placed on it. Each finite candidate is then **projected into the representable interior of the
+/// gap between the two rows it separates** - `nextUp(lower)` where it falls below the gap,
+/// `nextDown(upper)` where it falls above, and unchanged where it is already inside. Upstream PR
+/// #4330 replaced the older rule, which discarded any out-of-gap candidate for the midpoint; the
+/// projection keeps the cut where the mass is when a representable interior exists, and the
+/// midpoint remains the fallback for a non-finite candidate or a gap with no interior.
 ///
 /// A `resolution` of one or less has nothing to delump and gives back the midpoints, which is the
 /// class's own fall-through.
@@ -229,8 +255,10 @@ pub(crate) fn equal_mass_boundaries(reference: &[Lump], resolution: i64) -> Vec<
                 return *midpoint;
             }
             let candidate = equal_mass.get(index).copied().unwrap_or(f64::NAN);
-            if candidate.is_finite() && candidate > lower && candidate < upper {
-                candidate
+            let first_interior = next_up(lower);
+            let last_interior = next_down(upper);
+            if candidate.is_finite() && first_interior <= last_interior {
+                candidate.max(first_interior).min(last_interior)
             } else {
                 *midpoint
             }
