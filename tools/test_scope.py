@@ -1433,13 +1433,20 @@ def known_jobs() -> tuple[str, ...]:
 def needs_extension(commands: list[Command]) -> bool:
     """Whether `python-test` must build the extension for this set.
 
-    A skills-only diff never touches `python/tests` and needs no `maturin develop`; a Rust
-    change emits the rebuild command itself. The job's separate build step is guarded on this,
-    so a docs or skills push does not pay a Rust link.
+    A docs-only diff touches neither `python/tests` nor the skills' own tests and needs no
+    rebuild; a Rust change emits the rebuild command itself. **The skills' smoke checks drive
+    the extension too** - the job sets `AZOTH_REQUIRE_RUST` - so a skills diff builds as well.
+    The job's separate build step is guarded on this, so a docs push does not pay a Rust link.
     """
     return any(
         entry.command.endswith("/maturin develop")
-        or (entry.kind == PYTEST and entry.command.split()[0].startswith(TESTS))
+        or (
+            entry.kind == PYTEST
+            and (
+                entry.command.split()[0].startswith(TESTS)
+                or "skills" in entry.command.split()
+            )
+        )
         for entry in commands
     )
 
