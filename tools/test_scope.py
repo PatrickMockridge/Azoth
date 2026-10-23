@@ -1442,10 +1442,7 @@ def needs_extension(commands: list[Command]) -> bool:
         entry.command.endswith("/maturin develop")
         or (
             entry.kind == PYTEST
-            and (
-                entry.command.split()[0].startswith(TESTS)
-                or "skills" in entry.command.split()
-            )
+            and (entry.command.split()[0].startswith(TESTS) or "skills" in entry.command.split())
         )
         for entry in commands
     )
