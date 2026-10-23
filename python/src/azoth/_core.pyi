@@ -284,6 +284,12 @@ class AssayCutDerivation(TypedDict):
     watson_characterization_factor: float | None
     standard_component_name: str | None
 
+class InteractionComponent(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    pseudo_component: bool
+
 class BrineAnalysis(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -633,6 +639,11 @@ class TbpDensityResult:
 @final
 class TbpGroupingResult:
     group_fraction: list[float]
+    warnings: list[Warning]
+
+@final
+class TransferBinaryInteractionParametersResult:
+    target_kij: list[list[float]]
     warnings: list[Warning]
 
 @final
@@ -3126,6 +3137,12 @@ def tbp_density(
     closure: str | None = None,
 ) -> TbpDensityResult: ...
 def tbp_grouping(boiling_point: list[float], mole_fraction: list[float]) -> TbpGroupingResult: ...
+def transfer_binary_interaction_parameters(
+    reference_components: list[InteractionComponent],
+    target_components: list[InteractionComponent],
+    reference_kij: list[list[float]],
+    target_kij: list[list[float]],
+) -> TransferBinaryInteractionParametersResult: ...
 def whitson_gamma_split(
     molar_mass: float,
     density: float,

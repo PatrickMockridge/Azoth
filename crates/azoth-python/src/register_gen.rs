@@ -34,6 +34,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTbpCutPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpDensityResult>()?;
     m.add_class::<crate::transport_gen::PyTbpGroupingResult>()?;
+    m.add_class::<crate::transport_gen::PyTransferBinaryInteractionParametersResult>()?;
     m.add_class::<crate::transport_gen::PyWhitsonGammaSplitResult>()?;
     m.add_class::<crate::transport_gen::PyAmmoniaPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyAntoineVaporPressureResult>()?;
@@ -340,6 +341,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::characterization::tbp_density, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tbp_grouping, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::transfer_binary_interaction_parameters,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::characterization::whitson_gamma_split,
         m

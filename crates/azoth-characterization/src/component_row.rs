@@ -123,3 +123,18 @@ pub struct CharacterizationComponent {
     /// The fitted `m` of its attractive term.
     pub attractive_m: Option<f64>,
 }
+
+/// One component of a fluid, as the interaction-parameter transfer reads it.
+///
+/// **Only two fields**, because the transfer does not compute with a component: it matches
+/// components between two slates by name and by pseudo flag, then moves numbers between their
+/// matrices. A row carrying the constants would invite a second use that the class does not
+/// have.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InteractionComponent {
+    /// The component's name.
+    pub name: String,
+    /// Whether this is a TBP or plus fraction. A pseudo-component pairs by position rather
+    /// than by name.
+    pub pseudo_component: bool,
+}

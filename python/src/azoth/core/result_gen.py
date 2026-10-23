@@ -385,6 +385,19 @@ class TbpGroupingResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TransferBinaryInteractionParametersResult(_HasWarnings):
+    """Result of ``characterization.transfer_binary_interaction_parameters``."""
+
+    CALC_ID: ClassVar[str] = "characterization.transfer_binary_interaction_parameters"
+
+    #: The target's matrix after the transfer: its own values, with the reference's nonzero pairs written over them in both triangles.
+    target_kij: tuple[tuple[float, ...], ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WhitsonGammaSplitResult(_HasWarnings):
     """Result of ``characterization.whitson_gamma_split``."""
 

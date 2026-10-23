@@ -15,6 +15,7 @@
 //!   - specs/models/characterization/tbp_cut_boundaries.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
+//!   - specs/models/characterization/transfer_binary_interaction_parameters.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
@@ -15548,6 +15549,277 @@ pub static TBP_GROUPING_SPEC: ModelSpec = ModelSpec {
     cases: TBP_GROUPING_CASES,
 };
 
+static TRANSFER_BINARY_INTERACTION_PARAMETERS_CHECKS: &[SpecCheck] = &[];
+
+static TRANSFER_BINARY_INTERACTION_PARAMETERS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "base_and_pseudo_pairs",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[
+            (
+                "reference_kij",
+                &[
+                    0.0, 0.09, 0.0, 0.04, 0.0, 0.09, 0.0, 0.1, 0.1, 0.02, 0.0, 0.1, 0.0, 0.01, 0.0,
+                    0.04, 0.1, 0.01, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0,
+                ],
+            ),
+            (
+                "target_kij",
+                &[
+                    0.0, 0.0973, 0.0, 0.0, 0.0973, 0.0, 0.1, 0.1, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1,
+                    0.0, 0.0,
+                ],
+            ),
+        ],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[
+            (
+                "reference_components",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("methane"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CO2"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C7_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C8_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C9_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "target_components",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("methane"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CO2"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C10_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C11_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "target_has_fewer_pcs",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[
+            (
+                "reference_kij",
+                &[
+                    0.0, 0.09, 0.0, 0.04, 0.0, 0.09, 0.0, 0.1, 0.1, 0.02, 0.0, 0.1, 0.0, 0.01, 0.0,
+                    0.04, 0.1, 0.01, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0,
+                ],
+            ),
+            (
+                "target_kij",
+                &[0.0, 0.0973, 0.0, 0.0973, 0.0, 0.1, 0.0, 0.1, 0.0],
+            ),
+        ],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[
+            (
+                "reference_components",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("methane"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CO2"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C7_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C8_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C9_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "target_components",
+                &[
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("methane"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("CO2"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(false),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "name",
+                            value: FieldValue::Name("C10_PC"),
+                        },
+                        RecordField {
+                            name: "pseudo_component",
+                            value: FieldValue::Flag(true),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `characterization.transfer_binary_interaction_parameters`.
+pub static TRANSFER_BINARY_INTERACTION_PARAMETERS_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.transfer_binary_interaction_parameters",
+    kind: "direct",
+    algorithm: None,
+    checks: TRANSFER_BINARY_INTERACTION_PARAMETERS_CHECKS,
+    cases: TRANSFER_BINARY_INTERACTION_PARAMETERS_CASES,
+};
+
 static WHITSON_GAMMA_SPLIT_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -17353,6 +17625,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TBP_CUT_BOUNDARIES_SPEC,
     &TBP_DENSITY_SPEC,
     &TBP_GROUPING_SPEC,
+    &TRANSFER_BINARY_INTERACTION_PARAMETERS_SPEC,
     &WHITSON_GAMMA_SPLIT_SPEC,
 ];
 

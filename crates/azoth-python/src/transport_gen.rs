@@ -934,6 +934,46 @@ impl From<&azoth_characterization::results::TbpGroupingResult> for PyTbpGrouping
         }
     }
 }
+/// Result of `characterization.transfer_binary_interaction_parameters`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TransferBinaryInteractionParametersResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTransferBinaryInteractionParametersResult {
+    /// The target's matrix after the transfer: its own values, with the reference's nonzero pairs written over them in both triangles.
+    #[pyo3(get)]
+    pub target_kij: Vec<Vec<f64>>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTransferBinaryInteractionParametersResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TransferBinaryInteractionParametersResult(target_kij={:?}, {} warning(s))",
+            self.target_kij,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TransferBinaryInteractionParametersResult>
+    for PyTransferBinaryInteractionParametersResult
+{
+    fn from(
+        r: &azoth_characterization::results::TransferBinaryInteractionParametersResult,
+    ) -> Self {
+        Self {
+            target_kij: r.target_kij.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.whitson_gamma_split`, transported.
 #[pyclass(
     frozen,

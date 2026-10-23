@@ -213,6 +213,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # the field off both.
         "x",
         "ln_phi",
+        # `transfer_binary_interaction_parameters`'s answer, which is a matrix and so has no
+        # field in `TestCase`. `python/tests/test_transfer_binary_interaction_parameters.py`
+        # reads the expected block from this module's raw spec and compares the selected
+        # backend against it; `test_cross_impl` then holds the other kernel to the same values.
+        "target_kij",
         # `reactive_phase_equilibrium`'s boolean, which `TestCase` carries for an input but
         # not for an expectation: a flag on the *result* is read by the model's own test,
         # which asserts the case's value against the field.

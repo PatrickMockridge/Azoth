@@ -501,3 +501,22 @@ impl CalcResult for CharacterizeToCommonSlateResult {
         &self.warnings
     }
 }
+
+/// Result of `characterization.transfer_binary_interaction_parameters`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TransferBinaryInteractionParametersResult {
+    /// The target's interaction matrix after the transfer: its own values everywhere the
+    /// reference states none, and the reference's nonzero pairs written over it.
+    pub target_kij: Vec<Vec<f64>>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TransferBinaryInteractionParametersResult {
+    const CALC_ID: &'static str = "characterization.transfer_binary_interaction_parameters";
+    const FIELDS: &'static [&'static str] = &["target_kij", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

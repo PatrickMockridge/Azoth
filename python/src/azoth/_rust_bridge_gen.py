@@ -263,6 +263,7 @@ from azoth.core.result import (
     TpMultiflashResult,
     TpMultiflashWaxResult,
     TpSolidFlashResult,
+    TransferBinaryInteractionParametersResult,
     TrayHydraulicsResult,
     TsFlashResult,
     TuFlashResult,
@@ -557,6 +558,7 @@ __all__ = [
     "tp_multiflash",
     "tp_multiflash_wax",
     "tp_solid_flash",
+    "transfer_binary_interaction_parameters",
     "tray_hydraulics",
     "ts_flash",
     "tu_flash",
@@ -853,6 +855,21 @@ def tbp_grouping(boiling_point: list[Q], mole_fraction: list[float]) -> TbpGroup
     )
     return TbpGroupingResult(
         group_fraction=tuple(result.group_fraction),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def transfer_binary_interaction_parameters(reference_components: Sequence[Mapping[str, Any]], target_components: Sequence[Mapping[str, Any]], reference_kij: Sequence[Sequence[float]], target_kij: Sequence[Sequence[float]]) -> TransferBinaryInteractionParametersResult:
+    """``characterization.transfer_binary_interaction_parameters``, computed in Rust."""
+    spec = _models_gen.model("characterization.transfer_binary_interaction_parameters")
+    result = _core.transfer_binary_interaction_parameters(
+        input_records_to_si(spec, "reference_components", reference_components),
+        input_records_to_si(spec, "target_components", target_components),
+        [list(row) for row in reference_kij],
+        [list(row) for row in target_kij],
+    )
+    return TransferBinaryInteractionParametersResult(
+        target_kij=tuple(tuple(row) for row in result.target_kij),
         warnings=_warnings(result.warnings),
     )
 

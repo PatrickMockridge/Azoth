@@ -180,6 +180,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'characterization.transfer_binary_interaction_parameters': {
+        "calc_id": 'characterization.transfer_binary_interaction_parameters',
+        "name": "A fluid's interaction table written onto another fluid's slate",
+        "spec": {'path': 'specs/models/characterization/transfer_binary_interaction_parameters.toml', 'sha256': '64d214942fb0a534b47182d4121f574a1fb4d58f0b7f6631e974f8ffa6ac4bcd'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/transfer_binary_interaction_parameters.py', 'sha256': '034a51eeefbb44f3d1e258a13c02ca2b0a364766f2ba6a90eb71e4c37998de2d'}, {'path': 'crates/azoth-characterization/src/transfer_binary_interaction_parameters.rs', 'sha256': '7e0390643f35dc93f68ef1f7167a663c7504d2621e6c6c22d3af4b696120fba7'}],
+        "source": 'NeqSim master `PseudoComponentCombiner.transferBinaryInteractionParameters`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 2,
+        "tests_skipped": 0,
+    },
     'characterization.whitson_gamma_split': {
         "calc_id": 'characterization.whitson_gamma_split',
         "name": "A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma",

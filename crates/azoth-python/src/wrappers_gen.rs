@@ -399,6 +399,46 @@ pub fn tbp_grouping(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A fluid's interaction table written onto another fluid's slate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (reference_components, target_components, reference_kij, target_kij))]
+#[pyo3(text_signature = "(reference_components, target_components, reference_kij, target_kij)")]
+pub fn transfer_binary_interaction_parameters(
+    py: Python<'_>,
+    reference_components: Vec<crate::records_gen::InteractionComponent>,
+    target_components: Vec<crate::records_gen::InteractionComponent>,
+    reference_kij: Vec<Vec<f64>>,
+    target_kij: Vec<Vec<f64>>,
+) -> PyResult<crate::transport_gen::PyTransferBinaryInteractionParametersResult> {
+    let reference_components_records: Vec<
+        azoth_characterization::component_row::InteractionComponent,
+    > = reference_components
+        .into_iter()
+        .map(
+            |row| azoth_characterization::component_row::InteractionComponent {
+                name: row.name,
+                pseudo_component: row.pseudo_component,
+            },
+        )
+        .collect();
+    let target_components_records: Vec<
+        azoth_characterization::component_row::InteractionComponent,
+    > = target_components
+        .into_iter()
+        .map(
+            |row| azoth_characterization::component_row::InteractionComponent {
+                name: row.name,
+                pseudo_component: row.pseudo_component,
+            },
+        )
+        .collect();
+    azoth_characterization::transfer_binary_interaction_parameters::transfer_binary_interaction_parameters(&reference_components_records, &target_components_records, &reference_kij, &target_kij)
+        .map(|r| crate::transport_gen::PyTransferBinaryInteractionParametersResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Ammonia reference phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

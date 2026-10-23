@@ -16,6 +16,7 @@
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
+//!   - specs/models/characterization/transfer_binary_interaction_parameters.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
 //!   - specs/models/eos/ammonia_phase.toml
 //!   - specs/calcs/eos/antoine_vapor_pressure.toml
@@ -422,6 +423,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "characterization.tbp_grouping",
         "mole_fraction",
+        "dimensionless",
+    ),
+    (
+        "characterization.transfer_binary_interaction_parameters",
+        "reference_kij",
+        "dimensionless",
+    ),
+    (
+        "characterization.transfer_binary_interaction_parameters",
+        "target_kij",
         "dimensionless",
     ),
     (

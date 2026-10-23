@@ -1,0 +1,61 @@
+id = "characterization.transfer_binary_interaction_parameters"
+name = "A fluid's interaction table written onto another fluid's slate"
+kind = "direct"
+assumptions = [
+    "**this is the interaction table moved between two slates.** The reference's nonzero pairs are written onto the target - base components by name, pseudo-components by position - and the target's own values everywhere else are left alone.",
+    "**a pair the reference states as exactly zero is not transferred.** The class tests `kij != 0.0`, so a zero in the reference is silence rather than an instruction to clear the target's value.",
+    "**the target's initial matrix is the starting point.** Its databank defaults survive every pair the reference does not overwrite, which is why the answer is a matrix rather than a list of pairs.",
+    "**a base name missing from the target is skipped when it is the first name** and refused when it is the second: the class's `continue` guards the first lookup, and its setter throws on the second.",
+    "**the pseudo-components map by position**, first to first, because their names belong to their own fluids and do not match. A reference pseudo-component with no target one at its index transfers nothing.",
+    "**both triangles are written and the diagonal never is.** The pair is symmetric in NeqSim's mixing rule, and the class's loops exclude the diagonal by name and by `i < j`.",
+    "**the base loop runs before the pseudo loop**, and it covers base-to-pseudo pairs as well as base-to-base ones - so a pseudo-component's interaction with a named component travels with it.",
+    "the transfer moves numbers between tables and computes none: a pair neither input states stays at the target's value.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `transferBinaryInteractionParameters`, with `getPseudoComponentList` and `getBinaryInteractionParameter`, is the port source.",
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5, the binary interaction parameters a common slate carries.",
+    "`validation/neqsim/captures/characterization_fluid_rebuild_probe.tsv` - three transfers from `validation/neqsim/CharacterizationFluidRebuildProbe.java`: base and pseudo pairs, a target with fewer pseudo-components, and a missing base name the class refuses.",
+]
+[source]
+standard = "NeqSim master `PseudoComponentCombiner.transferBinaryInteractionParameters`"
+edition = "Its base-name and pseudo-position loops, and the two refusals `SystemInterface.setBinaryInteractionParameter` makes: an unknown component's name. The class mutates two fluids; this takes their tables."
+[inputs]
+[inputs.reference_components]
+type = "record_list"
+row_type = "InteractionComponent"
+description = "The reference fluid's components in its own order, each with the name it is looked up by and whether it is a pseudo-component. The order is what the pseudo-components are matched by.\n"
+[inputs.reference_components.fields.name]
+type = "string"
+description = "The component's name. A base component is matched to the target by it; a pseudo-component's is not matched at all.\n"
+[inputs.reference_components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the component is a TBP or plus fraction. A pseudo-component pairs with the target's at the same position in the pseudo-component list.\n"
+[inputs.target_components]
+type = "record_list"
+row_type = "InteractionComponent"
+description = "The target fluid's components in its own order. Its pseudo-components are the same row type and are counted separately from its base components.\n"
+[inputs.target_components.fields.name]
+type = "string"
+description = "The component's name. A base component is matched to the target by it; a pseudo-component's is not matched at all.\n"
+[inputs.target_components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the component is a TBP or plus fraction. A pseudo-component pairs with the target's at the same position in the pseudo-component list.\n"
+[inputs.reference_kij]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row and one column per reference component, symmetric, zero diagonal"
+description = "The reference's interaction matrix. Only a nonzero off-diagonal pair is transferred, so a zero is the reference declining to state one rather than clearing the target's.\n"
+[inputs.target_kij]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row and one column per target component, symmetric, zero diagonal"
+description = "The target's matrix before the transfer. The answer starts from it, so every value the reference does not overwrite survives.\n"
+[outputs]
+[outputs.target_kij]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row and one column per target component, symmetric, zero diagonal"
+description = "The target's matrix after the transfer: its own values, with the reference's nonzero pairs written over them in both triangles.\n"
+[implementations]
+python = "azoth.characterization.transfer_binary_interaction_parameters"
+rust = "azoth_characterization::transfer_binary_interaction_parameters"

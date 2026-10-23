@@ -115,6 +115,15 @@ pub struct FluidComponent {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct InteractionComponent {
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub pseudo_component: bool,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct Lump {
     #[pyo3(item)]
     pub name: String,

@@ -19,6 +19,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`delumping` - the same table rebuilt as a finer grid, lumping's inverse
 * :func:`combine_reservoir_fluids` - several fluids blended onto one pseudo-component slate
 * :func:`characterize_to_common_slate` - several fluids re-characterized onto one shared slate
+* :func:`transfer_binary_interaction_parameters` - an interaction table moved between two slates
 * :func:`mixture_from_characterization` - the table rebuilt as a mixture a flash can take
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
@@ -52,6 +53,7 @@ from azoth.core.result import (
     TbpCutPropertiesResult,
     TbpDensityResult,
     TbpGroupingResult,
+    TransferBinaryInteractionParametersResult,
     WhitsonGammaSplitResult,
 )
 from azoth.core.units import Q
@@ -156,6 +158,7 @@ _TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
 _DELUMPING = "characterization.delumping"
 _COMBINE_RESERVOIR_FLUIDS = "characterization.combine_reservoir_fluids"
 _CHARACTERIZE_TO_COMMON_SLATE = "characterization.characterize_to_common_slate"
+_TRANSFER_BINARY_INTERACTION_PARAMETERS = "characterization.transfer_binary_interaction_parameters"
 
 
 def tbp_cut_boundaries(
@@ -321,6 +324,39 @@ def characterize_to_common_slate(
         components=components,
         weights=weights,
         target_pseudo_components=target_pseudo_components,
+    )
+
+
+def transfer_binary_interaction_parameters(
+    reference_components: Sequence[Mapping[str, Any]],
+    target_components: Sequence[Mapping[str, Any]],
+    reference_kij: Sequence[Sequence[float]],
+    target_kij: Sequence[Sequence[float]],
+) -> TransferBinaryInteractionParametersResult:
+    """The reference fluid's nonzero interaction pairs, written onto the target's own matrix.
+
+    ``reference_components`` and ``target_components`` are lists of records, one per component
+    in each fluid's own order, each stating its ``name`` and whether it is a
+    ``pseudo_component``. The two matrices are one row and one column per component.
+
+    Base components are matched by name and pseudo-components **by position**, because their
+    names belong to their own fluids. A pair the reference states as zero is not transferred,
+    and every target value the reference does not overwrite survives - which is why the target's
+    own matrix is an input rather than a zero start.
+
+    Raises:
+        InvalidInputError: if either matrix is not `N x N` for its component list, or if a pair
+            the reference states names a base component the target does not carry. A reference
+            base component the target lacks entirely is skipped, which is the class's own
+            asymmetry.
+
+    See :func:`azoth.characterization.reference.transfer_binary_interaction_parameters`.
+    """
+    return resolve(_TRANSFER_BINARY_INTERACTION_PARAMETERS)(  # type: ignore[no-any-return]
+        reference_components=reference_components,
+        target_components=target_components,
+        reference_kij=reference_kij,
+        target_kij=target_kij,
     )
 
 
