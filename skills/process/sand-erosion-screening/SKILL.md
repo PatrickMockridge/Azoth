@@ -49,12 +49,19 @@ import azoth
 
 q = azoth.ureg.Quantity
 r = azoth.eos.erosion_prediction(
-    mixture_density=q(100.0, "kg/m**3"), mixture_velocity=q(10.0, "m/s"),
-    pipe_diameter=q(0.1524, "m"), wall_thickness=q(0.010, "m"),
-    sand_rate=q(50.0 / 86400.0, "kg/s"), sand_particle_diameter=q(0.00025, "m"),
-    sand_particle_density=q(2650.0, "kg/m**3"), mixture_viscosity=q(0.001, "Pa*s"),
-    geometry="elbow", bend_radius_ratio=1.5, pipe_material="carbon_steel",
-    api_c_factor=100.0, corrosion_allowance=q(0.003, "m"),
+    mixture_density=q(100.0, "kg/m**3"),
+    mixture_velocity=q(10.0, "m/s"),
+    pipe_diameter=q(0.1524, "m"),
+    wall_thickness=q(0.010, "m"),
+    sand_rate=q(50.0 / 86400.0, "kg/s"),
+    sand_particle_diameter=q(0.00025, "m"),
+    sand_particle_density=q(2650.0, "kg/m**3"),
+    mixture_viscosity=q(0.001, "Pa*s"),
+    geometry="elbow",
+    bend_radius_ratio=1.5,
+    pipe_material="carbon_steel",
+    api_c_factor=100.0,
+    corrosion_allowance=q(0.003, "m"),
     design_life=q(25 * 365.25 * 86400.0, "s"),
 )
 print(r.risk_level, r.remaining_wall_thickness.to("mm"))
