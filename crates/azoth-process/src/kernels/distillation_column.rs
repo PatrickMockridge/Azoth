@@ -1368,10 +1368,6 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             &feeds,
         )
     });
-    let specification_residual = top_specification_residual
-        .abs()
-        .max(bottom_specification_residual.abs());
-
     // **A direct specification is gated on its published residual.** An adjusted one was already
     // gated by the outer loop against the products that solve published; a direct one was applied
     // and never checked, and reporting a zero there said "not checked" while reading as

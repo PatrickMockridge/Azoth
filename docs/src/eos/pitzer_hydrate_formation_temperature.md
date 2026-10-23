@@ -79,11 +79,11 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `co2_water_30bara` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 3000000.0, cubic = srk | temperature = 280.86478680610657, structure = structure_i, water_activity = 0.9854726170359023 |
+| `co2_water_30bara` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 3000000.0, cubic = srk | temperature = 280.17475098609924, structure = structure_i, water_activity = 0.9754346764318317 |
 | `co2_nacl_1molal_30bara` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.9999936196592771, 0.0, 0.0, 0.0, 0.9999936196592771], P = 3000000.0, cubic = srk, pitzer_dataset = phreeqc_co2_chloride | temperature = 277.8689917945862, structure = structure_i, water_activity = 0.9421844191719909 |
 | `methane_water_50bara` | components = ['methane', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 5000000.0, cubic = srk | temperature = 279.82848044395445, structure = structure_i, water_activity = 0.9999999999991899 |
-| `co2_methane_mixture_50bara` | components = ['CO2', 'methane', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [5.0, 5.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 5000000.0, cubic = srk | temperature = 283.2409369564056, structure = structure_ii, water_activity = 0.9904024578453489 |
-| `structure_pinned_to_sii` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 3000000.0, cubic = srk, structure = sii | temperature = 279.12119835853576, structure = structure_ii, water_activity = 0.9846310322031774 |
+| `co2_methane_mixture_50bara` | components = ['CO2', 'methane', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [5.0, 5.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 5000000.0, cubic = srk | temperature = 282.7388953781128, structure = structure_ii, water_activity = 0.9842564673248485 |
+| `structure_pinned_to_sii` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], P = 3000000.0, cubic = srk, structure = sii | temperature = 278.39950651168823, structure = structure_ii, water_activity = 0.9742596461289182 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

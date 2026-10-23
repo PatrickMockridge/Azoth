@@ -116,6 +116,20 @@ def antoine_vapor_pressure(
             f"`exp` or `wagner`",
         )
 
+    # **The evaluated pressure must be finite, positive, and at or below `Pc`.** The class's
+    # contract is `NaN` otherwise (upstream PR #4106 added the critical-pressure clause); a
+    # correlation extrapolated through a pole gives a finite but meaningless pressure, and
+    # clipping it would report a state the fluid is not in.
+    critical = values["Pc"]
+    if not (math.isfinite(p_sat) and p_sat > 0.0 and math.isfinite(critical) and p_sat <= critical):
+        raise OutOfRangeError(
+            "T",
+            t,
+            f"the correlation gives `{p_sat}` Pa at this temperature, which is not a finite, "
+            f"positive pressure at or below the critical `{critical}` Pa. Upstream PR #4106 "
+            "rejects that extrapolation rather than clipping it to `Pc`",
+        )
+
     apply_checks(checks.derived, lambda name: p_sat if name == "p_sat" else None, warnings)
 
     return AntoineVaporPressureResult(p_sat=from_si(p_sat, "Pa"), warnings=tuple(warnings))

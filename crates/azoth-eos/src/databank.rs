@@ -456,7 +456,7 @@ pub struct Entry {
     pub liquid_density_kg_per_m3: f64,
     /// The four coefficients of NeqSim's Henry correlation.
     ///
-    /// **All four are zero on 296 of the 348 rows**, which is how the table spells "no
+    /// **All four are zero on 269 of the 348 rows**, which is how the table spells "no
     /// correlation", so a caller must refuse rather than evaluate - see
     /// [`crate::henry`], which is the surface a model takes them through.
     pub henry: crate::henry::HenryRecord,

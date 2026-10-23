@@ -82,7 +82,7 @@ dataset = "legacy"
 [[cases]]
 id = "carbon_dioxide_in_brine_at_10_bar"
 tolerance = 1e-08
-source = "The **neutral arm, with the database Henry correlation**, from `PitzerFugacityProbe`'s `co2-water-nacl` fluid. CO2's row is one of the two real correlations in the compiled table, and this is the case that shows the `m / x` conversion: `gamma H (m/x) / P` is `1.0 * 51.65450928785164 * 58.0090 / 10`, the captured `299.6444831649862`. **The ions are why the row and not the IAPWS table answers**: CO2 is reactive-qualified *and* the phase has ions, and either gate alone sends it here. The dataset is `legacy` - the catalogue has no `ZETA(CO2, Na+, Cl-)` row, pairing CO2 with sulphate instead - so the neutral layer here is the sparse one."
+source = "The **neutral arm, with the database Henry correlation**, from `PitzerFugacityProbe`'s `co2-water-nacl` fluid. CO2's row is one of the two real correlations in the compiled table, and this is the case that shows the `m / x` conversion: `gamma H (m/x) / P` is `1.0 * 28.95 * 58.0090 / 10`, the captured `167.93708636908306`. **The ions are why the row and not the IAPWS table answers**: CO2 is reactive-qualified *and* the phase has ions, and either gate alone sends it here. The dataset is `legacy` - the catalogue has no `ZETA(CO2, Na+, Cl-)` row, pairing CO2 with sulphate instead - so the neutral layer here is the sparse one."
 [cases.inputs]
 components = ["CO2", "water", "Na+", "Cl-"]
 T = 298.15
@@ -97,12 +97,12 @@ x = [
 gamma = [1.0, 1.0103960248954016, 0.6544726252218924, 0.6544726252218924]
 ln_gamma = [0.0, 0.0103423578573729, -0.423925519989104, -0.423925519989104]
 ln_phi = [
-    5.702596715805247,
+    5.123589423367589,
     -5.740923980504025,
     24.904530096244574,
     24.904530096244574,
 ]
-henry = [51.65450928785164, 0.0, 1000000000000.0, 1000000000000.0]
+henry = [28.950000000000646, 0.0, 1000000000000.0, 1000000000000.0]
 gamma_inf = [1.0, 1.0, 0.9999804068927719, 0.9999804068927719]
 molality = [
     0.5000116902733186,
@@ -152,7 +152,7 @@ dataset = "phreeqc"
 [[cases]]
 id = "hydrogen_sulphide_in_water_at_one_atmosphere"
 tolerance = 1e-08
-source = "The neutral arm **with no ions in the phase**, which is where the IAPWS table becomes reachable - and the case that shows it does not answer here. `IapwsHenryLaw.isSupportedSpecies(\"H2S\")` is true and its `henry_bar` is `539.9279861457985`, yet the phase reads `9.300854319275573e7` from the row: **CO2 and H2S are the two substances `requiresReactivePitzerQualification` excludes**, whatever the phase. Four and a half orders of magnitude separate the two arms on this fluid, which is why the gate is worth a case. The dataset is `legacy`, the salt-free fallback the case above names."
+source = "The neutral arm **with no ions in the phase**, which is where the IAPWS table becomes reachable - and the case that shows it does not answer here. `IapwsHenryLaw.isSupportedSpecies(\"H2S\")` is true and its `henry_bar` is `539.9279861457985`, yet the phase reads `10.1325` bar from the row: **CO2 and H2S are the two substances `requiresReactivePitzerQualification` excludes**, whatever the phase. **The row was re-sourced upstream (PR #4045)**, so it is now lower than the table where it used to be four and a half orders higher - the gate still decides which arm answers, and the case is about the gate. The dataset is `legacy`, the salt-free fallback the case above names."
 [cases.inputs]
 components = ["H2S", "water"]
 T = 298.15
@@ -161,8 +161,8 @@ x = [0.000999000999000999, 0.999000999000999]
 [cases.expected]
 gamma = [1.0, 1.0]
 ln_gamma = [0.0, 0.0]
-ln_phi = [22.352588957775026, -3.4618442318936333]
-henry = [93008543.19275573, 0.0]
+ln_phi = [6.3201351281092055, -3.4618442318936333]
+henry = [10.132499999999954, 0.0]
 gamma_inf = [1.0, 1.0]
 molality = [0.055509297807382736, 55.50929780738274]
 ionic_strength = 0.0
@@ -192,7 +192,7 @@ dataset = "legacy"
 [[cases]]
 id = "carbon_dioxide_in_water_at_one_atmosphere"
 tolerance = 1e-08
-source = "The **gate's other half**: the same salt-free phase the case above reaches the table through, with CO2 instead of methane. Every gate is open except the reactive qualification, and that one alone keeps the answer on the database row - `51.65450928785164` against the table's `1656.4458917920526 bar`. Two fluids that differ only in the solute, and the two arms are told apart by the name. The dataset is `legacy`, as on the case above."
+source = "The **gate's other half**: the same salt-free phase the case above reaches the table through, with CO2 instead of methane. Every gate is open except the reactive qualification, and that one alone keeps the answer on the database row - `28.95` against the table's `1656.4458917920526 bar`. Two fluids that differ only in the solute, and the two arms are told apart by the name. The dataset is `legacy`, as on the case above."
 [cases.inputs]
 components = ["CO2", "water"]
 T = 298.15
@@ -201,8 +201,8 @@ x = [0.047619047619047616, 0.9523809523809523]
 [cases.expected]
 gamma = [1.0, 1.0]
 ln_gamma = [0.0, 0.0]
-ln_phi = [7.9967552088819165, -3.4618442318936333]
-henry = [51.65450928785164, 0.0]
+ln_phi = [7.417747916444259, -3.4618442318936333]
+henry = [28.950000000000646, 0.0]
 gamma_inf = [1.0, 1.0]
 molality = [2.7754648903691366, 55.50929780738274]
 ionic_strength = 0.0

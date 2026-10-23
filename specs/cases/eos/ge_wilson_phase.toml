@@ -46,7 +46,7 @@ gamma_inf = [1.0, 2.7174002841642664]
 [[cases]]
 id = "methanol_co2_at_298_15_k_10_bar"
 tolerance = 1e-09
-source = "NeqSim master `PhaseGEWilson`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The no-water arm.** With no water component there is no IAPWS reference and no pair, so `H` is the databank's CO2 row (`51.654509287851646` bar) and `gamma^inf` is the full composition cloned with CO2 at `x = 1e-10` and the rest renormalised."
+source = "NeqSim master `PhaseGEWilson`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The no-water arm.** With no water component there is no IAPWS reference and no pair, so `H` is the databank's CO2 row (`28.95` bar after upstream PR #4045) and `gamma^inf` is the full composition cloned with CO2 at `x = 1e-10` and the rest renormalised."
 [cases.inputs]
 components = ["methanol", "CO2"]
 T = 298.15
@@ -55,7 +55,7 @@ x = [0.98, 0.02]
 [cases.expected]
 gamma = [1.0002027278279388, 2.6633472699415957]
 ln_gamma = [0.0002027072814295844, 0.9795837038654425]
-ln_phi = [-4.07783075367807, 1.621992407101495]
+ln_phi = [-4.07783075367807, 1.042985114663837]
 p_sat = [16940.747558344778, 0.0]
-henry = [0.0, 5165450.928785165]
+henry = [0.0, 2895000.000000065]
 gamma_inf = [1.0, 2.7171504438636984]

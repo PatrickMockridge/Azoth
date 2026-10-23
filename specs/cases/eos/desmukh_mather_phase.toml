@@ -2,7 +2,7 @@ model = "eos.desmukh_mather_phase"
 [[cases]]
 id = "mdea_plus_chloride_co2_at_313_k"
 tolerance = 1e-08
-source = "NeqSim master `ComponentDesmukhMather.getGamma` and `fugcoef`, on a live `SystemDesmukhMather`: validation/neqsim/GeElectrolyteProbe.java. **The pair sum is live here**: MDEA+/CO2 is one of the four nonzero `aijDesMath` rows, and it is why MDEA+'s and Cl-'s `ln_gamma` differ by exactly `2 * 0.0678732 * m_CO2` although both are monovalent ions at the same molality."
+source = "NeqSim master `ComponentDesmukhMather.getGamma` and `fugcoef`, on a live `SystemDesmukhMather`: validation/neqsim/GeElectrolyteProbe.java. **CO2's `fugcoef` reads the databank's Henry coefficient**, which the vendored `COMP.csv` re-sourced upstream, so it is `13.208` where the placeholder set gave `23.62`; the activity coefficients are untouched. **The pair sum is live here**: MDEA+/CO2 is one of the four nonzero `aijDesMath` rows, and it is why MDEA+'s and Cl-'s `ln_gamma` differ by exactly `2 * 0.0678732 * m_CO2` although both are monovalent ions at the same molality."
 [cases.inputs]
 components = ["water", "MDEA+", "Cl-", "CO2"]
 T = 313.15
@@ -23,7 +23,7 @@ ln_phi = [
     -4.09271615638785,
     -34.538776394910684,
     -34.538776394910684,
-    3.1621179888375215,
+    2.580841036729538,
 ]
 [[cases]]
 id = "sodium_chloride_at_313_k"

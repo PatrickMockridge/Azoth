@@ -195,28 +195,30 @@ fn the_dry_arm_reads_the_database_row() {
         );
     };
     let r = ge_nrtl_phase(&params, 298.15, 1_000_000.0, &[0.98, 0.02]).unwrap();
-    assert!((r.henry[1].value - 5_165_450.928_785_165).abs() < 1e-6);
+    assert!((r.henry[1].value - 2_895_000.000_000_065).abs() < 1e-6);
     assert!((r.gamma_inf[1] - 124_733.561_757_904_7).abs() < 1e-9);
 }
 
-/// The four-zero rows are refused where NeqSim evaluates 1.802 bar.
+/// **Every solute row is fitted now**, where two of these pairs used to be refused. The
+/// refusal survives for a row the table fits nothing for, and `henry.rs` tests it on `mdea`.
 #[test]
-fn an_unfitted_henry_row_is_refused() {
+fn every_solute_row_is_fitted_now() {
+    use azoth_eos::ge_phase::ReferenceState;
+
     for (a, b) in [("water", "n-butane"), ("methanol", "n-hexane")] {
-        let err = ge_nrtl_phase_parameters(&[a, b], None).unwrap_err();
-        assert!(
-            matches!(err, AzothError::PropertyUnavailable { .. }),
-            "{a}/{b}: {err:?}"
-        );
+        let params = ge_nrtl_phase_parameters(&[a, b], None)
+            .unwrap_or_else(|error| panic!("{a}/{b} used to be refused: {error}"));
+        assert!(matches!(params.references[1], ReferenceState::Henry(_)));
     }
 }
 
-/// The `900` sentinel caps to the insoluble limit where no IAPWS row shadows it.
+/// **The old `900` sentinel is now a fitted row.** Upstream PR #4045 re-sourced the table,
+/// so methanol/methane's Henry is methane's own `723.75 bar` rather than the cap.
 #[test]
-fn a_sentinel_row_is_capped() {
+fn the_old_sentinel_is_now_a_fitted_row() {
     let params = ge_nrtl_phase_parameters(&["methanol", "methane"], None).unwrap();
     let r = ge_nrtl_phase(&params, 298.15, 1_000_000.0, &[0.98, 0.02]).unwrap();
-    assert_eq!(r.henry[1].value, 1.0e17, "1e12 bar in pascals");
+    assert!((r.henry[1].value - 72_374_999.999_999_51).abs() < 1e-3);
 }
 
 /// An ion is capped whatever its row says.

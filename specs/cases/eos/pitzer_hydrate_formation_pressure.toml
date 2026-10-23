@@ -6,16 +6,16 @@ model = "eos.pitzer_hydrate_formation_pressure"
 [[cases]]
 id = "co2_water_278k"
 tolerance = 1.0e-05
-source = "The capture's `co2_water_278.0k` row: CO2 and water at a fixed 278 K solve 20.734137846824893 bara at a water activity of 0.9881796770768043, structure I.\n"
+source = "The capture's `co2_water_278.0k` row: CO2 and water at a fixed 278 K solve 22.211362285557975 bara at a water activity of 0.9795219483984382, structure I.\n"
 [cases.inputs]
 components = ["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"]
 moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
 T = 278.0
 cubic = "srk"
 [cases.expected]
-pressure = 2073413.7846824892
+pressure = 2221136.2285557975
 structure = "structure_i"
-water_activity = 0.9881796770768043
+water_activity = 0.9795219483984382
 
 [[cases]]
 id = "co2_nacl_5wt_278k"
@@ -42,6 +42,6 @@ moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0]
 T = 280.0
 cubic = "srk"
 [cases.expected]
-pressure = 2672590.2935027122
+pressure = 2924806.234264403
 structure = "structure_i"
-water_activity = 0.9863644219606345
+water_activity = 0.9757992693376938

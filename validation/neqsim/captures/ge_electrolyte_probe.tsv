@@ -18,7 +18,7 @@
     MDEA      z = +0  x = 0.0800000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.85275613328  refstate = solvent  phi = NaN
     Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 100000000.000000
     Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 100000000.000000
-    CO2       z = +0  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 14.9831174999581
+    CO2       z = +0  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 8.37831747035017
 
 === water + Na+ + Cl- ===
   phase class = PhaseKentEisenberg
@@ -33,7 +33,7 @@
     water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.0148069549104026
     Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
     Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
-    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 14.9831174999581
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 8.37831747035017
 
 === water + Na+ + Cl- + CO2 at 298.15 K ===
   phase class = PhaseKentEisenberg
@@ -41,7 +41,7 @@
     water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.00635750573997666
     Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
     Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
-    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 10.3309018575703
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 5.79000000000013
 
 === water + Na+ + Cl- + CO2 at 373.15 K ===
   phase class = PhaseKentEisenberg
@@ -49,7 +49,7 @@
     water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.202094507141332
     Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
     Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
-    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 35.0984787515352
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 27.2929647762646
 
 ################ Desmukh-Mather ################
 
@@ -60,7 +60,7 @@
     MDEA      z = +0  x = 0.0800000000000  gamma = 0.653273989578573  ln gamma = -0.425758651828879  molality = 3.34098195469  refstate = solvent  phi = NaN
     Na+       z = +1  x = 0.0400000000000  gamma = 0.393151708641170  ln gamma = -0.933559714525390  molality = 1.67049097734  refstate = solute  phi = 1.00000000000000e-15
     Cl-       z = -1  x = 0.0400000000000  gamma = 0.393151708641170  ln gamma = -0.933559714525390  molality = 1.67049097734  refstate = solute  phi = 1.00000000000000e-15
-    CO2       z = +0  x = 0.0400000000000  gamma = 1.13636363636364  ln gamma = 0.127833371509885  molality = 1.67049097734  refstate = solute  phi = 17.0262698861457
+    CO2       z = +0  x = 0.0400000000000  gamma = 1.13636363636364  ln gamma = 0.127833371509885  molality = 1.67049097734  refstate = solute  phi = 9.52081530712090
 
   I = 1.67049097734413   solvent weight = 0.0239450560000000   solvent molar mass = 0.0272102909090909
   aij / bij, and beta = aij + bij T:
@@ -109,7 +109,7 @@
     water     z = +0  x = 0.890000000000  gamma = 1.12359550561798  ln gamma = 0.116533816255951  molality = 55.5092978074  refstate = solvent  phi = 0.0166938288734500
     MDEA+     z = +1  x = 0.0400000000000  gamma = 0.429375480220153  ln gamma = -0.845423497589490  molality = 2.49479990146  refstate = solute  phi = 1.00000000000000e-15
     Cl-       z = -1  x = 0.0400000000000  gamma = 0.333064679011398  ln gamma = -1.09941857659668  molality = 2.49479990146  refstate = solute  phi = 1.00000000000000e-15
-    CO2       z = +0  x = 0.0300000000000  gamma = 1.57647906673492  ln gamma = 0.455193921598877  molality = 1.87109992609  refstate = solute  phi = 23.6205710928773
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.57647906673492  ln gamma = 0.455193921598877  molality = 1.87109992609  refstate = solute  phi = 13.2082421063344
 
 === water + methanol + Na+ + Cl- ===
   phase class = PhaseDesmukhMather

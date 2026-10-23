@@ -8,7 +8,7 @@ e^{\,A + B/T + C \ln T + D T^{E}} & \text{dippr101}\\
 10^{5}\,e^{\,A - B/(T + C)} & \text{exp}\\
 e^{\,(A x + B x^{3/2} + C x^{3} + D x^{6})/(1-x)}\,P_c,\ x = 1 - T/T_c & \text{wagner}
 \end{cases}'''
-assumptions = ["`none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.\n", "the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.\n", "`form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.\n", "`E` decides the form and not only the label: a non-zero `E` selects `dippr101` unless the label is `pow10` or `pow10KPa`, which keep precedence because their coefficients are log10-based. This is NeqSim's own rule, `Component.usesDipprVaporPressureCorrelation`.\n", "the rule matters because twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label `log`, which names the two-term exponential. Reading the label alone returns `i-pentane` at 8.3e38 bar where the correlation gives 0.918.\n", "`Tc` and `Pc` are used only by the Wagner form; the other three ignore them.\n", "the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.\n"]
+assumptions = ["`none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.\n", "the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.\n", "`form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.\n", "`E` decides the form and not only the label: a non-zero `E` selects `dippr101` unless the label is `pow10` or `pow10KPa`, which keep precedence because their coefficients are log10-based. This is NeqSim's own rule, `Component.usesDipprVaporPressureCorrelation`.\n", "the rule matters because twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label `log`, which names the two-term exponential. Reading the label alone returns `i-pentane` at 8.3e38 bar where the correlation gives 0.918.\n", "`Tc` and `Pc` are used only by the Wagner form; the other three ignore them.\n", "the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.\n", "**the evaluated pressure must be finite, positive and at or below `Pc`** (upstream PR #4106, `b7ee7300`): an extrapolation past the critical pressure is unavailable rather than clipped, and this port refuses it where the class returns `NaN`.\n"]
 references = ["Antoine, C. (1888). \\\"Tensions des vapeurs; nouvelle relation entre les tensions et les températures.\\\" Comptes Rendus des Séances de l'Académie des Sciences 107, 681-684.", "Wagner, W. (1973). \\\"New vapour pressure measurements for argon and nitrogen and a new method for establishing rational vapour pressure equations.\\\" Cryogenics 13(8), 470-482. DOI 10.1016/0011-2275(73)90003-9."]
 [source]
 standard = "NeqSim's `getAntoineVaporPressure`"
@@ -66,7 +66,7 @@ severity = "error"
 rationale = "`Pc` scales the Wagner form; a non-positive value is not a critical pressure.\n"
 [worked_example]
 source = "derived from the equation above"
-derivation = "Methane's coefficients, A = 5.23243, B = 891.0098, C = 332.0975, D = 0, E = 0, with form `pow10`, at T = 300 K:\n\n  B / (T + C - 273.15) = 891.0098 / (300 + 332.0975 - 273.15) = 891.0098 / 358.9475 = 2.482284\n  A - that                 = 5.23243 - 2.482284 = 2.750146\n  10**2.750146             = 562.5298119539252\n  p_sat = 1e5 * 562.5298119539252 = 56252981.19539252 Pa\n\nwhich reproduces NeqSim's `getAntoineVaporPressure` (562.5298119539252 bar).\n"
+derivation = "Methane's coefficients, A = 5.23243, B = 891.0098, C = 332.0975, D = 0, E = 0, with form `pow10`, at T = 150 K - below its 190.56 K critical temperature and with the correlation inside `Pc`:\n\n  B / (T + C - 273.15) = 891.0098 / (150 + 332.0975 - 273.15) = 891.0098 / 208.9475 = 4.264277\n  A - that                 = 5.23243 - 4.264277 = 0.968153\n  10**0.968153            = 9.292959523003073\n  p_sat = 1e5 * 9.292959523003073 = 929295.9523003073 Pa\n\nThe same correlation at 300 K gives `56.25e6` Pa, above the 4.599 MPa critical pressure: upstream PR #4106 rejects that extrapolation, and so does this port.\n"
 tolerance = 1e-12
 [worked_example.inputs]
 A = 5.23243
@@ -77,9 +77,9 @@ E = 0.0
 form = "pow10"
 Tc = 190.56
 Pc = 4599000.0
-T = 300.0
+T = 150.0
 [worked_example.expected]
-p_sat = 56252981.19539252
+p_sat = 929295.9523003073
 [implementations]
 python = "azoth.eos.antoine_vapor_pressure"
 rust = "azoth_eos::antoine_vapor_pressure"
@@ -91,7 +91,7 @@ status = "active"
 id = "ethylene_pow10kpa"
 type = "reference"
 status = "active"
-source = "Derived from the equation above, at ethylene's coefficients, A = 8.91382, B = 596.526, C = -16.78, form `pow10kpa`, T = 300 K:\n\n  10**(8.91382 - 596.526 / (300 - 16.78)) = 10**6.807523 = 6420836.723287002\n\np_sat = 6420836.723287002 Pa, matching NeqSim's 64.20836723287002 bar.\n"
+source = "Derived from the equation above, at ethylene's coefficients, A = 8.91382, B = 596.526, C = -16.78, form `pow10kpa`, T = 250 K - below its 282.35 K critical temperature and inside the 5.04 MPa critical pressure:\n\n  10**(8.91382 - 596.526 / (250 - 16.78)) = 10**6.355966 = 2270061.6328203664\n\np_sat = 2270061.6328203664 Pa.\n"
 tolerance = 1e-12
 [tests.inputs]
 A = 8.91382
@@ -102,9 +102,9 @@ E = 0.0
 form = "pow10kpa"
 Tc = 282.35
 Pc = 5041800.0
-T = 300.0
+T = 250.0
 [tests.expected]
-p_sat = 6420836.723287002
+p_sat = 2270061.6328203664
 [[tests]]
 id = "nc12_exp"
 type = "reference"

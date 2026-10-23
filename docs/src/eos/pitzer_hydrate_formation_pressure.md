@@ -79,9 +79,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `co2_water_278k` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], T = 278.0, cubic = srk | pressure = 2073413.7846824892, structure = structure_i, water_activity = 0.9881796770768043 |
+| `co2_water_278k` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], T = 278.0, cubic = srk | pressure = 2221136.2285557976, structure = structure_i, water_activity = 0.9795219483984382 |
 | `co2_nacl_5wt_278k` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.9006088115566122, 0.0, 0.0, 0.0, 0.9006088115566122], T = 278.0, cubic = srk, pitzer_dataset = phreeqc_co2_chloride | pressure = 2956387.148120002, structure = structure_i, water_activity = 0.945688038723503 |
-| `co2_water_280k` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], T = 280.0, cubic = srk | pressure = 2672590.293502712, structure = structure_i, water_activity = 0.9863644219606345 |
+| `co2_water_280k` | components = ['CO2', 'water', 'Na+', 'K+', 'Ca++', 'Mg++', 'Cl-'], moles = [10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0], T = 280.0, cubic = srk | pressure = 2924806.234264403, structure = structure_i, water_activity = 0.9757992693376938 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

@@ -57,14 +57,14 @@ viscosity = 3.6479710612851546e-04
 [[cases]]
 id = "methanol_at_300_k_and_5_bar"
 tolerance = 1e-12
-source = "Pure methanol, the second row whose `LIQVISC` set is its own - and the one the ions' rows are copies of: `-39.35, 4826.0, 0.1091, -1.13e-4`. So this case pins the numbers a brine would be computed from, which is why the two together say what the ion refusal is about.\n"
+source = "Pure methanol. **The row was re-sourced in the vendored `COMP.csv`** (upstream `8bb7bace`): it now carries `-7.897983583488313, 1538.8860162733163, 0.011318388916742009, -1.4024025435375236e-5` where it used to carry the filler set the ions still carry (`-39.35, 4826.0, 0.1091, -1.13e-4`). So this case pins the new coefficients, and the ion assumption is about the old ones.\n"
 [cases.inputs]
 components = ["methanol"]
 T = 300.0
 P = 500000.0
 z = [1.0]
 [cases.expected]
-viscosity = 4.955318590786208e-04
+viscosity = 5.305720894530389e-04
 [[cases]]
 id = "teg_at_300_k_and_5_bar"
 tolerance = 1e-12

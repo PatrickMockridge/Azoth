@@ -94,20 +94,13 @@ fn the_henrys_law_branch_does_not_apply_here() {
         "water and nitric acid resolve"
     );
 
-    // Every other GE phase reads the tag, so nitric acid takes its Henry arm there - the
-    // 900 sentinel, capped. Stated here so the inconsistency is a decision rather than an
-    // oversight.
-    use azoth_eos::ge_phase::{HenryState, ReferenceState};
-
-    let siblings = azoth_eos::databank::ge_nrtl_phase_parameters(&["water", "nitric acid"], None)
-        .expect("the sibling phases resolve the acid and give it the Henry arm");
+    // Every other GE phase reads the tag, so nitric acid takes its Henry arm there - and
+    // the row is unfitted, so that arm refuses. Stated here so the difference is a decision
+    // rather than an oversight.
+    let siblings = azoth_eos::databank::ge_nrtl_phase_parameters(&["water", "nitric acid"], None);
     assert!(
-        matches!(
-            siblings.references[1],
-            ReferenceState::Henry(HenryState::Database { ion: false, .. })
-        ),
-        "the sibling phases should read the tag: {:?}",
-        siblings.references[1]
+        matches!(siblings, Err(AzothError::PropertyUnavailable { .. })),
+        "the sibling phases refuse the acid's unfitted Henry row: {siblings:?}"
     );
 }
 
@@ -120,7 +113,10 @@ fn the_henrys_law_branch_does_not_apply_here() {
 /// so a flash over the mixture can still iterate while it does so.
 #[test]
 fn an_uncovered_component_takes_the_penalty() {
-    let names = ["water", "nitric acid", "nitrogen"];
+    // Propane rather than nitrogen: the acid phase reads every *solvent* arm's Antoine
+    // correlation, and nitrogen's is above its critical temperature at 250 K, where the
+    // class's own applicability gate answers `NaN` and this port refuses.
+    let names = ["water", "nitric acid", "propane"];
     let params = ge_van_laar_acid_phase_parameters(&names, None).unwrap();
     assert_eq!(params.acid_index, vec![1, 2, 0]);
 

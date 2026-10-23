@@ -227,8 +227,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.antoine_vapor_pressure': {
         "calc_id": 'eos.antoine_vapor_pressure',
         "name": "Antoine vapour pressure from NeqSim's correlation",
-        "spec": {'path': 'specs/calcs/eos/antoine_vapor_pressure.toml', 'sha256': 'e65440de1da401dad4cdbae2feb3f26527441f23afea9de69de31f056714181b'},
-        "code": [{'path': 'python/src/azoth/eos/reference/antoine_vapor_pressure.py', 'sha256': '36f150f7ee16d1c1901b8ee145aea2a6ac1dd8f1444760728afe97a5b5dcad8a'}, {'path': 'crates/azoth-eos/src/antoine_vapor_pressure.rs', 'sha256': 'cbeeadd927a72979af8bfa99f432e51a0837617f8064d4a64dea7659ce1ed64d'}],
+        "spec": {'path': 'specs/calcs/eos/antoine_vapor_pressure.toml', 'sha256': '145594f980d22da7b5d89c463d94527a1849809e4c74f81c3b70ebac38f206d8'},
+        "code": [{'path': 'python/src/azoth/eos/reference/antoine_vapor_pressure.py', 'sha256': '191c4adf63171ce844a85801e420a7f89c45ff7547737cc6d647cebbdd1b1103'}, {'path': 'crates/azoth-eos/src/antoine_vapor_pressure.rs', 'sha256': '2fa3874e023d336589617fdd998ce644bd717cd8c38da0e9834dd7a48767caf4'}],
         "source": "NeqSim's `getAntoineVaporPressure`",
         "verification": 'verified',
         "validation_cases": 5,
@@ -238,7 +238,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.aqueous_viscosity': {
         "calc_id": 'eos.aqueous_viscosity',
         "name": 'Liquid viscosity of an aqueous phase',
-        "spec": {'path': 'specs/models/eos/aqueous_viscosity.toml', 'sha256': '7ee14c3d7d80dc61abbff37b83540e00098273ebeacdbdf49736cc6b5bc0d4fc'},
+        "spec": {'path': 'specs/models/eos/aqueous_viscosity.toml', 'sha256': '051baeab55e11525b7fa73894605074459a503b3b15143b07a745ae64d623ea6'},
         "code": [{'path': 'python/src/azoth/eos/reference/aqueous_viscosity.py', 'sha256': '89a29a754855dd9e569ac8facb801549ec1668188495b1a52d4151d63308fc14'}, {'path': 'crates/azoth-eos/src/aqueous_viscosity.rs', 'sha256': '7a6f22236bfef4c395fe700901152155144f9657cb99585cf05fe74db4a4c6f0'}],
         "source": 'NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java',
         "verification": 'partially_verified',

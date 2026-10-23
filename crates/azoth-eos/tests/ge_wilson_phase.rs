@@ -164,19 +164,19 @@ fn three_ge_phases_share_the_vapour_pressure_and_not_the_activity() {
 
 /// The Henry arms follow the same rules as the other phases, and a dry CO2 resolves.
 ///
-/// The pair the Wilson *activity* model is validated on - `n-butane`/`nc12` - is still
-/// not a pair this *phase* can be stated against: `n-butane`'s Henry row is the four
-/// zeros, which the resolver refuses.
+/// **Upstream PR #4045 fitted the solutes this test used to refuse**: `n-butane` and
+/// `n-hexane` now resolve to database Henry rows rather than to the four zeros.
 #[test]
 fn the_henry_arms_follow_the_same_rules_as_the_other_phases() {
     use azoth_eos::ge_phase::{HenryState, ReferenceState};
 
     for name in ["n-butane", "n-hexane"] {
-        let err = ge_wilson_phase_parameters(&[name, "n-octane"], None).unwrap_err();
-        assert!(
-            matches!(err, AzothError::PropertyUnavailable { .. }),
-            "{name}: {err:?}"
-        );
+        let params = ge_wilson_phase_parameters(&[name, "n-octane"], None)
+            .unwrap_or_else(|error| panic!("{name} used to be refused: {error}"));
+        assert!(matches!(
+            params.references[0],
+            ReferenceState::Henry(HenryState::Database { ion: false, .. })
+        ));
     }
 
     let dry = ge_wilson_phase_parameters(&["CO2", "n-octane"], None).unwrap();
@@ -188,7 +188,7 @@ fn the_henry_arms_follow_the_same_rules_as_the_other_phases() {
     let names = ["CO2", "n-octane"];
     let (mixture, _) = mixture_of(&names, Cubic::Pr, None).unwrap();
     let r = ge_wilson_phase(&dry, &mixture, 298.15, 1_000_000.0, &[0.02, 0.98]).unwrap();
-    assert!((r.henry[0].value - 5_165_450.928_785_165).abs() < 1e-6);
+    assert!((r.henry[0].value - 2_895_000.000_000_065).abs() < 1e-6);
 
     let err = ge_wilson_phase_parameters(&["argon", "water"], None).unwrap_err();
     assert!(

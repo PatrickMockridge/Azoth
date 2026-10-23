@@ -122,8 +122,8 @@ pub fn form_from_type(label: &str, e: f64) -> Option<AntoineForm> {
 /// use azoth_eos::AntoineForm;
 ///
 /// let r = antoine_vapor_pressure(5.23243, 891.0098, 332.0975, 0.0, 0.0,
-///     AntoineForm::Pow10, kelvins(190.56), pascals(4_599_000.0), kelvins(300.0))?;
-/// assert!((r.p_sat.value - 56_252_981.19539252).abs() < 1e-6);
+///     AntoineForm::Pow10, kelvins(190.56), pascals(4_599_000.0), kelvins(150.0))?;
+/// assert!((r.p_sat.value - 929_295.952_300_307_3).abs() < 1e-6);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the published equation
@@ -187,6 +187,24 @@ pub fn antoine_vapor_pressure(
             ((A * x + B * x.powf(1.5) + C * x.powi(3) + D * x.powi(6)) / (1.0 - x)).exp() * Pc.value
         }
     };
+
+    // **The evaluated pressure must be a finite, positive value at or below `Pc`.** The class's
+    // contract is `NaN` otherwise (upstream PR #4106 added the critical-pressure clause); a
+    // correlation extrapolated through a pole gives a finite but meaningless pressure, and
+    // clipping it to `Pc` would report a state the fluid is not in. This port refuses rather
+    // than returning the class's `NaN`, which is this library's rule for an unavailable state.
+    if !(p_sat.is_finite() && p_sat > 0.0 && Pc.value.is_finite() && p_sat <= Pc.value) {
+        return Err(AzothError::out_of_range(
+            "T",
+            t,
+            format!(
+                "the correlation gives `{p_sat}` Pa at this temperature, which is not a finite, \
+                 positive pressure at or below the critical `{}` Pa. Upstream PR #4106 rejects \
+                 that extrapolation rather than clipping it to `Pc`",
+                Pc.value
+            ),
+        ));
+    }
 
     apply_checks(
         spec.derived_checks(),

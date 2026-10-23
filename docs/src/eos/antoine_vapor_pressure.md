@@ -79,6 +79,8 @@ satisfy for the result to mean what it says.
 
 - the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.
 
+- **the evaluated pressure must be finite, positive and at or below `Pc`** (upstream PR #4106, `b7ee7300`): an extrapolation past the critical pressure is unavailable rather than clipped, and this port refuses it where the class returns `NaN`.
+
 
 
 
@@ -96,15 +98,15 @@ Source: derived from the equation above
 | `form` | pow10 |
 | `Tc` | 190.56 |
 | `Pc` | 4599000.0 |
-| `T` | 300.0 |
+| `T` | 150.0 |
 
 | Output | Expected |
 |---|---|
-| `p_sat` | 56252981.19539252 |
+| `p_sat` | 929295.9523003073 |
 
 Relative tolerance: `1e-12`
 
-Methane's coefficients, A = 5.23243, B = 891.0098, C = 332.0975, D = 0, E = 0, with form `pow10`, at T = 300 K: B / (T + C - 273.15) = 891.0098 / (300 + 332.0975 - 273.15) = 891.0098 / 358.9475 = 2.482284 A - that = 5.23243 - 2.482284 = 2.750146 10**2.750146 = 562.5298119539252 p_sat = 1e5 * 562.5298119539252 = 56252981.19539252 Pa which reproduces NeqSim's `getAntoineVaporPressure` (562.5298119539252 bar).
+Methane's coefficients, A = 5.23243, B = 891.0098, C = 332.0975, D = 0, E = 0, with form `pow10`, at T = 150 K - below its 190.56 K critical temperature and with the correlation inside `Pc`: B / (T + C - 273.15) = 891.0098 / (150 + 332.0975 - 273.15) = 891.0098 / 208.9475 = 4.264277 A - that = 5.23243 - 4.264277 = 0.968153 10**0.968153 = 9.292959523003073 p_sat = 1e5 * 9.292959523003073 = 929295.9523003073 Pa The same correlation at 300 K gives `56.25e6` Pa, above the 4.599 MPa critical pressure: upstream PR #4106 rejects that extrapolation, and so does this port.
 
 
 ## Tests
