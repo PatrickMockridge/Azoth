@@ -401,12 +401,12 @@ mod tests {
         );
         close(
             report.empty_vessel_weight.value,
-            1956.188_578_713_105_2,
+            1_956.188_578_713_105_2,
             "empty_vessel_weight_kg",
         );
         close(
             report.total_equipped_weight.value,
-            2196.799_690_080_435_5,
+            2_196.799_690_080_435_5,
             "total_equipped_weight_kg",
         );
     }
@@ -461,12 +461,12 @@ mod tests {
         );
         close(
             report.empty_vessel_weight.value,
-            2444.452_627_150_544_2,
+            2_444.452_627_150_544_2,
             "empty_vessel_weight_kg",
         );
         close(
             report.total_equipped_weight.value,
-            3006.615_755_120_348,
+            3_006.615_755_120_348,
             "total_equipped_weight_kg",
         );
     }
@@ -518,7 +518,7 @@ mod tests {
         );
         close(
             report.total_equipped_weight.value,
-            1077.584_470_390_200_7,
+            1_077.584_470_390_200_7,
             "total_equipped_weight_kg",
         );
     }
@@ -534,7 +534,7 @@ mod tests {
                 .max(MINIMUM_VESSEL_DIAMETER_M);
             let length = TARGET_LD_RATIO * diameter;
             let ratio = length / diameter;
-            assert!(ratio >= MIN_LD_RATIO && ratio <= MAX_LD_RATIO);
+            assert!((MIN_LD_RATIO..=MAX_LD_RATIO).contains(&ratio));
         }
     }
 
