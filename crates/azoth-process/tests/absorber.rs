@@ -330,6 +330,8 @@ fn a_pinned_column_stops_after_one_sweep_and_is_refused() {
 /// **The stripper's id, on the same state its case states**, which is what verifies the model
 /// layer while the extension cannot be rebuilt: `process.stripping_column` is the absorber's
 /// model under the class's own names, so this asserts the names *and* the numbers.
+/// **The declared parameters reach the calculation** (upstream #4096): the class's six
+/// inert setters, `setNumberOfStages` among them, are inputs here that the profile reads.
 #[test]
 fn the_stripping_column_id_reaches_the_absorber_model() {
     let setup = hydrocarbon_stripper();

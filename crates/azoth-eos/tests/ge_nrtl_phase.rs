@@ -277,3 +277,13 @@ fn a_length_mismatch_is_refused() {
     assert!(matches!(err, AzothError::InvalidInput { .. }), "{err:?}");
     assert_eq!(err.field(), Some("components"));
 }
+
+/// **A one-component GE phase resolves** (upstream #3837): `PhaseGE.getActivityCoefficientInfDil`
+/// passed a literal `2` as the component count, so a one-component phase read a component that
+/// does not exist. This port evaluates the reference over the components it has.
+#[test]
+fn a_one_component_ge_phase_resolves() {
+    let params = ge_nrtl_phase_parameters(&["water"], None).expect("water resolves");
+    let result = ge_nrtl_phase(&params, 298.15, 1.0e5, &[1.0]).expect("one component");
+    assert!(result.ln_phi[0].is_finite(), "{:?}", result.ln_phi);
+}

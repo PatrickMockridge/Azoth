@@ -277,7 +277,9 @@ fn the_session_addresses_every_value_by_a_stable_path() {
 /// `SimulationInterface.run()` defaults to `run(UUID.randomUUID())`, but a **recycle** needs the
 /// sequential loop around it. So this is the only external measurement of the executor, and it
 /// holds the loop's *convergence* - the pass it stopped on and the residual it stopped with - as
-/// well as its destination.
+/// well as its destination. **The class's `Recycle` has no outlet before `run` and its
+/// `applyStreamValues` drops the accelerated temperature, pressure and flow** (issues #4000,
+/// #3999); this port's loop writes the whole stream.
 ///
 /// The row is `demo_condensing`: the shipped graph with the heater at 250 K, which is the one
 /// whose tear carries material. At 320 K the separator's liquid is nil and NeqSim **deactivates**

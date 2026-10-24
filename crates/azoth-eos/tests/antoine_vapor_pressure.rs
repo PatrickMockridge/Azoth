@@ -80,7 +80,8 @@ fn every_case_in_the_spec() {
 /// `log`, which names the two-term exponential instead. Reading the label alone returns
 /// `i-pentane` at 8.3e38 bar where the correlation gives 0.918, so the selection takes
 /// the fifth coefficient as well - NeqSim's own rule,
-/// `Component.usesDipprVaporPressureCorrelation`.
+/// `Component.usesDipprVaporPressureCorrelation`. Upstream #3768: the branch was unreachable
+/// and twenty components came out `1e38`-`1e96` bar.
 #[test]
 fn a_non_zero_exponent_selects_the_dippr_form() {
     use azoth_eos::AntoineForm::*;
@@ -210,4 +211,15 @@ fn an_extrapolation_past_the_critical_pressure_is_refused() {
     );
     let admitted = methane(150.0).expect("inside Pc");
     assert!((admitted.p_sat.value - 929_295.952_300_307_3).abs() < 1e-6);
+}
+
+/// **A `none` row is unavailable, not Wagner's `Pc`** (upstream #3771, whose rows upstream now
+/// marks `none`): the label is an absence rather than a form, so a row carrying it is refused
+/// rather than evaluated from zeros.
+#[test]
+fn a_none_label_is_an_absence() {
+    assert!(
+        azoth_eos::form_from_type("none", 0.0).is_none(),
+        "`none` is a marker, not a form"
+    );
 }

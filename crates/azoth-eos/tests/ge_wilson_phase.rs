@@ -103,7 +103,8 @@ fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
     }
 }
 
-/// The activity coefficients are `eos.wilson_activity_coefficients`', not a second copy.
+/// The activity coefficients are `eos.wilson_activity_coefficients`', not a second copy -
+/// and they are **published** where the class published none (upstream #3770).
 #[test]
 fn the_activity_coefficients_are_the_wilson_models() {
     let names = ["nc10", "n-octane"];

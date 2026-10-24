@@ -100,7 +100,8 @@ fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
     }
 }
 
-/// The activity coefficients are `eos.unifac_activity_coefficients`', not a second copy.
+/// The activity coefficients are `eos.unifac_activity_coefficients`', not a second copy -
+/// with the group array and the group list agreed, where the class threw (upstream #3769).
 #[test]
 fn the_activity_coefficients_are_the_unifac_models() {
     let names = ["methanol", "water"];
