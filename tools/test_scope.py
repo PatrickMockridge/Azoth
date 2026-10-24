@@ -2168,6 +2168,14 @@ def main() -> int:
 
     budget = args.max_minutes if args.max_minutes is not None else LANE_BUDGET_MINUTES[lane]
     budget_seconds = budget * 60 if budget else None
+    if args.no_gate:
+        # **On a runner the job's `timeout-minutes` is the watchdog, not this lane's budget.**
+        # `--no-gate` is the CI render - the gated wrapper does not exist there - and a command
+        # the diff widens to a whole suite (a change to `python/tests/_helpers.py` reaches every
+        # model) can take longer than a local lane's fifteen minutes without being hung. The
+        # 60-minute job ceiling is what bounds it; carrying the lane budget into the render made
+        # a correct wide diff fail at 900 s with exit 124.
+        budget_seconds = None
     selection = selection_terms(commands) if lane == "tranche" else ""
 
     sweeps = marked_sweeps(commands)
