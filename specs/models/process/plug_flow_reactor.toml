@@ -11,9 +11,9 @@ assumptions = [
     "**a species a reaction names and the feed does not carry is added at 1e-20 mol**, in the reaction's own stoichiometry order, which is also the order the profile is described in.\n",
     "**a component is floored at 1e-30 mol** before each flash, so a spent reactant is present and out of the rate.\n",
     "**the species order is the feed's, then the added ones.** The profile vectors are over stations and not species, so this fixes which components the outlet composition is over.\n",
-    "**the class's summed volumetric reaction rate is deliberately not an output.** It is mol/(m3*s), this vocabulary has no dimension for an amount per volume per time and uom carries no such quantity, so it stays in the kernel and the capture - the same absence as ISO 6976's Wobbe index.\n",
+    "**the summed volumetric reaction rate is an output, and the vocabulary gained the dimension for it.** `mol/(m3*s)` had no unit; `MolarRateDensity` and its `mol/(m**3*s)` entry are what close it, rather than a dimensionless declaration.\n",
     "**which component the conversion is of is not an output either**, because this schema has no string output anywhere; it is the `key_component` input, and where that is omitted it is the first reactant of the first reaction as the class derives it.\n",
-    "**the residence time is not an output, and this one is a gap rather than a choice.** The vocabulary has no dimension of time, so a *duration* is not expressible here. Closing it adds a canonical unit and a `Gate.lean` line with it, so it is named rather than folded in.\n",
+    "**the residence time is an output.** The earlier note said the vocabulary had no dimension of time; that was wrong - `s` is there and three models already publish it - so the duration is declared in seconds.\n",
     "**the stoichiometry is read, not declared.** `KineticReaction` is configured in Java, but a declaration cannot carry a coefficient map, so the reaction id resolves against `data/reactions/stoichiometry.csv` and only the orders are declared.\n",
     "**LHHW with no adsorption terms added is its own power law**: the denominator is `(1 + 0)**m`, which is one. The class has the same behaviour when `addAdsorptionTerm` is never called, and a declaration cannot carry the terms.\n",
     "**a reactor with no reaction is refused.** The class logs a warning and returns its feed through; a tube with no reaction is a tube, and passing it through would hide a wiring error.\n",
@@ -181,6 +181,19 @@ type = "vector"
 unit = "dimensionless"
 length = "number_of_steps + 1"
 description = "every station's conversion of the key component.\n"
+[outputs.reaction_rate_profile]
+type = "vector"
+unit = "mol/(m**3*s)"
+length = "number_of_steps + 1"
+description = "every station's summed volumetric reaction rate - the class's `ReactionRate_mol_m3s` column. **The first output on the vocabulary's `MolarRateDensity` dimension**, added for it.\n"
+[outputs.molar_flow_profile]
+type = "matrix"
+unit = "mol/s"
+shape = "one row per station, one column per component, the feed's order then the added species'"
+description = "every station's molar flow of every component - the class's `F_<component>_mol_s` columns. A matrix rather than a vector per component, because the component set is the run's.\n"
+[outputs.residence_time]
+unit = "s"
+description = "`getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.\n"
 [[valid_range]]
 quantity = "length"
 min = 0

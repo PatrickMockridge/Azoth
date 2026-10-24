@@ -6353,6 +6353,15 @@ class PlugFlowReactorResult(_HasWarnings):
     #: every station's conversion of the key component.
     conversion_profile: tuple[float, ...]
 
+    #: every station's summed volumetric reaction rate - the class's `ReactionRate_mol_m3s` column. **The first output on the vocabulary's `MolarRateDensity` dimension**, added for it.
+    reaction_rate_profile: tuple[Q, ...]
+
+    #: every station's molar flow of every component - the class's `F_<component>_mol_s` columns. A matrix rather than a vector per component, because the component set is the run's.
+    molar_flow_profile: tuple[tuple[Q, ...], ...]
+
+    #: `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
+    residence_time: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

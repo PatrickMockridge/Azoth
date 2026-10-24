@@ -478,6 +478,9 @@ impl CalcResult for PlugFlowReactorResult {
         "temperature_profile",
         "pressure_profile",
         "conversion_profile",
+        "reaction_rate_profile",
+        "molar_flow_profile",
+        "residence_time",
         "warnings",
     ];
 

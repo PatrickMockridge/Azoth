@@ -8180,6 +8180,11 @@
       "factor": 1.0,
       "offset": 0.0
     },
+    "mol/(m**3*s)": {
+      "dimension": "amount_concentration_rate",
+      "factor": 1.0,
+      "offset": 0.0
+    },
     "mol/kg": {
       "dimension": "molality",
       "factor": 1.0,

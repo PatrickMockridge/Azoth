@@ -24,6 +24,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "time",
     "amount",
     "molar_flow",
+    "amount_concentration_rate",
     "mass_density",
     "mass_flux",
     "velocity",
@@ -67,6 +68,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("time", [0, 0, 1, 0, 0, 0, 0]),
     ("amount", [0, 0, 0, 0, 0, 1, 0]),
     ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
+    ("amount_concentration_rate", [-3, 0, -1, 0, 0, 1, 0]),
     ("mass_density", [-3, 1, 0, 0, 0, 0, 0]),
     ("mass_flux", [-2, 1, -1, 0, 0, 0, 0]),
     ("velocity", [1, 0, -1, 0, 0, 0, 0]),
@@ -135,6 +137,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "m**3/s",
     "kg/s",
     "mol/s",
+    "mol/(m**3*s)",
     "mol",
     "kg",
     "kg/m**3",
@@ -213,6 +216,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("m**3/s", [3, 0, -1, 0, 0, 0, 0]),
     ("kg/s", [0, 1, -1, 0, 0, 0, 0]),
     ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
+    ("mol/(m**3*s)", [-3, 0, -1, 0, 0, 1, 0]),
     ("mol", [0, 0, 0, 0, 0, 1, 0]),
     ("kg", [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
@@ -310,6 +314,9 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("m**3/s", |v| crate::units::cubic_meters_per_second(v).value),
     ("kg/s", |v| crate::units::kilograms_per_second(v).value),
     ("mol/s", |v| crate::units::moles_per_second(v).value),
+    ("mol/(m**3*s)", |v| {
+        crate::units::moles_per_cubic_meter_second(v).value
+    }),
     ("mol", |v| crate::units::moles(v).value),
     ("kg", |v| crate::units::kilograms(v).value),
     ("kg/m**3", |v| {
@@ -641,6 +648,10 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     (
         "mol/s",
         "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription.",
+    ),
+    (
+        "mol/(m**3*s)",
+        "uom carries a molar concentration and a molar flow, and no quantity for one over a volume over a time: every unit of the dimension converts through this crate's `MolarRateDensity` instead - `mol/(m**3*s)` itself, the SI base, through `moles_per_cubic_meter_second` - so none of them gets a type ascription.",
     ),
     (
         "Pa*m**6/mol**2",

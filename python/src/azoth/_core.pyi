@@ -2778,6 +2778,9 @@ class PlugFlowReactorResult:
     temperature_profile: list[Qty]
     pressure_profile: list[Qty]
     conversion_profile: list[float]
+    reaction_rate_profile: list[Qty]
+    molar_flow_profile: list[list[Qty]]
+    residence_time: Qty
     warnings: list[Warning]
 
 @final

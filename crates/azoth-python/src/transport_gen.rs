@@ -15963,6 +15963,15 @@ pub struct PyPlugFlowReactorResult {
     /// every station's conversion of the key component.
     #[pyo3(get)]
     pub conversion_profile: Vec<f64>,
+    /// every station's summed volumetric reaction rate - the class's `ReactionRate_mol_m3s` column. **The first output on the vocabulary's `MolarRateDensity` dimension**, added for it.
+    #[pyo3(get)]
+    pub reaction_rate_profile: Vec<PyQty>,
+    /// every station's molar flow of every component - the class's `F_<component>_mol_s` columns. A matrix rather than a vector per component, because the component set is the run's.
+    #[pyo3(get)]
+    pub molar_flow_profile: Vec<Vec<PyQty>>,
+    /// `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
+    #[pyo3(get)]
+    pub residence_time: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15972,7 +15981,7 @@ pub struct PyPlugFlowReactorResult {
 impl PyPlugFlowReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "PlugFlowReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, conversion={:?}, pressure_drop={:?}, outlet_temperature={:?}, heat_duty={:?}, positions={:?}, temperature_profile={:?}, pressure_profile={:?}, conversion_profile={:?}, {} warning(s))",
+            "PlugFlowReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, conversion={:?}, pressure_drop={:?}, outlet_temperature={:?}, heat_duty={:?}, positions={:?}, temperature_profile={:?}, pressure_profile={:?}, conversion_profile={:?}, reaction_rate_profile={:?}, molar_flow_profile={:?}, residence_time={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -15986,6 +15995,9 @@ impl PyPlugFlowReactorResult {
             self.temperature_profile,
             self.pressure_profile,
             self.conversion_profile,
+            self.reaction_rate_profile,
+            self.molar_flow_profile,
+            self.residence_time,
             self.warnings.len()
         )
     }
@@ -16051,6 +16063,30 @@ impl From<&azoth_process::models::plug_flow_reactor::PlugFlowReactorResult>
                 })
                 .collect(),
             conversion_profile: r.conversion_profile.clone(),
+            reaction_rate_profile: r
+                .reaction_rate_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol/(m**3*s)".to_string(),
+                })
+                .collect(),
+            molar_flow_profile: r
+                .molar_flow_profile
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|v| PyQty {
+                            magnitude_si: *v,
+                            unit: "mol/s".to_string(),
+                        })
+                        .collect()
+                })
+                .collect(),
+            residence_time: PyQty {
+                magnitude_si: r.residence_time.value,
+                unit: "s".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

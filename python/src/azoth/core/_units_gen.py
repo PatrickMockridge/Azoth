@@ -31,6 +31,7 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "m**3/s": "meter**3/second",
     "kg/s": "kilogram/second",
     "mol/s": "mole/second",
+    "mol/(m**3*s)": "mole/(meter**3*second)",
     "mol": "mole",
     "kg": "kilogram",
     "kg/m**3": "kilogram/meter**3",

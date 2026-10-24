@@ -152,6 +152,7 @@ class March:
     pressures: tuple[float, ...]
     conversions: tuple[float, ...]
     rates: tuple[float, ...]
+    flows: tuple[tuple[float, ...], ...]
     outlet_z: tuple[float, ...]
     outlet_n: float
     outlet_t: float
@@ -424,6 +425,9 @@ def plug_flow_reactor(
             from_si(_v, "Pa") for _v in tuple(p * 1.0e5 for p in march.pressures)
         ),
         conversion_profile=march.conversions,
+        reaction_rate_profile=tuple(from_si(_v, "mol/(m**3*s)") for _v in march.rates),
+        molar_flow_profile=tuple(tuple(from_si(_v, "mol/s") for _v in row) for row in march.flows),
+        residence_time=from_si(march.residence_time, "s"),
         warnings=tuple(warnings),
     )
 
@@ -486,6 +490,7 @@ def _march(
 
     positions, temperatures, pressures = [0.0], [temperature], [pressure]
     conversions, rates = [0.0], [0.0]
+    station_flows: list[tuple[float, ...]] = [tuple(flows)]
 
     def derivatives(trial: list[float], current: State) -> list[float]:
         return _derivatives(
@@ -531,9 +536,6 @@ def _march(
         # `state` at the end of the loop is *not* what the properties hold - which is what
         # makes `calculateResidenceTime`, called before the class's final update, read a
         # ninety-step temperature.
-        if not fully_coupled and step % update_every == 0 and step < number_of_steps:
-            properties = _state_at(species, state[:n], temperature, pressure)
-
         conversions.append(
             min(1.0, max(0.0, 1.0 - state[key_index] / initial_key))
             if initial_key > 1.0e-30
@@ -543,6 +545,13 @@ def _march(
         positions.append(step * dz)
         temperatures.append(temperature)
         pressures.append(pressure)
+        station_flows.append(tuple(state[:n]))
+
+        # **The refresh is after the station is recorded**, so the recorded rate is the one this
+        # step's derivative used: the class's refresh point carries the old rate and the new one
+        # starts a station later.
+        if not fully_coupled and step % update_every == 0 and step < number_of_steps:
+            properties = _state_at(species, state[:n], temperature, pressure)
 
     final = state[:n]
     total = sum(final)
@@ -586,6 +595,7 @@ def _march(
         pressures=tuple(pressures),
         conversions=tuple(conversions),
         rates=tuple(rates),
+        flows=tuple(station_flows),
         outlet_z=tuple(f / total for f in final),
         outlet_n=total,
         outlet_t=temperature,

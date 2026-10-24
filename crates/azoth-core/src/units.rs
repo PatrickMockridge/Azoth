@@ -716,6 +716,93 @@ impl Div<f64> for MolarFlow {
     }
 }
 
+/// **The second dimension in the library with a type of its own.** `uom` carries a molar
+/// concentration and a molar flow and no quantity for one over a volume over a time, so the
+/// reactor's volumetric reaction rate - `mol/(m**3*s)` - converts through this type, exactly as
+/// a molar flow converts through [`MolarFlow`].
+///
+/// The arithmetic is the bound, as it is there: rates add, subtract and compare, and a rate
+/// scales by a scalar. There is no product of two rates, because no calculation here has one.
+#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
+pub struct MolarRateDensity {
+    /// The SI base magnitude, in `mol/(m**3*s)`.
+    pub value: f64,
+}
+
+impl MolarRateDensity {
+    /// A rate from its SI base magnitude.
+    #[must_use]
+    pub fn from_si(value: f64) -> Self {
+        Self { value }
+    }
+
+    /// A rate in moles per cubic metre per second, which is the dimension's SI base.
+    #[must_use]
+    pub fn moles_per_cubic_meter_second(value: f64) -> Self {
+        Self { value }
+    }
+}
+
+impl Add for MolarRateDensity {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            value: self.value + other.value,
+        }
+    }
+}
+
+impl Sub for MolarRateDensity {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            value: self.value - other.value,
+        }
+    }
+}
+
+impl Neg for MolarRateDensity {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self { value: -self.value }
+    }
+}
+
+impl AddAssign for MolarRateDensity {
+    fn add_assign(&mut self, other: Self) {
+        self.value += other.value;
+    }
+}
+
+impl SubAssign for MolarRateDensity {
+    fn sub_assign(&mut self, other: Self) {
+        self.value -= other.value;
+    }
+}
+
+impl Mul<f64> for MolarRateDensity {
+    type Output = Self;
+
+    fn mul(self, scale: f64) -> Self {
+        Self {
+            value: self.value * scale,
+        }
+    }
+}
+
+impl Div<f64> for MolarRateDensity {
+    type Output = Self;
+
+    fn div(self, scale: f64) -> Self {
+        Self {
+            value: self.value / scale,
+        }
+    }
+}
+
 /// A molar flow rate in kilomoles per hour.
 ///
 /// The vocabulary's constructor for `kmol/h`, and the reason the generated
@@ -734,6 +821,15 @@ pub fn kilomoles_per_hour(value: f64) -> MolarFlow {
 #[must_use]
 pub fn moles_per_second(value: f64) -> MolarFlow {
     MolarFlow::moles_per_second(value)
+}
+
+/// A volumetric reaction rate in moles per cubic metre per second, the dimension's SI base.
+///
+/// The constructor is `MolarRateDensity`'s own, kept here because the generated conversion
+/// table calls a free function for every unit whose dimension `uom` does not carry.
+#[must_use]
+pub fn moles_per_cubic_meter_second(value: f64) -> MolarRateDensity {
+    MolarRateDensity::moles_per_cubic_meter_second(value)
 }
 
 /// The canonical unit strings the spec schema permits.

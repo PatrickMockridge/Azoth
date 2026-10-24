@@ -24,7 +24,7 @@
 
 use azoth_core::units::{
     DiffusionCoefficient, DynamicViscosity, Length, Mass, MassDensity, MassRate, MolarEnergy,
-    Power, Pressure, ThermalConductance, ThermodynamicTemperature, Velocity, Volume,
+    Power, Pressure, ThermalConductance, ThermodynamicTemperature, Time, Velocity, Volume,
 };
 use azoth_core::{AzothError, Result, Warning};
 use serde::ser::SerializeSeq;
@@ -142,6 +142,13 @@ impl WireScalar for Mass {
 
 impl WireScalar for Volume {
     const UNIT: &'static str = "m**3";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Time {
+    const UNIT: &'static str = "s";
     fn magnitude(&self) -> f64 {
         self.value
     }

@@ -88,6 +88,19 @@ def _expected_result(result: Any, case: dict[str, Any]) -> Any:
             updates[name] = type(current)(declared, current.units)
         elif isinstance(current, tuple) and current and isinstance(current[0], pint.Quantity):
             updates[name] = tuple(type(current[0])(value, current[0].units) for value in declared)
+        elif (
+            isinstance(current, tuple)
+            and current
+            and isinstance(current[0], tuple)
+            and current[0]
+            and isinstance(current[0][0], pint.Quantity)
+        ):
+            # **A matrix whose entries carry a unit** - `plug_flow_reactor`'s per-station molar
+            # flows. The case states one row of magnitudes per station in the declared unit.
+            unit = current[0][0].units
+            updates[name] = tuple(
+                tuple(type(current[0][0])(value, unit) for value in row) for row in declared
+            )
         elif isinstance(current, tuple) and current and dataclasses.is_dataclass(current[0]):
             # A `record_list` output: the case records one mapping per row, each holding the
             # fields that row states. Rebuilt through the element's constructor rather than

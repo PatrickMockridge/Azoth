@@ -6108,6 +6108,9 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         temperature_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.temperature_profile),
         pressure_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_profile),
         conversion_profile=tuple(result.conversion_profile),
+        reaction_rate_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.reaction_rate_profile),
+        molar_flow_profile=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.molar_flow_profile),
+        residence_time=from_si(result.residence_time.magnitude_si, result.residence_time.unit),
         warnings=_warnings(result.warnings),
     )
 

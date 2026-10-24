@@ -366,6 +366,23 @@ pub fn plug_flow_reactor(
             // final `updateSystemState`, reads a state at the *ninety*-step temperature rather
             // than the outlet's. Measured: `3.3649` s against the `3.2132` the outlet state
             // gives. The port reproduces that rather than tidying it.
+            // **The recorded rate is the one this step's derivative used**, so it is taken
+            // before the refresh: measured, the class's station at the refresh point carries
+            // the *old* rate (`5.428858e-2` at `0.50` m) and the new one starts a station later
+            // (`6.103087e-2` at `0.55` m).
+            let conversion = if initial_key_moles > 1.0e-30 {
+                (1.0 - settled[key_index] / initial_key_moles).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            let total_rate = total_reaction_rate(setup, &properties.borrow());
+            profile.positions.push(step_index as f64 * dz);
+            profile.temperatures.push(temperature);
+            profile.pressures.push(pressure_bar);
+            profile.conversions.push(conversion);
+            profile.rates.push(total_rate);
+            profile.flows.push(settled[..n_components].to_vec());
+
             if setup.thermodynamic_coupling == ThermodynamicCoupling::FrozenProperties
                 && step_index % update_every == 0
                 && step_index < steps
@@ -379,19 +396,6 @@ pub fn plug_flow_reactor(
                     properties.replace(refreshed);
                 }
             }
-
-            let conversion = if initial_key_moles > 1.0e-30 {
-                (1.0 - settled[key_index] / initial_key_moles).clamp(0.0, 1.0)
-            } else {
-                0.0
-            };
-            let total_rate = total_reaction_rate(setup, &properties.borrow());
-            profile.positions.push(step_index as f64 * dz);
-            profile.temperatures.push(temperature);
-            profile.pressures.push(pressure_bar);
-            profile.conversions.push(conversion);
-            profile.rates.push(total_rate);
-            profile.flows.push(settled[..n_components].to_vec());
         },
     );
 

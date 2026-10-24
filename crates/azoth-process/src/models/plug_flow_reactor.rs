@@ -12,7 +12,7 @@
 
 use azoth_core::units::{
     DiffusionCoefficient, HeatTransfer, MassDensity, MolarEnergy, Power, Pressure,
-    ThermodynamicTemperature, joules_per_mole, kelvins, pascals, watts,
+    ThermodynamicTemperature, Time, joules_per_mole, kelvins, pascals, seconds, watts,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use azoth_reactions::databank::stoichiometry;
@@ -64,6 +64,13 @@ pub struct PlugFlowReactorResult {
     pub pressure_profile: Vec<f64>,
     /// Every station's conversion.
     pub conversion_profile: Vec<f64>,
+    /// Every station's summed volumetric reaction rate, mol/(m3*s).
+    pub reaction_rate_profile: Vec<f64>,
+    /// Every station's molar flow of every component, mol/s: one row per station.
+    pub molar_flow_profile: Vec<Vec<f64>>,
+    /// `getResidenceTime()`, s.
+    #[serde(serialize_with = "scalar")]
+    pub residence_time: Time,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -265,6 +272,9 @@ impl PlugFlowReactorResult {
             // to the declaration's pascals happens here and nowhere else.
             pressure_profile: profile.pressures.iter().map(|p| p * 1.0e5).collect(),
             conversion_profile: profile.conversions.clone(),
+            reaction_rate_profile: profile.rates.clone(),
+            molar_flow_profile: profile.flows.clone(),
+            residence_time: seconds(numbers.residence_time),
             warnings,
         }
     }

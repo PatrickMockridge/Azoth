@@ -335,3 +335,100 @@ fn an_unknown_scheme_name_is_the_default_and_not_a_refusal() {
         "the class's match is case-sensitive"
     );
 }
+
+/// **`process.plug_flow_reactor`'s molar-flow matrix**, which the generated case test cannot
+/// carry: a model case's expected values are numbers, vectors and strings, and this is a matrix.
+/// `SELF_ASSERTED_EXPECTATIONS` names this test for that reason.
+///
+/// The row is the capture's `rk4_default`: station 0 is the feed with the two product species at
+/// the class's `1e-20` floor, station 100 is the outlet, and the refresh boundary is where the
+/// recorded rate lags the refreshed properties by one station - `5.428858e-2` at `0.50` m and
+/// `6.103087e-2` at `0.55` m.
+#[test]
+fn the_model_publishes_the_captures_molar_flow_profile() {
+    use azoth_core::units::{kelvins, pascals, watts_per_square_meter_kelvin};
+    use azoth_process::models::plug_flow_reactor::plug_flow_reactor;
+
+    let components: Vec<String> = ["methane", "oxygen", "nitrogen"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let z = [0.05, 0.10, 0.85];
+    let result = plug_flow_reactor(
+        &components,
+        1.0,
+        &z,
+        pascals(5.0e5),
+        kelvins(600.0),
+        5.0,
+        0.1,
+        1.0,
+        "adiabatic",
+        kelvins(298.15),
+        watts_per_square_meter_kelvin(50.0),
+        100.0,
+        "rk4",
+        10.0,
+        "frozen_properties",
+        "methanecombustion",
+        &[1.0, 1.0],
+        "power_law",
+        1.0e4,
+        80_000.0,
+        0.0,
+        -802_000.0,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the reactor marches");
+
+    let close = |got: f64, want: f64, what: &str| {
+        assert!(
+            (got - want).abs() / want.abs().max(1e-30) < 5e-3,
+            "{what}: {got} against {want}"
+        );
+    };
+
+    assert_eq!(result.molar_flow_profile.len(), 101, "one row per station");
+    let first = &result.molar_flow_profile[0];
+    assert_eq!(first.len(), 5, "one column per component");
+    close(first[0], 5.0e-2, "inlet methane");
+    close(first[1], 1.0e-1, "inlet oxygen");
+    close(first[2], 8.5e-1, "inlet nitrogen");
+    assert_eq!(
+        first[3], 1.0e-20,
+        "the added CO2 starts on the class's floor"
+    );
+    assert_eq!(
+        first[4], 1.0e-20,
+        "the added water starts on the class's floor"
+    );
+
+    close(
+        result.reaction_rate_profile[10],
+        5.428_858e-2,
+        "rate at the refresh",
+    );
+    close(
+        result.reaction_rate_profile[11],
+        6.103_087e-2,
+        "rate after it",
+    );
+
+    let last = &result.molar_flow_profile[100];
+    close(last[0], 4.466_655_05e-2, "outlet methane");
+    close(last[1], 8.933_310_11e-2, "outlet oxygen");
+    close(last[2], 8.5e-1, "outlet nitrogen");
+    close(last[3], 5.333_449_45e-3, "outlet CO2");
+    close(last[4], 1.066_689_89e-2, "outlet water");
+    close(
+        result.residence_time.value,
+        3.364_932_946_581_431_5,
+        "residence time",
+    );
+}
