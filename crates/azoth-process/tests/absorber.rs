@@ -707,14 +707,8 @@ fn the_absorber_row_publishes_the_post_init_density() {
 #[test]
 fn the_stripper_row_publishes_the_post_init_density() {
     let out = distillation_column(&hydrocarbon_stripper()).expect("the stripper converges");
-    let components = [
-        "methane",
-        "propane",
-        "n-butane",
-        "n-pentane",
-        "n-heptane",
-    ]
-    .map(str::to_string);
+    let components =
+        ["methane", "propane", "n-butane", "n-pentane", "n-heptane"].map(str::to_string);
     let report = mechanical_design(
         &out.trays,
         &components,
