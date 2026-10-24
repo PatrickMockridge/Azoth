@@ -457,6 +457,8 @@ public surface of forty-odd getters.
 
 ```bash
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe reactor_mechanical \
+  > captures/process_reactor_mechanical_design.tsv
 ```
 
 **`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
@@ -509,6 +511,60 @@ produced the false claim. **And the `216.19496855345912` mm wall is the probe's 
 `calcDesign`, and this row constructs the design directly and so sizes against the base class's
 `100.0` bara initialiser - a property of the measurement, not of the class. Both corrections are
 in the issue's own "what I am not claiming" section.
+
+**A fifth row is the stripping column's own**, and it is the same class a second time.
+`StrippingColumn extends AbsorptionColumn extends DistillationColumn`, so it inherits
+`DistillationColumnMechanicalDesign` and overrides no getter of it. The row is built from the same
+recipe as `process_absorber.tsv`'s `hydrocarbon_stripper` row - five trays at 12 bara, 150 kg/hr of
+stripping gas against 900 kg/hr of rich liquid, both at 70 C, the `1e-4` K gate and direct
+substitution - so the two captures describe one state rather than two copies of one. It carries
+the same `#4140` read: `tray0_liquid_density_kg_per_m3=0.0`, `weir_loading=Infinity` and
+`tray_pressure_drop_Pa=5.0`, which one `initProperties()` moves to `631.6396155323132`,
+`3.480252186825798` and `8.098192314185997`. The vessel is `0.5` m by `8.8` m at
+`216.19496855345912` mm - the base class's `100.0` bara initialiser, the same artefact the binary
+rows carry - with `8` actual trays at the `0.65` efficiency and both duties zero, because a
+stripper has no ends.
+
+**`ProcessProbe reactor_mechanical` is `ReactorMechanicalDesign`, which is `GibbsReactor`'s own
+vessel.** `GibbsReactor` overrides `getMechanicalDesign()` (`GibbsReactor.java:700`) and lazily
+builds it; `PlugFlowReactor` overrides nothing, so its `getMechanicalDesign()` is
+`ProcessEquipmentBaseClass`'s, whose `calcDesign()` only reads design specifications and computes
+no vessel - **there is nothing there to capture.** The reactor class reads the **inlet** stream of
+a `TwoPortInterface` and nothing else: its pressure, temperature, volumetric flow
+(`getFlowRate("m3/hr")`) and the fluid's system density (`getDensity("kg/m3")`), then a catalyst
+volume from a space velocity, a vessel from a bed fill fraction and a target L/D, an ASME VIII
+Div 1 shell and head, an Ergun bed drop and a weight. **No capture in this directory held the
+class.**
+
+**The three rows separate every branch that changes an answer.** The defaults row is the ammonia
+feed at 300 bara, where `flow/GHSV` floors the catalyst volume at `0.01` m3 and the shell is
+`69.85605419136324` mm at a `330.0` bara design pressure. The CSTR row takes the LHSV branch,
+which is the only place `reactorType` is read, and its `1.5` 1/hr keeps the vessel **above** the
+`0.5` m diameter floor - at every default-GHSV flow the floor answers, and a capture that only
+ever reads `0.5` does not measure the cube root: this row reports
+`vessel_diameter_m=0.5385511691956425` and `vessel_length_m=2.15420467678257`. The high-pressure
+row feeds 1 bara with `maxOperationPressure` stated as `150.0`, so `max(inlet, maxOperation)`
+takes the max branch (`165.0` bara design) and its 299 m3/hr over the default `5000` keeps the
+GHSV division above the floor on a gas whose density is `0.2767` kg/m3, where the Ergun inertial
+term is a third of the answer.
+
+**Two branches cannot answer, and the capture is what makes that a measurement.**
+
+- **The head thickness is always the shell's.** The 2:1 ellipsoidal form divides by
+  `2SE - 0.2p` and the shell by `2SE - 1.2p`, so at every positive design pressure the head is
+  thinner and `Math.max(head, shell)` reports the shell. `head_thickness_mm` equals
+  `shell_thickness_mm` on all three rows, to the last digit.
+- **The L/D clamps are unreachable.** The diameter is built at the target `4.0` and the length is
+  `4.0 * D`, so the ratio is exactly `4.0` and neither the `2.0` floor nor the `8.0` ceiling can
+  fire on any state the class can reach.
+
+**Five configured parameters are setters with no getters.** `ghsv`, `lhsv`,
+`catalystBulkDensity`, `catalystParticleDiameter` and `bedVoidFraction` therefore appear as
+`requested_` keys - the probe's statement of what it configured, with the class's own
+initialisers on the defaults row - and are not a reading of the class. The six that do have
+getters are printed as `class_` keys, and `calcDesign`'s own `super.calcDesign()` leaves
+`joint_efficiency=1.0` and `corrosion_allowance=0.0` at the pin, which is why those two are class
+defaults and not design-standard output.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

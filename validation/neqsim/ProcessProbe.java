@@ -200,6 +200,9 @@ public class ProcessProbe {
       case "mechanical":
         mechanicalRows();
         break;
+      case "reactor_mechanical":
+        reactorMechanicalRows();
+        break;
       case "packed_column":
         packedColumnRows();
         break;
@@ -1011,14 +1014,24 @@ public class ProcessProbe {
   /// renames the same two inlets. Both rows here are the classes' own tests, re-cased on PR:
   /// each pins **every tray** to one temperature, because an isothermal absorber is what those
   /// tests solve, and each is printed on the class's own product getters.
+  /// **The hydrocarbon stripper's two compositions, in one place.** The product capture's
+  /// `hydrocarbon_stripper` row and the mechanical capture's stripper row are two readings of one
+  /// state, so they share the recipe rather than copying it.
+  static final String[] STRIPPER_COMPONENTS =
+      new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" };
+  static final double[] STRIPPER_GAS_Z =
+      new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
+  static final double[] STRIPPER_LIQUID_Z =
+      new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+
   static void absorberRows() {
     String[] gas = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
         "n-heptane" };
     double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
     double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
-    String[] strip = new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" };
-    double[] stripZ = new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
-    double[] richZ = new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+    String[] strip = STRIPPER_COMPONENTS;
+    double[] stripZ = STRIPPER_GAS_Z;
+    double[] richZ = STRIPPER_LIQUID_Z;
 
     // **Three rows per machine, and the difference between them is the gate.**
     // `AbsorptionColumnTest` and `StrippingColumnTest` both solve an isothermal column: they
@@ -1103,12 +1116,27 @@ public class ProcessProbe {
         0.0);
   }
 
-  /// The full row, with the Murphree pair the efficiency rows carry and every other row leaves
-  /// null.
-  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
-      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
-      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
-      boolean reactive, Double murphree, String componentName, double componentEfficiency) {
+  /// One absorber or stripper state, held so two readings of it - the product capture and the
+  /// mechanical design - are the same run rather than two copies of one recipe.
+  static final class AbsorberCase {
+    final Stream gas;
+    final Stream solvent;
+    final neqsim.process.equipment.absorber.AbsorptionColumn column;
+
+    AbsorberCase(Stream gas, Stream solvent,
+        neqsim.process.equipment.absorber.AbsorptionColumn column) {
+      this.gas = gas;
+      this.solvent = solvent;
+      this.column = column;
+    }
+  }
+
+  /// The construction and the run, separated from the printing.
+  static AbsorberCase runAbsorber(String label, String[] gasNames, double[] gasZ,
+      double gasKgPerHour, double gasC, String[] solventNames, double[] solventZ,
+      double solventKgPerHour, double solventC, int trays, double bara, double stageC,
+      double tolerance, String solver, boolean reactive, Double murphree, String componentName,
+      double componentEfficiency) {
     Stream gas = feedMass("gas", gasNames, gasZ, gasC + 273.15, bara, gasKgPerHour);
     Stream solvent = feedMass("solvent", solventNames, solventZ, solventC + 273.15, bara,
         solventKgPerHour);
@@ -1164,6 +1192,21 @@ public class ProcessProbe {
     process.add(solvent);
     process.add(column);
     process.run();
+    return new AbsorberCase(gas, solvent, column);
+  }
+
+  /// The full row, with the Murphree pair the efficiency rows carry and every other row leaves
+  /// null.
+  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
+      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
+      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
+      boolean reactive, Double murphree, String componentName, double componentEfficiency) {
+    AbsorberCase unit = runAbsorber(label, gasNames, gasZ, gasKgPerHour, gasC, solventNames,
+        solventZ, solventKgPerHour, solventC, trays, bara, stageC, tolerance, solver, reactive,
+        murphree, componentName, componentEfficiency);
+    Stream gas = unit.gas;
+    Stream solvent = unit.solvent;
+    neqsim.process.equipment.absorber.AbsorptionColumn column = unit.column;
 
     System.out.println(label);
     System.out.println("trays=" + trays);
@@ -4886,6 +4929,21 @@ public class ProcessProbe {
     // `DistillationColumn`, throws `ClassCastException` from `PressureVesselDesignStandard:36`.
     // The class is the separator family's sizing for a machine this port does not carry, which is
     // why `process.absorption_column`'s mechanical design is the *column's* design and not this.
+    // **And the stripper's own row**, appended last so the four rows above keep their indices. It
+    // is the same state as the product capture's `hydrocarbon_stripper` row - the same subclass,
+    // the same two feeds, the same gate - and it exists because the stripper inherits every
+    // getter and overrides none: one absorber row cannot settle a second reading.
+    mechanicalStripperRow("hydrocarbon_stripper_mechanical");
+  }
+
+  /// **The stripper's mechanical row**, on the state `absorberRows()` captures as
+  /// `hydrocarbon_stripper`.
+  static void mechanicalStripperRow(String label) {
+    AbsorberCase unit = runAbsorber(label, STRIPPER_COMPONENTS, STRIPPER_GAS_Z, 150.0, 70.0,
+        STRIPPER_COMPONENTS, STRIPPER_LIQUID_Z, 900.0, 70.0, 5, 12.0, 0.0, 1.0e-4,
+        "DIRECT_SUBSTITUTION", false, null, null, 0.0);
+    mechanicalRow(label, "stripping_column",
+        (neqsim.process.equipment.distillation.DistillationColumn) unit.column, null, null);
   }
 
   /// The port's own binary column, at the class's own constructor defaults.
@@ -5028,6 +5086,103 @@ public class ProcessProbe {
     System.out.println("internals_total_pressure_drop_pa=" + internals.getTotalPressureDrop());
     System.out.println("column_diameter_override_m=" + design.getColumnDiameterOverride());
     System.out.println("max_contactor_pressure_drop_bar=" + design.getMaxContactorPressureDropBar());
+    System.out.println();
+  }
+
+  /// **`ReactorMechanicalDesign`, which is the reactor vessel's own sizing.**
+  ///
+  /// `calcDesign` reads the **inlet** stream of a `TwoPortInterface` and nothing else: its
+  /// pressure, temperature, volumetric flow and the fluid's density, then sizes a catalyst volume
+  /// from a space velocity, a vessel from a bed fill fraction and a target L/D, an ASME VIII Div 1
+  /// shell and head, an Ergun bed drop and a weight. **No capture in this directory held the
+  /// class.**
+  ///
+  /// **Three rows, and between them every branch that changes an answer.** The defaults row is
+  /// the ammonia feed at 300 bara, where the GHSV division floors the catalyst volume at `0.01`
+  /// m3 and the shell is thick. The CSTR row takes the LHSV branch instead, which is the only
+  /// place `reactorType` is read, and its `1.5` 1/hr is chosen so the vessel is **above** the
+  /// `0.5` m diameter floor: at these flows every default-GHSV row floors it, and a capture that
+  /// only ever reads `0.5` does not measure the cube root. The high-pressure row feeds 1 bara with a stated
+  /// `maxOperationPressure` of `150.0`, so `max(inlet, maxOperation)` takes the max branch, and
+  /// its 299 m3/hr over the default `5000` keeps the GHSV division **above** the floor.
+  ///
+  /// **Five configured parameters have no getter.** `ghsv`, `lhsv`, `catalystBulkDensity`,
+  /// `catalystParticleDiameter` and `bedVoidFraction` are setters only, so each row prints what
+  /// it asked for under `requested_` - the class's own initialisers on the defaults row.
+  static void reactorMechanicalRows() {
+    reactorMechanicalRow("gibbs_fixed_bed_defaults",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 },
+        450.0, 300.0, 1.0, null, null, null);
+    reactorMechanicalRow("gibbs_cstr",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 },
+        450.0, 300.0, 1.0, "CSTR", 1.5, null);
+    reactorMechanicalRow("gibbs_high_pressure",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, 1.0, null, null, 150.0);
+  }
+
+  /// One reactor mechanical row: the feed the class's own Gibbs rows state, the reactor run,
+  /// then the design on the inlet it read.
+  static void reactorMechanicalRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond, String reactorType, Double lhsv,
+      Double maxOperationPressure) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSecond);
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs", inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.run();
+
+    neqsim.process.mechanicaldesign.reactor.ReactorMechanicalDesign design =
+        reactor.getMechanicalDesign();
+    if (reactorType != null) {
+      design.setReactorType(reactorType);
+    }
+    if (lhsv != null) {
+      design.setLHSV(lhsv);
+    }
+    if (maxOperationPressure != null) {
+      design.setMaxOperationPressure(maxOperationPressure);
+    }
+    design.calcDesign();
+
+    System.out.println(label);
+    // ---- What it reads: the inlet's own state, which is the whole of its input surface.
+    System.out.println("inlet_p_bara=" + inlet.getPressure("bara"));
+    System.out.println("inlet_t_c=" + inlet.getTemperature("C"));
+    System.out.println("inlet_flow_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println(
+        "inlet_molar_mass_kg_per_mol=" + inlet.getThermoSystem().getMolarMass());
+    System.out.println("inlet_moles_per_sec=" + inlet.getFlowRate("mol/sec"));
+    // ---- The configuration, from the getters where the class has one and from the probe where
+    // it does not.
+    System.out.println("requested_reactor_type="
+        + (reactorType == null ? "FIXED_BED" : reactorType));
+    System.out.println("requested_ghsv_per_hr=5000.0");
+    System.out.println("requested_lhsv_per_hr=" + (lhsv == null ? 1.0 : lhsv));
+    System.out.println("requested_catalyst_bulk_density_kg_per_m3=800.0");
+    System.out.println("requested_catalyst_particle_diameter_mm=3.0");
+    System.out.println("requested_bed_void_fraction=0.4");
+    System.out.println("class_reactor_type=" + design.getReactorType());
+    System.out.println("class_number_of_beds=" + design.getNumberOfBeds());
+    System.out.println("class_max_operation_pressure=" + design.getMaxOperationPressure());
+    System.out.println("class_max_operation_temperature=" + design.getMaxOperationTemperature());
+    System.out.println("class_joint_efficiency=" + design.getJointEfficiency());
+    System.out.println("class_corrosion_allowance=" + design.getCorrosionAllowance());
+    // ---- And what it answers.
+    System.out.println("vessel_diameter_m=" + design.getVesselDiameter());
+    System.out.println("vessel_length_m=" + design.getVesselLength());
+    System.out.println("shell_thickness_mm=" + design.getShellThickness());
+    System.out.println("head_thickness_mm=" + design.getHeadThickness());
+    System.out.println("design_pressure_bara=" + design.getDesignPressureBara());
+    System.out.println("design_temperature_c=" + design.getDesignTemperatureC());
+    System.out.println("catalyst_volume_m3=" + design.getCatalystVolume());
+    System.out.println("catalyst_mass_kg=" + design.getCatalystMass());
+    System.out.println("bed_pressure_drop_bar=" + design.getBedPressureDrop());
+    System.out.println("empty_vessel_weight_kg=" + design.getEmptyVesselWeight());
+    System.out.println("total_equipped_weight_kg=" + design.getTotalEquippedWeight());
+    System.out.println("reactor_type=" + design.getReactorType());
+    System.out.println("number_of_beds=" + design.getNumberOfBeds());
     System.out.println();
   }
 
