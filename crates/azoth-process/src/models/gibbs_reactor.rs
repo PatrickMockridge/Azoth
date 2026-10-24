@@ -94,6 +94,8 @@ pub struct GibbsReactorResult {
     pub reactor_type: String,
     /// `getNumberOfBeds()`.
     pub number_of_beds: usize,
+    /// `getConditionNumberHistory()`, one 2-norm condition number per recorded pass.
+    pub condition_number_history: Vec<f64>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -146,6 +148,7 @@ impl GibbsReactorResult {
             total_equipped_weight: mechanical.total_equipped_weight,
             reactor_type: mechanical.reactor_type.clone(),
             number_of_beds: mechanical.number_of_beds,
+            condition_number_history: numbers.condition_number_history.clone(),
             warnings,
         }
     }
@@ -208,6 +211,9 @@ pub fn gibbs_reactor(
     armijo_rho: Option<f64>,
     armijo_max_backtracks: Option<usize>,
     adaptive_step_size: Option<bool>,
+    regularization: Option<bool>,
+    regularization_threshold: Option<f64>,
+    regularization_tau: Option<f64>,
 ) -> Result<GibbsReactorResult> {
     let spec = &model_gen::GIBBS_REACTOR_SPEC;
     let mut warnings = Vec::new();
@@ -267,6 +273,10 @@ pub fn gibbs_reactor(
             .unwrap_or(defaults.armijo_max_backtracks as usize)
             as u32,
         adaptive_step_size: adaptive_step_size.unwrap_or(defaults.adaptive_step_size),
+        regularization: regularization.unwrap_or(defaults.regularization),
+        regularization_threshold: regularization_threshold
+            .unwrap_or(defaults.regularization_threshold),
+        regularization_tau: regularization_tau.unwrap_or(defaults.regularization_tau),
     };
     let (outlet, numbers) = solve_equilibrium(&feed, &setup)?;
 

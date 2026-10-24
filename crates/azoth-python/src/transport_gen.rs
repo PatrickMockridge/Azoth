@@ -15031,6 +15031,9 @@ pub struct PyGibbsReactorResult {
     /// `getNumberOfBeds()`.
     #[pyo3(get)]
     pub number_of_beds: usize,
+    /// `getConditionNumberHistory()`: the Jacobian's 2-norm condition number, recorded at `:3009-3026` before the update. **A diagnostic, not an answer** - it is what says the iteration is ill-conditioned rather than only saying so in prose.
+    #[pyo3(get)]
+    pub condition_number_history: Vec<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15040,7 +15043,7 @@ pub struct PyGibbsReactorResult {
 impl PyGibbsReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, vessel_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, design_pressure={:?}, design_temperature={:?}, catalyst_volume={:?}, catalyst_mass={:?}, bed_pressure_drop={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, reactor_type={:?}, number_of_beds={:?}, {} warning(s))",
+            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, vessel_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, design_pressure={:?}, design_temperature={:?}, catalyst_volume={:?}, catalyst_mass={:?}, bed_pressure_drop={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, reactor_type={:?}, number_of_beds={:?}, condition_number_history={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -15065,6 +15068,7 @@ impl PyGibbsReactorResult {
             self.total_equipped_weight,
             self.reactor_type,
             self.number_of_beds,
+            self.condition_number_history,
             self.warnings.len()
         )
     }
@@ -15163,6 +15167,7 @@ impl From<&azoth_process::models::gibbs_reactor::GibbsReactorResult> for PyGibbs
             },
             reactor_type: r.reactor_type.clone(),
             number_of_beds: r.number_of_beds,
+            condition_number_history: r.condition_number_history.clone(),
             warnings: transport(&r.warnings),
         }
     }

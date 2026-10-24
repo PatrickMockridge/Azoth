@@ -1653,6 +1653,9 @@ def gibbs_reactor(
     armijo_rho: float | None = None,
     armijo_max_backtracks: int | None = None,
     adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -1702,4 +1705,7 @@ def gibbs_reactor(
         armijo_rho=armijo_rho,
         armijo_max_backtracks=armijo_max_backtracks,
         adaptive_step_size=adaptive_step_size,
+        regularization=regularization,
+        regularization_threshold=regularization_threshold,
+        regularization_tau=regularization_tau,
     )

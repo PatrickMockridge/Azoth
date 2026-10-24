@@ -593,6 +593,21 @@ the `min_iterations` floor with a final error of `7.0e-16`, **and the class's ow
 `getMassBalanceConverged()` reports false on the row** - a second stopping flag this port does not
 carry, printed so the capture states it.
 
+**Two more rows carry the regularisation and the condition-number diagnostic.**
+`regularized_methane` turns `useRegularization` on at the class's `1e10` threshold: its first
+condition number is `2.901938724391527e12`, so the augmentation fires - `max(tau,
+maxDiag*1e-8)` on the composition block's diagonal, then a re-solve - and the row reaches the
+same adiabatic equilibrium the baseline does. `diagnostic_ammonia` leaves the flag off and
+records the history anyway.
+
+**The history is the whole run, not the first five passes.** The class's disjunction is
+`useRegularization || !conditionNumberHistory.isEmpty() || iteration <= 5`, so once the first
+number is recorded every later pass adds one. Every row prints it, and the port's entries agree
+with the class's where the trajectories do - `1.192020268e7` against `1.1920202268595556e7` on
+the ammonia row's first entry. **The lengths differ where the trajectories do**: the ammonia row
+stops at 104 passes against the class's 117, which is the conditioning divergence the baseline
+rows already carry.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

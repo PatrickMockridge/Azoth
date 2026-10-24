@@ -45,6 +45,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `armijo_rho` | dimensionless | *Optional.* `armijoRho`, the backtracking contraction. **Absent is `0.5`.** |
 | `armijo_max_backtracks` | dimensionless | *Optional.* `armijoMaxBacktracks`. **Absent is `20`**; on exhaustion the search returns `max(alpha, 1e-6)`. |
 | `adaptive_step_size` | - | *Optional.* `useAdaptiveStepSize`: the NASA CEA limit that keeps a major component's change under a factor of `e^ln 5` per step and stops a step crossing zero, floored at `1e-4`. **Absent is `false`.** |
+| `regularization` | - | *Optional.* `useRegularization`: when the Jacobian's 2-norm condition number exceeds the threshold, add `max(tau, maxDiag*1e-8)` to the composition block's diagonal and re-solve. **Absent is `false`.** |
+| `regularization_threshold` | dimensionless | *Optional.* `regularizationThreshold`, the condition number above which the augmentation fires. **Absent is `1e10`.** |
+| `regularization_tau` | dimensionless | *Optional.* `regularizationTau`, the diagonal addition before it is raised to `maxDiag*1e-8`. **Absent is `1e-6`.** |
 
 
 ## Outputs
@@ -75,6 +78,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `total_equipped_weight` | kg | `getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads. |
 | `reactor_type` | - | `getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints. |
 | `number_of_beds` | dimensionless | `getNumberOfBeds()`. |
+| `condition_number_history` | dimensionless | `getConditionNumberHistory()`: the Jacobian's 2-norm condition number, recorded at `:3009-3026` before the update. **A diagnostic, not an answer** - it is what says the iteration is ill-conditioned rather than only saying so in prose. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -109,7 +113,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **`calculateJ`'s javadoc and its code disagree on three signs.** The comment subtracts every term; the code subtracts the first and adds the other three. The code is ported.
 - **a singular Newton system falls back to `SimpleMatrix.pseudoInverse`.** Two species against three active balances - the capture's `steam_methane_hot` row - make the Jacobian singular, and the port calls `solve_least_squares`, which is that inverse's own construction.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` has no other route. The class carries no cubic of its own, so the oracle is built on PR too.
-- **still owed, and named in `ROADMAP.md`**: the Tikhonov regularisation and `runTransient`. **The step controls are in**: `armijo_line_search` and `adaptive_step_size` reproduce the class's own algorithm rows, held to `process_gibbs_algorithms.tsv`.
+- **the step controls and the regularisation are in.** `armijo_line_search`, `adaptive_step_size` and `regularization` reproduce the class's own algorithm rows, held to `process_gibbs_algorithms.tsv`; the augmentation fires on the regularized methane row at `2.9e12` against the `1e10` threshold.
 - **the vessel is `ReactorMechanicalDesign`, read from the inlet.** `GibbsReactor` is a `TwoPortEquipment`, and `calcDesign` takes its feed's pressure, temperature, volumetric flow and **system** density - so a two-phase feed is answered where `Stream::density` refuses. The solve is not on its path.
 - **three branches cannot answer.** The L/D clamps cannot fire, the diameter being built at the target `4.0`; the head is always the shell's, its denominator being the larger; and the catalyst and `0.5` m floors answer at every default GHSV. The capture's `cstr` row lifts the diameter off its floor.
 - **the space velocities are declared dimensionless.** `ghsv` and `lhsv` are reciprocal hours, and the unit vocabulary has no reciprocal-time unit; the values cross unconverted, on the `total_pressure_drop_mbar` precedent.

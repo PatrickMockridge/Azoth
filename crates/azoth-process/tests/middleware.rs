@@ -608,8 +608,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `max_operation_temperature`, `joint_efficiency` and `corrosion_allowance`.
     // `435 + 11 = 446`. **And then the Gibbs solver's five step controls**, on the same entry:
     // `armijo_line_search`, `armijo_c1`, `armijo_rho`, `armijo_max_backtracks` and
-    // `adaptive_step_size`. `446 + 5 = 451`.
-    assert_eq!(walked, 451, "the inputs this test walked");
+    // `adaptive_step_size`. `446 + 5 = 451`. **And then the regularisation's three**, on the
+    // same entry: `regularization`, `regularization_threshold` and `regularization_tau`.
+    // `451 + 3 = 454`.
+    assert_eq!(walked, 454, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

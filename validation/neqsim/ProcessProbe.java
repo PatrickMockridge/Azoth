@@ -3807,11 +3807,28 @@ public class ProcessProbe {
     gibbsAlgorithmRow("adaptive_rwgs",
         new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
         1000.0, 1.0, false, 0.05, 5000, 1.0e-3, false, true);
+    // **The two states `GibbsReactorAlgorithmTest` uses for the regularisation and the
+    // diagnostic.** The flag is on in the first and off in the second; the condition history is
+    // recorded on the first five passes either way.
+    gibbsAlgorithmRow("regularized_methane",
+        new String[] { "methane", "oxygen", "CO2", "CO", "water" },
+        new double[] { 0.05, 0.5, 0.0, 0.0, 0.0 }, 298.15, 100.0, true, 0.01, 10000, 1.0e-3,
+        false, false, true, 1.0e10, 1.0e-6);
+    gibbsAlgorithmRow("diagnostic_ammonia",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 }, 450.0,
+        300.0, false, 0.05, 5000, 1.0e-3, false, false, false, 1.0e10, 1.0e-6);
   }
 
   static void gibbsAlgorithmRow(String label, String[] names, double[] z, double temperatureK,
       double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance,
       boolean armijo, boolean adaptive) {
+    gibbsAlgorithmRow(label, names, z, temperatureK, pressureBara, adiabatic, damping,
+        maxIterations, tolerance, armijo, adaptive, false, 1.0e10, 1.0e-6);
+  }
+
+  static void gibbsAlgorithmRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance,
+      boolean armijo, boolean adaptive, boolean regularization, double threshold, double tau) {
     Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
 
     neqsim.process.equipment.reactor.GibbsReactor reactor =
@@ -3822,6 +3839,9 @@ public class ProcessProbe {
     reactor.setConvergenceTolerance(tolerance);
     reactor.setUseArmijoLineSearch(armijo);
     reactor.setUseAdaptiveStepSize(adaptive);
+    reactor.setUseRegularization(regularization);
+    reactor.setRegularizationThreshold(threshold);
+    reactor.setRegularizationTau(tau);
     reactor.setEnergyMode(adiabatic
         ? neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ADIABATIC
         : neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ISOTHERMAL);
@@ -3851,6 +3871,10 @@ public class ProcessProbe {
         + "\tmass_balance_converged=" + reactor.getMassBalanceConverged());
     System.out.println("gibbs_history=" + joined(reactor.getGibbsEnergyHistory()));
     System.out.println("step_size_history=" + joined(reactor.getStepSizeHistory()));
+    System.out.println("regularization=" + regularization + "\tthreshold=" + threshold
+        + "\ttau=" + tau);
+    System.out.println("condition_number_history="
+        + joined(reactor.getConditionNumberHistory()));
     System.out.println();
   }
 

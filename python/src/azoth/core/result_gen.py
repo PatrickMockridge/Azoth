@@ -6025,6 +6025,9 @@ class GibbsReactorResult(_HasWarnings):
     #: `getNumberOfBeds()`.
     number_of_beds: int
 
+    #: `getConditionNumberHistory()`: the Jacobian's 2-norm condition number, recorded at `:3009-3026` before the update. **A diagnostic, not an answer** - it is what says the iteration is ill-conditioned rather than only saying so in prose.
+    condition_number_history: tuple[float, ...]
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -1532,6 +1532,27 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: None,
             },
+            ModelInput {
+                name: "regularization",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "regularization_threshold",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "regularization_tau",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
         ],
     },
     ModelInputs {

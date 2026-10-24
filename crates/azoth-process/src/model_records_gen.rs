@@ -315,6 +315,7 @@ impl CalcResult for GibbsReactorResult {
         "total_equipped_weight",
         "reactor_type",
         "number_of_beds",
+        "condition_number_history",
         "warnings",
     ];
 

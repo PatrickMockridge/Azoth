@@ -5775,7 +5775,7 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
     )
 
 
-def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float, reactor_type: str | None=None, catalyst_bulk_density: float | None=None, catalyst_particle_diameter: float | None=None, bed_void_fraction: float | None=None, ghsv: float | None=None, lhsv: float | None=None, number_of_beds: int | None=None, max_operation_pressure: float | None=None, max_operation_temperature: float | None=None, joint_efficiency: float | None=None, corrosion_allowance: float | None=None, armijo_line_search: bool | None=None, armijo_c1: float | None=None, armijo_rho: float | None=None, armijo_max_backtracks: int | None=None, adaptive_step_size: bool | None=None) -> GibbsReactorResult:
+def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float, reactor_type: str | None=None, catalyst_bulk_density: float | None=None, catalyst_particle_diameter: float | None=None, bed_void_fraction: float | None=None, ghsv: float | None=None, lhsv: float | None=None, number_of_beds: int | None=None, max_operation_pressure: float | None=None, max_operation_temperature: float | None=None, joint_efficiency: float | None=None, corrosion_allowance: float | None=None, armijo_line_search: bool | None=None, armijo_c1: float | None=None, armijo_rho: float | None=None, armijo_max_backtracks: int | None=None, adaptive_step_size: bool | None=None, regularization: bool | None=None, regularization_threshold: float | None=None, regularization_tau: float | None=None) -> GibbsReactorResult:
     """``process.gibbs_reactor``, computed in Rust."""
     spec = _models_gen.model("process.gibbs_reactor")
     result = _core.gibbs_reactor(
@@ -5805,6 +5805,9 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         None if armijo_rho is None else armijo_rho,
         None if armijo_max_backtracks is None else _count("armijo_max_backtracks", armijo_max_backtracks),
         adaptive_step_size,
+        regularization,
+        None if regularization_threshold is None else regularization_threshold,
+        None if regularization_tau is None else regularization_tau,
     )
     return GibbsReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -5831,6 +5834,7 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         total_equipped_weight=from_si(result.total_equipped_weight.magnitude_si, result.total_equipped_weight.unit),
         reactor_type=result.reactor_type,
         number_of_beds=result.number_of_beds,
+        condition_number_history=tuple(result.condition_number_history),
         warnings=_warnings(result.warnings),
     )
 

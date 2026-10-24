@@ -2935,6 +2935,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "armijo_max_backtracks",
         "dimensionless",
     ),
+    (
+        "process.gibbs_reactor",
+        "regularization_threshold",
+        "dimensionless",
+    ),
+    (
+        "process.gibbs_reactor",
+        "regularization_tau",
+        "dimensionless",
+    ),
     ("process.heat_exchanger", "hot_in_n", "molar_flow"),
     ("process.heat_exchanger", "hot_in_z", "dimensionless"),
     ("process.heat_exchanger", "hot_in_p", "pressure"),

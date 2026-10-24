@@ -78,6 +78,12 @@ pub struct ReactorSetup {
     pub armijo_max_backtracks: u32,
     /// `useAdaptiveStepSize`.
     pub adaptive_step_size: bool,
+    /// `useRegularization`.
+    pub regularization: bool,
+    /// `regularizationThreshold`.
+    pub regularization_threshold: f64,
+    /// `regularizationTau`.
+    pub regularization_tau: f64,
 }
 
 impl Default for ReactorSetup {
@@ -93,6 +99,9 @@ impl Default for ReactorSetup {
             armijo_rho: 0.5,
             armijo_max_backtracks: 20,
             adaptive_step_size: false,
+            regularization: false,
+            regularization_threshold: 1e10,
+            regularization_tau: 1e-6,
         }
     }
 }
@@ -123,6 +132,8 @@ pub struct ReactorNumbers {
     pub gibbs_energy_history: Vec<f64>,
     /// The outlet temperature, K.
     pub temperature: f64,
+    /// `getConditionNumberHistory()`, the 2-norm condition number per recorded pass.
+    pub condition_number_history: Vec<f64>,
 }
 
 /// Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
@@ -155,6 +166,9 @@ pub fn gibbs_reactor(feed: &Stream, setup: &ReactorSetup) -> Result<(Stream, Rea
         armijo_rho: setup.armijo_rho,
         armijo_max_backtracks: setup.armijo_max_backtracks,
         adaptive_step_size: setup.adaptive_step_size,
+        regularization: setup.regularization,
+        regularization_threshold: setup.regularization_threshold,
+        regularization_tau: setup.regularization_tau,
     };
     let state = solve(
         &mixture,
@@ -177,6 +191,7 @@ pub fn gibbs_reactor(feed: &Stream, setup: &ReactorSetup) -> Result<(Stream, Rea
         element_balance_difference: state.element_diff,
         gibbs_energy_history: state.gibbs_history,
         temperature: state.temperature,
+        condition_number_history: state.condition_number_history,
     };
     Ok((outlet, numbers))
 }

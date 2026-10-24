@@ -35,13 +35,18 @@
 //!   zero), and its update is skipped - which is how `testComponentNotInDatabaseMolesUnchanged`
 //!   gets its name.
 //!
-//! **The two step controls are ported, and the capture measures what each does.**
-//! `useArmijoLineSearch` and `useAdaptiveStepSize` are both `false` by default and neither is
-//! reached by a row of `process_gibbs_reactor.tsv`; `validation/neqsim/captures/process_gibbs_algorithms.tsv`
-//! drives them from the class's own algorithm test. The Armijo arm accepts its maximum on that
-//! test's state and only the undamped row backtracks - nine contractions in one pass - which is
-//! why both are in the capture. **The Tikhonov regularisation is still refused**: the flag is
-//! `false` by default and the measured states do not reach it.
+//! **The step controls and the regularisation are ported, and the capture measures what each
+//! does.** All three flags are `false` by default and none is reached by a row of
+//! `process_gibbs_reactor.tsv`; `validation/neqsim/captures/process_gibbs_algorithms.tsv` drives
+//! them from the class's own algorithm test. The Armijo arm accepts its maximum on that test's
+//! state and only the undamped row backtracks; the adaptive limit answers `1.0, 1.0, 0.0193,
+//! ...`; and the augmentation fires on the regularized methane row, whose first condition number
+//! is `2.9e12` against the class's `1e10` threshold.
+//!
+//! **The condition number is recorded on every pass after the first.** The class's disjunction
+//! is `useRegularization || !conditionNumberHistory.isEmpty() || iteration <= 5`, so the history
+//! is the first five passes and then the rest of the run - `getConditionNumberHistory()` is a
+//! diagnostic of the whole trajectory, not a sample of it.
 //!
 //! **This iteration is ill-conditioned, and that bounds how closely a port can match it.** Two
 //! things compound, both the class's own: the `MIN_MOLES = 1e-6` floor puts an `RT/n` entry of
@@ -57,7 +62,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result};
 use azoth_eos::mixture::{Mixture, RootSide};
 use azoth_eos::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
-use azoth_reactions::linalg::{solve_least_squares, solve_lu};
+use azoth_reactions::linalg::{condition_number_2, solve_least_squares, solve_lu};
 
 use crate::reactor::gibbs_database::{GibbsDatabase, GibbsSpecies, R_KJ};
 
@@ -106,6 +111,12 @@ pub struct GibbsSettings {
     pub armijo_max_backtracks: u32,
     /// `useAdaptiveStepSize`, the NASA CEA-style step limiter.
     pub adaptive_step_size: bool,
+    /// `useRegularization`, the Tikhonov diagonal augmentation.
+    pub regularization: bool,
+    /// `regularizationThreshold`, the condition number above which it fires.
+    pub regularization_threshold: f64,
+    /// `regularizationTau`, the diagonal addition before scaling.
+    pub regularization_tau: f64,
 }
 
 impl Default for GibbsSettings {
@@ -121,6 +132,9 @@ impl Default for GibbsSettings {
             armijo_rho: 0.5,
             armijo_max_backtracks: 20,
             adaptive_step_size: false,
+            regularization: false,
+            regularization_threshold: 1e10,
+            regularization_tau: 1e-6,
         }
     }
 }
@@ -159,6 +173,9 @@ pub struct GibbsState {
     /// this port against one of the class's - `getJacobianMatrix()` is public there, and a
     /// trajectory that separates says nothing about which of the two maps moved.
     pub jacobian: Vec<Vec<f64>>,
+    /// `getConditionNumberHistory()`, one 2-norm condition number per pass it was recorded on:
+    /// the first five always, and every pass when regularization is on.
+    pub condition_number_history: Vec<f64>,
 }
 
 /// Minimise the Gibbs energy of a fluid at a temperature and pressure.
@@ -270,6 +287,7 @@ pub fn solve(
     let mut lambdas = [0.0f64; 7];
     let mut temperature_value = temperature.value;
     let mut gibbs_history = Vec::new();
+    let mut condition_history: Vec<f64> = Vec::new();
     let mut objective: Vec<Option<f64>> = vec![None; n];
     let mut converged = false;
     let mut iterations = 0u32;
@@ -297,7 +315,7 @@ pub fn solve(
         let total: f64 = moles.iter().sum();
         let (ln_phi, d_ln_phi_dn) =
             phase_derivatives(mixture, &moles, temperature_value, pressure_bara)?;
-        let jacobian = jacobian(
+        let mut jacobian = jacobian(
             mixture,
             database,
             &species,
@@ -309,7 +327,6 @@ pub fn solve(
             &ln_phi,
             &d_ln_phi_dn,
         );
-        last_jacobian.clone_from(&jacobian);
         let vector = objective_vector(
             &objective,
             &variables,
@@ -330,6 +347,28 @@ pub fn solve(
             _ => solve_least_squares(&jacobian, &negated)?,
         };
 
+        // **`applyRegularization`, called every pass while `iteration <= 5`** even with the
+        // flag off, because the class records the condition number there; and every pass when
+        // it is on. When the augmentation fires the condition drops, and the class then
+        // re-solves the Newton system against the mutated Jacobian - its own condition at
+        // `:3016-3025`, reproduced as written.
+        // **`|| !condition_history.is_empty()` is the class's own disjunction**: once the first
+        // number is recorded, every later pass records one too, so the history is the first
+        // five passes followed by the rest of the run.
+        if settings.regularization || !condition_history.is_empty() || iteration <= 5 {
+            let number = apply_regularization(&settings, &mut jacobian, variables.len())?;
+            condition_history.push(number);
+            if settings.regularization && number < settings.regularization_threshold {
+                delta = match solve_lu(&jacobian, &negated) {
+                    Ok(delta) if delta.iter().all(|value| value.is_finite()) => delta,
+                    _ => solve_least_squares(&jacobian, &negated)?,
+                };
+            }
+        }
+
+        // The state carries the matrix `getJacobianMatrix()` would answer with, which is the
+        // *regularized* one when the augmentation fired - the class mutates its field in place.
+        last_jacobian.clone_from(&jacobian);
         // The class's `columnScaleFactors` are the identity, so `unscaleNewtonStep` is one.
         let delta_norm = delta.iter().map(|v| v * v).sum::<f64>().sqrt();
 
@@ -438,7 +477,35 @@ pub fn solve(
         variables,
         active_elements,
         jacobian: last_jacobian,
+        condition_number_history: condition_history,
     })
+}
+
+/// `applyRegularization`: the 2-norm condition number, and the diagonal augmentation.
+///
+/// **The augmentation fires only above the threshold**, and `tau` is raised to
+/// `maxDiag * 1e-8` when that is larger than the configured value. The first
+/// `variables` diagonal entries are the composition block; the element rows are untouched.
+fn apply_regularization(
+    settings: &GibbsSettings,
+    jacobian: &mut [Vec<f64>],
+    variables: usize,
+) -> Result<f64> {
+    let mut number = condition_number_2(jacobian)?;
+    if settings.regularization && number > settings.regularization_threshold {
+        let max_diag = (0..variables)
+            .map(|i| jacobian[i][i].abs())
+            .fold(0.0_f64, f64::max);
+        let mut tau = settings.regularization_tau;
+        if max_diag > 0.0 {
+            tau = tau.max(max_diag * 1e-8);
+        }
+        for i in 0..variables {
+            jacobian[i][i] += tau;
+        }
+        number = condition_number_2(jacobian)?;
+    }
+    Ok(number)
 }
 
 /// `evaluateTotalGibbsEnergy`: the total Gibbs energy **with the fugacity coefficients**, kJ/mol.

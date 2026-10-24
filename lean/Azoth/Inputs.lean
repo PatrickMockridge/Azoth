@@ -183,6 +183,8 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.gibbs_reactor", "armijo_c1", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.gibbs_reactor", "armijo_rho", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.gibbs_reactor", "armijo_max_backtracks", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.gibbs_reactor", "regularization_threshold", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.gibbs_reactor", "regularization_tau", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.heat_exchanger", "hot_in_n", "mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("unit_ops.heat_exchanger", "hot_in_z", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.heat_exchanger", "hot_in_p", "Pa", [-1, 1, -2, 0, 0, 0, 0]),

@@ -2664,6 +2664,7 @@ class GibbsReactorResult:
     total_equipped_weight: Qty
     reactor_type: str
     number_of_beds: int
+    condition_number_history: list[float]
     warnings: list[Warning]
 
 @final
@@ -5172,6 +5173,9 @@ def gibbs_reactor(
     armijo_rho: float | None = None,
     armijo_max_backtracks: float | None = None,
     adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult: ...
 def heat_exchanger(
     hot_components: list[str],

@@ -66,7 +66,7 @@ from azoth.eos.reference._mixture_state import (
 )
 from azoth.eos.reference.pt_flash import check_composition
 from azoth.process.reference import reactor_mechanical
-from azoth.reactions.reference._linalg import solve_least_squares
+from azoth.reactions.reference._linalg import condition_number_2, solve_least_squares
 
 #: ``GibbsReactor.java``'s own ``elementNames``, which has **seven** entries for an eight-column
 #: table. Index 5 is named ``Ar`` and reads the file's ``Na`` column; index 6 is named ``Z`` and
@@ -266,6 +266,7 @@ class Solved:
     element_in: tuple[float, ...]
     element_out: tuple[float, ...]
     gibbs_history: list[float]
+    condition_number_history: list[float]
 
 
 def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float]:
@@ -311,6 +312,9 @@ def solve(
     armijo_rho: float = 0.5,
     armijo_max_backtracks: int = 20,
     adaptive_step_size: bool = False,
+    regularization: bool = False,
+    regularization_threshold: float = 1.0e10,
+    regularization_tau: float = 1.0e-6,
 ) -> Solved:
     """Minimise the Gibbs energy of a fluid at a temperature and pressure."""
     table = database()
@@ -359,6 +363,7 @@ def solve(
     iterations = 0
     final_error = math.inf
     enthalpy_old = 0.0
+    condition_history: list[float] = []
 
     for iteration in range(1, max_iterations + 1):
         iterations = iteration
@@ -385,6 +390,17 @@ def solve(
             _element_balance(species, moles)[j] - element_in[j] for j in active
         ]
         delta = _solve_linear(jacobian, [-value for value in vector])
+
+        # **``applyRegularization``, every pass while ``iteration <= 5``** even with the flag
+        # off, because the class records the condition number there; every pass when it is on.
+        # When the augmentation fires the condition drops and the class re-solves.
+        if regularization or condition_history or iteration <= 5:
+            number = _apply_regularization(
+                jacobian, variables, regularization, regularization_threshold, regularization_tau
+            )
+            condition_history.append(number)
+            if regularization and number < regularization_threshold:
+                delta = _solve_linear(jacobian, [-value for value in vector])
 
         delta_norm = math.sqrt(sum(value * value for value in delta))
         history.append(_mixture_gibbs(species, moles, temperature_value, cp))
@@ -456,6 +472,7 @@ def solve(
         element_in=tuple(element_in),
         element_out=tuple(element_out),
         gibbs_history=history,
+        condition_number_history=condition_history,
     )
 
 
@@ -485,6 +502,32 @@ def _objective(
             - lagrange
         )
     return values
+
+
+def _apply_regularization(
+    jacobian: list[list[float]],
+    variables: list[int],
+    regularization: bool,
+    threshold: float,
+    tau: float,
+) -> float:
+    """``applyRegularization``: the 2-norm condition number, and the diagonal augmentation.
+
+    **The augmentation fires only above the threshold**, and ``tau`` is raised to
+    ``maxDiag * 1e-8`` when that is larger than the configured value. The first
+    ``len(variables)`` diagonal entries are the composition block; the element rows are
+    untouched. The mutated Jacobian is the caller's, as the class mutates its own field.
+    """
+    number = condition_number_2(jacobian)
+    if regularization and number > threshold:
+        block = len(variables)
+        max_diag = max((abs(jacobian[i][i]) for i in range(block)), default=0.0)
+        if max_diag > 0.0:
+            tau = max(tau, max_diag * 1.0e-8)
+        for i in range(block):
+            jacobian[i][i] += tau
+        number = condition_number_2(jacobian)
+    return number
 
 
 def _total_gibbs_energy(
@@ -735,6 +778,9 @@ def gibbs_reactor(
     armijo_rho: float | None = None,
     armijo_max_backtracks: int | None = None,
     adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -781,6 +827,11 @@ def gibbs_reactor(
         armijo_rho=0.5 if armijo_rho is None else float(armijo_rho),
         armijo_max_backtracks=(20 if armijo_max_backtracks is None else int(armijo_max_backtracks)),
         adaptive_step_size=bool(adaptive_step_size),
+        regularization=bool(regularization),
+        regularization_threshold=(
+            1.0e10 if regularization_threshold is None else float(regularization_threshold)
+        ),
+        regularization_tau=1.0e-6 if regularization_tau is None else float(regularization_tau),
     )
 
     outlet_total = sum(state.moles)
@@ -893,6 +944,7 @@ def gibbs_reactor(
         total_equipped_weight=from_si(mechanical.total_equipped_weight_kg, "kg"),
         reactor_type=mechanical.reactor_type,
         number_of_beds=mechanical.number_of_beds,
+        condition_number_history=tuple(float(value) for value in state.condition_number_history),
         warnings=tuple(warnings),
     )
 

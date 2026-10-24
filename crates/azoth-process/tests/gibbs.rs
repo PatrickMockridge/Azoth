@@ -166,6 +166,9 @@ const ADIABATIC: GibbsSettings = GibbsSettings {
     armijo_rho: 0.5,
     armijo_max_backtracks: 20,
     adaptive_step_size: false,
+    regularization: false,
+    regularization_threshold: 1e10,
+    regularization_tau: 1e-6,
 };
 
 /// The capture's other rows, which are the class's defaults on the tolerance and the cap.
@@ -180,6 +183,9 @@ const DEFAULT: GibbsSettings = GibbsSettings {
     armijo_rho: 0.5,
     armijo_max_backtracks: 20,
     adaptive_step_size: false,
+    regularization: false,
+    regularization_threshold: 1e10,
+    regularization_tau: 1e-6,
 };
 
 /// A feed at a state, with NeqSim's own `addComponent` amounts scaled to one mole per second.
@@ -526,6 +532,9 @@ fn vessel_case(
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the reactor and its vessel resolve")
 }
@@ -779,4 +788,79 @@ fn the_undamped_ammonia_row_backtracks_and_converges() {
         "ammonia is the majority species at {}",
         state.moles[2] / total
     );
+}
+
+/// **The capture's `diagnostic_ammonia` row**: the condition number recorded on every pass.
+///
+/// The class's disjunction records the first five passes unconditionally and every later pass
+/// because the history is no longer empty, so the history is the run's whole length. The port's
+/// fifth entry agrees with the capture's to `3e-8`; the *lengths* differ - the port's ammonia
+/// trajectory stops at 104 passes against the class's 117 - and that divergence is the one the
+/// file's header measures.
+#[test]
+fn the_condition_history_starts_on_the_captures_numbers() {
+    let feed = stream(
+        &["hydrogen", "nitrogen", "ammonia"],
+        &[1.5, 0.5, 0.0],
+        450.0,
+        300.0,
+    );
+    let state = run(&feed, DEFAULT);
+    let capture = [
+        1.192_020_226_859_555_6e7,
+        6_118_443.882_786_845,
+        3_195_189.350_425_550_2,
+        1_697_396.884_701_434_3,
+        917_129.459_367_459_5,
+    ];
+    assert!(
+        state.condition_number_history.len() >= capture.len(),
+        "the history records every pass after the first"
+    );
+    for (index, expected) in capture.iter().enumerate() {
+        let got = state.condition_number_history[index];
+        assert!(
+            (got - expected).abs() / expected < 1e-6,
+            "condition number {index}: {got} against {expected}"
+        );
+    }
+}
+
+/// **The capture's `regularized_methane` row**, where the augmentation actually fires: the first
+/// condition number is `2.9e12`, above the class's `1e10` threshold, so the composition block's
+/// diagonal takes `max(tau, maxDiag*1e-8)` and the system is solved again.
+///
+/// The answer is the same adiabatic methane equilibrium the other rows reach - oxygen
+/// `0.7272576654786476` - and the condition number falls over the run. The trace species are
+/// held to the file's own bands, as everywhere else.
+#[test]
+fn the_regularization_augmentation_fires_and_keeps_the_answer() {
+    let feed = stream(
+        &["methane", "oxygen", "CO2", "CO", "water"],
+        &[0.05, 0.5, 0.0, 0.0, 0.0],
+        298.15,
+        100.0,
+    );
+    let state = run(
+        &feed,
+        GibbsSettings {
+            regularization: true,
+            ..ADIABATIC
+        },
+    );
+    let first = state.condition_number_history[0];
+    assert!(
+        (first - 2.901_938_724_391_527e12).abs() / 2.901_938_724_391_527e12 < 1e-4,
+        "the first condition number is {first}"
+    );
+    assert!(first > 1e10, "the augmentation fires");
+    // **`5e-5` on oxygen and not the file's usual `1e-5`**: the regularized run's adiabatic
+    // path separates from the class's by `1.0e-5` here, which is the same divergence the
+    // baseline rows show, one pass further along.
+    assert_close(&state, &feed, "oxygen", 0.727_257_665_478_647_6, 5e-5);
+    assert_close(&state, &feed, "CO2", 0.090_912_359_667_361_83, 1e-5);
+    assert_close(&state, &feed, "water", 0.181_836_701_254_169_8, 1e-5);
+    assert_close(&state, &feed, "CO", 6.545_554_179_530_483e-6, 1e-4);
+    assert_eq!(state.iterations, 100, "the minIterations floor");
+    assert!(state.converged);
 }
