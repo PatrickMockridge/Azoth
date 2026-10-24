@@ -2651,6 +2651,19 @@ class GibbsReactorResult:
     lagrange_multipliers: list[Qty]
     element_balance_difference: list[Qty]
     gibbs_energy_history: list[Qty]
+    vessel_diameter: Qty
+    vessel_length: Qty
+    shell_thickness: Qty
+    head_thickness: Qty
+    design_pressure: Qty
+    design_temperature: Qty
+    catalyst_volume: Qty
+    catalyst_mass: Qty
+    bed_pressure_drop: Qty
+    empty_vessel_weight: Qty
+    total_equipped_weight: Qty
+    reactor_type: str
+    number_of_beds: int
     warnings: list[Warning]
 
 @final
@@ -5143,6 +5156,17 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: float | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> GibbsReactorResult: ...
 def heat_exchanger(
     hot_components: list[str],

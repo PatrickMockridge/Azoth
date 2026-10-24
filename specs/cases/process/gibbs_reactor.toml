@@ -128,3 +128,119 @@ gibbs_energy_history = [
     -99476.06970222105, -99476.22797639284, -99476.37832759276, -99476.52115283249, -99476.65682919403, -99476.78571483321,
     -99476.90814993235, -99477.02445760493, -99477.1349447544, -99477.23990288957, -99477.33960889891, -99477.4343257856,
 ]
+
+[[cases]]
+id = "reactor_mechanical_fixed_bed_defaults"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ReactorMechanicalDesign.calcDesign` through `GibbsReactor.getMechanicalDesign()`,
+    from `validation/neqsim/captures/process_reactor_mechanical_design.tsv`, row
+    `gibbs_fixed_bed_defaults`: the ammonia feed at 300 bara and 450 K, with every class default.
+    **Only the vessel is asserted.** The equilibrium solve runs and is not compared - this is the
+    capture's ammonia state, whose species settle at fractions a relative comparison cannot hold -
+    so the thirteen outputs here are `calcDesign`'s, and the solve's absence from the expectations
+    is the same fact the `ammonia_isothermal` rows state. The catalyst volume is the `0.01` m3
+    floor and the diameter the `0.5` m floor; the shell is `330.0` bara of design pressure."""
+[cases.inputs]
+components = ["hydrogen", "nitrogen", "ammonia"]
+feed_n = 1.0
+feed_z = [0.75, 0.25, 0.0]
+feed_p = 30000000.0
+feed_t = 450.0
+energy_mode = "isothermal"
+damping_composition = 0.05
+max_iterations = 5000.0
+convergence_tolerance = 0.001
+min_iterations = 100.0
+[cases.expected]
+vessel_diameter = 0.5
+vessel_length = 2.0
+shell_thickness = 69.85605419136324
+head_thickness = 69.85605419136324
+design_pressure = 330.0
+design_temperature = 475.0
+catalyst_volume = 0.01
+catalyst_mass = 8.0
+bed_pressure_drop = 6.101079671327595e-7
+empty_vessel_weight = 1956.1885787131052
+total_equipped_weight = 2196.7996900804355
+reactor_type = "FIXED_BED"
+number_of_beds = 1
+
+[[cases]]
+id = "reactor_mechanical_cstr"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ReactorMechanicalDesign.calcDesign`, from
+    `validation/neqsim/captures/process_reactor_mechanical_design.tsv`, row `gibbs_cstr`: the same
+    ammonia feed as a `CSTR` at LHSV `1.5` 1/hr, which is the only input `reactorType` moves.
+    **This is the one captured row whose vessel is above the `0.5` m diameter floor** - the cube
+    root answers `0.5385511691956425` m and the length `2.15420467678257` m - so it is what makes
+    the sizing arithmetic measurable rather than clamped. Only the vessel is asserted, for the
+    reason the defaults row gives."""
+[cases.inputs]
+components = ["hydrogen", "nitrogen", "ammonia"]
+feed_n = 1.0
+feed_z = [0.75, 0.25, 0.0]
+feed_p = 30000000.0
+feed_t = 450.0
+energy_mode = "isothermal"
+damping_composition = 0.05
+max_iterations = 5000.0
+convergence_tolerance = 0.001
+min_iterations = 100.0
+reactor_type = "cstr"
+lhsv = 1.5
+[cases.expected]
+vessel_diameter = 0.5385511691956425
+vessel_length = 2.15420467678257
+shell_thickness = 75.24211932030568
+head_thickness = 75.24211932030568
+design_pressure = 330.0
+design_temperature = 475.0
+catalyst_volume = 0.3435016535055568
+catalyst_mass = 274.8013228044454
+bed_pressure_drop = 1.5260489476579843e-5
+empty_vessel_weight = 2444.4526271505442
+total_equipped_weight = 3006.615755120348
+reactor_type = "CSTR"
+number_of_beds = 1
+
+[[cases]]
+id = "reactor_mechanical_high_pressure"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ReactorMechanicalDesign.calcDesign`, from
+    `validation/neqsim/captures/process_reactor_mechanical_design.tsv`, row
+    `gibbs_high_pressure`: the reverse water-gas shift feed at 1 bara and 1000 K with
+    `maxOperationPressure` stated as `150.0`, so `max(inlet, maxOperation)` takes the class's
+    operation limit and the design pressure is `165.0` bara. The feed is one of the id's own
+    cases, so the solve is a state this tree already reproduces; the expectations are the
+    vessel's, and **the GHSV division is above its floor here** (`0.059878658517044936` m3 against
+    the `0.01` floor the other two rows take)."""
+[cases.inputs]
+components = ["CO2", "hydrogen", "CO", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.5, 0.0, 0.0]
+feed_p = 100000.0
+feed_t = 1000.0
+energy_mode = "isothermal"
+damping_composition = 0.05
+max_iterations = 5000.0
+convergence_tolerance = 0.001
+min_iterations = 100.0
+max_operation_pressure = 150.0
+[cases.expected]
+vessel_diameter = 0.5
+vessel_length = 2.0
+shell_thickness = 32.2265625
+head_thickness = 32.2265625
+design_pressure = 165.0
+design_temperature = 1025.0
+catalyst_volume = 0.059878658517044936
+catalyst_mass = 47.90292681363595
+bed_pressure_drop = 0.0026443223487221906
+empty_vessel_weight = 902.4448091641318
+total_equipped_weight = 1077.5844703902007
+reactor_type = "FIXED_BED"
+number_of_beds = 1

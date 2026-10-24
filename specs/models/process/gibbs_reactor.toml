@@ -18,7 +18,11 @@ assumptions = [
     "**`calculateJ`'s javadoc and its code disagree on three signs.** The comment subtracts every term; the code subtracts the first and adds the other three. The code is ported.",
     "**a singular Newton system is refused**, which costs the one capture row where two species meet three active balances. The class answers that through `SimpleMatrix.pseudoInverse`.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` has no other route. The class carries no cubic of its own, so the oracle is built on PR too.",
-    "**still owed, and named in `ROADMAP.md`**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `ReactorMechanicalDesign` and `runTransient`.",
+    "**still owed, and named in `ROADMAP.md`**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `runTransient`.",
+    "**the vessel is `ReactorMechanicalDesign`, read from the inlet.** `GibbsReactor` is a `TwoPortEquipment`, and `calcDesign` takes its feed's pressure, temperature, volumetric flow and **system** density - so a two-phase feed is answered where `Stream::density` refuses. The solve is not on its path.",
+    "**three branches cannot answer.** The L/D clamps cannot fire, the diameter being built at the target `4.0`; the head is always the shell's, its denominator being the larger; and the catalyst and `0.5` m floors answer at every default GHSV. The capture's `cstr` row lifts the diameter off its floor.",
+    "**the space velocities are declared dimensionless.** `ghsv` and `lhsv` are reciprocal hours, and the unit vocabulary has no reciprocal-time unit; the values cross unconverted, on the `total_pressure_drop_mbar` precedent.",
+    "**`super.calcDesign()`'s design-standard tree is absent.** It would overwrite the joint efficiency and the corrosion allowance from a database this workspace lacks; the capture holds both at `1.0` and `0.0`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/GibbsReactor.java` is the port source, through `run`, `solveGibbsEquilibrium`, `calculateJacobian` and `performIterationUpdate`.\n",
@@ -64,6 +68,51 @@ description = "the bound on the **undamped** step's norm, the class's default 1e
 [inputs.min_iterations]
 unit = "dimensionless"
 description = "the floor below which the tolerance is not consulted, the class's default 100.\n"
+[inputs.reactor_type]
+type = "enum"
+values = ["fixed-bed", "cstr", "packed-bed", "fluidized-bed"]
+optional = true
+description = "`reactorType`, and **only `cstr` reaches a branch**: `calcDesign` compares it to the class's own `\"CSTR\"` with `String.equals`, so the other three select the GHSV branch and otherwise only echo. **Absent is `fixed-bed`**, the class's field initialiser.\n"
+[inputs.catalyst_bulk_density]
+unit = "kg/m**3"
+optional = true
+description = "`catalystBulkDensity`, which turns the catalyst volume into a mass. **Absent is `800.0`.**\n"
+[inputs.catalyst_particle_diameter]
+unit = "mm"
+optional = true
+description = "`catalystParticleDiameter`, **in millimetres**, the Ergun equation's particle size. **Absent is `3.0` mm.**\n"
+[inputs.bed_void_fraction]
+unit = "dimensionless"
+optional = true
+description = "`bedVoidFraction`, the `eps` of both Ergun terms. **Absent is `0.40`.**\n"
+[inputs.ghsv]
+unit = "dimensionless"
+optional = true
+description = "`ghsv`, the gas hourly space velocity **in reciprocal hours**, declared dimensionless because the vocabulary has no reciprocal-time unit, so the value crosses unconverted. The class floors it at `1.0`. **Absent is `5000.0` 1/hr**, read by every non-`cstr` type.\n"
+[inputs.lhsv]
+unit = "dimensionless"
+optional = true
+description = "`lhsv`, the liquid hourly space velocity **in reciprocal hours**, with the same vocabulary gap as `ghsv` and the same absence of a conversion. The class floors it at `0.01`. **Absent is `1.0` 1/hr**, and it is read by `cstr` alone.\n"
+[inputs.number_of_beds]
+unit = "dimensionless"
+optional = true
+description = "`numberOfBeds`: `calcDesign` puts two `12` mm distribution plates in **each** bed's weight. **Absent is `1`.**\n"
+[inputs.max_operation_pressure]
+unit = "bar"
+optional = true
+description = "`getMaxOperationPressure()`, **absolute**: the operating pressure is `max(inlet, this)`. **Absent is `100.0`**, `MechanicalDesign`'s own field initialiser - NeqSim's equipment path would overwrite it from an economic design pressure, a tree this id does not carry.\n"
+[inputs.max_operation_temperature]
+unit = "K"
+optional = true
+description = "`getMaxOperationTemperature()`: the operating temperature is `max(inlet C, this - 273.15)`. **Absent is `100.0` K**, the base class's own initialiser, which is below every real feed and so never binds.\n"
+[inputs.joint_efficiency]
+unit = "dimensionless"
+optional = true
+description = "`getJointEfficiency()`, the `E` of both ASME thickness forms. **Absent is `1.0`**, fully radiographed; `super.calcDesign()`'s design-standard tree is absent here, so nothing overwrites it.\n"
+[inputs.corrosion_allowance]
+unit = "mm"
+optional = true
+description = "`getCorrosionAllowance()`, added to both thicknesses. **Absent is `0.0` mm.**\n"
 [outputs.product_n]
 unit = "mol/s"
 description = "the outlet's molar flow, which the element balances do not fix.\n"
@@ -105,6 +154,45 @@ type = "vector"
 unit = "W"
 length = "one per iteration taken"
 description = "the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.\n"
+[outputs.vessel_diameter]
+unit = "m"
+description = "`getVesselDiameter()`: `(4 V / (pi * 4))^(1/3)` off `V = catalystVolume / 0.70`, floored at `0.5` m.\n"
+[outputs.vessel_length]
+unit = "m"
+description = "`getVesselLength()`: `4.0 * D`. The class's `2.0`/`8.0` L/D clamps are unreachable, because the ratio is `4.0` by construction.\n"
+[outputs.shell_thickness]
+unit = "mm"
+description = "`getShellThickness()`, the ASME VIII Div 1 shell at the target diameter, floored at `6.0` mm. SI, shown in mm.\n"
+[outputs.head_thickness]
+unit = "mm"
+description = "`getHeadThickness()`, the 2:1 ellipsoidal form floored at the shell - **which it always is**: its denominator is the larger of the two at every positive design pressure, so this equals `shell_thickness` on every state.\n"
+[outputs.design_pressure]
+unit = "bar"
+description = "`getDesignPressureBara()`: the operating pressure times `1.10`.\n"
+[outputs.design_temperature]
+unit = "K"
+description = "`getDesignTemperatureC()` plus `273.15`: the operating temperature plus `25` C. SI, shown in K.\n"
+[outputs.catalyst_volume]
+unit = "m**3"
+description = "`getCatalystVolume()`: `flow_m3hr / max(GHSV, 1)` - or `max(LHSV, 0.01)` for `cstr` - floored at `0.01` m3.\n"
+[outputs.catalyst_mass]
+unit = "kg"
+description = "`getCatalystMass()`: the volume times the bulk density.\n"
+[outputs.bed_pressure_drop]
+unit = "bar"
+description = "`getBedPressureDrop()`: the Ergun drop over `bedLength = catalystVolume / (pi D^2 / 4)`, with the class's hard-coded `1.5e-5` Pa s viscosity.\n"
+[outputs.empty_vessel_weight]
+unit = "kg"
+description = "`getEmptyVesselWeight()`: the shell plus both heads at the shell thickness.\n"
+[outputs.total_equipped_weight]
+unit = "kg"
+description = "`getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads.\n"
+[outputs.reactor_type]
+type = "string"
+description = "`getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints.\n"
+[outputs.number_of_beds]
+unit = "dimensionless"
+description = "`getNumberOfBeds()`.\n"
 [[valid_range]]
 quantity = "feed_n"
 min = 0
@@ -131,6 +219,56 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "a tolerance of zero is never satisfied, so the cap is the only stop\n"
+[[valid_range]]
+quantity = "catalyst_bulk_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the catalyst mass is the volume times this, and a non-positive density is not a loading\n"
+[[valid_range]]
+quantity = "catalyst_particle_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "both Ergun terms divide by its square\n"
+[[valid_range]]
+quantity = "bed_void_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "the Ergun terms divide by its cube, and a void fraction of one is no bed at all\n"
+[[valid_range]]
+quantity = "number_of_beds"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a reactor with no bed carries no bed weight and no loading\n"
+[[valid_range]]
+quantity = "joint_efficiency"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "both thickness forms divide by the allowable stress times this efficiency\n"
+[[valid_range]]
+quantity = "corrosion_allowance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a negative allowance thins the vessel below its calculated wall\n"
+[[valid_range]]
+quantity = "max_operation_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the design pressure is this times the margin, and a vessel is not designed at zero absolute\n"
+[[valid_range]]
+quantity = "max_operation_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class tests this against zero before reading it, and a non-positive Kelvin limit is not a temperature\n"
 [implementations]
 python = "azoth.process.gibbs_reactor"
 rust = "azoth_process::gibbs_reactor"

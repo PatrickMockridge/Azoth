@@ -470,3 +470,210 @@ fn the_adiabatic_ammonia_row_is_reproduced() {
     let state = run(&feed, settings);
     report("ammonia_adiabatic", &feed, &state);
 }
+
+/// **The vessel, through the model id**, whose eleven mechanical inputs are declared where the
+/// palette entry declares none.
+///
+/// The rows are `validation/neqsim/captures/process_reactor_mechanical_design.tsv`'s, read through
+/// `process.gibbs_reactor`'s own surface rather than the mechanical module directly: the equality
+/// with the module is `S2`'s, and this is the one that says the id publishes it.
+struct VesselOverrides {
+    reactor_type: Option<&'static str>,
+    lhsv: Option<f64>,
+    max_operation_pressure: Option<f64>,
+}
+
+fn vessel_case(
+    names: &[&str],
+    amounts: &[f64],
+    temperature_k: f64,
+    pressure_bara: f64,
+    overrides: VesselOverrides,
+) -> azoth_process::models::gibbs_reactor::GibbsReactorResult {
+    let total: f64 = amounts.iter().sum();
+    let z: Vec<f64> = amounts.iter().map(|amount| amount / total).collect();
+    let components: Vec<String> = names.iter().map(|name| (*name).to_string()).collect();
+    azoth_process::models::gibbs_reactor::gibbs_reactor(
+        &components,
+        1.0,
+        &z,
+        pascals(pressure_bara * 1.0e5),
+        kelvins(temperature_k),
+        "isothermal",
+        0.05,
+        5000.0,
+        1.0e-3,
+        100.0,
+        overrides.reactor_type,
+        None,
+        None,
+        None,
+        None,
+        overrides.lhsv,
+        None,
+        // The model's dimensioned inputs cross in SI, as the boundary declares them: the
+        // override is stated in the capture's own bar and converted here.
+        overrides.max_operation_pressure.map(|bara| bara * 1.0e5),
+        None,
+        None,
+        None,
+    )
+    .expect("the reactor and its vessel resolve")
+}
+
+/// The module tests' own `1e-6`, for the reason `reactor/mechanical.rs` gives: the two libraries'
+/// volumetric-flow identity differs at about `2e-8` on these rows.
+fn close(got: f64, want: f64, what: &str) {
+    assert!(
+        (got - want).abs() / want.abs() < 1e-6,
+        "{what}: {got} against {want}"
+    );
+}
+
+/// **`gibbs_fixed_bed_defaults`**: every class default, on the ammonia feed.
+#[test]
+fn the_reactor_vessel_publishes_the_defaults_row() {
+    let result = vessel_case(
+        &["hydrogen", "nitrogen", "ammonia"],
+        &[1.5, 0.5, 0.0],
+        450.0,
+        300.0,
+        VesselOverrides {
+            reactor_type: None,
+            lhsv: None,
+            max_operation_pressure: None,
+        },
+    );
+    assert_eq!(result.reactor_type, "FIXED_BED");
+    assert_eq!(result.number_of_beds, 1);
+    close(result.vessel_diameter.value, 0.5, "vessel_diameter");
+    close(result.vessel_length.value, 2.0, "vessel_length");
+    close(
+        result.shell_thickness.value,
+        69.856_054_191_363_24e-3,
+        "shell_thickness",
+    );
+    close(
+        result.head_thickness.value,
+        69.856_054_191_363_24e-3,
+        "head_thickness",
+    );
+    close(result.design_pressure.value, 330.0e5, "design_pressure");
+    close(result.design_temperature.value, 475.0, "design_temperature");
+    close(result.catalyst_volume.value, 0.01, "catalyst_volume");
+    close(result.catalyst_mass.value, 8.0, "catalyst_mass");
+    close(
+        result.bed_pressure_drop.value,
+        6.101_079_671_327_595e-7 * 1.0e5,
+        "bed_pressure_drop",
+    );
+    close(
+        result.empty_vessel_weight.value,
+        1956.188_578_713_105_2,
+        "empty_vessel_weight",
+    );
+    close(
+        result.total_equipped_weight.value,
+        2196.799_690_080_435_5,
+        "total_equipped_weight",
+    );
+}
+
+/// **`gibbs_cstr`**: the LHSV branch, and the one captured row above the diameter floor.
+#[test]
+fn the_reactor_vessel_publishes_the_cstr_row() {
+    let result = vessel_case(
+        &["hydrogen", "nitrogen", "ammonia"],
+        &[1.5, 0.5, 0.0],
+        450.0,
+        300.0,
+        VesselOverrides {
+            reactor_type: Some("cstr"),
+            lhsv: Some(1.5),
+            max_operation_pressure: None,
+        },
+    );
+    assert_eq!(result.reactor_type, "CSTR");
+    close(
+        result.vessel_diameter.value,
+        0.538_551_169_195_642_5,
+        "vessel_diameter",
+    );
+    close(
+        result.vessel_length.value,
+        2.154_204_676_782_57,
+        "vessel_length",
+    );
+    close(
+        result.shell_thickness.value,
+        75.242_119_320_305_68e-3,
+        "shell_thickness",
+    );
+    close(
+        result.catalyst_volume.value,
+        0.343_501_653_505_556_8,
+        "catalyst_volume",
+    );
+    close(
+        result.catalyst_mass.value,
+        274.801_322_804_445_4,
+        "catalyst_mass",
+    );
+    close(
+        result.bed_pressure_drop.value,
+        1.526_048_947_657_984_3e-5 * 1.0e5,
+        "bed_pressure_drop",
+    );
+    close(
+        result.total_equipped_weight.value,
+        3006.615_755_120_348,
+        "total_equipped_weight",
+    );
+}
+
+/// **`gibbs_high_pressure`**: a 1 bara feed against a stated `150` bara operation limit.
+#[test]
+fn the_reactor_vessel_publishes_the_high_pressure_row() {
+    let result = vessel_case(
+        &["CO2", "hydrogen", "CO", "water"],
+        &[1.0, 1.0, 0.0, 0.0],
+        1000.0,
+        1.0,
+        VesselOverrides {
+            reactor_type: None,
+            lhsv: None,
+            max_operation_pressure: Some(150.0),
+        },
+    );
+    close(result.design_pressure.value, 165.0e5, "design_pressure");
+    close(
+        result.design_temperature.value,
+        1025.0,
+        "design_temperature",
+    );
+    close(
+        result.shell_thickness.value,
+        32.226_562_5e-3,
+        "shell_thickness",
+    );
+    close(
+        result.catalyst_volume.value,
+        0.059_878_658_517_044_936,
+        "catalyst_volume",
+    );
+    close(
+        result.catalyst_mass.value,
+        47.902_926_813_635_95,
+        "catalyst_mass",
+    );
+    close(
+        result.bed_pressure_drop.value,
+        0.002_644_322_348_722_190_6 * 1.0e5,
+        "bed_pressure_drop",
+    );
+    close(
+        result.total_equipped_weight.value,
+        1077.584_470_390_200_7,
+        "total_equipped_weight",
+    );
+}

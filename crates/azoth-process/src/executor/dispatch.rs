@@ -400,7 +400,14 @@ pub(crate) fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
         min_iterations: p.number("min_iterations")? as u32,
     };
     let (outlet, numbers) = kernels::gibbs_reactor::gibbs_reactor(&inlets[0], &setup)?;
-    let result = crate::models::GibbsReactorResult::of(&outlet, &numbers, Vec::new());
+    // **The palette entry declares the solve's parameters and none of the vessel's**, so a
+    // flowsheet's Gibbs reactor publishes the class-default vessel. The model id is where the
+    // eleven mechanical inputs are declared.
+    let mechanical = crate::reactor::mechanical::reactor_mechanical_design(
+        &inlets[0],
+        &crate::reactor::mechanical::ReactorMechanicalGeometry::default(),
+    )?;
+    let result = crate::models::GibbsReactorResult::of(&outlet, &numbers, &mechanical, Vec::new());
     KernelOutcome::publishing(vec![outlet], &result)
 }
 

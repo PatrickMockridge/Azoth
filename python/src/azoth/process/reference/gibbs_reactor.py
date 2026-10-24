@@ -65,6 +65,7 @@ from azoth.eos.reference._mixture_state import (
     reduced_parameters,
 )
 from azoth.eos.reference.pt_flash import check_composition
+from azoth.process.reference import reactor_mechanical
 
 #: ``GibbsReactor.java``'s own ``elementNames``, which has **seven** entries for an eight-column
 #: table. Index 5 is named ``Ar`` and reads the file's ``Na`` column; index 6 is named ``Z`` and
@@ -569,6 +570,17 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: int | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -628,6 +640,69 @@ def gibbs_reactor(
         warnings,
     )
 
+    # **The vessel is read from the feed, before the equilibrium**, which is the class's own
+    # surface: ``calcDesign`` never looks at the outlet.
+    # **The four dimensioned values cross in SI and the geometry keeps the class's units.**
+    # The spec declares millimetres and bar, and the boundary hands over the SI magnitude - so
+    # the conversions are here, and a default is the class's initialiser in its own unit.
+    mechanical = reactor_mechanical.reactor_mechanical_design(
+        list(components),
+        temperature_k,
+        pressure_pa,
+        list(feed_z),
+        total_flow,
+        reactor_mechanical.ReactorMechanicalGeometry(
+            reactor_type=_reactor_type_name(reactor_type or "fixed-bed"),
+            catalyst_bulk_density=(
+                reactor_mechanical.DEFAULT_CATALYST_BULK_DENSITY
+                if catalyst_bulk_density is None
+                else input_to_si(spec, "catalyst_bulk_density", catalyst_bulk_density)
+            ),
+            catalyst_particle_diameter_mm=(
+                reactor_mechanical.DEFAULT_CATALYST_PARTICLE_DIAMETER_MM
+                if catalyst_particle_diameter is None
+                else input_to_si(spec, "catalyst_particle_diameter", catalyst_particle_diameter)
+                * 1000.0
+            ),
+            bed_void_fraction=(
+                reactor_mechanical.DEFAULT_BED_VOID_FRACTION
+                if bed_void_fraction is None
+                else float(bed_void_fraction)
+            ),
+            ghsv_per_hour=(
+                reactor_mechanical.DEFAULT_GHSV_PER_HOUR if ghsv is None else float(ghsv)
+            ),
+            lhsv_per_hour=(
+                reactor_mechanical.DEFAULT_LHSV_PER_HOUR if lhsv is None else float(lhsv)
+            ),
+            number_of_beds=(
+                reactor_mechanical.DEFAULT_NUMBER_OF_BEDS
+                if number_of_beds is None
+                else int(number_of_beds)
+            ),
+            max_operation_pressure_bara=(
+                reactor_mechanical.DEFAULT_MAX_OPERATION_PRESSURE_BARA
+                if max_operation_pressure is None
+                else input_to_si(spec, "max_operation_pressure", max_operation_pressure) / 1.0e5
+            ),
+            max_operation_temperature_k=(
+                reactor_mechanical.DEFAULT_MAX_OPERATION_TEMPERATURE_K
+                if max_operation_temperature is None
+                else input_to_si(spec, "max_operation_temperature", max_operation_temperature)
+            ),
+            joint_efficiency=(
+                reactor_mechanical.JOINT_EFFICIENCY
+                if joint_efficiency is None
+                else float(joint_efficiency)
+            ),
+            corrosion_allowance_mm=(
+                reactor_mechanical.CORROSION_ALLOWANCE_MM
+                if corrosion_allowance is None
+                else input_to_si(spec, "corrosion_allowance", corrosion_allowance) * 1000.0
+            ),
+        ),
+    )
+
     return GibbsReactorResult(
         product_n=from_si(outlet_total, "mol/s"),
         product_z=tuple(composition),
@@ -646,8 +721,42 @@ def gibbs_reactor(
         gibbs_energy_history=tuple(
             from_si(_v, "W") for _v in tuple(value * 1000.0 for value in state.gibbs_history)
         ),
+        vessel_diameter=from_si(mechanical.vessel_diameter_m, "m"),
+        vessel_length=from_si(mechanical.vessel_length_m, "m"),
+        shell_thickness=from_si(mechanical.shell_thickness_mm / 1000.0, "mm"),
+        head_thickness=from_si(mechanical.head_thickness_mm / 1000.0, "mm"),
+        design_pressure=from_si(mechanical.design_pressure_bara * 1.0e5, "bar"),
+        design_temperature=from_si(mechanical.design_temperature_c + 273.15, "K"),
+        catalyst_volume=from_si(mechanical.catalyst_volume_m3, "m**3"),
+        catalyst_mass=from_si(mechanical.catalyst_mass_kg, "kg"),
+        bed_pressure_drop=from_si(mechanical.bed_pressure_drop_bar * 1.0e5, "bar"),
+        empty_vessel_weight=from_si(mechanical.empty_vessel_weight_kg, "kg"),
+        total_equipped_weight=from_si(mechanical.total_equipped_weight_kg, "kg"),
+        reactor_type=mechanical.reactor_type,
+        number_of_beds=mechanical.number_of_beds,
         warnings=tuple(warnings),
     )
+
+
+#: The spec's four reactor types, in the class's own spelling. **Only ``CSTR`` changes an
+#: answer**; the other three select the GHSV branch and otherwise only echo.
+_REACTOR_TYPES: Final = {
+    "fixed-bed": "FIXED_BED",
+    "cstr": "CSTR",
+    "packed-bed": "PACKED_BED",
+    "fluidized-bed": "FLUIDIZED_BED",
+}
+
+
+def _reactor_type_name(kind: str) -> str:
+    """The class's own spelling of a declared reactor type, or a refusal."""
+    mapped = _REACTOR_TYPES.get(kind)
+    if mapped is None:
+        raise InvalidInputError(
+            "reactor_type",
+            f"'{kind}' is not one of fixed-bed, cstr, packed-bed, fluidized-bed",
+        )
+    return mapped
 
 
 def _spec() -> dict[str, Any]:

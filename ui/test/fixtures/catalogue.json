@@ -5139,7 +5139,15 @@
       "runnable": true,
       "source": "NeqSim process/equipment/reactor/GibbsReactor.java",
       "unmodelled_ranges": [
-        "feed_n"
+        "feed_n",
+        "catalyst_bulk_density",
+        "catalyst_particle_diameter",
+        "bed_void_fraction",
+        "number_of_beds",
+        "joint_efficiency",
+        "corrosion_allowance",
+        "max_operation_pressure",
+        "max_operation_temperature"
       ]
     },
     {

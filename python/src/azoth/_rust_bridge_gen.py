@@ -5775,7 +5775,7 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
     )
 
 
-def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float) -> GibbsReactorResult:
+def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float, reactor_type: str | None=None, catalyst_bulk_density: float | None=None, catalyst_particle_diameter: float | None=None, bed_void_fraction: float | None=None, ghsv: float | None=None, lhsv: float | None=None, number_of_beds: int | None=None, max_operation_pressure: float | None=None, max_operation_temperature: float | None=None, joint_efficiency: float | None=None, corrosion_allowance: float | None=None) -> GibbsReactorResult:
     """``process.gibbs_reactor``, computed in Rust."""
     spec = _models_gen.model("process.gibbs_reactor")
     result = _core.gibbs_reactor(
@@ -5789,6 +5789,17 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         max_iterations,
         convergence_tolerance,
         min_iterations,
+        reactor_type,
+        None if catalyst_bulk_density is None else _si(spec, "catalyst_bulk_density", catalyst_bulk_density),
+        None if catalyst_particle_diameter is None else _si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
+        None if bed_void_fraction is None else bed_void_fraction,
+        None if ghsv is None else ghsv,
+        None if lhsv is None else lhsv,
+        None if number_of_beds is None else _count("number_of_beds", number_of_beds),
+        None if max_operation_pressure is None else _si(spec, "max_operation_pressure", max_operation_pressure),
+        None if max_operation_temperature is None else _si(spec, "max_operation_temperature", max_operation_temperature),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else _si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return GibbsReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -5802,6 +5813,19 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         lagrange_multipliers=tuple(from_si(q.magnitude_si, q.unit) for q in result.lagrange_multipliers),
         element_balance_difference=tuple(from_si(q.magnitude_si, q.unit) for q in result.element_balance_difference),
         gibbs_energy_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.gibbs_energy_history),
+        vessel_diameter=from_si(result.vessel_diameter.magnitude_si, result.vessel_diameter.unit),
+        vessel_length=from_si(result.vessel_length.magnitude_si, result.vessel_length.unit),
+        shell_thickness=from_si(result.shell_thickness.magnitude_si, result.shell_thickness.unit),
+        head_thickness=from_si(result.head_thickness.magnitude_si, result.head_thickness.unit),
+        design_pressure=from_si(result.design_pressure.magnitude_si, result.design_pressure.unit),
+        design_temperature=from_si(result.design_temperature.magnitude_si, result.design_temperature.unit),
+        catalyst_volume=from_si(result.catalyst_volume.magnitude_si, result.catalyst_volume.unit),
+        catalyst_mass=from_si(result.catalyst_mass.magnitude_si, result.catalyst_mass.unit),
+        bed_pressure_drop=from_si(result.bed_pressure_drop.magnitude_si, result.bed_pressure_drop.unit),
+        empty_vessel_weight=from_si(result.empty_vessel_weight.magnitude_si, result.empty_vessel_weight.unit),
+        total_equipped_weight=from_si(result.total_equipped_weight.magnitude_si, result.total_equipped_weight.unit),
+        reactor_type=result.reactor_type,
+        number_of_beds=result.number_of_beds,
         warnings=_warnings(result.warnings),
     )
 

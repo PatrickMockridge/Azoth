@@ -5986,6 +5986,45 @@ class GibbsReactorResult(_HasWarnings):
     #: the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.
     gibbs_energy_history: tuple[Q, ...]
 
+    #: `getVesselDiameter()`: `(4 V / (pi * 4))^(1/3)` off `V = catalystVolume / 0.70`, floored at `0.5` m.
+    vessel_diameter: Q
+
+    #: `getVesselLength()`: `4.0 * D`. The class's `2.0`/`8.0` L/D clamps are unreachable, because the ratio is `4.0` by construction.
+    vessel_length: Q
+
+    #: `getShellThickness()`, the ASME VIII Div 1 shell at the target diameter, floored at `6.0` mm. SI, shown in mm.
+    shell_thickness: Q
+
+    #: `getHeadThickness()`, the 2:1 ellipsoidal form floored at the shell - **which it always is**: its denominator is the larger of the two at every positive design pressure, so this equals `shell_thickness` on every state.
+    head_thickness: Q
+
+    #: `getDesignPressureBara()`: the operating pressure times `1.10`.
+    design_pressure: Q
+
+    #: `getDesignTemperatureC()` plus `273.15`: the operating temperature plus `25` C. SI, shown in K.
+    design_temperature: Q
+
+    #: `getCatalystVolume()`: `flow_m3hr / max(GHSV, 1)` - or `max(LHSV, 0.01)` for `cstr` - floored at `0.01` m3.
+    catalyst_volume: Q
+
+    #: `getCatalystMass()`: the volume times the bulk density.
+    catalyst_mass: Q
+
+    #: `getBedPressureDrop()`: the Ergun drop over `bedLength = catalystVolume / (pi D^2 / 4)`, with the class's hard-coded `1.5e-5` Pa s viscosity.
+    bed_pressure_drop: Q
+
+    #: `getEmptyVesselWeight()`: the shell plus both heads at the shell thickness.
+    empty_vessel_weight: Q
+
+    #: `getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads.
+    total_equipped_weight: Q
+
+    #: `getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints.
+    reactor_type: str
+
+    #: `getNumberOfBeds()`.
+    number_of_beds: int
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

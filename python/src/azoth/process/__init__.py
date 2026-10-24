@@ -1637,6 +1637,17 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: int | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -1652,6 +1663,11 @@ def gibbs_reactor(
     rows stop there rather than on the tolerance. A run that reaches ``max_iterations`` still
     succeeds, with ``converged`` false.
 
+    **The vessel is ``ReactorMechanicalDesign``, and it is read from the feed.** The eleven
+    mechanical inputs default to the class's own field initialisers, so omitting them gives the
+    class's design rather than no design; ``ghsv`` and ``lhsv`` are reciprocal hours and cross
+    unconverted, the unit vocabulary having no reciprocal-time unit.
+
     See :func:`azoth.process.reference.gibbs_reactor`.
     """
     return resolve(_GIBBS_REACTOR)(  # type: ignore[no-any-return]
@@ -1665,4 +1681,15 @@ def gibbs_reactor(
         max_iterations=max_iterations,
         convergence_tolerance=convergence_tolerance,
         min_iterations=min_iterations,
+        reactor_type=reactor_type,
+        catalyst_bulk_density=catalyst_bulk_density,
+        catalyst_particle_diameter=catalyst_particle_diameter,
+        bed_void_fraction=bed_void_fraction,
+        ghsv=ghsv,
+        lhsv=lhsv,
+        number_of_beds=number_of_beds,
+        max_operation_pressure=max_operation_pressure,
+        max_operation_temperature=max_operation_temperature,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
     )

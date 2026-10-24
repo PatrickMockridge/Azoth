@@ -14992,6 +14992,45 @@ pub struct PyGibbsReactorResult {
     /// the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.
     #[pyo3(get)]
     pub gibbs_energy_history: Vec<PyQty>,
+    /// `getVesselDiameter()`: `(4 V / (pi * 4))^(1/3)` off `V = catalystVolume / 0.70`, floored at `0.5` m.
+    #[pyo3(get)]
+    pub vessel_diameter: PyQty,
+    /// `getVesselLength()`: `4.0 * D`. The class's `2.0`/`8.0` L/D clamps are unreachable, because the ratio is `4.0` by construction.
+    #[pyo3(get)]
+    pub vessel_length: PyQty,
+    /// `getShellThickness()`, the ASME VIII Div 1 shell at the target diameter, floored at `6.0` mm. SI, shown in mm.
+    #[pyo3(get)]
+    pub shell_thickness: PyQty,
+    /// `getHeadThickness()`, the 2:1 ellipsoidal form floored at the shell - **which it always is**: its denominator is the larger of the two at every positive design pressure, so this equals `shell_thickness` on every state.
+    #[pyo3(get)]
+    pub head_thickness: PyQty,
+    /// `getDesignPressureBara()`: the operating pressure times `1.10`.
+    #[pyo3(get)]
+    pub design_pressure: PyQty,
+    /// `getDesignTemperatureC()` plus `273.15`: the operating temperature plus `25` C. SI, shown in K.
+    #[pyo3(get)]
+    pub design_temperature: PyQty,
+    /// `getCatalystVolume()`: `flow_m3hr / max(GHSV, 1)` - or `max(LHSV, 0.01)` for `cstr` - floored at `0.01` m3.
+    #[pyo3(get)]
+    pub catalyst_volume: PyQty,
+    /// `getCatalystMass()`: the volume times the bulk density.
+    #[pyo3(get)]
+    pub catalyst_mass: PyQty,
+    /// `getBedPressureDrop()`: the Ergun drop over `bedLength = catalystVolume / (pi D^2 / 4)`, with the class's hard-coded `1.5e-5` Pa s viscosity.
+    #[pyo3(get)]
+    pub bed_pressure_drop: PyQty,
+    /// `getEmptyVesselWeight()`: the shell plus both heads at the shell thickness.
+    #[pyo3(get)]
+    pub empty_vessel_weight: PyQty,
+    /// `getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads.
+    #[pyo3(get)]
+    pub total_equipped_weight: PyQty,
+    /// `getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints.
+    #[pyo3(get)]
+    pub reactor_type: String,
+    /// `getNumberOfBeds()`.
+    #[pyo3(get)]
+    pub number_of_beds: usize,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15001,7 +15040,7 @@ pub struct PyGibbsReactorResult {
 impl PyGibbsReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, {} warning(s))",
+            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, vessel_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, design_pressure={:?}, design_temperature={:?}, catalyst_volume={:?}, catalyst_mass={:?}, bed_pressure_drop={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, reactor_type={:?}, number_of_beds={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -15013,6 +15052,19 @@ impl PyGibbsReactorResult {
             self.lagrange_multipliers,
             self.element_balance_difference,
             self.gibbs_energy_history,
+            self.vessel_diameter,
+            self.vessel_length,
+            self.shell_thickness,
+            self.head_thickness,
+            self.design_pressure,
+            self.design_temperature,
+            self.catalyst_volume,
+            self.catalyst_mass,
+            self.bed_pressure_drop,
+            self.empty_vessel_weight,
+            self.total_equipped_weight,
+            self.reactor_type,
+            self.number_of_beds,
             self.warnings.len()
         )
     }
@@ -15065,6 +15117,52 @@ impl From<&azoth_process::models::gibbs_reactor::GibbsReactorResult> for PyGibbs
                     unit: "W".to_string(),
                 })
                 .collect(),
+            vessel_diameter: PyQty {
+                magnitude_si: r.vessel_diameter.value,
+                unit: "m".to_string(),
+            },
+            vessel_length: PyQty {
+                magnitude_si: r.vessel_length.value,
+                unit: "m".to_string(),
+            },
+            shell_thickness: PyQty {
+                magnitude_si: r.shell_thickness.value,
+                unit: "mm".to_string(),
+            },
+            head_thickness: PyQty {
+                magnitude_si: r.head_thickness.value,
+                unit: "mm".to_string(),
+            },
+            design_pressure: PyQty {
+                magnitude_si: r.design_pressure.value,
+                unit: "bar".to_string(),
+            },
+            design_temperature: PyQty {
+                magnitude_si: r.design_temperature.value,
+                unit: "K".to_string(),
+            },
+            catalyst_volume: PyQty {
+                magnitude_si: r.catalyst_volume.value,
+                unit: "m**3".to_string(),
+            },
+            catalyst_mass: PyQty {
+                magnitude_si: r.catalyst_mass.value,
+                unit: "kg".to_string(),
+            },
+            bed_pressure_drop: PyQty {
+                magnitude_si: r.bed_pressure_drop.value,
+                unit: "bar".to_string(),
+            },
+            empty_vessel_weight: PyQty {
+                magnitude_si: r.empty_vessel_weight.value,
+                unit: "kg".to_string(),
+            },
+            total_equipped_weight: PyQty {
+                magnitude_si: r.total_equipped_weight.value,
+                unit: "kg".to_string(),
+            },
+            reactor_type: r.reactor_type.clone(),
+            number_of_beds: r.number_of_beds,
             warnings: transport(&r.warnings),
         }
     }
