@@ -64,6 +64,8 @@ pub fn debye_huckel_a_phi(t: f64) -> f64 {
 /// Below this `x` the two `g` functions are zero rather than their limit.
 ///
 /// NeqSim's own guard (`x1 > 1e-12`), kept as a guard rather than replaced by the limit
+/// (upstream issue #3827, whose truth-limit fix PR #3838 is already in the pin; the guard
+/// is the class's deliberate branch and this port keeps it)
 /// `g(0) = 1`: the two differ when `x` is small and not zero, and reproducing the branch
 /// is the point.
 const G_FLOOR: f64 = 1.0e-12;

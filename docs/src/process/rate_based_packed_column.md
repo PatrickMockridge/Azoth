@@ -137,7 +137,7 @@ holds the declaration and the two languages to each other.
 
 - **a bed of no height is a converged solve**: the class accepts it on the first pass, so a warning there would fail its own zero-height test. The profile is still `number_of_segments` records, at a height of zero.
 
-- **neither refused solver converges on the class's own state.** `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at a `0.25` mol/s residual against a `1e-9` gate with the vapour at `4.3e-31` K, and the Newton stalls after two passes at `118.6` against `1e-6`.
+- **neither refused solver converges on the class's own state** (upstream #4111, #4093). `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at `0.25` mol/s against a `1e-9` gate, and the Newton stalls after two passes at `118.6`.
 
 
 ## Cases

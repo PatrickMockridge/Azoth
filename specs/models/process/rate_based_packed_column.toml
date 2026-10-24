@@ -9,7 +9,7 @@ assumptions = [
     "**the reference diffusivity is the class's own constant, and that is measured.** `averageDiffusivity` averages a vector NeqSim never populates - every entry of both phases is `0.0` - while the pair matrix on the same state is real. See `segment::fallbacks`.\n",
     "**the profile is not monotone**: on the absorber's own state the three lower segments strip CO2 back out of the liquid and the top one absorbs it, so a port that summed a single direction lands elsewhere.\n",
     "**a bed of no height is a converged solve**: the class accepts it on the first pass, so a warning there would fail its own zero-height test. The profile is still `number_of_segments` records, at a height of zero.\n",
-    "**neither refused solver converges on the class's own state.** `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at a `0.25` mol/s residual against a `1e-9` gate with the vapour at `4.3e-31` K, and the Newton stalls after two passes at `118.6` against `1e-6`.\n",
+    "**neither refused solver converges on the class's own state** (upstream #4111, #4093). `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at `0.25` mol/s against a `1e-9` gate, and the Newton stalls after two passes at `118.6`.\n"
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/RateBasedPackedColumn.java` is the port source; `internals/PackingHydraulicsCalculator.java` is the packing's, and `process.rate_based_packed_column` composes it through `hydraulics.packing_hydraulics`.\n",

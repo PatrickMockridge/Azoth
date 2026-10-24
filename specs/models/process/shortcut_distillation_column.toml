@@ -10,7 +10,7 @@ assumptions = [
     "**Underwood's root is bisected on `[1 + 1e-6, alpha_LK/HK - 1e-6]`**, stopping at `|f| < 1e-10` or a bracket under `1e-12`, over at most 200 iterations.",
     "**no `[algorithm.bracket]` block is declared**, because the bracket's upper end is a computed relative volatility and not a literal. This assumption is the bracket.",
     "**Gilliland is Molokanov's fit**, `Y = 1 - exp[((1 + 54.4X)/(11 + 117.2X))((X - 1)/sqrt(X))]` with `X = (R - Rmin)/(R + 1)`, inverted by `N = (Y + Nmin)/(1 - Y)`.",
-    "**a reflux multiplier at or below one is refused.** At one, `X` is zero and the class returns `actual_stages = Infinity` with the feed tray at `(int) Math.round(Infinity) + 1`, which is zero.",
+    "**a reflux multiplier at or below one is refused** (upstream #4223). At one, `X` is zero and the class returns `actual_stages = Infinity` with the feed tray at `(int) Math.round(Infinity) + 1`, which is zero.",
     "**below one it silently takes its `Y = 0.5` fallback.** Both are degenerate, and neither is a column.",
     "**the Kirkbride argument is the correlation's own**: `r = [(z_HK,F/z_LK,F)(x_LK,B/x_HK,D)^2 (B/D)]^0.206`, with the composition ratio squared and `B/D` to the first power. Upstream PR #4108 corrected the class's inverse pairing.",
     "**`x_LK,B` and `x_HK,D` are product mole fractions.** The split gives the key amounts per feed mole, `(1 - r_LK) z_LK,F` and `(1 - r_HK) z_HK,F`, which the class normalises by `D/(B+D)` and `B/(B+D)`.",
