@@ -6918,6 +6918,16 @@ static STRIPPING_COLUMN_CASES: &[TestCase] = &[TestCase {
         ("gas_load_factor", 0.0009402581113639056),
         ("gas_load_factor_utilization", 0.006268387409092704),
         ("minimum_diameter_for_gas_load_limit", 0.07917314828332081),
+        ("vessel_diameter", 0.5),
+        ("vessel_height", 8.8),
+        ("vessel_wall_thickness", 216.19496855345912),
+        ("actual_trays", 8.0),
+        ("flooding_factor", 0.040667769770911966),
+        ("weir_loading", 3.480252186825798),
+        ("tray_pressure_drop_mbar", 8.098192314185997),
+        ("total_pressure_drop_bar", 0.018066455152999032),
+        ("reboiler_duty_kw", 0.0),
+        ("condenser_duty_kw", 0.0),
     ],
     expected_vectors: &[
         (

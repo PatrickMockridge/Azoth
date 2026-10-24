@@ -667,16 +667,19 @@ a claim nothing holds.
   absorber. **The geometry is not a declared surface on those two** — `AbsorptionColumn` carries
   no tray spacing, weir height or hole diameter of its own, so the two entries declare the six
   *class* inputs alone and the vessel is built at the designer's own defaults, which is what the
-  capture's row is. **`stripping_column` still has no mechanical row of its own**: it inherits
-  every getter and overrides none, so one absorber row cannot settle whether a second reading is
-  needed there, and the capacity families' own experience — where one row was not enough for the
-  absorber pair — says to add one rather than claim the shape. Its spec says so rather than
-  implying the row holds it.
+  capture's row is. **`stripping_column` has its own row too**: the capture's
+  `hydrocarbon_stripper_mechanical` is built from the case's own recipe - it inherits every getter
+  and overrides none, and one absorber row was not enough to claim the shape - and the case holds
+  the eleven outputs to it.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
-  separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign`** for
-  `process.gibbs_reactor` and `process.plug_flow_reactor` is still owed.
+  separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign` is
+  landed on `process.gibbs_reactor`**: eleven declared inputs and thirteen outputs, held to
+  `validation/neqsim/captures/process_reactor_mechanical_design.tsv`'s three rows.
+  **`PlugFlowReactor` is not owed it**: the class overrides no `getMechanicalDesign`, so it
+  answers the base `MechanicalDesign`, whose `calcDesign` only reads design specifications and
+  computes no vessel.
   **`TrayHydraulicsCalculator` is no longer one of them**: its arithmetic is the registered
   `hydraulics.tray_hydraulics` id.
 - **`ColumnInternalsDesigner`** is two halves and both are in. Its **packing** side is done

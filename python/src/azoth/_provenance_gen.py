@@ -2471,7 +2471,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.distillation_column': {
         "calc_id": 'process.distillation_column',
         "name": 'Distillation column',
-        "spec": {'path': 'specs/models/process/distillation_column.toml', 'sha256': 'a663b59757f940579d13d88e3c3618c597e62237e720e09bd93f39510f895782'},
+        "spec": {'path': 'specs/models/process/distillation_column.toml', 'sha256': '006b0cf80d616ea721786103e7b7a20392833385e42ee7b135a3990da7b2613b'},
         "code": [{'path': 'python/src/azoth/process/reference/distillation_column.py', 'sha256': '9d54060708443c8dd9be135b36b53998eaac86bc3972ed600b1bdd02a6d2cad5'}, {'path': 'crates/azoth-process/src/models/distillation_column.rs', 'sha256': 'f1451482b24e4abb66b4ae366c70c9fa2ac00a5a112d9c73aeb1aa6935ad50e3'}],
         "source": 'NeqSim process/equipment/distillation/DistillationColumn.java',
         "verification": 'partially_verified',
@@ -2614,7 +2614,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.plug_flow_reactor': {
         "calc_id": 'process.plug_flow_reactor',
         "name": 'Plug-flow reactor',
-        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': 'ca9dba1ec7a97f612569d42b45f6f000642405ef0eebe59783376c1db62d8425'},
+        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': 'd7e95e50dfff787e8f6c22974f6153748b337de4b087a6fe9acfdf6e45d27ef4'},
         "code": [{'path': 'python/src/azoth/process/reference/plug_flow_reactor.py', 'sha256': '4188b181db19828c0c8a20750c1a6c0adf679f336ed132d8527469d0a888ba0d'}, {'path': 'crates/azoth-process/src/models/plug_flow_reactor.rs', 'sha256': '1d68c19ce56c47124df2f31e2d4f059ffd8a9079c80b7c973ac57ab4817b196b'}],
         "source": 'NeqSim process/equipment/reactor/PlugFlowReactor.java',
         "verification": 'partially_verified',
