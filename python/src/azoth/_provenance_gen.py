@@ -2438,7 +2438,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.component_splitter': {
         "calc_id": 'process.component_splitter',
         "name": 'Component splitter',
-        "spec": {'path': 'specs/models/process/component_splitter.toml', 'sha256': 'b14bad11050342bb226053ad3fd4af5e72d5e387b46efb9a21c92babf73ac128'},
+        "spec": {'path': 'specs/models/process/component_splitter.toml', 'sha256': 'a00b1f0312b2c58b1f681a35316a92bc1724fb24b8fe419f722186851644ba37'},
         "code": [{'path': 'python/src/azoth/process/reference/component_splitter.py', 'sha256': '9de7d2cb77d6b5d7a58b536b18c4d7b3d381528d537bf0a36701ff8031c02e49'}, {'path': 'crates/azoth-process/src/models/component_splitter.rs', 'sha256': 'e6b41baee0e0548f695c93b2ca52288ca61a30dca24ee1ed84ff108153539d7d'}],
         "source": 'NeqSim process/equipment/splitter/ComponentSplitter.java',
         "verification": 'partially_verified',

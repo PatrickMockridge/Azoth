@@ -3318,7 +3318,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.component_splitter",
         name: "Component splitter",
         spec_path: "specs/models/process/component_splitter.toml",
-        spec_sha256: "b14bad11050342bb226053ad3fd4af5e72d5e387b46efb9a21c92babf73ac128",
+        spec_sha256: "a00b1f0312b2c58b1f681a35316a92bc1724fb24b8fe419f722186851644ba37",
         python_path: "python/src/azoth/process/reference/component_splitter.py",
         python_sha256: "9de7d2cb77d6b5d7a58b536b18c4d7b3d381528d537bf0a36701ff8031c02e49",
         rust_path: "crates/azoth-process/src/models/component_splitter.rs",
