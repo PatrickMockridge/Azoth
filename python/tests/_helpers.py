@@ -103,6 +103,17 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # as such; between the two kernels what is being compared is rounding.
         "max_material_balance_residual",
         "max_log_fugacity_residual",
+        # The element balance less the inlet's, per element: **zero by conservation**, so what
+        # crosses between two kernels is the rounding of the same cancellation - `-1.7e-16`
+        # against `2.2e-16` on the singular Gibbs row - and a relative comparison of it divides
+        # by that rounding. Held to the stopping precision, like the step norm below it.
+        "element_balance_difference",
+        # The solver's own last step norm. **On a row that reaches machine zero the two
+        # kernels land at `3e-16` and `6e-15`** - two roundings of a number that is zero,
+        # whose ratio is a factor of twenty - so a relative comparison of it is impossible.
+        # It is compared on the stopping precision, which a procedure declares under
+        # `algorithm` and a direct model takes as an *input* the case states.
+        "final_error",
         # `reactions.reactive_hybrid_eos_ge_flash`'s. It is the quantity the coupled loop
         # *stops on* - the sum of `|x_old - x_new|` over the brine at the last pass - so the
         # two kernels land either side of `1e-13` for the same reason an `error` does, and a
@@ -690,6 +701,15 @@ def _assert_diagnostic(
         for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
             _assert_diagnostic(ca, cb, bound, f"{context}[{index}]", relative_tolerance)
         return
+    # **A diagnostic can carry a unit** - the Gibbs row's element balance is mol/s - and the
+    # bound is a bare magnitude in that unit, so the quantities are stripped here rather than
+    # compared as quantities against a dimensionless bound.
+    if isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
+        assert isinstance(a, pint.Quantity) and isinstance(b, pint.Quantity), (
+            f"{context}: one side is a bare number and the other a quantity"
+        )
+        a = float(a.to_base_units().magnitude)
+        b = float(b.to_base_units().magnitude)
     a_nan = a != a
     b_nan = b != b
     if a_nan or b_nan:
@@ -1050,7 +1070,9 @@ def parameter_set(model: Mapping[str, Any], names: Sequence[str], inputs: Mappin
     return resolve(list(names), **{extra: inputs[extra] for extra in extras})
 
 
-def convergence_tolerance(spec_: dict[str, Any]) -> float | None:
+def convergence_tolerance(
+    spec_: dict[str, Any], case: dict[str, Any] | None = None
+) -> float | None:
     """The tolerance at which the spec says its solver converged, if it declares one.
 
     This is the bound a solver diagnostic is compared on. It is the spec's own number,
@@ -1061,9 +1083,18 @@ def convergence_tolerance(spec_: dict[str, Any]) -> float | None:
     which the iteration stopped - so a calc's residual is compared on its own bound
     too, rather than relatively (a residual near zero has no meaningful relative
     error, which ``_helpers._assert_diagnostic`` documents).
+
+    **A direct model has no procedure block, so its stopping precision is an input** -
+    ``convergence_tolerance``, whose class default the spec's prose names - and the
+    case states the value the run used. A caller that passes no case gets ``None`` and
+    the field falls back to the relative comparison, as before.
     """
     for block in ("algorithm", "solver"):
         value = spec_.get(block)
         if isinstance(value, dict) and value.get("tolerance") is not None:
             return float(value["tolerance"])
+    if case is not None:
+        declared = (case.get("inputs") or {}).get("convergence_tolerance")
+        if declared is not None:
+            return float(declared)
     return None

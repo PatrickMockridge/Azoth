@@ -88,30 +88,24 @@ fn the_adiabatic_methane_oxidation_row_is_reproduced() {
     assert!(state.converged);
 }
 
-/// The capture's `steam_methane_hot` row, refused by name.
+/// **The capture's `steam_methane_hot` row, which is the one the pseudo-inverse answers.**
 ///
 /// Two species against three active element balances - carbon, hydrogen and oxygen - makes the
 /// Newton system over-determined and its Jacobian singular, which is the case NeqSim answers
-/// through `SimpleMatrix.pseudoInverse`. The port refuses it and says so, rather than answering
-/// it with a different step; the class that would close it is named in the message.
+/// through `SimpleMatrix.pseudoInverse`; this port's `solve_least_squares` is that inverse's
+/// construction. **The answer is the feed**: the species set carries no product, so no direction
+/// moves the composition, the step is null-space-sized, and the row stops at the class's
+/// `min_iterations` floor of 100 with a final error of `5.8e-15` - the capture's own numbers.
 #[test]
-fn the_hot_steam_methane_row_is_refused_by_name() {
+fn the_hot_steam_methane_row_is_answered_by_the_pseudo_inverse() {
     let feed = stream(&["methane", "water"], &[1.0, 1.0], 1000.0, 1.0);
-    let (mixture, ideal_gas) = feed.mixture().expect("the fluid resolves");
-    let database = GibbsDatabase::shipped().expect("the database loads");
-    let inlet_moles: Vec<f64> = feed.z.iter().map(|z| z * feed.n).collect();
-    let error = solve(
-        &mixture,
-        &ideal_gas,
-        &database,
-        &inlet_moles,
-        feed.t,
-        feed.p.value / 1.0e5,
-        &DEFAULT,
-    )
-    .expect_err("a singular Jacobian is refused");
-    let message = error.to_string();
-    assert!(message.contains("pseudoInverse"), "{message}");
+    let state = run(&feed, DEFAULT);
+    report("steam_methane_hot", &feed, &state);
+
+    assert_eq!(state.iterations, 100, "the class's minIterations floor");
+    assert!(state.converged, "the row converges");
+    assert_close(&state, &feed, "methane", 0.5, 1e-12);
+    assert_close(&state, &feed, "water", 0.5, 1e-12);
 }
 
 /// The capture's `ammonia_isothermal` row.

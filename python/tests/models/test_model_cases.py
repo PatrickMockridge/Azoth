@@ -116,5 +116,5 @@ def test_a_model_case_matches_what_it_records(model: dict[str, Any], case: dict[
         _expected_result(result, case),
         float(case["tolerance"]),
         f"{model['id']}::{case['id']}",
-        diagnostic_bound=h.convergence_tolerance(model),
+        diagnostic_bound=h.convergence_tolerance(model, case),
     )

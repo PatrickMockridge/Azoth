@@ -56,7 +56,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result};
 use azoth_eos::mixture::{Mixture, RootSide};
 use azoth_eos::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
-use azoth_reactions::linalg::solve_lu;
+use azoth_reactions::linalg::{solve_least_squares, solve_lu};
 
 use crate::reactor::gibbs_database::{GibbsDatabase, GibbsSpecies, R_KJ};
 
@@ -293,28 +293,15 @@ pub fn solve(
             &species,
         );
         let negated: Vec<f64> = vector.iter().map(|v| -v).collect();
+        // **The class's `solveNewtonSystem` catches the LU failure and retries through
+        // `SimpleMatrix.pseudoInverse`**, and `solve_least_squares` is that inverse's own
+        // construction - its doc says so, and it is the same one-sided Jacobi decomposition.
+        // The reachable state is a feed with fewer species than active elements:
+        // `steam_methane_hot` carries methane and water alone, so two species meet three
+        // balance rows, and the capture's row converges there.
         let mut delta = match solve_lu(&jacobian, &negated) {
-            Ok(delta) => delta,
-            // **The class's fallback here is a pseudo-inverse and this port does not carry it.**
-            // `solveNewtonSystem` catches the LU failure and retries through
-            // `SimpleMatrix.pseudoInverse`, and the reachable case is a feed with fewer species
-            // than elements - `steam_methane_hot` carries methane and water alone, so two
-            // species meet three active balance rows and the system is over-determined. That
-            // row is in the capture and converges there, so the fallback is load-bearing rather
-            // than defensive; a port without it refuses the row rather than answering it
-            // differently. `azoth-reactions`' `linalg` has `row_space_basis` and
-            // `project_onto_null_space`, which is where a pseudo-inverse would be built.
-            Err(error) => {
-                return Err(AzothError::invalid_input(
-                    "jacobian",
-                    format!(
-                        "the Newton system is singular at iteration {iteration} ({error}), and \
-                         the class's fallback for that is `SimpleMatrix.pseudoInverse`, which \
-                         this port does not carry - a feed with fewer species than active \
-                         elements reaches it, and `steam_methane_hot` in the capture is one"
-                    ),
-                ));
-            }
+            Ok(delta) if delta.iter().all(|value| value.is_finite()) => delta,
+            _ => solve_least_squares(&jacobian, &negated)?,
         };
 
         // The class's `columnScaleFactors` are the identity, so `unscaleNewtonStep` is one.

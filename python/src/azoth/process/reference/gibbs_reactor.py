@@ -66,6 +66,7 @@ from azoth.eos.reference._mixture_state import (
 )
 from azoth.eos.reference.pt_flash import check_composition
 from azoth.process.reference import reactor_mechanical
+from azoth.reactions.reference._linalg import solve_least_squares
 
 #: ``GibbsReactor.java``'s own ``elementNames``, which has **seven** entries for an eight-column
 #: table. Index 5 is named ``Ar`` and reads the file's ``Na`` column; index 6 is named ``Z`` and
@@ -257,13 +258,14 @@ class Solved:
     gibbs_history: list[float]
 
 
-def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float] | None:
-    """``J x = rhs`` by Gaussian elimination with partial pivoting, or ``None`` if singular.
+def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float]:
+    """``J x = rhs`` by Gaussian elimination, falling back to the pseudo-inverse's construction.
 
-    ``solveNewtonSystem`` uses EJML's ``solve`` and falls back to ``pseudoInverse``; the fallback
-    is **not carried**, so a singular system is refused rather than answered differently. It is
-    reachable: two species against three active elements is over-determined, and the capture's
-    ``steam_methane_hot`` row is exactly that.
+    ``solveNewtonSystem`` uses EJML's ``solve`` and retries through ``pseudoInverse`` when it
+    throws; :func:`solve_least_squares` is that inverse's own decomposition, the same one
+    ``azoth-reactions``' bordered solve falls back to. It is reachable: two species against three
+    active elements is over-determined, and the capture's ``steam_methane_hot`` row is exactly
+    that.
     """
     n = len(rhs)
     a = [[*jacobian[i], rhs[i]] for i in range(n)]
@@ -271,7 +273,7 @@ def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float] 
         pivot = max(range(column, n), key=lambda row: abs(a[row][column]))
         a[column], a[pivot] = a[pivot], a[column]
         if a[column][column] == 0.0:
-            return None
+            return solve_least_squares(jacobian, rhs)
         for row in range(column + 1, n):
             factor = a[row][column] / a[column][column]
             for k in range(column, n + 1):
@@ -368,13 +370,6 @@ def solve(
             _element_balance(species, moles)[j] - element_in[j] for j in active
         ]
         delta = _solve_linear(jacobian, [-value for value in vector])
-        if delta is None:
-            raise InvalidInputError(
-                "jacobian",
-                f"the Newton system is singular at iteration {iteration}, and the class's "
-                "fallback for that is `SimpleMatrix.pseudoInverse`, which this port does not "
-                "carry - a feed with fewer species than active elements reaches it",
-            )
 
         delta_norm = math.sqrt(sum(value * value for value in delta))
         history.append(_mixture_gibbs(species, moles, temperature_value, cp))

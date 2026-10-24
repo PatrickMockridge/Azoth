@@ -244,3 +244,38 @@ empty_vessel_weight = 902.4448091641318
 total_equipped_weight = 1077.5844703902007
 reactor_type = "FIXED_BED"
 number_of_beds = 1
+
+[[cases]]
+id = "steam_methane_hot"
+tolerance = 0.001
+source = """\
+    NeqSim pin, `GibbsReactor.run` on an equimolar methane/water feed at 1000 K and 1 bara, from
+    `validation/neqsim/captures/process_gibbs_reactor.tsv`, row `steam_methane_hot`. **This is the
+    row the pseudo-inverse answers**: two species against three active element balances - carbon,
+    hydrogen and oxygen - make the Newton matrix singular, and the class catches the failed LU
+    solve and retries through `SimpleMatrix.pseudoInverse`. The answer is the feed, because the
+    species set carries no product and no direction moves the composition, and the row stops at
+    the class's `min_iterations` floor of 100. **The multipliers are deliberately not asserted.**
+    They are not unique on a rank-deficient system: the port's minimum-norm solution differs from
+    JAMA's by the element matrix's null vector (`O +4`, `C +8`, `H -2` J/mol), which is a choice
+    of basis rather than an answer - every element balance is still closed. The compositions and
+    the energy history are the oracle."""
+[cases.inputs]
+components = ["methane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.5]
+feed_p = 100000.0
+feed_t = 1000.0
+energy_mode = "isothermal"
+damping_composition = 0.05
+max_iterations = 5000.0
+convergence_tolerance = 0.001
+min_iterations = 100.0
+[cases.expected]
+product_n = 0.9999999999999984
+product_z = [0.5, 0.5]
+product_p = 100000.0
+product_t = 1000.0
+converged = true
+iterations = 100
+final_error = 5.803526382009237e-15
