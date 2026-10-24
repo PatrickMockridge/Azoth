@@ -113,7 +113,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 
-- **`runTransient` and the JSON profile export are owed**, and `ROADMAP.md` names them. `ReactorMechanicalDesign` is not: the class overrides no `getMechanicalDesign`, so it answers the base `MechanicalDesign`, which computes no vessel. The schemes are the textbook RK4 and Euler it writes out itself.
+- **`runTransient` is the interface's default here too.** No override exists, so `SimulationInterface` calls `run` and advances a clock, and `Session::run` is that fallback's substance. **The profile export is the result**: `toJson()` serialises the columns this id publishes.
 
 
 ## Cases
