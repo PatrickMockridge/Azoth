@@ -251,7 +251,12 @@ jobs:
   python-test:
     name: python-test
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # **60, and the reason is measured.** The full suite's slowest target,
+    # `test_every_declared_range_check_runs`, runs every model case on both backends and took
+    # 1681 s on 2026-10-23; with the rest of the nightly on four xdist workers the job crossed
+    # the old 45-minute ceiling and was cancelled at it. The ceiling is a ceiling, not a budget
+    # to spend: this is the number that lets the whole surface finish.
+    timeout-minutes: 60
     needs: scope
     if: needs.scope.outputs.python-test == 'true'
     env:

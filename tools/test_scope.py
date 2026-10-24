@@ -309,7 +309,7 @@ LANE_BUDGET_MINUTES: dict[str, int] = {
     "iterate": 5,
     "push": 15,
     "tranche": 20,
-    "nightly": 45,
+    "nightly": 60,
 }
 
 #: **Which generators a diff can make stale.** Conservative by design: a miss here is caught

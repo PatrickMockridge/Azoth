@@ -7,7 +7,7 @@ name: nightly
 # surface - every job, both languages, every generator, the Lean build, the front end, the
 # wheel - is this workflow's, on a 24-hour cycle. **It runs on the same runner class as a
 # push**, so the full Python suite is xdist-parallel (`-n 4 --dist loadgroup`) and `python-test`
-# carries a 45-minute ceiling: a green push is not a claim that the tree is sound, it is a claim
+# carries a 60-minute ceiling: a green push is not a claim that the tree is sound, it is a claim
 # that nothing *this change reaches* is broken, and this is what closes the gap within a day.
 #
 # **It calls `ci.yml` rather than repeating it.** `mode: full` makes `--plan` say `true` for
