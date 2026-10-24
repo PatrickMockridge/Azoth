@@ -79,4 +79,4 @@ declared checks *that call* could not evaluate.
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/ComponentSplitter.java` is the port source, through its `run`.
 - `validation/neqsim/captures/process_component_splitter.tsv` - a near-total separation, an even routing, and one that takes all of a component.
-- `validation/neqsim/CsFresh.java` - the measurement the outlet enthalpies are pinned to: a fresh fluid at each outlet's own state, which is what the class's own outlet does not reproduce.
+- `validation/neqsim/CsFresh.java` - the measurement the outlet enthalpies are pinned to: a fresh fluid at each outlet's own state, which is what the class's own outlet does not reproduce. (upstream #4072).
