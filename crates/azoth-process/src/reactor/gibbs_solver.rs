@@ -356,7 +356,7 @@ pub fn solve(
         // number is recorded, every later pass records one too, so the history is the first
         // five passes followed by the rest of the run.
         if settings.regularization || !condition_history.is_empty() || iteration <= 5 {
-            let number = apply_regularization(&settings, &mut jacobian, variables.len())?;
+            let number = apply_regularization(settings, &mut jacobian, variables.len())?;
             condition_history.push(number);
             if settings.regularization && number < settings.regularization_threshold {
                 delta = match solve_lu(&jacobian, &negated) {
@@ -442,7 +442,7 @@ pub fn solve(
                 &delta,
                 alpha,
                 current_g,
-                &settings,
+                settings,
             )?;
         }
 
@@ -500,8 +500,8 @@ fn apply_regularization(
         if max_diag > 0.0 {
             tau = tau.max(max_diag * 1e-8);
         }
-        for i in 0..variables {
-            jacobian[i][i] += tau;
+        for (i, row) in jacobian.iter_mut().enumerate().take(variables) {
+            row[i] += tau;
         }
         number = condition_number_2(jacobian)?;
     }
