@@ -486,7 +486,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         }
         checked += spec.input_checks().count();
     }
-    assert_eq!(checked, 94, "the bounds this test walked");
+    // The reactor vessel state eight, which took the walk from ninety-four to a hundred and
+    // two.
+    assert_eq!(checked, 102, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -600,7 +602,12 @@ fn the_generated_input_table_is_the_models_own() {
     // `material_grade` and `max_operation_pressure`. `417 + 6 = 423`. **And then the
     // absorber pair's six**, on `process.absorption_column` and `process.stripping_column`,
     // which inherit the vessel from the same class: the same six names, `423 + 12 = 435`.
-    assert_eq!(walked, 435, "the inputs this test walked");
+    // **And then the reactor vessel's eleven**, all on `process.gibbs_reactor` and five of them
+    // class defaults: `reactor_type`, `catalyst_bulk_density`, `catalyst_particle_diameter`,
+    // `bed_void_fraction`, `ghsv`, `lhsv`, `number_of_beds`, `max_operation_pressure`,
+    // `max_operation_temperature`, `joint_efficiency` and `corrosion_allowance`.
+    // `435 + 11 = 446`.
+    assert_eq!(walked, 446, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
