@@ -592,7 +592,10 @@ to `1e-8`, because the class is reconciling against a return this port has no tr
 `component_splitter`, `ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`,
 `stirred_tank_reactor`, `tank` and `three_phase_separator` - each a registered `process.*` id
 with a spec, two implementations, a NeqSim capture and a case set; so have the classes the column
-is the source of, beside the column itself, and so has `gibbs_reactor`:
+is the source of, beside the column itself, and so has `gibbs_reactor`. **The plug-flow reactor's
+axial profile is published rather than summarised** - the summed reaction rate, on a vocabulary
+dimension added for it, the per-station molar flows as a matrix, and the residence time - so the
+class's `toJson()` has nothing left to serialise that the result does not already carry:
 
 - **`gibbs_reactor` was not the composition the P11 plan expected, and it cost a tier of its
   own.** `GibbsReactor.run` never calls `ChemicalEquilibrium`: the class is 3,163 lines carrying
@@ -601,8 +604,13 @@ is the source of, beside the column itself, and so has `gibbs_reactor`:
   read the solver, and built it - `data/reactors/`, `reactor::gibbs_solver`, and the id. **The
   port reproduces the class to the accuracy the class's conditioning permits**: one iteration
   from the same state agrees to `8e-14` on the major species, and the hundred damped steps the
-  class takes separate two runs by the class's own `cond(J) = 6.12e6`. What is owed is the
-  pseudo-inverse its singular-Jacobian row needs.
+  class takes separate two runs by the class's own `cond(J) = 6.12e6`. **The solver's own
+  machinery is in**: a singular Jacobian falls back to `SimpleMatrix.pseudoInverse`'s
+  construction (`solve_least_squares`), the Armijo and adaptive step controls and the Tikhonov
+  augmentation are optional inputs at the class's own defaults, and `getConditionNumberHistory()`
+  is an output - all held to `process_gibbs_algorithms.tsv`, the capture the class's own
+  algorithm test supplies. **`runTransient` is stated as the interface's fallback rather than
+  owed**, because neither reactor overrides it.
 
 **And the one that was a second physics is ported.** `unit_ops.rate_based_packed_column` is
 4,081 lines of segment model - axial slices through the packing, each with gas and liquid film
