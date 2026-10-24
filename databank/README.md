@@ -166,6 +166,12 @@ files stayed on the previous revision through the last refresh.
    capture *is* the previous pin, and that is what makes the check decidable with one jar.
 4. **Re-vendor and regenerate**, as the sections above describe, and re-capture.
 
+**A file may be vendored at its own commit.** Each `[[upstreams.files]]` carries `commit` and
+`retrieved` beside the upstream's, and `tools/gen_databank.py` cites them; the code pin stays
+where it is. That is how a post-pin data fix is reflected without dragging five hundred
+commits of code with it - and a capture taken against such a file states the ingredients it
+actually used, in `validation/neqsim/captures/README.md`.
+
 **The models with no probe are the residual gap.** `crates/*/tests/` holds reference-equation
 tests - ammonia, Vega, Span-Wagner, Leachman, argon and para-hydrogen solid - whose NeqSim
 classes nothing in `validation/neqsim/` drives, so a move there is caught by step 2 and not
