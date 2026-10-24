@@ -695,3 +695,78 @@ fn the_absorber_row_publishes_the_post_init_density() {
     assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
     assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
 }
+
+/// **`process_column_mechanical_design.tsv`'s `hydrocarbon_stripper_mechanical` row**, which is
+/// the stripper's own reading of a class it overrides none of.
+///
+/// **The tolerance is `5e-3` and not the absorber's `1e-5`.** The two libraries converge to
+/// different fixed points on this state - the case's own source measures `4.4e-3` on propane's
+/// stripped residual - so the flows tray 0 hands the design differ by a few parts in a thousand,
+/// and the design is a function of those flows. The absorber's row is held at `1e-5` because its
+/// own state agrees; this one cannot be.
+#[test]
+fn the_stripper_row_publishes_the_post_init_density() {
+    let out = distillation_column(&hydrocarbon_stripper()).expect("the stripper converges");
+    let components = [
+        "methane",
+        "propane",
+        "n-butane",
+        "n-pentane",
+        "n-heptane",
+    ]
+    .map(str::to_string);
+    let report = mechanical_design(
+        &out.trays,
+        &components,
+        &out.distillate,
+        &out.bottoms,
+        None,
+        None,
+        &mechanical_geometry(),
+    )
+    .expect("the mechanical design computes");
+
+    assert_eq!(report.actual_trays, 8, "the actual trays");
+    assert_eq!(report.material_grade, "SA-516-70", "the material grade");
+    relative(report.vessel_diameter.value, 0.5, 5e-3, "vessel_diameter");
+    relative(report.vessel_height.value, 8.8, 5e-3, "vessel_height");
+    relative(
+        report.vessel_wall_thickness_mm,
+        216.194_968_553_459_12,
+        5e-3,
+        "vessel_wall_thickness_mm",
+    );
+    // **Derived, not printed**: the capture's `flooding_factor` is the *first* design's, at the
+    // `0.0` liquid density that makes `uFlood` fall back to `kFactor`; the repaired value is
+    // `uFlood = 0.8216` at `631.6396155323132` kg/m3, over the `0.1767` m2 net area of the `0.5`
+    // m shell.
+    relative(
+        report.flooding_factor,
+        0.040_667_769_770_911_966,
+        5e-3,
+        "flooding_factor",
+    );
+    // **The repaired values**, as on the absorber's row: the capture's first design reads the
+    // liquid outlet as `0.0` kg/m3, `Infinity` and its own `5.0` mbar, and the `_after_init` keys
+    // are the second one.
+    relative(
+        report.weir_loading,
+        3.480_252_186_825_798,
+        5e-3,
+        "weir_loading",
+    );
+    relative(
+        report.tray_pressure_drop_mbar,
+        8.098_192_314_185_997,
+        5e-3,
+        "tray_pressure_drop_mbar",
+    );
+    relative(
+        report.total_pressure_drop_bar,
+        0.018_066_455_152_999_032,
+        5e-3,
+        "total_pressure_drop_bar",
+    );
+    assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
+    assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
+}

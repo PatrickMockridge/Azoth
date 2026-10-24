@@ -144,7 +144,7 @@ holds the declaration and the two languages to each other.
 - **the Murphree efficiencies and the eight strategies the base declines are refused by name there**, because this entry delegates `solver_type` and `tray_murphree_efficiency` to `process.distillation_column` and that spec's rows carry them.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
-- **The vessel the last eleven outputs carry has no row of its own.** The capture's one `absorber_mechanical` row is the lean-oil absorber's, and a stripper overrides none of the getters - so these are held by cross-implementation agreement alone until a stripper row exists.
+- **the vessel's last eleven outputs have their own row.** `process_column_mechanical_design.tsv`'s `hydrocarbon_stripper_mechanical` is this case's recipe, and the case holds the eleven to it; `weir_loading`, `tray_pressure_drop_mbar` and `flooding_factor` are the repaired values.
 
 ## Cases
 
