@@ -24,7 +24,11 @@ component data is that file: `ge_henry_probe`, `ge_electrolyte_probe`, `pitzer_f
 `pitzer_hydrate_probe` and `aqueous_viscosity_probe` are taken with it.
 `pseudo_component_combiner_probe` adds the characterization fix `c93c8153`'s one hunk: the
 mass-quantile candidate is projected into `nextUp`/`nextDown` of the reference gap rather than
-discarded for the midpoint (upstream PR #4330). Everything else is the pin, so each capture's delta is those changes rather than the
+discarded for the midpoint (upstream PR #4330).
+
+**The jar also carries the re-vendored `REACTIONDATA.csv` and `REACTIONDATAPITZER.csv`**
+(upstream `1acf0652`), so `reactive_flash_probe`, `reactive_ph_flash_probe`,
+`hybrid_eos_ge_reactive_probe` and `hybrid_eos_ge_reactive_loop_probe` are taken with them. Everything else is the pin, so each capture's delta is those changes rather than the
 five hundred commits between the revisions. The built-in packing rows are
 the reference after the fix: `Pall-Ring-50` is `120.0`, `0.96`, factor `66`, and the file's
 plastic ring is reachable as `Pall-Ring-50-plastic` (`111.1`, `0.919`, `180`).
