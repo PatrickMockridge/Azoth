@@ -132,6 +132,29 @@ def _system_per_mole(
     return mass, volume
 
 
+def system_mass_density(components: list[str], t: float, p: float, z: list[float]) -> float:
+    """``SystemInterface.getDensity("kg/m3")``, kg/m**3.
+
+    The Python half of ``segment::phase::system_mass_density``. **It is the system's density and
+    not a phase's**, so it answers on a two-phase state where a single-phase cubic volume would
+    not.
+    """
+    mass, volume = _system_per_mole(components, t, p, z)
+    return mass / volume
+
+
+def system_volumetric_flow(
+    components: list[str], t: float, p: float, z: list[float], moles_per_second: float
+) -> float:
+    """``SystemInterface.getFlowRate("m3/sec")``, m**3/s.
+
+    The Python half of ``segment::phase::system_volumetric_flow``: ``n * V`` summed over the
+    phases.
+    """
+    _mass, volume = _system_per_mole(components, t, p, z)
+    return moles_per_second * volume
+
+
 def _phase_zero_density(components: list[str], t: float, p: float, z: list[float]) -> float:
     """``getPhase(0)``'s mass density: the gas phase where there is one, the single phase else."""
     mixture, labelled, _shares = _labelled_phases(components, t, p, z)
