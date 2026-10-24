@@ -188,7 +188,14 @@ def _compare(
             context,
             diagnostic_bound,
             nan_agrees=True,
-            absolute_floor=diagnostic_bound,
+            # **At least the case's own answer band, and twice the solver's bound.** Two
+            # kernels each within the declared bound may differ by their sum, and a
+            # degenerate input is not the case's state - so the field is held to the
+            # model's declared answer precision absolutely rather than to the stopping
+            # precision of a state the case never promises.
+            absolute_floor=(
+                None if diagnostic_bound is None else max(2.0 * diagnostic_bound, tolerance)
+            ),
         )
         return
     if left_kind == "raised" and right_kind == "raised":

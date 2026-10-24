@@ -85,7 +85,9 @@ def test_every_pyclass_field_is_readable_and_the_conversion_is_a_function() -> N
             f"attributes no caller can read"
         )
 
-    conversions = re.findall(r"impl From<&[\w:]+> for (Py\w+) \{", text)
+    # **Across a line break**: rustfmt wraps a long source path before `for`, and a
+    # pattern that required the impl on one line read a generated file as incomplete.
+    conversions = re.findall(r"impl From<&[\w:]+>\s+for (Py\w+)\s*\{", text)
     assert len(conversions) == len(re.findall(r"#\[pyclass\(", text)), (
         "every pyclass needs a `From` impl, which is what the transport calls"
     )
