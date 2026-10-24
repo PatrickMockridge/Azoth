@@ -2537,12 +2537,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gibbs_reactor': {
         "calc_id": 'process.gibbs_reactor',
         "name": 'Gibbs reactor',
-        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': '4ba893945c7fa5e3f40e68300be01e6d99254b31621f542b675447246ef5dbb9'},
-        "code": [{'path': 'python/src/azoth/process/reference/gibbs_reactor.py', 'sha256': 'abcb79ce305db14e19b1569ba8ddc22958b131135b03c9250de273b60c7a8822'}, {'path': 'crates/azoth-process/src/models/gibbs_reactor.rs', 'sha256': '61987dcd7111ff40e8c2859518297b703a410f10a31d5d8452283582cb8d4fa2'}],
+        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': '76d4bccbb61c5779e8eb0fb06e9ab4a73479b2ed58a057d5a5e1ba80764deb40'},
+        "code": [{'path': 'python/src/azoth/process/reference/gibbs_reactor.py', 'sha256': '246d5df2473c45b744f959db437e15220ef6c18e6440d62be112f50bf46b743c'}, {'path': 'crates/azoth-process/src/models/gibbs_reactor.rs', 'sha256': '8883ba938b50e99f0806ac2ba4eacf2d5fa9615ce0695bf366b843a790558b7f'}],
         "source": 'NeqSim process/equipment/reactor/GibbsReactor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 6,
+        "tests_active": 8,
         "tests_skipped": 0,
     },
     'process.heat_exchanger': {

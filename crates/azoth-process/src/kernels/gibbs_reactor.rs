@@ -68,6 +68,16 @@ pub struct ReactorSetup {
     pub convergence_tolerance: f64,
     /// `minIterations`, the floor below which the tolerance is not consulted.
     pub min_iterations: u32,
+    /// `useArmijoLineSearch`.
+    pub armijo_line_search: bool,
+    /// `armijoC1`.
+    pub armijo_c1: f64,
+    /// `armijoRho`.
+    pub armijo_rho: f64,
+    /// `armijoMaxBacktracks`.
+    pub armijo_max_backtracks: u32,
+    /// `useAdaptiveStepSize`.
+    pub adaptive_step_size: bool,
 }
 
 impl Default for ReactorSetup {
@@ -78,6 +88,11 @@ impl Default for ReactorSetup {
             max_iterations: 5000,
             convergence_tolerance: 1e-3,
             min_iterations: 100,
+            armijo_line_search: false,
+            armijo_c1: 1e-4,
+            armijo_rho: 0.5,
+            armijo_max_backtracks: 20,
+            adaptive_step_size: false,
         }
     }
 }
@@ -115,8 +130,9 @@ pub struct ReactorNumbers {
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the mixture cannot be resolved, if the feed carries no
 ///   moles, or if the solve meets a state it cannot take a logarithm of.
-/// * Whatever [`solve`] returns, including its refusal of a singular Newton system - the one
-///   case the class answers through a pseudo-inverse this port does not carry.
+/// * Whatever [`solve`] returns - including its own refusals of a state it cannot take a
+///   logarithm of. A singular Newton system is not one of them: the solve falls back to the
+///   pseudo-inverse's construction, as the class does.
 pub fn gibbs_reactor(feed: &Stream, setup: &ReactorSetup) -> Result<(Stream, ReactorNumbers)> {
     if feed.n <= 0.0 {
         return Err(AzothError::invalid_input(
@@ -134,6 +150,11 @@ pub fn gibbs_reactor(feed: &Stream, setup: &ReactorSetup) -> Result<(Stream, Rea
         max_iterations: setup.max_iterations,
         tolerance: setup.convergence_tolerance,
         min_iterations: setup.min_iterations,
+        armijo_line_search: setup.armijo_line_search,
+        armijo_c1: setup.armijo_c1,
+        armijo_rho: setup.armijo_rho,
+        armijo_max_backtracks: setup.armijo_max_backtracks,
+        adaptive_step_size: setup.adaptive_step_size,
     };
     let state = solve(
         &mixture,

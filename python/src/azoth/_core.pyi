@@ -5167,6 +5167,11 @@ def gibbs_reactor(
     max_operation_temperature: float | None = None,
     joint_efficiency: float | None = None,
     corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: float | None = None,
+    adaptive_step_size: bool | None = None,
 ) -> GibbsReactorResult: ...
 def heat_exchanger(
     hot_components: list[str],

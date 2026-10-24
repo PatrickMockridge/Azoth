@@ -18,7 +18,7 @@ assumptions = [
     "**`calculateJ`'s javadoc and its code disagree on three signs.** The comment subtracts every term; the code subtracts the first and adds the other three. The code is ported.",
     "**a singular Newton system falls back to `SimpleMatrix.pseudoInverse`.** Two species against three active balances - the capture's `steam_methane_hot` row - make the Jacobian singular, and the port calls `solve_least_squares`, which is that inverse's own construction.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` has no other route. The class carries no cubic of its own, so the oracle is built on PR too.",
-    "**still owed, and named in `ROADMAP.md`**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `runTransient`.",
+    "**still owed, and named in `ROADMAP.md`**: the Tikhonov regularisation and `runTransient`. **The step controls are in**: `armijo_line_search` and `adaptive_step_size` reproduce the class's own algorithm rows, held to `process_gibbs_algorithms.tsv`.",
     "**the vessel is `ReactorMechanicalDesign`, read from the inlet.** `GibbsReactor` is a `TwoPortEquipment`, and `calcDesign` takes its feed's pressure, temperature, volumetric flow and **system** density - so a two-phase feed is answered where `Stream::density` refuses. The solve is not on its path.",
     "**three branches cannot answer.** The L/D clamps cannot fire, the diameter being built at the target `4.0`; the head is always the shell's, its denominator being the larger; and the catalyst and `0.5` m floors answer at every default GHSV. The capture's `cstr` row lifts the diameter off its floor.",
     "**the space velocities are declared dimensionless.** `ghsv` and `lhsv` are reciprocal hours, and the unit vocabulary has no reciprocal-time unit; the values cross unconverted, on the `total_pressure_drop_mbar` precedent.",
@@ -113,6 +113,26 @@ description = "`getJointEfficiency()`, the `E` of both ASME thickness forms. **A
 unit = "mm"
 optional = true
 description = "`getCorrosionAllowance()`, added to both thicknesses. **Absent is `0.0` mm.**\n"
+[inputs.armijo_line_search]
+type = "boolean"
+optional = true
+description = "`useArmijoLineSearch`: backtrack from the damped step until the total Gibbs energy meets `G(trial) <= G + c1*alpha*grad^T dn`, with the trial's fugacity coefficients recomputed. **Absent is `false`**, the class's own initialiser.\n"
+[inputs.armijo_c1]
+unit = "dimensionless"
+optional = true
+description = "`armijoC1`, the sufficient-decrease constant. **Absent is `1e-4`.** Read only when the line search is on.\n"
+[inputs.armijo_rho]
+unit = "dimensionless"
+optional = true
+description = "`armijoRho`, the backtracking contraction. **Absent is `0.5`.**\n"
+[inputs.armijo_max_backtracks]
+unit = "dimensionless"
+optional = true
+description = "`armijoMaxBacktracks`. **Absent is `20`**; on exhaustion the search returns `max(alpha, 1e-6)`.\n"
+[inputs.adaptive_step_size]
+type = "boolean"
+optional = true
+description = "`useAdaptiveStepSize`: the NASA CEA limit that keeps a major component's change under a factor of `e^ln 5` per step and stops a step crossing zero, floored at `1e-4`. **Absent is `false`.**\n"
 [outputs.product_n]
 unit = "mol/s"
 description = "the outlet's molar flow, which the element balances do not fix.\n"

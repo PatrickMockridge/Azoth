@@ -93,6 +93,16 @@ ELEMENT_ZERO_THRESHOLD: Final = 1.0e-6
 #: ``performIterationUpdate``'s floor on a composition after the damped step.
 MIN_COMPOSITION: Final = 1.0e-15
 
+#: ``MAX_STEP_LIMIT``, ``Math.log(5.0)``: the largest fractional mole change one adaptive step
+#: allows a significant component.
+MAX_STEP_LIMIT: Final = 1.6094379124341004
+#: ``calculateAdaptiveAlpha``'s floor under the step it returns.
+MIN_ADAPTIVE_ALPHA: Final = 1.0e-4
+#: ``armijoLineSearch``'s floor when every backtrack fails.
+MIN_ARMIJO_ALPHA: Final = 1.0e-6
+#: ``evaluateTotalGibbsEnergy``'s ``1e-30`` floor under a mole number.
+GIBBS_ZERO_MOLES: Final = 1.0e-30
+
 #: The four heat-capacity coefficients the element subtraction reads, per element, in the order
 #: ``O, N, C, H, S`` - ``calculateCorrectedHeatCapacityCoeffs``' own five arrays.
 ELEMENT_CP: Final = (
@@ -296,6 +306,11 @@ def solve(
     max_iterations: int,
     tolerance: float,
     min_iterations: int,
+    armijo_line_search: bool = False,
+    armijo_c1: float = 1.0e-4,
+    armijo_rho: float = 0.5,
+    armijo_max_backtracks: int = 20,
+    adaptive_step_size: bool = False,
 ) -> Solved:
     """Minimise the Gibbs energy of a fluid at a temperature and pressure."""
     table = database()
@@ -399,8 +414,34 @@ def solve(
             final_error = delta_norm
             break
 
+        # **The step size: adaptive first, then Armijo, then the fixed damping.** The class's
+        # own order, with the adaptive branch replacing the damping rather than bounding it.
+        alpha = damping
+        if adaptive_step_size:
+            alpha = _adaptive_alpha(moles, variables, delta)
+        if armijo_line_search:
+            current_g = _total_gibbs_energy(
+                mixture, species, cp, moles, temperature_value, pressure_bara
+            )
+            alpha = _armijo_alpha(
+                mixture,
+                species,
+                cp,
+                moles,
+                temperature_value,
+                pressure_bara,
+                objective,
+                variables,
+                delta,
+                alpha,
+                current_g,
+                armijo_c1,
+                armijo_rho,
+                armijo_max_backtracks,
+            )
+
         for slot, index in enumerate(variables):
-            moles[index] = max(moles[index] + delta[slot] * damping, MIN_COMPOSITION)
+            moles[index] = max(moles[index] + delta[slot] * alpha, MIN_COMPOSITION)
         for slot, element in enumerate(active):
             lambdas[element] += delta[len(variables) + slot]
 
@@ -444,6 +485,119 @@ def _objective(
             - lagrange
         )
     return values
+
+
+def _total_gibbs_energy(
+    mixture: Any,
+    species: list[Species | None],
+    cp: Sequence[tuple[float, ...]],
+    moles: list[float],
+    temperature: float,
+    pressure_bara: float,
+) -> float:
+    """``evaluateTotalGibbsEnergy``: the Gibbs energy **with the fugacity coefficients**, kJ.
+
+    **A second Gibbs energy in this module, and not the history's.** The history pushes
+    ``calculateMixtureGibbsEnergy`` - the formation sum alone - while Armijo compares this one,
+    which adds ``RT ln phi``, ``RT ln y`` and ``RT ln P``.
+    """
+    rt = R_KJ * temperature
+    total = sum(moles)
+    x = [divide(value, total) for value in moles]
+    reduced = reduced_parameters(mixture, temperature, pressure_bara * 1.0e5)
+    state = phase_state(reduced, mixture.kij, x, liquid=False)
+    derivatives = phase_derivatives(
+        reduced,
+        mixture.kij,
+        x,
+        state.z,
+        temperature=temperature,
+        pressure=pressure_bara * 1.0e5,
+    )
+    ln_p = natural_log(pressure_bara)
+    total_g = 0.0
+    for i, entry in enumerate(species):
+        if entry is None:
+            continue
+        ni = moles[i]
+        if ni < GIBBS_ZERO_MOLES:
+            continue
+        y = divide(ni, total)
+        total_g += ni * (
+            entry.gibbs_energy(temperature, cp[i])
+            + rt * derivatives.ln_phi[i]
+            + rt * natural_log(y)
+            + rt * ln_p
+        )
+    return total_g
+
+
+def _directional_derivative(
+    objective: list[float], variables: list[int], delta: list[float]
+) -> float:
+    """The Armijo slope: ``sum_i F_i * delta_i`` over the composition variables."""
+    return sum(objective[index] * delta[slot] for slot, index in enumerate(variables))
+
+
+def _adaptive_alpha(moles: list[float], variables: list[int], delta: list[float]) -> float:
+    """``calculateAdaptiveAlpha``: the NASA CEA-style step limit, from a requested ``1.0``.
+
+    **The requested step is ``1.0`` and not ``dampingComposition``**, which is what the class
+    passes at its call site; the fixed damping is what this replaces.
+    """
+    alpha = 1.0
+    significance = sum(moles) * 1.0e-3
+    for slot, index in enumerate(variables):
+        current = moles[index]
+        if current < significance:
+            continue
+        abs_delta = abs(delta[slot])
+        if abs_delta < 1.0e-30:
+            continue
+        alpha = min(alpha, MAX_STEP_LIMIT * current / abs_delta)
+    for slot, index in enumerate(variables):
+        current = moles[index]
+        step = delta[slot]
+        if step < 0.0 and current > MIN_COMPOSITION:
+            alpha = min(alpha, 0.9 * current / (-step))
+    return max(alpha, MIN_ADAPTIVE_ALPHA)
+
+
+def _armijo_alpha(
+    mixture: Any,
+    species: list[Species | None],
+    cp: Sequence[tuple[float, ...]],
+    moles: list[float],
+    temperature: float,
+    pressure_bara: float,
+    objective: list[float],
+    variables: list[int],
+    delta: list[float],
+    alpha_max: float,
+    current_g: float,
+    armijo_c1: float,
+    armijo_rho: float,
+    armijo_max_backtracks: int,
+) -> float:
+    """``armijoLineSearch``: the step satisfying ``G(trial) <= G + c1*alpha*slope``.
+
+    **Each trial needs the fugacity coefficients at the trial composition** - the class calls
+    ``updateSystemWithNewCompositions(); system.init(3)`` before ``evaluateTotalGibbsEnergy`` -
+    so every backtrack is one ``phase_derivatives`` call. ``moles`` is never touched.
+    """
+    slope = _directional_derivative(objective, variables, delta)
+    if slope >= 0.0:
+        return alpha_max
+    alpha = alpha_max
+    for _ in range(armijo_max_backtracks):
+        trial = list(moles)
+        for slot, index in enumerate(variables):
+            trial[index] = max(moles[index] + alpha * delta[slot], MIN_COMPOSITION)
+        trial_g = _total_gibbs_energy(mixture, species, cp, trial, temperature, pressure_bara)
+        if trial_g <= current_g + armijo_c1 * alpha * slope:
+            return alpha
+        alpha *= armijo_rho
+    return max(alpha, MIN_ARMIJO_ALPHA)
 
 
 def _jacobian(
@@ -576,6 +730,11 @@ def gibbs_reactor(
     max_operation_temperature: float | None = None,
     joint_efficiency: float | None = None,
     corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: int | None = None,
+    adaptive_step_size: bool | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -617,6 +776,11 @@ def gibbs_reactor(
         max_iterations=int(max_iterations),
         tolerance=convergence_tolerance,
         min_iterations=int(min_iterations),
+        armijo_line_search=bool(armijo_line_search),
+        armijo_c1=1.0e-4 if armijo_c1 is None else float(armijo_c1),
+        armijo_rho=0.5 if armijo_rho is None else float(armijo_rho),
+        armijo_max_backtracks=(20 if armijo_max_backtracks is None else int(armijo_max_backtracks)),
+        adaptive_step_size=bool(adaptive_step_size),
     )
 
     outlet_total = sum(state.moles)

@@ -398,6 +398,7 @@ pub(crate) fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
         max_iterations: p.number("max_iterations")? as u32,
         convergence_tolerance: p.number("convergence_tolerance")?,
         min_iterations: p.number("min_iterations")? as u32,
+        ..Default::default()
     };
     let (outlet, numbers) = kernels::gibbs_reactor::gibbs_reactor(&inlets[0], &setup)?;
     // **The palette entry declares the solve's parameters and none of the vessel's**, so a

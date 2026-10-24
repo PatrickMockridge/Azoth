@@ -180,7 +180,7 @@ fn reactor_type_name(kind: &str) -> Result<String> {
 ///   cannot be resolved, or on the singular Newton system the class answers with a pseudo-inverse
 ///   this port does not carry;
 /// * the reactor mechanical design's own refusals, and whatever the vessel's arithmetic raises.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-one
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-six
 pub fn gibbs_reactor(
     components: &[String],
     feed_n: f64,
@@ -203,6 +203,11 @@ pub fn gibbs_reactor(
     max_operation_temperature: Option<f64>,
     joint_efficiency: Option<f64>,
     corrosion_allowance: Option<f64>,
+    armijo_line_search: Option<bool>,
+    armijo_c1: Option<f64>,
+    armijo_rho: Option<f64>,
+    armijo_max_backtracks: Option<usize>,
+    adaptive_step_size: Option<bool>,
 ) -> Result<GibbsReactorResult> {
     let spec = &model_gen::GIBBS_REACTOR_SPEC;
     let mut warnings = Vec::new();
@@ -248,12 +253,20 @@ pub fn gibbs_reactor(
     // **The vessel is read from the feed, before the equilibrium**, which is the class's own
     // surface: `calcDesign` never looks at the outlet.
     let mechanical = reactor_mechanical_design(&feed, &geometry)?;
+    let defaults = ReactorSetup::default();
     let setup = ReactorSetup {
         energy_mode: EnergyMode::named(energy_mode),
         damping_composition,
         max_iterations: max_iterations as u32,
         convergence_tolerance,
         min_iterations: min_iterations as u32,
+        armijo_line_search: armijo_line_search.unwrap_or(defaults.armijo_line_search),
+        armijo_c1: armijo_c1.unwrap_or(defaults.armijo_c1),
+        armijo_rho: armijo_rho.unwrap_or(defaults.armijo_rho),
+        armijo_max_backtracks: armijo_max_backtracks
+            .unwrap_or(defaults.armijo_max_backtracks as usize)
+            as u32,
+        adaptive_step_size: adaptive_step_size.unwrap_or(defaults.adaptive_step_size),
     };
     let (outlet, numbers) = solve_equilibrium(&feed, &setup)?;
 

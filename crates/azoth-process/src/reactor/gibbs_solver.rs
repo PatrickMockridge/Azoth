@@ -35,12 +35,13 @@
 //!   zero), and its update is skipped - which is how `testComponentNotInDatabaseMolesUnchanged`
 //!   gets its name.
 //!
-//! **Two branches are refused rather than ported**, because the default path never takes them
-//! and a branch nothing reaches is a claim nobody can check: the Armijo backtracking line
-//! search and the Tikhonov regularisation, both `false` by default. `applyRegularization` is
-//! *called* every iteration while `iteration <= 5` even with the flag off - it computes a
-//! 2-norm condition number and stores it in a diagnostic history - and that is refused too,
-//! since it consumes no state and modifies the Jacobian only when the flag is set.
+//! **The two step controls are ported, and the capture measures what each does.**
+//! `useArmijoLineSearch` and `useAdaptiveStepSize` are both `false` by default and neither is
+//! reached by a row of `process_gibbs_reactor.tsv`; `validation/neqsim/captures/process_gibbs_algorithms.tsv`
+//! drives them from the class's own algorithm test. The Armijo arm accepts its maximum on that
+//! test's state and only the undamped row backtracks - nine contractions in one pass - which is
+//! why both are in the capture. **The Tikhonov regularisation is still refused**: the flag is
+//! `false` by default and the measured states do not reach it.
 //!
 //! **This iteration is ill-conditioned, and that bounds how closely a port can match it.** Two
 //! things compound, both the class's own: the `MIN_MOLES = 1e-6` floor puts an `RT/n` entry of
@@ -72,6 +73,16 @@ const ELEMENT_ZERO_THRESHOLD: f64 = 1e-6;
 /// The floor `performIterationUpdate` puts under a composition after the damped step.
 const MIN_COMPOSITION: f64 = 1e-15;
 
+/// `MAX_STEP_LIMIT`, `Math.log(5.0)`: the largest fractional mole change one adaptive step
+/// allows a significant component.
+const MAX_STEP_LIMIT: f64 = 1.609_437_912_434_100_4;
+/// `calculateAdaptiveAlpha`'s floor under the step it returns.
+const MIN_ADAPTIVE_ALPHA: f64 = 1e-4;
+/// `armijoLineSearch`'s floor when every backtrack fails.
+const MIN_ARMIJO_ALPHA: f64 = 1e-6;
+/// `evaluateTotalGibbsEnergy`'s `1e-30` floor under a mole number.
+const GIBBS_ZERO_MOLES: f64 = 1e-30;
+
 /// The class's controls, as `GibbsReactor`'s own fields default them.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GibbsSettings {
@@ -85,6 +96,16 @@ pub struct GibbsSettings {
     pub tolerance: f64,
     /// `minIterations`, the floor below which the tolerance is not consulted.
     pub min_iterations: u32,
+    /// `useArmijoLineSearch`, the backtracking line search on the total Gibbs energy.
+    pub armijo_line_search: bool,
+    /// `armijoC1`, the sufficient-decrease constant.
+    pub armijo_c1: f64,
+    /// `armijoRho`, the backtracking contraction.
+    pub armijo_rho: f64,
+    /// `armijoMaxBacktracks`.
+    pub armijo_max_backtracks: u32,
+    /// `useAdaptiveStepSize`, the NASA CEA-style step limiter.
+    pub adaptive_step_size: bool,
 }
 
 impl Default for GibbsSettings {
@@ -95,6 +116,11 @@ impl Default for GibbsSettings {
             max_iterations: 5000,
             tolerance: 1e-3,
             min_iterations: 100,
+            armijo_line_search: false,
+            armijo_c1: 1e-4,
+            armijo_rho: 0.5,
+            armijo_max_backtracks: 20,
+            adaptive_step_size: false,
         }
     }
 }
@@ -350,8 +376,38 @@ pub fn solve(
             break;
         }
 
+        // **The step size: adaptive first, then Armijo, then the fixed damping.** The class's
+        // own order, with the adaptive branch replacing the damping rather than bounding it.
+        let mut alpha = settings.damping;
+        if settings.adaptive_step_size {
+            alpha = adaptive_alpha(&moles, &variables, &delta);
+        }
+        if settings.armijo_line_search {
+            let current_g = total_gibbs_energy(
+                mixture,
+                &species,
+                &moles,
+                temperature_value,
+                pressure_bara,
+                &cp,
+            )?;
+            alpha = armijo_alpha(
+                mixture,
+                &species,
+                &cp,
+                &moles,
+                temperature_value,
+                pressure_bara,
+                &objective,
+                &variables,
+                &delta,
+                alpha,
+                current_g,
+                &settings,
+            )?;
+        }
+
         // `performIterationUpdate`: the compositions take `alpha`, the multipliers take all.
-        let alpha = settings.damping;
         for (slot, &i) in variables.iter().enumerate() {
             moles[i] = (moles[i] + delta[slot] * alpha).max(MIN_COMPOSITION);
         }
@@ -383,6 +439,121 @@ pub fn solve(
         active_elements,
         jacobian: last_jacobian,
     })
+}
+
+/// `evaluateTotalGibbsEnergy`: the total Gibbs energy **with the fugacity coefficients**, kJ/mol.
+///
+/// **A second Gibbs energy in this file, and not the history's.** The history pushes
+/// `calculateMixtureGibbsEnergy` - the formation sum alone - while Armijo compares this one,
+/// which adds `RT ln phi`, `RT ln y` and `RT ln P`. The class keeps both and they are not
+/// interchangeable.
+fn total_gibbs_energy(
+    mixture: &Mixture,
+    species: &[Option<&GibbsSpecies>],
+    moles: &[f64],
+    temperature: f64,
+    pressure_bara: f64,
+    cp: &[[f64; 4]],
+) -> Result<f64> {
+    let rt = R_KJ * temperature;
+    let total: f64 = moles.iter().sum();
+    let (ln_phi, _) = phase_derivatives(mixture, moles, temperature, pressure_bara)?;
+    let ln_p = pressure_bara.ln();
+    let mut total_g = 0.0;
+    for (i, entry) in species.iter().enumerate() {
+        let Some(species) = entry else {
+            continue;
+        };
+        let ni = moles[i];
+        if ni < GIBBS_ZERO_MOLES {
+            continue;
+        }
+        let y = ni / total;
+        total_g += ni
+            * (species.gibbs_energy(temperature, cp[i]) + rt * ln_phi[i] + rt * y.ln() + rt * ln_p);
+    }
+    Ok(total_g)
+}
+
+/// The Armijo slope: `sum_i F_i * delta_i` over the composition variables.
+///
+/// **The class sums only the composition entries**, not the multiplier rows, and reads `F` from
+/// the objective map at the current point.
+fn directional_derivative(objective: &[Option<f64>], variables: &[usize], delta: &[f64]) -> f64 {
+    variables
+        .iter()
+        .enumerate()
+        .map(|(slot, &i)| objective[i].unwrap_or(0.0) * delta[slot])
+        .sum()
+}
+
+/// `calculateAdaptiveAlpha`: the NASA CEA-style step limit, from a requested `1.0`.
+///
+/// **The requested step is `1.0` and not `dampingComposition`**, which is what the class passes
+/// at its call site; the fixed damping is what this replaces.
+fn adaptive_alpha(moles: &[f64], variables: &[usize], delta: &[f64]) -> f64 {
+    let mut alpha = 1.0_f64;
+    let total: f64 = moles.iter().sum();
+    let significance = total * 1e-3;
+    for (slot, &i) in variables.iter().enumerate() {
+        let current = moles[i];
+        if current < significance {
+            continue;
+        }
+        let abs_delta = delta[slot].abs();
+        if abs_delta < 1e-30 {
+            continue;
+        }
+        alpha = alpha.min(MAX_STEP_LIMIT * current / abs_delta);
+    }
+    for (slot, &i) in variables.iter().enumerate() {
+        let current = moles[i];
+        let step = delta[slot];
+        if step < 0.0 && current > MIN_COMPOSITION {
+            alpha = alpha.min(0.9 * current / (-step));
+        }
+    }
+    alpha.max(MIN_ADAPTIVE_ALPHA)
+}
+
+/// `armijoLineSearch`: the backtracking step that satisfies `G(trial) <= G + c1*alpha*slope`.
+///
+/// **The trial needs the fugacity coefficients at the trial composition** - the class calls
+/// `updateSystemWithNewCompositions(); system.init(3)` before `evaluateTotalGibbsEnergy` - so
+/// each backtrack is one `phase_derivatives` call. The class's save/restore is a copy here: the
+/// trial is its own vector and `moles` is untouched.
+#[allow(clippy::too_many_arguments)] // the class's own argument list, less its state
+fn armijo_alpha(
+    mixture: &Mixture,
+    species: &[Option<&GibbsSpecies>],
+    cp: &[[f64; 4]],
+    moles: &[f64],
+    temperature: f64,
+    pressure_bara: f64,
+    objective: &[Option<f64>],
+    variables: &[usize],
+    delta: &[f64],
+    alpha_max: f64,
+    current_g: f64,
+    settings: &GibbsSettings,
+) -> Result<f64> {
+    let slope = directional_derivative(objective, variables, delta);
+    if slope >= 0.0 {
+        return Ok(alpha_max);
+    }
+    let mut alpha = alpha_max;
+    for _ in 0..settings.armijo_max_backtracks {
+        let mut trial = moles.to_vec();
+        for (slot, &i) in variables.iter().enumerate() {
+            trial[i] = (moles[i] + alpha * delta[slot]).max(MIN_COMPOSITION);
+        }
+        let trial_g = total_gibbs_energy(mixture, species, &trial, temperature, pressure_bara, cp)?;
+        if trial_g <= current_g + settings.armijo_c1 * alpha * slope {
+            return Ok(alpha);
+        }
+        alpha *= settings.armijo_rho;
+    }
+    Ok(alpha.max(MIN_ARMIJO_ALPHA))
 }
 
 /// `calculateObjectiveFunctionValues`' own loop, skipping a component with no species.

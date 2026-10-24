@@ -2928,6 +2928,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.gibbs_reactor", "joint_efficiency", "dimensionless"),
     ("process.gibbs_reactor", "corrosion_allowance", "length"),
+    ("process.gibbs_reactor", "armijo_c1", "dimensionless"),
+    ("process.gibbs_reactor", "armijo_rho", "dimensionless"),
+    (
+        "process.gibbs_reactor",
+        "armijo_max_backtracks",
+        "dimensionless",
+    ),
     ("process.heat_exchanger", "hot_in_n", "molar_flow"),
     ("process.heat_exchanger", "hot_in_z", "dimensionless"),
     ("process.heat_exchanger", "hot_in_p", "pressure"),

@@ -5742,9 +5742,9 @@ pub fn gas_scrubber(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations, reactor_type, catalyst_bulk_density, catalyst_particle_diameter, bed_void_fraction, ghsv, lhsv, number_of_beds, max_operation_pressure, max_operation_temperature, joint_efficiency, corrosion_allowance))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations, reactor_type, catalyst_bulk_density, catalyst_particle_diameter, bed_void_fraction, ghsv, lhsv, number_of_beds, max_operation_pressure, max_operation_temperature, joint_efficiency, corrosion_allowance, armijo_line_search, armijo_c1, armijo_rho, armijo_max_backtracks, adaptive_step_size))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations, reactor_type, catalyst_bulk_density, catalyst_particle_diameter, bed_void_fraction, ghsv, lhsv, number_of_beds, max_operation_pressure, max_operation_temperature, joint_efficiency, corrosion_allowance)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations, reactor_type, catalyst_bulk_density, catalyst_particle_diameter, bed_void_fraction, ghsv, lhsv, number_of_beds, max_operation_pressure, max_operation_temperature, joint_efficiency, corrosion_allowance, armijo_line_search, armijo_c1, armijo_rho, armijo_max_backtracks, adaptive_step_size)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn gibbs_reactor(
@@ -5770,6 +5770,11 @@ pub fn gibbs_reactor(
     max_operation_temperature: Option<f64>,
     joint_efficiency: Option<f64>,
     corrosion_allowance: Option<f64>,
+    armijo_line_search: Option<bool>,
+    armijo_c1: Option<f64>,
+    armijo_rho: Option<f64>,
+    armijo_max_backtracks: Option<usize>,
+    adaptive_step_size: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyGibbsReactorResult> {
     azoth_process::models::gibbs_reactor::gibbs_reactor(
         &components,
@@ -5793,6 +5798,11 @@ pub fn gibbs_reactor(
         max_operation_temperature,
         joint_efficiency,
         corrosion_allowance,
+        armijo_line_search,
+        armijo_c1,
+        armijo_rho,
+        armijo_max_backtracks,
+        adaptive_step_size,
     )
     .map(|r| crate::transport_gen::PyGibbsReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

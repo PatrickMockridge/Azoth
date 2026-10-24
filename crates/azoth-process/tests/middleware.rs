@@ -606,8 +606,10 @@ fn the_generated_input_table_is_the_models_own() {
     // class defaults: `reactor_type`, `catalyst_bulk_density`, `catalyst_particle_diameter`,
     // `bed_void_fraction`, `ghsv`, `lhsv`, `number_of_beds`, `max_operation_pressure`,
     // `max_operation_temperature`, `joint_efficiency` and `corrosion_allowance`.
-    // `435 + 11 = 446`.
-    assert_eq!(walked, 446, "the inputs this test walked");
+    // `435 + 11 = 446`. **And then the Gibbs solver's five step controls**, on the same entry:
+    // `armijo_line_search`, `armijo_c1`, `armijo_rho`, `armijo_max_backtracks` and
+    // `adaptive_step_size`. `446 + 5 = 451`.
+    assert_eq!(walked, 451, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

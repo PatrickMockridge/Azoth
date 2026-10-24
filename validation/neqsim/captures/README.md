@@ -459,6 +459,8 @@ public surface of forty-odd getters.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe reactor_mechanical \
   > captures/process_reactor_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_algorithms \
+  > captures/process_gibbs_algorithms.tsv
 ```
 
 **`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
@@ -565,6 +567,31 @@ initialisers on the defaults row - and are not a reading of the class. The six t
 getters are printed as `class_` keys, and `calcDesign`'s own `super.calcDesign()` leaves
 `joint_efficiency=1.0` and `corrosion_allowance=0.0` at the pin, which is why those two are class
 defaults and not design-standard output.
+
+**`ProcessProbe gibbs_algorithms` is the Gibbs solver's two step controls, on the states
+`GibbsReactorAlgorithmTest` solves.** `useArmijoLineSearch` and `useAdaptiveStepSize` are both
+`false` by default, so no row of `process_gibbs_reactor.tsv` reaches either; and
+**`useAdaptiveStepSize` is named nowhere in this tree's record** - the rules below are its first
+statement. Five rows, each printing the whole path rather than the class's own "it converged":
+the iteration count, the final error, the outlet, and both diagnostic histories.
+
+**The Armijo row does not backtrack, and printing the step history is how that is known.** The
+class's own Armijo test caps the step at its `damping` of `0.01`, and every one of the row's 100
+steps is exactly `0.01` - the line search accepts `alpha_max` on every pass. Its baseline
+(`fixed_methane_adiabatic`, the same feed, damping and gate with the search off) agrees to `1e-15`
+on the whole Gibbs history, which is the class's own assertion made measurable rather than assumed.
+
+**The adaptive pair separates the two branches, and on this state Armijo adds nothing.**
+`adaptive_hydrogen` and `armijo_adaptive_hydrogen` carry step histories that differ in the
+fifteenth digit: the adaptive limit answers `1.0, 1.0, 0.0193, 0.0247, 0.0127, ...` and the line
+search accepts each of them.
+
+**The row that does backtrack is the undamped one.** `armijo_ammonia_undamped` starts from a full
+Newton step (`damping = 1.0`) and its history reads `1.0, 1.0, 1.0, 1.0, 1.0, 0.5, ... 0.001953125
+... 0.03125, ...` - contractions by `armijoRho = 0.5`, nine of them in one pass. It converges at
+the `min_iterations` floor with a final error of `7.0e-16`, **and the class's own
+`getMassBalanceConverged()` reports false on the row** - a second stopping flag this port does not
+carry, printed so the capture states it.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

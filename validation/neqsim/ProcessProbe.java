@@ -167,6 +167,9 @@ public class ProcessProbe {
       case "gibbs_steps":
         gibbsReactorSteps();
         break;
+      case "gibbs_algorithms":
+        gibbsAlgorithmRows();
+        break;
       case "flowsheet":
         flowsheetRows();
         break;
@@ -3764,6 +3767,103 @@ public class ProcessProbe {
         new double[] { 1.0, 1.0, 0.0, 0.0 }, 1000.0, 1.0, false, 0.05, 5000, 1e-3);
     gibbsReactorRow("argon_in_feed", new String[] { "hydrogen", "oxygen", "water", "argon" },
         new double[] { 0.1, 1.0, 0.0, 0.05 }, 298.15, 50.0, true, 0.05, 5000, 1e-3);
+  }
+
+  /// **The step controls, on the states `GibbsReactorAlgorithmTest` solves.**
+  ///
+  /// `useArmijoLineSearch` and `useAdaptiveStepSize` are both `false` by default, so no row in
+  /// `process_gibbs_reactor.tsv` reaches either. The class's own test drives them, and this
+  /// capture prints the whole path rather than the assertion: the iteration count, the final
+  /// error, the outlet and both diagnostic histories, so a port is held to the trajectory and
+  /// not only to "it converged".
+  ///
+  /// **The fixed-damping row is the baseline the class's own test compares against**: the same
+  /// feed, damping and gate as `armijo_methane_adiabatic`, with the line search off. The two
+  /// must reach the same equilibrium, and printing both is what makes that checkable.
+  static void gibbsAlgorithmRows() {
+    gibbsAlgorithmRow("armijo_methane_adiabatic",
+        new String[] { "methane", "oxygen", "CO2", "water" }, new double[] { 0.05, 0.5, 0.0, 0.0 },
+        298.15, 100.0, true, 0.01, 10000, 1.0e-3, true, false);
+    gibbsAlgorithmRow("fixed_methane_adiabatic",
+        new String[] { "methane", "oxygen", "CO2", "water" }, new double[] { 0.05, 0.5, 0.0, 0.0 },
+        298.15, 100.0, true, 0.01, 10000, 1.0e-3, false, false);
+    gibbsAlgorithmRow("adaptive_hydrogen",
+        new String[] { "hydrogen", "oxygen", "water" }, new double[] { 0.1, 1.0, 0.0 }, 298.15,
+        1.0, false, 0.05, 5000, 1.0e-3, false, true);
+    gibbsAlgorithmRow("armijo_adaptive_hydrogen",
+        new String[] { "hydrogen", "oxygen", "water" }, new double[] { 0.1, 1.0, 0.0 }, 298.15,
+        1.0, false, 0.05, 5000, 1.0e-3, true, true);
+    // **An undamped step under the line search**, which is where the backtracks are: the class's
+    // own Armijo row caps alpha at its `0.01` damping, so it accepts that alpha every pass.
+    gibbsAlgorithmRow("armijo_ammonia_undamped",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 }, 450.0,
+        300.0, false, 1.0, 5000, 1.0e-3, true, false);
+    // **Two rows on a state every species stays significant in**, which is what a case needs:
+    // the reverse water-gas shift at 1000 K carries four species against three active elements,
+    // so nothing sits on the `1e-6` floor and the comparison can be relative.
+    gibbsAlgorithmRow("armijo_rwgs_undamped",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, false, 1.0, 5000, 1.0e-3, true, false);
+    gibbsAlgorithmRow("adaptive_rwgs",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, false, 0.05, 5000, 1.0e-3, false, true);
+  }
+
+  static void gibbsAlgorithmRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance,
+      boolean armijo, boolean adaptive) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
+
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs " + label, inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.setDampingComposition(damping);
+    reactor.setMaxIterations(maxIterations);
+    reactor.setConvergenceTolerance(tolerance);
+    reactor.setUseArmijoLineSearch(armijo);
+    reactor.setUseAdaptiveStepSize(adaptive);
+    reactor.setEnergyMode(adiabatic
+        ? neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ADIABATIC
+        : neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ISOTHERMAL);
+
+    reactor.run();
+    StreamInterface outlet = reactor.getOutletStream();
+
+    System.out.println(label);
+    print("feed", inlet);
+    print("product", outlet);
+    // **What the solve carried, beside what the outlet stream published.** The two are not the
+    // same object in the class, and a row where they disagree says which one moved.
+    StringBuilder moles = new StringBuilder("outlet_moles=");
+    for (int i = 0; i < reactor.getOutletMole().size(); i++) {
+      moles.append(inlet.getThermoSystem().getComponent(i).getComponentName()).append(":")
+          .append(reactor.getOutletMole().get(i));
+      if (i + 1 < reactor.getOutletMole().size()) {
+        moles.append(" ");
+      }
+    }
+    System.out.println(moles);
+    System.out.println("energy_mode=" + reactor.getEnergyMode() + "\tdamping=" + damping
+        + "\tmax_iterations=" + maxIterations + "\ttolerance=" + tolerance
+        + "\tarmijo=" + armijo + "\tadaptive=" + adaptive);
+    System.out.println("converged=" + reactor.hasConverged() + "\titerations="
+        + reactor.getActualIterations() + "\tfinal_error=" + reactor.getFinalConvergenceError()
+        + "\tmass_balance_converged=" + reactor.getMassBalanceConverged());
+    System.out.println("gibbs_history=" + joined(reactor.getGibbsEnergyHistory()));
+    System.out.println("step_size_history=" + joined(reactor.getStepSizeHistory()));
+    System.out.println();
+  }
+
+  /// One history as the space-separated list the capture's other rows use.
+  static String joined(java.util.List<Double> values) {
+    StringBuilder text = new StringBuilder();
+    for (int i = 0; i < values.size(); i++) {
+      if (i > 0) {
+        text.append(' ');
+      }
+      text.append(values.get(i));
+    }
+    return text.toString();
   }
 
   static void gibbsReactorRow(String label, String[] names, double[] z, double temperatureK,

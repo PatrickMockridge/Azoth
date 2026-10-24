@@ -1648,6 +1648,11 @@ def gibbs_reactor(
     max_operation_temperature: float | None = None,
     joint_efficiency: float | None = None,
     corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: int | None = None,
+    adaptive_step_size: bool | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -1692,4 +1697,9 @@ def gibbs_reactor(
         max_operation_temperature=max_operation_temperature,
         joint_efficiency=joint_efficiency,
         corrosion_allowance=corrosion_allowance,
+        armijo_line_search=armijo_line_search,
+        armijo_c1=armijo_c1,
+        armijo_rho=armijo_rho,
+        armijo_max_backtracks=armijo_max_backtracks,
+        adaptive_step_size=adaptive_step_size,
     )
