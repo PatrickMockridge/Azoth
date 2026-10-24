@@ -85,6 +85,7 @@ def test_the_hand_written_adapters_are_capped() -> None:
     )
 
 
+@pytest.mark.slow_sweep
 def test_no_id_is_both_generated_and_hand_written() -> None:
     """The two sets are disjoint, and together they are the registry.
 
