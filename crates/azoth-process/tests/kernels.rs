@@ -262,7 +262,7 @@ fn an_unstated_heater_is_an_isothermal_drop_and_not_a_throttling() {
 #[test]
 fn a_heater_refuses_a_temperature_and_a_duty_together() {
     // `Heater`'s two setters clear each other's flags, so the class's answer to both is the
-    // order they were called in. A model that picked one would be inventing a rule the
+    // order they were called in (upstream #4087). A model that picked one would be inventing a rule the
     // class does not have, and a model that silently preferred the temperature would report
     // a duty the caller never asked for.
     let feed = binary(0.9, 100.0, 3e6, 320.0);

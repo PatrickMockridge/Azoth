@@ -39,7 +39,7 @@ fn mixture(salinity: f64) -> azoth_eos::mixture::Mixture {
 
 /// **Refused beside any other rule.** The variant reads which component is water from the
 /// rule's roles and the salinity from the same place, so a classic `kij` beside it leaves
-/// it nothing to read - and resolving against a zero would be a water alpha quietly
+/// it nothing to read (issue #3843) - and resolving against a zero would be a water alpha quietly
 /// computed at fresh water.
 #[test]
 fn it_is_refused_beside_another_rule() {

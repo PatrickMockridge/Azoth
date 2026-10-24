@@ -153,7 +153,7 @@ fn a_substance_the_table_states_no_melt_for_is_refused() {
 /// finds a negative amount and the fluid flash is the whole of the answer.
 ///
 /// Methane's triple point is `90.69` K, so a methane/methane-free feed at 273.15 K is well
-/// above it. NeqSim's `checkAndAddSolidPhase` skips such a component outright; the same state
+/// above it. NeqSim's `checkAndAddSolidPhase` skips such a component outright (issue #3890); the same state
 /// is reached here through the screen, which is the one place the two can disagree.
 #[test]
 fn above_the_triple_point_the_fluid_flash_is_the_answer() {

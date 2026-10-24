@@ -230,7 +230,7 @@ impl Recycle {
 
     /// Whether this declaration's acceleration is one the port carries, and why not if it is not.
     ///
-    /// **`broyden` is declared and refused, and the reason is measured.** Its arithmetic *is*
+    /// **`broyden` is declared and refused, and the reason is measured** (upstream #3997). Its arithmetic *is*
     /// transcribed - `BroydenAccelerator` is held to `captures/process_acceleration.tsv` call by
     /// call - but what a `Recycle` does with the answer is not reproducible: `applyStreamValues`
     /// writes the accelerated fractions through `Component.setx` on **both** phases, and a

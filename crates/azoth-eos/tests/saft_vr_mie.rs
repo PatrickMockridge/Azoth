@@ -651,7 +651,7 @@ fn the_dispersion_temperature_derivative_is_neqsims() {
 /// and used to stop there, differentiating `g_hs` as though it were a function of the
 /// packing fraction alone. It is not: it is the Mie-weighted contact value,
 /// `exp(sum_i w_i ln g_Mie_ii / W)`, and `g_Mie_ii = g_HS0 exp(beta (g_1 + beta g_2)/g_HS0)`
-/// carries `beta = eps/(k T)`, so the `T` route was missing. `#3830` added it.
+/// carries `beta = eps/(k T)`, so the `T` route was missing. `#3830` added it (issue #3814).
 ///
 /// The measurement is a **difference of NeqSim's own `F_hc` at a pinned molar volume**,
 /// which is what the probe's `fAtFixedVolume` does - it perturbs `T`, restores the volume

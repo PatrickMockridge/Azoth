@@ -615,7 +615,7 @@ pub fn ln_fugacity_coefficients(
 /// **NeqSim's own `getdDSAFTdT` multiplied the chain rule by an extra `3 d_i^2`**, so every
 /// `eta`-dependent part of its `dFdT` was about `1e-18` too small - the volume's own
 /// derivative right and the temperature's not - and both `PhasePCSAFT` and
-/// `PhasePCSAFTRahmat` carried it. **`#3829` removed both overrides**, leaving the parent's
+/// `PhasePCSAFTRahmat` carried it. **`#3829` removed both overrides** (issue #3813), leaving the parent's
 /// expression, which is this one; the function is unchanged here because the correction was
 /// already made.
 ///

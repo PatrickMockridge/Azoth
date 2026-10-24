@@ -7,6 +7,9 @@
 //!
 //! **What this file can assert, and the mechanism behind what it cannot.**
 //!
+//! **The method performs a minimization here**: upstream #3993 found `performGibbsMinimization`
+//! did none and logged completion, so this port solves rather than reproducing the log.
+//!
 //! *The equations are verified.* At the state the ammonia row converged to, rebuilt from scratch
 //! in NeqSim (`GibbsFluidProbe`), NeqSim's cubic root is `0.5510988090103938` and its fugacity
 //! coefficients are `2.541831506999508`, `2.3587662599954933`, `0.48361932989558243`. azoth

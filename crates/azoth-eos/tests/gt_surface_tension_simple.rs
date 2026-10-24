@@ -58,7 +58,7 @@ fn every_case_in_the_spec() {
 
 /// **The class's own CO2/water state is refused.** Its profile collapses at step 3 -
 /// `den_interface` is zero from there - and it returns the two-step partial integral
-/// `0.0145737553` without a word; a partial integral is not a surface tension.
+/// `0.0145737553` without a word; a partial integral is not a surface tension (upstream #4497).
 #[test]
 fn a_collapsing_profile_is_refused() {
     let (mixture, _) =
