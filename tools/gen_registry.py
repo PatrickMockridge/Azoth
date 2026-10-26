@@ -205,6 +205,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `test_cross_impl` compares them on both results.
         "choked",
         "gas_valve",
+        # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
+        # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
+        # `test_cross_impl` compares it on both results.
+        "cavitating",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

@@ -154,23 +154,33 @@ def pump(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
-    outlet_pressure: Q,
     isentropic_efficiency: float,
+    outlet_pressure: Q | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    speed: float | None = None,
+    reference_density: Q | None = None,
+    viscosity: Q | None = None,
+    use_viscosity_correction: bool | None = None,
+    check_npsh: bool | None = None,
+    npsh_margin: float | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
     ``components``, ``inlet_n``, ``inlet_z``, ``inlet_p`` and ``inlet_t`` are the inlet's
-    record - the fluid, its flow, composition, pressure and temperature - and
-    ``outlet_pressure`` and ``isentropic_efficiency`` are ``unit_ops.pump``'s own two
-    parameters. The inlet's molar enthalpy is *not* an input: it is a state function of
-    ``(T, P, z)``, so accepting one would let a caller hand over a state that does not exist.
+    record - the fluid, its flow, composition, pressure and temperature. The inlet's molar
+    enthalpy is *not* an input: it is a state function of ``(T, P, z)``, so accepting one
+    would let a caller hand over a state that does not exist.
 
-    The work is the isentropic head - ``(H(P_out, s_in) - H(P_in)) / eta``, from a flash -
-    and not the incompressible ``v (P_out - P_in)``, which is its linearisation. NeqSim's
-    ``Pump.run`` does the former, because ``calculateAsCompressor`` defaults to ``true``.
+    Without a curve the work is the isentropic head - ``(H(P_out, s_in) - H(P_in)) / eta``,
+    from a flash - and ``outlet_pressure`` is the pressure it reaches. A non-empty ``curve``
+    selects ``PumpChart``'s reduced quadratic instead: the head sets the pressure rise, the
+    chart's efficiency sets the shaft power, and ``outlet_pressure`` is ignored. ``speed``,
+    ``reference_density``, ``viscosity``, ``use_viscosity_correction``, ``check_npsh`` and
+    ``npsh_margin`` are the chart's own surface.
 
     Raises:
-        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+        InvalidInputError: where the shapes disagree, the efficiency is outside ``(0, 1]``, a
+            pump with no curve has no outlet pressure, or the curve is not a curve.
 
     See :func:`azoth.process.reference.pump`.
     """
@@ -182,6 +192,13 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        curve=curve,
+        speed=speed,
+        reference_density=reference_density,
+        viscosity=viscosity,
+        use_viscosity_correction=use_viscosity_correction,
+        check_npsh=check_npsh,
+        npsh_margin=npsh_margin,
     )
 
 

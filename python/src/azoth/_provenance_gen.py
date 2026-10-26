@@ -2625,12 +2625,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pump': {
         "calc_id": 'process.pump',
         "name": 'Pump',
-        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '97ae987bc00a910eff281464a9f050604eace81a99110ccc510ffecff7d3813d'},
-        "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': '1b42bfc933502cd84b74058fdcb2dc8c0fc346d0a2bb7b7dedd07867a8b3c4f6'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': '48317daad488038802f3be7b44759b05f254ba82dc2e5ef0010bb5bc00b3f4f9'}],
-        "source": 'NeqSim process/equipment/pump/Pump.java',
+        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': 'a7fac0ba1b85947a1ff1cce14ba7dec9c967e5c62a7f664d49e9158f249a2d9a'},
+        "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': 'cd531d060e4b387abac9b35e7764f777f65d99db5bbb2aa26a13e8bac2188269'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': '7f72ddacf1f6591db58bbc0c47a248240d8fcb0583312aea683156b1551ce376'}],
+        "source": 'NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 2,
+        "tests_active": 5,
         "tests_skipped": 0,
     },
     'process.rate_based_packed_column': {

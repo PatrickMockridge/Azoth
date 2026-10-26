@@ -173,6 +173,9 @@ public class ProcessProbe {
       case "valve_sizing":
         valveSizingRows();
         break;
+      case "pump_curve":
+        pumpCurveRows();
+        break;
       case "flowsheet":
         flowsheetRows();
         break;
@@ -5404,6 +5407,281 @@ public class ProcessProbe {
     valve.run();
     System.out.println("stated_kv=" + valve.getKv());
     System.out.println("flow_mode_molar_flow=" + valve.calculateMolarFlow());
+    System.out.println();
+  }
+
+  /// ``PumpChart`` and ``Pump``'s chart branch.
+  ///
+  /// **The chart's own arithmetic is fluid-free**, so those rows compare a reduced-polynomial
+  /// fit and nothing else: the eight-speed table ``PumpChartTest`` states, read at the flow
+  /// and speed its own ``Pump.run`` reaches, at both edges of the measured reduced-flow range,
+  /// and past both. The density, NPSH and viscosity rows are ``PumpDensityCorrectionTest``,
+  /// ``PumpNPSHCurveTest`` and ``PumpViscosityCorrectionTest``'s states.
+  ///
+  /// **The run rows use PR water, not the SRK water the class tests build.** The chart branch
+  /// multiplies the head by the inlet density, and the port's fluid is PR; a row on SRK water
+  /// would price the equation of state rather than the chart.
+  static void pumpCurveRows() {
+    neqsim.process.equipment.pump.PumpChart test =
+        chartTest(new double[] {0.3, 1.0, 1.0, 1.0});
+
+    chartFitRow("chart_test_run_point", test, 3974.8455, 12913.0);
+    chartFitRow("chart_test_second_speed", test, 3599.6333, 10453.0);
+    chartFitRow("chart_test_lowest_speed", test, 1636.5807, 8200.0);
+    chartFitRow("chart_test_above_reduced_range", test, 6000.0, 12913.0);
+    chartFitRow("chart_test_below_reduced_range", test, 100.0, 12913.0);
+    System.out.println("chart_bep_flow_at_reference=" + test.getBestEfficiencyFlowRate());
+    System.out.println("chart_bep_flow_at_1500=" + test.getBestEfficiencyFlowRate(1500.0));
+    System.out.println();
+
+    // The class's two head units are one specific energy, so the same three-point curve in
+    // metre and in kJ/kg has to give one pressure rise. `testHeadUnitKJkg`'s own factor.
+    neqsim.process.equipment.pump.PumpChart metre = threePointChart("meter");
+    neqsim.process.equipment.pump.PumpChart kJkg = threePointChart("kJ/kg");
+    System.out.println("head_unit_meter_at_40=" + metre.getHead(40.0, 500.0));
+    System.out.println("head_unit_kjkg_at_40=" + kJkg.getHead(40.0, 500.0));
+    System.out.println("head_unit_meter_delta_p_pa="
+        + metre.getHead(40.0, 500.0) * 1000.0 * 9.80665);
+    System.out.println("head_unit_kjkg_delta_p_pa="
+        + kJkg.getHead(40.0, 500.0) * 1000.0 * 1000.0);
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart density =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+    System.out.println("density_reference=" + density.getReferenceDensity());
+    System.out.println("density_has_correction=" + density.hasDensityCorrection());
+    System.out.println("density_chart_head_at_40=" + density.getHead(40.0, 1000.0));
+    System.out.println("density_corrected_at_998="
+        + density.getCorrectedHead(40.0, 1000.0, 998.0));
+    System.out.println("density_corrected_at_800="
+        + density.getCorrectedHead(40.0, 1000.0, 800.0));
+    System.out.println("density_corrected_at_1200="
+        + density.getCorrectedHead(40.0, 1000.0, 1200.0));
+    neqsim.process.equipment.pump.PumpChart noDensity =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0});
+    System.out.println("density_absent_reference=" + noDensity.getReferenceDensity());
+    System.out.println("density_absent_has_correction=" + noDensity.hasDensityCorrection());
+    System.out.println("density_absent_corrected_at_800="
+        + noDensity.getCorrectedHead(40.0, 1000.0, 800.0));
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart npsh = npshChart();
+    npsh.setNPSHCurve(new double[][] {{2.0, 2.2, 2.5, 3.0, 3.8, 4.8, 6.2, 8.0},
+        {4.5, 4.95, 5.625, 6.75, 8.55, 10.8, 13.95, 18.0}});
+    System.out.println("npsh_has_curve=" + npsh.hasNPSHCurve());
+    System.out.println("npsh_at_40_1000=" + npsh.getNPSHRequired(40.0, 1000.0));
+    System.out.println("npsh_at_60_1500=" + npsh.getNPSHRequired(60.0, 1500.0));
+    System.out.println("npsh_at_35_1000=" + npsh.getNPSHRequired(35.0, 1000.0));
+    System.out.println("npsh_at_150_1000=" + npsh.getNPSHRequired(150.0, 1000.0));
+    System.out.println("npsh_at_1_1000=" + npsh.getNPSHRequired(1.0, 1000.0));
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart viscous =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+    viscous.setUseViscosityCorrection(true);
+    for (double viscosity : new double[] {1.0, 50.0, 75.0, 100.0, 500.0}) {
+      viscous.calculateViscosityCorrection(viscosity, 30.0, 88.0, 1000.0);
+      System.out.println("viscosity=" + viscosity);
+      System.out.println("viscosity_cq=" + viscous.getFlowCorrectionFactor());
+      System.out.println("viscosity_ch=" + viscous.getHeadCorrectionFactor());
+      System.out.println("viscosity_ceta=" + viscous.getEfficiencyCorrectionFactor());
+      System.out.println("viscosity_base_head=" + viscous.getHead(30.0, 1000.0));
+      System.out.println("viscosity_base_efficiency=" + viscous.getEfficiency(30.0, 1000.0));
+      System.out.println("viscosity_corrected_head="
+          + viscous.getViscosityCorrectedHead(viscous.getHead(30.0, 1000.0)));
+      System.out.println("viscosity_corrected_efficiency="
+          + viscous.getViscosityCorrectedEfficiency(viscous.getEfficiency(30.0, 1000.0)));
+      System.out.println("viscosity_corrected_efficiency_method="
+          + viscous.getCorrectedEfficiency(30.0, 1000.0, viscosity));
+      // **A fresh chart, because the factors are cached.** `getFullyCorrectedHead` recalculates
+      // them only when the viscosity moved by more than 0.1, so on the chart above it would
+      // reuse the `flowBEP = 30, headBEP = 88` factors the loop seeded. A chart that has never
+      // been corrected recomputes them at its own best-efficiency point, which is what
+      // `Pump.run` meets - that is the row the port is held to.
+      neqsim.process.equipment.pump.PumpChart fresh =
+          simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+      fresh.setUseViscosityCorrection(true);
+      System.out.println("viscosity_run_fully_corrected_head="
+          + fresh.getFullyCorrectedHead(30.0, 1000.0, 850.0, viscosity));
+      System.out.println("viscosity_run_corrected_efficiency="
+          + fresh.getCorrectedEfficiency(30.0, 1000.0, viscosity));
+      System.out.println();
+    }
+
+    runChartRow("run_chart", new double[] {0.3, 1.0, 1.0, 1.0}, 12913.0);
+    runChartRow("run_chart_reference_density", new double[] {18.0, 298.15, 1.0, 1.0, 998.0},
+        12913.0);
+
+    npshAvailableRow("npsh_available_water_25c_2bara", new String[] {"water"}, 298.15, 2.0);
+    npshAvailableRow("npsh_available_water_60c_1p5bara", new String[] {"water"}, 333.15, 1.5);
+    npshAvailableRow("npsh_available_water_80c_1p5bara", new String[] {"water"}, 353.15, 1.5);
+    npshAvailableRow("npsh_available_hexane", new String[] {"n-hexane"}, 298.15, 2.0);
+
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 298.15, 2.0,
+        39900.0);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump("p npsh", inlet);
+    pump.getPumpChart().setCurves(new double[] {}, new double[] {1000.0, 1500.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0},
+            {15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0},
+            {270.0, 265.5, 258.8, 247.5, 231.8, 211.5, 186.8, 157.5}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0},
+            {62.0, 71.0, 79.0, 83.0, 82.0, 77.0, 69.0, 56.0}});
+    pump.getPumpChart().setHeadUnit("meter");
+    pump.getPumpChart().setNPSHCurve(new double[][] {{2.0, 2.2, 2.5, 3.0, 3.8, 4.8, 6.2, 8.0},
+        {4.5, 4.95, 5.625, 6.75, 8.55, 10.8, 13.95, 18.0}});
+    pump.setSpeed(1000.0);
+    pump.setCheckNPSH(true);
+    pump.setNPSHMargin(1.3);
+    pump.run();
+    System.out.println("npsh_run_label=npsh_curve_run");
+    System.out.println("npsh_run_inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("npsh_run_inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("npsh_run_head_m=" + pump.getPumpChart().getCorrectedHead(
+        inlet.getFlowRate("m3/hr"), 1000.0, inlet.getThermoSystem().getDensity("kg/m3")));
+    System.out.println("npsh_run_efficiency_percent="
+        + pump.getPumpChart().getEfficiency(inlet.getFlowRate("m3/hr"), 1000.0));
+    print("inlet", inlet);
+    print("outlet", pump.getOutletStream());
+    System.out.println("npsh_run_power_kW=" + pump.getPower("kW"));
+    System.out.println("npsh_run_required=" + pump.getNPSHRequired());
+    System.out.println("npsh_run_available=" + pump.getNPSHAvailable());
+    System.out.println("npsh_run_cavitating=" + pump.isCavitating());
+    System.out.println("npsh_run_margin=" + pump.getNPSHMargin());
+    System.out.println();
+  }
+
+  static neqsim.process.equipment.pump.PumpChart chartTest(double[] conditions) {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    setChartTest(chart, conditions);
+    return chart;
+  }
+
+  static void setChartTest(neqsim.process.equipment.pump.PumpChart chart, double[] conditions) {
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {
+        {80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] efficiency = new double[][] {
+        {77.2452238409573, 79.4154186459363, 80.737960012489, 80.5229826589649, 79.2210931638144,
+            75.4719133864634, 69.6034181197298, 58.7322388482707},
+        {77.0107837113504, 79.3069974136389, 80.8941189021135, 80.7190194665918, 79.5313242980328,
+            75.5912622896367, 69.6846136362097, 60.0043057990909},
+        {77.0043065299874, 79.1690958847856, 80.8038169975675, 80.6543975614197, 78.8532389102705,
+            73.6664774270613, 66.2735600426727, 57.671664571658},
+        {77.0716623789093, 80.4629750233093, 81.1390811169072, 79.6374242667478, 75.380928428817,
+            69.5332969549779, 63.7997587622339, 58.8120614497758},
+        {76.9705872525642, 79.8335492585324, 80.9468133671171, 80.5806471927835, 78.0462158225426,
+            73.0403707523258, 66.5572286338589, 59.8624822515064},
+        {77.5063036680357, 80.2056198362559, 81.0339108025933, 79.6085962687939, 76.3814534404405,
+            70.8027503005902, 64.6437367160571, 60.5299349982342},
+        {77.8175271586685, 80.065165942218, 81.0631362122632, 79.8955051771299, 76.1983240929369,
+            69.289982774309, 60.8567149372229},
+        {78.0924334304045, 80.9353551568667, 80.7904437766234, 78.8639325223295, 75.2170936751143,
+            70.3105081673411, 65.5507568533569, 61.0391468300337}};
+    chart.setCurves(conditions, speed, flow, head, efficiency);
+    chart.setHeadUnit("meter");
+  }
+
+  static neqsim.process.equipment.pump.PumpChart simpleChart(double[] conditions) {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(conditions, new double[] {1000.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0}});
+    chart.setHeadUnit("meter");
+    return chart;
+  }
+
+  static neqsim.process.equipment.pump.PumpChart threePointChart(String headUnit) {
+    double factor = headUnit.equals("kJ/kg") ? 0.00981 : 1.0;
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(new double[] {}, new double[] {500.0}, new double[][] {{30.0, 40.0, 50.0}},
+        new double[][] {{80.0 * factor, 70.0 * factor, 60.0 * factor}},
+        new double[][] {{80.0, 80.0, 75.0}});
+    chart.setHeadUnit(headUnit);
+    return chart;
+  }
+
+  static neqsim.process.equipment.pump.PumpChart npshChart() {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(new double[] {}, new double[] {1000.0, 1500.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0},
+            {15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0},
+            {270.0, 265.5, 258.8, 247.5, 231.8, 211.5, 186.8, 157.5}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0},
+            {62.0, 71.0, 79.0, 83.0, 82.0, 77.0, 69.0, 56.0}});
+    chart.setHeadUnit("meter");
+    return chart;
+  }
+
+  static void chartFitRow(String label, neqsim.process.equipment.pump.PumpChart chart,
+      double flow, double speed) {
+    System.out.println(label);
+    System.out.println("flow_m3_per_hr=" + flow);
+    System.out.println("speed_rpm=" + speed);
+    System.out.println("head_m=" + chart.getHead(flow, speed));
+    System.out.println("efficiency_percent=" + chart.getEfficiency(flow, speed));
+    System.out.println();
+  }
+
+  static void runChartRow(String label, double[] conditions, double speed) {
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 293.15, 1.0,
+        4.0e6);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    setChartTest((neqsim.process.equipment.pump.PumpChart) pump.getPumpChart(), conditions);
+    pump.setSpeed(speed);
+    pump.run();
+
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("head_m=" + pump.getPumpChart().getCorrectedHead(
+        inlet.getFlowRate("m3/hr"), speed, inlet.getThermoSystem().getDensity("kg/m3")));
+    System.out.println("efficiency_percent=" + pump.getPumpChart().getEfficiency(
+        inlet.getFlowRate("m3/hr"), speed));
+    print("inlet", inlet);
+    print("outlet", pump.getOutletStream());
+    System.out.println("power_kW=" + pump.getPower("kW"));
+    System.out.println();
+  }
+
+  static void npshAvailableRow(String label, String[] names, double temperatureK,
+      double pressureBara) {
+    Stream inlet = feedMass("inlet", names, new double[] {1.0}, temperatureK, pressureBara,
+        1000.0);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    pump.setOutletPressure(5.0);
+    pump.setIsentropicEfficiency(0.75);
+    pump.setCheckNPSH(true);
+    pump.run();
+
+    System.out.println(label);
+    System.out.println("npsh_available_m=" + pump.getNPSHAvailable());
+    System.out.println("npsh_required_m=" + pump.getNPSHRequired());
+    System.out.println("npsh_cavitating=" + pump.isCavitating());
+    System.out.println("npsh_margin=" + pump.getNPSHMargin());
     System.out.println();
   }
 

@@ -8,8 +8,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    joules_per_mole, kelvins, kilograms_per_cubic_meter, pascals, square_meters_per_second, watts,
-    watts_per_kelvin, watts_per_square_meter_kelvin,
+    cubic_meters_per_second, joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals,
+    square_meters_per_second, watts, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -207,6 +207,69 @@ pub fn pump_stream(
     azoth_process::kernels::pump(&feed.to_stream(), pascals(outlet_pressure), efficiency)
         .map(PyStream::from_inner)
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.pump` - the pump's kernel as a registered id.
+///
+/// **Hand-written, because the wrapper generator cannot derive a record slice that may be
+/// absent.** `process.pump` declares `curve` as an optional `record_list`; `gen_python_wrappers`
+/// refuses `Option<&[Row]>` and re-points the register here, so the row is built from the
+/// generated mapping by hand. Each field arrives as an SI magnitude, which is the rule every
+/// record field crosses by.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn pump(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    isentropic_efficiency: f64,
+    outlet_pressure: Option<f64>,
+    curve: Option<Vec<crate::records_gen::PumpCurvePoint>>,
+    speed: Option<f64>,
+    reference_density: Option<f64>,
+    viscosity: Option<f64>,
+    use_viscosity_correction: Option<bool>,
+    check_npsh: Option<bool>,
+    npsh_margin: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPumpResult> {
+    let points: Option<Vec<azoth_process::models::pump::PumpCurvePoint>> = curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| azoth_process::models::pump::PumpCurvePoint {
+                speed: row.speed,
+                flow: cubic_meters_per_second(row.flow),
+                head: meters(row.head),
+                efficiency: row.efficiency,
+                npsh_required: row.npsh_required.map(meters),
+            })
+            .collect()
+    });
+    azoth_process::pump(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_pressure.map(pascals),
+        isentropic_efficiency,
+        points.as_deref(),
+        speed,
+        reference_density.map(kilograms_per_cubic_meter),
+        viscosity.map(square_meters_per_second),
+        use_viscosity_correction,
+        check_npsh,
+        npsh_margin,
+    )
+    .map(|r| crate::transport_gen::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// `process.absorption_column` - the tray absorber as a registered id.

@@ -16106,15 +16106,33 @@ pub struct PyPumpResult {
     /// the outlet composition, which is the inlet's.
     #[pyo3(get)]
     pub outlet_z: Vec<f64>,
-    /// the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.
+    /// the outlet pressure: `outlet_pressure` in the isentropic branch, or the inlet pressure plus the chart's corrected head times the inlet density and `g`.
     #[pyo3(get)]
     pub outlet_p: PyQty,
     /// the outlet temperature, solved from the shifted enthalpy at the outlet pressure.
     #[pyo3(get)]
     pub outlet_t: PyQty,
-    /// the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.
+    /// the outlet molar enthalpy: the inlet's plus the shaft work per mole. In the isentropic branch that work is the isentropic head over the efficiency; in the chart branch it is `Q dP/eta/n`.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the head the pump used: the chart's corrected head after the density and viscosity corrections, or in the isentropic branch the work per mole over `M g`.
+    #[pyo3(get)]
+    pub head: PyQty,
+    /// the efficiency the pump used, as a fraction: the chart's corrected value, or the stated isentropic efficiency.
+    #[pyo3(get)]
+    pub efficiency: f64,
+    /// the required NPSH: the chart's curve at the operating flow where it has one, else the class's flow-band estimate. Reported in both branches.
+    #[pyo3(get)]
+    pub npsh_required: PyQty,
+    /// `(P_in - P_bubble)/(rho g)` at the inlet, which is `Pump.getNPSHAvailable`. `NaN` where the bubble point does not solve, which the class also returns.
+    #[pyo3(get)]
+    pub npsh_available: PyQty,
+    /// `NPSHa < margin * NPSHr`, with an unknown NPSH status counting as cavitating. False whenever `check_npsh` is not set.
+    #[pyo3(get)]
+    pub cavitating: bool,
+    /// the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
+    #[pyo3(get)]
+    pub power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16124,12 +16142,18 @@ pub struct PyPumpResult {
 impl PyPumpResult {
     fn __repr__(&self) -> String {
         format!(
-            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.head,
+            self.efficiency,
+            self.npsh_required,
+            self.npsh_available,
+            self.cavitating,
+            self.power,
             self.warnings.len()
         )
     }
@@ -16154,6 +16178,24 @@ impl From<&azoth_process::models::pump::PumpResult> for PyPumpResult {
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            head: PyQty {
+                magnitude_si: r.head.value,
+                unit: "m".to_string(),
+            },
+            efficiency: r.efficiency,
+            npsh_required: PyQty {
+                magnitude_si: r.npsh_required.value,
+                unit: "m".to_string(),
+            },
+            npsh_available: PyQty {
+                magnitude_si: r.npsh_available.value,
+                unit: "m".to_string(),
+            },
+            cavitating: r.cavitating,
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
             },
             warnings: transport(&r.warnings),
         }

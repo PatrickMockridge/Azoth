@@ -3,19 +3,25 @@ name = "Pump"
 kind = "direct"
 assumptions = [
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist, while an outlet reports the `h` it reached because a machine changes it.",
-    "**this is `unit_ops.pump`'s arithmetic, not a second one.** The kernel in `azoth_process::kernels` is what the flowsheet calls and what this wraps; the only thing added here is the declared input list and the result type.",
+    "**this is `unit_ops.pump`'s arithmetic, and the performance curve is a second branch beside it.** The isentropic kernel is `azoth_process::kernels::pump` and the reduced curve `azoth_process::pump_chart`; what is here is the declared input list and the result type.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route. A case on SRK or a non-classic rule is not a case this can be held to.",
-    "**the work is an isentropic head from a flash, not `v (P_out - P_in)`.** NeqSim clones the fluid to the outlet pressure and runs a `PSflash` at the inlet entropy, because `calculateAsCompressor` defaults to `true`; the incompressible form is its linearisation.",
+    "**without a curve the work is an isentropic head from a flash, not `v (P_out - P_in)`.** NeqSim clones the fluid to the outlet pressure and runs a `PSflash` at the inlet entropy, because `calculateAsCompressor` defaults to `true`; the incompressible form is its linearisation.",
     "**the outlet temperature is solved, not assumed isothermal.** The work raises the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it.",
-    "NeqSim's `Pump` also carries a `runTransient` path, a mechanical design and a performance curve. **None is here**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` and `isentropic_efficiency` reach.",
+    "**the curve is `PumpChart`'s reduced quadratic.** Each measured flow divides by its speed and each head by the speed squared; one degree-2 least-squares fit over every point is the head, and the efficiency is fitted at the same reduced flow, which is clamped to the measured range.",
+    "**a curve's head is in metres and its speed in rpm.** The class's `kJ/kg` head unit is the same specific energy divided by `g`, so a curve quoted that way is converted rather than run through a second calculation.",
+    "**the density correction multiplies by `reference_density` over the inlet density**, and the viscosity correction is the Hydraulic Institute's three factors. `run` applies the latter only when it is enabled and the stated viscosity exceeds 4 cSt, and the model's inputs are that branch's.",
+    "**NPSH available is `(P_in - P_bubble)/(rho g)` and NPSH required is the curve where the chart carries one**, else the class's 2/5/8 m flow bands. A bubble point that does not solve is `NaN`, and an unknown NPSH status counts as cavitating.",
+    "**an absent `curve` is the isentropic branch, and a stated one overrides `outlet_pressure`.** The class's chart branch ignores the stated pressure and solves it from the head; the isentropic branch refuses a pump with no pressure to reach.",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`, and `process/equipment/pump/PumpChart.java` is the curve.",
     "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The incompressible-liquid work `v(P2 - P1)` and the isentropic efficiency that divides it.",
+    "ANSI/HI 9.6.7-2021, \"Effects of Liquid Viscosity on Rotodynamic Pump Performance\". The three correction factors and the parameter `B`.",
+    "`validation/neqsim/captures/process_pump_curve.tsv` - the reduced curve, the density, NPSH and viscosity rows, and two `Pump.run` rows on PR water.",
 ]
 [source]
-standard = "NeqSim process/equipment/pump/Pump.java"
-edition = "Its steady-state `run`: an isentropic flash to the outlet pressure at the inlet entropy, the step divided by the isentropic efficiency, and the outlet temperature solved from the shifted enthalpy by a second flash."
+standard = "NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java"
+edition = "Its steady-state `run`: the isentropic flash to a stated outlet pressure, and the `isUsePumpChart` branch that solves the pressure from the reduced head, divides the hydraulic power by the chart efficiency, and flashes the inlet enthalpy plus the shaft work per mole."
 [inputs]
 [inputs.components]
 type = "components"
@@ -30,16 +36,62 @@ length = "one per component"
 description = "the inlet composition, summing to one.\n"
 [inputs.inlet_p]
 unit = "Pa"
-description = "the inlet pressure, which with `inlet_t` and `inlet_z` fixes the inlet state and its entropy.\n"
+description = "the inlet pressure, which with `inlet_t` and `inlet_z` fixes the inlet state, its entropy and its density.\n"
 [inputs.inlet_t]
 unit = "K"
-description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy.\n"
-[inputs.outlet_pressure]
-unit = "Pa"
-description = "the pressure the pump raises the stream to, which is `unit_ops.pump`'s own parameter.\n"
+description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy and the bubble pressure NPSH available reads.\n"
 [inputs.isentropic_efficiency]
 unit = "dimensionless"
-description = "the pump's isentropic efficiency, in `(0, 1]`. The isentropic head divides by it, so an efficiency of one is the reversible limit - and the captured second row is exactly that.\n"
+description = "the pump's isentropic efficiency, in `(0, 1]`. The isentropic head divides by it, so an efficiency of one is the reversible limit - and the captured second row is exactly that. A curve's own efficiency replaces it in the chart branch.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+optional = true
+description = "the pressure the pump raises the stream to in the isentropic branch. **A stated `curve` overrides it**, as the class's `usePumpChart` flag does; an absent value with no curve is refused.\n"
+[inputs.curve]
+type = "record_list"
+row_type = "PumpCurvePoint"
+optional = true
+description = "the manufacturer's measured points, one row each, in the order the chart states them. **Absent is the isentropic branch.** The rows are the flattened speed, flow, head and efficiency table, and one reduced fit is made over all of them.\n"
+[inputs.curve.fields.speed]
+unit = "dimensionless"
+description = "the pump speed the point was measured at, in revolutions per minute. The class's affinity laws are linear in it, and the reduced variables divide by it.\n"
+[inputs.curve.fields.flow]
+unit = "m**3/h"
+description = "the measured volumetric flow at this point, which divides by the speed to become the reduced flow.\n"
+[inputs.curve.fields.head]
+unit = "m"
+description = "the measured head, which divides by the speed squared. A curve quoted in `kJ/kg` is multiplied by `1000/g` before it is stated here.\n"
+[inputs.curve.fields.efficiency]
+unit = "dimensionless"
+description = "the measured efficiency as a fraction, which the class quotes in percent. It is fitted without a speed reduction, as the class's stored reduced efficiency is the measurement itself.\n"
+[inputs.curve.fields.npsh_required]
+unit = "m"
+optional = true
+description = "the required NPSH at this point. **All rows or none**: the class's NPSH curve is one value per flow point, so a table that states it at some points and not others is refused.\n"
+[inputs.speed]
+unit = "dimensionless"
+optional = true
+description = "the pump's rotational speed in revolutions per minute, at which the curve is read. Absent takes `Pump.speed`'s initialiser, 1000 rpm. Ignored in the isentropic branch.\n"
+[inputs.reference_density]
+unit = "kg/m**3"
+optional = true
+description = "the density the curve was measured at. Present and positive enables the correction `H_actual = H_chart rho_reference/rho_inlet`; absent or non-positive is the class's `-1.0`, no correction.\n"
+[inputs.viscosity]
+unit = "m**2/s"
+optional = true
+description = "the inlet's kinematic viscosity (1 cSt is `1e-6` m**2/s). Absent takes the class's water-like 1 cSt. The correction is applied only above 4 cSt and only when `use_viscosity_correction` is true.\n"
+[inputs.use_viscosity_correction]
+type = "boolean"
+optional = true
+description = "whether the Hydraulic Institute correction is enabled. Absent is the class's `false`, which applies the density correction alone.\n"
+[inputs.check_npsh]
+type = "boolean"
+optional = true
+description = "whether cavitation is assessed. Absent is the class's `false`, which reports `cavitating` as false whatever the NPSH margin.\n"
+[inputs.npsh_margin]
+unit = "dimensionless"
+optional = true
+description = "the factor NPSH available must exceed: cavitation is `NPSHa < margin * NPSHr`. Absent takes the class's 1.3.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -51,13 +103,31 @@ length = "one per component"
 description = "the outlet composition, which is the inlet's.\n"
 [outputs.outlet_p]
 unit = "Pa"
-description = "the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.\n"
+description = "the outlet pressure: `outlet_pressure` in the isentropic branch, or the inlet pressure plus the chart's corrected head times the inlet density and `g`.\n"
 [outputs.outlet_t]
 unit = "K"
 description = "the outlet temperature, solved from the shifted enthalpy at the outlet pressure.\n"
 [outputs.outlet_h]
 unit = "J/mol"
-description = "the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.\n"
+description = "the outlet molar enthalpy: the inlet's plus the shaft work per mole. In the isentropic branch that work is the isentropic head over the efficiency; in the chart branch it is `Q dP/eta/n`.\n"
+[outputs.head]
+unit = "m"
+description = "the head the pump used: the chart's corrected head after the density and viscosity corrections, or in the isentropic branch the work per mole over `M g`.\n"
+[outputs.efficiency]
+unit = "dimensionless"
+description = "the efficiency the pump used, as a fraction: the chart's corrected value, or the stated isentropic efficiency.\n"
+[outputs.npsh_required]
+unit = "m"
+description = "the required NPSH: the chart's curve at the operating flow where it has one, else the class's flow-band estimate. Reported in both branches.\n"
+[outputs.npsh_available]
+unit = "m"
+description = "`(P_in - P_bubble)/(rho g)` at the inlet, which is `Pump.getNPSHAvailable`. `NaN` where the bubble point does not solve, which the class also returns.\n"
+[outputs.cavitating]
+type = "boolean"
+description = "`NPSHa < margin * NPSHr`, with an unknown NPSH status counting as cavitating. False whenever `check_npsh` is not set.\n"
+[outputs.power]
+unit = "W"
+description = "the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0
@@ -72,6 +142,18 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "inlet_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the chart branch divides the shaft power by the molar flow to get the enthalpy rise, and a zero feed has no volumetric flow\n"
+[[valid_range]]
+quantity = "speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the reduced variables divide by the speed\n"
 [implementations]
 python = "azoth.process.pump"
 rust = "azoth_process::pump"

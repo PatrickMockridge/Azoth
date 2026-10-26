@@ -86,7 +86,10 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 60 -> 59 when the generator learned an `interval = true` input:
 #: `thermal.conduction_plane_wall`'s `dT` is a `TemperatureInterval` it had refused, so
 #: that binding - and the hand-written `thermal.rs` module with it - could go.
-KNOWN_HAND_WRITTEN = 59
+#: 59 -> 60 when `process.pump`'s `curve` became an optional `record_list`: the generator
+#: refuses an `Option<&[Row]>` (a record slice it can derive, an absent one it cannot), so
+#: the binding moved into the process module where the row is built by hand.
+KNOWN_HAND_WRITTEN = 60
 
 
 def _tools_module(name: str) -> ModuleType:

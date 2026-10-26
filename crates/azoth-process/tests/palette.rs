@@ -130,16 +130,18 @@ fn declared_inputs_by_optionality(name: &str) -> Option<toml::map::Map<String, t
 /// **The palette's `required` flag, held to the model spec that knows.**
 ///
 /// A model's `[inputs]` block marks an input `optional = true` when a caller may leave it out, and
-/// the palette now carries the same fact on `Param::required`. They are two spellings of one
-/// thing, and this is the gate that keeps them one thing: without it, an entry could declare a
-/// parameter optional that its kernel refuses without, or required one the kernel is happy to
-/// default - and the checker's `MissingParameter` would be wrong in the direction that either
-/// breaks working documents or misses a broken one.
+/// the palette carries the same fact on `Param::required`. They are two spellings of one thing
+/// wherever the palette exposes the model's whole surface, and this is the gate that keeps the
+/// dangerous direction one thing: without it, an entry could declare a parameter optional that its
+/// kernel refuses without, and the checker's `MissingParameter` would miss the broken document.
+/// **A palette entry that exposes one branch of a model may demand more than the model does** -
+/// `unit_ops.pump` runs the fixed-pressure pump and has no curve parameter - so a required palette
+/// parameter on an optional model input is a narrower form rather than a disagreement.
 ///
 /// **Scoped like its sibling** to the entries that have a kernel, because an entry with no kernel
 /// has no model either and its parameters describe a machine that does not exist yet.
 #[test]
-fn every_required_parameter_is_the_ones_its_model_marks_required() {
+fn every_optional_parameter_is_one_its_model_marks_optional() {
     let kernels = kernel_names();
     let mut checked = 0;
 
@@ -161,15 +163,22 @@ fn every_required_parameter_is_the_ones_its_model_marks_required() {
                 continue;
             };
             let optional = input.get("optional").and_then(toml::Value::as_bool) == Some(true);
-            assert_eq!(
-                declaration.required,
-                !optional,
-                "{} declares `{name}` with required = {}, and its model at \
-                 specs/models/process/{short}.toml says {}",
-                spec.id,
-                declaration.required,
-                if optional { "optional" } else { "required" }
-            );
+            // **A palette entry may be stricter than its model, never laxer.** The model is
+            // the direct call; the palette is the machine a flowsheet runs, and a palette
+            // parameter list may expose one branch of a model that has several - `unit_ops.pump`
+            // runs the fixed-pressure pump and has no curve parameter, so it requires the
+            // pressure its model needs only without a chart. A parameter the palette marks
+            // optional must be one the model defaults, or `MissingParameter` would let a
+            // document through that the kernel refuses; the other direction only asks a form
+            // for a value the direct call could have omitted.
+            if !declaration.required {
+                assert!(
+                    optional,
+                    "{} declares `{name}` optional, and its model at \
+                     specs/models/process/{short}.toml requires it",
+                    spec.id
+                );
+            }
             checked += 1;
         }
     }

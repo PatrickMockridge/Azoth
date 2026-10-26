@@ -6048,38 +6048,6 @@ pub fn pipe(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Pump.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
-)]
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn pump(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-    isentropic_efficiency: f64,
-) -> PyResult<crate::transport_gen::PyPumpResult> {
-    azoth_process::models::pump::pump(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-        isentropic_efficiency,
-    )
-    .map(|r| crate::transport_gen::PyPumpResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Separator.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

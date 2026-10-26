@@ -463,6 +463,8 @@ public surface of forty-odd getters.
   > captures/process_gibbs_algorithms.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe valve_sizing \
   > captures/process_valve_sizing.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
+  > captures/process_pump_curve.tsv
 ```
 
 **`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
@@ -627,6 +629,25 @@ the gas branch reads `gamma`, and the two libraries' heat capacities differ by t
 plug-flow reactor's own test measures, which the choked `Kv` scales as `1/sqrt(Fgamma)`; the
 liquid branch reads only the density. The `allow_choked` row is the cap: capping `x` at
 `Fgamma xT` raises the rich gas's `Kv` from `607.954` to `873.111`.
+
+**`ProcessProbe pump_curve` is `PumpChart`, the performance curve, and `Pump.run`'s chart
+branch.** The chart rows are fluid-free: the eight-speed table `PumpChartTest` states, read at the
+flow and speed its own run reaches, at both edges of the measured reduced-flow range and past
+both; the three-point curve in metre and in `kJ/kg`; `PumpDensityCorrectionTest`'s reference
+densities; `PumpNPSHCurveTest`'s NPSH table; and `PumpViscosityCorrectionTest`'s Hydraulic
+Institute factors at `1`, `50`, `75`, `100` and `500` cSt. **The run rows use PR water, not the
+SRK water the class tests build**, because the chart branch multiplies the head by the inlet
+density and the port's fluid is PR - a row on SRK water would price the equation of state rather
+than the chart. The NPSH-available rows are `PumpNPSHTest`'s water states at `25/60/80` C and its
+n-hexane state, and the last row puts the NPSH table on a running pump at `40` m3/hr.
+
+**Two of the class's states are cached rather than pure, and the rows say which.** `getHead`,
+`getEfficiency`, `getNPSHRequired` and the density correction are functions of the chart; the
+viscosity factors are not - `getFullyCorrectedHead` recomputes them only when the viscosity moved
+by more than `0.1` cSt, so a chart that has just been handed `calculateViscosityCorrection`'s
+factors keeps them. The `viscosity_*` rows are the seeded factors at the class's own BEP
+(`30` m3/hr, `88` m); the `viscosity_run_*` rows use a fresh chart, which recomputes them at its
+own best-efficiency point - and that is the state `Pump.run` meets.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

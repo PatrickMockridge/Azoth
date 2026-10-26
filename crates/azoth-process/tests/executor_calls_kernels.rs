@@ -89,8 +89,15 @@ fn the_executor_s_answer_is_the_pumps() {
         &inlet.z,
         inlet.p,
         inlet.t,
-        pascals(parameter(&session, "p1", "outlet_pressure")),
+        Some(pascals(parameter(&session, "p1", "outlet_pressure"))),
         parameter(&session, "p1", "isentropic_efficiency"),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the model runs");
 

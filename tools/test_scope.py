@@ -1636,7 +1636,15 @@ def sweep_line(
     terms = tuple(term for term in selection.split(" or ") if term)
     if not any(file_has_selected_marked_tests(path, terms) for path in files):
         return None
-    return pytest_line(f'{entry.command} -m {MARKER} -k "{selection}"', gate, budget_seconds)
+    probe = f'{entry.command} -m {MARKER} -k "{selection}"'
+    # **The marker test is a cheap pre-filter, not the answer.** A file whose marked tests are
+    # parametrized at collection time - the registry completeness sweeps - looks reachable from
+    # its AST under any term, and `test_registration_completeness.py` does: its `calc_id` grid
+    # carries no `process.*` id, so the narrowed command collected nothing and pytest exited 5,
+    # which the lane read as a failure. The collection is the only thing that knows.
+    if collects_nothing(probe) is not None:
+        return None
+    return pytest_line(probe, gate, budget_seconds)
 
 
 def selection_terms(commands: list[Command]) -> str:

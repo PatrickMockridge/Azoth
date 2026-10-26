@@ -500,7 +500,7 @@ mod tests {
         Stream::from_pt(
             vec!["water".to_string()],
             vec![1.0],
-            26100.471_829_031_365,
+            26_100.471_829_031_365,
             pascals(14.8e5),
             kelvins(289.15),
         )
@@ -587,7 +587,7 @@ mod tests {
             "cv: {}",
             report.cv
         );
-        close(report.calculated_molar_flow, 26100.471_829_031_365, "flow");
+        close(report.calculated_molar_flow, 26_100.471_829_031_365, "flow");
         close_loose(
             report.calculated_outlet_pressure,
             4.460_000_000_000_003,

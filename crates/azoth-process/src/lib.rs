@@ -23,6 +23,7 @@ pub mod model_records_gen;
 pub mod models;
 pub mod order;
 pub mod palette_gen;
+pub mod pump_chart;
 pub mod reactor;
 pub mod recycle;
 pub mod segment;

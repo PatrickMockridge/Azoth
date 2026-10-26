@@ -341,6 +341,15 @@ class WaterAnalysis(TypedDict):
     pressure: float
     co2_partial_pressure: float
 
+class PumpCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+    npsh_required: float | None
+
 @final
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
@@ -2790,6 +2799,12 @@ class PumpResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    head: Qty
+    efficiency: float
+    npsh_required: Qty
+    npsh_available: Qty
+    cavitating: bool
+    power: Qty
     warnings: list[Warning]
 
 @final
@@ -5324,8 +5339,15 @@ def pump(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
-    outlet_pressure: float,
     isentropic_efficiency: float,
+    outlet_pressure: float | None = None,
+    curve: list[PumpCurvePoint] | None = None,
+    speed: float | None = None,
+    reference_density: float | None = None,
+    viscosity: float | None = None,
+    use_viscosity_correction: bool | None = None,
+    check_npsh: bool | None = None,
+    npsh_margin: float | None = None,
 ) -> PumpResult: ...
 def rate_based_packed_column(
     gas_components: list[str],

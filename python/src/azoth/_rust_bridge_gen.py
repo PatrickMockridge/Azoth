@@ -6115,7 +6115,7 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
     )
 
 
-def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> PumpResult:
+def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, reference_density: Q | None=None, viscosity: Q | None=None, use_viscosity_correction: bool | None=None, check_npsh: bool | None=None, npsh_margin: float | None=None) -> PumpResult:
     """``process.pump``, computed in Rust."""
     spec = _models_gen.model("process.pump")
     result = _core.pump(
@@ -6124,8 +6124,15 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
-        input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        None if curve is None else input_records_to_si(spec, "curve", curve),
+        None if speed is None else speed,
+        None if reference_density is None else input_to_si(spec, "reference_density", reference_density),
+        None if viscosity is None else input_to_si(spec, "viscosity", viscosity),
+        use_viscosity_correction,
+        check_npsh,
+        None if npsh_margin is None else npsh_margin,
     )
     return PumpResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6133,6 +6140,12 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        head=from_si(result.head.magnitude_si, result.head.unit),
+        efficiency=result.efficiency,
+        npsh_required=from_si(result.npsh_required.magnitude_si, result.npsh_required.unit),
+        npsh_available=from_si(result.npsh_available.magnitude_si, result.npsh_available.unit),
+        cavitating=result.cavitating,
+        power=from_si(result.power.magnitude_si, result.power.unit),
         warnings=_warnings(result.warnings),
     )
 

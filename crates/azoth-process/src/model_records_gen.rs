@@ -492,7 +492,18 @@ impl CalcResult for PlugFlowReactorResult {
 impl CalcResult for PumpResult {
     const CALC_ID: &'static str = "process.pump";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "head",
+        "efficiency",
+        "npsh_required",
+        "npsh_available",
+        "cavitating",
+        "power",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

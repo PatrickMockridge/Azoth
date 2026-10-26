@@ -6378,14 +6378,32 @@ class PumpResult(_HasWarnings):
     #: the outlet composition, which is the inlet's.
     outlet_z: tuple[float, ...]
 
-    #: the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.
+    #: the outlet pressure: `outlet_pressure` in the isentropic branch, or the inlet pressure plus the chart's corrected head times the inlet density and `g`.
     outlet_p: Q
 
     #: the outlet temperature, solved from the shifted enthalpy at the outlet pressure.
     outlet_t: Q
 
-    #: the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.
+    #: the outlet molar enthalpy: the inlet's plus the shaft work per mole. In the isentropic branch that work is the isentropic head over the efficiency; in the chart branch it is `Q dP/eta/n`.
     outlet_h: Q
+
+    #: the head the pump used: the chart's corrected head after the density and viscosity corrections, or in the isentropic branch the work per mole over `M g`.
+    head: Q
+
+    #: the efficiency the pump used, as a fraction: the chart's corrected value, or the stated isentropic efficiency.
+    efficiency: float
+
+    #: the required NPSH: the chart's curve at the operating flow where it has one, else the class's flow-band estimate. Reported in both branches.
+    npsh_required: Q
+
+    #: `(P_in - P_bubble)/(rho g)` at the inlet, which is `Pump.getNPSHAvailable`. `NaN` where the bubble point does not solve, which the class also returns.
+    npsh_available: Q
+
+    #: `NPSHa < margin * NPSHr`, with an unknown NPSH status counting as cavitating. False whenever `check_npsh` is not set.
+    cavitating: bool
+
+    #: the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
+    power: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
