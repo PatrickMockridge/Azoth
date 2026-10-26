@@ -6256,8 +6256,11 @@ pub fn three_phase_separator(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure)")]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, valve_opening, kv, fouling_fraction, valve_characterization, xt, allow_choked, is_calc_pressure, is_isothermal, sizing_standard))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, valve_opening, kv, fouling_fraction, valve_characterization, xt, allow_choked, is_calc_pressure, is_isothermal, sizing_standard)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn throttling_valve(
     py: Python<'_>,
     components: Vec<String>,
@@ -6266,6 +6269,15 @@ pub fn throttling_valve(
     inlet_p: f64,
     inlet_t: f64,
     outlet_pressure: f64,
+    valve_opening: Option<f64>,
+    kv: Option<f64>,
+    fouling_fraction: Option<f64>,
+    valve_characterization: Option<&str>,
+    xt: Option<f64>,
+    allow_choked: Option<bool>,
+    is_calc_pressure: Option<bool>,
+    is_isothermal: Option<bool>,
+    sizing_standard: Option<&str>,
 ) -> PyResult<crate::transport_gen::PyThrottlingValveResult> {
     azoth_process::models::throttling_valve::throttling_valve(
         &components,
@@ -6274,6 +6286,15 @@ pub fn throttling_valve(
         pascals(inlet_p),
         kelvins(inlet_t),
         pascals(outlet_pressure),
+        valve_opening,
+        kv,
+        fouling_fraction,
+        valve_characterization,
+        xt,
+        allow_choked,
+        is_calc_pressure,
+        is_isothermal,
+        sizing_standard,
     )
     .map(|r| crate::transport_gen::PyThrottlingValveResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

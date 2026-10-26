@@ -50,3 +50,168 @@ outlet_z = [0.9, 0.1]
 outlet_p = 4000000.0
 outlet_t = 325.0535827975854
 outlet_h = 1235.7579658880618
+
+[[cases]]
+id = "the_default_sizing_of_a_choked_gas"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_gas_rich`.
+    **`ControlValveSizing` on the rich-gas regression state**: the class's own default standard, re-cased on PR. The drop ratio `x` exceeds `Fgamma xT`, so the row is choked and `allow_choked` is off - the flag is reported, not capped.
+    """
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 97.21961972278174
+inlet_z = [0.1, 0.2, 0.4, 0.3]
+inlet_p = 182925.0
+inlet_t = 296.25
+outlet_pressure = 141325.0
+[cases.expected]
+outlet_n = 97.21961972278174
+outlet_z = [0.1, 0.2, 0.4, 0.3]
+outlet_p = 141325.0
+outlet_t = 295.63504651075675
+kv = 607.9540338130714
+cv = 702.7948630879105
+cg = 955801.0137995583
+choked = true
+gas_valve = true
+calculated_molar_flow = 97.21961972278176
+
+[[cases]]
+id = "the_isothermal_branch_holds_the_inlet_temperature"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_gas_rich_isothermal`.
+    The same state with `setIsoThermal(true)`: the outlet flashes at the inlet temperature instead of isenthalpically, so `outlet_t` is the feed's `296.25` K.
+    """
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 97.21961972278174
+inlet_z = [0.1, 0.2, 0.4, 0.3]
+inlet_p = 182925.0
+inlet_t = 296.25
+outlet_pressure = 141325.0
+is_isothermal = true
+[cases.expected]
+outlet_n = 97.21961972278174
+outlet_z = [0.1, 0.2, 0.4, 0.3]
+outlet_p = 141325.0
+outlet_t = 296.25
+kv = 607.9540338130714
+cv = 702.7948630879105
+cg = 955801.0137995583
+choked = true
+gas_valve = true
+calculated_molar_flow = 97.21961972278176
+
+[[cases]]
+id = "the_choked_cap_raises_the_flow_coefficient"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_gas_rich_choked_cap`.
+    The same state with `allowChoked` on: the sizing caps `x` at `Fgamma xT`, which raises the required `Kv` from `607.95` to `873.11`.
+    """
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 97.21961972278174
+inlet_z = [0.1, 0.2, 0.4, 0.3]
+inlet_p = 182925.0
+inlet_t = 296.25
+outlet_pressure = 141325.0
+allow_choked = true
+[cases.expected]
+outlet_n = 97.21961972278174
+outlet_z = [0.1, 0.2, 0.4, 0.3]
+outlet_p = 141325.0
+outlet_t = 295.63504651075675
+kv = 873.1112420037152
+cv = 1009.3165957562948
+cg = 1372670.5702285608
+choked = true
+gas_valve = true
+calculated_molar_flow = 97.21961972278176
+
+[[cases]]
+id = "the_pressure_mode_solves_the_drop"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_gas_rich`.
+    The same state with `setIsCalcOutPressure(true)`: the outlet pressure is solved from the trim rather than stated, and the row records what the bisection lands on - `1.4132495384` bara, the stated value to the class's own tolerance.
+    """
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 97.21961972278174
+inlet_z = [0.1, 0.2, 0.4, 0.3]
+inlet_p = 182925.0
+inlet_t = 296.25
+outlet_pressure = 141325.0
+is_calc_pressure = true
+[cases.expected]
+outlet_n = 97.21961972278174
+outlet_z = [0.1, 0.2, 0.4, 0.3]
+outlet_p = 141324.95384216306
+outlet_t = 295.6350458294925
+kv = 607.9540338130714
+cv = 702.7948630879105
+cg = 955801.0137995583
+choked = true
+gas_valve = true
+calculated_molar_flow = 97.21961972278176
+
+[[cases]]
+id = "the_default_sizing_of_an_unchoked_gas"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_methane`.
+    The methane state: a gas valve whose drop ratio is below `Fgamma xT`, so the row is not choked.
+    """
+[cases.inputs]
+components = ["methane"]
+inlet_n = 82.22866324530604
+inlet_z = [1.0]
+inlet_p = 1000000.0
+inlet_t = 293.15
+outlet_pressure = 900000.0
+[cases.expected]
+outlet_n = 82.22866324530604
+outlet_z = [1.0]
+outlet_p = 900000.0
+outlet_t = 292.63596698321015
+kv = 78.64616342682979
+cv = 90.91496492141523
+cg = 123644.35229312471
+choked = false
+gas_valve = true
+calculated_molar_flow = 82.22866324530605
+
+[[cases]]
+id = "the_default_sizing_of_a_liquid"
+tolerance = 0.0002
+source = """\
+    NeqSim pin, `ControlValveSizing` through `ThrottlingValve.run`, from
+    `validation/neqsim/captures/process_valve_sizing.tsv`, row `sizing_water_liquid`.
+    Water at 14.8 bara: `isGasValve` is false and the liquid form sizes it - the only branch that does not read `gamma`.
+    """
+[cases.inputs]
+components = ["water"]
+inlet_n = 26100.471829031365
+inlet_z = [1.0]
+inlet_p = 1480000.0
+inlet_t = 289.15
+outlet_pressure = 446000.0
+[cases.expected]
+outlet_n = 26100.471829031365
+outlet_z = [1.0]
+outlet_p = 446000.0
+outlet_t = 289.3699126718532
+kv = 528.4961597255068
+cv = 610.9415606426858
+cg = 830880.5224740526
+choked = false
+gas_valve = false
+calculated_molar_flow = 26100.47182903137

@@ -604,7 +604,19 @@ def assert_results_equal(
 #: certify. One NaN against a number is still a failure - that is one kernel computing what
 #: the other refused - and a case pinning a number catches a NaN wherever both should have one.
 _MAY_AGREE_ON_NAN = frozenset(
-    {"max_reaction_log_residual", "net_charge_moles", "max_element_residual"}
+    {
+        "max_reaction_log_residual",
+        "net_charge_moles",
+        "max_element_residual",
+        # **The valve's sizing on a non-positive drop.** `ControlValveSizing.calcKv` takes the
+        # square root of a negative ratio and answers `NaN`, and the class's
+        # `acceptNegativeDP` row - the outlet stated above the inlet - is a state whose stream
+        # still answers. Both kernels carry the same NaN.
+        "kv",
+        "cv",
+        "cg",
+        "calculated_outlet_pressure",
+    }
 )
 
 

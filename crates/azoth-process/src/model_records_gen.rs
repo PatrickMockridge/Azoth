@@ -715,7 +715,18 @@ impl CalcResult for ThreePhaseSeparatorResult {
 impl CalcResult for ThrottlingValveResult {
     const CALC_ID: &'static str = "process.throttling_valve";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "kv",
+        "cv",
+        "cg",
+        "choked",
+        "gas_valve",
+        "calculated_molar_flow",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

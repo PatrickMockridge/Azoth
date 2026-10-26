@@ -5,16 +5,17 @@ assumptions = [
     "**the drop is isenthalpic.** `ThrottlingValve.run` flashes a `PHflash` at the inlet's total enthalpy and `Stream::from_ph` is the same operation, so the outlet's temperature is the one the mixture reaches at the outlet pressure.",
     "**`outlet_pressure` is taken at face value even above the inlet.** NeqSim's `acceptNegativeDP` defaults to `true`, so the capture's third row takes 30 bara to 40 at the same enthalpy. A port that clamped would disagree with the class it names.",
     "**nothing bounds the drop and no pressure is refused.** A valve asked for a pressure it cannot reach raises it, which is what the measured class does; whether that is a sensible thing to ask for is the caller's business and not a check this can make on a single inlet.",
-    "**`valve_opening` is not a parameter here, and the sizing mode is owed.** It solves the drop from the trim, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` - the `process/mechanicaldesign/` tree, which `ROADMAP.md` names.",
+    "**the valve sizes itself, and the sizing is `ControlValveSizing`, the default.** `calcKv` reads the inlet's flow, density, `Z` and `gamma` and the branch `isGasValve` selects; it is the rated `Kv` at 100%, which `valve_opening` and fouling scale. **The other eight standards are refused by name.**",
+    "**the gas branch's `gamma` is the libraries' heat capacity, and the two differ.** The choked `Kv` scales as `1/sqrt(Fgamma)`, so the plug-flow reactor's measured capacity divergence reaches this coefficient at about `3e-5` relative; the liquid branch reads only the density and agrees to rounding.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `ThrottlingValve` also carries a choked-flow branch, a laminar branch, a fouling fraction, an `isIsoThermal` mode and a controller path. **None is here**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` reaches.",
+    "**the choked branch, fouling and the isothermal mode are in; the laminar branch and the controller are not.** The laminar branch is the `prod choke` class's and the controller a transient surface. **A two-phase inlet is refused**: `Z` is read from the single-phase cubic.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/valve/ThrottlingValve.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
-edition = "Its steady-state `run` in its default specification: the outlet's pressure as the inlet's clone is set to, and a `PHflash` at the inlet's enthalpy for the temperature. **The `isCalcPressure` branch is owed**; it solves the pressure from the trim, which is the mechanical-design tree."
+edition = "Its steady-state `run`: the isenthalpic drop to the stated pressure, with `ControlValveSizing` sizing the trim on the first pass - `calcKv`, the flow inverse and the `isCalcPressure` solve - and the four opening characteristics. **The eight other sizing standards are refused by name.**"
 [inputs]
 [inputs.components]
 type = "components"
@@ -36,6 +37,62 @@ description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes t
 [inputs.outlet_pressure]
 unit = "Pa"
 description = "the pressure the valve drops the stream to, which is `unit_ops.throttling_valve`'s own parameter. Taken at face value even above the inlet, as `run` does by default.\n"
+[inputs.valve_opening]
+unit = "dimensionless"
+optional = true
+description = "`percentValveOpening`, **in percent**: the factor the opening characteristic gives of the rated `Kv`. **Absent is `100.0`.** Read by the sizing, the flow and the pressure solve.\n"
+[inputs.kv]
+unit = "dimensionless"
+optional = true
+description = "the valve's rated `Kv` at 100% opening, in the class's own units `(m3/h)*sqrt(bar)`. **Absent sizes it** from the inlet flow and the drop, which is what the class's first `run` does through `calcKv`.\n"
+[inputs.fouling_fraction]
+unit = "dimensionless"
+optional = true
+description = "`foulingFraction`: the effective `Kv` is the adjusted one times `1 - this`. **Absent is `0.0`.**\n"
+[inputs.valve_characterization]
+type = "enum"
+values = ["linear", "equal_percentage", "quick_opening", "modified_parabolic"]
+optional = true
+description = "the opening characteristic `getOpeningFactor` applies: `x`, `R^(x-1)` with `R = 50`, `sqrt(x)`, or `x^2`. **Absent is `linear`**, `ValveMechanicalDesign`'s constructor default.\n"
+[inputs.xt]
+unit = "dimensionless"
+optional = true
+description = "`xT`, the pressure-drop ratio factor of the gas branch. **Absent is `0.137`.**\n"
+[inputs.allow_choked]
+type = "boolean"
+optional = true
+description = "`allowChoked`: whether the sizing caps the flow at the choked limit. **Absent is `false`**, the class's initialiser - so the choked state is reported and not capped.\n"
+[inputs.is_calc_pressure]
+type = "boolean"
+optional = true
+description = "`isCalcPressure`: solve the outlet pressure from the trim instead of dropping to `outlet_pressure`. **Absent is `false`**, the class's initialiser. **The stated `outlet_pressure` is then ignored and the solved one published.**\n"
+[inputs.is_isothermal]
+type = "boolean"
+optional = true
+description = "`isIsoThermal`: flash at the inlet temperature at the outlet pressure instead of isenthalpically. **Absent is `false`.**\n"
+[inputs.sizing_standard]
+type = "enum"
+values = ["default", "iec_60534", "iec_60534_full", "prod_choke", "sachdeva", "gilbert", "baxendell", "ros", "achong"]
+optional = true
+description = "`setValveSizingStandard`: which `ControlValveSizingInterface` the sizing runs. **Absent is `default`**, `ControlValveSizing`; the other eight are refused by name, each naming its class.\n"
+[outputs.kv]
+unit = "dimensionless"
+description = "`getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`.\n"
+[outputs.cv]
+unit = "dimensionless"
+description = "`getCv()`: `Kv * 1.156`.\n"
+[outputs.cg]
+unit = "dimensionless"
+description = "`getCg()`: `Cv * 1360`.\n"
+[outputs.choked]
+type = "boolean"
+description = "`calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it.\n"
+[outputs.gas_valve]
+type = "boolean"
+description = "`isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs.\n"
+[outputs.calculated_molar_flow]
+unit = "mol/s"
+description = "`calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -54,6 +111,54 @@ description = "the outlet temperature, solved from the unchanged enthalpy at the
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.\n"
+[[unported]]
+parameter = "sizing_standard"
+value = "iec_60534"
+class = "ControlValveSizing_IEC_60534"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "iec_60534_full"
+class = "ControlValveSizing_IEC_60534_full"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "prod_choke"
+class = "ControlValveSizing_simple"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "sachdeva"
+class = "ControlValveSizing_MultiphaseChoke"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "gilbert"
+class = "ControlValveSizing_MultiphaseChoke"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "baxendell"
+class = "ControlValveSizing_MultiphaseChoke"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "ros"
+class = "ControlValveSizing_MultiphaseChoke"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
+[[unported]]
+parameter = "sizing_standard"
+value = "achong"
+class = "ControlValveSizing_MultiphaseChoke"
+capture = "validation/neqsim/captures/process_valve_sizing.tsv"
+
 [[valid_range]]
 quantity = "outlet_pressure"
 min = 0
@@ -69,3 +174,11 @@ rationale = "an absolute temperature\n"
 [implementations]
 python = "azoth.process.throttling_valve"
 rust = "azoth_process::throttling_valve"
+[[valid_range]]
+quantity = "valve_opening"
+min = 0
+min_inclusive = false
+max = 100
+max_inclusive = true
+severity = "error"
+rationale = "the characteristic's opening factor is zero at a closed valve, and the sizing divides by it\n"

@@ -17,13 +17,15 @@ entry was wrong about its parameters, not about its arithmetic.
 
 from __future__ import annotations
 
+from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ThrottlingValveResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
+from azoth.process.reference import _unported, valve_sizing
 
 
 def throttling_valve(
@@ -33,6 +35,15 @@ def throttling_valve(
     inlet_p: Q,
     inlet_t: Q,
     outlet_pressure: Q,
+    valve_opening: float | None = None,
+    kv: float | None = None,
+    fouling_fraction: float | None = None,
+    valve_characterization: str | None = None,
+    xt: float | None = None,
+    allow_choked: bool | None = None,
+    is_calc_pressure: bool | None = None,
+    is_isothermal: bool | None = None,
+    sizing_standard: str | None = None,
 ) -> ThrottlingValveResult:
     """Drop a stream to a lower pressure without heat or work.
 
@@ -76,26 +87,80 @@ def throttling_valve(
     # Every declared bound's quantity is fed here: a closure that supplies one and not
     # the other produces a `RANGE_CHECK_SKIPPED` warning for a check that could have run,
     # which reads as a defect in the caller's state rather than in this line.
+    opening = 100.0 if valve_opening is None else float(valve_opening)
+    stated = input_to_si(spec, "outlet_pressure", outlet_pressure)
     apply_checks(
         checks.on_input,
         {
             "inlet_t": t,
-            "outlet_pressure": input_to_si(spec, "outlet_pressure", outlet_pressure),
+            "outlet_pressure": stated,
+            "valve_opening": opening,
         }.get,
         warnings,
     )
 
+    # **The eight other standards are second machines**, refused by name from the declaration.
+    standard = "default" if sizing_standard is None else sizing_standard
+    if standard == "iec_60534":
+        _unported.refuse("sizing_standard=iec_60534")
+    elif standard == "iec_60534_full":
+        _unported.refuse("sizing_standard=iec_60534_full")
+    elif standard == "prod_choke":
+        _unported.refuse("sizing_standard=prod_choke")
+    elif standard == "sachdeva":
+        _unported.refuse("sizing_standard=sachdeva")
+    elif standard == "gilbert":
+        _unported.refuse("sizing_standard=gilbert")
+    elif standard == "baxendell":
+        _unported.refuse("sizing_standard=baxendell")
+    elif standard == "ros":
+        _unported.refuse("sizing_standard=ros")
+    elif standard == "achong":
+        _unported.refuse("sizing_standard=achong")
+    elif standard != "default":
+        raise InvalidInputError(
+            "sizing_standard", f"'{standard}' is not one of the nine declared standards"
+        )
+
+    geometry = valve_sizing.ValveSizingGeometry(
+        kv=kv,
+        opening_percent=opening,
+        fouling_fraction=0.0 if fouling_fraction is None else float(fouling_fraction),
+        characteristic="linear" if valve_characterization is None else valve_characterization,
+        xt=valve_sizing.DEFAULT_XT if xt is None else float(xt),
+        allow_choked=bool(allow_choked),
+    )
+    report = valve_sizing.sizing_report(
+        components, t, p, list(inlet_z), n, stated / 1.0e5, geometry
+    )
+    out_p = report.calculated_outlet_pressure * 1.0e5 if is_calc_pressure else stated
+
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
-    # The inlet's own state, which the drop carries unchanged.
-    h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
-    solved = ph_flash_solve(mixture, ideal_gas, outlet_pressure, from_si(h_in, "J/mol"), inlet_z)
+    if is_isothermal:
+        # `isIsoThermal` flashes at the inlet temperature rather than isenthalpically.
+        h_out, _ = enthalpy_at(mixture, ideal_gas, t, out_p, inlet_z)
+        out_t = from_si(t, "K")
+    else:
+        # The inlet's own state, which the drop carries unchanged.
+        h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
+        solved = ph_flash_solve(
+            mixture, ideal_gas, quantity(out_p, "Pa"), from_si(h_in, "J/mol"), inlet_z
+        )
+        h_out = h_in
+        out_t = solved.T
 
     return ThrottlingValveResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
-        outlet_p=outlet_pressure,
-        outlet_t=solved.T,
-        outlet_h=from_si(h_in, "J/mol"),
+        outlet_p=from_si(out_p, "Pa"),
+        outlet_t=out_t,
+        outlet_h=from_si(h_out, "J/mol"),
+        kv=report.kv,
+        cv=report.cv,
+        cg=report.cg,
+        choked=report.choked,
+        gas_valve=report.gas_valve,
+        calculated_molar_flow=from_si(report.calculated_molar_flow, "mol/s"),
         warnings=tuple(warnings),
     )
 

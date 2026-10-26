@@ -30,6 +30,7 @@ pub mod stream;
 pub mod unit_op;
 pub mod unported;
 pub mod unported_gen;
+pub mod valve;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{

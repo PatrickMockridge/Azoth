@@ -17561,6 +17561,24 @@ pub struct PyThrottlingValveResult {
     /// the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// `getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`.
+    #[pyo3(get)]
+    pub kv: f64,
+    /// `getCv()`: `Kv * 1.156`.
+    #[pyo3(get)]
+    pub cv: f64,
+    /// `getCg()`: `Cv * 1360`.
+    #[pyo3(get)]
+    pub cg: f64,
+    /// `calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it.
+    #[pyo3(get)]
+    pub choked: bool,
+    /// `isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs.
+    #[pyo3(get)]
+    pub gas_valve: bool,
+    /// `calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check.
+    #[pyo3(get)]
+    pub calculated_molar_flow: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -17570,12 +17588,18 @@ pub struct PyThrottlingValveResult {
 impl PyThrottlingValveResult {
     fn __repr__(&self) -> String {
         format!(
-            "ThrottlingValveResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "ThrottlingValveResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, kv={:?}, cv={:?}, cg={:?}, choked={:?}, gas_valve={:?}, calculated_molar_flow={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.kv,
+            self.cv,
+            self.cg,
+            self.choked,
+            self.gas_valve,
+            self.calculated_molar_flow,
             self.warnings.len()
         )
     }
@@ -17602,6 +17626,15 @@ impl From<&azoth_process::models::throttling_valve::ThrottlingValveResult>
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            kv: r.kv,
+            cv: r.cv,
+            cg: r.cg,
+            choked: r.choked,
+            gas_valve: r.gas_valve,
+            calculated_molar_flow: PyQty {
+                magnitude_si: r.calculated_molar_flow,
+                unit: "mol/s".to_string(),
             },
             warnings: transport(&r.warnings),
         }

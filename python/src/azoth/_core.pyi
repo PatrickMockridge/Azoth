@@ -2973,6 +2973,12 @@ class ThrottlingValveResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    kv: float
+    cv: float
+    cg: float
+    choked: bool
+    gas_valve: bool
+    calculated_molar_flow: Qty
     warnings: list[Warning]
 
 @final
@@ -5469,6 +5475,15 @@ def throttling_valve(
     inlet_p: float,
     inlet_t: float,
     outlet_pressure: float,
+    valve_opening: float | None = None,
+    kv: float | None = None,
+    fouling_fraction: float | None = None,
+    valve_characterization: str | None = None,
+    xt: float | None = None,
+    allow_choked: bool | None = None,
+    is_calc_pressure: bool | None = None,
+    is_isothermal: bool | None = None,
+    sizing_standard: str | None = None,
 ) -> ThrottlingValveResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],

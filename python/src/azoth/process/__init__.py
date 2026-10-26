@@ -1550,6 +1550,15 @@ def throttling_valve(
     inlet_p: Q,
     inlet_t: Q,
     outlet_pressure: Q,
+    valve_opening: float | None = None,
+    kv: float | None = None,
+    fouling_fraction: float | None = None,
+    valve_characterization: str | None = None,
+    xt: float | None = None,
+    allow_choked: bool | None = None,
+    is_calc_pressure: bool | None = None,
+    is_isothermal: bool | None = None,
+    sizing_standard: str | None = None,
 ) -> ThrottlingValveResult:
     """Drop a stream to a lower pressure without heat or work.
 
@@ -1570,6 +1579,15 @@ def throttling_valve(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
+        valve_opening=valve_opening,
+        kv=kv,
+        fouling_fraction=fouling_fraction,
+        valve_characterization=valve_characterization,
+        xt=xt,
+        allow_choked=allow_choked,
+        is_calc_pressure=is_calc_pressure,
+        is_isothermal=is_isothermal,
+        sizing_standard=sizing_standard,
     )
 
 

@@ -6918,6 +6918,24 @@ class ThrottlingValveResult(_HasWarnings):
     #: the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.
     outlet_h: Q
 
+    #: `getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`.
+    kv: float
+
+    #: `getCv()`: `Kv * 1.156`.
+    cv: float
+
+    #: `getCg()`: `Cv * 1360`.
+    cg: float
+
+    #: `calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it.
+    choked: bool
+
+    #: `isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs.
+    gas_valve: bool
+
+    #: `calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check.
+    calculated_molar_flow: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

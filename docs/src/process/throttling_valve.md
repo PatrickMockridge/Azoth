@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/valve/ThrottlingValve.java**
 
-Its steady-state `run` in its default specification: the outlet's pressure as the inlet's clone is set to, and a `PHflash` at the inlet's enthalpy for the temperature. **The `isCalcPressure` branch is owed**; it solves the pressure from the trim, which is the mechanical-design tree.
+Its steady-state `run`: the isenthalpic drop to the stated pressure, with `ControlValveSizing` sizing the trim on the first pass - `calcKv`, the flow inverse and the `isCalcPressure` solve - and the four opening characteristics. **The eight other sizing standards are refused by name.**
 
 
 ## What this model is
@@ -25,12 +25,27 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `inlet_p` | Pa | the inlet pressure, which with `inlet_t` and `inlet_z` fixes the inlet state and its enthalpy. |
 | `inlet_t` | K | the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy the drop carries. |
 | `outlet_pressure` | Pa | the pressure the valve drops the stream to, which is `unit_ops.throttling_valve`'s own parameter. Taken at face value even above the inlet, as `run` does by default. |
+| `valve_opening` | dimensionless | *Optional.* `percentValveOpening`, **in percent**: the factor the opening characteristic gives of the rated `Kv`. **Absent is `100.0`.** Read by the sizing, the flow and the pressure solve. |
+| `kv` | dimensionless | *Optional.* the valve's rated `Kv` at 100% opening, in the class's own units `(m3/h)*sqrt(bar)`. **Absent sizes it** from the inlet flow and the drop, which is what the class's first `run` does through `calcKv`. |
+| `fouling_fraction` | dimensionless | *Optional.* `foulingFraction`: the effective `Kv` is the adjusted one times `1 - this`. **Absent is `0.0`.** |
+| `valve_characterization` | linear / equal_percentage / quick_opening / modified_parabolic | *Optional.* the opening characteristic `getOpeningFactor` applies: `x`, `R^(x-1)` with `R = 50`, `sqrt(x)`, or `x^2`. **Absent is `linear`**, `ValveMechanicalDesign`'s constructor default. |
+| `xt` | dimensionless | *Optional.* `xT`, the pressure-drop ratio factor of the gas branch. **Absent is `0.137`.** |
+| `allow_choked` | - | *Optional.* `allowChoked`: whether the sizing caps the flow at the choked limit. **Absent is `false`**, the class's initialiser - so the choked state is reported and not capped. |
+| `is_calc_pressure` | - | *Optional.* `isCalcPressure`: solve the outlet pressure from the trim instead of dropping to `outlet_pressure`. **Absent is `false`**, the class's initialiser. **The stated `outlet_pressure` is then ignored and the solved one published.** |
+| `is_isothermal` | - | *Optional.* `isIsoThermal`: flash at the inlet temperature at the outlet pressure instead of isenthalpically. **Absent is `false`.** |
+| `sizing_standard` | default / iec_60534 / iec_60534_full / prod_choke / sachdeva / gilbert / baxendell / ros / achong | *Optional.* `setValveSizingStandard`: which `ControlValveSizingInterface` the sizing runs. **Absent is `default`**, `ControlValveSizing`; the other eight are refused by name, each naming its class. |
 
 
 ## Outputs
 
 | Name | Unit | Description |
 |---|---|---|
+| `kv` | dimensionless | `getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`. |
+| `cv` | dimensionless | `getCv()`: `Kv * 1.156`. |
+| `cg` | dimensionless | `getCg()`: `Cv * 1360`. |
+| `choked` | - | `calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it. |
+| `gas_valve` | - | `isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs. |
+| `calculated_molar_flow` | mol/s | `calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check. |
 | `outlet_n` | mol/s | the outlet molar flow, which is the inlet's: a valve adds no moles. |
 | `outlet_z` | dimensionless | the outlet composition, which is the inlet's. |
 | `outlet_p` | Pa | the outlet pressure, which is `outlet_pressure` rather than something the valve solves for. |
@@ -41,15 +56,35 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `outlet_pressure > 0` | raises | an absolute pressure |
 | `inlet_t > 0` | raises | an absolute temperature |
+| `valve_opening > 0 and valve_opening <= 100` | raises | the characteristic's opening factor is zero at a closed valve, and the sizing divides by it |
+
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `sizing_standard` = `iec_60534` | `ControlValveSizing_IEC_60534` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `iec_60534_full` | `ControlValveSizing_IEC_60534_full` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `prod_choke` | `ControlValveSizing_simple` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `sachdeva` | `ControlValveSizing_MultiphaseChoke` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `gilbert` | `ControlValveSizing_MultiphaseChoke` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `baxendell` | `ControlValveSizing_MultiphaseChoke` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `ros` | `ControlValveSizing_MultiphaseChoke` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+| `sizing_standard` = `achong` | `ControlValveSizing_MultiphaseChoke` | `validation/neqsim/captures/process_valve_sizing.tsv` |
+
 
 ## Assumptions
 
 - **the drop is isenthalpic.** `ThrottlingValve.run` flashes a `PHflash` at the inlet's total enthalpy and `Stream::from_ph` is the same operation, so the outlet's temperature is the one the mixture reaches at the outlet pressure.
 - **`outlet_pressure` is taken at face value even above the inlet.** NeqSim's `acceptNegativeDP` defaults to `true`, so the capture's third row takes 30 bara to 40 at the same enthalpy. A port that clamped would disagree with the class it names.
 - **nothing bounds the drop and no pressure is refused.** A valve asked for a pressure it cannot reach raises it, which is what the measured class does; whether that is a sensible thing to ask for is the caller's business and not a check this can make on a single inlet.
-- **`valve_opening` is not a parameter here, and the sizing mode is owed.** It solves the drop from the trim, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` - the `process/mechanicaldesign/` tree, which `ROADMAP.md` names.
+- **the valve sizes itself, and the sizing is `ControlValveSizing`, the default.** `calcKv` reads the inlet's flow, density, `Z` and `gamma` and the branch `isGasValve` selects; it is the rated `Kv` at 100%, which `valve_opening` and fouling scale. **The other eight standards are refused by name.**
+- **the gas branch's `gamma` is the libraries' heat capacity, and the two differ.** The choked `Kv` scales as `1/sqrt(Fgamma)`, so the plug-flow reactor's measured capacity divergence reaches this coefficient at about `3e-5` relative; the liquid branch reads only the density and agrees to rounding.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `ThrottlingValve` also carries a choked-flow branch, a laminar branch, a fouling fraction, an `isIsoThermal` mode and a controller path. **None is here**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` reaches.
+- **the choked branch, fouling and the isothermal mode are in; the laminar branch and the controller are not.** The laminar branch is the `prod choke` class's and the controller a transient surface. **A two-phase inlet is refused**: `Z` is read from the single-phase cubic.
 
 ## Cases
 
@@ -58,11 +93,17 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_gas_isenthalpic_drop` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 1000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 1000000.0, outlet_t = 308.9295610763757, outlet_h = 1235.7579664789316 |
 | `the_same_drop_stated_as_a_delta` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 2000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2000000.0, outlet_t = 314.62348149495364, outlet_h = 1235.7579669275347 |
 | `a_pressure_above_the_inlet_is_honoured` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 4000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 4000000.0, outlet_t = 325.0535827975854, outlet_h = 1235.7579658880618 |
+| `the_default_sizing_of_a_choked_gas` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 97.21961972278174, inlet_z = [0.1, 0.2, 0.4, 0.3], inlet_p = 182925.0, inlet_t = 296.25, outlet_pressure = 141325.0 | outlet_n = 97.21961972278174, outlet_z = [0.1, 0.2, 0.4, 0.3], outlet_p = 141325.0, outlet_t = 295.63504651075675, kv = 607.9540338130714, cv = 702.7948630879105, cg = 955801.0137995583, choked = True, gas_valve = True, calculated_molar_flow = 97.21961972278176 |
+| `the_isothermal_branch_holds_the_inlet_temperature` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 97.21961972278174, inlet_z = [0.1, 0.2, 0.4, 0.3], inlet_p = 182925.0, inlet_t = 296.25, outlet_pressure = 141325.0, is_isothermal = True | outlet_n = 97.21961972278174, outlet_z = [0.1, 0.2, 0.4, 0.3], outlet_p = 141325.0, outlet_t = 296.25, kv = 607.9540338130714, cv = 702.7948630879105, cg = 955801.0137995583, choked = True, gas_valve = True, calculated_molar_flow = 97.21961972278176 |
+| `the_choked_cap_raises_the_flow_coefficient` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 97.21961972278174, inlet_z = [0.1, 0.2, 0.4, 0.3], inlet_p = 182925.0, inlet_t = 296.25, outlet_pressure = 141325.0, allow_choked = True | outlet_n = 97.21961972278174, outlet_z = [0.1, 0.2, 0.4, 0.3], outlet_p = 141325.0, outlet_t = 295.63504651075675, kv = 873.1112420037152, cv = 1009.3165957562948, cg = 1372670.5702285608, choked = True, gas_valve = True, calculated_molar_flow = 97.21961972278176 |
+| `the_pressure_mode_solves_the_drop` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 97.21961972278174, inlet_z = [0.1, 0.2, 0.4, 0.3], inlet_p = 182925.0, inlet_t = 296.25, outlet_pressure = 141325.0, is_calc_pressure = True | outlet_n = 97.21961972278174, outlet_z = [0.1, 0.2, 0.4, 0.3], outlet_p = 141324.95384216306, outlet_t = 295.6350458294925, kv = 607.9540338130714, cv = 702.7948630879105, cg = 955801.0137995583, choked = True, gas_valve = True, calculated_molar_flow = 97.21961972278176 |
+| `the_default_sizing_of_an_unchoked_gas` | components = ['methane'], inlet_n = 82.22866324530604, inlet_z = [1.0], inlet_p = 1000000.0, inlet_t = 293.15, outlet_pressure = 900000.0 | outlet_n = 82.22866324530604, outlet_z = [1.0], outlet_p = 900000.0, outlet_t = 292.63596698321015, kv = 78.64616342682979, cv = 90.91496492141523, cg = 123644.35229312471, choked = False, gas_valve = True, calculated_molar_flow = 82.22866324530605 |
+| `the_default_sizing_of_a_liquid` | components = ['water'], inlet_n = 26100.471829031365, inlet_z = [1.0], inlet_p = 1480000.0, inlet_t = 289.15, outlet_pressure = 446000.0 | outlet_n = 26100.471829031365, outlet_z = [1.0], outlet_p = 446000.0, outlet_t = 289.3699126718532, kv = 528.4961597255068, cv = 610.9415606426858, cg = 830880.5224740526, choked = False, gas_valve = False, calculated_molar_flow = 26100.47182903137 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 3 declared, every one run
+- Tests: 9 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

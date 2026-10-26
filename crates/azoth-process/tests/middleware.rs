@@ -487,8 +487,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         checked += spec.input_checks().count();
     }
     // The reactor vessel state eight, which took the walk from ninety-four to a hundred and
-    // two; the plug-flow reactor's feed bound is the third.
-    assert_eq!(checked, 103, "the bounds this test walked");
+    // two; the plug-flow reactor's feed bound is the third, and the throttling valve's opening
+    // the fourth.
+    assert_eq!(checked, 104, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -610,8 +611,11 @@ fn the_generated_input_table_is_the_models_own() {
     // `armijo_line_search`, `armijo_c1`, `armijo_rho`, `armijo_max_backtracks` and
     // `adaptive_step_size`. `446 + 5 = 451`. **And then the regularisation's three**, on the
     // same entry: `regularization`, `regularization_threshold` and `regularization_tau`.
-    // `451 + 3 = 454`.
-    assert_eq!(walked, 454, "the inputs this test walked");
+    // `451 + 3 = 454`. **And then the throttling valve's nine**, all on `process.throttling_valve`
+    // and eight of them class defaults: `valve_opening`, `kv`, `fouling_fraction`,
+    // `valve_characterization`, `xt`, `allow_choked`, `is_calc_pressure`, `is_isothermal` and
+    // `sizing_standard`. `454 + 9 = 463`.
+    assert_eq!(walked, 463, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

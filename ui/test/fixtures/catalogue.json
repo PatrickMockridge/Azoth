@@ -7502,7 +7502,8 @@
       "runnable": true,
       "source": "NeqSim process/equipment/valve/ThrottlingValve.java",
       "unmodelled_ranges": [
-        "inlet_t"
+        "inlet_t",
+        "valve_opening"
       ]
     },
     {

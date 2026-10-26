@@ -170,6 +170,9 @@ public class ProcessProbe {
       case "gibbs_algorithms":
         gibbsAlgorithmRows();
         break;
+      case "valve_sizing":
+        valveSizingRows();
+        break;
       case "flowsheet":
         flowsheetRows();
         break;
@@ -5307,6 +5310,100 @@ public class ProcessProbe {
     System.out.println("total_equipped_weight_kg=" + design.getTotalEquippedWeight());
     System.out.println("reactor_type=" + design.getReactorType());
     System.out.println("number_of_beds=" + design.getNumberOfBeds());
+    System.out.println();
+  }
+
+  /// **`ControlValveSizing`, the `ValveMechanicalDesign` default, and the two solve modes.**
+  ///
+  /// The class's own sizing tests re-cased on PR: the rich-gas regression state
+  /// (`ThrottlingValveSizingStateRegressionTest`), the methane state and a water liquid. Each row
+  /// runs the valve unsized - the first `run` calls `calcKv` through `getMechanicalDesign()` -
+  /// then prints what the sizing reads and what it answers, and then drives the two modes with the
+  /// Kv it produced: `isCalcPressure` solves the outlet pressure from the trim, and the flow mode
+  /// solves the mole flow from the drop.
+  static void valveSizingRows() {
+    String[] rich = new String[] { "methane", "ethane", "propane", "n-butane" };
+    valveSizingRow("sizing_gas_rich", rich, new double[] { 0.1, 0.2, 0.4, 0.3 }, 296.25, 1.82925,
+        14942.5, 1.41325, 100.0, false, false);
+    valveSizingRow("sizing_gas_rich_isothermal", rich, new double[] { 0.1, 0.2, 0.4, 0.3 },
+        296.25, 1.82925, 14942.5, 1.41325, 100.0, true, false);
+    valveSizingRow("sizing_gas_rich_choked_cap", rich, new double[] { 0.1, 0.2, 0.4, 0.3 },
+        296.25, 1.82925, 14942.5, 1.41325, 100.0, false, true);
+    valveSizingRow("sizing_methane", new String[] { "methane" }, new double[] { 1.0 }, 293.15,
+        10.0, 4749.1, 9.0, 100.0, false, false);
+    valveSizingRow("sizing_water_liquid", new String[] { "water" }, new double[] { 1.0 }, 289.15,
+        14.8, 1.69272e6, 4.46, 100.0, false, false);
+  }
+
+  static void valveSizingRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double kgPerHour, double outletBara, double openingPercent,
+      boolean isothermal, boolean allowChoked) {
+    Stream inlet = feedMass("inlet", names, z, temperatureK, pressureBara, kgPerHour);
+
+    neqsim.process.equipment.valve.ThrottlingValve valve =
+        new neqsim.process.equipment.valve.ThrottlingValve(label, inlet);
+    valve.setOutletPressure(outletBara);
+    valve.setPercentValveOpening(openingPercent);
+    valve.setIsoThermal(isothermal);
+    valve.getMechanicalDesign().getValveSizingMethod().setAllowChoked(allowChoked);
+
+    System.out.println(label);
+    // ---- What the sizing reads.
+    System.out.println("inlet_p_bara=" + inlet.getPressure("bara"));
+    System.out.println("inlet_t_k=" + inlet.getTemperature("K"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("inlet_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_z=" + inlet.getThermoSystem().getZ());
+    System.out.println("inlet_gamma2=" + inlet.getThermoSystem().getGamma2());
+    System.out.println("inlet_molar_mass_gr_per_mol="
+        + inlet.getThermoSystem().getMolarMass("gr/mol"));
+    StringBuilder feedZ = new StringBuilder("feed_z=");
+    for (int i = 0; i < inlet.getThermoSystem().getNumberOfComponents(); i++) {
+      feedZ.append(inlet.getThermoSystem().getComponent(i).getComponentName()).append(":")
+          .append(inlet.getThermoSystem().getComponent(i).getz());
+      if (i + 1 < inlet.getThermoSystem().getNumberOfComponents()) {
+        feedZ.append(" ");
+      }
+    }
+    System.out.println(feedZ);
+    System.out.println("outlet_p_stated_bara=" + outletBara);
+    System.out.println("opening_percent=" + openingPercent);
+    System.out.println("is_isothermal=" + isothermal);
+    System.out.println("allow_choked=" + allowChoked);
+
+    // ---- The first run sizes the valve, because no Kv was set.
+    valve.run();
+    System.out.println("gas_valve=" + valve.isGasValve());
+    System.out.println("kv=" + valve.getKv());
+    System.out.println("cv=" + valve.getCv());
+    System.out.println("cg=" + valve.getCg());
+    java.util.Map<String, Object> sized =
+        ((neqsim.process.mechanicaldesign.valve.ValveMechanicalDesign) valve.getMechanicalDesign())
+            .calcValveSize();
+    System.out.println("choked=" + sized.get("choked"));
+    System.out.println("outlet_stream_p_bara=" + valve.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_stream_t_k=" + valve.getOutletStream().getTemperature("K"));
+    System.out.println("calculated_molar_flow=" + valve.calculateMolarFlow());
+
+    // ---- The pressure mode: the drop from the trim, at the same opening.
+    valve.setIsCalcOutPressure(true);
+    valve.run();
+    System.out.println("solved_outlet_p_bara=" + valve.getOutletPressure());
+    System.out.println("solved_outlet_stream_p_bara="
+        + valve.getOutletStream().getPressure("bara"));
+    System.out.println("solved_outlet_stream_t_k=" + valve.getOutletStream().getTemperature("K"));
+
+    // ---- The flow mode, with the Kv the sizing produced stated explicitly.
+    double sizedKv = valve.getKv();
+    valve.setIsCalcOutPressure(false);
+    valve.setKv(sizedKv);
+    valve.setOutletPressure(outletBara);
+    valve.run();
+    System.out.println("stated_kv=" + valve.getKv());
+    System.out.println("flow_mode_molar_flow=" + valve.calculateMolarFlow());
     System.out.println();
   }
 

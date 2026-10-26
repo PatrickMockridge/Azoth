@@ -200,6 +200,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # through `TestCase::matrix` and compares it row by row against the matrix the
         # operation built, so the specification is what constrains it either way.
         "a_matrix",
+        # `throttling_valve`'s two flags, which are booleans and have no slot in `TestCase`.
+        # `crates/azoth-process/src/valve.rs`'s tests assert them against the capture, and
+        # `test_cross_impl` compares them on both results.
+        "choked",
+        "gas_valve",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

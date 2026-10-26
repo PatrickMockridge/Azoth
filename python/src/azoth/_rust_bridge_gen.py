@@ -6484,7 +6484,7 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
     )
 
 
-def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q) -> ThrottlingValveResult:
+def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, valve_opening: float | None=None, kv: float | None=None, fouling_fraction: float | None=None, valve_characterization: str | None=None, xt: float | None=None, allow_choked: bool | None=None, is_calc_pressure: bool | None=None, is_isothermal: bool | None=None, sizing_standard: str | None=None) -> ThrottlingValveResult:
     """``process.throttling_valve``, computed in Rust."""
     spec = _models_gen.model("process.throttling_valve")
     result = _core.throttling_valve(
@@ -6494,6 +6494,15 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
+        None if valve_opening is None else valve_opening,
+        None if kv is None else kv,
+        None if fouling_fraction is None else fouling_fraction,
+        valve_characterization,
+        None if xt is None else xt,
+        allow_choked,
+        is_calc_pressure,
+        is_isothermal,
+        sizing_standard,
     )
     return ThrottlingValveResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6501,6 +6510,12 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        kv=result.kv,
+        cv=result.cv,
+        cg=result.cg,
+        choked=result.choked,
+        gas_valve=result.gas_valve,
+        calculated_molar_flow=from_si(result.calculated_molar_flow.magnitude_si, result.calculated_molar_flow.unit),
         warnings=_warnings(result.warnings),
     )
 

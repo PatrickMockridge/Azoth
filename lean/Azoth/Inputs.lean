@@ -384,6 +384,10 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.throttling_valve", "inlet_p", "Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("unit_ops.throttling_valve", "inlet_t", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.throttling_valve", "outlet_pressure", "Pa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("unit_ops.throttling_valve", "valve_opening", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.throttling_valve", "kv", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.throttling_valve", "fouling_fraction", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.throttling_valve", "xt", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
   ]
 
 /-- The number of rows, so a generator that emitted nothing is a difference rather

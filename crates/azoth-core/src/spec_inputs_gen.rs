@@ -3568,6 +3568,14 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("process.throttling_valve", "outlet_pressure", "pressure"),
+    ("process.throttling_valve", "valve_opening", "dimensionless"),
+    ("process.throttling_valve", "kv", "dimensionless"),
+    (
+        "process.throttling_valve",
+        "fouling_fraction",
+        "dimensionless",
+    ),
+    ("process.throttling_valve", "xt", "dimensionless"),
     (
         "reactions.chemical_equilibrium",
         "a_matrix",

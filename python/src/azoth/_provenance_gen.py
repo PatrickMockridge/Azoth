@@ -2724,12 +2724,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.throttling_valve': {
         "calc_id": 'process.throttling_valve',
         "name": 'Throttling valve',
-        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': 'f2965fb5ea1485728f0daec61cb2be87bea4746b59021c353c2181ba957dd4b1'},
-        "code": [{'path': 'python/src/azoth/process/reference/throttling_valve.py', 'sha256': '85bf1dfad9cb24b04b46df9d5ca3cf331af68eda7f8f5c8407caa6dbd38a7ee4'}, {'path': 'crates/azoth-process/src/models/throttling_valve.rs', 'sha256': 'b20610ce0d93a7ea11b12bee3170df323dcb4c192df2216e53f249c7f1dc669d'}],
+        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': '33c1924dbb4e152382acaf601158b4ae0af1f571aa5bebd81d048021403acdc8'},
+        "code": [{'path': 'python/src/azoth/process/reference/throttling_valve.py', 'sha256': 'b79326bedae7ace0689f0994b4dd5b639cf190c41cb53cc11edad1ce16e55b3a'}, {'path': 'crates/azoth-process/src/models/throttling_valve.rs', 'sha256': '16cf20f93f7832cbe0cbae3f1f5f0d54b0bd13466818122422d087c76d0866bb'}],
         "source": 'NeqSim process/equipment/valve/ThrottlingValve.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 3,
+        "tests_active": 9,
         "tests_skipped": 0,
     },
     'reactions.chemical_equilibrium': {

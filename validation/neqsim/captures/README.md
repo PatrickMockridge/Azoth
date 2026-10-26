@@ -461,6 +461,8 @@ public surface of forty-odd getters.
   > captures/process_reactor_mechanical_design.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_algorithms \
   > captures/process_gibbs_algorithms.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe valve_sizing \
+  > captures/process_valve_sizing.tsv
 ```
 
 **`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
@@ -607,6 +609,24 @@ with the class's where the trajectories do - `1.192020268e7` against `1.19202022
 the ammonia row's first entry. **The lengths differ where the trajectories do**: the ammonia row
 stops at 104 passes against the class's 117, which is the conditioning divergence the baseline
 rows already carry.
+
+**`ProcessProbe valve_sizing` is `ControlValveSizing`, the `ValveMechanicalDesign` default.**
+`setValveSizingStandard` selects the IEC and multiphase-choke families; a valve that never calls
+it runs the default, which is the class `ThrottlingValveSizingStateRegressionTest` exercises. The
+rows are that regression state and two others, **re-cased on PR** so the port can rebuild them:
+the rich gas (methane/ethane/propane/n-butane `0.1/0.2/0.4/0.3`) at `296.25` K and `1.82925`
+bara, methane at `10` bara and water at `14.8` bara. Each row prints what the sizing reads -
+volumetric flow, density, `Z`, `gamma`, molar mass - and then drives the three modes: the first
+`run` auto-sizes (`calcKv` through `getMechanicalDesign()`), `isCalcPressure` solves the drop
+from the trim, and the flow mode states the sized `Kv` and asks `calculateMolarFlow()`.
+
+**Two facts are measured and one divergence is bounded.** The flow mode reproduces the inlet flow
+to `1e-17` and the pressure mode returns the stated pressure to `5e-7` bara - the inverse pair is
+consistent on the class's own state. **The gas `Kv` agrees to `3e-5` and the liquid to `3e-8`**:
+the gas branch reads `gamma`, and the two libraries' heat capacities differ by the divergence the
+plug-flow reactor's own test measures, which the choked `Kv` scales as `1/sqrt(Fgamma)`; the
+liquid branch reads only the density. The `allow_choked` row is the cap: capping `x` at
+`Fgamma xT` raises the rich gas's `Kv` from `607.954` to `873.111`.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
