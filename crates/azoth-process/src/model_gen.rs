@@ -5425,6 +5425,21 @@ static PLUG_FLOW_REACTOR_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
         check: RangeCheck {
+            quantity: "feed_n",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a zero feed has no volumetric flow to give a residence time, and the division answers a rounding-level quotient rather than a state",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
             quantity: "length",
             min: Some(0.0),
             min_inclusive: false,

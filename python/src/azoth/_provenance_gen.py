@@ -2614,8 +2614,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.plug_flow_reactor': {
         "calc_id": 'process.plug_flow_reactor',
         "name": 'Plug-flow reactor',
-        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': '79a5080a82ac74e9c3581544b7a094ebf5220a36521c9bf74c10c4c138923ecc'},
-        "code": [{'path': 'python/src/azoth/process/reference/plug_flow_reactor.py', 'sha256': '43e6f7ac29c1da53e163ecb2accbd95b014ff0ccd3f89109bcad6bcded226c08'}, {'path': 'crates/azoth-process/src/models/plug_flow_reactor.rs', 'sha256': 'e8afae82c7414b1308166250819a609a5af6a720f2b240cade42e6f84fb0ebd0'}],
+        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': '7ff235084ae7e756c106a35f06998344451a88776c4d071215e6744ffb32c2cd'},
+        "code": [{'path': 'python/src/azoth/process/reference/plug_flow_reactor.py', 'sha256': '3fe8cb49a956d68e8fb99479d6190fa441a299e20e995e50659d7685b5184f15'}, {'path': 'crates/azoth-process/src/models/plug_flow_reactor.rs', 'sha256': '4f5680f777625df5480ff85de7d8c3f03cde193eb453b3c8b0b4965f9c1cb1b2'}],
         "source": 'NeqSim process/equipment/reactor/PlugFlowReactor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

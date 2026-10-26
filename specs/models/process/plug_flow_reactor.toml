@@ -195,6 +195,12 @@ description = "every station's molar flow of every component - the class's `F_<c
 unit = "s"
 description = "`getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.\n"
 [[valid_range]]
+quantity = "feed_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a zero feed has no volumetric flow to give a residence time, and the division answers a rounding-level quotient rather than a state\n"
+[[valid_range]]
 quantity = "length"
 min = 0
 min_inclusive = false

@@ -73,6 +73,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Bound | On violation | Why |
 |---|---|---|
+| `feed_n > 0` | raises | a zero feed has no volumetric flow to give a residence time, and the division answers a rounding-level quotient rather than a state |
 | `length > 0` | raises | a tube has a positive length |
 | `diameter > 0` | raises | a tube has a positive diameter |
 | `number_of_steps >= 1` | raises | a march with no steps is not a march |

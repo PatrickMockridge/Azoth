@@ -244,6 +244,13 @@ pub fn plug_flow_reactor(
     feed: &Stream,
     setup: &ReactorSetup,
 ) -> Result<(Stream, ReactorNumbers, PlugFlowProfile)> {
+    if feed.n <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "feed_n",
+            "a reactor needs a positive molar flow, and a zero feed has no volumetric flow \
+             for the residence time",
+        ));
+    }
     if setup.reactions.is_empty() {
         return Err(AzothError::invalid_input(
             "reactions",

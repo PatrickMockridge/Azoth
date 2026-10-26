@@ -313,6 +313,7 @@ def plug_flow_reactor(
     apply_checks(
         checks.on_input,
         {
+            "feed_n": feed_n_si,
             "length": length_si,
             "diameter": diameter_si,
             "number_of_steps": number_of_steps,

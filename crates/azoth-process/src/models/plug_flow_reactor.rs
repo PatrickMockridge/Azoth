@@ -158,6 +158,7 @@ pub fn plug_flow_reactor(
     apply_checks(
         spec.input_checks(),
         |quantity| match quantity {
+            "feed_n" => Some(feed_n),
             "length" => Some(length),
             "diameter" => Some(diameter),
             "number_of_steps" => Some(number_of_steps),

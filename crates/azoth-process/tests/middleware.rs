@@ -487,8 +487,8 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         checked += spec.input_checks().count();
     }
     // The reactor vessel state eight, which took the walk from ninety-four to a hundred and
-    // two.
-    assert_eq!(checked, 102, "the bounds this test walked");
+    // two; the plug-flow reactor's feed bound is the third.
+    assert_eq!(checked, 103, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**

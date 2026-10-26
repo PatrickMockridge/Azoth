@@ -432,3 +432,41 @@ fn the_model_publishes_the_captures_molar_flow_profile() {
         "residence time",
     );
 }
+
+/// **A zero feed is refused by name**, which is the nightly's finding: without the guard the
+/// march's residence time is a division by a rounding-level volumetric flow, and the two
+/// implementations' `V/Q` are two different enormous numbers.
+#[test]
+fn a_zero_feed_is_refused_before_the_march() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_process::kernels::plug_flow_reactor::{ReactorSetup, plug_flow_reactor};
+    use azoth_process::reactor::kinetic_reaction::KineticReaction;
+
+    let feed = Stream::from_pt(
+        ["methane", "oxygen", "nitrogen"]
+            .iter()
+            .map(|n| (*n).to_string())
+            .collect(),
+        vec![0.05, 0.10, 0.85],
+        0.0,
+        pascals(5.0e5),
+        kelvins(600.0),
+    )
+    .expect("the feed resolves");
+
+    let mut reaction = KineticReaction::new("methanecombustion");
+    reaction.add_reactant("methane", 1.0, 1.0);
+    reaction.add_reactant("oxygen", 2.0, 1.0);
+    reaction.add_product("CO2", 1.0);
+    reaction.add_product("water", 2.0);
+    reaction.pre_exponential_factor = 1.0e4;
+    reaction.activation_energy = 80_000.0;
+    reaction.heat_of_reaction = -802_000.0;
+    let setup = ReactorSetup {
+        reactions: vec![reaction],
+        ..ReactorSetup::default()
+    };
+
+    let error = plug_flow_reactor(&feed, &setup).expect_err("a zero feed is refused");
+    assert_eq!(error.field(), Some("feed_n"));
+}
