@@ -64,6 +64,24 @@ pub struct BrineAnalysis {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FilterBetaPoint {
+    #[pyo3(item)]
+    pub particle_size: f64,
+    #[pyo3(item)]
+    pub beta_ratio: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FilterDropPoint {
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub drop: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct FluidComponent {
     #[pyo3(item)]
     pub fluid: f64,

@@ -341,6 +341,18 @@ class WaterAnalysis(TypedDict):
     pressure: float
     co2_partial_pressure: float
 
+class FilterDropPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    flow: float
+    drop: float
+
+class FilterBetaPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    particle_size: float
+    beta_ratio: float
+
 class PumpCurvePoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -2618,7 +2630,11 @@ class FilterResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    clean_drop: Qty
     applied_drop: Qty
+    nominal_removal_efficiency: float
+    outlet_particle_concentration: float
+    captured_rate: Qty
     warnings: list[Warning]
 
 @final
@@ -5150,6 +5166,19 @@ def filter(
     inlet_p: float,
     inlet_t: float,
     pressure_drop: float,
+    pressure_drop_model: str | None = None,
+    reference_flow: float | None = None,
+    flow_exponent: float | None = None,
+    pressure_drop_curve: list[FilterDropPoint] | None = None,
+    media_area: float | None = None,
+    media_bed_depth: float | None = None,
+    media_particle_diameter: float | None = None,
+    media_void_fraction: float | None = None,
+    viscosity: float | None = None,
+    performance_curve: list[FilterBetaPoint] | None = None,
+    particle_size: float | None = None,
+    nominal_removal_efficiency: float | None = None,
+    inlet_particle_concentration: float | None = None,
 ) -> FilterResult: ...
 def flare(
     components: list[str],

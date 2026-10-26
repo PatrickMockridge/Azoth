@@ -910,6 +910,19 @@ def filter(
     inlet_p: Q,
     inlet_t: Q,
     pressure_drop: Q,
+    pressure_drop_model: str | None = None,
+    reference_flow: Q | None = None,
+    flow_exponent: float | None = None,
+    pressure_drop_curve: list[dict[str, Q]] | None = None,
+    media_area: Q | None = None,
+    media_bed_depth: Q | None = None,
+    media_particle_diameter: Q | None = None,
+    media_void_fraction: float | None = None,
+    viscosity: Q | None = None,
+    performance_curve: list[dict[str, Q]] | None = None,
+    particle_size: Q | None = None,
+    nominal_removal_efficiency: float | None = None,
+    inlet_particle_concentration: float | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by a fixed amount at a constant temperature.
 
@@ -923,6 +936,12 @@ def filter(
     ``applied_drop`` reports what was applied, with a warning when it differs from the
     request.
 
+    ``pressure_drop_model`` selects the class's clean-drop model - ``fixed`` by default, then
+    ``flow_scaled``, ``tabulated`` and ``ergun`` - and the inputs after it are that model's
+    own settings. The beta-ratio ``performance_curve`` (or a scalar
+    ``nominal_removal_efficiency``) with an ``inlet_particle_concentration`` enables the
+    particle capture.
+
     See :func:`azoth.process.reference.filter`.
     """
     return resolve(_FILTER)(  # type: ignore[no-any-return]
@@ -932,6 +951,19 @@ def filter(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         pressure_drop=pressure_drop,
+        pressure_drop_model=pressure_drop_model,
+        reference_flow=reference_flow,
+        flow_exponent=flow_exponent,
+        pressure_drop_curve=pressure_drop_curve,
+        media_area=media_area,
+        media_bed_depth=media_bed_depth,
+        media_particle_diameter=media_particle_diameter,
+        media_void_fraction=media_void_fraction,
+        viscosity=viscosity,
+        performance_curve=performance_curve,
+        particle_size=particle_size,
+        nominal_removal_efficiency=nominal_removal_efficiency,
+        inlet_particle_concentration=inlet_particle_concentration,
     )
 
 

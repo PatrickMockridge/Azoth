@@ -8,8 +8,9 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    cubic_meters_per_second, joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals,
-    square_meters_per_second, watts, watts_per_kelvin, watts_per_square_meter_kelvin,
+    cubic_meters_per_second, joules_per_mole, kelvins, kilograms_per_cubic_meter, meters,
+    pascal_seconds, pascals, square_meters, square_meters_per_second, watts, watts_per_kelvin,
+    watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -269,6 +270,84 @@ pub fn pump(
         npsh_margin,
     )
     .map(|r| crate::transport_gen::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.filter` - the filter's kernel as a registered id.
+///
+/// **Hand-written, because two of its record slices may be absent.** `gen_python_wrappers`
+/// refuses `Option<&[Row]>`, and both `pressure_drop_curve` and `performance_curve` are
+/// optional; the rows are built from the generated mappings here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn filter(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    pressure_drop: f64,
+    pressure_drop_model: Option<&str>,
+    reference_flow: Option<f64>,
+    flow_exponent: Option<f64>,
+    pressure_drop_curve: Option<Vec<crate::records_gen::FilterDropPoint>>,
+    media_area: Option<f64>,
+    media_bed_depth: Option<f64>,
+    media_particle_diameter: Option<f64>,
+    media_void_fraction: Option<f64>,
+    viscosity: Option<f64>,
+    performance_curve: Option<Vec<crate::records_gen::FilterBetaPoint>>,
+    particle_size: Option<f64>,
+    nominal_removal_efficiency: Option<f64>,
+    inlet_particle_concentration: Option<f64>,
+) -> PyResult<crate::transport_gen::PyFilterResult> {
+    let drop_points: Option<Vec<azoth_process::models::filter::FilterDropPoint>> =
+        pressure_drop_curve.map(|rows| {
+            rows.into_iter()
+                .map(|row| azoth_process::models::filter::FilterDropPoint {
+                    flow: cubic_meters_per_second(row.flow),
+                    drop: pascals(row.drop),
+                })
+                .collect()
+        });
+    let beta_points: Option<Vec<azoth_process::models::filter::FilterBetaPoint>> =
+        performance_curve.map(|rows| {
+            rows.into_iter()
+                .map(|row| azoth_process::models::filter::FilterBetaPoint {
+                    particle_size: meters(row.particle_size),
+                    beta_ratio: row.beta_ratio,
+                })
+                .collect()
+        });
+    azoth_process::filter(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(pressure_drop),
+        pressure_drop_model,
+        reference_flow.map(cubic_meters_per_second),
+        flow_exponent,
+        drop_points.as_deref(),
+        media_area.map(square_meters),
+        media_bed_depth.map(meters),
+        media_particle_diameter.map(meters),
+        media_void_fraction,
+        viscosity.map(pascal_seconds),
+        beta_points.as_deref(),
+        particle_size.map(meters),
+        nominal_removal_efficiency,
+        inlet_particle_concentration,
+    )
+    .map(|r| crate::transport_gen::PyFilterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

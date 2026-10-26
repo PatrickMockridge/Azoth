@@ -5648,33 +5648,6 @@ pub fn expander(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Filter.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop)")]
-pub fn filter(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    pressure_drop: f64,
-) -> PyResult<crate::transport_gen::PyFilterResult> {
-    azoth_process::models::filter::filter(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(pressure_drop),
-    )
-    .map(|r| crate::transport_gen::PyFilterResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Flare.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

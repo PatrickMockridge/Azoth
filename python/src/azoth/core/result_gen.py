@@ -5866,8 +5866,20 @@ class FilterResult(_HasWarnings):
     #: the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.
     outlet_h: Q
 
+    #: the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`.
+    clean_drop: Q
+
     #: the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.
     applied_drop: Q
+
+    #: the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar.
+    nominal_removal_efficiency: float
+
+    #: the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off.
+    outlet_particle_concentration: float
+
+    #: the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
+    captured_rate: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

@@ -239,7 +239,11 @@ impl CalcResult for FilterResult {
         "outlet_p",
         "outlet_t",
         "outlet_h",
+        "clean_drop",
         "applied_drop",
+        "nominal_removal_efficiency",
+        "outlet_particle_concentration",
+        "captured_rate",
         "warnings",
     ];
 

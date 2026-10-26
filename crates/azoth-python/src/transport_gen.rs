@@ -14704,9 +14704,21 @@ pub struct PyFilterResult {
     /// the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`.
+    #[pyo3(get)]
+    pub clean_drop: PyQty,
     /// the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.
     #[pyo3(get)]
     pub applied_drop: PyQty,
+    /// the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar.
+    #[pyo3(get)]
+    pub nominal_removal_efficiency: f64,
+    /// the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off.
+    #[pyo3(get)]
+    pub outlet_particle_concentration: f64,
+    /// the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
+    #[pyo3(get)]
+    pub captured_rate: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14716,13 +14728,17 @@ pub struct PyFilterResult {
 impl PyFilterResult {
     fn __repr__(&self) -> String {
         format!(
-            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, applied_drop={:?}, {} warning(s))",
+            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.clean_drop,
             self.applied_drop,
+            self.nominal_removal_efficiency,
+            self.outlet_particle_concentration,
+            self.captured_rate,
             self.warnings.len()
         )
     }
@@ -14748,9 +14764,19 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
             },
+            clean_drop: PyQty {
+                magnitude_si: r.clean_drop.value,
+                unit: "Pa".to_string(),
+            },
             applied_drop: PyQty {
                 magnitude_si: r.applied_drop.value,
                 unit: "Pa".to_string(),
+            },
+            nominal_removal_efficiency: r.nominal_removal_efficiency,
+            outlet_particle_concentration: r.outlet_particle_concentration,
+            captured_rate: PyQty {
+                magnitude_si: r.captured_rate.value,
+                unit: "kg/h".to_string(),
             },
             warnings: transport(&r.warnings),
         }

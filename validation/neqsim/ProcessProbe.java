@@ -125,6 +125,9 @@ public class ProcessProbe {
       case "filter":
         filterRows();
         break;
+      case "filter_models":
+        filterModelRows();
+        break;
       case "compressor":
         isentropicRows("Compressor");
         break;
@@ -411,6 +414,112 @@ public class ProcessProbe {
     // the coefficient it derives from the mass flow it sees.
     System.out.println("applied_deltaP_bara=" + unit.getDeltaP());
     System.out.println("cv_sqrt_bar_per_kg_per_hr=" + unit.getCvFactor());
+    System.out.println();
+  }
+
+  /// `FilterPressureDropModel`'s four branches and the particle-capture update.
+  ///
+  /// **The rows are `FilterTest`'s states re-cased on PR methane**, because the port's fluid is
+  /// PR. The drop models are fluid-free except the Ergun branch, which reads the density and
+  /// viscosity the class's system reports; those are printed and the port takes the viscosity
+  /// as an input, because azoth's viscosity dispatch is its own calculation.
+  static void filterModelRows() {
+    neqsim.process.equipment.filter.Filter fixed = new neqsim.process.equipment.filter.Filter(
+        "fixed", filterPrFeed(1000.0));
+    fixed.setDeltaP(0.10);
+    fixed.run();
+    printFilterRow("fixed_methane_1000_kg_per_hr", fixed.getInletStream(), fixed);
+
+    for (double kgPerHour : new double[] {1000.0, 2000.0}) {
+      Stream inlet = filterPrFeed(kgPerHour);
+      neqsim.process.equipment.filter.Filter filter =
+          new neqsim.process.equipment.filter.Filter("flow scaled", inlet);
+      filter.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+      filter.setDeltaP(0.10);
+      filter.setReferenceFlowRate(flowM3Hr(filterPrFeed(1000.0)));
+      filter.run();
+      printFilterRow("flow_scaled_methane_" + (int) kgPerHour + "_kg_per_hr",
+          filter.getInletStream(), filter);
+    }
+
+    Stream tabulatedInlet = filterPrFeed(1000.0);
+    double tabulatedFlow = flowM3Hr(tabulatedInlet);
+    neqsim.process.equipment.filter.FilterPressureDropCurve curve =
+        new neqsim.process.equipment.filter.FilterPressureDropCurve(
+            new double[] {0.5 * tabulatedFlow, 1.5 * tabulatedFlow}, new double[] {0.10, 0.50});
+    curve.setTestStandard("ISO 3968:2017");
+    neqsim.process.equipment.filter.Filter tabulated =
+        new neqsim.process.equipment.filter.Filter("tested cartridge", tabulatedInlet);
+    tabulated.setPressureDropCurve(curve);
+    tabulated.run();
+    printFilterRow("tabulated_methane_1000_kg_per_hr", tabulated.getInletStream(), tabulated);
+
+    for (double kgPerHour : new double[] {1000.0, 2000.0}) {
+      Stream inlet = filterPrFeed(kgPerHour);
+      neqsim.process.equipment.filter.Filter filter =
+          new neqsim.process.equipment.filter.Filter("granular guard bed", inlet);
+      filter.setFilterServiceType(neqsim.process.equipment.filter.FilterType.GRANULAR_MEDIA);
+      filter.setMediaGeometry(1.0, 1.5, 0.002, 0.40);
+      filter.run();
+      printFilterRow("ergun_methane_" + (int) kgPerHour + "_kg_per_hr",
+          filter.getInletStream(), filter);
+    }
+
+    Stream captureInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.FilterPerformanceCurve performance =
+        new neqsim.process.equipment.filter.FilterPerformanceCurve(
+            new double[] {5.0, 10.0, 20.0}, new double[] {2.0, 100.0, 1000.0});
+    performance.setTestStandard("ISO 16889:2022");
+    neqsim.process.equipment.filter.Filter capture =
+        new neqsim.process.equipment.filter.Filter("beta rated filter", captureInlet);
+    capture.setPerformanceCurve(performance);
+    capture.setParticleSize(10.0);
+    capture.setInletParticleConcentration(100.0);
+    capture.run();
+    System.out.println("capture_beta_ratio_methane_1000_kg_per_hr");
+    System.out.println("inlet_m3_per_hr=" + flowM3Hr(captureInlet));
+    System.out.println("inlet_density_kg_per_m3="
+        + captureInlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + captureInlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("particle_size_micrometre=" + capture.getParticleSize());
+    System.out.println("inlet_particle_concentration_mg_per_kg="
+        + capture.getInletParticleConcentration());
+    System.out.println("nominal_removal_efficiency=" + capture.getNominalRemovalEfficiency());
+    System.out.println("outlet_particle_concentration_mg_per_kg="
+        + capture.getOutletParticleConcentration());
+    System.out.println("captured_rate_kg_per_hr=" + capture.getCalculatedCapturedRate());
+    print("inlet", captureInlet);
+    print("outlet", capture.getOutletStream());
+    System.out.println();
+  }
+
+  static Stream filterPrFeed(double kgPerHour) {
+    SystemInterface fluid = new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 1.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static double flowM3Hr(Stream stream) {
+    return stream.getFlowRate("m3/hr");
+  }
+
+  static void printFilterRow(String label, StreamInterface inlet,
+      neqsim.process.equipment.filter.Filter filter) {
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + inlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("clean_delta_p_bar=" + filter.getCalculatedCleanDeltaP());
+    System.out.println("delta_p_bar=" + filter.getDeltaP());
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
     System.out.println();
   }
 

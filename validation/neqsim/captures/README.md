@@ -463,6 +463,8 @@ public surface of forty-odd getters.
   > captures/process_gibbs_algorithms.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe valve_sizing \
   > captures/process_valve_sizing.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_models \
+  > captures/process_filter_models.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -648,6 +650,15 @@ by more than `0.1` cSt, so a chart that has just been handed `calculateViscosity
 factors keeps them. The `viscosity_*` rows are the seeded factors at the class's own BEP
 (`30` m3/hr, `88` m); the `viscosity_run_*` rows use a fresh chart, which recomputes them at its
 own best-efficiency point - and that is the state `Pump.run` meets.
+
+**`ProcessProbe filter_models` is `FilterPressureDropModel`'s four branches and the
+particle-capture update.** The rows are `FilterTest`'s states re-cased on PR methane at 298.15 K
+and 20 bara: `FIXED`, `FLOW_SCALED` at the reference flow and at twice it, `TABULATED` at the
+midpoint of a two-point curve, `ERGUN` at one and two thousand kg/hr, and the beta-ratio capture
+row. Each prints the actual flow, density and viscosity the class reads beside the calculated
+clean drop, the applied drop and both records. **The Ergun rows' viscosity is printed because the
+port takes it as an input**: azoth's viscosity dispatch is a separate calculation, and these rows
+are the packed-bed arithmetic rather than a second viscosity model.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

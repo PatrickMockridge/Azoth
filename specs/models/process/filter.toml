@@ -7,9 +7,9 @@ assumptions = [
     "**a drop larger than the inlet pressure is clamped rather than refused.** `run` applies `min(max(0, dP), max(0, P_in - 1e-6 bar))` and logs, so the outlet lands a millionth of a bar above vacuum; `applied_drop` reports it and the model warns when it differs from the request.",
     "**and that clamped state is one no cubic can evaluate.** NeqSim extrapolates to `1968.3` J/mol there and azoth's does not converge (`1.9e-9` against `1e-12`), so the port reproduces the clamp and the flash after it refuses.",
     "**a drop below the class's own `1e-10` bar threshold runs no flash at all** and the outlet is the cloned inlet. A `TPflash` at the same state *is* that state, so this has no second branch and the two agree exactly - which the capture's second row is.",
-    "**the particle-capture curve is absent, on the outlet as much as anywhere.** `concentrationLoadingModelEnabled` is false by default, and with it off `updateParticleCapturePerformance` zeroes two fields and returns: nothing about a particle reaches the fluid. `ROADMAP.md` names it.",
+    "**the capture is `updateParticleCapturePerformance`.** A beta-ratio curve or a scalar efficiency gives the nominal removal; the outlet concentration is `inlet (1 - eta)` and the captured rate `m_dot inlet eta`, both zero unless `inlet_particle_concentration` is stated.",
     "**`Cv` is not an output.** `run` computes `sqrt(dP) / massFlow`, a number whose unit (`bar**0.5 * hr / kg`) this library has no dimension for; the standard flow coefficient is `hydraulics.control_valve_cv`'s. It is a function of two values the result already carries.",
-    "**`pressure_drop` is the `FIXED` branch, and the other three are owed.** `FilterPressureDropModel`'s `FLOW_SCALED`, `TABULATED` and `ERGUN` replace the fixed drop with a curve, a table or a packed-bed correlation, and each needs media geometry. `ROADMAP.md` names the class.",
+    "**the clean drop is one of `FilterPressureDropModel`'s four branches.** `FIXED` returns the configured drop, `FLOW_SCALED` scales it by `(Q/Q_ref)^n`, `TABULATED` interpolates a measured curve, and `ERGUN` is the packed-bed correlation.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "NeqSim's `Filter` also carries `runTransient` with solids loading, breakthrough, backwash and regeneration, and an element-integrity check. **None is here.**",
 ]
@@ -41,6 +41,73 @@ description = "the inlet temperature, which is also the outlet's: the flash is a
 [inputs.pressure_drop]
 unit = "Pa"
 description = "the pressure loss across the filter, which is `unit_ops.filter`'s own parameter and the `FIXED` branch of the class's model selector. A drop past the inlet pressure is clamped rather than refused.\n"
+[inputs.pressure_drop_model]
+type = "enum"
+values = ["fixed", "flow_scaled", "tabulated", "ergun"]
+optional = true
+description = "the clean-drop model. Absent is the class's own default, `FIXED`.\n"
+[inputs.reference_flow]
+unit = "m**3/h"
+optional = true
+description = "the reference actual flow `FLOW_SCALED` scales from. Absent takes the actual flow, so the ratio is one and the configured drop stands.\n"
+[inputs.flow_exponent]
+unit = "dimensionless"
+optional = true
+description = "`FLOW_SCALED`'s exponent, positive. Absent takes the class's `1.0`; a type's own default is not read, because the model's selector is stated here.\n"
+[inputs.pressure_drop_curve]
+type = "record_list"
+row_type = "FilterDropPoint"
+optional = true
+description = "the `TABULATED` curve, in strictly increasing flow order. **An absent or empty curve returns the configured drop**, which is the class's own fallback.\n"
+[inputs.pressure_drop_curve.fields.flow]
+unit = "m**3/h"
+description = "the actual volumetric flow of the test point.\n"
+[inputs.pressure_drop_curve.fields.drop]
+unit = "Pa"
+description = "the clean drop there, non-negative and non-decreasing with flow.\n"
+[inputs.media_area]
+unit = "m**2"
+optional = true
+description = "the `ERGUN` bed's cross-sectional area. Absent takes the class's `1.0` m2.\n"
+[inputs.media_bed_depth]
+unit = "m"
+optional = true
+description = "the `ERGUN` bed's depth. Absent takes the class's `1.0` m.\n"
+[inputs.media_particle_diameter]
+unit = "m"
+optional = true
+description = "the `ERGUN` bed's representative particle diameter. Absent takes the class's `1e-3` m.\n"
+[inputs.media_void_fraction]
+unit = "dimensionless"
+optional = true
+description = "the `ERGUN` bed's void fraction in `(0, 1)`. Absent takes the class's `0.40`.\n"
+[inputs.viscosity]
+unit = "Pa*s"
+optional = true
+description = "the fluid's dynamic viscosity, which the Ergun branch reads. **Required by `ergun`**, because the class reads it from the EOS and this library's viscosity dispatch is a separate calculation.\n"
+[inputs.performance_curve]
+type = "record_list"
+row_type = "FilterBetaPoint"
+optional = true
+description = "the beta-ratio curve, in strictly increasing particle-size order. **An absent or empty curve uses `nominal_removal_efficiency`.**\n"
+[inputs.performance_curve.fields.particle_size]
+unit = "m"
+description = "the particle size the ratio is stated at.\n"
+[inputs.performance_curve.fields.beta_ratio]
+unit = "dimensionless"
+description = "the upstream over downstream particle count at that size, at least one.\n"
+[inputs.particle_size]
+unit = "m"
+optional = true
+description = "the size the beta curve is evaluated at. Absent takes the class's `10e-6` m.\n"
+[inputs.nominal_removal_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the scalar removal efficiency a filter without a beta curve uses. Absent takes the class's `0.0`.\n"
+[inputs.inlet_particle_concentration]
+unit = "dimensionless"
+optional = true
+description = "the inlet particle concentration as a mass fraction (100 mg/kg is `1e-4`). **Stating it enables the capture**, as `setInletParticleConcentration` does; absent leaves both capture outputs zero.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -59,15 +126,49 @@ description = "the outlet temperature, which is the inlet's.\n"
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.\n"
+[outputs.clean_drop]
+unit = "Pa"
+description = "the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`.\n"
 [outputs.applied_drop]
 unit = "Pa"
 description = "the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.\n"
+[outputs.nominal_removal_efficiency]
+unit = "dimensionless"
+description = "the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar.\n"
+[outputs.outlet_particle_concentration]
+unit = "dimensionless"
+description = "the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off.\n"
+[outputs.captured_rate]
+unit = "kg/h"
+description = "the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.\n"
 [[valid_range]]
 quantity = "inlet_t"
 min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "flow_exponent"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the scaling is a positive power of the flow ratio"
+[[valid_range]]
+quantity = "media_void_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a bed's void fraction is strictly between zero and one"
+[[valid_range]]
+quantity = "nominal_removal_efficiency"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a removal efficiency is a fraction"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0

@@ -47,3 +47,171 @@ applied_drop = 0.0
 # capture as the evidence for the assumption that says why. What the clamp itself does is held
 # by `crates/azoth-process/tests/kernels.rs`: the request is clamped, and the flash after it is
 # what refuses.
+
+[[cases]]
+id = "the_flow_scaled_drop_is_the_configured_one_at_the_reference_flow"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `flow_scaled_methane_1000_kg_per_hr` row: `FilterTest.testFlowScaledPressureDrop`'s state re-cased on PR methane - `Y_STRAINER`'s `FLOW_SCALED` model at exponent `2.0`, the configured `0.10` bar and the reference flow the inlet itself carries. At the reference the ratio is one, so the clean drop is the configured one and the outlet is the `FIXED` row's.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "flow_scaled"
+reference_flow = 74.26460241371493
+flow_exponent = 2.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1990000.0
+outlet_t = 298.15
+outlet_h = 519.8638561838793
+clean_drop = 10000.0
+applied_drop = 10000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_flow_scaled_drop_doubles_at_twice_the_flow"
+tolerance = 0.0002
+source = "The same state at `2000` kg/hr: twice the actual flow against the same reference, so `(Q/Q_ref)^2 = 4` and the clean drop is `0.40` bar. **The square is the class's `Y_STRAINER` exponent**, set by `setFilterServiceType` and read from `flowExponent`; the model states it rather than a type's default, because a type is not a declared input.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 34.62915636449265
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "flow_scaled"
+reference_flow = 74.26460241371493
+flow_exponent = 2.0
+[cases.expected]
+outlet_n = 34.62915636449265
+outlet_z = [1.0]
+outlet_p = 1960000.0
+outlet_t = 298.15
+outlet_h = 525.3552022816244
+clean_drop = 40000.0
+applied_drop = 40000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_tabulated_curve_interpolates_between_its_points"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `tabulated_methane_1000_kg_per_hr` row: `FilterTest.testTabulatedPressureDropCurve`'s curve - `0.10` bar at half the inlet flow and `0.50` at one and a half times it - evaluated at the inlet flow, which is halfway and so lands on `0.30` bar. Selecting a curve selects the `TABULATED` model in the class; here the model is stated and the curve is its input.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "tabulated"
+pressure_drop_curve = [
+    { flow = 37.132301206857465, drop = 10000.0 },
+    { flow = 111.39690362057239, drop = 50000.0 },
+]
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1970000.0
+outlet_t = 298.15
+outlet_h = 523.5247917958733
+clean_drop = 30000.0
+applied_drop = 30000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_ergun_bed_drops_by_the_packed_bed_correlation"
+tolerance = 0.0005
+source = "`process_filter_models.tsv`'s `ergun_methane_1000_kg_per_hr` row: `FilterTest.testErgunPressureDropIncreasesWithFlow`'s geometry - `1.0` m2, `1.5` m deep, `2` mm particles, `0.40` void - on PR methane at `1000` kg/hr. **The viscosity is an input**, `1.1529270713459012e-5` Pa s as the class's own system reports it, because azoth's viscosity dispatch is a separate calculation and this row is the packed-bed arithmetic. The density is the port's PR at the same state.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "ergun"
+media_area = 1.0
+media_bed_depth = 1.5
+media_particle_diameter = 0.002
+media_void_fraction = 0.40
+viscosity = 1.1529270713459012e-05
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1999854.237109082
+outlet_t = 298.15
+outlet_h = 518.0600145934741
+clean_drop = 145.7628909180396
+applied_drop = 145.7628909180396
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_ergun_drop_rises_with_the_flow"
+tolerance = 0.0005
+source = "The same bed at `2000` kg/hr. The viscous term is linear in the superficial velocity and the inertial one quadratic, so the drop rises by `2.97` rather than by `4` - the row that separates Ergun from a flow-scaled curve.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 34.62915636449265
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "ergun"
+media_area = 1.0
+media_bed_depth = 1.5
+media_particle_diameter = 0.002
+media_void_fraction = 0.40
+viscosity = 1.1529270713459012e-05
+[cases.expected]
+outlet_n = 34.62915636449265
+outlet_z = [1.0]
+outlet_p = 1999567.4552791186
+outlet_t = 298.15
+outlet_h = 518.1125111990125
+clean_drop = 432.5447208812192
+applied_drop = 432.5447208812192
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_beta_curve_captures_particles"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `capture_beta_ratio_methane_1000_kg_per_hr` row: `FilterTest.testBetaRatioCurveCalculatesParticleCapture`'s curve - beta `2/100/1000` at `5/10/20` micrometre - at the `10` micrometre knot, `100` mg/kg inlet (`1e-4` as a mass fraction) and the filter's default `0.01` bar drop. The efficiency is `0.99`, the outlet `1` mg/kg (`1e-6`) and the captured rate `0.099` kg/hr on `1000` kg/hr.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 1000.0
+performance_curve = [
+    { particle_size = 5.0e-06, beta_ratio = 2.0 },
+    { particle_size = 1.0e-05, beta_ratio = 100.0 },
+    { particle_size = 2.0e-05, beta_ratio = 1000.0 },
+]
+particle_size = 1.0e-05
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1999000.0
+outlet_t = 298.15
+outlet_h = 518.2163861562253
+clean_drop = 1000.0
+applied_drop = 1000.0
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 1.0000000000000009e-06
+captured_rate = 0.099

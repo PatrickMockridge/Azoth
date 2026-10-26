@@ -89,7 +89,8 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 59 -> 60 when `process.pump`'s `curve` became an optional `record_list`: the generator
 #: refuses an `Option<&[Row]>` (a record slice it can derive, an absent one it cannot), so
 #: the binding moved into the process module where the row is built by hand.
-KNOWN_HAND_WRITTEN = 60
+#: 60 -> 61 when `process.filter` gained two optional `record_list`s for the same reason.
+KNOWN_HAND_WRITTEN = 61
 
 
 def _tools_module(name: str) -> ModuleType:

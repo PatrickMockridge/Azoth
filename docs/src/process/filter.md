@@ -25,6 +25,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `inlet_p` | Pa | the inlet pressure, which the drop reduces. |
 | `inlet_t` | K | the inlet temperature, which is also the outlet's: the flash is a `TPflash` at it. |
 | `pressure_drop` | Pa | the pressure loss across the filter, which is `unit_ops.filter`'s own parameter and the `FIXED` branch of the class's model selector. A drop past the inlet pressure is clamped rather than refused. |
+| `pressure_drop_model` | fixed / flow_scaled / tabulated / ergun | *Optional.* the clean-drop model. Absent is the class's own default, `FIXED`. |
+| `reference_flow` | m**3/h | *Optional.* the reference actual flow `FLOW_SCALED` scales from. Absent takes the actual flow, so the ratio is one and the configured drop stands. |
+| `flow_exponent` | dimensionless | *Optional.* `FLOW_SCALED`'s exponent, positive. Absent takes the class's `1.0`; a type's own default is not read, because the model's selector is stated here. |
+| `pressure_drop_curve` | - | *Optional.* the `TABULATED` curve, in strictly increasing flow order. **An absent or empty curve returns the configured drop**, which is the class's own fallback. |
+| `media_area` | m**2 | *Optional.* the `ERGUN` bed's cross-sectional area. Absent takes the class's `1.0` m2. |
+| `media_bed_depth` | m | *Optional.* the `ERGUN` bed's depth. Absent takes the class's `1.0` m. |
+| `media_particle_diameter` | m | *Optional.* the `ERGUN` bed's representative particle diameter. Absent takes the class's `1e-3` m. |
+| `media_void_fraction` | dimensionless | *Optional.* the `ERGUN` bed's void fraction in `(0, 1)`. Absent takes the class's `0.40`. |
+| `viscosity` | Pa*s | *Optional.* the fluid's dynamic viscosity, which the Ergun branch reads. **Required by `ergun`**, because the class reads it from the EOS and this library's viscosity dispatch is a separate calculation. |
+| `performance_curve` | - | *Optional.* the beta-ratio curve, in strictly increasing particle-size order. **An absent or empty curve uses `nominal_removal_efficiency`.** |
+| `particle_size` | m | *Optional.* the size the beta curve is evaluated at. Absent takes the class's `10e-6` m. |
+| `nominal_removal_efficiency` | dimensionless | *Optional.* the scalar removal efficiency a filter without a beta curve uses. Absent takes the class's `0.0`. |
+| `inlet_particle_concentration` | dimensionless | *Optional.* the inlet particle concentration as a mass fraction (100 mg/kg is `1e-4`). **Stating it enables the capture**, as `setInletParticleConcentration` does; absent leaves both capture outputs zero. |
 
 
 ## Outputs
@@ -36,11 +49,18 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_p` | Pa | the outlet pressure: `inlet_p - applied_drop`. |
 | `outlet_t` | K | the outlet temperature, which is the inlet's. |
 | `outlet_h` | J/mol | the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it. |
+| `clean_drop` | Pa | the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`. |
 | `applied_drop` | Pa | the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input. |
+| `nominal_removal_efficiency` | dimensionless | the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar. |
+| `outlet_particle_concentration` | dimensionless | the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off. |
+| `captured_rate` | kg/h | the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `inlet_t > 0` | raises | an absolute temperature |
+| `flow_exponent > 0` | raises | the scaling is a positive power of the flow ratio |
+| `media_void_fraction > 0 and media_void_fraction < 1` | raises | a bed's void fraction is strictly between zero and one |
+| `nominal_removal_efficiency >= 0 and nominal_removal_efficiency <= 1` | raises | a removal efficiency is a fraction |
 | `pressure_drop >= 0` | warns `OUT_OF_VALID_RANGE` | a negative drop would raise the pressure. `Filter.setDeltaP` clamps it to zero rather than refusing, so this is a warning and the kernel clamps - a refusal here would be inventing a bound the class does not have. |
 
 ## Assumptions
@@ -50,9 +70,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **a drop larger than the inlet pressure is clamped rather than refused.** `run` applies `min(max(0, dP), max(0, P_in - 1e-6 bar))` and logs, so the outlet lands a millionth of a bar above vacuum; `applied_drop` reports it and the model warns when it differs from the request.
 - **and that clamped state is one no cubic can evaluate.** NeqSim extrapolates to `1968.3` J/mol there and azoth's does not converge (`1.9e-9` against `1e-12`), so the port reproduces the clamp and the flash after it refuses.
 - **a drop below the class's own `1e-10` bar threshold runs no flash at all** and the outlet is the cloned inlet. A `TPflash` at the same state *is* that state, so this has no second branch and the two agree exactly - which the capture's second row is.
-- **the particle-capture curve is absent, on the outlet as much as anywhere.** `concentrationLoadingModelEnabled` is false by default, and with it off `updateParticleCapturePerformance` zeroes two fields and returns: nothing about a particle reaches the fluid. `ROADMAP.md` names it.
+- **the capture is `updateParticleCapturePerformance`.** A beta-ratio curve or a scalar efficiency gives the nominal removal; the outlet concentration is `inlet (1 - eta)` and the captured rate `m_dot inlet eta`, both zero unless `inlet_particle_concentration` is stated.
 - **`Cv` is not an output.** `run` computes `sqrt(dP) / massFlow`, a number whose unit (`bar**0.5 * hr / kg`) this library has no dimension for; the standard flow coefficient is `hydraulics.control_valve_cv`'s. It is a function of two values the result already carries.
-- **`pressure_drop` is the `FIXED` branch, and the other three are owed.** `FilterPressureDropModel`'s `FLOW_SCALED`, `TABULATED` and `ERGUN` replace the fixed drop with a curve, a table or a packed-bed correlation, and each needs media geometry. `ROADMAP.md` names the class.
+- **the clean drop is one of `FilterPressureDropModel`'s four branches.** `FIXED` returns the configured drop, `FLOW_SCALED` scales it by `(Q/Q_ref)^n`, `TABULATED` interpolates a measured curve, and `ERGUN` is the packed-bed correlation.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - NeqSim's `Filter` also carries `runTransient` with solids loading, breakthrough, backwash and regeneration, and an element-integrity check. **None is here.**
 
@@ -62,11 +82,17 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `pressure_drop_1_bar` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, pressure_drop = 100000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2900000.0, outlet_t = 320.0, outlet_h = 1260.5800684104881, applied_drop = 100000.0 |
 | `no_pressure_drop` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, pressure_drop = 0.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 320.0, outlet_h = 1235.7579663941092, applied_drop = 0.0 |
+| `the_flow_scaled_drop_is_the_configured_one_at_the_reference_flow` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, pressure_drop_model = flow_scaled, reference_flow = 74.26460241371493, flow_exponent = 2.0 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1990000.0, outlet_t = 298.15, outlet_h = 519.8638561838793, clean_drop = 10000.0, applied_drop = 10000.0, nominal_removal_efficiency = 0.0, outlet_particle_concentration = 0.0, captured_rate = 0.0 |
+| `the_flow_scaled_drop_doubles_at_twice_the_flow` | components = ['methane'], inlet_n = 34.62915636449265, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, pressure_drop_model = flow_scaled, reference_flow = 74.26460241371493, flow_exponent = 2.0 | outlet_n = 34.62915636449265, outlet_z = [1.0], outlet_p = 1960000.0, outlet_t = 298.15, outlet_h = 525.3552022816244, clean_drop = 40000.0, applied_drop = 40000.0, nominal_removal_efficiency = 0.0, outlet_particle_concentration = 0.0, captured_rate = 0.0 |
+| `the_tabulated_curve_interpolates_between_its_points` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, pressure_drop_model = tabulated, pressure_drop_curve = [{'flow': 37.13230120685746, 'drop': 10000.0}, {'flow': 111.39690362057239, 'drop': 50000.0}] | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1970000.0, outlet_t = 298.15, outlet_h = 523.5247917958733, clean_drop = 30000.0, applied_drop = 30000.0, nominal_removal_efficiency = 0.0, outlet_particle_concentration = 0.0, captured_rate = 0.0 |
+| `the_ergun_bed_drops_by_the_packed_bed_correlation` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, pressure_drop_model = ergun, media_area = 1.0, media_bed_depth = 1.5, media_particle_diameter = 0.002, media_void_fraction = 0.4, viscosity = 1.1529270713459012e-05 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1999854.237109082, outlet_t = 298.15, outlet_h = 518.0600145934741, clean_drop = 145.7628909180396, applied_drop = 145.7628909180396, nominal_removal_efficiency = 0.0, outlet_particle_concentration = 0.0, captured_rate = 0.0 |
+| `the_ergun_drop_rises_with_the_flow` | components = ['methane'], inlet_n = 34.62915636449265, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, pressure_drop_model = ergun, media_area = 1.0, media_bed_depth = 1.5, media_particle_diameter = 0.002, media_void_fraction = 0.4, viscosity = 1.1529270713459012e-05 | outlet_n = 34.62915636449265, outlet_z = [1.0], outlet_p = 1999567.4552791186, outlet_t = 298.15, outlet_h = 518.1125111990125, clean_drop = 432.5447208812192, applied_drop = 432.5447208812192, nominal_removal_efficiency = 0.0, outlet_particle_concentration = 0.0, captured_rate = 0.0 |
+| `the_beta_curve_captures_particles` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 1000.0, performance_curve = [{'particle_size': 5e-06, 'beta_ratio': 2.0}, {'particle_size': 1e-05, 'beta_ratio': 100.0}, {'particle_size': 2e-05, 'beta_ratio': 1000.0}], particle_size = 1e-05, inlet_particle_concentration = 0.0001 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1999000.0, outlet_t = 298.15, outlet_h = 518.2163861562253, clean_drop = 1000.0, applied_drop = 1000.0, nominal_removal_efficiency = 0.99, outlet_particle_concentration = 1.0000000000000008e-06, captured_rate = 0.099 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 8 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

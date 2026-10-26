@@ -7020,7 +7020,10 @@
       "runnable": true,
       "source": "NeqSim process/equipment/filter/Filter.java",
       "unmodelled_ranges": [
-        "inlet_t"
+        "inlet_t",
+        "flow_exponent",
+        "media_void_fraction",
+        "nominal_removal_efficiency"
       ]
     },
     {

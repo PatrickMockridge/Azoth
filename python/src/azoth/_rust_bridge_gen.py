@@ -5700,7 +5700,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
     )
 
 
-def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q) -> FilterResult:
+def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None) -> FilterResult:
     """``process.filter``, computed in Rust."""
     spec = _models_gen.model("process.filter")
     result = _core.filter(
@@ -5710,6 +5710,19 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
+        pressure_drop_model,
+        None if reference_flow is None else input_to_si(spec, "reference_flow", reference_flow),
+        None if flow_exponent is None else flow_exponent,
+        None if pressure_drop_curve is None else input_records_to_si(spec, "pressure_drop_curve", pressure_drop_curve),
+        None if media_area is None else input_to_si(spec, "media_area", media_area),
+        None if media_bed_depth is None else input_to_si(spec, "media_bed_depth", media_bed_depth),
+        None if media_particle_diameter is None else input_to_si(spec, "media_particle_diameter", media_particle_diameter),
+        None if media_void_fraction is None else media_void_fraction,
+        None if viscosity is None else input_to_si(spec, "viscosity", viscosity),
+        None if performance_curve is None else input_records_to_si(spec, "performance_curve", performance_curve),
+        None if particle_size is None else input_to_si(spec, "particle_size", particle_size),
+        None if nominal_removal_efficiency is None else nominal_removal_efficiency,
+        None if inlet_particle_concentration is None else inlet_particle_concentration,
     )
     return FilterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5717,7 +5730,11 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        clean_drop=from_si(result.clean_drop.magnitude_si, result.clean_drop.unit),
         applied_drop=from_si(result.applied_drop.magnitude_si, result.applied_drop.unit),
+        nominal_removal_efficiency=result.nominal_removal_efficiency,
+        outlet_particle_concentration=result.outlet_particle_concentration,
+        captured_rate=from_si(result.captured_rate.magnitude_si, result.captured_rate.unit),
         warnings=_warnings(result.warnings),
     )
 
