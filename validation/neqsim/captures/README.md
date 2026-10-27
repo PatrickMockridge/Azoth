@@ -469,6 +469,8 @@ public surface of forty-odd getters.
   > captures/process_pipe_modes.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \
   > captures/process_compressor_curve.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
+  > captures/process_expander_steps.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -681,6 +683,13 @@ gas, the same table in kJ/kg and speed `11918` - and prints the chart head, the 
 efficiency and the power beside both records. **The class's own test asserts `1163805.3` J,
 `55.404` kJ/kg and `0.43175` on SRK; on PR the same state answers its own numbers**, which is
 what the port is held to.
+
+**`ProcessProbe expander_steps` is `Expander.run`'s stepped polytropic branch.** The class's
+own `ExpanderPolytropicStepsTest` is a *relative* oracle - five steps against forty, to `0.1` K
+and `0.5 %` - so the capture supplies the absolute rows: the 82/10/5/3 methane/ethane/propane/
+n-butane gas at 25 C, 90 to 30 bara and 50 000 kg/hr, a polytropic efficiency of `0.80`, at
+**five and forty steps**, plus the isentropic row at the same efficiency. The five-step power is
+`-999.9` kW and the forty-step `-1003.5` kW, `0.354 %` apart, inside the class's own band.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

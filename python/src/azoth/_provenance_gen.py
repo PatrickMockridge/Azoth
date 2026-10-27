@@ -2493,12 +2493,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.expander': {
         "calc_id": 'process.expander',
         "name": 'Expander',
-        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': '0808b0c885a60051874617225715d13a59baf0e96b3d5194f6481f4519732cb4'},
-        "code": [{'path': 'python/src/azoth/process/reference/expander.py', 'sha256': 'f04e1d19d324c244de7cfccd45a9311ed4e705124a8dfc0f738cc384e011a789'}, {'path': 'crates/azoth-process/src/models/expander.rs', 'sha256': 'f82bf9e0453a56bd379c98ca1a83c2acb798505c2dbe96406d99281f206bfb45'}],
+        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': '2c9043bb1e0caebb660a932a6eccab2e21d11fea389bbf051284ad4a4201bcc8'},
+        "code": [{'path': 'python/src/azoth/process/reference/expander.py', 'sha256': 'd72348eacfbb37ade3485939d3662a9b399ec27df0b82264a655e201638644ea'}, {'path': 'crates/azoth-process/src/models/expander.rs', 'sha256': '27047569d3e59b3013e06fe1e3b245901e67f1f344a976b6196cd6850f6b4060'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 2,
+        "tests_active": 5,
         "tests_skipped": 0,
     },
     'process.filter': {

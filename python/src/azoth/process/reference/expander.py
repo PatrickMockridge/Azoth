@@ -44,8 +44,11 @@ def expander(
     inlet_t: Q,
     outlet_pressure: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    number_of_steps: int | None = None,
 ) -> ExpanderResult:
-    """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
+    """Drop a stream's pressure along an isentrope, or in polytropic steps.
 
     Args:
         components: the fluid's substances, by name.
@@ -55,9 +58,12 @@ def expander(
         inlet_t: the inlet temperature.
         outlet_pressure: the pressure the machine takes the stream to.
         isentropic_efficiency: the machine's isentropic efficiency, in ``(0, 1]``.
+        use_polytropic_calc: whether the stepped branch runs instead.
+        polytropic_efficiency: the stepped branch's efficiency, in ``(0, 1]``.
+        number_of_steps: the stepped branch's pressure increments.
 
     Returns:
-        The outlet's record.
+        The outlet's record and the recovered power (negative).
 
     Example:
         >>> import azoth
@@ -85,7 +91,11 @@ def expander(
 
     apply_checks(
         checks.on_input,
-        {"inlet_t": t, "isentropic_efficiency": isentropic_efficiency}.get,
+        {
+            "inlet_t": t,
+            "isentropic_efficiency": isentropic_efficiency,
+            "polytropic_efficiency": polytropic_efficiency,
+        }.get,
         warnings,
     )
 
@@ -96,14 +106,28 @@ def expander(
             f"{isentropic_efficiency} is not",
         )
 
-    states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+    efficiency = 1.0 if polytropic_efficiency is None else float(polytropic_efficiency)
+    if use_polytropic_calc:
+        h_in, h_out, outlet_t = _polytropic_states(
+            components,
+            inlet_z,
+            t,
+            p,
+            p_out,
+            efficiency,
+            5 if number_of_steps is None else int(number_of_steps),
+        )
+    else:
+        states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+        h_in, h_out, outlet_t = states.h_in, states.h_out, states.outlet_t
 
     return ExpanderResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
         outlet_p=outlet_pressure,
-        outlet_t=states.outlet_t,
-        outlet_h=from_si(states.h_out, "J/mol"),
+        outlet_t=outlet_t,
+        outlet_h=from_si(h_out, "J/mol"),
+        power=from_si(n * (h_out - h_in), "W"),
         warnings=tuple(warnings),
     )
 
@@ -177,3 +201,51 @@ def _spec() -> dict[str, object]:
     from azoth._models_gen import model
 
     return model("process.expander")
+
+
+def _polytropic_states(
+    components: list[str],
+    inlet_z: list[float],
+    t: float,
+    p: float,
+    p_out: float,
+    polytropic_efficiency: float,
+    number_of_steps: int,
+) -> tuple[float, float, Q]:
+    """The stepped branch: ``Expander.run``'s ``numbersteps`` increments of ``dp``.
+
+    Each step takes the current entropy and enthalpy, flashes isentropically to the next
+    pressure, and multiplies the step by the efficiency before a ``PHflash`` lands the state.
+    The count is floored at one, as the class's ``Math.max(1, ...)`` does.
+    """
+    if not 0.0 < polytropic_efficiency <= 1.0:
+        raise InvalidInputError(
+            "polytropic_efficiency",
+            "the expander's polytropic efficiency must be in (0, 1]",
+        )
+    steps = max(1, number_of_steps)
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    increment = (p_out - p) / steps
+    state_t, state_p = t, p
+    h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
+    h = h_in
+    for _ in range(steps):
+        entropy, _ = entropy_at(mixture, ideal_gas, state_t, state_p, inlet_z)
+        next_p = state_p + increment
+        isentropic = ps_flash_solve(
+            mixture,
+            ideal_gas,
+            from_si(next_p, "Pa"),
+            from_si(entropy, "J/(mol*K)"),
+            inlet_z,
+        )
+        h_isentropic, _ = enthalpy_at(
+            mixture, ideal_gas, isentropic.T.to("K").magnitude, next_p, inlet_z
+        )
+        h = h + (h_isentropic - h) * polytropic_efficiency
+        flashed = ph_flash_solve(
+            mixture, ideal_gas, from_si(next_p, "Pa"), from_si(h, "J/mol"), inlet_z
+        )
+        state_t = flashed.T.to("K").magnitude
+        state_p = next_p
+    return h_in, h, flashed.T

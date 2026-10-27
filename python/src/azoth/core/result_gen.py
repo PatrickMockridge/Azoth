@@ -5850,6 +5850,9 @@ class ExpanderResult(_HasWarnings):
     #: the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     outlet_h: Q
 
+    #: the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
+    power: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

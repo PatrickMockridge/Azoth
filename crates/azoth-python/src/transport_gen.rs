@@ -14657,6 +14657,9 @@ pub struct PyExpanderResult {
     /// the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
+    #[pyo3(get)]
+    pub power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14666,12 +14669,13 @@ pub struct PyExpanderResult {
 impl PyExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.power,
             self.warnings.len()
         )
     }
@@ -14696,6 +14700,10 @@ impl From<&azoth_process::models::expander::ExpanderResult> for PyExpanderResult
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
             },
             warnings: transport(&r.warnings),
         }

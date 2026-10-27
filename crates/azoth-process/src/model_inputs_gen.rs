@@ -1205,6 +1205,27 @@ static ALL: &[ModelInputs] = &[
                 optional: false,
                 dimension: Some("dimensionless"),
             },
+            ModelInput {
+                name: "use_polytropic_calc",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "polytropic_efficiency",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "number_of_steps",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
         ],
     },
     ModelInputs {

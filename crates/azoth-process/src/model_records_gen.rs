@@ -231,7 +231,7 @@ impl CalcResult for EjectorResult {
 impl CalcResult for ExpanderResult {
     const CALC_ID: &'static str = "process.expander";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "power", "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

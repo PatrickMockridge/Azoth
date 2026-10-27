@@ -5684,7 +5684,7 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
     )
 
 
-def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> ExpanderResult:
+def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None) -> ExpanderResult:
     """``process.expander``, computed in Rust."""
     spec = _models_gen.model("process.expander")
     result = _core.expander(
@@ -5695,6 +5695,9 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        use_polytropic_calc,
+        None if polytropic_efficiency is None else polytropic_efficiency,
+        None if number_of_steps is None else _count("number_of_steps", number_of_steps),
     )
     return ExpanderResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5702,6 +5705,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        power=from_si(result.power.magnitude_si, result.power.unit),
         warnings=_warnings(result.warnings),
     )
 

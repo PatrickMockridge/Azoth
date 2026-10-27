@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/compressor/Compressor.java**
 
-Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`.
+Its `run`: the isentropic branch - a `PSflash` at the inlet's own entropy and the enthalpy moved by `(h_isentropic - h_in) * eta` - and the stepped polytropic branch, `numbersteps` increments each flashed and multiplied.
 
 
 ## What this model is
@@ -26,6 +26,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `inlet_t` | K | the inlet temperature, which fixes the inlet enthalpy. |
 | `outlet_pressure` | Pa | the pressure the machine takes the stream to, which is `unit_ops.expander`'s own parameter. |
 | `isentropic_efficiency` | dimensionless | the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that. |
+| `use_polytropic_calc` | - | *Optional.* whether the stepped polytropic branch runs instead of the isentropic one. Absent is the class's `false`. |
+| `polytropic_efficiency` | dimensionless | *Optional.* the stepped branch's polytropic efficiency, in `(0, 1]`. Absent takes the class's `1.0`, the reversible limit. Ignored in the isentropic branch. |
+| `number_of_steps` | dimensionless | *Optional.* the stepped branch's pressure increments. Absent takes `Expander.DEFAULT_EXPANDER_CALC_STEPS`' `5`; a value below one is one, as the class's `Math.max(1, ...)` makes it. |
 
 
 ## Outputs
@@ -37,10 +40,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_p` | Pa | the outlet pressure, which is `outlet_pressure` rather than something the machine solves for. |
 | `outlet_t` | K | the outlet temperature, solved from the shifted enthalpy at the outlet pressure. |
 | `outlet_h` | J/mol | the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow. |
+| `power` | W | the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is. |
 
 | Bound | On violation | Why |
 |---|---|---|
-| `isentropic_efficiency > 0 and isentropic_efficiency <= 1` | raises | the reversible step divides by it, so zero has no answer and above one would beat the reversible machine |
+| `isentropic_efficiency > 0 and isentropic_efficiency <= 1` | raises | the step multiplies by it, so zero recovers nothing and above one would beat the reversible machine |
+| `polytropic_efficiency > 0 and polytropic_efficiency <= 1` | raises | each step multiplies by it, and above one would beat the reversible step |
 | `inlet_t > 0` | raises | an absolute temperature |
 
 ## Assumptions
@@ -49,9 +54,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the step is isentropic, and the inlet's entropy is derived rather than carried.** `s = f(T, P, z)` from the same flash that gives the inlet's enthalpy. The captured efficiency-of-one row is the demonstration: the outlet's entropy equals the inlet's and the step's production is zero.
 - **the efficiency multiplies the isentropic step**: `h_out = h_in + (h_is - h_in) * eta`, so an efficiency below one recovers less work than the reversible step. Dividing - the compressor's rule - would beat the reversible machine, because an expansion's difference is negative.
 - **the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.
-- **the shaft power is not an output.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which the record already carries as `n * (outlet_h - inlet_h)` - the captured rows satisfy that to their last digit, so a field would be a second copy of one number.
+- **the shaft power is an output, and it is negative.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which is below zero for an expansion; `power` reports it times the molar flow, so the recovered-work magnitude is its absolute value.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's class also carries a compressor chart and catalogue, the polytropic branch, a gamma-based pressure-ratio mode, anti-surge machinery, a deposit model, `useGERG2008`/`useLeachman`/`useVega` property overrides, `runTransient` and a `MechanicalDesign`. **None is here.**
+- **`use_polytropic_calc` selects the stepped branch.** `Expander.run` divides the pressure range into `number_of_steps` equal increments - five by default - flashes each isentropically, multiplies the step by `polytropic_efficiency` and flashes the enthalpy; a count below one is one.
+- **the expander chart (`ExpanderChartKhader`), its turbo-expander consumer, the `powerSet` and `useOutTemperature` modes, the dynamic nozzle and the capacity constraints are absent.** The chart's only reader is `TurboExpanderCompressor`, which the record keeps owed with it.
 
 ## Cases
 
@@ -59,11 +65,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `the_reversible_limit_at_efficiency_one` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 1.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 283.09454605780746, outlet_h = -987.4456325302849 |
 | `the_efficiency_multiplies_the_step_and_not_divides_it` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178 |
+| `the_stepped_polytropic_expander` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 1.0, use_polytropic_calc = True, polytropic_efficiency = 0.8, number_of_steps = 5 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.26461237189093, outlet_h = -3093.134500487529, power = -999915.6921234869 |
+| `forty_steps_agree_with_the_class_s_own_bound` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 1.0, use_polytropic_calc = True, polytropic_efficiency = 0.8, number_of_steps = 40 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.20334169697597, outlet_h = -3098.284476589658, power = -1003472.3604739706 |
+| `the_isentropic_expander_reports_its_recovered_power` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.5081238299595, outlet_h = -3072.6673912100423, power = -985780.7294849169 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 5 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

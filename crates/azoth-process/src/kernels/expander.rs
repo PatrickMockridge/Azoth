@@ -1,6 +1,6 @@
 //! `unit_ops.expander` - the isentropic route with the efficiency on the other side.
 
-use azoth_core::units::{Pressure, joules_per_mole, joules_per_mole_kelvin};
+use azoth_core::units::{Pressure, joules_per_mole, joules_per_mole_kelvin, pascals};
 use azoth_core::{AzothError, Result};
 use azoth_eos::{ph_flash, ps_flash};
 
@@ -20,10 +20,9 @@ use crate::stream::Stream;
 /// not carried on the record - flashed to the outlet pressure for the reversible enthalpy, and
 /// a second flash at the enthalpy the efficiency leaves.
 ///
-/// Named out: the polytropic branch's stepped integration (`numbersteps` increments of `dp`,
-/// each one a `PSflash` and a `PHflash`), the `powerSet` mode that takes a shaft power instead
-/// of an efficiency, the `useOutTemperature` mode, and the same chart, anti-surge and property
-/// overrides the compressor names.
+/// Named out: the `powerSet` mode that takes a shaft power instead of an efficiency, the
+/// `useOutTemperature` mode, and the same chart, anti-surge and property overrides the
+/// compressor names. The polytropic branch is [`expander_polytropic`].
 pub fn expander(feed: &Stream, outlet_pressure: Pressure, efficiency: f64) -> Result<Stream> {
     if !(efficiency > 0.0 && efficiency <= 1.0) {
         return Err(AzothError::invalid_input(
@@ -58,4 +57,64 @@ pub fn expander(feed: &Stream, outlet_pressure: Pressure, efficiency: f64) -> Re
         outlet_pressure,
         joules_per_mole(feed.h.value + dh),
     )
+}
+
+/// Drop a stream's pressure in steps, multiplying each isentropic step by the efficiency.
+///
+/// **`Expander.run`'s polytropic branch, `Expander.java:620-633`.** The pressure falls in
+/// `numbersteps` equal increments; each step takes the *current* entropy and enthalpy, flashes
+/// isentropically to the next pressure, and sets the real enthalpy to
+/// `h + (h_is - h) eta` before a `PHflash` lands the state. The expander **multiplies** where
+/// the compressor divides, because an expansion's isentropic difference is negative.
+///
+/// **The step count is floored at one**, which is the class's `Math.max(1, ...)`; a count of
+/// zero is one step rather than an error.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] if the efficiency is outside `(0, 1]`, and
+/// whatever the flash refuses.
+pub fn expander_polytropic(
+    feed: &Stream,
+    outlet_pressure: Pressure,
+    polytropic_efficiency: f64,
+    number_of_steps: usize,
+) -> Result<Stream> {
+    if !(polytropic_efficiency > 0.0 && polytropic_efficiency <= 1.0) {
+        return Err(AzothError::invalid_input(
+            "polytropic_efficiency",
+            "the expander's polytropic efficiency must be in (0, 1]",
+        ));
+    }
+
+    let steps = number_of_steps.max(1);
+    let (mixture, ideal_gas) = feed.mixture()?;
+    let increment = (outlet_pressure.value - feed.p.value) / steps as f64;
+    let mut state = feed.clone();
+    for _ in 0..steps {
+        let (entropy, _) = ps_flash::entropy_at(&mixture, &ideal_gas, state.t, state.p, &state.z)?;
+        let next_pressure = pascals(state.p.value + increment);
+        let isentropic = ps_flash::ps_flash(
+            &mixture,
+            &ideal_gas,
+            next_pressure,
+            joules_per_mole_kelvin(entropy),
+            &state.z,
+        )?;
+        let (h_isentropic, _) = ph_flash::enthalpy_at(
+            &mixture,
+            &ideal_gas,
+            isentropic.temperature,
+            next_pressure,
+            &state.z,
+        )?;
+        let enthalpy = state.h.value + (h_isentropic - state.h.value) * polytropic_efficiency;
+        state = Stream::from_ph(
+            state.components.clone(),
+            state.z.clone(),
+            state.n,
+            next_pressure,
+            joules_per_mole(enthalpy),
+        )?;
+    }
+    Ok(state)
 }

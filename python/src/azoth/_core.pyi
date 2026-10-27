@@ -2638,6 +2638,7 @@ class ExpanderResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    power: Qty
     warnings: list[Warning]
 
 @final
@@ -5179,6 +5180,9 @@ def expander(
     inlet_t: float,
     outlet_pressure: float,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    number_of_steps: float | None = None,
 ) -> ExpanderResult: ...
 def filter(
     components: list[str],

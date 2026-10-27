@@ -6830,7 +6830,7 @@
               "max_inclusive": true,
               "min": 0.0,
               "min_inclusive": false,
-              "rationale": "the reversible step divides by it, so zero has no answer and above one would beat the reversible machine",
+              "rationale": "the step multiplies by it, so zero recovers nothing and above one would beat the reversible machine",
               "severity": "error"
             }
           ],
@@ -6919,6 +6919,7 @@
       "runnable": true,
       "source": "NeqSim process/equipment/expander/Expander.java",
       "unmodelled_ranges": [
+        "polytropic_efficiency",
         "inlet_t"
       ]
     },

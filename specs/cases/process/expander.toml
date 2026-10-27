@@ -35,3 +35,69 @@ outlet_z = [0.9, 0.1]
 outlet_p = 3000000.0
 outlet_t = 286.82511684097125
 outlet_h = -618.9331837187178
+
+[[cases]]
+id = "the_stepped_polytropic_expander"
+tolerance = 1e-04
+source = "`process_expander_steps.tsv`'s five-step row: `ExpanderPolytropicStepsTest`'s state re-cased on PR - 82/10/5/3 methane/ethane/propane/n-butane, 25 C, 90 to 30 bara and 50 000 kg/hr - with a polytropic efficiency of `0.80` in five increments. The outlet lands at `246.265` K carrying `-3093.13` J/mol, and the recovered power is `-999.9` kW.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 1.0
+use_polytropic_calc = true
+polytropic_efficiency = 0.8
+number_of_steps = 5
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 246.26461237189093
+outlet_h = -3093.134500487529
+power = -999915.6921234869
+
+[[cases]]
+id = "forty_steps_agree_with_the_class_s_own_bound"
+tolerance = 1e-04
+source = "The same state in forty increments. The class's own test holds the two to `0.1` K and `0.5 %`; the capture measures `0.061` K and `0.354 %` here, and both rows are pinned because the five-step default is the one the class runs.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 1.0
+use_polytropic_calc = true
+polytropic_efficiency = 0.8
+number_of_steps = 40
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 246.20334169697597
+outlet_h = -3098.284476589658
+power = -1003472.3604739706
+
+[[cases]]
+id = "the_isentropic_expander_reports_its_recovered_power"
+tolerance = 1e-04
+source = "The same state on the isentropic branch at `0.80`: the capture's `power_w=-985780.7294849169`, the recovered work the record's enthalpy difference already implied and now publishes.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 246.5081238299595
+outlet_h = -3072.6673912100423
+power = -985780.7294849169

@@ -1056,6 +1056,9 @@ def expander(
     inlet_t: Q,
     outlet_pressure: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    number_of_steps: int | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1078,6 +1081,9 @@ def expander(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        use_polytropic_calc=use_polytropic_calc,
+        polytropic_efficiency=polytropic_efficiency,
+        number_of_steps=number_of_steps,
     )
 
 
