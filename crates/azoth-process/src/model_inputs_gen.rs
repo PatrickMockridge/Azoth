@@ -4003,7 +4003,7 @@ pub fn model_inputs() -> &'static [ModelInputs] {
 
 /// One entry's model inputs, or `None` for an entry with no model.
 ///
-/// One of the twenty-nine is in that state and `executor::dispatch::UNRUNNABLE` names
+/// One of the thirty is in that state and `executor::dispatch::UNRUNNABLE` names
 /// it, so `None` here and a refusal there are the same fact stated twice.
 #[must_use]
 pub fn inputs_for(unit_op: &str) -> Option<&'static ModelInputs> {

@@ -163,7 +163,7 @@ def emit_rust(
         "}\n\n"
         "/// One entry's model inputs, or `None` for an entry with no model.\n"
         "///\n"
-        "/// One of the twenty-nine is in that state and `executor::dispatch::UNRUNNABLE` names\n"
+        "/// One of the thirty is in that state and `executor::dispatch::UNRUNNABLE` names\n"
         "/// it, so `None` here and a refusal there are the same fact stated twice.\n"
         "#[must_use]\n"
         "pub fn inputs_for(unit_op: &str) -> Option<&'static ModelInputs> {\n"
