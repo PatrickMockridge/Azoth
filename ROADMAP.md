@@ -712,11 +712,10 @@ a claim nothing holds.
   A port would be a class nothing calls.
 - **`MechanicalDesign`** — `process.ejector`'s own size, whose areas, diameters, lengths and
   volumes `updateDesign` fills. They are absent rather than guessed.
-- **`FilterPressureDropModel`** — `FLOW_SCALED`, `TABULATED` and `ERGUN`, which replace
-  `process.filter`'s fixed drop with a curve, a table or a packed-bed correlation. The palette's
-  `pressure_drop` is the `FIXED` branch, and the other three need media geometry. Beside it,
-  **`updateParticleCapturePerformance`**: `concentrationLoadingModelEnabled` is false by
-  default, and with it off nothing about a particle reaches the fluid.
+- **`process.filter`'s transient surfaces** — solids loading, breakthrough, backwash,
+  regeneration and the element-integrity check. The four clean-drop models and
+  `updateParticleCapturePerformance` are ported; what remains is the loading the transient
+  accumulates, which is a dynamic state the five-field record has no slot for.
 - **`getCapacityUtilization` is ported**, as a pair of optional inputs — `internal_diameter` and
   `design_gas_load_factor`, **both or neither**, because half a vessel has nothing to check — and
   an optional `capacity_utilization`. **It reads the system `run` entrained rather than the flash
@@ -729,9 +728,9 @@ a claim nothing holds.
 - **The energy port** — `process.stirred_tank_reactor` runs `PHflash(inlet + duty)` when an
   `EnergyStream` is connected, and this library's five-field record has no place for one. The
   duty is declared out with the port named rather than guessed at.
-- **`process.pipe`'s remaining three**: `getEffectiveLength`'s fittings, `setPressureOut`/
-  `calcFlow`, and the Beggs-and-Brill multiphase limit. With no fittings added the effective
-  length is the physical length, which is what the entry's `length` is. **`process.mixer`** owes
+- **`process.pipe`'s transient**: `AdiabaticPipe.runTransient` re-runs the steady state, so the
+  line participates in a dynamic system without line-pack or wave propagation; this port has
+  the steady state and no transient, with the rest of the tree. **`process.mixer`** owes
   the pressure-mismatch flag, which warns that the inlets arrived at different pressures — a
   fact about upstream equipment rather than the record — and, with the rest of the tree,
   `runTransient`.
@@ -739,10 +738,11 @@ a claim nothing holds.
   measurement: without it the class's first Newton step moves the variables by `1e11` times their
   own size. **`process.shortcut_distillation_column`** owes the tray hydraulics, the tray
   optimization and `getResultsJson`; its own `setNumberOfTrays` override is inert, and says so.
-- **`process.throttling_valve`'s sizing mode** — solving the drop from the trim, with `Kv` from
-  `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod`. `valve_opening` is not a
-  parameter here and the `isCalcPressure` branch is absent, for the same reason: it is the
-  mechanical-design tree.
+- **`process.throttling_valve`'s laminar branch and controller** — the laminar form is the
+  `prod choke` sizing class's and the controller a transient surface. The `ControlValveSizing`
+  default, its inverse flow and `isCalcPressure` solve, the choked cap, the fouling fraction and
+  the isothermal mode are ported; **the eight other sizing standards are refused by name** in
+  the spec's `[[unported]]` rows, each naming its class.
 - **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch is complete** - the
   four `eos.ge_*_phase` ids resolve both reference states, which the vendored table's
   `REFERENCESTATETYPE` selects on 115 of its 348 rows (113 `solute` and the two literal
@@ -773,16 +773,17 @@ a claim nothing holds.
   `process.*` class NeqSim carries also carries a `runTransient`, and most carry a mechanical
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
-  electrical and instrument design and its bounded outlet temperatures; `Pump`'s performance
-  curve; `Compressor`'s and `Expander`'s chart and catalogue, polytropic branch, anti-surge
-  machinery, deposit model and `useGERG2008`/`useLeachman`/`useVega` property overrides;
-  `HeatExchanger`'s thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA;
-  `Separator`'s capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s
-  levels and outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
-  temperature, steel mass and auto-sizing; `ThrottlingValve`'s choked-flow and laminar
-  branches, fouling fraction, `isIsoThermal` mode and controller path; `Filter`'s solids
-  loading, breakthrough, backwash, regeneration and element-integrity check; and
-  `StirredTankReactor`'s vessel volume, residence time and agitator power.
+  electrical and instrument design and its bounded outlet temperatures; `Compressor`'s and
+  `Expander`'s chart and catalogue, polytropic branch, anti-surge machinery, deposit model and
+  `useGERG2008`/`useLeachman`/`useVega` property overrides; `HeatExchanger`'s
+  thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; `Separator`'s
+  capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s levels and
+  outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
+  temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
+  path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
+  check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
+  compressor's and expander's chart is the next tranche**, because it is the largest single
+  entry - a chart family, a catalogue data file and two polytropic methods.
 - **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
   clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
   port returns the root the equation gives, so the negative flash stays visible;

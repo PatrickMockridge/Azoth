@@ -3543,7 +3543,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.pipe",
         name: "Pipe",
         spec_path: "specs/models/process/pipe.toml",
-        spec_sha256: "8620ed8fc04be7e53594f444fe7e60b92ef7e17d5bf4abb1c240635d9574e03b",
+        spec_sha256: "a70ae4d6ddbb470df27b5371bdb9872a463fc13e5cee8c97242c6bc7a080eade",
         python_path: "python/src/azoth/process/reference/pipe.py",
         python_sha256: "da0df9ab9d15bcab8a8881ae7bc566b03916f535c785e325fe46c9a7dd5cbbad",
         rust_path: "crates/azoth-process/src/models/pipe.rs",

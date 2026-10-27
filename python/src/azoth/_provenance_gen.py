@@ -2603,7 +2603,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pipe': {
         "calc_id": 'process.pipe',
         "name": 'Pipe',
-        "spec": {'path': 'specs/models/process/pipe.toml', 'sha256': '8620ed8fc04be7e53594f444fe7e60b92ef7e17d5bf4abb1c240635d9574e03b'},
+        "spec": {'path': 'specs/models/process/pipe.toml', 'sha256': 'a70ae4d6ddbb470df27b5371bdb9872a463fc13e5cee8c97242c6bc7a080eade'},
         "code": [{'path': 'python/src/azoth/process/reference/pipe.py', 'sha256': 'da0df9ab9d15bcab8a8881ae7bc566b03916f535c785e325fe46c9a7dd5cbbad'}, {'path': 'crates/azoth-process/src/models/pipe.rs', 'sha256': 'a189cad2466bf1cd9a649bd028ca883651c03dcfe0547e3a6ed234c6292047f4'}],
         "source": 'NeqSim process/equipment/pipeline/AdiabaticPipe.java',
         "verification": 'partially_verified',
