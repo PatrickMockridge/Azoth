@@ -471,6 +471,8 @@ public surface of forty-odd getters.
   > captures/process_compressor_curve.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
+  > captures/process_expander_chart.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -690,6 +692,16 @@ and `0.5 %` - so the capture supplies the absolute rows: the 82/10/5/3 methane/e
 n-butane gas at 25 C, 90 to 30 bara and 50 000 kg/hr, a polytropic efficiency of `0.80`, at
 **five and forty steps**, plus the isentropic row at the same efficiency. The five-step power is
 `-999.9` kW and the forty-step `-1003.5` kW, `0.354 %` apart, inside the class's own band.
+
+**`ProcessProbe expander_chart` is `ExpanderChartKhader`.** The rows are
+`TurboExpanderEnhancementsTest`'s 2-D table - IGV `{0.6, 1.0}`, U/C `0.5..0.9`, the efficiency
+and head rows - read at the exact nodes, the IGV midpoint, and both U/C extrapolation ends; the
+optimum U/C; and the head round-trip with no reference fluid (`37.0` kJ/kg at the design node).
+The second block gives the reference fluid and a CO2-rich fluid the composition-aware row needs:
+**the class's cached reference sound speed is the *phase* value (`415.42` m/s) while its
+`getStageHeadDrop` reads `SystemInterface.getSoundSpeed()`, which is twice that** (`830.84`),
+so the capture prints both and the port takes them as stated inputs - azoth has no real-fluid
+sound-speed model.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

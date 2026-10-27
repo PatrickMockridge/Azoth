@@ -14,6 +14,7 @@ pub mod check;
 pub mod column;
 pub mod compressor_chart;
 pub mod executor;
+pub mod expander_chart;
 pub mod flowsheet;
 pub mod kernels;
 pub mod load;

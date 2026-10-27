@@ -137,6 +137,12 @@ public class ProcessProbe {
       case "expander_steps":
         expanderStepRows();
         break;
+      case "expander_chart":
+        expanderChartRows();
+        break;
+      case "turbo_expander":
+        turboExpanderRows();
+        break;
       case "expander":
         isentropicRows("Expander");
         break;
@@ -612,6 +618,247 @@ public class ProcessProbe {
     print("inlet", inlet);
     print("outlet", pipe.getOutletStream());
     System.out.println();
+  }
+
+  /// `ExpanderChartKhader`, the 2-D IGV/U-C map, on the enhancement test's table.
+  static void expanderChartRows() {
+    double[] igv = {0.6, 1.0};
+    double[][] uc = {{0.5, 0.6, 0.7, 0.8, 0.9}, {0.5, 0.6, 0.7, 0.8, 0.9}};
+    double[][] eta = {{0.72, 0.80, 0.84, 0.82, 0.76}, {0.78, 0.85, 0.88, 0.86, 0.80}};
+    double[][] head = {{30.0, 32.0, 33.0, 32.5, 31.0}, {34.0, 36.0, 37.0, 36.5, 35.0}};
+
+    neqsim.process.equipment.expander.ExpanderChartKhader chart =
+        new neqsim.process.equipment.expander.ExpanderChartKhader();
+    chart.setCurves(igv, uc, eta, head);
+
+    System.out.println("chart_no_reference");
+    System.out.println("map_defined=" + chart.isMapDefined());
+    System.out.println("efficiency_07_10=" + chart.getEfficiency(0.7, 1.0));
+    System.out.println("efficiency_07_06=" + chart.getEfficiency(0.7, 0.6));
+    System.out.println("efficiency_07_08=" + chart.getEfficiency(0.7, 0.8));
+    System.out.println("efficiency_04_10=" + chart.getEfficiency(0.4, 1.0));
+    System.out.println("efficiency_095_10=" + chart.getEfficiency(0.95, 1.0));
+    System.out.println("optimum_uc_10=" + chart.getOptimumVelocityRatio(1.0));
+    System.out.println("optimum_uc_06=" + chart.getOptimumVelocityRatio(0.6));
+    System.out.println("head_07_10=" + chart.getStageHeadDrop(0.7, 1.0, null));
+    System.out.println("head_07_06=" + chart.getStageHeadDrop(0.7, 0.6, null));
+    System.out.println("head_07_08=" + chart.getStageHeadDrop(0.7, 0.8, null));
+    System.out.println("head_04_10=" + chart.getStageHeadDrop(0.4, 1.0, null));
+    System.out.println("head_095_10=" + chart.getStageHeadDrop(0.95, 1.0, null));
+    System.out.println();
+
+    SystemInterface reference = new neqsim.thermo.system.SystemSrkEos(298.15, 50.0);
+    reference.addComponent("methane", 0.9);
+    reference.addComponent("ethane", 0.1);
+    reference.setMixingRule(2);
+    reference.init(0);
+    reference.initThermoProperties();
+    neqsim.process.equipment.expander.ExpanderChartKhader withReference =
+        new neqsim.process.equipment.expander.ExpanderChartKhader(reference, 0.424);
+    withReference.setCurves(igv, uc, eta, head);
+
+    SystemInterface co2 = new neqsim.thermo.system.SystemSrkEos(283.15, 50.0);
+    co2.addComponent("CO2", 0.9);
+    co2.addComponent("methane", 0.1);
+    co2.setMixingRule(2);
+    co2.init(0);
+    co2.initThermoProperties();
+
+    System.out.println("chart_with_reference");
+    System.out.println("reference_sound_speed=" + withReference.getReferenceSoundSpeed());
+    System.out.println("reference_system_sound_speed=" + reference.getSoundSpeed());
+    System.out.println("reference_phase_sound_speed=" + reference.getPhase(0).getSoundSpeed());
+    System.out.println("process_sound_speed=" + co2.getSoundSpeed());
+    System.out.println("process_phase_sound_speed=" + co2.getPhase(0).getSoundSpeed());
+    System.out.println("head_ref_fluid=" + withReference.getStageHeadDrop(0.7, 1.0, reference));
+    System.out.println("head_co2_fluid=" + withReference.getStageHeadDrop(0.7, 1.0, co2));
+    System.out.println();
+  }
+
+  /// `TurboExpanderCompressor`, the coupled expander-compressor.
+  static void turboExpanderRows() {
+    turboExpanderRow("turbo_expander_run", 456000.0, 60.95, -23.0, 423448.0, 42.0, 17.0);
+    turboExpanderRow("turbo_expander_low_expander_pressure", 426000.0, 55.95, -23.0, 423448.0,
+        42.0, 17.0);
+    turboExpanderMassRow("turbo_expander_mass_balance");
+    turboExpanderInverseRow("turbo_expander_outlet_temperature");
+    turboExpanderChartRow("turbo_expander_igv_penalty");
+  }
+
+  static Stream turboFeed(double kgPerHour, double bara, double celsius) {
+    SystemInterface fluid = new SystemPrEos(273.15 + 42.0, 10.0);
+    fluid.addComponent("nitrogen", 0.006);
+    fluid.addComponent("CO2", 0.014);
+    fluid.addComponent("methane", 0.862);
+    fluid.addComponent("ethane", 0.08);
+    fluid.addComponent("propane", 0.03);
+    fluid.addComponent("i-butane", 0.0024);
+    fluid.addComponent("n-butane", 0.004);
+    fluid.addComponent("n-hexane", 0.0015);
+    fluid.setMixingRule(2);
+    fluid.init(0);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.setTemperature(celsius, "C");
+    stream.setPressure(bara, "bara");
+    stream.run();
+    return stream;
+  }
+
+  static neqsim.process.equipment.expander.TurboExpanderCompressor turboMachine(
+      Stream expanderFeed, Stream compressorFeed) {
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        new neqsim.process.equipment.expander.TurboExpanderCompressor("TurboExpander",
+            expanderFeed);
+    machine.setCompressorFeedStream(compressorFeed);
+    machine.setUCcurve(
+        new double[] {0.9964751359624449, 0.7590835113213541, 0.984295619176559,
+            0.8827799803397821, 0.9552460269880922, 1.0},
+        new double[] {0.984090909090909, 0.796590909090909, 0.9931818181818183,
+            0.9363636363636364, 0.9943181818181818, 1.0});
+    machine.setQNEfficiencycurve(new double[] {0.5, 0.7, 0.85, 1.0, 1.2, 1.4, 1.6},
+        new double[] {0.88, 0.91, 0.95, 1.0, 0.97, 0.85, 0.6});
+    machine.setQNHeadcurve(new double[] {0.5, 0.8, 1.0, 1.2, 1.4, 1.6},
+        new double[] {1.1, 1.05, 1.0, 0.9, 0.7, 0.4});
+    machine.setImpellerDiameter(0.424);
+    machine.setDesignSpeed(6850.0);
+    machine.setExpanderDesignIsentropicEfficiency(0.88);
+    machine.setDesignUC(0.7);
+    machine.setDesignQn(0.03328);
+    machine.setExpanderOutPressure(42.0);
+    machine.setCompressorDesignPolytropicEfficiency(0.81);
+    machine.setCompressorDesignPolytropicHead(20.47);
+    machine.setMaximumIGVArea(1.637e4);
+    return machine;
+  }
+
+  static void printTurboRow(String label,
+      neqsim.process.equipment.expander.TurboExpanderCompressor machine, Stream expanderFeed,
+      Stream compressorFeed) {
+    System.out.println(label);
+    System.out.println("expander_inlet_m3_per_hr=" + expanderFeed.getFlowRate("m3/hr"));
+    System.out.println("expander_inlet_kg_per_hr=" + expanderFeed.getFlowRate("kg/hr"));
+    System.out.println("compressor_inlet_m3_per_hr=" + compressorFeed.getFlowRate("m3/hr"));
+    System.out.println("compressor_inlet_kg_per_hr=" + compressorFeed.getFlowRate("kg/hr"));
+    System.out.println("speed_rpm=" + machine.getSpeed());
+    System.out.println("power_expander_w=" + machine.getPowerExpander());
+    System.out.println("power_compressor_w=" + machine.getPowerCompressor());
+    System.out.println("expander_isentropic_efficiency="
+        + machine.getExpanderIsentropicEfficiency());
+    System.out.println("compressor_polytropic_efficiency="
+        + machine.getCompressorPolytropicEfficiency());
+    System.out.println("compressor_polytropic_head_kj_per_kg="
+        + machine.getCompressorPolytropicHead());
+    System.out.println("uc_ratio_expander=" + machine.getUCratioexpander());
+    System.out.println("qn_ratio_compressor=" + machine.getQNratiocompressor());
+    System.out.println("igv_opening=" + machine.getIGVopening());
+    System.out.println("expander_outlet_p_bara="
+        + machine.getExpanderOutletStream().getPressure("bara"));
+    System.out.println("expander_outlet_t_k="
+        + machine.getExpanderOutletStream().getTemperature("K"));
+    System.out.println("compressor_outlet_p_bara="
+        + machine.getCompressorOutletStream().getPressure("bara"));
+    System.out.println("compressor_outlet_t_k="
+        + machine.getCompressorOutletStream().getTemperature("K"));
+    print("expander_inlet", expanderFeed);
+    print("expander_outlet", machine.getExpanderOutletStream());
+    print("compressor_inlet", compressorFeed);
+    print("compressor_outlet", machine.getCompressorOutletStream());
+    System.out.println();
+  }
+
+  static void turboExpanderRow(String label, double expanderKgHr, double expanderBara,
+      double expanderC, double compressorKgHr, double compressorBara, double compressorC) {
+    Stream expanderFeed = turboFeed(expanderKgHr, expanderBara, expanderC);
+    Stream compressorFeed = turboFeed(compressorKgHr, compressorBara, compressorC);
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+    machine.run();
+    printTurboRow(label, machine, expanderFeed, compressorFeed);
+  }
+
+  static void turboExpanderMassRow(String label) {
+    SystemInterface fluid = new SystemPrEos(293.15, 50.0);
+    fluid.addComponent("methane", 0.95);
+    fluid.addComponent("ethane", 0.05);
+    fluid.setMixingRule(2);
+    fluid.init(0);
+    Stream expanderFeed = new Stream("expander feed", fluid);
+    expanderFeed.setFlowRate(10000.0, "kg/hr");
+    expanderFeed.setTemperature(20.0, "C");
+    expanderFeed.setPressure(50.0, "bara");
+    expanderFeed.run();
+    Stream compressorFeed = new Stream("compressor feed", fluid.clone());
+    compressorFeed.setFlowRate(7500.0, "kg/hr");
+    compressorFeed.setTemperature(5.0, "C");
+    compressorFeed.setPressure(30.0, "bara");
+    compressorFeed.run();
+
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+    machine.setExpanderOutPressure(25.0);
+    machine.setCompressorDesignPolytropicEfficiency(0.8);
+    machine.setCompressorDesignPolytropicHead(10.0);
+    machine.run();
+    System.out.println("mass_balance_expander_kg_per_hr=" + machine.getMassBalance("kg/hr"));
+    printTurboRow(label, machine, expanderFeed, compressorFeed);
+  }
+
+  static void turboExpanderInverseRow(String label) {
+    Stream expanderFeed = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor forward =
+        turboMachine(expanderFeed, compressorFeed);
+    forward.run();
+    double targetC = forward.getExpanderOutletStream().getTemperature("C");
+
+    Stream expanderFeed2 = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed2 = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor inverse =
+        turboMachine(expanderFeed2, compressorFeed2);
+    inverse.setExpanderOutTemperature(targetC, "C");
+    inverse.run();
+
+    System.out.println(label);
+    System.out.println("target_outlet_t_c=" + targetC);
+    System.out.println("forward_design_efficiency="
+        + forward.getExpanderDesignIsentropicEfficiency());
+    System.out.println("inverse_design_efficiency="
+        + inverse.getExpanderDesignIsentropicEfficiency());
+    System.out.println("inverse_isentropic_efficiency="
+        + inverse.getExpanderIsentropicEfficiency());
+    printTurboRow(label + "_state", inverse, expanderFeed2, compressorFeed2);
+  }
+
+  static void turboExpanderChartRow(String label) {
+    Stream expanderFeed = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+
+    double[] igv = {0.6, 1.0};
+    double[][] uc = {{0.5, 0.6, 0.7, 0.8, 0.9}, {0.5, 0.6, 0.7, 0.8, 0.9}};
+    double[][] eta = {{0.72, 0.80, 0.84, 0.82, 0.76}, {0.78, 0.85, 0.88, 0.86, 0.80}};
+    double[][] head = {{30.0, 32.0, 33.0, 32.5, 31.0}, {34.0, 36.0, 37.0, 36.5, 35.0}};
+    neqsim.process.equipment.expander.ExpanderChartKhader chart =
+        new neqsim.process.equipment.expander.ExpanderChartKhader();
+    chart.setCurves(igv, uc, eta, head);
+    machine.setExpanderChart(chart);
+    machine.setIgvControlMode(true);
+    machine.setIGVopening(1.0);
+    machine.run();
+    double noPenalty = machine.getExpanderIsentropicEfficiency();
+
+    machine.setIgvEfficiencyPenaltyCurve(new double[] {0.4, 1.0}, new double[] {0.85, 0.90});
+    machine.setIGVopening(1.0);
+    machine.run();
+
+    System.out.println(label);
+    System.out.println("efficiency_no_penalty=" + noPenalty);
+    System.out.println("efficiency_with_penalty=" + machine.getExpanderIsentropicEfficiency());
+    System.out.println("igv_opening=" + machine.getIGVopening());
+    System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
+    printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
   }
 
   /// `CompressorChart`, the default fan-law class, and `Compressor.run`'s chart branch.
