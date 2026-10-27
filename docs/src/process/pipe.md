@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/pipeline/AdiabaticPipe.java**
 
-Its steady-state `run`: the outlet pressure iterated to `1e-2` bar, the compressible form for a gas and Darcy-Weisbach for a liquid, and a `TPflash` at the answer.
+Its steady-state `run`: the outlet pressure iterated to `1e-2` bar, the compressible form for a gas and Darcy-Weisbach for a liquid, a `TPflash` at the answer, `calcFlow`'s bisection when an outlet pressure is stated, and `Pipeline.getEffectiveLength` for the fittings.
 
 
 ## What this model is
@@ -27,6 +27,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `length` | m | the pipe's length, which is `unit_ops.pipe`'s own parameter and the `L` of both equations. No fittings are added to it. |
 | `diameter` | m | the internal diameter, which sets the area the velocity is taken over and the `D` of both equations. |
 | `roughness` | m | the sand-grain roughness height, which enters the Haaland form as `roughness / diameter`. |
+| `fittings` | - | *Optional.* the line's fittings, one row per kind: an L/D ratio and how many. **The equivalent length is `sum(L/D) D`**, added to `length`; a named Crane fitting is its ratio stated here. |
+| `outlet_pressure` | Pa | *Optional.* the outlet pressure the line is asked to reach. **Stating it solves the flow**, `AdiabaticPipe.calcFlow`'s bisection, and the result's `outlet_n` is the solved flow rather than the inlet's. |
+| `correlation` | adiabatic / beggs_and_brills | *Optional.* which drop the line computes. Absent is `adiabatic`, `AdiabaticPipe`'s two single-phase equations; `beggs_and_brills` wires the ported `eos.pipe_beggs_and_brills` march over the same geometry. |
+| `number_of_increments` | dimensionless | *Optional.* the Beggs-and-Brills march's segment count. Absent takes `PipeBeggsAndBrills.numberOfIncrements`' `5`. |
+| `elevation` | m | *Optional.* the total elevation change, positive uphill. Absent is zero; the adiabatic correlation carries no gravity term, so this is read only by `beggs_and_brills`. |
 
 
 ## Outputs
@@ -38,11 +43,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_p` | Pa | the outlet pressure the line's friction implies. This is the model's answer rather than an input, and `inlet_p - outlet_p` is the pressure drop the class reports. |
 | `outlet_t` | K | the outlet temperature, which is the inlet's: the line is adiabatic and the class sets no temperature. |
 | `outlet_h` | J/mol | the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it. |
+| `effective_length` | m | `length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`. |
 | `pressure_drop` | Pa | `inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `inlet_t > 0` | raises | an absolute temperature |
+| `outlet_pressure > 0` | raises | the flow solve divides by the target and bisects toward it |
 | `length > 0` | raises | a pipe's length is a positive length; the kernel refuses zero with the same message |
 | `diameter > 0` | raises | a diameter of zero has no area to take a velocity over |
 | `roughness > 0` | raises | a sand-grain height is a positive length, and a smooth pipe states a small one rather than zero |
@@ -57,7 +64,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the transition band is interpolated, not refused.** Between `Re` 2300 and 4000 the class blends the laminar value at 2300 with the Haaland value at 4000, and this reproduces it rather than declining the band.
 - **a level line only.** The class's balance carries `rho g (z_in - z_out)`, and the palette entry declares no elevations - so the gravity term is zero here rather than defaulted to something. A line with a rise is not a state this entry describes.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- **`length` is `getEffectiveLength` with no fittings added**: the physical length. The fittings, `setPressureOut`/`calcFlow`, the transient and the Beggs-and-Brill multiphase limit are owed, and `ROADMAP.md` names them.
+- **the effective length is `length + sum(L/D) D`.** `Pipeline.getEffectiveLength` adds the fittings' equivalent length to the physical one, and every drop the line computes uses the sum. A named Crane fitting is its L/D ratio stated in the row.
 
 ## Cases
 
@@ -66,11 +73,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_methane_co2_1000m` | components = ['methane', 'CO2'], inlet_n = 1.0, inlet_z = [0.7, 0.3], inlet_p = 5000000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [0.7, 0.3], outlet_p = 4999978.227836236, outlet_t = 300.0, outlet_h = -231.601245143823, pressure_drop = 21.77216376398931 |
 | `liquid_n_butane_1000m` | components = ['n-butane'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 1999981.6572976355, outlet_t = 300.0, pressure_drop = 18.3427023645 |
 | `water_1000m` | components = ['water'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 499992.6009196372, outlet_t = 300.0, pressure_drop = 7.399080362802124 |
+| `the_adiabatic_line_drops_by_its_friction` | components = ['methane', 'ethane'], inlet_n = 4894.970603565765, inlet_z = [0.95, 0.05], inlet_p = 10000000.0, inlet_t = 298.15, length = 50000.0, diameter = 0.5, roughness = 1e-05 | outlet_n = 4894.970603565765, outlet_z = [0.95, 0.05], outlet_p = 8946088.253356121, outlet_t = 298.15, outlet_h = -863.4836271943127, effective_length = 50000.0, pressure_drop = 1053911.746643878 |
+| `the_fittings_add_their_equivalent_length` | components = ['methane', 'ethane'], inlet_n = 4894.970603565765, inlet_z = [0.95, 0.05], inlet_p = 10000000.0, inlet_t = 298.15, length = 50000.0, diameter = 0.5, roughness = 1e-05, fittings = [{'ld_ratio': 30.0, 'count': 2.0}] | outlet_n = 4894.970603565765, outlet_z = [0.95, 0.05], outlet_p = 8945407.149292042, outlet_t = 298.15, outlet_h = -863.3563051686726, effective_length = 50030.0, pressure_drop = 1054592.850707958 |
+| `the_stated_outlet_pressure_solves_the_flow` | components = ['methane', 'ethane'], inlet_n = 4894.970603565765, inlet_z = [0.95, 0.05], inlet_p = 10000000.0, inlet_t = 298.15, length = 50000.0, diameter = 0.5, roughness = 1e-05, outlet_pressure = 8000000.0 | outlet_n = 6656.090851893372, outlet_z = [0.95, 0.05], outlet_p = 8000000.0, outlet_t = 298.15, outlet_h = -684.2417400868012, effective_length = 50000.0, pressure_drop = 2000000.0 |
+| `the_beggs_and_brills_march_over_the_same_geometry` | components = ['methane', 'ethane'], inlet_n = 4894.970603565765, inlet_z = [0.95, 0.05], inlet_p = 10000000.0, inlet_t = 298.15, length = 50000.0, diameter = 0.5, roughness = 1e-05, correlation = beggs_and_brills, number_of_increments = 5, elevation = 0.0 | outlet_n = 4894.970603565765, outlet_z = [0.95, 0.05], outlet_p = 8942233.52757637, outlet_t = 298.15, outlet_h = -862.7630099376822, effective_length = 50000.0, pressure_drop = 1057766.47242363 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 3 declared, every one run
+- Tests: 7 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

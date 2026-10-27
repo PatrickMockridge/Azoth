@@ -15889,6 +15889,9 @@ pub struct PyPipeResult {
     /// the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// `length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`.
+    #[pyo3(get)]
+    pub effective_length: PyQty,
     /// `inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.
     #[pyo3(get)]
     pub pressure_drop: PyQty,
@@ -15901,12 +15904,13 @@ pub struct PyPipeResult {
 impl PyPipeResult {
     fn __repr__(&self) -> String {
         format!(
-            "PipeResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, pressure_drop={:?}, {} warning(s))",
+            "PipeResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, effective_length={:?}, pressure_drop={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.effective_length,
             self.pressure_drop,
             self.warnings.len()
         )
@@ -15932,6 +15936,10 @@ impl From<&azoth_process::models::pipe::PipeResult> for PyPipeResult {
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            effective_length: PyQty {
+                magnitude_si: r.effective_length.value,
+                unit: "m".to_string(),
             },
             pressure_drop: PyQty {
                 magnitude_si: r.pressure_drop.value,

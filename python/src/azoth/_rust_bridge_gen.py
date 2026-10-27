@@ -6053,7 +6053,7 @@ def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
     )
 
 
-def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, roughness: Q) -> PipeResult:
+def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, roughness: Q, fittings: list[dict[str, Q]] | None=None, outlet_pressure: Q | None=None, correlation: str | None=None, number_of_increments: int | None=None, elevation: Q | None=None) -> PipeResult:
     """``process.pipe``, computed in Rust."""
     spec = _models_gen.model("process.pipe")
     result = _core.pipe(
@@ -6065,6 +6065,11 @@ def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         input_to_si(spec, "length", length),
         input_to_si(spec, "diameter", diameter),
         input_to_si(spec, "roughness", roughness),
+        None if fittings is None else input_records_to_si(spec, "fittings", fittings),
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        correlation,
+        None if number_of_increments is None else _count("number_of_increments", number_of_increments),
+        None if elevation is None else input_to_si(spec, "elevation", elevation),
     )
     return PipeResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6072,6 +6077,7 @@ def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        effective_length=from_si(result.effective_length.magnitude_si, result.effective_length.unit),
         pressure_drop=from_si(result.pressure_drop.magnitude_si, result.pressure_drop.unit),
         warnings=_warnings(result.warnings),
     )

@@ -6313,6 +6313,9 @@ class PipeResult(_HasWarnings):
     #: the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.
     outlet_h: Q
 
+    #: `length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`.
+    effective_length: Q
+
     #: `inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.
     pressure_drop: Q
 

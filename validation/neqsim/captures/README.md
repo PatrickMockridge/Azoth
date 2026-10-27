@@ -465,6 +465,8 @@ public surface of forty-odd getters.
   > captures/process_valve_sizing.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_models \
   > captures/process_filter_models.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pipe_modes \
+  > captures/process_pipe_modes.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -659,6 +661,14 @@ row. Each prints the actual flow, density and viscosity the class reads beside t
 clean drop, the applied drop and both records. **The Ergun rows' viscosity is printed because the
 port takes it as an input**: azoth's viscosity dispatch is a separate calculation, and these rows
 are the packed-bed arithmetic rather than a second viscosity model.
+
+**`ProcessProbe pipe_modes` is `AdiabaticPipe`'s fittings and `calcFlow`, and
+`PipeBeggsAndBrills`.** The rows are `AdiabaticPipeTest`'s 50 km gas state re-cased on PR:
+the plain line, the same line with two standard elbows (Crane L/D 30 each, so the effective
+length is `50000 + 60 D`), the line asked for 80 bara - where `calcFlow` bisects the flow and
+writes it back onto the inlet stream - and the Beggs-and-Brills march at five segments. Each
+row prints the effective and equivalent lengths, the drop, the velocity, Reynolds number and
+friction factor, and both records.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

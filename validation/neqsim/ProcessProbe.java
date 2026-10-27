@@ -137,6 +137,9 @@ public class ProcessProbe {
       case "pipe":
         pipeRows();
         break;
+      case "pipe_modes":
+        pipeModeRows();
+        break;
       case "manifold":
         manifoldRows();
         break;
@@ -520,6 +523,88 @@ public class ProcessProbe {
     System.out.println("delta_p_bar=" + filter.getDeltaP());
     print("inlet", inlet);
     print("outlet", filter.getOutletStream());
+    System.out.println();
+  }
+
+  /// `AdiabaticPipe`'s fittings and `setPressureOut` mode, and `PipeBeggsAndBrills`.
+  ///
+  /// **The rows are `AdiabaticPipeTest`'s 50 km gas state re-cased on PR** - 95/5
+  /// methane/ethane at 100 bara and 25 C - because the port's fluid is PR. The fittings row
+  /// adds two standard 90-degree elbows (Crane L/D 30 each), so the effective length grows by
+  /// `60 D = 30` m; the pressure-out row states 80 bara and lets `calcFlow` bisect the flow.
+  static void pipeModeRows() {
+    pipeAdiabaticRow("adiabatic_50km", false, null);
+    pipeAdiabaticRow("adiabatic_50km_two_elbows", true, null);
+    pipeAdiabaticRow("adiabatic_pressure_out_80_bara", false, 80.0);
+
+    Stream inlet = pipeFeed();
+    neqsim.process.equipment.pipeline.PipeBeggsAndBrills pipe =
+        new neqsim.process.equipment.pipeline.PipeBeggsAndBrills("bb", inlet);
+    pipe.setLength(50000.0);
+    pipe.setDiameter(0.5);
+    pipe.setPipeWallRoughness(1.0e-5);
+    pipe.setElevation(0.0);
+    pipe.setNumberOfIncrements(5);
+    pipe.run();
+
+    System.out.println("beggs_and_brills_50km");
+    System.out.println("inlet_m3_per_day=" + inlet.getFlowRate("m3/day"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    print("inlet", inlet);
+    print("outlet", pipe.getOutletStream());
+    System.out.println("outlet_p_bara=" + pipe.getOutletStream().getPressure("bara"));
+    System.out.println("pressure_drop_bar=" + pipe.getPressureDrop());
+    System.out.println("pressure_drop_profile=" + pipe.getPressureDropProfile());
+    System.out.println();
+  }
+
+  static Stream pipeFeed() {
+    SystemInterface fluid = new SystemPrEos(278.15, 100.0);
+    fluid.addComponent("methane", 95.0);
+    fluid.addComponent("ethane", 5.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("inlet", fluid);
+    stream.setPressure(100.0, "bara");
+    stream.setTemperature(25.0, "C");
+    stream.setFlowRate(10.0, "MSm3/day");
+    stream.run();
+    return stream;
+  }
+
+  static void pipeAdiabaticRow(String label, boolean fittings, Double outletBara) {
+    Stream inlet = pipeFeed();
+    neqsim.process.equipment.pipeline.AdiabaticPipe pipe =
+        new neqsim.process.equipment.pipeline.AdiabaticPipe(label, inlet);
+    pipe.setLength(50000.0);
+    pipe.setDiameter(0.5);
+    pipe.setPipeWallRoughness(1.0e-5);
+    if (fittings) {
+      pipe.addStandardFittings("elbow_90_standard", 2);
+    }
+    if (outletBara != null) {
+      pipe.setOutletPressure(outletBara);
+    }
+    pipe.run();
+
+    System.out.println(label);
+    System.out.println("inlet_m3_per_day=" + inlet.getFlowRate("m3/day"));
+    System.out.println("inlet_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + inlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("effective_length_m=" + pipe.getEffectiveLength());
+    System.out.println("equivalent_length_m=" + pipe.getEquivalentLength());
+    System.out.println("total_fittings_ld=" + pipe.getTotalFittingsLdRatio());
+    System.out.println("outlet_p_bara=" + pipe.getOutletStream().getPressure("bara"));
+    System.out.println("pressure_drop_bar=" + pipe.getPressureDrop());
+    System.out.println("velocity_m_per_s=" + pipe.getVelocity());
+    System.out.println("reynolds=" + pipe.getReynoldsNumber());
+    System.out.println("friction_factor=" + pipe.getFrictionFactor());
+    System.out.println("flow_kg_per_hr_after=" + inlet.getFlowRate("kg/hr"));
+    print("inlet", inlet);
+    print("outlet", pipe.getOutletStream());
     System.out.println();
   }
 

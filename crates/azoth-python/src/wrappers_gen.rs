@@ -5987,40 +5987,6 @@ pub fn packed_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Pipe.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness)"
-)]
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn pipe(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    length: f64,
-    diameter: f64,
-    roughness: f64,
-) -> PyResult<crate::transport_gen::PyPipeResult> {
-    azoth_process::models::pipe::pipe(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        meters(length),
-        meters(diameter),
-        meters(roughness),
-    )
-    .map(|r| crate::transport_gen::PyPipeResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Separator.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

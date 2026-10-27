@@ -457,6 +457,7 @@ impl CalcResult for PipeResult {
         "outlet_p",
         "outlet_t",
         "outlet_h",
+        "effective_length",
         "pressure_drop",
         "warnings",
     ];

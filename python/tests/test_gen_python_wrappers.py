@@ -90,7 +90,8 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: refuses an `Option<&[Row]>` (a record slice it can derive, an absent one it cannot), so
 #: the binding moved into the process module where the row is built by hand.
 #: 60 -> 61 when `process.filter` gained two optional `record_list`s for the same reason.
-KNOWN_HAND_WRITTEN = 61
+#: 61 -> 62 when `process.pipe`'s `fittings` did too.
+KNOWN_HAND_WRITTEN = 62
 
 
 def _tools_module(name: str) -> ModuleType:

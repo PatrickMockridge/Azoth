@@ -10,7 +10,7 @@ assumptions = [
     "**the transition band is interpolated, not refused.** Between `Re` 2300 and 4000 the class blends the laminar value at 2300 with the Haaland value at 4000, and this reproduces it rather than declining the band.",
     "**a level line only.** The class's balance carries `rho g (z_in - z_out)`, and the palette entry declares no elevations - so the gravity term is zero here rather than defaulted to something. A line with a rise is not a state this entry describes.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "**`length` is `getEffectiveLength` with no fittings added**: the physical length. The fittings, `setPressureOut`/`calcFlow`, the transient and the Beggs-and-Brill multiphase limit are owed, and `ROADMAP.md` names them.",
+    "**the effective length is `length + sum(L/D) D`.** `Pipeline.getEffectiveLength` adds the fittings' equivalent length to the physical one, and every drop the line computes uses the sum. A named Crane fitting is its L/D ratio stated in the row.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pipeline/AdiabaticPipe.java` is the port source, through its `run` and `calcPressureOut`.",
@@ -19,7 +19,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/pipeline/AdiabaticPipe.java"
-edition = "Its steady-state `run`: the outlet pressure iterated to `1e-2` bar, the compressible form for a gas and Darcy-Weisbach for a liquid, and a `TPflash` at the answer."
+edition = "Its steady-state `run`: the outlet pressure iterated to `1e-2` bar, the compressible form for a gas and Darcy-Weisbach for a liquid, a `TPflash` at the answer, `calcFlow`'s bisection when an outlet pressure is stated, and `Pipeline.getEffectiveLength` for the fittings."
 [inputs]
 [inputs.components]
 type = "components"
@@ -47,6 +47,34 @@ description = "the internal diameter, which sets the area the velocity is taken 
 [inputs.roughness]
 unit = "m"
 description = "the sand-grain roughness height, which enters the Haaland form as `roughness / diameter`.\n"
+[inputs.fittings]
+type = "record_list"
+row_type = "PipeFitting"
+optional = true
+description = "the line's fittings, one row per kind: an L/D ratio and how many. **The equivalent length is `sum(L/D) D`**, added to `length`; a named Crane fitting is its ratio stated here.\n"
+[inputs.fittings.fields.ld_ratio]
+unit = "dimensionless"
+description = "the fitting's equivalent length over the pipe diameter, non-negative.\n"
+[inputs.fittings.fields.count]
+unit = "dimensionless"
+description = "how many identical fittings the row stands for.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+optional = true
+description = "the outlet pressure the line is asked to reach. **Stating it solves the flow**, `AdiabaticPipe.calcFlow`'s bisection, and the result's `outlet_n` is the solved flow rather than the inlet's.\n"
+[inputs.correlation]
+type = "enum"
+values = ["adiabatic", "beggs_and_brills"]
+optional = true
+description = "which drop the line computes. Absent is `adiabatic`, `AdiabaticPipe`'s two single-phase equations; `beggs_and_brills` wires the ported `eos.pipe_beggs_and_brills` march over the same geometry.\n"
+[inputs.number_of_increments]
+unit = "dimensionless"
+optional = true
+description = "the Beggs-and-Brills march's segment count. Absent takes `PipeBeggsAndBrills.numberOfIncrements`' `5`.\n"
+[inputs.elevation]
+unit = "m"
+optional = true
+description = "the total elevation change, positive uphill. Absent is zero; the adiabatic correlation carries no gravity term, so this is read only by `beggs_and_brills`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -65,6 +93,9 @@ description = "the outlet temperature, which is the inlet's: the line is adiabat
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.\n"
+[outputs.effective_length]
+unit = "m"
+description = "`length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`.\n"
 [outputs.pressure_drop]
 unit = "Pa"
 description = "`inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.\n"
@@ -74,6 +105,12 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "outlet_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flow solve divides by the target and bisects toward it"
 [[valid_range]]
 quantity = "length"
 min = 0

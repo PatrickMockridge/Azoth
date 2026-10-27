@@ -438,9 +438,10 @@ pub(crate) fn mixer(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
 }
 
 pub(crate) fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+    let length = azoth_core::units::meters(p.si("length")?);
     let out = kernels::pipe::pipe(
         &inlets[0],
-        azoth_core::units::meters(p.si("length")?),
+        length,
         azoth_core::units::meters(p.si("diameter")?),
         azoth_core::units::meters(p.si("roughness")?),
     )?;
@@ -448,7 +449,7 @@ pub(crate) fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcom
     // expression the model publishes, written once here because a flowsheet's inlet is the stream
     // the executor handed over and not a record field.
     let pressure_drop = pascals(inlets[0].p.value - out.outlet.p.value);
-    let result = crate::models::PipeResult::of(&out, pressure_drop, Vec::new());
+    let result = crate::models::PipeResult::of(&out.outlet, pressure_drop, length, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 

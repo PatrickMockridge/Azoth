@@ -157,6 +157,15 @@ pub struct Lump {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct PipeFitting {
+    #[pyo3(item)]
+    pub ld_ratio: f64,
+    #[pyo3(item)]
+    pub count: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct ProductionChemicalDose {
     #[pyo3(item)]
     pub chemical_type: String,

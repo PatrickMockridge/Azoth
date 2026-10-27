@@ -1155,6 +1155,11 @@ def pipe(
     length: Q,
     diameter: Q,
     roughness: Q,
+    fittings: list[dict[str, Q]] | None = None,
+    outlet_pressure: Q | None = None,
+    correlation: str | None = None,
+    number_of_increments: int | None = None,
+    elevation: Q | None = None,
 ) -> PipeResult:
     """Drop a stream's pressure along a line, solving the outlet pressure it implies.
 
@@ -1164,9 +1169,10 @@ def pipe(
     two-port machines around it.
 
     **Two equations, one per phase**, chosen by the phase label: a gas takes the compressible
-    ``P1^2 - P2^2`` form and anything else Darcy-Weisbach. **The aqueous viscosity branch is
-    not ported**, so a water line's Reynolds number is ``1.61`` times NeqSim's; the case
-    records it.
+    ``P1^2 - P2^2`` form and anything else Darcy-Weisbach. ``fittings`` adds their ``sum(L/D) D``
+    to the physical length; ``outlet_pressure`` replaces the solved drop with a solved *flow*,
+    ``AdiabaticPipe.calcFlow``'s bisection; ``correlation = "beggs_and_brills"`` runs the ported
+    Beggs-and-Brills march over the same geometry instead.
 
     Raises:
         InvalidInputError: where the geometry is not positive.
@@ -1182,6 +1188,11 @@ def pipe(
         length=length,
         diameter=diameter,
         roughness=roughness,
+        fittings=fittings,
+        outlet_pressure=outlet_pressure,
+        correlation=correlation,
+        number_of_increments=number_of_increments,
+        elevation=elevation,
     )
 
 

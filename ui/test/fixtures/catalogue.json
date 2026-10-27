@@ -7291,7 +7291,8 @@
       "runnable": true,
       "source": "NeqSim process/equipment/pipeline/AdiabaticPipe.java",
       "unmodelled_ranges": [
-        "inlet_t"
+        "inlet_t",
+        "outlet_pressure"
       ]
     },
     {

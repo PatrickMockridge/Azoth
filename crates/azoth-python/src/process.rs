@@ -351,6 +351,61 @@ pub fn filter(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.pipe` - the line's kernel as a registered id.
+///
+/// **Hand-written, because `fittings` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness, fittings = None, outlet_pressure = None, correlation = None, number_of_increments = None, elevation = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness, fittings=None, outlet_pressure=None, correlation=None, number_of_increments=None, elevation=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn pipe(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    roughness: f64,
+    fittings: Option<Vec<crate::records_gen::PipeFitting>>,
+    outlet_pressure: Option<f64>,
+    correlation: Option<&str>,
+    number_of_increments: Option<usize>,
+    elevation: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPipeResult> {
+    let rows: Option<Vec<azoth_process::models::pipe::PipeFitting>> = fittings.map(|rows| {
+        rows.into_iter()
+            .map(|row| azoth_process::models::pipe::PipeFitting {
+                ld_ratio: row.ld_ratio,
+                count: row.count,
+            })
+            .collect()
+    });
+    azoth_process::pipe(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(roughness),
+        rows.as_deref(),
+        outlet_pressure.map(pascals),
+        correlation,
+        number_of_increments,
+        elevation.map(meters),
+    )
+    .map(|r| crate::transport_gen::PyPipeResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.absorption_column` - the tray absorber as a registered id.
 ///
 /// **The column's own profile shape with the class's own product names**, and two inlets where

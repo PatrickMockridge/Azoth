@@ -353,6 +353,12 @@ class FilterBetaPoint(TypedDict):
     particle_size: float
     beta_ratio: float
 
+class PipeFitting(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    ld_ratio: float
+    count: float
+
 class PumpCurvePoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -2785,6 +2791,7 @@ class PipeResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    effective_length: Qty
     pressure_drop: Qty
     warnings: list[Warning]
 
@@ -5330,6 +5337,11 @@ def pipe(
     length: float,
     diameter: float,
     roughness: float,
+    fittings: list[PipeFitting] | None = None,
+    outlet_pressure: float | None = None,
+    correlation: str | None = None,
+    number_of_increments: float | None = None,
+    elevation: float | None = None,
 ) -> PipeResult: ...
 def plug_flow_reactor(
     components: list[str],

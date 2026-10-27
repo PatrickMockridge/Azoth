@@ -847,7 +847,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::manifold, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::mixer, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::packed_column, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pipe, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::process::pipe, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::plug_flow_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::pump, m)?)?;
     m.add_function(wrap_pyfunction!(
