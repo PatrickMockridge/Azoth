@@ -63,7 +63,7 @@ pub struct Param {
     /// reads a required parameter with `Parameters::si`/`number`/`flag`/`text`/`vector` and an
     /// optional one with the `optional_*` family, and the two agree with the
     /// `[inputs]` block of `specs/models/process/<id>.toml` - where an input is optional unless it
-    /// carries `optional = true` - for all twenty-eight runnable entries, measured. That agreement
+    /// carries `optional = true` - for all twenty-nine runnable entries, measured. That agreement
     /// is what `every_declared_parameter_reaches_its_kernel`'s sibling in `tests/palette.rs` holds.
     #[serde(default)]
     pub required: bool,

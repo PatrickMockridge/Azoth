@@ -17745,6 +17745,172 @@ impl From<&azoth_process::models::throttling_valve::ThrottlingValveResult>
         }
     }
 }
+/// Result of `process.turbo_expander_compressor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TurboExpanderResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTurboExpanderResult {
+    /// the expander outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub expander_outlet_n: PyQty,
+    /// the expander outlet's composition.
+    #[pyo3(get)]
+    pub expander_outlet_z: Vec<f64>,
+    /// the expander outlet's pressure, which is the stated `expander_out_pressure`.
+    #[pyo3(get)]
+    pub expander_outlet_p: PyQty,
+    /// the expander outlet's temperature, from the replay at the solved efficiency.
+    #[pyo3(get)]
+    pub expander_outlet_t: PyQty,
+    /// the expander outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub expander_outlet_h: PyQty,
+    /// the compressor outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub compressor_outlet_n: PyQty,
+    /// the compressor outlet's composition.
+    #[pyo3(get)]
+    pub compressor_outlet_z: Vec<f64>,
+    /// the compressor outlet's pressure, solved from the absorbed power and the polytropic efficiency.
+    #[pyo3(get)]
+    pub compressor_outlet_p: PyQty,
+    /// the compressor outlet's temperature.
+    #[pyo3(get)]
+    pub compressor_outlet_t: PyQty,
+    /// the compressor outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub compressor_outlet_h: PyQty,
+    /// the solved shaft speed, rpm.
+    #[pyo3(get)]
+    pub speed: f64,
+    /// the expander's power: the mass flow times the isentropic drop times the solved efficiency.
+    #[pyo3(get)]
+    pub power_expander: PyQty,
+    /// the compressor's absorbed power, which does not include the bearing loss.
+    #[pyo3(get)]
+    pub power_compressor: PyQty,
+    /// the expander efficiency the balance used.
+    #[pyo3(get)]
+    pub expander_isentropic_efficiency: f64,
+    /// the design efficiency: the stated one, or the inverse's back-calculation.
+    #[pyo3(get)]
+    pub expander_design_isentropic_efficiency: f64,
+    /// the compressor's polytropic efficiency the balance used.
+    #[pyo3(get)]
+    pub compressor_polytropic_efficiency: f64,
+    /// the compressor's polytropic head the balance used.
+    #[pyo3(get)]
+    pub compressor_polytropic_head: PyQty,
+    /// the expander's `U/C/design_uc` at the solved speed.
+    #[pyo3(get)]
+    pub uc_ratio_expander: f64,
+    /// the compressor's Q/N ratio at the solved speed.
+    #[pyo3(get)]
+    pub qn_ratio_compressor: f64,
+    /// the IGV opening the machine reports - the held one, or the recomputed one.
+    #[pyo3(get)]
+    pub igv_opening: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTurboExpanderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, speed={:?}, power_expander={:?}, power_compressor={:?}, expander_isentropic_efficiency={:?}, expander_design_isentropic_efficiency={:?}, compressor_polytropic_efficiency={:?}, compressor_polytropic_head={:?}, uc_ratio_expander={:?}, qn_ratio_compressor={:?}, igv_opening={:?}, {} warning(s))",
+            self.expander_outlet_n,
+            self.expander_outlet_z,
+            self.expander_outlet_p,
+            self.expander_outlet_t,
+            self.expander_outlet_h,
+            self.compressor_outlet_n,
+            self.compressor_outlet_z,
+            self.compressor_outlet_p,
+            self.compressor_outlet_t,
+            self.compressor_outlet_h,
+            self.speed,
+            self.power_expander,
+            self.power_compressor,
+            self.expander_isentropic_efficiency,
+            self.expander_design_isentropic_efficiency,
+            self.compressor_polytropic_efficiency,
+            self.compressor_polytropic_head,
+            self.uc_ratio_expander,
+            self.qn_ratio_compressor,
+            self.igv_opening,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::turbo_expander_compressor::TurboExpanderResult>
+    for PyTurboExpanderResult
+{
+    fn from(r: &azoth_process::models::turbo_expander_compressor::TurboExpanderResult) -> Self {
+        Self {
+            expander_outlet_n: PyQty {
+                magnitude_si: r.expander_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            expander_outlet_z: r.expander_outlet_z.clone(),
+            expander_outlet_p: PyQty {
+                magnitude_si: r.expander_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            expander_outlet_t: PyQty {
+                magnitude_si: r.expander_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            expander_outlet_h: PyQty {
+                magnitude_si: r.expander_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            compressor_outlet_n: PyQty {
+                magnitude_si: r.compressor_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            compressor_outlet_z: r.compressor_outlet_z.clone(),
+            compressor_outlet_p: PyQty {
+                magnitude_si: r.compressor_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            compressor_outlet_t: PyQty {
+                magnitude_si: r.compressor_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            compressor_outlet_h: PyQty {
+                magnitude_si: r.compressor_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            speed: r.speed,
+            power_expander: PyQty {
+                magnitude_si: r.power_expander.value,
+                unit: "W".to_string(),
+            },
+            power_compressor: PyQty {
+                magnitude_si: r.power_compressor.value,
+                unit: "W".to_string(),
+            },
+            expander_isentropic_efficiency: r.expander_isentropic_efficiency,
+            expander_design_isentropic_efficiency: r.expander_design_isentropic_efficiency,
+            compressor_polytropic_efficiency: r.compressor_polytropic_efficiency,
+            compressor_polytropic_head: PyQty {
+                magnitude_si: r.compressor_polytropic_head.value,
+                unit: "m".to_string(),
+            },
+            uc_ratio_expander: r.uc_ratio_expander,
+            qn_ratio_compressor: r.qn_ratio_compressor,
+            igv_opening: r.igv_opening,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `reactions.chemical_equilibrium`, transported.
 #[pyclass(
     frozen,

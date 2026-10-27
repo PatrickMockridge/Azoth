@@ -58,6 +58,7 @@ pub mod stripping_column;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
+pub mod turbo_expander_compressor;
 
 pub use absorption_column::{AbsorptionColumnResult, absorption_column};
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
@@ -89,3 +90,4 @@ pub use stripping_column::{StrippingColumnResult, stripping_column};
 pub use tank::{TankResult, tank};
 pub use three_phase_separator::{ThreePhaseSeparatorResult, three_phase_separator};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};
+pub use turbo_expander_compressor::{TurboExpanderResult, turbo_expander_compressor};

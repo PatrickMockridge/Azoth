@@ -23,7 +23,7 @@ is named at the foot of this page.
 | read *and* write a flowsheet | **yes** — `Flowsheet::to_toml`, with a test over `specs/flowsheets/` that the value survives and that writing is a fixed point of itself |
 | a form per unit op (ports + parameters) | **yes** — `middleware::form`, one object per palette entry: the ports, the parameters with their units and dimensions, the *kind* that chooses a widget (from the model's input declaration, via `model_inputs_gen`), and the model's own bounds with the sentence that explains each. The bounds the model states on inputs no parameter carries are listed rather than dropped |
 | structured, locatable diagnostics | **yes** — every `Diagnostic` carries a `Severity`, a `Location` **and a `Target`**: a stable code and the node, handle, parameter or edge a front-end puts a mark on, both derived from the variant's own fields |
-| dispatch an instance to its kernel | **yes** — the `DISPATCH` table, 28 entries and **1** refusal by name |
+| dispatch an instance to its kernel | **yes** — the `DISPATCH` table, 29 entries and **1** refusal by name |
 | an edit as one typed command | **yes** — `middleware::command`, fifteen variants, each a structure edit that leaves the checker to rule on the result |
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
@@ -277,7 +277,7 @@ that reads as finished.
   wheel are also walked by `check_wheel_data.py`: for what they must not carry (`ui/`, the built
   browser module, and every repository tree but the one below), and, for the sdist, for whether it
   carries what the Rust sources embed. `specs/unit_ops/` is that one exemption, and it is a build
-  input rather than a copy: `palette_gen.rs` embeds those 29 TOMLs with `include_str!`, and
+  input rather than a copy: `palette_gen.rs` embeds those 30 TOMLs with `include_str!`, and
   maturin 1.15 reads one `include` list for both artifacts, so the sdist cannot have them without
   the wheel having them too. So "a distribution is not a copy of the repository" is a measurement
   rather than an assumption about maturin's defaults — and so is "the sdist can be built from".

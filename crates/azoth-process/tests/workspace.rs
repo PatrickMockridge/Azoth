@@ -257,7 +257,7 @@ fn the_other_resources_answer_with_their_own_text() {
     let catalogue = resources::read(&workspace, &palette, "azoth://catalogue").expect("published");
     let parsed: serde_json::Value =
         serde_json::from_str(&catalogue.text).expect("the catalogue is JSON");
-    assert_eq!(parsed["unit_ops"].as_array().expect("an array").len(), 29);
+    assert_eq!(parsed["unit_ops"].as_array().expect("an array").len(), 30);
 
     // A URI this server does not publish is `None` rather than an error: the transport answers it
     // as a bad request, which is what a client's mistake about a name is.

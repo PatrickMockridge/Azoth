@@ -102,6 +102,9 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         ("unit_ops.tank", None),
         ("unit_ops.three_phase_separator", None),
         ("unit_ops.throttling_valve", None),
+        // The machine's executor arm publishes its two outlets and nothing else, like its
+        // neighbours' - the speed and the powers are the model's record, not the wire's.
+        ("unit_ops.turbo_expander_compressor", None),
     ]
 }
 

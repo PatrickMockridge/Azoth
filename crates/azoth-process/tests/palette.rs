@@ -259,10 +259,11 @@ fn every_entry_carries_the_family_it_was_read_from() {
         );
         families.insert(family);
     }
-    // The seven the directories declare, so a new directory is a new family and belongs here too.
+    // The eight the directories declare, so a new directory is a new family and belongs here too.
     for expected in [
         "column",
         "heat_exchanger",
+        "machine",
         "mixer",
         "reactor",
         "separator",
@@ -273,7 +274,7 @@ fn every_entry_carries_the_family_it_was_read_from() {
     }
     assert_eq!(
         families.len(),
-        7,
+        8,
         "the palette has {} families: {families:?}",
         families.len()
     );

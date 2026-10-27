@@ -57,7 +57,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the shaft power is an output, and it is negative.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which is below zero for an expansion; `power` reports it times the molar flow, so the recovered-work magnitude is its absolute value.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **`use_polytropic_calc` selects the stepped branch.** `Expander.run` divides the pressure range into `number_of_steps` equal increments - five by default - flashes each isentropically, multiplies the step by `polytropic_efficiency` and flashes the enthalpy; a count below one is one.
-- **the expander chart (`ExpanderChartKhader`), its turbo-expander consumer, the `powerSet` and `useOutTemperature` modes, the dynamic nozzle and the capacity constraints are absent.** The chart's only reader is `TurboExpanderCompressor`, which the record keeps owed with it.
+- **the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; its `powerSet` and `useOutTemperature` modes, the dynamic nozzle and the capacity constraints are outside this surface.
 
 ## Cases
 

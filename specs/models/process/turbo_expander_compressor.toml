@@ -1,0 +1,275 @@
+id = "process.turbo_expander_compressor"
+name = "Turbo-expander compressor"
+kind = "direct"
+assumptions = [
+    "**two inlets and two outlets.** The expander's feed and the compressor's feed are separate fluids, each carrying its own `n, z, P, T`; the expander's outlet and the compressor's outlet are two records. One shaft balances them.",
+    "**the speed is the unknown.** A damped Newton on the shaft speed drives the expander's power to the compressor's plus the speed-scaled bearing loss, bounded to the class's `[1000, 9000]` rpm.",
+    "**the efficiency is the map at the raw `U/C` or the parabola at the normalised one.** `ExpanderChartKhader` reads `U/C`; the legacy fitted parabola reads `U/C/design_uc` times the design efficiency - the class's own asymmetry.",
+    "**the compressor's power is its design head scaled by `(N/N_design)²` and a Q/N head factor**, over a Q/N efficiency factor times the design efficiency. The two Q/N curves are cubic-Hermite splines with linear extrapolation, unity without one.",
+    "**the replay is two machines.** The expander's outlet is an isentropic expansion at the solved efficiency, which the inverse may push above one; the compressor's outlet is the polytropic pressure ratio the absorbed power implies.",
+    "**the model's map carries efficiency alone.** The class's stage-head grid is not read by the machine - its expander head comes from a `PSflash` - so the rows are `(igv, uc, efficiency)` and the chart is built with a unit reference sound speed; the head grid is `expander_chart.rs`'s own test surface.",
+    "**the outlet-temperature inverse back-calculates the design efficiency.** A stated `expander_out_temperature` gives the required efficiency before the map's value is replaced, and the design efficiency is the required one over the converged efficiency ratio.",
+    "**the IGV is held or recomputed.** `igv_control_mode` holds the stated opening; otherwise the opening is recomputed from the stage drop and flow by the class's area rule, and the penalty curve multiplies the efficiency.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**`RadialExpanderGeometryMap`, `TurboExpanderMapIngestion`, `MapTurboExpanderCompressor` and the class's `toJson` report are outside this surface.** The synthetic-map generator has no caller in this tree, and the map machine is a different shaft; `ROADMAP.md` carries both as owed.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/expander/TurboExpanderCompressor.java` is the port source, through its `run`, and `ExpanderChartKhader.java` is the map.",
+    "`validation/neqsim/captures/process_turbo_expander.tsv` - the reference machine, the lower expander pressure, the mass-balance pair, the outlet-temperature inverse and the map/IGV row.",
+    "`validation/neqsim/captures/process_expander_chart.tsv` - the map's interpolation, optimum and composition-aware head rows.",
+]
+[source]
+standard = "NeqSim process/equipment/expander/TurboExpanderCompressor.java"
+edition = "Its `run`: the expander's isentropic head at the stated outlet, the velocity-ratio or 2-D-map efficiency, the Q/N-scaled compressor head and efficiency, the damped Newton on shaft speed, and the two outlet replays."
+[inputs]
+[inputs.expander_components]
+type = "components"
+description = "the expander feed's substances, by name.\n"
+[inputs.expander_n]
+unit = "mol/s"
+description = "the expander feed's molar flow, which the expander outlet carries unchanged.\n"
+[inputs.expander_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the expander feed's composition.\n"
+[inputs.expander_p]
+unit = "Pa"
+description = "the expander feed's pressure.\n"
+[inputs.expander_t]
+unit = "K"
+description = "the expander feed's temperature.\n"
+[inputs.compressor_components]
+type = "components"
+description = "the compressor feed's substances, by name.\n"
+[inputs.compressor_n]
+unit = "mol/s"
+description = "the compressor feed's molar flow, which the compressor outlet carries unchanged.\n"
+[inputs.compressor_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the compressor feed's composition.\n"
+[inputs.compressor_p]
+unit = "Pa"
+description = "the compressor feed's pressure, which the discharge ratio multiplies.\n"
+[inputs.compressor_t]
+unit = "K"
+description = "the compressor feed's temperature.\n"
+[inputs.expander_out_pressure]
+unit = "Pa"
+description = "the expander's stated outlet pressure, which fixes its isentropic head.\n"
+[inputs.impeller_diameter]
+unit = "m"
+description = "the impeller's outer diameter; the tip speed is `pi D N / 60`.\n"
+[inputs.design_speed]
+unit = "dimensionless"
+description = "the design speed, rpm, which seeds the Newton and scales both the head and the bearing loss.\n"
+[inputs.design_uc]
+unit = "dimensionless"
+description = "the design velocity ratio, which normalises `U/C` for the legacy parabola.\n"
+[inputs.design_qn]
+unit = "dimensionless"
+description = "the design flow coefficient, m3/rev, which normalises the compressor's `Q N`.\n"
+[inputs.igv_opening]
+unit = "dimensionless"
+optional = true
+description = "the stated inlet-guide-vane opening, 0..1. Absent takes the class's `1.0`; held only when `igv_control_mode` is set.\n"
+[inputs.igv_control_mode]
+type = "boolean"
+optional = true
+description = "whether the stated opening is held. Absent is the class's `false`, where the opening is recomputed after the solve.\n"
+[inputs.maximum_igv_area]
+unit = "m**2"
+optional = true
+description = "the maximum IGV area (the class's `1.637e4` mm2 as `0.01637` m2). Absent takes that value.\n"
+[inputs.igv_area_increase_factor]
+unit = "dimensionless"
+optional = true
+description = "the expanded-area factor the IGV rule may call on. Absent takes the class's `1.14`.\n"
+[inputs.bearing_loss]
+unit = "W"
+optional = true
+description = "the bearing loss at the design speed, scaled by `(N/N_design)²`. Absent takes the class's `10.0` W.\n"
+[inputs.expander_design_isentropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the expander's design efficiency, the parabola's scale. Absent takes the class's `1.0`; the inverse back-calculates it.\n"
+[inputs.compressor_design_polytropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the compressor's design polytropic efficiency, scaled by the Q/N factor. Absent takes the class's `0.81`.\n"
+[inputs.compressor_design_polytropic_head]
+unit = "m"
+optional = true
+description = "the compressor's design polytropic head, scaled by `(N/N_design)²` and the Q/N head factor. Absent takes `20.47` kJ/kg as metres, the class's own `1000/9.81` conversion.\n"
+[inputs.expander_out_temperature]
+unit = "K"
+optional = true
+description = "a target expander outlet temperature. **Stating it runs the inverse**: the required efficiency is solved and the design efficiency is back-calculated from it.\n"
+[inputs.uc_curve]
+type = "record_list"
+row_type = "TurboUcPoint"
+optional = true
+description = "the legacy velocity-ratio efficiency curve, `(uc, efficiency)` rows. Absent takes the class's fixed parabola `-3.56 (uc-1)^2 + 1`.\n"
+[inputs.uc_curve.fields.uc]
+unit = "dimensionless"
+description = "the velocity ratio.\n"
+[inputs.uc_curve.fields.efficiency]
+unit = "dimensionless"
+description = "the efficiency there, as a fraction.\n"
+[inputs.qn_efficiency_curve]
+type = "record_list"
+row_type = "TurboQnPoint"
+optional = true
+description = "the compressor's Q/N efficiency correction, `(qn, factor)` rows. Absent is unity everywhere.\n"
+[inputs.qn_efficiency_curve.fields.qn]
+unit = "dimensionless"
+description = "the flow coefficient ratio.\n"
+[inputs.qn_efficiency_curve.fields.factor]
+unit = "dimensionless"
+description = "the correction factor there, on the quantity its curve names.\n"
+[inputs.qn_head_curve]
+type = "record_list"
+row_type = "TurboQnPoint"
+optional = true
+description = "the compressor's Q/N head correction, `(qn, factor)` rows. Absent is unity everywhere.\n"
+[inputs.qn_head_curve.fields.qn]
+unit = "dimensionless"
+description = "the flow coefficient ratio.\n"
+[inputs.qn_head_curve.fields.factor]
+unit = "dimensionless"
+description = "the correction factor there, on the quantity its curve names.\n"
+[inputs.chart]
+type = "record_list"
+row_type = "ExpanderMapPoint"
+optional = true
+description = "the expander's 2-D map, `(igv, uc, efficiency)` rows. **Absent is the legacy parabola.** The head grid is not read, so no head is carried.\n"
+[inputs.chart.fields.igv]
+unit = "dimensionless"
+description = "the IGV opening, 0..1, strictly increasing in row order.\n"
+[inputs.chart.fields.uc]
+unit = "dimensionless"
+description = "the velocity ratio.\n"
+[inputs.chart.fields.efficiency]
+unit = "dimensionless"
+description = "the isentropic efficiency there, as a fraction.\n"
+[inputs.igv_penalty_curve]
+type = "record_list"
+row_type = "TurboIgvPenaltyPoint"
+optional = true
+description = "the IGV efficiency penalty, `(igv, factor)` rows, edge-clamped. Absent is unity.\n"
+[inputs.igv_penalty_curve.fields.igv]
+unit = "dimensionless"
+description = "the IGV opening.\n"
+[inputs.igv_penalty_curve.fields.factor]
+unit = "dimensionless"
+description = "the multiplicative efficiency factor there.\n"
+[outputs]
+[outputs.expander_outlet_n]
+unit = "mol/s"
+description = "the expander outlet's molar flow, which is its feed's.\n"
+[outputs.expander_outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the expander outlet's composition.\n"
+[outputs.expander_outlet_p]
+unit = "Pa"
+description = "the expander outlet's pressure, which is the stated `expander_out_pressure`.\n"
+[outputs.expander_outlet_t]
+unit = "K"
+description = "the expander outlet's temperature, from the replay at the solved efficiency.\n"
+[outputs.expander_outlet_h]
+unit = "J/mol"
+description = "the expander outlet's molar enthalpy.\n"
+[outputs.compressor_outlet_n]
+unit = "mol/s"
+description = "the compressor outlet's molar flow, which is its feed's.\n"
+[outputs.compressor_outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the compressor outlet's composition.\n"
+[outputs.compressor_outlet_p]
+unit = "Pa"
+description = "the compressor outlet's pressure, solved from the absorbed power and the polytropic efficiency.\n"
+[outputs.compressor_outlet_t]
+unit = "K"
+description = "the compressor outlet's temperature.\n"
+[outputs.compressor_outlet_h]
+unit = "J/mol"
+description = "the compressor outlet's molar enthalpy.\n"
+[outputs.speed]
+unit = "dimensionless"
+description = "the solved shaft speed, rpm.\n"
+[outputs.power_expander]
+unit = "W"
+description = "the expander's power: the mass flow times the isentropic drop times the solved efficiency.\n"
+[outputs.power_compressor]
+unit = "W"
+description = "the compressor's absorbed power, which does not include the bearing loss.\n"
+[outputs.expander_isentropic_efficiency]
+unit = "dimensionless"
+description = "the expander efficiency the balance used.\n"
+[outputs.expander_design_isentropic_efficiency]
+unit = "dimensionless"
+description = "the design efficiency: the stated one, or the inverse's back-calculation.\n"
+[outputs.compressor_polytropic_efficiency]
+unit = "dimensionless"
+description = "the compressor's polytropic efficiency the balance used.\n"
+[outputs.compressor_polytropic_head]
+unit = "m"
+description = "the compressor's polytropic head the balance used.\n"
+[outputs.uc_ratio_expander]
+unit = "dimensionless"
+description = "the expander's `U/C/design_uc` at the solved speed.\n"
+[outputs.qn_ratio_compressor]
+unit = "dimensionless"
+description = "the compressor's Q/N ratio at the solved speed.\n"
+[outputs.igv_opening]
+unit = "dimensionless"
+description = "the IGV opening the machine reports - the held one, or the recomputed one.\n"
+[[valid_range]]
+quantity = "design_speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the speed is a divisor in the Q/N ratio and a scale in both powers"
+[[valid_range]]
+quantity = "design_uc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the parabola reads U/C over it"
+[[valid_range]]
+quantity = "design_qn"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Q/N ratio divides by it"
+[[valid_range]]
+quantity = "impeller_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the tip speed is proportional to it"
+[[valid_range]]
+quantity = "expander_design_isentropic_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an efficiency is a fraction"
+[[valid_range]]
+quantity = "compressor_design_polytropic_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an efficiency is a fraction"
+[implementations]
+python = "azoth.process.turbo_expander_compressor"
+rust = "azoth_process::turbo_expander_compressor"

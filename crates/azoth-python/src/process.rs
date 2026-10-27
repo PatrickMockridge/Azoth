@@ -460,6 +460,131 @@ pub fn compressor(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.turbo_expander_compressor` - the coupled machine as a registered id.
+///
+/// **Hand-written, because four of its inputs are optional record slices** the wrapper
+/// generator refuses; each row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening = None, igv_control_mode = None, maximum_igv_area = None, igv_area_increase_factor = None, bearing_loss = None, expander_design_isentropic_efficiency = None, compressor_design_polytropic_efficiency = None, compressor_design_polytropic_head = None, expander_out_temperature = None, uc_curve = None, qn_efficiency_curve = None, qn_head_curve = None, chart = None, igv_penalty_curve = None)
+)]
+#[pyo3(
+    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening=None, igv_control_mode=None, maximum_igv_area=None, igv_area_increase_factor=None, bearing_loss=None, expander_design_isentropic_efficiency=None, compressor_design_polytropic_efficiency=None, compressor_design_polytropic_head=None, expander_out_temperature=None, uc_curve=None, qn_efficiency_curve=None, qn_head_curve=None, chart=None, igv_penalty_curve=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn turbo_expander_compressor(
+    py: Python<'_>,
+    expander_components: Vec<String>,
+    compressor_components: Vec<String>,
+    expander_n: f64,
+    expander_z: Vec<f64>,
+    expander_p: f64,
+    expander_t: f64,
+    compressor_n: f64,
+    compressor_z: Vec<f64>,
+    compressor_p: f64,
+    compressor_t: f64,
+    expander_out_pressure: f64,
+    impeller_diameter: f64,
+    design_speed: f64,
+    design_uc: f64,
+    design_qn: f64,
+    igv_opening: Option<f64>,
+    igv_control_mode: Option<bool>,
+    maximum_igv_area: Option<f64>,
+    igv_area_increase_factor: Option<f64>,
+    bearing_loss: Option<f64>,
+    expander_design_isentropic_efficiency: Option<f64>,
+    compressor_design_polytropic_efficiency: Option<f64>,
+    compressor_design_polytropic_head: Option<f64>,
+    expander_out_temperature: Option<f64>,
+    uc_curve: Option<Vec<crate::records_gen::TurboUcPoint>>,
+    qn_efficiency_curve: Option<Vec<crate::records_gen::TurboQnPoint>>,
+    qn_head_curve: Option<Vec<crate::records_gen::TurboQnPoint>>,
+    chart: Option<Vec<crate::records_gen::ExpanderMapPoint>>,
+    igv_penalty_curve: Option<Vec<crate::records_gen::TurboIgvPenaltyPoint>>,
+) -> PyResult<crate::transport_gen::PyTurboExpanderResult> {
+    use azoth_process::models::turbo_expander_compressor::{
+        ExpanderMapPoint, TurboIgvPenaltyPoint, TurboQnPoint, TurboUcPoint,
+    };
+
+    let uc: Option<Vec<TurboUcPoint>> = uc_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboUcPoint {
+                uc: row.uc,
+                efficiency: row.efficiency,
+            })
+            .collect()
+    });
+    let qn_efficiency: Option<Vec<TurboQnPoint>> = qn_efficiency_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboQnPoint {
+                qn: row.qn,
+                factor: row.factor,
+            })
+            .collect()
+    });
+    let qn_head: Option<Vec<TurboQnPoint>> = qn_head_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboQnPoint {
+                qn: row.qn,
+                factor: row.factor,
+            })
+            .collect()
+    });
+    let map: Option<Vec<ExpanderMapPoint>> = chart.map(|rows| {
+        rows.into_iter()
+            .map(|row| ExpanderMapPoint {
+                igv: row.igv,
+                uc: row.uc,
+                efficiency: row.efficiency,
+            })
+            .collect()
+    });
+    let penalty: Option<Vec<TurboIgvPenaltyPoint>> = igv_penalty_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboIgvPenaltyPoint {
+                igv: row.igv,
+                factor: row.factor,
+            })
+            .collect()
+    });
+
+    azoth_process::turbo_expander_compressor(
+        &expander_components,
+        expander_n,
+        &expander_z,
+        pascals(expander_p),
+        kelvins(expander_t),
+        &compressor_components,
+        compressor_n,
+        &compressor_z,
+        pascals(compressor_p),
+        kelvins(compressor_t),
+        pascals(expander_out_pressure),
+        meters(impeller_diameter),
+        design_speed,
+        design_uc,
+        design_qn,
+        igv_opening,
+        igv_control_mode,
+        maximum_igv_area.map(square_meters),
+        igv_area_increase_factor,
+        bearing_loss.map(watts),
+        expander_design_isentropic_efficiency,
+        compressor_design_polytropic_efficiency,
+        compressor_design_polytropic_head.map(meters),
+        expander_out_temperature.map(kelvins),
+        uc.as_deref(),
+        qn_efficiency.as_deref(),
+        qn_head.as_deref(),
+        map.as_deref(),
+        penalty.as_deref(),
+    )
+    .map(|r| crate::transport_gen::PyTurboExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.absorption_column` - the tray absorber as a registered id.
 ///
 /// **The column's own profile shape with the class's own product names**, and two inlets where

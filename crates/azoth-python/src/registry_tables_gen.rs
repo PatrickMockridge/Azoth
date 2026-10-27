@@ -267,6 +267,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "process.tank" => azoth_process::models::tank::TankResult::FIELDS.to_vec(),
         "process.three_phase_separator" => azoth_process::models::three_phase_separator::ThreePhaseSeparatorResult::FIELDS.to_vec(),
         "process.throttling_valve" => azoth_process::models::throttling_valve::ThrottlingValveResult::FIELDS.to_vec(),
+        "process.turbo_expander_compressor" => azoth_process::models::turbo_expander_compressor::TurboExpanderResult::FIELDS.to_vec(),
         "reactions.chemical_equilibrium" => azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult::FIELDS.to_vec(),
         "reactions.equilibrium_constant" => azoth_reactions::equilibrium_constant::EquilibriumConstantResult::FIELDS.to_vec(),
         "reactions.kinetic_rate_law" => azoth_reactions::kinetic_rate_law::KineticRateLawResult::FIELDS.to_vec(),

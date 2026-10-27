@@ -29,6 +29,7 @@
 //!   - specs/models/process/tank.toml
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
+//!   - specs/models/process/turbo_expander_compressor.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
@@ -12958,6 +12959,1868 @@ pub static THROTTLING_VALVE_SPEC: ModelSpec = ModelSpec {
     cases: THROTTLING_VALVE_CASES,
 };
 
+static TURBO_EXPANDER_COMPRESSOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "design_speed",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the speed is a divisor in the Q/N ratio and a scale in both powers",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "design_uc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the parabola reads U/C over it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "design_qn",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the Q/N ratio divides by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "impeller_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the tip speed is proportional to it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "expander_design_isentropic_efficiency",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an efficiency is a fraction",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "compressor_design_polytropic_efficiency",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an efficiency is a fraction",
+        },
+    },
+];
+
+static TURBO_EXPANDER_COMPRESSOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_coupled_machine_balances_the_reference_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 6721.52342728258),
+            ("expander_p", 6095000.0),
+            ("expander_t", 250.14999999999998),
+            ("compressor_n", 6241.700991745513),
+            ("compressor_p", 4200000.0),
+            ("compressor_t", 290.15),
+            ("expander_out_pressure", 4200000.0),
+            ("impeller_diameter", 0.424),
+            ("design_speed", 6850.0),
+            ("design_uc", 0.7),
+            ("design_qn", 0.03328),
+            ("maximum_igv_area", 0.01637),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_design_polytropic_efficiency", 0.81),
+            ("compressor_design_polytropic_head", 2086.6462793068295),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+        ],
+        strings: &[],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("expander_outlet_n", 6721.52342728258),
+            ("expander_outlet_p", 4200000.0),
+            ("expander_outlet_t", 232.189731590532),
+            ("expander_outlet_h", -3569.9413821248468),
+            ("compressor_outlet_n", 6241.700991745513),
+            ("compressor_outlet_p", 4966274.910531827),
+            ("compressor_outlet_t", 304.3200064191468),
+            ("compressor_outlet_h", 48.21902708109133),
+            ("speed", 6494.405432697534),
+            ("power_expander", 2884181.3383801645),
+            ("power_compressor", 2884172.349666985),
+            ("expander_isentropic_efficiency", 0.8371395349454721),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_polytropic_efficiency", 0.7765834427907704),
+            ("compressor_polytropic_head", 1941.0769091163454),
+            ("uc_ratio_expander", 0.8830995313317037),
+            ("qn_ratio_compressor", 0.8750807187611298),
+            ("igv_opening", 0.5905404854849305),
+        ],
+        expected_vectors: &[
+            (
+                "expander_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "uc_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9964751359624449),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.984090909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7590835113213541),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.796590909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.984295619176559),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9931818181818183),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8827799803397821),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9363636363636364),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9552460269880922),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9943181818181818),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_efficiency_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.91),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.85),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.95),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.97),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.6),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_head_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.1),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.05),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.7),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.4),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "a_lower_expander_pressure_settles_at_a_lower_speed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 6279.317938645569),
+            ("expander_p", 5595000.0),
+            ("expander_t", 250.14999999999998),
+            ("compressor_n", 6241.700991745513),
+            ("compressor_p", 4200000.0),
+            ("compressor_t", 290.15),
+            ("expander_out_pressure", 4200000.0),
+            ("impeller_diameter", 0.424),
+            ("design_speed", 6850.0),
+            ("design_uc", 0.7),
+            ("design_qn", 0.03328),
+            ("maximum_igv_area", 0.01637),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_design_polytropic_efficiency", 0.81),
+            ("compressor_design_polytropic_head", 2086.6462793068295),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+        ],
+        strings: &[],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.006000600060006001,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008003,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015003,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("expander_outlet_n", 6279.317938645569),
+            ("expander_outlet_p", 4200000.0),
+            ("expander_outlet_t", 236.03978486810888),
+            ("expander_outlet_h", -3272.407881045271),
+            ("compressor_outlet_n", 6241.700991745513),
+            ("compressor_outlet_p", 4789375.077741732),
+            ("compressor_outlet_t", 300.92354568694003),
+            ("compressor_outlet_h", -67.37301247896089),
+            ("speed", 5811.3542876716465),
+            ("power_expander", 2162688.599047536),
+            ("power_compressor", 2162681.4016840765),
+            ("expander_isentropic_efficiency", 0.8358478873500466),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_polytropic_efficiency", 0.8075585923832763),
+            ("compressor_polytropic_head", 1513.5612318872156),
+            ("uc_ratio_expander", 0.8813511433970018),
+            ("qn_ratio_compressor", 0.9779353817796457),
+            ("igv_opening", 0.6944794362342865),
+        ],
+        expected_vectors: &[
+            (
+                "expander_outlet_z",
+                &[
+                    0.006000600060006001,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008003,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015003,
+                ],
+            ),
+            (
+                "compressor_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "uc_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9964751359624449),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.984090909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7590835113213541),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.796590909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.984295619176559),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9931818181818183),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8827799803397821),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9363636363636364),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9552460269880922),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9943181818181818),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_efficiency_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.91),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.85),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.95),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.97),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.6),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_head_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.1),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.05),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.7),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.4),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_mass_balance_is_clean_on_both_shafts",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 165.8934373551543),
+            ("expander_p", 5000000.0),
+            ("expander_t", 293.15),
+            ("compressor_n", 124.42007801636574),
+            ("compressor_p", 3000000.0),
+            ("compressor_t", 278.15),
+            ("expander_out_pressure", 2500000.0),
+            ("impeller_diameter", 0.424),
+            ("design_speed", 6850.0),
+            ("design_uc", 0.7),
+            ("design_qn", 0.03328),
+            ("maximum_igv_area", 0.01637),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_design_polytropic_efficiency", 0.8),
+            ("compressor_design_polytropic_head", 1019.367991845056),
+        ],
+        flags: &[],
+        lists: &[
+            ("expander_components", &["methane", "ethane"]),
+            ("compressor_components", &["methane", "ethane"]),
+        ],
+        strings: &[],
+        vectors: &[
+            ("expander_z", &[0.95, 0.05]),
+            ("compressor_z", &[0.9499999999999998, 0.05]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("expander_outlet_n", 165.8934373551543),
+            ("expander_outlet_p", 2500000.0),
+            ("expander_outlet_t", 274.5167692384868),
+            ("expander_outlet_h", -523.5905049279799),
+            ("compressor_outlet_n", 124.42007801636574),
+            ("compressor_outlet_p", 3270679.651664622),
+            ("compressor_outlet_t", 286.72769594090187),
+            ("compressor_outlet_h", -210.21624001194593),
+            ("speed", 6623.600245008636),
+            ("power_expander", 35521.97907981475),
+            ("power_compressor", 35512.62917504412),
+            ("expander_isentropic_efficiency", 0.15654946925408522),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_polytropic_efficiency", 0.6468765084930197),
+            ("compressor_polytropic_head", 1124.0262051699028),
+            ("uc_ratio_expander", 0.5197225096554883),
+            ("qn_ratio_compressor", 0.023970904108497747),
+            ("igv_opening", 0.015418915278966154),
+        ],
+        expected_vectors: &[
+            ("expander_outlet_z", &[0.95, 0.05]),
+            ("compressor_outlet_z", &[0.9499999999999998, 0.05]),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "uc_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9964751359624449),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.984090909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7590835113213541),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.796590909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.984295619176559),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9931818181818183),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8827799803397821),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9363636363636364),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9552460269880922),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9943181818181818),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_efficiency_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.91),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.85),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.95),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.97),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.6),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_head_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.1),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.05),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.7),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.4),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_outlet_temperature_inverse_back_calculates_the_design",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 6721.52342728258),
+            ("expander_p", 6095000.0),
+            ("expander_t", 250.14999999999998),
+            ("compressor_n", 6241.700991745513),
+            ("compressor_p", 4200000.0),
+            ("compressor_t", 290.15),
+            ("expander_out_pressure", 4200000.0),
+            ("impeller_diameter", 0.424),
+            ("design_speed", 6850.0),
+            ("design_uc", 0.7),
+            ("design_qn", 0.03328),
+            ("maximum_igv_area", 0.01637),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_design_polytropic_efficiency", 0.81),
+            ("compressor_design_polytropic_head", 2086.6462793068295),
+            ("expander_out_temperature", 232.189731590532),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+        ],
+        strings: &[],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("expander_outlet_n", 6721.52342728258),
+            ("expander_outlet_p", 4200000.0),
+            ("expander_outlet_t", 232.18973153879043),
+            ("expander_outlet_h", -3569.9413862520173),
+            ("compressor_outlet_n", 6241.700991745513),
+            ("compressor_outlet_p", 4966274.917260833),
+            ("compressor_outlet_t", 304.3200065486071),
+            ("compressor_outlet_h", 48.21903152555303),
+            ("speed", 6494.405457341178),
+            ("power_expander", 2884181.366121094),
+            ("power_compressor", 2884172.3774079997),
+            ("expander_isentropic_efficiency", 0.8371395429973337),
+            ("expander_design_isentropic_efficiency", 0.880000005881149),
+            ("compressor_polytropic_efficiency", 0.776583441745344),
+            ("compressor_polytropic_head", 1941.0769251732743),
+            ("uc_ratio_expander", 0.8830995346826066),
+            ("qn_ratio_compressor", 0.8750807154406541),
+            ("igv_opening", 0.5905404854849305),
+        ],
+        expected_vectors: &[
+            (
+                "expander_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "uc_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9964751359624449),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.984090909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7590835113213541),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.796590909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.984295619176559),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9931818181818183),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8827799803397821),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9363636363636364),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9552460269880922),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9943181818181818),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_efficiency_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.91),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.85),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.95),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.97),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.6),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_head_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.1),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.05),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.7),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.4),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_map_and_the_igv_penalty",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 6721.52342728258),
+            ("expander_p", 6095000.0),
+            ("expander_t", 250.14999999999998),
+            ("compressor_n", 6241.700991745513),
+            ("compressor_p", 4200000.0),
+            ("compressor_t", 290.15),
+            ("expander_out_pressure", 4200000.0),
+            ("impeller_diameter", 0.424),
+            ("design_speed", 6850.0),
+            ("design_uc", 0.7),
+            ("design_qn", 0.03328),
+            ("maximum_igv_area", 0.01637),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_design_polytropic_efficiency", 0.81),
+            ("compressor_design_polytropic_head", 2086.6462793068295),
+            ("igv_opening", 1.0),
+        ],
+        flags: &[("igv_control_mode", true)],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                    "n-hexane",
+                ],
+            ),
+        ],
+        strings: &[],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("expander_outlet_n", 6721.52342728258),
+            ("expander_outlet_p", 4200000.0),
+            ("expander_outlet_t", 232.6705274014519),
+            ("expander_outlet_h", -3531.736982193598),
+            ("compressor_outlet_n", 6241.700991745513),
+            ("compressor_outlet_p", 4904471.982886439),
+            ("compressor_outlet_t", 303.12164926882633),
+            ("compressor_outlet_h", 7.077813793900483),
+            ("speed", 6263.581669754374),
+            ("power_expander", 2627389.5589101547),
+            ("power_compressor", 2627381.1977973646),
+            ("expander_isentropic_efficiency", 0.7626051955186463),
+            ("expander_design_isentropic_efficiency", 0.88),
+            ("compressor_polytropic_efficiency", 0.7874163426374898),
+            ("compressor_polytropic_head", 1792.9200309803607),
+            ("uc_ratio_expander", 0.8517124614935289),
+            ("qn_ratio_compressor", 0.9073289490918591),
+            ("igv_opening", 1.0),
+        ],
+        expected_vectors: &[
+            (
+                "expander_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+            (
+                "compressor_outlet_z",
+                &[
+                    0.006000600060006002,
+                    0.014001400140014003,
+                    0.8620862086208622,
+                    0.08000800080008001,
+                    0.030003000300030006,
+                    0.0024002400240024004,
+                    0.004000400040004001,
+                    0.0015001500150015005,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "uc_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9964751359624449),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.984090909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7590835113213541),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.796590909090909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.984295619176559),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9931818181818183),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8827799803397821),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9363636363636364),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9552460269880922),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.9943181818181818),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_efficiency_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.91),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.85),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.95),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.97),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.6),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "qn_head_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.1),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.05),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(1.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.2),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.7),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "qn",
+                            value: FieldValue::Number(1.6),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.4),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "chart",
+                &[
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.72),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.8),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.84),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.82),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.76),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.78),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.6),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.7),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.88),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.8),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.86),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "uc",
+                            value: FieldValue::Number(0.9),
+                        },
+                        RecordField {
+                            name: "efficiency",
+                            value: FieldValue::Number(0.8),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "igv_penalty_curve",
+                &[
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(0.4),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.85),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "igv",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "factor",
+                            value: FieldValue::Number(0.9),
+                        },
+                    ],
+                ],
+            ),
+        ],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `process.turbo_expander_compressor`.
+pub static TURBO_EXPANDER_COMPRESSOR_SPEC: ModelSpec = ModelSpec {
+    id: "process.turbo_expander_compressor",
+    kind: "direct",
+    algorithm: None,
+    checks: TURBO_EXPANDER_COMPRESSOR_CHECKS,
+    cases: TURBO_EXPANDER_COMPRESSOR_CASES,
+};
+
 static ALL_MODELS: &[&ModelSpec] = &[
     &ABSORPTION_COLUMN_SPEC,
     &COMPONENT_SPLITTER_SPEC,
@@ -12987,6 +14850,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TANK_SPEC,
     &THREE_PHASE_SEPARATOR_SPEC,
     &THROTTLING_VALVE_SPEC,
+    &TURBO_EXPANDER_COMPRESSOR_SPEC,
 ];
 
 /// Every model in this namespace, in id order.

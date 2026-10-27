@@ -545,8 +545,8 @@ complete rather than silent about them:
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
 types, the stream record, the palette loader, the checker and the executor, and `specs/unit_ops/`
-declares 29 unit operations of which **28 carry kernels**. Two do not, and each says why; a third
-has one and is refused by the executor, which is a different statement again. **`unit_ops.simple_absorber` is refused on measured
+declares 30 unit operations of which **29 carry kernels**. The one that does not says why, and
+the executor refuses it by name. **`unit_ops.simple_absorber` is refused on measured
 evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
 loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a
 faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and
@@ -784,10 +784,12 @@ a claim nothing holds.
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
-  turbo-expander is the next tranche**: `TurboExpanderCompressor` and `ExpanderChartKhader`
-  are one coupled machine, the chart's only reader, and its own test prints the numbers -
-  the chart is the one surface S3's tranche left owed rather than porting a class nothing
-  calls. Anti-surge follows it over the compressor chart that has now landed.
+  turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled
+  machine, the chart's only reader. What the tranche left owed is the map surface around it:
+  `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
+  (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls;
+  `MapTurboExpanderCompressor`, a different shaft that reuses `CompressorChartKhader2015`; and
+  the class's `toJson` report. Anti-surge is next, over the compressor chart that has landed.
 - **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
   clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
   port returns the root the equation gives, so the negative flash stays visible;

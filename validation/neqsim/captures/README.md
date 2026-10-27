@@ -473,6 +473,8 @@ public surface of forty-odd getters.
   > captures/process_expander_steps.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
   > captures/process_expander_chart.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \
+  > captures/process_turbo_expander.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -702,6 +704,19 @@ The second block gives the reference fluid and a CO2-rich fluid the composition-
 `getStageHeadDrop` reads `SystemInterface.getSoundSpeed()`, which is twice that** (`830.84`),
 so the capture prints both and the port takes them as stated inputs - azoth has no real-fluid
 sound-speed model.
+
+**`ProcessProbe turbo_expander` is `TurboExpanderCompressor`.** The rows are
+`TurboExpanderCompressorTest`'s reference state re-cased on PR - the nine-component gas at
+456 000 kg/hr, 60.95 bara and -23 C into the expander, 423 448 kg/hr at 42 bara and 17 C into
+the compressor, with the test's UC and Q/N curves and design numbers - the same compressor at a
+lower expander pressure, `testMassBalance`'s small methane/ethane pair, and
+`testOutletTemperatureSpecConsistency`'s inverse, where the forward outlet temperature is
+stated back and the design efficiency returns at `0.8800000059`. The last row is
+`TurboExpanderEnhancementsTest`'s map-and-IGV-penalty state: the chart attached, the IGV held at
+`1.0`, and the `{0.4, 1.0} -> {0.85, 0.90}` penalty, which moves the efficiency from `0.85720`
+to `0.76261`. Each row prints the solved speed, both powers, both efficiencies, the polytropic
+head, UC/QN, the IGV opening and both outlet records; `getMassBalance` is exactly zero on both
+sides.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

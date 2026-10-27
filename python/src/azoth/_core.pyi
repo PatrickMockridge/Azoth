@@ -376,6 +376,31 @@ class PumpCurvePoint(TypedDict):
     efficiency: float
     npsh_required: float | None
 
+class TurboUcPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    uc: float
+    efficiency: float
+
+class TurboQnPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    qn: float
+    factor: float
+
+class ExpanderMapPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    igv: float
+    uc: float
+    efficiency: float
+
+class TurboIgvPenaltyPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    igv: float
+    factor: float
+
 @final
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
@@ -3032,6 +3057,30 @@ class ThrottlingValveResult:
     warnings: list[Warning]
 
 @final
+class TurboExpanderResult:
+    expander_outlet_n: Qty
+    expander_outlet_z: list[float]
+    expander_outlet_p: Qty
+    expander_outlet_t: Qty
+    expander_outlet_h: Qty
+    compressor_outlet_n: Qty
+    compressor_outlet_z: list[float]
+    compressor_outlet_p: Qty
+    compressor_outlet_t: Qty
+    compressor_outlet_h: Qty
+    speed: float
+    power_expander: Qty
+    power_compressor: Qty
+    expander_isentropic_efficiency: float
+    expander_design_isentropic_efficiency: float
+    compressor_polytropic_efficiency: float
+    compressor_polytropic_head: Qty
+    uc_ratio_expander: float
+    qn_ratio_compressor: float
+    igv_opening: float
+    warnings: list[Warning]
+
+@final
 class ChemicalEquilibriumResult:
     moles: list[Qty]
     iterations: int
@@ -5566,6 +5615,37 @@ def throttling_valve(
     is_isothermal: bool | None = None,
     sizing_standard: str | None = None,
 ) -> ThrottlingValveResult: ...
+def turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: float,
+    expander_z: list[float],
+    expander_p: float,
+    expander_t: float,
+    compressor_n: float,
+    compressor_z: list[float],
+    compressor_p: float,
+    compressor_t: float,
+    expander_out_pressure: float,
+    impeller_diameter: float,
+    design_speed: float,
+    design_uc: float,
+    design_qn: float,
+    igv_opening: float | None = None,
+    igv_control_mode: bool | None = None,
+    maximum_igv_area: float | None = None,
+    igv_area_increase_factor: float | None = None,
+    bearing_loss: float | None = None,
+    expander_design_isentropic_efficiency: float | None = None,
+    compressor_design_polytropic_efficiency: float | None = None,
+    compressor_design_polytropic_head: float | None = None,
+    expander_out_temperature: float | None = None,
+    uc_curve: list[TurboUcPoint] | None = None,
+    qn_efficiency_curve: list[TurboQnPoint] | None = None,
+    qn_head_curve: list[TurboQnPoint] | None = None,
+    chart: list[ExpanderMapPoint] | None = None,
+    igv_penalty_curve: list[TurboIgvPenaltyPoint] | None = None,
+) -> TurboExpanderResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],

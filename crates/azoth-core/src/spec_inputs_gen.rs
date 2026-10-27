@@ -248,6 +248,7 @@
 //!   - specs/models/process/tank.toml
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
+//!   - specs/models/process/turbo_expander_compressor.toml
 //!   - specs/models/reactions/chemical_equilibrium.toml
 //!   - specs/calcs/reactions/equilibrium_constant.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
@@ -3604,6 +3605,107 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.throttling_valve", "xt", "dimensionless"),
+    (
+        "process.turbo_expander_compressor",
+        "expander_n",
+        "molar_flow",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "expander_z",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "expander_p",
+        "pressure",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "expander_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_n",
+        "molar_flow",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_z",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_p",
+        "pressure",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "expander_out_pressure",
+        "pressure",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "impeller_diameter",
+        "length",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "design_speed",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "design_uc",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "design_qn",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "igv_opening",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "maximum_igv_area",
+        "area",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "igv_area_increase_factor",
+        "dimensionless",
+    ),
+    ("process.turbo_expander_compressor", "bearing_loss", "power"),
+    (
+        "process.turbo_expander_compressor",
+        "expander_design_isentropic_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_design_polytropic_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "compressor_design_polytropic_head",
+        "length",
+    ),
+    (
+        "process.turbo_expander_compressor",
+        "expander_out_temperature",
+        "thermodynamic_temperature",
+    ),
     (
         "reactions.chemical_equilibrium",
         "a_matrix",

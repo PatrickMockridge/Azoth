@@ -6986,6 +6986,76 @@ class ThrottlingValveResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TurboExpanderResult(_HasWarnings):
+    """Result of ``process.turbo_expander_compressor``."""
+
+    CALC_ID: ClassVar[str] = "process.turbo_expander_compressor"
+
+    #: the expander outlet's molar flow, which is its feed's.
+    expander_outlet_n: Q
+
+    #: the expander outlet's composition.
+    expander_outlet_z: tuple[float, ...]
+
+    #: the expander outlet's pressure, which is the stated `expander_out_pressure`.
+    expander_outlet_p: Q
+
+    #: the expander outlet's temperature, from the replay at the solved efficiency.
+    expander_outlet_t: Q
+
+    #: the expander outlet's molar enthalpy.
+    expander_outlet_h: Q
+
+    #: the compressor outlet's molar flow, which is its feed's.
+    compressor_outlet_n: Q
+
+    #: the compressor outlet's composition.
+    compressor_outlet_z: tuple[float, ...]
+
+    #: the compressor outlet's pressure, solved from the absorbed power and the polytropic efficiency.
+    compressor_outlet_p: Q
+
+    #: the compressor outlet's temperature.
+    compressor_outlet_t: Q
+
+    #: the compressor outlet's molar enthalpy.
+    compressor_outlet_h: Q
+
+    #: the solved shaft speed, rpm.
+    speed: float
+
+    #: the expander's power: the mass flow times the isentropic drop times the solved efficiency.
+    power_expander: Q
+
+    #: the compressor's absorbed power, which does not include the bearing loss.
+    power_compressor: Q
+
+    #: the expander efficiency the balance used.
+    expander_isentropic_efficiency: float
+
+    #: the design efficiency: the stated one, or the inverse's back-calculation.
+    expander_design_isentropic_efficiency: float
+
+    #: the compressor's polytropic efficiency the balance used.
+    compressor_polytropic_efficiency: float
+
+    #: the compressor's polytropic head the balance used.
+    compressor_polytropic_head: Q
+
+    #: the expander's `U/C/design_uc` at the solved speed.
+    uc_ratio_expander: float
+
+    #: the compressor's Q/N ratio at the solved speed.
+    qn_ratio_compressor: float
+
+    #: the IGV opening the machine reports - the held one, or the recomputed one.
+    igv_opening: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ChemicalEquilibriumResult(_HasWarnings):
     """Result of ``reactions.chemical_equilibrium``."""
 

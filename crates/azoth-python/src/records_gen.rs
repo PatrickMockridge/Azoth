@@ -77,6 +77,17 @@ pub struct CompressorCurvePoint {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ExpanderMapPoint {
+    #[pyo3(item)]
+    pub igv: f64,
+    #[pyo3(item)]
+    pub uc: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct FilterBetaPoint {
     #[pyo3(item)]
     pub particle_size: f64,
@@ -254,6 +265,33 @@ pub struct SourceRow {
     pub density: Option<f64>,
     #[pyo3(item)]
     pub boiling_point: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboIgvPenaltyPoint {
+    #[pyo3(item)]
+    pub igv: f64,
+    #[pyo3(item)]
+    pub factor: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboQnPoint {
+    #[pyo3(item)]
+    pub qn: f64,
+    #[pyo3(item)]
+    pub factor: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboUcPoint {
+    #[pyo3(item)]
+    pub uc: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
 }
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.

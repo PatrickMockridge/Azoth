@@ -34,6 +34,7 @@ pub mod stripping_column;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
+pub mod turbo_expander_compressor;
 
 pub use component_splitter::component_splitter;
 pub use compressor::compressor;

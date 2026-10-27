@@ -266,6 +266,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTankResult>()?;
     m.add_class::<crate::transport_gen::PyThreePhaseSeparatorResult>()?;
     m.add_class::<crate::transport_gen::PyThrottlingValveResult>()?;
+    m.add_class::<crate::transport_gen::PyTurboExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyChemicalEquilibriumResult>()?;
     m.add_class::<crate::transport_gen::PyEquilibriumConstantResult>()?;
     m.add_class::<crate::transport_gen::PyKineticRateLawResult>()?;
@@ -868,6 +869,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::throttling_valve, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::process::turbo_expander_compressor,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::chemical_equilibrium,
         m

@@ -30,6 +30,30 @@ pub fn expander(feed: &Stream, outlet_pressure: Pressure, efficiency: f64) -> Re
             "the expander's isentropic efficiency must be in (0, 1]",
         ));
     }
+    expander_replay(feed, outlet_pressure, efficiency)
+}
+
+/// The isentropic route without the upper bound, for the turbo-expander's replay.
+///
+/// **The coupled machine assigns its solved efficiency to the field directly**, bypassing
+/// `setIsentropicEfficiency`'s `(0, 1]` clamp because the outlet-temperature inverse needs a
+/// required efficiency that can exceed one on the way to a back-calculated design value. The
+/// public [`expander`] keeps the clamp; this is the path the machine's replay takes.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] for a non-positive efficiency, and whatever the
+/// flash refuses.
+pub fn expander_replay(
+    feed: &Stream,
+    outlet_pressure: Pressure,
+    efficiency: f64,
+) -> Result<Stream> {
+    if efficiency.is_nan() || efficiency <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "isentropic_efficiency",
+            format!("the replay needs a positive efficiency, and {efficiency} is not"),
+        ));
+    }
 
     let (mixture, ideal_gas) = feed.mixture()?;
     let (entropy, _) = ps_flash::entropy_at(&mixture, &ideal_gas, feed.t, feed.p, &feed.z)?;

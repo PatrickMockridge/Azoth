@@ -1053,6 +1053,14 @@ NO_INTERIOR: dict[str, str] = {
         "and reaching for it again here would be a second implementation of the ported "
         "arithmetic rather than a layer of it"
     ),
+    "process.turbo_expander_compressor": (
+        "the kernel forms the speed, both powers, both efficiencies, the compressor's "
+        "polytropic head, the two ratios and the IGV opening, and **every one of them is on "
+        "the model's own record** beside the two outlet streams - the model function copies "
+        "``TurboOutcome`` field for field. The case's expected block already asserts all of "
+        "them against the same capture, so a dumper would add a key-by-key comparison of "
+        "numbers the case compares and no layer behind them"
+    ),
 }
 
 

@@ -41,3 +41,4 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.tank`](./tank.md) | `direct composition` | NeqSim process/equipment/tank/Tank.java |
 | [`process.three_phase_separator`](./three_phase_separator.md) | `direct composition` | NeqSim process/equipment/separator/ThreePhaseSeparator.java |
 | [`process.throttling_valve`](./throttling_valve.md) | `direct composition` | NeqSim process/equipment/valve/ThrottlingValve.java |
+| [`process.turbo_expander_compressor`](./turbo_expander_compressor.md) | `direct composition` | NeqSim process/equipment/expander/TurboExpanderCompressor.java |

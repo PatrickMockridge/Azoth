@@ -273,6 +273,7 @@
   - [Tank](./process/tank.md)
   - [Three-phase separator](./process/three_phase_separator.md)
   - [Throttling valve](./process/throttling_valve.md)
+  - [Turbo-expander compressor](./process/turbo_expander_compressor.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)

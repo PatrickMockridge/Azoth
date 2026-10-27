@@ -499,6 +499,64 @@ pub(crate) fn throttling_valve(inlets: &[Stream], p: &Parameters<'_>) -> Result<
     ]))
 }
 
+/// `unit_ops.turbo_expander_compressor`: two feeds on one shaft, two outlets.
+///
+/// **The curves are not palette parameters**, so a flowsheet runs the class's defaults: the
+/// fitted velocity-ratio parabola and unity Q/N factors. A caller that has measured curves
+/// reaches them through `process.turbo_expander_compressor`.
+pub(crate) fn turbo_expander_compressor(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
+    use kernels::turbo_expander_compressor::{
+        DEFAULT_BEARING_LOSS, DEFAULT_COMPRESSOR_DESIGN_EFFICIENCY,
+        DEFAULT_COMPRESSOR_DESIGN_HEAD_M, DEFAULT_EXPANDER_DESIGN_EFFICIENCY,
+        DEFAULT_IGV_AREA_INCREASE_FACTOR, DEFAULT_IGV_OPENING, DEFAULT_MAXIMUM_IGV_AREA,
+        TurboSettings, turbo_expander,
+    };
+
+    let settings = TurboSettings {
+        expander_out_pressure: pascals(p.si("expander_out_pressure")?),
+        impeller_diameter: p.si("impeller_diameter")?,
+        design_speed: p.number("design_speed")?,
+        design_uc: p.number("design_uc")?,
+        design_qn: p.number("design_qn")?,
+        maximum_igv_area: p
+            .optional_si("maximum_igv_area")?
+            .unwrap_or(DEFAULT_MAXIMUM_IGV_AREA),
+        igv_area_increase_factor: p
+            .optional_number("igv_area_increase_factor")?
+            .unwrap_or(DEFAULT_IGV_AREA_INCREASE_FACTOR),
+        igv_opening: p
+            .optional_number("igv_opening")?
+            .unwrap_or(DEFAULT_IGV_OPENING),
+        igv_control_mode: p.optional_flag("igv_control_mode")?.unwrap_or(false),
+        bearing_loss: p
+            .optional_si("bearing_loss")?
+            .unwrap_or(DEFAULT_BEARING_LOSS),
+        expander_design_efficiency: p
+            .optional_number("expander_design_isentropic_efficiency")?
+            .unwrap_or(DEFAULT_EXPANDER_DESIGN_EFFICIENCY),
+        compressor_design_efficiency: p
+            .optional_number("compressor_design_polytropic_efficiency")?
+            .unwrap_or(DEFAULT_COMPRESSOR_DESIGN_EFFICIENCY),
+        compressor_design_head_m: p
+            .optional_si("compressor_design_polytropic_head")?
+            .unwrap_or(DEFAULT_COMPRESSOR_DESIGN_HEAD_M),
+        uc_curve: &[],
+        qn_efficiency_curve: &[],
+        qn_head_curve: &[],
+        chart: None,
+        igv_penalty_curve: &[],
+        expander_out_temperature: p.optional_si("expander_out_temperature")?.map(kelvins),
+    };
+    let outcome = turbo_expander(&inlets[0], &inlets[1], &settings)?;
+    Ok(KernelOutcome::streams_only(vec![
+        outcome.expander_outlet,
+        outcome.compressor_outlet,
+    ]))
+}
+
 pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::heat_exchanger::heat_exchanger(
         &inlets[0],

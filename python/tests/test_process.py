@@ -252,9 +252,9 @@ def _demo() -> str:
 def test_the_palette_comes_back_as_a_form_per_entry() -> None:
     """The declaration a unit-op window *is*, and the embedded bundle is the shipped palette."""
     entries = process.forms()
-    assert len(entries) == 29
-    assert sum(1 for entry in entries if entry["model"]) == 28
-    assert sum(1 for entry in entries if entry["runnable"]) == 28
+    assert len(entries) == 30
+    assert sum(1 for entry in entries if entry["model"]) == 29
+    assert sum(1 for entry in entries if entry["runnable"]) == 29
 
     pump = next(entry for entry in entries if entry["id"] == "unit_ops.pump")
     pressure = next(p for p in pump["parameters"] if p["name"] == "outlet_pressure")
@@ -280,7 +280,7 @@ def test_the_agent_tools_are_the_command_model() -> None:
     add = process.tools()[0]["input_schema"]
     assert add["additionalProperties"] is False
     assert add["properties"]["command"]["const"] == "add_instance"
-    assert len(add["properties"]["unit"]["enum"]) == 29
+    assert len(add["properties"]["unit"]["enum"]) == 30
 
 
 def test_a_session_holds_a_document_and_marks_its_values_stale() -> None:

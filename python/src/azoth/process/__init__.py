@@ -47,6 +47,7 @@ from azoth.core.result import (
     TankResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
+    TurboExpanderResult,
 )
 from azoth.core.units import Q
 from azoth.process.flowsheet import (
@@ -120,6 +121,7 @@ _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
+_TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
@@ -1084,6 +1086,90 @@ def expander(
         use_polytropic_calc=use_polytropic_calc,
         polytropic_efficiency=polytropic_efficiency,
         number_of_steps=number_of_steps,
+    )
+
+
+def turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: Q,
+    expander_z: list[float],
+    expander_p: Q,
+    expander_t: Q,
+    compressor_n: Q,
+    compressor_z: list[float],
+    compressor_p: Q,
+    compressor_t: Q,
+    expander_out_pressure: Q,
+    impeller_diameter: Q,
+    design_speed: float,
+    design_uc: float,
+    design_qn: float,
+    igv_opening: float | None = None,
+    igv_control_mode: bool | None = None,
+    maximum_igv_area: Q | None = None,
+    igv_area_increase_factor: float | None = None,
+    bearing_loss: Q | None = None,
+    expander_design_isentropic_efficiency: float | None = None,
+    compressor_design_polytropic_efficiency: float | None = None,
+    compressor_design_polytropic_head: Q | None = None,
+    expander_out_temperature: Q | None = None,
+    uc_curve: list[dict[str, float]] | None = None,
+    qn_efficiency_curve: list[dict[str, float]] | None = None,
+    qn_head_curve: list[dict[str, float]] | None = None,
+    chart: list[dict[str, float]] | None = None,
+    igv_penalty_curve: list[dict[str, float]] | None = None,
+) -> TurboExpanderResult:
+    """Balance a turbo-expander and a boost compressor on one shaft.
+
+    **The speed is the only unknown.** The expander's isentropic head comes from one
+    ``PSflash`` at ``expander_out_pressure`` and its efficiency from the velocity-ratio
+    parabola or the 2-D map; the compressor's absorbed power is its design polytropic head
+    scaled by ``(N/N_design)²`` and a Q/N head factor over a Q/N efficiency factor times the
+    design efficiency. A damped Newton on ``N`` drives the expander's power to the
+    compressor's plus the bearing loss ``10 (N/N_design)²``.
+
+    **``chart`` selects the map branch**, whose rows carry ``(igv, uc, efficiency)``; its
+    stage-head grid is not read by the machine. Stating ``expander_out_temperature`` runs
+    the inverse: the required efficiency is solved from the target state and the design
+    efficiency is back-calculated from the converged ratio.
+
+    Raises:
+        InvalidInputError: for a non-positive design or geometry value, an efficiency outside
+            ``(0, 1]``, a non-positive isentropic drop or a map that is not a map.
+
+    See :func:`azoth.process.reference.turbo_expander_compressor`.
+    """
+    return resolve(_TURBO_EXPANDER_COMPRESSOR)(  # type: ignore[no-any-return]
+        expander_components=expander_components,
+        compressor_components=compressor_components,
+        expander_n=expander_n,
+        expander_z=expander_z,
+        expander_p=expander_p,
+        expander_t=expander_t,
+        compressor_n=compressor_n,
+        compressor_z=compressor_z,
+        compressor_p=compressor_p,
+        compressor_t=compressor_t,
+        expander_out_pressure=expander_out_pressure,
+        impeller_diameter=impeller_diameter,
+        design_speed=design_speed,
+        design_uc=design_uc,
+        design_qn=design_qn,
+        igv_opening=igv_opening,
+        igv_control_mode=igv_control_mode,
+        maximum_igv_area=maximum_igv_area,
+        igv_area_increase_factor=igv_area_increase_factor,
+        bearing_loss=bearing_loss,
+        expander_design_isentropic_efficiency=expander_design_isentropic_efficiency,
+        compressor_design_polytropic_efficiency=compressor_design_polytropic_efficiency,
+        compressor_design_polytropic_head=compressor_design_polytropic_head,
+        expander_out_temperature=expander_out_temperature,
+        uc_curve=uc_curve,
+        qn_efficiency_curve=qn_efficiency_curve,
+        qn_head_curve=qn_head_curve,
+        chart=chart,
+        igv_penalty_curve=igv_penalty_curve,
     )
 
 

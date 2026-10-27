@@ -28,15 +28,15 @@ const check = (what, condition, detail = "") => {
 
 // 1. The palette the module carries, with no filesystem anywhere in sight.
 const catalogue = JSON.parse(azoth.palette_json(false));
-check("29 palette entries", catalogue.unit_ops.length === 29, `${catalogue.unit_ops.length}`);
+check("30 palette entries", catalogue.unit_ops.length === 30, `${catalogue.unit_ops.length}`);
 // **Two censuses, and both print what they found rather than only what they wanted.**
 // `unit_ops.simple_absorber` is the one entry with neither a model nor a kernel, so both counts
 // sit one short of the entry count. A census has to move when the palette grows; a failure that
 // named only the expected number is how these two went stale unnoticed.
 const withModel = catalogue.unit_ops.filter((entry) => entry.model !== null).length;
 const runnable = catalogue.unit_ops.filter((entry) => entry.runnable).length;
-check("28 with a model", withModel === 28, `${withModel}`);
-check("28 runnable", runnable === 28, `${runnable}`);
+check("29 with a model", withModel === 29, `${withModel}`);
+check("29 runnable", runnable === 29, `${runnable}`);
 const withTools = JSON.parse(azoth.palette_json(true));
 check("15 tools", withTools.tools.length === 15, `${withTools.tools.length}`);
 
@@ -107,4 +107,4 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`  ${failure}`);
   process.exit(1);
 }
-console.log("wasm smoke: OK (29 palette entries, 15 tools, 6 nodes, 43 values)");
+console.log("wasm smoke: OK (30 palette entries, 15 tools, 6 nodes, 43 values)");

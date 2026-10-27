@@ -1,0 +1,86 @@
+id = "unit_ops.turbo_expander_compressor"
+name = "Turbo-expander compressor"
+[source]
+standard = "NeqSim process/equipment/expander/TurboExpanderCompressor.java"
+[parameters.expander_out_pressure]
+required = true
+unit = "Pa"
+description = "the expander's outlet pressure, which fixes its isentropic head"
+[parameters.impeller_diameter]
+required = true
+unit = "m"
+description = "the impeller's outer diameter; the tip speed is pi D N / 60"
+[parameters.design_speed]
+required = true
+unit = "dimensionless"
+description = "the design speed, rpm, which seeds the Newton and scales the head and the bearing loss"
+[parameters.design_uc]
+required = true
+unit = "dimensionless"
+description = "the design velocity ratio, which normalises U/C for the legacy parabola"
+[parameters.design_qn]
+required = true
+unit = "dimensionless"
+description = "the design flow coefficient, m3/rev, which normalises the compressor's Q N"
+[parameters.igv_opening]
+unit = "dimensionless"
+description = "the stated inlet-guide-vane opening, 0..1; the class defaults it to 1.0"
+[parameters.igv_control_mode]
+description = "whether the stated opening is held rather than recomputed after the solve"
+[parameters.maximum_igv_area]
+unit = "m**2"
+description = "the maximum IGV area; the class defaults it to 1.637e4 mm2"
+[parameters.igv_area_increase_factor]
+unit = "dimensionless"
+description = "the expanded-area factor the IGV rule may call on; the class defaults it to 1.14"
+[parameters.bearing_loss]
+unit = "W"
+description = "the bearing loss at the design speed, scaled by (N/N_design)^2; the class defaults it to 10 W"
+[parameters.expander_design_isentropic_efficiency]
+unit = "dimensionless"
+description = "the expander's design efficiency, the parabola's scale; the class defaults it to 1.0"
+[parameters.compressor_design_polytropic_efficiency]
+unit = "dimensionless"
+description = "the compressor's design polytropic efficiency, scaled by the Q/N factor; the class defaults it to 0.81"
+[parameters.compressor_design_polytropic_head]
+unit = "m"
+description = "the compressor's design polytropic head, scaled by (N/N_design)^2 and the Q/N head factor; the class's 20.47 kJ/kg as metres"
+[parameters.expander_out_temperature]
+unit = "K"
+description = "a target expander outlet temperature, which runs the inverse and back-calculates the design efficiency"
+[[ports]]
+name = "expander_feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "compressor_feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "expander_outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "compressor_outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

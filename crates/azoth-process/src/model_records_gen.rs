@@ -39,6 +39,7 @@ use crate::models::stripping_column::StrippingColumnResult;
 use crate::models::tank::TankResult;
 use crate::models::three_phase_separator::ThreePhaseSeparatorResult;
 use crate::models::throttling_valve::ThrottlingValveResult;
+use crate::models::turbo_expander_compressor::TurboExpanderResult;
 
 impl CalcResult for AbsorptionColumnResult {
     const CALC_ID: &'static str = "process.absorption_column";
@@ -750,6 +751,37 @@ impl CalcResult for ThrottlingValveResult {
         "choked",
         "gas_valve",
         "calculated_molar_flow",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for TurboExpanderResult {
+    const CALC_ID: &'static str = "process.turbo_expander_compressor";
+    const FIELDS: &'static [&'static str] = &[
+        "expander_outlet_n",
+        "expander_outlet_z",
+        "expander_outlet_p",
+        "expander_outlet_t",
+        "expander_outlet_h",
+        "compressor_outlet_n",
+        "compressor_outlet_z",
+        "compressor_outlet_p",
+        "compressor_outlet_t",
+        "compressor_outlet_h",
+        "speed",
+        "power_expander",
+        "power_compressor",
+        "expander_isentropic_efficiency",
+        "expander_design_isentropic_efficiency",
+        "compressor_polytropic_efficiency",
+        "compressor_polytropic_head",
+        "uc_ratio_expander",
+        "qn_ratio_compressor",
+        "igv_opening",
         "warnings",
     ];
 

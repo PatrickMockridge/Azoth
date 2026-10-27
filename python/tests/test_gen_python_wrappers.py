@@ -92,7 +92,9 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 60 -> 61 when `process.filter` gained two optional `record_list`s for the same reason.
 #: 61 -> 62 when `process.pipe`'s `fittings` did too.
 #: 62 -> 63 when `process.compressor`'s `curve` did too.
-KNOWN_HAND_WRITTEN = 63
+#: 63 -> 64 when `process.turbo_expander_compressor` brought four optional record lists at
+#: once - the UC curve, the two Q/N curves, the map and the IGV penalty curve.
+KNOWN_HAND_WRITTEN = 64
 
 
 def _tools_module(name: str) -> ModuleType:
