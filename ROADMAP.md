@@ -773,17 +773,21 @@ a claim nothing holds.
   `process.*` class NeqSim carries also carries a `runTransient`, and most carry a mechanical
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
-  electrical and instrument design and its bounded outlet temperatures; `Compressor`'s and
-  `Expander`'s chart and catalogue, polytropic branch, anti-surge machinery, deposit model and
-  `useGERG2008`/`useLeachman`/`useVega` property overrides; `HeatExchanger`'s
+  electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
+  speed-solve mode, its three alternative chart classes and its catalogue and readers,
+  anti-surge machinery, deposit model and `useGERG2008`/`useLeachman`/`useVega` property
+  overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
+  constraints; `HeatExchanger`'s
   thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; `Separator`'s
   capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s levels and
   outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
-  compressor's and expander's chart is the next tranche**, because it is the largest single
-  entry - a chart family, a catalogue data file and two polytropic methods.
+  turbo-expander is the next tranche**: `TurboExpanderCompressor` and `ExpanderChartKhader`
+  are one coupled machine, the chart's only reader, and its own test prints the numbers -
+  the chart is the one surface S3's tranche left owed rather than porting a class nothing
+  calls. Anti-surge follows it over the compressor chart that has now landed.
 - **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
   clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
   port returns the root the equation gives, so the negative flash stays visible;

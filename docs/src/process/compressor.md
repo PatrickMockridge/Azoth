@@ -98,3 +98,4 @@ declared checks *that call* could not evaluate.
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.
 - Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). "Introduction to Chemical Engineering Thermodynamics.", 7th ed., McGraw-Hill. The isentropic efficiency and the reversible-work reference it divides.
 - `validation/neqsim/captures/process_compressor.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.
+- `validation/neqsim/captures/process_compressor_curve.tsv` - the reduced chart's rows and inverses, and `Compressor.run`'s fixed-speed branch on PR.
