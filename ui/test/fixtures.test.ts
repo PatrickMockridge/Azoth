@@ -58,7 +58,7 @@ describe("the catalogue", () => {
     // packed column was a refusal by name and is now a kernel with a model of its own, so the
     // library the fixture captures has twenty-eight of each - and `simple_absorber` is the one
     // entry left with neither, refused on measured evidence rather than for want of a port.
-    expect(catalogue.unit_ops).toHaveLength(29);
+    expect(catalogue.unit_ops).toHaveLength(30);
     expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(28);
     expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(28);
     expect(catalogue.unit_ops.filter((entry) => entry.model === null).map((e) => e.id)).toEqual([
@@ -116,6 +116,7 @@ describe("the catalogue", () => {
     expect([...families].sort()).toEqual([
       "column",
       "heat_exchanger",
+      "machine",
       "mixer",
       "reactor",
       "separator",

@@ -57,7 +57,7 @@ describe("the decode", () => {
   it("parses the documents the library actually wrote", () => {
     // The whole point of the file: the same parse a browser runs, over the CLI's own output.
     expect(decodeEnvelope(envelopeJson).flowsheet.graph.nodes).toHaveLength(6);
-    expect(decodeCatalogue(catalogueJson).unit_ops).toHaveLength(29);
+    expect(decodeCatalogue(catalogueJson).unit_ops).toHaveLength(30);
   });
 
   it("refuses a document whose array is gone, and names the path", () => {

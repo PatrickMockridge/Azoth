@@ -1422,6 +1422,7 @@
               "unit_ops.simple_absorber",
               "unit_ops.stripping_column",
               "unit_ops.heat_exchanger",
+              "unit_ops.turbo_expander_compressor",
               "unit_ops.component_splitter",
               "unit_ops.mixer",
               "unit_ops.splitter",
@@ -4680,6 +4681,360 @@
         "hot_in_t",
         "cold_in_t"
       ]
+    },
+    {
+      "family": "machine",
+      "id": "unit_ops.turbo_expander_compressor",
+      "model": "process.turbo_expander_compressor",
+      "name": "Turbo-expander compressor",
+      "parameters": [
+        {
+          "description": "the bearing loss at the design speed, scaled by (N/N_design)^2; the class defaults it to 10 W",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "bearing_loss",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the compressor's design polytropic efficiency, scaled by the Q/N factor; the class defaults it to 0.81",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "compressor_design_polytropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an efficiency is a fraction",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the compressor's design polytropic head, scaled by (N/N_design)^2 and the Q/N head factor; the class's 20.47 kJ/kg as metres",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "compressor_design_polytropic_head",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the design flow coefficient, m3/rev, which normalises the compressor's Q N",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_qn",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the Q/N ratio divides by it",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the design speed, rpm, which seeds the Newton and scales the head and the bearing loss",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_speed",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the speed is a divisor in the Q/N ratio and a scale in both powers",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the design velocity ratio, which normalises U/C for the legacy parabola",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_uc",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the parabola reads U/C over it",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the expander's design efficiency, the parabola's scale; the class defaults it to 1.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "expander_design_isentropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an efficiency is a fraction",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the expander's outlet pressure, which fixes its isentropic head",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "expander_out_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "a target expander outlet temperature, which runs the inverse and back-calculates the design efficiency",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "expander_out_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the expanded-area factor the IGV rule may call on; the class defaults it to 1.14",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "igv_area_increase_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "whether the stated opening is held rather than recomputed after the solve",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "igv_control_mode",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the stated inlet-guide-vane opening, 0..1; the class defaults it to 1.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "igv_opening",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the impeller's outer diameter; the tip speed is pi D N / 60",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "impeller_diameter",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the tip speed is proportional to it",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the maximum IGV area; the class defaults it to 1.637e4 mm2",
+          "dimension": "area",
+          "kind": "quantity",
+          "name": "maximum_igv_area",
+          "range": [],
+          "required": false,
+          "unit": "m**2",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "expander_feed"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "compressor_feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "expander_outlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "compressor_outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/expander/TurboExpanderCompressor.java",
+      "unmodelled_ranges": []
     },
     {
       "family": "mixer",

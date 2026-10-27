@@ -304,12 +304,13 @@ describe("the editor", () => {
     const headings = [...container.querySelectorAll("aside.side .group > .label")].map(
       (label) => label.textContent,
     );
-    // **Seven, and not the one group called `other` this drew until the wire carried the family.**
+    // **Eight, and not the one group called `other` this drew until the wire carried the family.**
     // The fault was here and the missing fact was in the wire: every id is `unit_ops.<leaf>`, so a
     // split on `.` took the leaf for a family.
     expect(headings).toEqual([
       "column",
       "heat exchanger",
+      "machine",
       "mixer",
       "reactor",
       "separator",
