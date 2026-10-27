@@ -2,7 +2,7 @@
  * What each unit operation is drawn as, and which side of it a port leaves from.
  *
  * **Two tables, and both are keyed on the leaf of `unit_ops.<leaf>`.** The leaf is unique across
- * all twenty-nine entries, which the *id* is not useful for: every id is `unit_ops.<thing>`, so
+ * all thirty entries, which the *id* is not useful for: every id is `unit_ops.<thing>`, so
  * splitting it takes the thing for a family. The family is on the wire now (`Form.family`, from the
  * palette directory) and this is deliberately not that - a pump and a compressor are both
  * `two_port` and are drawn as different machines.
@@ -76,6 +76,7 @@ export const GLYPHS: Readonly<Record<string, GlyphKind>> = {
   tank: "tank",
   three_phase_separator: "separator",
   throttling_valve: "valve",
+  turbo_expander_compressor: "machine",
 };
 
 /** Which entries are drawn as a machine that moves a fluid one way rather than the other. */
