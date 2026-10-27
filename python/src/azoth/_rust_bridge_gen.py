@@ -5477,7 +5477,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, chart_type: str | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -5486,8 +5486,11 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
-        input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        None if curve is None else input_records_to_si(spec, "curve", curve),
+        None if speed is None else speed,
+        chart_type,
     )
     return CompressorResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5495,6 +5498,9 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        polytropic_head=from_si(result.polytropic_head.magnitude_si, result.polytropic_head.unit),
+        polytropic_efficiency=result.polytropic_efficiency,
+        power=from_si(result.power.magnitude_si, result.power.unit),
         warnings=_warnings(result.warnings),
     )
 

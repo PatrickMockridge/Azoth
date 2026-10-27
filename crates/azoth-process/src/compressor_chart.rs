@@ -40,9 +40,11 @@ const FLOW_TOLERANCE: f64 = 1.0e-6;
 
 /// One measured point of the map: a flow and the head and polytropic efficiency there.
 ///
-/// `head` is a specific energy in J/kg and `efficiency` a fraction; the class's table is
-/// normally quoted in kJ/kg and percent, and both conversions are linear, so the fit is the
-/// same polynomial. `speed` is rpm and `flow` m3/hr, the class's own coordinates.
+/// `head` is in the chart's head unit - the model's record carries **metres**, the class's
+/// default `headUnit`, so a curve quoted in kJ/kg is multiplied by `1000/9.81` (the class's
+/// own `polytropicHeadMeter`). `efficiency` is a fraction; the class's percent column is
+/// divided by `100`. Both conversions are linear, so the fit is the same polynomial either
+/// way. `speed` is rpm and `flow` m3/hr, the class's own coordinates.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CurvePoint {
     /// The compressor speed, rpm.
@@ -221,6 +223,8 @@ impl CompressorChart {
                     break;
                 }
             }
+            // numerics-ok: `CompressorChart.getSpeedValue` caps its damped Newton step
+            // at 30 % of the speed, the class's own bound.
             let update = (DAMPING * error / derivative)
                 .clamp(-MAX_STEP_FRACTION * speed, MAX_STEP_FRACTION * speed);
             old_speed = speed;
@@ -278,7 +282,7 @@ impl CompressorChart {
         let mut flow = guess;
         let mut old_flow = flow * 1.1;
         let mut old_error = self.polytropic_head(old_flow, speed) - head;
-        let mut error = 1.0;
+        let mut error;
         let mut iteration = 1;
         loop {
             iteration += 1;
@@ -570,13 +574,16 @@ mod tests {
                 points.push(CurvePoint {
                     speed: *speed,
                     flow: flows[row][column],
-                    head: heads[row][column] * 1000.0,
+                    head: heads[row][column] * KJ_PER_KG_TO_M,
                     efficiency: efficiencies[row][column] / 100.0,
                 });
             }
         }
         points
     }
+
+    /// The class's `polytropicHeadMeter`: kJ/kg to metres by `1000/9.81`.
+    const KJ_PER_KG_TO_M: f64 = 1000.0 / 9.81;
 
     #[test]
     fn the_capture_rows_reproduce_the_class() {
@@ -589,7 +596,7 @@ mod tests {
             (6000.0, 12913.0, 28.035736231331526, 50.487041963431494),
             (100.0, 12913.0, 49.67512659722273, 17.784484294150236),
         ] {
-            let head = head_kj * 1000.0;
+            let head = head_kj * KJ_PER_KG_TO_M;
             let efficiency = efficiency_percent / 100.0;
             assert!(
                 (chart.polytropic_head(flow, speed) - head).abs() < 1.0e-9 * head.abs(),
@@ -603,16 +610,16 @@ mod tests {
             );
         }
 
-        let speed = chart.speed_for_head(3974.8455, 70_000.0);
+        let speed = chart.speed_for_head(3974.8455, 70.0 * KJ_PER_KG_TO_M);
         // The class stops its Newton at `1e-6` on the head, so its reported speed can differ
         // in the last few hundredths of an rpm; the fit itself agrees to `1e-12`.
         assert!(
             (speed - 12822.382970080176).abs() < 1.0e-2,
             "speed: {speed}"
         );
-        assert_eq!(chart.speed(3974.8455, 70_000.0), 12822);
+        assert_eq!(chart.speed(3974.8455, 70.0 * KJ_PER_KG_TO_M), 12822);
 
-        let flow = chart.flow_for_head(70_000.0, 12913.0, 4000.0);
+        let flow = chart.flow_for_head(70.0 * KJ_PER_KG_TO_M, 12913.0, 4000.0);
         assert!((flow - 5399.049830646614).abs() < 1.0e-2, "flow: {flow}");
     }
 
@@ -621,8 +628,8 @@ mod tests {
         let chart = CompressorChart::new(&table()).expect("a valid chart");
         assert!((chart.surge_flow_at_speed(11683.0) - 2415.3793).abs() < 1.0e-9);
         assert!((chart.stonewall_flow_at_speed(11683.0) - 5138.7858).abs() < 1.0e-9);
-        assert!((chart.surge_head_at_speed(11683.0) - 65_157.6).abs() < 1.0e-6);
-        assert!((chart.stonewall_head_at_speed(11683.0) - 31_638.7).abs() < 1.0e-6);
+        assert!((chart.surge_head_at_speed(11683.0) - 65.1576 * KJ_PER_KG_TO_M).abs() < 1.0e-6);
+        assert!((chart.stonewall_head_at_speed(11683.0) - 31.6387 * KJ_PER_KG_TO_M).abs() < 1.0e-6);
 
         let mid = 0.5 * (2415.3793 + 5138.7858);
         assert_eq!(chart.flow_range_status(mid, 11683.0), "IN_RANGE");

@@ -830,7 +830,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::component_splitter,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::wrappers_gen::compressor, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::process::compressor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::cooler, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::distillation_column,

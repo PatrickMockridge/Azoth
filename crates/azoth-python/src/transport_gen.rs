@@ -13983,6 +13983,15 @@ pub struct PyCompressorResult {
     /// the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
+    #[pyo3(get)]
+    pub polytropic_head: PyQty,
+    /// the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.
+    #[pyo3(get)]
+    pub polytropic_efficiency: f64,
+    /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
+    #[pyo3(get)]
+    pub power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13992,12 +14001,15 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.polytropic_head,
+            self.polytropic_efficiency,
+            self.power,
             self.warnings.len()
         )
     }
@@ -14022,6 +14034,15 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            polytropic_head: PyQty {
+                magnitude_si: r.polytropic_head.value,
+                unit: "m".to_string(),
+            },
+            polytropic_efficiency: r.polytropic_efficiency,
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
             },
             warnings: transport(&r.warnings),
         }

@@ -341,6 +341,14 @@ class WaterAnalysis(TypedDict):
     pressure: float
     co2_partial_pressure: float
 
+class CompressorCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+
 class FilterDropPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -2539,6 +2547,9 @@ class CompressorResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    polytropic_head: Qty
+    polytropic_efficiency: float
+    power: Qty
     warnings: list[Warning]
 
 @final
@@ -5066,8 +5077,11 @@ def compressor(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
-    outlet_pressure: float,
     isentropic_efficiency: float,
+    outlet_pressure: float | None = None,
+    curve: list[CompressorCurvePoint] | None = None,
+    speed: float | None = None,
+    chart_type: str | None = None,
 ) -> CompressorResult: ...
 def cooler(
     components: list[str],

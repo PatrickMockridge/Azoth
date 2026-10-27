@@ -2643,6 +2643,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "isentropic_efficiency",
         "dimensionless",
     ),
+    ("process.compressor", "speed", "dimensionless"),
     ("process.cooler", "inlet_n", "molar_flow"),
     ("process.cooler", "inlet_z", "dimensionless"),
     ("process.cooler", "inlet_p", "pressure"),

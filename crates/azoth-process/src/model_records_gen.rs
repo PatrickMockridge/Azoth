@@ -112,7 +112,15 @@ impl CalcResult for ComponentSplitterResult {
 impl CalcResult for CompressorResult {
     const CALC_ID: &'static str = "process.compressor";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "polytropic_head",
+        "polytropic_efficiency",
+        "power",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

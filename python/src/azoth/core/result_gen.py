@@ -5585,6 +5585,15 @@ class CompressorResult(_HasWarnings):
     #: the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     outlet_h: Q
 
+    #: the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
+    polytropic_head: Q
+
+    #: the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.
+    polytropic_efficiency: float
+
+    #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
+    power: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

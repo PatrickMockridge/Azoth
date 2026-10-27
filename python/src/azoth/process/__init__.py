@@ -1008,10 +1008,13 @@ def compressor(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
-    outlet_pressure: Q,
     isentropic_efficiency: float,
+    outlet_pressure: Q | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    speed: float | None = None,
+    chart_type: str | None = None,
 ) -> CompressorResult:
-    """Raise a stream's pressure along an isentrope, dividing the step by the efficiency.
+    """Raise a stream's pressure along an isentrope or the machine's chart.
 
     **The entropy is derived, not carried.** The record has five fields and ``s`` is not one
     of them: it is a function of ``(T, P, z)``, and the flash at the inlet decides it. At an
@@ -1021,8 +1024,13 @@ def compressor(
     ``h_out = h_in + (h_isentropic - h_in) / eta``. :func:`expander` is the same route with a
     multiplication, because an expansion's isentropic difference is negative.
 
+    ``curve`` selects ``CompressorChart``'s fixed-speed branch instead: the pressure is solved
+    from the head, ``speed`` reads the map, and ``chart_type`` names the map class (only the
+    default ``fan_law`` is carried).
+
     Raises:
-        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+        InvalidInputError: where the shapes disagree, the efficiency is outside ``(0, 1]``, or
+            the chart type is refused.
 
     See :func:`azoth.process.reference.compressor`.
     """
@@ -1032,8 +1040,11 @@ def compressor(
         inlet_z=inlet_z,
         inlet_p=inlet_p,
         inlet_t=inlet_t,
-        outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        outlet_pressure=outlet_pressure,
+        curve=curve,
+        speed=speed,
+        chart_type=chart_type,
     )
 
 

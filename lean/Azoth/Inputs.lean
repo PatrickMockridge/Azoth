@@ -75,6 +75,7 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.compressor", "inlet_t", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.compressor", "outlet_pressure", "Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("unit_ops.compressor", "isentropic_efficiency", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.compressor", "speed", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.cooler", "inlet_n", "mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("unit_ops.cooler", "inlet_z", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.cooler", "inlet_p", "Pa", [-1, 1, -2, 0, 0, 0, 0]),

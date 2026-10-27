@@ -5414,38 +5414,6 @@ pub fn component_splitter(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Compressor.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
-)]
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn compressor(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-    isentropic_efficiency: f64,
-) -> PyResult<crate::transport_gen::PyCompressorResult> {
-    azoth_process::models::compressor::compressor(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-        isentropic_efficiency,
-    )
-    .map(|r| crate::transport_gen::PyCompressorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Cooler.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -6,9 +6,11 @@ assumptions = [
     "**the step is isentropic, and the inlet's entropy is derived rather than carried.** `s = f(T, P, z)` from the same flash that gives the inlet's enthalpy. The captured efficiency-of-one row is the demonstration: the outlet's entropy equals the inlet's and the step's production is zero.",
     "**the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.",
     "**the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.",
-    "**the shaft power is not an output.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which the record already carries as `n * (outlet_h - inlet_h)` - the captured rows satisfy that to their last digit, so a field would be a second copy of one number.",
+    "**the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's class also carries a compressor chart and catalogue, the polytropic branch, a gamma-based pressure-ratio mode, anti-surge machinery, a deposit model, `useGERG2008`/`useLeachman`/`useVega` property overrides, `runTransient` and a `MechanicalDesign`. **None is here.**",
+    "**a curve selects the fixed-speed chart branch.** `CompressorChart`, the default fan law: one reduced quadratic in `Q/N` for the head and one for the efficiency, the class's kappa and pressure-ratio equation, and the head's shaft work. **Nothing is clamped**; the branch clamps only the efficiency.",
+    "**the chart's head crosses in metres.** A curve quoted in kJ/kg is multiplied by `1000/9.81` - the class's own `polytropicHeadMeter` - and the branch converts back with `9.81`, not standard gravity, so the pressure ratio is the class's.",
+    "**the speed-solve mode, the three other chart classes, the catalogue, anti-surge, the deposit model and the property overrides are absent**; the chart type's other values are refused by name.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
@@ -17,7 +19,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
-edition = "Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`."
+edition = "Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`; and the fixed-speed chart branch - the reduced head and polytropic efficiency, the kappa-based pressure ratio, and the head's shaft work."
 [inputs]
 [inputs.components]
 type = "components"
@@ -38,10 +40,37 @@ unit = "K"
 description = "the inlet temperature, which fixes the inlet enthalpy.\n"
 [inputs.outlet_pressure]
 unit = "Pa"
-description = "the pressure the machine takes the stream to, which is `unit_ops.compressor`'s own parameter.\n"
+optional = true
+description = "the pressure the machine takes the stream to in the isentropic branch. **A stated `curve` overrides it**: the chart branch solves the pressure from the head. An absent value with no curve is refused.\n"
 [inputs.isentropic_efficiency]
 unit = "dimensionless"
 description = "the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that.\n"
+[inputs.curve]
+type = "record_list"
+row_type = "CompressorCurvePoint"
+optional = true
+description = "the manufacturer's map, one row per point, in the order the chart states them. **An absent curve is the isentropic branch.** The head is in metres; a kJ/kg curve is multiplied by `1000/9.81`.\n"
+[inputs.curve.fields.speed]
+unit = "dimensionless"
+description = "the speed the point was measured at, rpm; the reduced variables divide by it.\n"
+[inputs.curve.fields.flow]
+unit = "m**3/h"
+description = "the measured actual flow, which becomes `Q/N`.\n"
+[inputs.curve.fields.head]
+unit = "m"
+description = "the measured polytropic head in metres, the class's default `headUnit`; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.curve.fields.efficiency]
+unit = "dimensionless"
+description = "the measured polytropic efficiency as a fraction; the class's percent column is divided by `100`. Fitted against the same `flow`.\n"
+[inputs.speed]
+unit = "dimensionless"
+optional = true
+description = "the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch.\n"
+[inputs.chart_type]
+type = "enum"
+values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
+optional = true
+description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; **the other three are refused by name**, each naming its class.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -60,6 +89,15 @@ description = "the outlet temperature, solved from the shifted enthalpy at the o
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.\n"
+[outputs.polytropic_head]
+unit = "m"
+description = "the chart head the branch used, in metres (`getPolytropicHead(\"meter\")`); zero in the isentropic branch.\n"
+[outputs.polytropic_efficiency]
+unit = "dimensionless"
+description = "the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.\n"
+[outputs.power]
+unit = "W"
+description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0
@@ -69,6 +107,12 @@ max_inclusive = true
 severity = "error"
 rationale = "the reversible step divides by it, so zero has no answer and above one would beat the reversible machine"
 [[valid_range]]
+quantity = "speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the reduced variables divide by the speed"
+[[valid_range]]
 quantity = "inlet_t"
 min = 0
 min_inclusive = false
@@ -77,3 +121,21 @@ rationale = "an absolute temperature"
 [implementations]
 python = "azoth.process.compressor"
 rust = "azoth_process::compressor"
+
+[[unported]]
+parameter = "chart_type"
+value = "interpolate"
+class = "CompressorChartAlternativeMapLookup"
+capture = "validation/neqsim/captures/process_compressor_curve.tsv"
+
+[[unported]]
+parameter = "chart_type"
+value = "interpolate_and_extrapolate"
+class = "CompressorChartAlternativeMapLookupExtrapolate"
+capture = "validation/neqsim/captures/process_compressor_curve.tsv"
+
+[[unported]]
+parameter = "chart_type"
+value = "khader_2015"
+class = "CompressorChartKhader2015"
+capture = "validation/neqsim/captures/process_compressor_curve.tsv"

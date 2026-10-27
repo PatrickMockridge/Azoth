@@ -67,7 +67,7 @@ their units, the valid range, the assumptions that are *not* checked, and the ca
 class that would close it, and `tools/check_unported.py` holds every row to *both*
 implementations — so a row neither refuses fails the build, and a row one refuses and the
 other carries is the divergence the field was built to make visible. The models declare
-**35 refusals**, and no spec may say the same thing in a sentence instead,
+**38 refusals**, and no spec may say the same thing in a sentence instead,
 because a sentence is a claim nothing holds: it drifts from the code silently, and the same
 fact written twice in two files is how a corrected claim left its twin lying.
 
@@ -95,7 +95,7 @@ exclusion list, and the port's NeqSim probe and its capture.
 
 **Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
 wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
-**197** of the registered ids and hand-written for **62**: a kernel that takes a record or a
+**196** of the registered ids and hand-written for **63**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
 for **257** and hand-written for **2**, and its rule is narrower because its boundary is a Python

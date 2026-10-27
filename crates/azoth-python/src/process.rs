@@ -406,6 +406,60 @@ pub fn pipe(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.compressor` - the machine's kernel as a registered id.
+///
+/// **Hand-written, because `curve` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, chart_type = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, chart_type=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn compressor(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    isentropic_efficiency: f64,
+    outlet_pressure: Option<f64>,
+    curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
+    speed: Option<f64>,
+    chart_type: Option<&str>,
+) -> PyResult<crate::transport_gen::PyCompressorResult> {
+    let points: Option<Vec<azoth_process::models::compressor::CompressorCurvePoint>> =
+        curve.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::compressor::CompressorCurvePoint {
+                        speed: row.speed,
+                        flow: cubic_meters_per_second(row.flow),
+                        head: meters(row.head),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    azoth_process::compressor(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_pressure.map(pascals),
+        isentropic_efficiency,
+        points.as_deref(),
+        speed,
+        chart_type,
+    )
+    .map(|r| crate::transport_gen::PyCompressorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.absorption_column` - the tray absorber as a registered id.
 ///
 /// **The column's own profile shape with the class's own product names**, and two inlets where

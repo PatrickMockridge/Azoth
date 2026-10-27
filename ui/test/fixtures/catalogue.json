@@ -6464,6 +6464,7 @@
       "runnable": true,
       "source": "NeqSim process/equipment/compressor/Compressor.java",
       "unmodelled_ranges": [
+        "speed",
         "inlet_t"
       ]
     },

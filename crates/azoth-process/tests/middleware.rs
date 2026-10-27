@@ -490,8 +490,8 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // two; the plug-flow reactor's feed bound is the third, the throttling valve's opening the
     // fourth, the pump's feed and speed the fifth and sixth, the filter's exponent, void
     // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
-    // tenth.
-    assert_eq!(checked, 110, "the bounds this test walked");
+    // tenth, and the compressor's speed the eleventh.
+    assert_eq!(checked, 111, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -624,8 +624,9 @@ fn the_generated_input_table_is_the_models_own() {
     // the viscosity, the beta curve, the particle size, the scalar efficiency and the inlet
     // concentration. `470 + 13 = 483`. **And then the pipe's five**, all on `process.pipe`
     // and all optional: `fittings`, `outlet_pressure`, `correlation`, `number_of_increments`
-    // and `elevation`. `483 + 5 = 488`.
-    assert_eq!(walked, 488, "the inputs this test walked");
+    // and `elevation`. `483 + 5 = 488`. **And then the compressor's chart's three**, all on
+    // `process.compressor`: `curve`, `speed` and `chart_type`. `488 + 3 = 491`.
+    assert_eq!(walked, 491, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

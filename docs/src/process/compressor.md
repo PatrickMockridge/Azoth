@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/compressor/Compressor.java**
 
-Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`.
+Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`; and the fixed-speed chart branch - the reduced head and polytropic efficiency, the kappa-based pressure ratio, and the head's shaft work.
 
 
 ## What this model is
@@ -24,8 +24,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `inlet_z` | dimensionless | the inlet composition, summing to one. |
 | `inlet_p` | Pa | the inlet pressure, which with `inlet_t` and `inlet_z` fixes the state whose entropy the step follows. |
 | `inlet_t` | K | the inlet temperature, which fixes the inlet enthalpy. |
-| `outlet_pressure` | Pa | the pressure the machine takes the stream to, which is `unit_ops.compressor`'s own parameter. |
+| `outlet_pressure` | Pa | *Optional.* the pressure the machine takes the stream to in the isentropic branch. **A stated `curve` overrides it**: the chart branch solves the pressure from the head. An absent value with no curve is refused. |
 | `isentropic_efficiency` | dimensionless | the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that. |
+| `curve` | - | *Optional.* the manufacturer's map, one row per point, in the order the chart states them. **An absent curve is the isentropic branch.** The head is in metres; a kJ/kg curve is multiplied by `1000/9.81`. |
+| `speed` | dimensionless | *Optional.* the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch. |
+| `chart_type` | fan_law / interpolate / interpolate_and_extrapolate / khader_2015 | *Optional.* `setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; **the other three are refused by name**, each naming its class. |
 
 
 ## Outputs
@@ -37,11 +40,28 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_p` | Pa | the outlet pressure, which is `outlet_pressure` rather than something the machine solves for. |
 | `outlet_t` | K | the outlet temperature, solved from the shifted enthalpy at the outlet pressure. |
 | `outlet_h` | J/mol | the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow. |
+| `polytropic_head` | m | the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch. |
+| `polytropic_efficiency` | dimensionless | the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch. |
+| `power` | W | the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `isentropic_efficiency > 0 and isentropic_efficiency <= 1` | raises | the reversible step divides by it, so zero has no answer and above one would beat the reversible machine |
+| `speed > 0` | raises | the reduced variables divide by the speed |
 | `inlet_t > 0` | raises | an absolute temperature |
+
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `chart_type` = `interpolate` | `CompressorChartAlternativeMapLookup` | `validation/neqsim/captures/process_compressor_curve.tsv` |
+| `chart_type` = `interpolate_and_extrapolate` | `CompressorChartAlternativeMapLookupExtrapolate` | `validation/neqsim/captures/process_compressor_curve.tsv` |
+| `chart_type` = `khader_2015` | `CompressorChartKhader2015` | `validation/neqsim/captures/process_compressor_curve.tsv` |
+
 
 ## Assumptions
 
@@ -49,9 +69,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the step is isentropic, and the inlet's entropy is derived rather than carried.** `s = f(T, P, z)` from the same flash that gives the inlet's enthalpy. The captured efficiency-of-one row is the demonstration: the outlet's entropy equals the inlet's and the step's production is zero.
 - **the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.
 - **the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.
-- **the shaft power is not an output.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which the record already carries as `n * (outlet_h - inlet_h)` - the captured rows satisfy that to their last digit, so a field would be a second copy of one number.
+- **the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's class also carries a compressor chart and catalogue, the polytropic branch, a gamma-based pressure-ratio mode, anti-surge machinery, a deposit model, `useGERG2008`/`useLeachman`/`useVega` property overrides, `runTransient` and a `MechanicalDesign`. **None is here.**
+- **a curve selects the fixed-speed chart branch.** `CompressorChart`, the default fan law: one reduced quadratic in `Q/N` for the head and one for the efficiency, the class's kappa and pressure-ratio equation, and the head's shaft work. **Nothing is clamped**; the branch clamps only the efficiency.
+- **the chart's head crosses in metres.** A curve quoted in kJ/kg is multiplied by `1000/9.81` - the class's own `polytropicHeadMeter` - and the branch converts back with `9.81`, not standard gravity, so the pressure ratio is the class's.
+- **the speed-solve mode, the three other chart classes, the catalogue, anti-surge, the deposit model and the property overrides are absent**; the chart type's other values are refused by name.
 
 ## Cases
 
@@ -59,11 +81,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `the_reversible_limit_at_efficiency_one` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 6000000.0, isentropic_efficiency = 1.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 6000000.0, outlet_t = 368.7592218240752, outlet_h = 3049.9081133820987 |
 | `the_efficiency_divides_the_step` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 6000000.0, isentropic_efficiency = 0.75 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 6000000.0, outlet_t = 380.2120359420128, outlet_h = 3654.624827852691 |
+| `the_chart_solves_the_pressure_and_the_power` | components = ['nitrogen', 'CO2', 'methane', 'ethane', 'propane', 'i-butane', 'n-butane', 'i-pentane', 'n-pentane'], inlet_n = 489.4970603565765, inlet_z = [0.01208165393330526, 0.013435200224588424, 0.8820509735507028, 0.05271812147827308, 0.03291624055024163, 0.0008221540435942168, 0.004882792917443703, 0.0005614710541619043, 0.000531392247688945], inlet_p = 4800000.0, inlet_t = 297.15, isentropic_efficiency = 1.0, speed = 11918.0, curve = [{'speed': 12913.0, 'flow': 2789.1285, 'head': 8158.766564729867, 'efficiency': 0.7724522384095729}, {'speed': 12913.0, 'flow': 3174.0375, 'head': 8042.1406727828735, 'efficiency': 0.794154186459363}, {'speed': 12913.0, 'flow': 3689.2288, 'head': 7769.031600407748, 'efficiency': 0.80737960012489}, {'speed': 12913.0, 'flow': 4179.4503, 'head': 7325.9734964322115, 'efficiency': 0.805229826589649}, {'speed': 12913.0, 'flow': 4570.2768, 'head': 6830.39755351682, 'efficiency': 0.792210931638144}, {'speed': 12913.0, 'flow': 4954.7728, 'head': 6177.991845056064, 'efficiency': 0.754719133864634}, {'speed': 12913.0, 'flow': 5246.0329, 'head': 5407.737003058104, 'efficiency': 0.696034181197298}, {'speed': 12913.0, 'flow': 5661.0331, 'head': 4049.7451580020384, 'efficiency': 0.587322388482707}, {'speed': 12298.0, 'flow': 2571.1753, 'head': 7361.0805300713555, 'efficiency': 0.770107837113504}, {'speed': 12298.0, 'flow': 2943.7254, 'head': 7322.82364933741, 'efficiency': 0.7930699741363889}, {'speed': 12298.0, 'flow': 3440.2675, 'head': 7023.537206931702, 'efficiency': 0.8089411890211351}, {'speed': 12298.0, 'flow': 3837.4448, 'head': 6710.917431192661, 'efficiency': 0.807190194665918}, {'speed': 12298.0, 'flow': 4253.0898, 'head': 6189.266055045871, 'efficiency': 0.795313242980328}, {'speed': 12298.0, 'flow': 4668.6643, 'head': 5576.146788990825, 'efficiency': 0.7559126228963671}, {'speed': 12298.0, 'flow': 4997.1926, 'head': 4819.051987767584, 'efficiency': 0.696846136362097}, {'speed': 12298.0, 'flow': 5387.4952, 'head': 3643.9449541284407, 'efficiency': 0.600043057990909}, {'speed': 11683.0, 'flow': 2415.3793, 'head': 6641.957186544343, 'efficiency': 0.770043065299874}, {'speed': 11683.0, 'flow': 2763.0706, 'head': 6577.50254841998, 'efficiency': 0.791690958847856}, {'speed': 11683.0, 'flow': 3141.7095, 'head': 6382.446483180428, 'efficiency': 0.8080381699756749}, {'speed': 11683.0, 'flow': 3594.7436, 'head': 6030.774719673802, 'efficiency': 0.806543975614197}, {'speed': 11683.0, 'flow': 4047.6467, 'head': 5509.225280326197, 'efficiency': 0.7885323891027051}, {'speed': 11683.0, 'flow': 4494.1889, 'head': 4791.630988786951, 'efficiency': 0.7366647742706129}, {'speed': 11683.0, 'flow': 4853.7353, 'head': 3995.412844036697, 'efficiency': 0.662735600426727}, {'speed': 11683.0, 'flow': 5138.7858, 'head': 3225.1478083588177, 'efficiency': 0.57671664571658}, {'speed': 11098.0, 'flow': 2247.2043, 'head': 5975.06625891947, 'efficiency': 0.770716623789093}, {'speed': 11098.0, 'flow': 2799.7342, 'head': 5806.595310907237, 'efficiency': 0.804629750233093}, {'speed': 11098.0, 'flow': 3178.3428, 'head': 5572.344546381244, 'efficiency': 0.8113908111690721}, {'speed': 11098.0, 'flow': 3656.1551, 'head': 5142.324159021407, 'efficiency': 0.796374242667478}, {'speed': 11098.0, 'flow': 4102.778, 'head': 4529.2762487257905, 'efficiency': 0.75380928428817}, {'speed': 11098.0, 'flow': 4394.1591, 'head': 3915.840978593272, 'efficiency': 0.695332969549779}, {'speed': 11098.0, 'flow': 4648.3224, 'head': 3354.576962283384, 'efficiency': 0.637997587622339}, {'speed': 11098.0, 'flow': 4840.4998, 'head': 2936.890927624873, 'efficiency': 0.588120614497758}, {'speed': 10453.0, 'flow': 2072.8397, 'head': 5334.301732925586, 'efficiency': 0.769705872525642}, {'speed': 10453.0, 'flow': 2463.9483, 'head': 5204.617737003057, 'efficiency': 0.798335492585324}, {'speed': 10453.0, 'flow': 2836.4078, 'head': 5048.756371049949, 'efficiency': 0.809468133671171}, {'speed': 10453.0, 'flow': 3202.5266, 'head': 4722.9969418960245, 'efficiency': 0.805806471927835}, {'speed': 10453.0, 'flow': 3599.6333, 'head': 4318.909276248725, 'efficiency': 0.7804621582254261}, {'speed': 10453.0, 'flow': 3978.0203, 'head': 3797.16615698267, 'efficiency': 0.730403707523258}, {'speed': 10453.0, 'flow': 4257.0022, 'head': 3209.826707441386, 'efficiency': 0.665572286338589}, {'speed': 10453.0, 'flow': 4517.345, 'head': 2609.3781855249745, 'efficiency': 0.598624822515064}, {'speed': 9224.0, 'flow': 1835.9552, 'head': 4144.525993883793, 'efficiency': 0.775063036680357}, {'speed': 9224.0, 'flow': 2208.455, 'head': 4040.937818552497, 'efficiency': 0.802056198362559}, {'speed': 9224.0, 'flow': 2618.1322, 'head': 3832.9051987767584, 'efficiency': 0.810339108025933}, {'speed': 9224.0, 'flow': 2940.8034, 'head': 3533.1600407747196, 'efficiency': 0.7960859626879391}, {'speed': 9224.0, 'flow': 3244.7852, 'head': 3154.974515800204, 'efficiency': 0.7638145344044049}, {'speed': 9224.0, 'flow': 3530.1279, 'head': 2763.669724770642, 'efficiency': 0.708027503005902}, {'speed': 9224.0, 'flow': 3753.3738, 'head': 2372.201834862385, 'efficiency': 0.6464373671605711}, {'speed': 9224.0, 'flow': 3895.9746, 'head': 2085.076452599388, 'efficiency': 0.6052993499823419}, {'speed': 8609.0, 'flow': 1711.3386, 'head': 3595.3618756371047, 'efficiency': 0.778175271586685}, {'speed': 8609.0, 'flow': 1965.8848, 'head': 3530.6727828746175, 'efficiency': 0.80065165942218}, {'speed': 8609.0, 'flow': 2356.9431, 'head': 3335.65749235474, 'efficiency': 0.810631362122632}, {'speed': 8609.0, 'flow': 2685.9247, 'head': 3166.615698267074, 'efficiency': 0.7989550517712991}, {'speed': 8609.0, 'flow': 3008.5154, 'head': 2762.334352701325, 'efficiency': 0.761983240929369}, {'speed': 8609.0, 'flow': 3337.2855, 'head': 2318.8786952089704, 'efficiency': 0.69289982774309}, {'speed': 8609.0, 'flow': 3591.5092, 'head': 1836.0142711518856, 'efficiency': 0.608567149372229}, {'speed': 8200.0, 'flow': 1636.5807, 'head': 3281.549439347604, 'efficiency': 0.780924334304045}, {'speed': 8200.0, 'flow': 2002.8708, 'head': 3177.9408766564725, 'efficiency': 0.8093535515686671}, {'speed': 8200.0, 'flow': 2338.0319, 'head': 2969.714576962283, 'efficiency': 0.8079044377662341}, {'speed': 8200.0, 'flow': 2642.1245, 'head': 2735.2701325178386, 'efficiency': 0.788639325223295}, {'speed': 8200.0, 'flow': 2896.4894, 'head': 2435.3618756371047, 'efficiency': 0.752170936751143}, {'speed': 8200.0, 'flow': 3113.6264, 'head': 2174.5565749235475, 'efficiency': 0.703105081673411}, {'speed': 8200.0, 'flow': 3274.8764, 'head': 1913.61875637105, 'efficiency': 0.6555075685335691}, {'speed': 8200.0, 'flow': 3411.2977, 'head': 1665.6778797145769, 'efficiency': 0.610391468300337}] | outlet_n = 489.4970603565765, outlet_z = [0.01208165393330526, 0.013435200224588424, 0.8820509735507028, 0.05271812147827308, 0.03291624055024163, 0.0008221540435942168, 0.004882792917443703, 0.0005614710541619043, 0.000531392247688945], outlet_p = 7397411.228278199, outlet_t = 358.59774283278875, outlet_h = 2186.875042790436, polytropic_head = 5632.487624342265, polytropic_efficiency = 0.4286634260929254, power = 1169023.9606096155 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 3 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

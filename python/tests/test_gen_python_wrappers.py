@@ -91,7 +91,8 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: the binding moved into the process module where the row is built by hand.
 #: 60 -> 61 when `process.filter` gained two optional `record_list`s for the same reason.
 #: 61 -> 62 when `process.pipe`'s `fittings` did too.
-KNOWN_HAND_WRITTEN = 62
+#: 62 -> 63 when `process.compressor`'s `curve` did too.
+KNOWN_HAND_WRITTEN = 63
 
 
 def _tools_module(name: str) -> ModuleType:

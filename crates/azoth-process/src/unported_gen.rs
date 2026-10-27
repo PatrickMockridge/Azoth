@@ -92,6 +92,24 @@ pub static UNPORTED: &[Unported] = &[
         capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
     },
     Unported {
+        key: "chart_type=interpolate",
+        model: "process.compressor",
+        class: "CompressorChartAlternativeMapLookup",
+        capture: "validation/neqsim/captures/process_compressor_curve.tsv",
+    },
+    Unported {
+        key: "chart_type=interpolate_and_extrapolate",
+        model: "process.compressor",
+        class: "CompressorChartAlternativeMapLookupExtrapolate",
+        capture: "validation/neqsim/captures/process_compressor_curve.tsv",
+    },
+    Unported {
+        key: "chart_type=khader_2015",
+        model: "process.compressor",
+        class: "CompressorChartKhader2015",
+        capture: "validation/neqsim/captures/process_compressor_curve.tsv",
+    },
+    Unported {
         key: "contactor_internals_type=packed",
         model: "process.distillation_column",
         class: "PackedColumnMechanicalDesign",
