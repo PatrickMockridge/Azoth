@@ -467,6 +467,8 @@ public surface of forty-odd getters.
   > captures/process_filter_models.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pipe_modes \
   > captures/process_pipe_modes.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \
+  > captures/process_compressor_curve.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -669,6 +671,16 @@ length is `50000 + 60 D`), the line asked for 80 bara - where `calcFlow` bisects
 writes it back onto the inlet stream - and the Beggs-and-Brills march at five segments. Each
 row prints the effective and equivalent lengths, the drop, the velocity, Reynolds number and
 friction factor, and both records.
+
+**`ProcessProbe compressor_curve` is the default `CompressorChart` and `Compressor.run`'s
+fixed-speed polytropic branch.** The chart rows are fluid-free: the eight-speed
+`CompressorChartTest` table read at five flows and speeds, the `getSpeedValue`/`getFlow`
+inverses at stated states, and the surge/stonewall lookups and `getFlowRangeStatus` at
+`11683` rpm. The run row re-cases `CompressorCalculationTest.testRun` on PR - its nine-component
+gas, the same table in kJ/kg and speed `11918` - and prints the chart head, the polytropic
+efficiency and the power beside both records. **The class's own test asserts `1163805.3` J,
+`55.404` kJ/kg and `0.43175` on SRK; on PR the same state answers its own numbers**, which is
+what the port is held to.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

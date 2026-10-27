@@ -12,6 +12,7 @@
 pub mod channel;
 pub mod check;
 pub mod column;
+pub mod compressor_chart;
 pub mod executor;
 pub mod flowsheet;
 pub mod kernels;
