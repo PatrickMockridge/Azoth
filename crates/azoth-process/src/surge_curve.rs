@@ -154,6 +154,16 @@ impl Boundary {
 
         let mut pairs: Vec<(f64, f64)> = flow.iter().copied().zip(head.iter().copied()).collect();
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("finite flows"));
+        if pairs.len() == 2 {
+            // Commons Math's `SplineInterpolator` refuses fewer than three points
+            // (`NumberIsTooSmallException`), and the class propagates it; one point is its
+            // constant curve, so two is the one size that cannot be read at all.
+            return Err(AzothError::invalid_input(
+                "surge_curve",
+                "a two-point boundary cannot be splined - the class's interpolator needs three \
+                 points, and one is its constant",
+            ));
+        }
         for window in pairs.windows(2) {
             if window[0].0 == window[1].0 {
                 // The class sorts the pairs but does not dedupe the flows, and its spline then
@@ -170,15 +180,24 @@ impl Boundary {
         let sorted_flow: Vec<f64> = pairs.iter().map(|pair| pair.0).collect();
         let sorted_head: Vec<f64> = pairs.iter().map(|pair| pair.1).collect();
 
-        // `TreeMap<Double, Double>`: head ascending, one flow per head, the last duplicate
-        // winning on `put`.
-        let mut by_head: std::collections::BTreeMap<u64, (f64, f64)> =
-            std::collections::BTreeMap::new();
-        for pair in &pairs {
-            by_head.insert(pair.1.to_bits(), *pair);
+        // `TreeMap<Double, Double>`: head ascending by `Double.compareTo` (which is
+        // `total_cmp`), one flow per head, the last duplicate winning on `put`. The pairs are
+        // flow-sorted, so a stable sort by head keeps the largest flow last among equal heads.
+        let mut by_head = pairs.clone();
+        by_head.sort_by(|a, b| a.1.total_cmp(&b.1));
+        let mut heads: Vec<f64> = Vec::new();
+        let mut flows: Vec<f64> = Vec::new();
+        for pair in &by_head {
+            match heads.last() {
+                Some(head) if *head == pair.1 => {
+                    *flows.last_mut().expect("one flow per head") = pair.0;
+                }
+                _ => {
+                    heads.push(pair.1);
+                    flows.push(pair.0);
+                }
+            }
         }
-        let heads: Vec<f64> = by_head.values().map(|pair| pair.1).collect();
-        let flows: Vec<f64> = by_head.values().map(|pair| pair.0).collect();
         if heads.len() < 2 {
             return Err(AzothError::invalid_input(
                 "surge_curve",
@@ -421,5 +440,7 @@ mod tests {
         assert!(SurgeCurve::new(&[5000.0, 5000.0], &[100.0, 90.0]).is_err());
         assert!(SurgeCurve::new(&[5000.0, 6000.0], &[100.0, 100.0]).is_err());
         assert!(SurgeCurve::new(&[5000.0], &[]).is_err());
+        // Two points is the one size Commons Math's interpolator refuses.
+        assert!(SurgeCurve::new(&[5000.0, 6000.0], &[100.0, 90.0]).is_err());
     }
 }

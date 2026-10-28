@@ -54,7 +54,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `control_line_flow` | m**3/h | `getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr. |
 | `distance_to_control_line` | dimensionless | `getDistanceToControlLine()`: the inlet flow over the control-line flow, less one. |
 | `required_recycle_fraction` | dimensionless | `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it. |
-| `anti_surge_recycle_power` | W | `getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction. |
+| `anti_surge_recycle_power` | W | `getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired. |
 | `recycle_fraction` | dimensionless | `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.** |
 
 | Bound | On violation | Why |

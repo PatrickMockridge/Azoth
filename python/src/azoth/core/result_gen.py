@@ -5615,7 +5615,7 @@ class CompressorResult(_HasWarnings):
     #: `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
     required_recycle_fraction: float | None
 
-    #: `getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.
+    #: `getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.
     anti_surge_recycle_power: Q | None
 
     #: `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**

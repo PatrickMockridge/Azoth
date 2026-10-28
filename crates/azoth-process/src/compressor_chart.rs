@@ -387,6 +387,20 @@ impl CompressorChart {
             .map(|curve| curve.flow_at_head(head))
     }
 
+    /// `getSurgeCurve().getSurgeHead(flow)`, or `None` without a curve.
+    #[must_use]
+    pub fn surge_head(&self, flow: f64) -> Option<f64> {
+        self.surge.as_ref().map(|curve| curve.head_at_flow(flow))
+    }
+
+    /// `getStoneWallCurve().getStoneWallHead(flow)`, or `None` without a curve.
+    #[must_use]
+    pub fn stonewall_head(&self, flow: f64) -> Option<f64> {
+        self.stonewall
+            .as_ref()
+            .map(|curve| curve.head_at_flow(flow))
+    }
+
     /// `isSurge(head, flow)`: false where no surge curve is set, the class's inactive answer.
     #[must_use]
     pub fn is_surge(&self, head: f64, flow: f64) -> bool {
@@ -407,7 +421,7 @@ impl CompressorChart {
     ///
     /// # Errors
     /// [`AzothError::InvalidInput`] if the chart carries no speed rows, or if the points do not
-    /// make a curve (one speed line, or every row sharing a flow).
+    /// make a curve (two distinct rows, which the class's spline refuses).
     pub fn generate_surge_curve(&mut self) -> Result<()> {
         let (flow, head) = self.extreme_points(true)?;
         self.surge = Some(SurgeCurve::new(&flow, &head)?);

@@ -268,6 +268,18 @@ class CompressorChart:
             return None
         return self._stonewall.flow_at_head(head)
 
+    def surge_head(self, flow: float) -> float | None:
+        """``getSurgeCurve().getSurgeHead(flow)``, or ``None`` without a curve."""
+        if self._surge is None:
+            return None
+        return self._surge.head_at_flow(flow)
+
+    def stonewall_head(self, flow: float) -> float | None:
+        """``getStoneWallCurve().getStoneWallHead(flow)``, or ``None`` without a curve."""
+        if self._stonewall is None:
+            return None
+        return self._stonewall.head_at_flow(flow)
+
     def is_surge(self, head: float, flow: float) -> bool:
         """``isSurge(head, flow)``: false where no surge curve is set."""
         if self._surge is None:

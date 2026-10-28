@@ -190,7 +190,7 @@ pub fn compressor_with_chart(
         if settings.active && chart.is_surge(head_m, flow_m3hr) {
             if let Some(target) = chart.surge_flow(head_m) {
                 if target.is_finite() && target > 0.0 {
-                    boosted_n = fresh_n * target / fresh_flow_m3hr;
+                    boosted_n = fresh_n * settings.control_factor * target / fresh_flow_m3hr;
                     passes += 1;
                     if passes < MAX_SURGE_PASSES {
                         continue;

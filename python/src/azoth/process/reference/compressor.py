@@ -360,7 +360,7 @@ def _chart_states(
         if settings.active and chart.is_surge(head, flow_m3hr):
             target = chart.surge_flow(head)
             if target is not None and math.isfinite(target) and target > 0.0:
-                boosted = n * target / fresh_flow
+                boosted = n * settings.control_factor * target / fresh_flow
                 passes += 1
                 if passes < MAX_SURGE_PASSES:
                     continue

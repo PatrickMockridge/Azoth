@@ -14013,7 +14013,7 @@ pub struct PyCompressorResult {
     /// `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
     #[pyo3(get)]
     pub required_recycle_fraction: Option<f64>,
-    /// `getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.
+    /// `getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.
     #[pyo3(get)]
     pub anti_surge_recycle_power: Option<PyQty>,
     /// `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**

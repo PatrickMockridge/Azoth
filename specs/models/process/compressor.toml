@@ -149,7 +149,7 @@ unit = "dimensionless"
 description = "`getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.\n"
 [outputs.anti_surge_recycle_power]
 unit = "W"
-description = "`getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.\n"
+description = "`getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.\n"
 [outputs.recycle_fraction]
 unit = "dimensionless"
 description = "`AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**\n"

@@ -126,6 +126,12 @@ class _Boundary:
             return
 
         pairs = sorted(zip(flow, head, strict=True), key=lambda pair: pair[0])
+        if len(pairs) == 2:
+            raise InvalidInputError(
+                "surge_curve",
+                "a two-point boundary cannot be splined - the class's interpolator needs three "
+                "points, and one is its constant",
+            )
         for first, second in itertools.pairwise(pairs):
             if first[0] == second[0]:
                 raise InvalidInputError(
