@@ -5498,7 +5498,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, chart_type: str | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -5512,6 +5512,8 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         None if curve is None else input_records_to_si(spec, "curve", curve),
         None if speed is None else speed,
         chart_type,
+        None if chart_conditions is None else list(chart_conditions),
+        None if impeller_diameter is None else input_to_si(spec, "impeller_diameter", impeller_diameter),
         None if surge_curve is None else input_records_to_si(spec, "surge_curve", surge_curve),
         None if surge_control_margin is None else surge_control_margin,
         anti_surge_active,

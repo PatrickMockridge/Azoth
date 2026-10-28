@@ -4,7 +4,7 @@
 //! the model case; this is the isentropic power the record now publishes and the named
 //! refusals the spec declares.
 
-use azoth_core::units::{kelvins, pascals};
+use azoth_core::units::{cubic_meters_per_hour, kelvins, meters, pascals};
 use azoth_process::models::compressor::compressor;
 
 #[test]
@@ -17,6 +17,8 @@ fn the_isentropic_power_is_the_enthalpy_step() {
         kelvins(320.0),
         Some(pascals(6_000_000.0)),
         0.75,
+        None,
+        None,
         None,
         None,
         None,
@@ -40,27 +42,49 @@ fn the_isentropic_power_is_the_enthalpy_step() {
 }
 
 #[test]
-fn the_khader_chart_is_refused_by_name() {
-    // `interpolate` and `interpolate_and_extrapolate` are carried now; `khader_2015` is the
-    // one remaining declared refusal.
+fn the_khader_chart_needs_its_conditions() {
+    // Every chart type is carried; the Khader one is the only map that cannot be built
+    // without the reference fluid's chart conditions.
+    let curve = [
+        azoth_process::models::compressor::CompressorCurvePoint {
+            speed: 10_000.0,
+            flow: cubic_meters_per_hour(2000.0),
+            head: meters(4000.0),
+            efficiency: 0.8,
+        },
+        azoth_process::models::compressor::CompressorCurvePoint {
+            speed: 10_000.0,
+            flow: cubic_meters_per_hour(2500.0),
+            head: meters(3800.0),
+            efficiency: 0.79,
+        },
+        azoth_process::models::compressor::CompressorCurvePoint {
+            speed: 11_000.0,
+            flow: cubic_meters_per_hour(2400.0),
+            head: meters(4600.0),
+            efficiency: 0.81,
+        },
+    ];
     let error = compressor(
         &["methane".to_string()],
         1.0,
         &[1.0],
         pascals(3_000_000.0),
         kelvins(320.0),
-        Some(pascals(6_000_000.0)),
+        None,
         0.75,
-        None,
-        None,
+        Some(&curve),
+        Some(10_000.0),
         Some("khader_2015"),
         None,
         None,
         None,
         None,
+        None,
+        None,
     )
-    .expect_err("the Khader chart is a declared refusal");
-    assert_eq!(error.field(), Some("chart_type"));
+    .expect_err("the Khader chart needs chart_conditions");
+    assert_eq!(error.field(), Some("chart_conditions"));
     for chart_type in ["interpolate", "interpolate_and_extrapolate"] {
         // No curve on this state, so the isentropic branch runs; the type itself is accepted.
         assert!(
@@ -75,6 +99,8 @@ fn the_khader_chart_is_refused_by_name() {
                 None,
                 None,
                 Some(chart_type),
+                None,
+                None,
                 None,
                 None,
                 None,
@@ -151,6 +177,8 @@ mod anti_surge {
             1.0,
             Some(&curve()),
             Some(11918.0),
+            None,
+            None,
             None,
             Some(&surge_curve()),
             margin,
@@ -659,6 +687,8 @@ mod anti_surge {
             1.0,
             Some(&curve()),
             Some(11918.0),
+            None,
+            None,
             None,
             Some(&surge_curve()),
             Some(-0.1),

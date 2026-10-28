@@ -2654,6 +2654,8 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "surge_control_margin",
         "dimensionless",
     ),
+    ("process.compressor", "chart_conditions", "dimensionless"),
+    ("process.compressor", "impeller_diameter", "length"),
     (
         "process.compressor",
         "surge_control_factor",

@@ -8,9 +8,10 @@
 
 use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, VolumeRate,
-    cubic_meter_per_hour, joules_per_mole, meter, meters,
+    cubic_meter_per_hour, joules_per_mole, kelvins, meter, meters, pascals,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
+use azoth_eos::Cubic;
 
 use crate::compressor_chart::{ChartKind, CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
@@ -18,7 +19,6 @@ use crate::kernels::compressor::{SurgeSettings, compressor_with_chart};
 use crate::model_gen;
 use crate::stream::Stream;
 use crate::surge_curve::SurgeCurve;
-use crate::unported;
 
 /// One row of `curve`: a measured point, in the units the spec declares.
 #[derive(Debug, Clone, PartialEq)]
@@ -101,6 +101,8 @@ pub fn compressor(
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
     chart_type: Option<&str>,
+    chart_conditions: Option<&[f64]>,
+    impeller_diameter: Option<Length>,
     surge_curve: Option<&[CompressorSurgePoint]>,
     surge_control_margin: Option<f64>,
     anti_surge_active: Option<bool>,
@@ -120,12 +122,11 @@ pub fn compressor(
         &mut warnings,
     )?;
 
-    // `khader_2015` is the declaration's one remaining `[[unported]]` row.
     let kind = match chart_type.unwrap_or("fan_law") {
         "fan_law" => ChartKind::FanLaw,
         "interpolate" => ChartKind::MapLookup,
         "interpolate_and_extrapolate" => ChartKind::MapLookupExtrapolate,
-        "khader_2015" => return Err(unported::refuse("chart_type=khader_2015")),
+        "khader_2015" => ChartKind::Khader2015,
         other => {
             return Err(AzothError::invalid_input(
                 "chart_type",
@@ -170,6 +171,29 @@ pub fn compressor(
     };
 
     let mut read_outs: [Option<f64>; 9] = [None; 9];
+    let khader = |kind: ChartKind, points: &[CurvePoint]| -> Result<CompressorChart> {
+        if kind != ChartKind::Khader2015 {
+            return CompressorChart::with_kind(points, kind);
+        }
+        let conditions = chart_conditions.ok_or_else(|| {
+            AzothError::invalid_input(
+                "chart_conditions",
+                "the Khader chart builds its reference fluid at the chart conditions, and this \
+                 machine states none",
+            )
+        })?;
+        let reference = reference_sound_speed(conditions)?;
+        let process = azoth_eos::sound_speed(components, inlet_t, inlet_p, inlet_z)?
+            .system_sound_speed
+            .value;
+        CompressorChart::with_khader(
+            points,
+            reference,
+            process,
+            impeller_diameter.map_or(0.3, |diameter| diameter.value),
+        )
+    };
+
     let (out, head, efficiency, power) = if points.is_empty() {
         let pressure = outlet_pressure.ok_or_else(|| {
             AzothError::invalid_input(
@@ -182,7 +206,7 @@ pub fn compressor(
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
         (out, 0.0, 0.0, power)
     } else {
-        let mut chart = CompressorChart::with_kind(&points, kind)?;
+        let mut chart = khader(kind, &points)?;
         if !surge_flow.is_empty() {
             chart.set_surge_curve(SurgeCurve::new(&surge_flow, &surge_head)?);
         }
@@ -227,4 +251,49 @@ pub fn compressor(
         recycle_fraction: read_outs[8],
         warnings,
     })
+}
+
+/// `createDefaultFluid`'s phase sound speed: methane/ethane/propane `0.90/0.05/0.05`, rescaled
+/// to the chart conditions' molar mass, flashed at their temperature and pressure.
+///
+/// The class instantiates the *same EOS class* by reflection; azoth's cubic is the one this
+/// model runs, so the reference fluid is built the same way and the speed comes from
+/// [`azoth_eos::sound_speed`].
+fn reference_sound_speed(conditions: &[f64]) -> Result<f64> {
+    if conditions.len() != 4 {
+        return Err(AzothError::invalid_input(
+            "chart_conditions",
+            format!(
+                "the chart conditions are four numbers (T C, P bara, density, MW g/mol), and {} \
+                 were given",
+                conditions.len()
+            ),
+        ));
+    }
+    let names = ["methane", "ethane", "propane"];
+    let (mixture, _) = azoth_eos::databank::mixture_of(&names, Cubic::Pr, None)?;
+    let masses: Vec<f64> = mixture
+        .components()
+        .iter()
+        .map(|component| component.molar_mass.unwrap_or(0.0) * 1000.0)
+        .collect();
+    let (x1, x2, x3) = (0.90_f64, 0.05_f64, 0.05_f64);
+    let z = if conditions[3] > 0.0 {
+        let a = (conditions[3] - masses[2])
+            / (x1 * (masses[0] - masses[2]) + x2 * (masses[1] - masses[2]));
+        let first = a * x1;
+        let second = a * x2;
+        vec![first, second, 1.0 - first - second]
+    } else {
+        vec![x1, x2, x3]
+    };
+    let components: Vec<String> = names.iter().map(|name| (*name).to_string()).collect();
+    Ok(azoth_eos::sound_speed(
+        &components,
+        kelvins(conditions[0] + 273.15),
+        pascals(conditions[1] * 1.0e5),
+        &z,
+    )?
+    .sound_speed
+    .value)
 }

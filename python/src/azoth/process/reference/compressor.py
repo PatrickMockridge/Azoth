@@ -29,6 +29,7 @@ and the branch converts it with ``9.81`` - the class's own ``polytropicHeadMeter
 from __future__ import annotations
 
 import math
+from typing import Any
 from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
@@ -37,14 +38,15 @@ from azoth.core.result import CompressorResult
 from azoth.core.units import Q, from_si, input_records_to_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
+from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
-from azoth.eos.reference.pr_molar_volume import pr_molar_volume
 from azoth.eos.reference.ps_flash import entropy_at
 from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
-from azoth.process.reference import _unported, capacity, compressor_chart
+from azoth.eos.reference.sound_speed import sound_speed as _sound_speed
+from azoth.process.reference import capacity, compressor_chart
 from azoth.process.reference.surge_curve import SurgeCurve
 
 #: ``Compressor.R``, J/(mol*K).
@@ -68,6 +70,8 @@ def compressor(
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
     chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: Q | None = None,
     surge_curve: list[dict[str, Q]] | None = None,
     surge_control_margin: float | None = None,
     anti_surge_active: bool | None = None,
@@ -117,6 +121,11 @@ def compressor(
     checks = checks_for(spec)
     warnings: list[Warning] = []
 
+    if len(inlet_z) != len(components):
+        raise InvalidInputError(
+            "z", f"a feed for {len(components)} components has {len(inlet_z)} entries"
+        )
+
     n = input_to_si(spec, "inlet_n", inlet_n)
     t = input_to_si(spec, "inlet_t", inlet_t)
     p = input_to_si(spec, "inlet_p", inlet_p)
@@ -147,10 +156,9 @@ def compressor(
         "fan_law": compressor_chart.FAN_LAW,
         "interpolate": compressor_chart.MAP_LOOKUP,
         "interpolate_and_extrapolate": compressor_chart.MAP_LOOKUP_EXTRAPOLATE,
+        "khader_2015": compressor_chart.KHADER_2015,
     }.get(chart_type)
     if kind is None:
-        if chart_type == "khader_2015":
-            _unported.refuse("chart_type=khader_2015")
         raise InvalidInputError(
             "chart_type", f"'{chart_type}' is not one of the four declared chart types"
         )
@@ -202,7 +210,32 @@ def compressor(
             recycle_fraction=None,
         )
     else:
-        chart = compressor_chart.CompressorChart(points, kind)
+        if kind == compressor_chart.KHADER_2015:
+            if chart_conditions is None or len(chart_conditions) != 4:
+                raise InvalidInputError(
+                    "chart_conditions",
+                    "the Khader chart builds its reference fluid at the chart conditions, and "
+                    "this machine states none",
+                )
+            reference = _reference_sound_speed(chart_conditions)
+            feed_speed = _sound_speed(
+                components, quantity(t, "K"), quantity(p, "Pa"), list(inlet_z)
+            ).system_sound_speed
+            if feed_speed is None:
+                raise InvalidInputError(
+                    "inlet_t", "the feed's sound speed is not a number, and the map needs one"
+                )
+            process = feed_speed.to("m/s").magnitude
+            diameter = (
+                0.3
+                if impeller_diameter is None
+                else input_to_si(spec, "impeller_diameter", impeller_diameter)
+            )
+            chart = compressor_chart.CompressorChart.from_khader(
+                points, reference, process, diameter
+            )
+        else:
+            chart = compressor_chart.CompressorChart(points, kind)
         if surge_rows:
             chart.set_surge_curve(
                 SurgeCurve.from_points(
@@ -309,6 +342,68 @@ def _plain_or_none(read: _SurgeRead | None, name: str) -> float | None:
     return None if value is None else float(value)
 
 
+def _reference_sound_speed(conditions: list[float]) -> float:
+    """``createDefaultFluid``'s phase sound speed: methane/ethane/propane, rescaled to MW."""
+    names = ["methane", "ethane", "propane"]
+    mixture, _ideal_gas = _components.mixture_of(names, eos="pr")
+    masses = [
+        (component.molar_mass.to("kg/mol").magnitude * 1000.0)
+        if component.molar_mass is not None
+        else 0.0
+        for component in mixture.components
+    ]
+    x1, x2, x3 = 0.90, 0.05, 0.05
+    if conditions[3] > 0.0:
+        a = (conditions[3] - masses[2]) / (
+            x1 * (masses[0] - masses[2]) + x2 * (masses[1] - masses[2])
+        )
+        first = a * x1
+        second = a * x2
+        z = [first, second, 1.0 - first - second]
+    else:
+        z = [x1, x2, x3]
+    state = _sound_speed(
+        names,
+        quantity(conditions[0] + 273.15, "K"),
+        quantity(conditions[1] * 1.0e5, "Pa"),
+        z,
+    )
+    return float(state.sound_speed.to("m/s").magnitude)
+
+
+def _feed_state(
+    mixture: Any, ideal_gas: Any, t: float, p: float, z: list[float]
+) -> tuple[float, float, float]:
+    """``getZ()``, ``getCP()/n`` and the molar volume at the feed's own composition."""
+    flash = pt_flash_solve(mixture, quantity(t, "K"), quantity(p, "Pa"), list(z))
+    reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(reduced.t_kelvin)
+
+    def single(composition: list[float], liquid: bool) -> tuple[float, float, float]:
+        state = phase_state(reduced, kij, list(composition), liquid=liquid)
+        root = float(state.z)
+        cp = float(
+            molar_enthalpy_entropy(
+                mixture, ideal_gas, quantity(t, "K"), quantity(p, "Pa"), list(composition), root
+            )
+            .cp.to_base_units()
+            .magnitude
+        )
+        volume = root * R * t / p - mixture.volume_shift(list(composition))
+        return root, cp, volume
+
+    if flash.phase == "two_phase":
+        beta = flash.vapour_fraction if flash.vapour_fraction is not None else 1.0
+        vapour = single(list(flash.y), False)
+        liquid = single(list(flash.x), True)
+        return (
+            beta * vapour[0] + (1.0 - beta) * liquid[0],
+            beta * vapour[1] + (1.0 - beta) * liquid[1],
+            beta * vapour[2] + (1.0 - beta) * liquid[2],
+        )
+    return single(list(z), flash.phase != "all_vapour")
+
+
 def _chart_states(
     components: list[str],
     n: float,
@@ -321,22 +416,17 @@ def _chart_states(
 ) -> _ChartState:
     """The chart branch: head, efficiency, power, outlet pressure, enthalpy and temperature."""
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
-    fresh_flow = capacity.system_volumetric_flow(components, t, p, inlet_z, n) * 3600.0
+    molar_mass = capacity._molar_mass(mixture, list(inlet_z))
+    # **The feed's own root, at the feed's composition** - `getZ()` and `getCP()/n` on the one
+    # phase the class holds, and the molar volume behind `getFlowRate("m3/sec")`.
+    z, cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
+    fresh_flow = n * molar_volume * 3600.0
     if not n > 0.0 or not fresh_flow > 0.0 or not math.isfinite(n):
         raise InvalidInputError(
             "inlet_n",
             f"the chart branch needs a positive flow to scale, and {n} mol/s gives "
             f"{fresh_flow} m3/hr",
         )
-    molar_mass = capacity._molar_mass(mixture, list(inlet_z))
-    flash = pt_flash_solve(mixture, quantity(t, "K"), quantity(p, "Pa"), list(inlet_z))
-    root = flash.z_vapour if flash.phase == "all_vapour" else flash.z_liquid
-    volume = pr_molar_volume(root, quantity(t, "K"), quantity(p, "Pa")).v.to("m**3/mol").magnitude
-    z = p * volume / (R * t)
-    state = molar_enthalpy_entropy(
-        mixture, ideal_gas, quantity(t, "K"), quantity(p, "Pa"), list(inlet_z), root
-    )
-    cp = float(state.cp.to_base_units().magnitude)
     kappa = cp / (cp - R)
     # ``getZvolcorr`` = ``P v/(R T)`` at the Peneloux-shifted molar volume.
     zvolcorr = z - p * mixture.volume_shift(list(inlet_z)) / (R * t)

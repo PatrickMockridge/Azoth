@@ -3,9 +3,10 @@
 use azoth_core::units::{Power, Pressure, joules_per_mole, pascals, watts};
 use azoth_core::{AzothError, Result};
 
+use azoth_eos::{Phase, RootSide, molar_enthalpy_entropy, pt_flash};
+
 use crate::compressor_chart::CompressorChart;
 use crate::kernels::pump::pump;
-use crate::segment::phase::system_volumetric_flow;
 use crate::stream::Stream;
 
 /// `ThermodynamicConstantsInterface.R`, J/(mol*K), as the class's own constant carries it.
@@ -139,7 +140,7 @@ pub fn compressor_with_chart(
         ));
     }
 
-    let fresh_flow_m3hr = system_volumetric_flow(feed)? * 3600.0;
+    let fresh_flow_m3hr = feed_volumetric_flow(feed)? * 3600.0;
     let fresh_n = feed.n;
     if fresh_n.is_nan() || fresh_n <= 0.0 || fresh_flow_m3hr.is_nan() || fresh_flow_m3hr <= 0.0 {
         return Err(AzothError::invalid_input(
@@ -151,9 +152,9 @@ pub fn compressor_with_chart(
         ));
     }
     let molar_mass = feed.molar_mass()?.value;
-    // The cubic's own `Z`, which is `getZ()`: `p M/(rho_cubic R T)`.
-    let z = feed.p.value * molar_mass / (feed.density()? * R_J_PER_MOL_K * feed.t.value);
-    let cp = feed.molar_heat_capacity()?;
+    // **The feed's own root, at the feed's composition** - `getZ()` and `getCP()` on the one
+    // phase the class holds, not the flash's incipient phase.
+    let (z, cp) = feed_z_cp(feed)?;
     let kappa = cp / (cp - R_J_PER_MOL_K);
     // `getZvolcorr` = `P v/(R T)` at the Peneloux-shifted molar volume.
     let shift = {
@@ -270,4 +271,67 @@ struct SurgeReadOut {
     distance_to_control_line: Option<f64>,
     required_recycle_fraction: f64,
     anti_surge_recycle_power: f64,
+}
+
+/// `getFlowRate("m3/sec")` at the feed's own composition.
+///
+/// **The feed's root, not the flash's incipient one.** `pt_flash` on a superheated stream
+/// reports the *incipient* phase's root, whose composition can sit far from the feed's; the
+/// class reads the one phase it holds. A two-phase feed is the beta-weighted mean of its
+/// phases, which is what the system flow sums.
+fn feed_volumetric_flow(feed: &Stream) -> Result<f64> {
+    let (mixture, _) = feed.mixture()?;
+    let flash = pt_flash(&mixture, feed.t, feed.p, &feed.z)?;
+    let reduced = mixture.reduced_parameters(feed.t, feed.p)?;
+    let volume = |composition: &[f64], root: f64| -> f64 {
+        root * R_J_PER_MOL_K * feed.t.value / feed.p.value - mixture.volume_shift(composition)
+    };
+    let molar_volume = match flash.phase {
+        Phase::AllVapour | Phase::AllLiquid | Phase::Trivial => {
+            let side = if matches!(flash.phase, Phase::AllVapour) {
+                RootSide::Vapour
+            } else {
+                RootSide::Liquid
+            };
+            let root = mixture.phase_state(&reduced, &feed.z, side)?.z;
+            volume(&feed.z, root)
+        }
+        Phase::TwoPhase => {
+            let beta = flash.vapour_fraction.unwrap_or(1.0);
+            beta * volume(&flash.y, flash.z_vapour)
+                + (1.0 - beta) * volume(&flash.x, flash.z_liquid)
+        }
+    };
+    Ok(feed.n * molar_volume)
+}
+
+/// `getZ()` and `getCP()/n` at the feed's own composition.
+///
+/// **The feed's root, not the flash's incipient one**, for the reason
+/// [`feed_volumetric_flow`] gives. A two-phase feed is the beta-weighted mean, which is what
+/// the class's `getZ()` sums.
+fn feed_z_cp(feed: &Stream) -> Result<(f64, f64)> {
+    let (mixture, ideal_gas) = feed.mixture()?;
+    let flash = pt_flash(&mixture, feed.t, feed.p, &feed.z)?;
+    let reduced = mixture.reduced_parameters(feed.t, feed.p)?;
+    let single = |composition: &[f64], side: RootSide| -> Result<(f64, f64)> {
+        let root = mixture.phase_state(&reduced, composition, side)?.z;
+        let cp = molar_enthalpy_entropy(&mixture, &ideal_gas, feed.t, feed.p, composition, root)?
+            .cp
+            .value;
+        Ok((root, cp))
+    };
+    match flash.phase {
+        Phase::AllVapour => single(&feed.z, RootSide::Vapour),
+        Phase::AllLiquid | Phase::Trivial => single(&feed.z, RootSide::Liquid),
+        Phase::TwoPhase => {
+            let beta = flash.vapour_fraction.unwrap_or(1.0);
+            let (vapour_z, vapour_cp) = single(&flash.y, RootSide::Vapour)?;
+            let (liquid_z, liquid_cp) = single(&flash.x, RootSide::Liquid)?;
+            Ok((
+                beta * vapour_z + (1.0 - beta) * liquid_z,
+                beta * vapour_cp + (1.0 - beta) * liquid_cp,
+            ))
+        }
+    }
 }

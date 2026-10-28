@@ -471,6 +471,8 @@ public surface of forty-odd getters.
   > captures/process_compressor_curve.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_map_lookup \
   > captures/process_compressor_map_lookup.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_khader \
+  > captures/process_compressor_khader.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
@@ -704,6 +706,18 @@ them and outside them; the base class's flow outside the knots, where it prints 
 with each class, which the two differ on (`155.99` against `158.26` bara). **The pinned jar's
 source scales the blended head and the working tree's does not**; the rows are the jar's, which
 is the oracle.
+
+**`ProcessProbe compressor_khader` is `CompressorChartKhader2015`.** The map is fitted in the
+*reference* fluid's phase sound speed - a default methane/ethane/propane mix rescaled to the
+chart conditions' 20 g/mol - and read in the *process* fluid's system value; both are printed.
+`setCurves` also stores a second corrected-flow column for the efficiency **without** the
+`3600` the head's has, and the getters never read it: both interpolate against the head's
+corrected flow, which is why the port carries one axis. The rows re-case
+`CompressorChartKhader2015Test` on PR - the nine-component gas at 24 C, 48 bara, 3 MSm3/day and
+speed 10000, then the test's own reference-like three-component gas. **The three-component
+row's machine run is not cased**: its outlet lands on a state where our `PHflash` refuses
+(`SolverNotConverged`, residual `0.193`) while the class converges, so the capture prints it as
+a finding; the chart read itself matches the class to `1e-5` in both rows.
 
 **`ProcessProbe expander_steps` is `Expander.run`'s stepped polytropic branch.** The class's
 own `ExpanderPolytropicStepsTest` is a *relative* oracle - five steps against forty, to `0.1` K

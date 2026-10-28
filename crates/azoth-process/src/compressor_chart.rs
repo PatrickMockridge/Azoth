@@ -85,6 +85,36 @@ pub enum ChartKind {
     /// `CompressorChartAlternativeMapLookupExtrapolate`: the same, with linear extrapolation
     /// past the flow knots and a linear speed blend.
     MapLookupExtrapolate,
+    /// `CompressorChartKhader2015`: the extrapolating lookup in the map's similarity
+    /// coordinates - machine Mach number, corrected flow and head over the sound speed.
+    Khader2015,
+}
+
+/// `CompressorChartKhader2015`'s map: the speed lines in similarity coordinates.
+#[derive(Debug, Clone, PartialEq)]
+struct KhaderMap {
+    /// The reference fluid's phase sound speed, which fits the map, m/s.
+    reference_sound_speed: f64,
+    /// The process fluid's system sound speed, which reads it, m/s.
+    process_sound_speed: f64,
+    /// The impeller's outer diameter, m.
+    impeller_diameter: f64,
+    /// One line per speed, as machine Mach numbers.
+    lines: Vec<KhaderLine>,
+}
+
+/// One speed line in the similarity coordinates.
+#[derive(Debug, Clone, PartialEq)]
+struct KhaderLine {
+    /// `N/60 D/cs`, the machine Mach number.
+    mach: f64,
+    /// `Q/3600/cs/D^2`, the corrected flow **both getters interpolate against**. The class
+    /// stores a second column without the `3600` and never reads it on this path.
+    head_flow: Vec<f64>,
+    /// `h/cs^2`.
+    head: Vec<f64>,
+    /// The measured efficiency, as a fraction.
+    efficiency: Vec<f64>,
 }
 
 /// The reduced fits and the speed lines, as `CompressorChart` holds them.
@@ -96,6 +126,7 @@ pub struct CompressorChart {
     min_speed: f64,
     max_speed: f64,
     curves: Vec<SpeedCurve>,
+    khader: Option<KhaderMap>,
     kind: ChartKind,
     surge: Option<SurgeCurve>,
     stonewall: Option<StoneWallCurve>,
@@ -208,16 +239,81 @@ impl CompressorChart {
             min_speed,
             max_speed,
             curves,
+            khader: None,
             kind,
             surge: None,
             stonewall: None,
         })
     }
 
+    /// Build the Khader 2015 chart: the extrapolating lookup in similarity coordinates.
+    ///
+    /// **Two sound speeds, because the class uses two.** The map is fitted in the *reference*
+    /// fluid's phase sound speed - the default methane/ethane/propane mix at the chart
+    /// conditions - and read in the *process* fluid's system sound speed. The head's corrected
+    /// flow divides by `3600` and the efficiency's does not; both asymmetries are the class's.
+    ///
+    /// # Errors
+    /// The same refusals as [`Self::new`], plus a non-positive sound speed or diameter.
+    pub fn with_khader(
+        points: &[CurvePoint],
+        reference_sound_speed: f64,
+        process_sound_speed: f64,
+        impeller_diameter: f64,
+    ) -> Result<Self> {
+        for (name, value) in [
+            ("reference_sound_speed", reference_sound_speed),
+            ("process_sound_speed", process_sound_speed),
+            ("impeller_diameter", impeller_diameter),
+        ] {
+            if !value.is_finite() || value <= 0.0 {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("the Khader map divides by {name}, and {value} is not positive"),
+                ));
+            }
+        }
+        let mut chart = Self::with_kind(points, ChartKind::Khader2015)?;
+        let area = impeller_diameter * impeller_diameter;
+        let mut lines: Vec<KhaderLine> = Vec::new();
+        for curve in &chart.curves {
+            let mach = curve.speed / 60.0 * impeller_diameter / reference_sound_speed;
+            let head_flow = curve
+                .flow
+                .iter()
+                .map(|flow| flow / 3600.0 / reference_sound_speed / area)
+                .collect();
+            let head = curve
+                .head
+                .iter()
+                .map(|head| head / (reference_sound_speed * reference_sound_speed))
+                .collect();
+            lines.push(KhaderLine {
+                mach,
+                head_flow,
+                head,
+                efficiency: curve.efficiency.clone(),
+            });
+        }
+        chart.khader = Some(KhaderMap {
+            reference_sound_speed,
+            process_sound_speed,
+            impeller_diameter,
+            lines,
+        });
+        Ok(chart)
+    }
+
     /// The interpolation scheme this chart uses.
     #[must_use]
     pub fn kind(&self) -> ChartKind {
         self.kind
+    }
+
+    /// The Khader map, where one is built.
+    #[must_use]
+    pub fn khader(&self) -> bool {
+        self.khader.is_some()
     }
 
     /// The midpoint of the measured speed range, rpm.
@@ -235,6 +331,15 @@ impl CompressorChart {
     pub fn polytropic_head(&self, flow: f64, speed: f64) -> Result<f64> {
         match self.kind {
             ChartKind::FanLaw => Ok(self.fan_law_head(flow, speed)),
+            ChartKind::Khader2015 => {
+                let map = self.khader_map()?;
+                let (corrected_flow, mach) = map.coordinates(flow, speed);
+                Ok(
+                    lookup_lines(&map.map_lines(), corrected_flow, mach, true, true, false)?
+                        * map.process_sound_speed
+                        * map.process_sound_speed,
+                )
+            }
             _ => self.lookup(flow, speed, true),
         }
     }
@@ -252,86 +357,41 @@ impl CompressorChart {
         if self.kind == ChartKind::FanLaw {
             return Ok(evaluate(&self.efficiency, flow / speed));
         }
+        if self.kind == ChartKind::Khader2015 {
+            let map = self.khader_map()?;
+            let (corrected_flow, mach) = map.coordinates(flow, speed);
+            return lookup_lines(&map.map_lines(), corrected_flow, mach, false, true, false);
+        }
         self.lookup(flow, speed, false)
     }
 
     /// The alternative lookups: the nearest speed line(s), splined along `flow`.
     fn lookup(&self, flow: f64, speed: f64, head: bool) -> Result<f64> {
-        let speeds = self.closest_speeds(speed);
-        if speeds.is_empty() {
-            return Err(AzothError::invalid_input(
-                "curve",
-                "the chart has no speed lines, so a map lookup has nothing to read",
-            ));
-        }
-        let extrapolate = self.kind == ChartKind::MapLookupExtrapolate;
-        let mut values: Vec<(f64, f64)> = Vec::with_capacity(speeds.len());
-        for index in speeds {
-            let curve = &self.curves[index];
-            let (knots, ordinates) = if head {
-                (&curve.flow, &curve.head)
-            } else {
-                (&curve.flow, &curve.efficiency)
-            };
-            let value = line_value(knots, ordinates, flow, extrapolate, curve.speed)?;
-            values.push((curve.speed, value));
-        }
-        match self.kind {
-            ChartKind::MapLookup => {
-                Ok(values.iter().map(|(_, value)| value).sum::<f64>() / values.len() as f64)
-            }
-            _ => {
-                if values.len() == 1 {
-                    let (reference, value) = values[0];
-                    // The extrapolating class scales a single line's head by the speed ratio
-                    // (not its square), and leaves the efficiency alone.
-                    if head {
-                        Ok(value * speed / reference)
-                    } else {
-                        Ok(value)
-                    }
-                } else {
-                    let (first, first_value) = values[0];
-                    let (second, second_value) = values[1];
-                    let slope = (second_value - first_value) / (second - first);
-                    let blended = first_value + slope * (speed - first);
-                    // **The pinned class scales the blended head by `speed / max(s1, s2)`**,
-                    // and leaves the efficiency unscaled. The rule is in
-                    // `neqsim-f0c7436.jar`'s source; the later working-tree source drops it,
-                    // and the capture is the jar's.
-                    if head {
-                        Ok(blended * speed / first.max(second))
-                    } else {
-                        Ok(blended)
-                    }
-                }
-            }
-        }
+        let lines: Vec<MapLine<'_>> = self
+            .curves
+            .iter()
+            .map(|curve| MapLine {
+                speed: curve.speed,
+                head_flow: &curve.flow,
+                efficiency_flow: &curve.flow,
+                head: &curve.head,
+                efficiency: &curve.efficiency,
+            })
+            .collect();
+        lookup_lines(
+            &lines,
+            flow,
+            speed,
+            head,
+            self.kind == ChartKind::MapLookupExtrapolate,
+            matches!(self.kind, ChartKind::MapLookup),
+        )
     }
 
-    /// `getClosestRefSpeeds`: the line itself on an exact match, the two it sits between, and
-    /// the end line outside the range.
-    fn closest_speeds(&self, speed: f64) -> Vec<usize> {
-        let mut order: Vec<usize> = (0..self.curves.len()).collect();
-        order.sort_by(|a, b| self.curves[*a].speed.total_cmp(&self.curves[*b].speed));
-        // `bisect_left`: the first line at or above the speed.
-        let mut index = 0;
-        while index < order.len() && self.curves[order[index]].speed < speed {
-            index += 1;
-        }
-        if index < order.len() && self.curves[order[index]].speed == speed {
-            return vec![order[index]];
-        }
-        if index == 0 {
-            return vec![order[0]];
-        }
-        if index == order.len() {
-            return vec![order[order.len() - 1]];
-        }
-        vec![index - 1, index]
-            .into_iter()
-            .map(|position| order[position])
-            .collect()
+    fn khader_map(&self) -> Result<&KhaderMap> {
+        self.khader.as_ref().ok_or_else(|| {
+            AzothError::invalid_input("chart_type", "the Khader kind has no map built")
+        })
     }
 
     /// `getSpeedValue(flow, head)`: the speed that reaches a head at a flow, rpm.
@@ -641,6 +701,113 @@ impl CompressorChart {
         }
         best
     }
+}
+
+/// One speed line, borrowed for a lookup.
+struct MapLine<'a> {
+    speed: f64,
+    head_flow: &'a [f64],
+    efficiency_flow: &'a [f64],
+    head: &'a [f64],
+    efficiency: &'a [f64],
+}
+
+impl KhaderMap {
+    /// The corrected flow and machine Mach number a read is taken at.
+    fn coordinates(&self, flow: f64, speed: f64) -> (f64, f64) {
+        let area = self.impeller_diameter * self.impeller_diameter;
+        let corrected = flow / 3600.0 / self.process_sound_speed / area;
+        let mach = speed / 60.0 * self.impeller_diameter / self.process_sound_speed;
+        (corrected, mach)
+    }
+
+    /// The map's lines, with the head's flow axis or the efficiency's.
+    fn map_lines(&self) -> Vec<MapLine<'_>> {
+        self.lines
+            .iter()
+            .map(|line| {
+                // **Both getters read `curve.flow`**, the head's corrected flow; the class's
+                // `flowPolytropicEfficiency` column is stored and never read on this path.
+                MapLine {
+                    speed: line.mach,
+                    head_flow: &line.head_flow,
+                    efficiency_flow: &line.head_flow,
+                    head: &line.head,
+                    efficiency: &line.efficiency,
+                }
+            })
+            .collect()
+    }
+}
+
+/// The mean-over-lines rule (`MapLookup`) or the extrapolating blend, over any set of lines.
+fn lookup_lines(
+    lines: &[MapLine<'_>],
+    flow: f64,
+    speed: f64,
+    head: bool,
+    extrapolate: bool,
+    mean: bool,
+) -> Result<f64> {
+    if lines.is_empty() {
+        return Err(AzothError::invalid_input(
+            "curve",
+            "the chart has no speed lines, so a map lookup has nothing to read",
+        ));
+    }
+    let mut order: Vec<usize> = (0..lines.len()).collect();
+    order.sort_by(|a, b| lines[*a].speed.total_cmp(&lines[*b].speed));
+    let mut index = 0;
+    while index < order.len() && lines[order[index]].speed < speed {
+        index += 1;
+    }
+    let closest: Vec<usize> = if index < order.len() && lines[order[index]].speed == speed {
+        vec![order[index]]
+    } else if index == 0 {
+        vec![order[0]]
+    } else if index == order.len() {
+        vec![order[order.len() - 1]]
+    } else {
+        vec![order[index - 1], order[index]]
+    };
+
+    let mut values: Vec<(f64, f64)> = Vec::with_capacity(closest.len());
+    for position in closest {
+        let line = &lines[position];
+        let (knots, ordinates) = if head {
+            (line.head_flow, line.head)
+        } else {
+            (line.efficiency_flow, line.efficiency)
+        };
+        values.push((
+            line.speed,
+            line_value(knots, ordinates, flow, extrapolate, line.speed)?,
+        ));
+    }
+    if mean {
+        return Ok(values.iter().map(|(_, value)| value).sum::<f64>() / values.len() as f64);
+    }
+    if values.len() == 1 {
+        let (reference, value) = values[0];
+        // The extrapolating class scales a single line's head by the speed ratio (not its
+        // square), and leaves the efficiency alone.
+        return Ok(if head {
+            value * speed / reference
+        } else {
+            value
+        });
+    }
+    let (first, first_value) = values[0];
+    let (second, second_value) = values[1];
+    let slope = (second_value - first_value) / (second - first);
+    let blended = first_value + slope * (speed - first);
+    // **The pinned class scales the blended head by `speed / max(s1, s2)`**, and leaves the
+    // efficiency unscaled; the later working-tree source drops it and the jar is the oracle.
+    Ok(if head {
+        blended * speed / first.max(second)
+    } else {
+        blended
+    })
 }
 
 /// One speed line's head or efficiency at a flow: the natural spline inside the knots, and

@@ -75,10 +75,56 @@ class _SpeedCurve:
 FAN_LAW = "fan_law"
 MAP_LOOKUP = "map_lookup"
 MAP_LOOKUP_EXTRAPOLATE = "map_lookup_extrapolate"
+KHADER_2015 = "khader_2015"
 
 
 class CompressorChart:
     """The reduced fits and the speed lines, as ``CompressorChart`` holds them."""
+
+    @staticmethod
+    def from_khader(
+        points: list[CurvePoint],
+        reference_sound_speed: float,
+        process_sound_speed: float,
+        impeller_diameter: float,
+    ) -> CompressorChart:
+        """`CompressorChartKhader2015`: the extrapolating lookup in similarity coordinates.
+
+        The map is fitted in the *reference* fluid's phase sound speed and read in the
+        *process* fluid's system value; the head's corrected flow divides by ``3600`` and the
+        efficiency's does not - the class's own asymmetries.
+        """
+        for name, value in (
+            ("reference_sound_speed", reference_sound_speed),
+            ("process_sound_speed", process_sound_speed),
+            ("impeller_diameter", impeller_diameter),
+        ):
+            if not math.isfinite(value) or value <= 0.0:
+                raise InvalidInputError(
+                    name, f"the Khader map divides by {name}, and {value} is not positive"
+                )
+        chart = CompressorChart(points, KHADER_2015)
+        area = impeller_diameter * impeller_diameter
+        lines: list[_KhaderLine] = []
+        for curve in chart._curves:
+            lines.append(
+                _KhaderLine(
+                    mach=curve.speed / 60.0 * impeller_diameter / reference_sound_speed,
+                    head_flow=[flow / 3600.0 / reference_sound_speed / area for flow in curve.flow],
+                    head=[
+                        head / (reference_sound_speed * reference_sound_speed)
+                        for head in curve.head
+                    ],
+                    efficiency=list(curve.efficiency),
+                )
+            )
+        chart._khader = _KhaderMap(
+            reference_sound_speed=reference_sound_speed,
+            process_sound_speed=process_sound_speed,
+            impeller_diameter=impeller_diameter,
+            lines=lines,
+        )
+        return chart
 
     def __init__(self, points: list[CurvePoint], kind: str = FAN_LAW) -> None:
         """Build the fits and the speed lines from a flattened map.
@@ -87,7 +133,7 @@ class CompressorChart:
             InvalidInputError: for fewer than three points, a non-finite value, a
                 non-positive speed, or an unknown ``kind``.
         """
-        if kind not in (FAN_LAW, MAP_LOOKUP, MAP_LOOKUP_EXTRAPOLATE):
+        if kind not in (FAN_LAW, MAP_LOOKUP, MAP_LOOKUP_EXTRAPOLATE, KHADER_2015):
             raise InvalidInputError("curve", f"'{kind}' is not a chart interpolation")
         if len(points) < _COEFFICIENTS:
             raise InvalidInputError(
@@ -130,6 +176,7 @@ class CompressorChart:
         speeds = [point.speed for point in points]
         self._curves = curves
         self._kind = kind
+        self._khader: _KhaderMap | None = None
         self._surge: SurgeCurve | None = None
         self._stonewall: StoneWallCurve | None = None
         self._min_speed = min(speeds)
@@ -150,6 +197,20 @@ class CompressorChart:
         """
         if self._kind == FAN_LAW:
             return _evaluate(self._head, flow / speed) * speed * speed
+        if self._kind == KHADER_2015:
+            map_ = self._khader_map()
+            area = map_.impeller_diameter * map_.impeller_diameter
+            corrected = flow / 3600.0 / map_.process_sound_speed / area
+            mach = speed / 60.0 * map_.impeller_diameter / map_.process_sound_speed
+            value = _lookup_lines(
+                map_.map_lines(),
+                corrected,
+                mach,
+                head=True,
+                extrapolate=True,
+                mean=False,
+            )
+            return value * map_.process_sound_speed * map_.process_sound_speed
         return self._lookup(flow, speed, head=True)
 
     def polytropic_efficiency(self, flow: float, speed: float) -> float:
@@ -160,6 +221,19 @@ class CompressorChart:
         """
         if self._kind == FAN_LAW:
             return _evaluate(self._efficiency, flow / speed)
+        if self._kind == KHADER_2015:
+            map_ = self._khader_map()
+            area = map_.impeller_diameter * map_.impeller_diameter
+            corrected = flow / 3600.0 / map_.process_sound_speed / area
+            mach = speed / 60.0 * map_.impeller_diameter / map_.process_sound_speed
+            return _lookup_lines(
+                map_.map_lines(),
+                corrected,
+                mach,
+                head=False,
+                extrapolate=True,
+                mean=False,
+            )
         return self._lookup(flow, speed, head=False)
 
     @property
@@ -167,35 +241,31 @@ class CompressorChart:
         """The interpolation scheme this chart uses."""
         return self._kind
 
+    def _khader_map(self) -> _KhaderMap:
+        if self._khader is None:
+            raise InvalidInputError("chart_type", "the Khader kind has no map built")
+        return self._khader
+
     def _lookup(self, flow: float, speed: float, *, head: bool) -> float:
         """The alternative lookups: the nearest line(s), splined along ``flow``."""
-        closest = self._closest_indices(speed)
-        if not closest:
-            raise InvalidInputError(
-                "curve", "the chart has no speed lines, so a map lookup has nothing to read"
+        lines = [
+            _MapLine(
+                speed=curve.speed,
+                head_flow=curve.flow,
+                efficiency_flow=curve.flow,
+                head=curve.head,
+                efficiency=curve.efficiency,
             )
-        extrapolate = self._kind == MAP_LOOKUP_EXTRAPOLATE
-        values: list[tuple[float, float]] = []
-        for index in closest:
-            curve = self._curves[index]
-            ordinates = curve.head if head else curve.efficiency
-            value = _line_value(
-                curve.flow, ordinates, flow, extrapolate=extrapolate, speed=curve.speed
-            )
-            values.append((curve.speed, value))
-        if self._kind == MAP_LOOKUP:
-            return sum(value for _, value in values) / len(values)
-        if len(values) == 1:
-            reference, value = values[0]
-            # The extrapolating class scales a single line's head by the speed ratio (not its
-            # square), and leaves the efficiency alone.
-            return value * speed / reference if head else value
-        (first, first_value), (second, second_value) = values
-        slope = (second_value - first_value) / (second - first)
-        blended = first_value + slope * (speed - first)
-        # **The pinned class scales the blended head by ``speed / max(s1, s2)``**, and leaves
-        # the efficiency unscaled.
-        return blended * speed / max(first, second) if head else blended
+            for curve in self._curves
+        ]
+        return _lookup_lines(
+            lines,
+            flow,
+            speed,
+            head=head,
+            extrapolate=self._kind == MAP_LOOKUP_EXTRAPOLATE,
+            mean=self._kind == MAP_LOOKUP,
+        )
 
     def _closest_indices(self, speed: float) -> list[int]:
         """``getClosestRefSpeeds``: the line itself, the two it sits between, or the end line."""
@@ -459,6 +529,103 @@ def _solve3(a: list[list[float]], b: list[float]) -> list[float]:
                 for value, pivot_value in zip(matrix[row], matrix[column], strict=True)
             ]
     return [matrix[row][_COEFFICIENTS] for row in range(_COEFFICIENTS)]
+
+
+@dataclass(frozen=True, slots=True)
+class _MapLine:
+    """One speed line, as the lookup reads it."""
+
+    speed: float
+    head_flow: list[float]
+    efficiency_flow: list[float]
+    head: list[float]
+    efficiency: list[float]
+
+
+@dataclass(frozen=True, slots=True)
+class _KhaderLine:
+    """One speed line in the similarity coordinates."""
+
+    mach: float
+    head_flow: list[float]
+    head: list[float]
+    efficiency: list[float]
+
+
+@dataclass(frozen=True, slots=True)
+class _KhaderMap:
+    """`CompressorChartKhader2015`'s map, in similarity coordinates."""
+
+    reference_sound_speed: float
+    process_sound_speed: float
+    impeller_diameter: float
+    lines: list[_KhaderLine]
+
+    def map_lines(self) -> list[_MapLine]:
+        """**Both getters read the head's corrected flow**; the class's separate efficiency
+        column is stored and never read on this path."""
+        return [
+            _MapLine(
+                speed=line.mach,
+                head_flow=line.head_flow,
+                efficiency_flow=line.head_flow,
+                head=line.head,
+                efficiency=line.efficiency,
+            )
+            for line in self.lines
+        ]
+
+
+def _lookup_lines(
+    lines: list[_MapLine],
+    flow: float,
+    speed: float,
+    *,
+    head: bool,
+    extrapolate: bool,
+    mean: bool,
+) -> float:
+    """The mean-over-lines rule or the extrapolating blend, over any set of lines."""
+    if not lines:
+        raise InvalidInputError(
+            "curve", "the chart has no speed lines, so a map lookup has nothing to read"
+        )
+    order = sorted(range(len(lines)), key=lambda index: lines[index].speed)
+    index = 0
+    while index < len(order) and lines[order[index]].speed < speed:
+        index += 1
+    if index < len(order) and lines[order[index]].speed == speed:
+        closest = [order[index]]
+    elif index == 0:
+        closest = [order[0]]
+    elif index == len(order):
+        closest = [order[len(order) - 1]]
+    else:
+        closest = [order[index - 1], order[index]]
+
+    values: list[tuple[float, float]] = []
+    for position in closest:
+        line = lines[position]
+        knots, ordinates = (
+            (line.head_flow, line.head) if head else (line.efficiency_flow, line.efficiency)
+        )
+        values.append(
+            (
+                line.speed,
+                _line_value(knots, ordinates, flow, extrapolate=extrapolate, speed=line.speed),
+            )
+        )
+    if mean:
+        return sum(value for _, value in values) / len(values)
+    if len(values) == 1:
+        reference, value = values[0]
+        return value * speed / reference if head else value
+    (first, first_value), (second, second_value) = values
+    slope = (second_value - first_value) / (second - first)
+    blended = first_value + slope * (speed - first)
+    # **The pinned class scales the blended head by ``speed / max(s1, s2)``**, and leaves the
+    # efficiency unscaled.
+    return blended * speed / max(first, second) if head else blended
 
 
 def _line_value(

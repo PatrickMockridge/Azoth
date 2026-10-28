@@ -558,6 +558,20 @@ static ALL: &[ModelInputs] = &[
                 dimension: None,
             },
             ModelInput {
+                name: "chart_conditions",
+                kind: "vector",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "impeller_diameter",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
                 name: "surge_control_factor",
                 kind: "quantity",
                 values: &[],

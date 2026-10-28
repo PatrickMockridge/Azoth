@@ -412,10 +412,10 @@ pub fn pipe(
 /// refuses; the row is built from the generated mapping here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, chart_type = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, chart_type=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn compressor(
@@ -430,6 +430,8 @@ pub fn compressor(
     curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
     speed: Option<f64>,
     chart_type: Option<&str>,
+    chart_conditions: Option<Vec<f64>>,
+    impeller_diameter: Option<f64>,
     surge_curve: Option<Vec<crate::records_gen::CompressorSurgePoint>>,
     surge_control_margin: Option<f64>,
     anti_surge_active: Option<bool>,
@@ -470,6 +472,8 @@ pub fn compressor(
         points.as_deref(),
         speed,
         chart_type,
+        chart_conditions.as_deref(),
+        impeller_diameter.map(meters),
         surge.as_deref(),
         surge_control_margin,
         anti_surge_active,

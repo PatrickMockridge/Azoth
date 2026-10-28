@@ -13,7 +13,7 @@ assumptions = [
     "**the surge surface is the compressor's own; the recycle calculators are not.** A stated `surge_curve` sets the boundary curve, the read-outs are `getSurgeFlowRate`'s family, and `anti_surge_active` runs `run`'s recycle block. The calculators and controllers are named in `ROADMAP.md`.",
     "**the run-time loop is capped at 20 passes.** The class's `do-while` is uncapped and would spin on a curve it cannot leave; this stops and reports the last pass, which is the one deliberate divergence here.",
     "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
-    "**the speed-solve mode, the Khader 2015 chart, the catalogue, the deposit model and the property overrides are absent**; `chart_type = khader_2015` is the one chart value refused by name.",
+    "**the speed-solve mode, the catalogue, the deposit model and the property overrides are absent**, and so is `MapTurboExpanderCompressor`, the second shaft that reuses the Khader chart.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
@@ -22,6 +22,7 @@ references = [
     "`validation/neqsim/captures/process_compressor_curve.tsv` - the reduced chart's rows and inverses, and `Compressor.run`'s fixed-speed branch on PR.",
     "`validation/neqsim/captures/process_anti_surge.tsv` - the two boundary splines, the chart's generated surge and stonewall curves, the read-outs at a control margin, and the run-time recycle block in and out of surge.",
     "`validation/neqsim/captures/process_compressor_map_lookup.tsv` - the two alternative map lookups: their interpolation rows, the base class's out-of-range throw, and a machine run on each.",
+    "`validation/neqsim/captures/process_compressor_khader.tsv` - the Mach-number normalised map on PR: the reference and process sound speeds, the corrected factors, the real curves, and two machine runs.",
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
@@ -76,7 +77,7 @@ description = "the machine's speed, rpm, at which the chart is read. Absent take
 type = "enum"
 values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
 optional = true
-description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; `interpolate` and `interpolate_and_extrapolate` are the two alternative map lookups; **`khader_2015` is refused by name**, and its class is the declared row.\n"
+description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; `interpolate` and `interpolate_and_extrapolate` are the two alternative map lookups; `khader_2015` is the Mach-number normalised map.\n"
 [inputs.surge_curve]
 type = "record_list"
 row_type = "CompressorSurgePoint"
@@ -96,6 +97,16 @@ description = "`setSurgeControlMargin`: the control line as a fraction above the
 type = "boolean"
 optional = true
 description = "`getAntiSurge().setActive(true)`: whether the run-time recycle block runs. Absent is the class's `false`.\n"
+[inputs.chart_conditions]
+type = "vector"
+unit = "dimensionless"
+length = "four"
+optional = true
+description = "`setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps.\n"
+[inputs.impeller_diameter]
+unit = "m"
+optional = true
+description = "the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps.\n"
 [inputs.surge_control_factor]
 unit = "dimensionless"
 optional = true
@@ -184,8 +195,3 @@ rationale = "an absolute temperature"
 python = "azoth.process.compressor"
 rust = "azoth_process::compressor"
 
-[[unported]]
-parameter = "chart_type"
-value = "khader_2015"
-class = "CompressorChartKhader2015"
-capture = "validation/neqsim/captures/process_compressor_curve.tsv"

@@ -2460,12 +2460,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.compressor': {
         "calc_id": 'process.compressor',
         "name": 'Compressor',
-        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': 'dee17b185b795c5e01e43ef14efb4fa770745509cb4eacc565df06a4ec91d94e'},
-        "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': 'e755ca0c4be1e196c9e3ea74865b7cda1b2289ae08c859e1fecbfdc584624dce'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': '339af473bbf692340df10a697ba05b2d5b9df2b3b54be5d63cd0d41587a2a884'}],
+        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '64f1dee905c2a939ea486f58b06ca8308ce9e1baea6aa4e4cd8f2112664e39ec'},
+        "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': '47044cce3096b6ed5d24d9085c705e2b8e01f9ca02341d51b007a16266965b6a'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': 'b2f0c01aae656fa81611fba46e958d3c2991d3834fffe85488c74abd472e2c5e'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 8,
+        "tests_active": 9,
         "tests_skipped": 0,
     },
     'process.cooler': {
