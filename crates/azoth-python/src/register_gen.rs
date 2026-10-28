@@ -177,6 +177,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PySolidFugacityResult>()?;
     m.add_class::<crate::transport_gen::PySoreideWhitsonAlphaResult>()?;
     m.add_class::<crate::transport_gen::PySoreideWhitsonPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PySoundSpeedResult>()?;
     m.add_class::<crate::transport_gen::PySrkAlphaAbResult>()?;
     m.add_class::<crate::transport_gen::PySrkCpaPhaseResult>()?;
     m.add_class::<crate::transport_gen::PySrkDepartureResult>()?;
@@ -705,6 +706,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::soreide_whitson_phase,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::sound_speed, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::srk_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::srk_cpa_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::srk_departure, m)?)?;

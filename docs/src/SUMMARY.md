@@ -197,6 +197,7 @@
   - [Segmented pipeline scale deposition from a temperature and pressure profile](./eos/scale_deposition_accumulator.md)
   - [Dissolver and solvent recommendations for a scaled or fouled deposit](./eos/scale_remediation_advisor.md)
   - [Phase state of a Soreide-Whitson fluid](./eos/soreide_whitson_phase.md)
+  - [Speed of sound of a mixture](./eos/sound_speed.md)
   - [Soave-Redlich-Kwong CPA phase state](./eos/srk_cpa_phase.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Scale mass rates of an aqueous stream from its coupled mineral equilibrium](./eos/stream_scale_analyzer.md)

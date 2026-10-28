@@ -233,6 +233,7 @@ from azoth.core.result import (
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
+    SoundSpeedResult,
     SplitterResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
@@ -533,6 +534,7 @@ __all__ = [
     "solid_fugacity",
     "soreide_whitson_alpha",
     "soreide_whitson_phase",
+    "sound_speed",
     "splitter",
     "srk_alpha_ab",
     "srk_cpa_phase",
@@ -3984,6 +3986,23 @@ def soreide_whitson_phase(components: list[str], T: Q, P: Q, x: list[float], sal
     return SoreideWhitsonPhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def sound_speed(components: list[str], T: Q, P: Q, z: list[float]) -> SoundSpeedResult:
+    """``eos.sound_speed``, computed in Rust."""
+    spec = _models_gen.model("eos.sound_speed")
+    result = _core.sound_speed(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return SoundSpeedResult(
+        sound_speed=from_si(result.sound_speed.magnitude_si, result.sound_speed.unit),
+        system_sound_speed=from_si(result.system_sound_speed.magnitude_si, result.system_sound_speed.unit),
+        phase=_Phase(result.phase),
         warnings=_warnings(result.warnings),
     )
 

@@ -168,6 +168,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.scale_deposition_accumulator`](./scale_deposition_accumulator.md) | `direct composition` | NeqSim master `ScaleDepositionAccumulator` |
 | [`eos.scale_remediation_advisor`](./scale_remediation_advisor.md) | `direct composition` | NeqSim master `ScaleRemediationAdvisor` |
 | [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim master `SystemSoreideWhitson` |
+| [`eos.sound_speed`](./sound_speed.md) | `direct composition` | NeqSim thermo/phase/PhaseEos.java |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
 | [`eos.stream_scale_analyzer`](./stream_scale_analyzer.md) | `direct composition` | NeqSim master `StreamScaleAnalyzer` |

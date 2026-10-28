@@ -1,0 +1,62 @@
+id = "eos.sound_speed"
+name = "Speed of sound of a mixture"
+kind = "direct"
+assumptions = [
+    "**the speed is the cubic's own isentrope.** `c^2 = -gamma (v^2/M) (dP/dv)_T` with `gamma = cp/cv`, `v` the phase's molar volume and `M` its molar mass; `(dP/dv)_T` and `(dP/dT)_v` are closed forms of the same residual the departure functions use.",
+    "**`cp - cv = -T (dP/dT)^2_v / (dP/dv)_T`**, the standard identity, so `cv` needs no separate departure term; `cp` is `eos.molar_enthalpy_entropy`'s at the same composition and root.",
+    "**the phase composition and root are the flash's.** A single-phase feed is read at its own composition; a two-phase feed reads each phase at its own composition and root, which is what a phase sound speed is.",
+    "**the system value is the beta-weighted arithmetic mean** of the phase speeds. NeqSim's own `getSoundSpeed()` sums beta times the phase value; on a two-phase state that mean is not a physical mixture speed and is reported as the class's reading, not as physics.",
+    "**an unflashed NeqSim system doubles the system value**, because two phase objects carry `beta = 1.0` each. Every row here flashes first; the port reports the flashed value and does not reproduce the artefact.",
+    "**the mixture is PR with the classic mixing rule**, because the databank's `mixture_of` has no other route here; SRK and RK share the same `PhaseEos` formula.",
+    "**`PhaseGE`'s constant 1470 m/s and `PhaseDefault`'s NaN are not models** and have no row here; `EquilibriumSoundSpeed`, the re-flash finite-difference utility, is owed and named in `ROADMAP.md`.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/phase/PhaseEos.java`'s `getSoundSpeed` and `thermo/system/SystemThermo.java`'s beta-weighted system value are the port source.",
+    "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. \"The Properties of Gases and Liquids\", 5th ed. The isentropic relation and the `cp - cv` identity.",
+    "`validation/neqsim/captures/process_sound_speed.tsv` - the phase and system values on a flashed gas, a two-phase state, a liquid and a low-pressure gas.",
+]
+[source]
+standard = "NeqSim thermo/phase/PhaseEos.java"
+edition = "Its `getSoundSpeed`: `bs = -(1/V) Cv/Cp / dPdVTn`, `sqrt(V/Mw/bs)`, with the derivative analytic in the cubic's Helmholtz residual; and `SystemThermo.getSoundSpeed`'s beta-weighted sum."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank.\n"
+[inputs.T]
+unit = "K"
+description = "the state's absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "the state's absolute pressure.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised.\n"
+[outputs]
+[outputs.sound_speed]
+unit = "m/s"
+description = "the speed of sound in the phase the flash puts first - the gas where two phases - at the flashed state, m/s.\n"
+[outputs.system_sound_speed]
+unit = "m/s"
+description = "`SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds. Equal to `sound_speed` on a flashed single phase; a weighted mean, not a mixture speed, on two.\n"
+[outputs.phase]
+type = "enum"
+values = ["all_vapour", "all_liquid", "two_phase", "trivial"]
+description = "what the flash found at the state, which says whether the two speeds above differ.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[implementations]
+python = "azoth.eos.sound_speed"
+rust = "azoth_eos::sound_speed"

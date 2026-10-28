@@ -3903,6 +3903,25 @@ pub fn soreide_whitson_phase(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Speed of sound of a mixture.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[pyo3(text_signature = "(components, T, P, z)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn sound_speed(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PySoundSpeedResult> {
+    azoth_eos::sound_speed::sound_speed(&components, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PySoundSpeedResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Soave-Redlich-Kwong alpha function and reduced attraction parameters.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

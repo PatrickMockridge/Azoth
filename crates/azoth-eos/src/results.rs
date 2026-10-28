@@ -6420,3 +6420,26 @@ impl CalcResult for PitzerHydrateFormationPressureResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoundSpeedResult {
+    /// The speed of sound in the phase the flash puts first, m/s.
+    pub sound_speed: Velocity,
+    /// `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds, m/s.
+    pub system_sound_speed: Velocity,
+    /// What the flash found at the state.
+    pub phase: Phase,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SoundSpeedResult {
+    const CALC_ID: &'static str = "eos.sound_speed";
+    const FIELDS: &'static [&'static str] =
+        &["sound_speed", "system_sound_speed", "phase", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

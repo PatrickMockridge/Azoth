@@ -86,6 +86,7 @@
 //!   - specs/models/eos/scale_deposition_accumulator.toml
 //!   - specs/models/eos/scale_remediation_advisor.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
+//!   - specs/models/eos/sound_speed.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/stream_scale_analyzer.toml
@@ -23203,6 +23204,213 @@ pub static SOREIDE_WHITSON_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: SOREIDE_WHITSON_PHASE_CASES,
 };
 
+static SOUND_SPEED_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static SOUND_SPEED_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_nine_component_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 297.15), ("P", 4800000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "nitrogen",
+                "CO2",
+                "methane",
+                "ethane",
+                "propane",
+                "i-butane",
+                "n-butane",
+                "i-pentane",
+                "n-pentane",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[
+                0.01208165393330526,
+                0.013435200224588424,
+                0.8820509735507028,
+                0.05271812147827308,
+                0.03291624055024163,
+                0.0008221540435942168,
+                0.004882792917443703,
+                0.0005614710541619043,
+                0.000531392247688945,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 390.7205902869134),
+            ("system_sound_speed", 390.7205902869134),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_nine_component_gas_cold",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 250.15), ("P", 6095000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "nitrogen",
+                "CO2",
+                "methane",
+                "ethane",
+                "propane",
+                "i-butane",
+                "n-butane",
+                "i-pentane",
+                "n-pentane",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[
+                0.01208165393330526,
+                0.013435200224588424,
+                0.8820509735507028,
+                0.05271812147827308,
+                0.03291624055024163,
+                0.0008221540435942168,
+                0.004882792917443703,
+                0.0005614710541619043,
+                0.000531392247688945,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 336.3275242593267),
+            ("system_sound_speed", 336.3275242593267),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_two_phase_state_weights_the_phases",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.01,
+        numbers: &[("T", 250.0), ("P", 3000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 373.6430578285567),
+            ("system_sound_speed", 685.5795111384601),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "two_phase")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "liquid_propane",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 293.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["propane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 706.7752466817828),
+            ("system_sound_speed", 706.7752466817828),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_liquid")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_ideal_gas_limit",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 300.15), ("P", 100000.0)],
+        flags: &[],
+        lists: &[("components", &["methane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 449.53013355407364),
+            ("system_sound_speed", 449.53013355407364),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.sound_speed`.
+pub static SOUND_SPEED_SPEC: ModelSpec = ModelSpec {
+    id: "eos.sound_speed",
+    kind: "direct",
+    algorithm: None,
+    checks: SOUND_SPEED_CHECKS,
+    cases: SOUND_SPEED_CASES,
+};
+
 static SRK_CPA_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -29230,6 +29438,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SCALE_DEPOSITION_ACCUMULATOR_SPEC,
     &SCALE_REMEDIATION_ADVISOR_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
+    &SOUND_SPEED_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,
     &STREAM_SCALE_ANALYZER_SPEC,

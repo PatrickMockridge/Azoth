@@ -149,6 +149,9 @@ public class ProcessProbe {
       case "compressor_map_lookup":
         compressorMapLookupRows();
         break;
+      case "sound_speed":
+        soundSpeedRows();
+        break;
       case "expander":
         isentropicRows("Expander");
         break;
@@ -865,6 +868,68 @@ public class ProcessProbe {
     System.out.println("igv_opening=" + machine.getIGVopening());
     System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
     printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
+  }
+
+  /// `PhaseEos.getSoundSpeed` and `SystemThermo.getSoundSpeed`, on flashed states.
+  ///
+  /// **The system value is a beta-weighted sum, and an unflashed system doubles it** - two
+  /// phase objects with `beta = 1.0` each. Every row here flashes through a `Stream`, so the
+  /// system value is the phase value on a single phase and the weighted mean on two. The
+  /// phase's own `Cp`, `Cv`, `Z` and density are printed beside it so the port's cubic
+  /// derivatives can be held to the same state.
+  static void soundSpeedRows() {
+    soundSpeedRow("gas_nine_component", new SystemPrEos(298.15, 48.0),
+        new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+            "i-pentane", "n-pentane"},
+        new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053},
+        24.0, 48.0, 1.0);
+    soundSpeedRow("gas_nine_component_hot", new SystemPrEos(298.15, 48.0),
+        new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+            "i-pentane", "n-pentane"},
+        new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053},
+        -23.0, 60.95, 1.0);
+    soundSpeedRow("two_phase_methane_butane", new SystemPrEos(298.15, 50.0),
+        new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, -23.15, 30.0, 0.0);
+    soundSpeedRow("liquid_propane", new SystemPrEos(298.15, 50.0),
+        new String[] {"propane"}, new double[] {1.0}, 20.0, 100.0, 0.0);
+    soundSpeedRow("gas_methane_low_pressure", new SystemPrEos(298.15, 50.0),
+        new String[] {"methane"}, new double[] {1.0}, 27.0, 1.0, 0.0);
+  }
+
+  static void soundSpeedRow(String label, SystemInterface fluid, String[] names, double[] z,
+      double celsius, double bara, double msm3PerDay) {
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule("classic");
+    fluid.setTemperature(celsius, "C");
+    fluid.setPressure(bara, "bara");
+    if (msm3PerDay > 0.0) {
+      fluid.setTotalFlowRate(msm3PerDay, "MSm3/day");
+    }
+    Stream stream = new Stream(label, fluid);
+    stream.run();
+    SystemInterface system = stream.getThermoSystem();
+    system.initProperties();
+
+    System.out.println(label);
+    System.out.println("phase=" + system.getPhase(0).getType());
+    System.out.println("number_of_phases=" + system.getNumberOfPhases());
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      System.out.println("beta_" + i + "=" + system.getBeta(i));
+      System.out.println("sound_speed_phase_" + i + "=" + system.getPhase(i).getSoundSpeed());
+    }
+    System.out.println("sound_speed_system=" + system.getSoundSpeed());
+    System.out.println("sound_speed_phase_0=" + system.getPhase(0).getSoundSpeed());
+    System.out.println("phase0_z=" + system.getPhase(0).getZ());
+    System.out.println("phase0_density_kg_per_m3=" + system.getPhase(0).getDensity("kg/m3"));
+    double moles = system.getPhase(0).getNumberOfMolesInPhase();
+    System.out.println("phase0_cp_j_per_mol_k=" + system.getPhase(0).getCp() / moles);
+    System.out.println("phase0_cv_j_per_mol_k=" + system.getPhase(0).getCv() / moles);
+    System.out.println("phase0_molar_mass_kg_per_mol=" + system.getPhase(0).getMolarMass());
+    System.out.println("temperature_k=" + system.getTemperature());
+    System.out.println("pressure_pa=" + system.getPressure("Pa"));
+    System.out.println();
   }
 
   /// The two alternative compressor map lookups, and a machine run on the extrapolating one.

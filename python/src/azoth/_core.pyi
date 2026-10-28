@@ -1965,6 +1965,13 @@ class SoreideWhitsonPhaseResult:
     warnings: list[Warning]
 
 @final
+class SoundSpeedResult:
+    sound_speed: Qty
+    system_sound_speed: Qty
+    phase: str
+    warnings: list[Warning]
+
+@final
 class SrkAlphaAbResult:
     alpha: float
     a_reduced: float
@@ -4559,6 +4566,7 @@ def soreide_whitson_phase(
     salinity: float,
     compressed_phase: str,
 ) -> SoreideWhitsonPhaseResult: ...
+def sound_speed(components: list[str], T: float, P: float, z: list[float]) -> SoundSpeedResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
 def srk_cpa_phase(
     components: list[str],

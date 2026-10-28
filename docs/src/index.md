@@ -264,6 +264,7 @@ Five sections, and the difference between them is the point:
 - [`eos.scale_deposition_accumulator`](./eos/scale_deposition_accumulator.md) — Segmented pipeline scale deposition from a temperature and pressure profile
 - [`eos.scale_remediation_advisor`](./eos/scale_remediation_advisor.md) — Dissolver and solvent recommendations for a scaled or fouled deposit
 - [`eos.soreide_whitson_phase`](./eos/soreide_whitson_phase.md) — Phase state of a Soreide-Whitson fluid
+- [`eos.sound_speed`](./eos/sound_speed.md) — Speed of sound of a mixture
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.stream_scale_analyzer`](./eos/stream_scale_analyzer.md) — Scale mass rates of an aqueous stream from its coupled mineral equilibrium

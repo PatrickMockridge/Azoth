@@ -159,6 +159,7 @@
 //!   - specs/calcs/eos/solid_fugacity.toml
 //!   - specs/calcs/eos/soreide_whitson_alpha.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
+//!   - specs/models/eos/sound_speed.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/calcs/eos/srk_departure.toml
@@ -2015,6 +2016,9 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.soreide_whitson_phase", "P", "pressure"),
     ("eos.soreide_whitson_phase", "x", "dimensionless"),
     ("eos.soreide_whitson_phase", "salinity", "molality"),
+    ("eos.sound_speed", "T", "thermodynamic_temperature"),
+    ("eos.sound_speed", "P", "pressure"),
+    ("eos.sound_speed", "z", "dimensionless"),
     ("eos.srk_alpha_ab", "kappa", "dimensionless"),
     ("eos.srk_alpha_ab", "Tr", "dimensionless"),
     ("eos.srk_alpha_ab", "Pr", "dimensionless"),

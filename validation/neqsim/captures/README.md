@@ -479,6 +479,8 @@ public surface of forty-odd getters.
   > captures/process_turbo_expander.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
   > captures/process_anti_surge.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe sound_speed \
+  > captures/process_sound_speed.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -745,6 +747,18 @@ disagree**: after a recycle the class recomputes the fluid head as the recycled 
 *restored* flow, which inflates it by `1 + fraction` (`680.5` against `67.6` kJ/kg), and every
 read-out is evaluated at the inflated number. Its discharge pressure is the one number the case
 does not record: it belongs to a pass whose head the run does not report.
+
+**`ProcessProbe sound_speed` is the cubic's isentropic speed.** `PhaseEos.getSoundSpeed` is
+`c^2 = -gamma (v^2/M) (dP/dv)_T` with `gamma = cp/cv`, and its two derivatives are closed forms
+of the Helmholtz residual; the rows print the phase value, the beta-weighted system value,
+`Cp`, `Cv`, `Z` and the density for a flashed nine-component gas at two states, a two-phase
+methane/n-butane state, liquid propane and a low-pressure gas. **The system value doubles on an
+unflashed system** - two phase objects with `beta = 1.0` each - which is where the turbo
+capture's `830.84` against `415.42` came from; every row here flashes first, so the system value
+is the phase value on one phase and a weighted mean (not a mixture speed) on two.
+`PhaseGE.getSoundSpeed` is a constant `1470.0` m/s and `PhaseDefault`'s is `NaN`; neither is a
+model, and `EquilibriumSoundSpeed` - the re-flash finite-difference utility - is a separate
+class, owed.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

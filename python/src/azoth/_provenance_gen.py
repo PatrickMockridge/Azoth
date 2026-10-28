@@ -1753,6 +1753,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.sound_speed': {
+        "calc_id": 'eos.sound_speed',
+        "name": 'Speed of sound of a mixture',
+        "spec": {'path': 'specs/models/eos/sound_speed.toml', 'sha256': '505d355fd4c57f932c41004d8bca723f3d0b6ceb03de4f2cdf618c7dfda0aae2'},
+        "code": [{'path': 'python/src/azoth/eos/reference/sound_speed.py', 'sha256': 'def4055ca747ac7cc6c1e2369730e76433e0a7aaa29ab1f4085cf96e9001e048'}, {'path': 'crates/azoth-eos/src/sound_speed.rs', 'sha256': '18cabb9ddf41e1f90c94ecaea14ef454a34996dfc0b50f46d7ff9158f02f45a9'}],
+        "source": 'NeqSim thermo/phase/PhaseEos.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'eos.srk_alpha_ab': {
         "calc_id": 'eos.srk_alpha_ab',
         "name": 'Soave-Redlich-Kwong alpha function and reduced attraction parameters',

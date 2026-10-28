@@ -181,6 +181,7 @@ from azoth.core.result import (
     PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
+    SoundSpeedResult,
     PsFlashResult,
     PtFlashResult,
     PtPhaseEnvelopeResult,
@@ -388,6 +389,7 @@ __all__ = [
     "srk_departure",
     "srk_kappa",
     "srk_peneloux_shift",
+    "sound_speed",
     "srk_z_factor",
     "stability_test",
     "th_flash",
@@ -535,6 +537,7 @@ _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
+_SOUND_SPEED = "eos.sound_speed"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
@@ -1017,6 +1020,32 @@ def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
     See :func:`azoth.eos.reference.pr_alpha_ab`.
     """
     return resolve(_PR_ALPHA_AB)(kappa=kappa, Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]
+
+
+def sound_speed(components: list[str], T: Q, P: Q, z: list[float]) -> SoundSpeedResult:
+    """The speed of sound in a mixture at a state.
+
+    The cubic's isentrope: ``c^2 = -gamma (v^2/M) (dP/dv)_T`` with ``gamma = cp/cv``, the
+    phase's molar volume and molar mass, and the two derivatives closed forms of the same
+    residual the departure functions evaluate. **The system value is the class's
+    beta-weighted mean of the phase speeds**, which equals the phase value on a flashed
+    single phase and is an arithmetic mean - not a mixture speed - on two.
+
+    Args:
+        components: the substances, by name.
+        T: the state's absolute temperature.
+        P: the state's absolute pressure.
+        z: the mixture's mole fractions.
+
+    Raises:
+        InvalidInputError: if the composition's length disagrees or the state is unstable.
+        OutOfRangeError: for a non-positive temperature or pressure.
+
+    See :func:`azoth.eos.reference.sound_speed`.
+    """
+    return resolve(_SOUND_SPEED)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z
+    )
 
 
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:

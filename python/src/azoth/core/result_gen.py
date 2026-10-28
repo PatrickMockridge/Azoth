@@ -3870,6 +3870,25 @@ class SoreideWhitsonPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SoundSpeedResult(_HasWarnings):
+    """Result of ``eos.sound_speed``."""
+
+    CALC_ID: ClassVar[str] = "eos.sound_speed"
+
+    #: the speed of sound in the phase the flash puts first - the gas where two phases - at the flashed state, m/s.
+    sound_speed: Q
+
+    #: `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds. Equal to `sound_speed` on a flashed single phase; a weighted mean, not a mixture speed, on two.
+    system_sound_speed: Q
+
+    #: what the flash found at the state, which says whether the two speeds above differ.
+    phase: Phase
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SrkAlphaAbResult(_HasWarnings):
     """Result of ``eos.srk_alpha_ab``."""
 

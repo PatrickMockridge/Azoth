@@ -9813,6 +9813,58 @@ impl From<&azoth_eos::results::SoreideWhitsonPhaseResult> for PySoreideWhitsonPh
         }
     }
 }
+/// Result of `eos.sound_speed`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SoundSpeedResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySoundSpeedResult {
+    /// the speed of sound in the phase the flash puts first - the gas where two phases - at the flashed state, m/s.
+    #[pyo3(get)]
+    pub sound_speed: PyQty,
+    /// `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds. Equal to `sound_speed` on a flashed single phase; a weighted mean, not a mixture speed, on two.
+    #[pyo3(get)]
+    pub system_sound_speed: PyQty,
+    /// what the flash found at the state, which says whether the two speeds above differ.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySoundSpeedResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SoundSpeedResult(sound_speed={:?}, system_sound_speed={:?}, phase={:?}, {} warning(s))",
+            self.sound_speed,
+            self.system_sound_speed,
+            self.phase,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SoundSpeedResult> for PySoundSpeedResult {
+    fn from(r: &azoth_eos::results::SoundSpeedResult) -> Self {
+        Self {
+            sound_speed: PyQty {
+                magnitude_si: r.sound_speed.value,
+                unit: "m/s".to_string(),
+            },
+            system_sound_speed: PyQty {
+                magnitude_si: r.system_sound_speed.value,
+                unit: "m/s".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.srk_alpha_ab`, transported.
 #[pyclass(
     frozen,

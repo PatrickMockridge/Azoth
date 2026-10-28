@@ -178,6 +178,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.solid_fugacity" => azoth_eos::results::SolidFugacityResult::FIELDS.to_vec(),
         "eos.soreide_whitson_alpha" => azoth_eos::results::SoreideWhitsonAlphaResult::FIELDS.to_vec(),
         "eos.soreide_whitson_phase" => azoth_eos::results::SoreideWhitsonPhaseResult::FIELDS.to_vec(),
+        "eos.sound_speed" => azoth_eos::results::SoundSpeedResult::FIELDS.to_vec(),
         "eos.srk_alpha_ab" => azoth_eos::results::SrkAlphaAbResult::FIELDS.to_vec(),
         "eos.srk_cpa_phase" => azoth_eos::results::SrkCpaPhaseResult::FIELDS.to_vec(),
         "eos.srk_departure" => azoth_eos::results::SrkDepartureResult::FIELDS.to_vec(),
