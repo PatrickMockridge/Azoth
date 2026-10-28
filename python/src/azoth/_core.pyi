@@ -349,6 +349,12 @@ class CompressorCurvePoint(TypedDict):
     head: float
     efficiency: float
 
+class CompressorSurgePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    flow: float
+    head: float
+
 class FilterDropPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -2575,6 +2581,15 @@ class CompressorResult:
     polytropic_head: Qty
     polytropic_efficiency: float
     power: Qty
+    surge_flow_rate: Qty | None
+    surge_flow_rate_margin: Qty | None
+    surge_flow_rate_std: Qty | None
+    distance_to_surge: float | None
+    control_line_flow: Qty | None
+    distance_to_control_line: float | None
+    required_recycle_fraction: float | None
+    anti_surge_recycle_power: Qty | None
+    recycle_fraction: float | None
     warnings: list[Warning]
 
 @final
@@ -5132,6 +5147,10 @@ def compressor(
     curve: list[CompressorCurvePoint] | None = None,
     speed: float | None = None,
     chart_type: str | None = None,
+    surge_curve: list[CompressorSurgePoint] | None = None,
+    surge_control_margin: float | None = None,
+    anti_surge_active: bool | None = None,
+    surge_control_factor: float | None = None,
 ) -> CompressorResult: ...
 def cooler(
     components: list[str],

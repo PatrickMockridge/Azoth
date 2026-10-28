@@ -5594,6 +5594,33 @@ class CompressorResult(_HasWarnings):
     #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     power: Q
 
+    #: `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
+    surge_flow_rate: Q | None
+
+    #: `getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.
+    surge_flow_rate_margin: Q | None
+
+    #: `getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.
+    surge_flow_rate_std: Q | None
+
+    #: `getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**
+    distance_to_surge: float | None
+
+    #: `getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.
+    control_line_flow: Q | None
+
+    #: `getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.
+    distance_to_control_line: float | None
+
+    #: `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
+    required_recycle_fraction: float | None
+
+    #: `getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.
+    anti_surge_recycle_power: Q | None
+
+    #: `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
+    recycle_fraction: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

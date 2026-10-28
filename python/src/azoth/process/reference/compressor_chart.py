@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 from typing import Final
 
 from azoth.core.errors import InvalidInputError
+from azoth.process.reference.surge_curve import StoneWallCurve, SurgeCurve
 
 #: The class's degree-2 polynomial fit has three coefficients.
 _COEFFICIENTS: Final = 3
@@ -111,6 +112,8 @@ class CompressorChart:
                 curves.append(_SpeedCurve(point.speed, [point.flow], [point.head]))
         speeds = [point.speed for point in points]
         self._curves = curves
+        self._surge: SurgeCurve | None = None
+        self._stonewall: StoneWallCurve | None = None
         self._min_speed = min(speeds)
         self._max_speed = max(speeds)
         self._reference_speed = 0.5 * (self._max_speed + self._min_speed)
@@ -234,6 +237,76 @@ class CompressorChart:
             return math.nan
         index = curve.flow.index(max(curve.flow))
         return curve.head[index]
+
+    def set_surge_curve(self, curve: SurgeCurve) -> None:
+        """``setSurgeCurve``: the explicit surge boundary, in the chart's head unit."""
+        self._surge = curve
+
+    def set_stonewall_curve(self, curve: StoneWallCurve) -> None:
+        """``setStoneWallCurve``: the explicit stonewall boundary."""
+        self._stonewall = curve
+
+    @property
+    def surge_curve(self) -> SurgeCurve | None:
+        """The surge curve, where one is set."""
+        return self._surge
+
+    @property
+    def stonewall_curve(self) -> StoneWallCurve | None:
+        """The stonewall curve, where one is set."""
+        return self._stonewall
+
+    def surge_flow(self, head: float) -> float | None:
+        """``getSurgeCurve().getSurgeFlow(head)``, or ``None`` without a curve."""
+        if self._surge is None:
+            return None
+        return self._surge.flow_at_head(head)
+
+    def stonewall_flow(self, head: float) -> float | None:
+        """``getStoneWallCurve().getStoneWallFlow(head)``, or ``None`` without a curve."""
+        if self._stonewall is None:
+            return None
+        return self._stonewall.flow_at_head(head)
+
+    def is_surge(self, head: float, flow: float) -> bool:
+        """``isSurge(head, flow)``: false where no surge curve is set."""
+        if self._surge is None:
+            return False
+        return self._surge.is_limit(head, flow)
+
+    def is_stonewall(self, head: float, flow: float) -> bool:
+        """``isStoneWall(head, flow)``: false where no stonewall curve is set."""
+        if self._stonewall is None:
+            return False
+        return self._stonewall.is_limit(head, flow)
+
+    def generate_surge_curve(self) -> None:
+        """``generateSurgeCurve``: one point per speed row - its lowest flow - deduped."""
+        flow, head = self._extreme_points(lowest=True)
+        self._surge = SurgeCurve.from_points(flow, head)
+
+    def generate_stonewall_curve(self) -> None:
+        """``generateStoneWallCurve``: one point per speed row - its highest flow - deduped."""
+        flow, head = self._extreme_points(lowest=False)
+        self._stonewall = StoneWallCurve.from_points(flow, head)
+
+    def _extreme_points(self, *, lowest: bool) -> tuple[list[float], list[float]]:
+        """The extreme point of every speed row, deduped by flow, first wins."""
+        if not self._curves:
+            raise InvalidInputError(
+                "curve", "the chart has no speed rows, so it has no boundary to generate"
+            )
+        seen: list[float] = []
+        flow: list[float] = []
+        head: list[float] = []
+        for curve in self._curves:
+            target = min(curve.flow) if lowest else max(curve.flow)
+            if target in seen:
+                continue
+            seen.append(target)
+            flow.append(target)
+            head.append(curve.head[curve.flow.index(target)])
+        return flow, head
 
     def flow_range_status(self, flow: float, speed: float) -> str:
         """``getFlowRangeStatus``: ``IN_RANGE``, an extrapolation name, or ``NO_CHART``."""

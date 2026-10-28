@@ -14,9 +14,10 @@ use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::compressor_chart::{CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
-use crate::kernels::compressor::compressor_with_chart;
+use crate::kernels::compressor::{SurgeSettings, compressor_with_chart};
 use crate::model_gen;
 use crate::stream::Stream;
+use crate::surge_curve::SurgeCurve;
 use crate::unported;
 
 /// One row of `curve`: a measured point, in the units the spec declares.
@@ -30,6 +31,15 @@ pub struct CompressorCurvePoint {
     pub head: Length,
     /// The measured polytropic efficiency, as a fraction.
     pub efficiency: f64,
+}
+
+/// One row of `surge_curve`: a measured boundary point, in the units the spec declares.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompressorSurgePoint {
+    /// The measured flow, m3/hr.
+    pub flow: VolumeRate,
+    /// The measured head, in metres - the same unit as `curve`'s.
+    pub head: Length,
 }
 
 /// Result of `process.compressor`.
@@ -49,8 +59,26 @@ pub struct CompressorResult {
     pub polytropic_head: Length,
     /// The chart polytropic efficiency the branch used; zero in the isentropic branch.
     pub polytropic_efficiency: f64,
-    /// The shaft power, W.
+    /// The shaft power, W - the recycled flow's where the anti-surge block ran.
     pub power: Power,
+    /// `getSurgeFlowRate()`, m3/hr, where a surge curve is set.
+    pub surge_flow_rate: Option<f64>,
+    /// `getSurgeFlowRateMargin()`, m3/hr.
+    pub surge_flow_rate_margin: Option<f64>,
+    /// `getSurgeFlowRateStd()`, m3/hr at 1.01325 bara and 288.15 K.
+    pub surge_flow_rate_std: Option<f64>,
+    /// `getDistanceToSurge()`: the inlet flow over the surge flow less one.
+    pub distance_to_surge: Option<f64>,
+    /// `getControlLineFlow()`, m3/hr.
+    pub control_line_flow: Option<f64>,
+    /// `getDistanceToControlLine()`.
+    pub distance_to_control_line: Option<f64>,
+    /// `getRequiredRecycleFractionToControlLine()`.
+    pub required_recycle_fraction: Option<f64>,
+    /// `getAntiSurgeRecyclePower(required fraction)`, W.
+    pub anti_surge_recycle_power: Option<f64>,
+    /// `AntiSurge.getCurrentSurgeFraction()`, present only when the block was active.
+    pub recycle_fraction: Option<f64>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -73,6 +101,10 @@ pub fn compressor(
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
     chart_type: Option<&str>,
+    surge_curve: Option<&[CompressorSurgePoint]>,
+    surge_control_margin: Option<f64>,
+    anti_surge_active: Option<bool>,
+    surge_control_factor: Option<f64>,
 ) -> Result<CompressorResult> {
     let spec = &model_gen::COMPRESSOR_SPEC;
     let mut warnings = Vec::new();
@@ -82,6 +114,7 @@ pub fn compressor(
             "inlet_t" => Some(inlet_t.value),
             "isentropic_efficiency" => Some(isentropic_efficiency),
             "speed" => speed,
+            "surge_control_margin" => surge_control_margin,
             _ => None,
         },
         &mut warnings,
@@ -122,6 +155,23 @@ pub fn compressor(
         })
         .collect();
 
+    let (surge_flow, surge_head): (Vec<f64>, Vec<f64>) = surge_curve
+        .unwrap_or(&[])
+        .iter()
+        .map(|point| {
+            (
+                point.flow.get::<cubic_meter_per_hour>(),
+                point.head.get::<meter>(),
+            )
+        })
+        .unzip();
+    let settings = SurgeSettings {
+        active: anti_surge_active.unwrap_or(false),
+        control_factor: surge_control_factor.unwrap_or(1.05),
+        control_margin: surge_control_margin.unwrap_or(0.0),
+    };
+
+    let mut read_outs: [Option<f64>; 9] = [None; 9];
     let (out, head, efficiency, power) = if points.is_empty() {
         let pressure = outlet_pressure.ok_or_else(|| {
             AzothError::invalid_input(
@@ -134,8 +184,23 @@ pub fn compressor(
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
         (out, 0.0, 0.0, power)
     } else {
-        let chart = CompressorChart::new(&points)?;
-        let outcome = compressor_with_chart(&feed, &chart, speed.unwrap_or(3000.0))?;
+        let mut chart = CompressorChart::new(&points)?;
+        if !surge_flow.is_empty() {
+            chart.set_surge_curve(SurgeCurve::new(&surge_flow, &surge_head)?);
+        }
+        let outcome = compressor_with_chart(&feed, &chart, speed.unwrap_or(3000.0), &settings)?;
+        // The kernel works in m3/hr, the class's chart unit; the record crosses in SI.
+        read_outs = [
+            outcome.surge_flow_rate.map(|value| value / 3600.0),
+            outcome.surge_flow_rate_margin.map(|value| value / 3600.0),
+            outcome.surge_flow_rate_std.map(|value| value / 3600.0),
+            outcome.distance_to_surge,
+            outcome.control_line_flow.map(|value| value / 3600.0),
+            outcome.distance_to_control_line,
+            outcome.required_recycle_fraction,
+            outcome.anti_surge_recycle_power,
+            outcome.recycle_fraction,
+        ];
         (
             outcome.outlet,
             outcome.polytropic_head,
@@ -153,6 +218,15 @@ pub fn compressor(
         polytropic_head: meters(head),
         polytropic_efficiency: efficiency,
         power,
+        surge_flow_rate: read_outs[0],
+        surge_flow_rate_margin: read_outs[1],
+        surge_flow_rate_std: read_outs[2],
+        distance_to_surge: read_outs[3],
+        control_line_flow: read_outs[4],
+        distance_to_control_line: read_outs[5],
+        required_recycle_fraction: read_outs[6],
+        anti_surge_recycle_power: read_outs[7],
+        recycle_fraction: read_outs[8],
         warnings,
     })
 }

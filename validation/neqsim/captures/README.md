@@ -475,6 +475,8 @@ public surface of forty-odd getters.
   > captures/process_expander_chart.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \
   > captures/process_turbo_expander.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
+  > captures/process_anti_surge.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
@@ -717,6 +719,19 @@ stated back and the design efficiency returns at `0.8800000059`. The last row is
 to `0.76261`. Each row prints the solved speed, both powers, both efficiencies, the polytropic
 head, UC/QN, the IGV opening and both outlet records; `getMassBalance` is exactly zero on both
 sides.
+
+**`ProcessProbe anti_surge` is the compressor's surge surface.** Three blocks: the
+`SafeSplineSurgeCurveTest.testSurgeCurve10250` table read at the points that test asserts
+(`9321.84` at head 130, `0` at 190, `11941.98` at 10, the head round trip and the monotonic
+pair); the eight-speed chart's own `generateSurgeCurve` / `generateStoneWallCurve` read at three
+heads and at speed 11683; and three `Compressor.run` states - one read out with a 0.10 control
+margin and the surge curve `{2789, 2550, 2500, 2200}` over `{80, 72, 70, 65}` kJ/kg, then the
+same machine at 0.30 and 4.00 MSm3/day with `AntiSurge` active and the default 1.05 factor.
+**The deep-surge row prints `polytropic_fluid_head` beside `polytropic_head` because they
+disagree**: after a recycle the class recomputes the fluid head as the recycled power over the
+*restored* flow, which inflates it by `1 + fraction` (`680.5` against `67.6` kJ/kg), and every
+read-out is evaluated at the inflated number. Its discharge pressure is the one number the case
+does not record: it belongs to a pass whose head the run does not report.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers

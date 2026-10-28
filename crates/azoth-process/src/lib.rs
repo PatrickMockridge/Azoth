@@ -30,6 +30,7 @@ pub mod reactor;
 pub mod recycle;
 pub mod segment;
 pub mod stream;
+pub mod surge_curve;
 pub mod unit_op;
 pub mod unported;
 pub mod unported_gen;

@@ -10,13 +10,17 @@ assumptions = [
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**a curve selects the fixed-speed chart branch.** `CompressorChart`, the default fan law: one reduced quadratic in `Q/N` for the head and one for the efficiency, the class's kappa and pressure-ratio equation, and the head's shaft work. **Nothing is clamped**; the branch clamps only the efficiency.",
     "**the chart's head crosses in metres.** A curve quoted in kJ/kg is multiplied by `1000/9.81` - the class's own `polytropicHeadMeter` - and the branch converts back with `9.81`, not standard gravity, so the pressure ratio is the class's.",
-    "**the speed-solve mode, the three other chart classes, the catalogue, anti-surge, the deposit model and the property overrides are absent**; the chart type's other values are refused by name.",
+    "**the surge surface is the compressor's own; the recycle calculators are not.** A stated `surge_curve` sets the boundary curve, the read-outs are `getSurgeFlowRate`'s family, and `anti_surge_active` runs `run`'s recycle block. The calculators and controllers are named in `ROADMAP.md`.",
+    "**the run-time loop is capped at 20 passes.** The class's `do-while` is uncapped and would spin on a curve it cannot leave; this stops and reports the last pass, which is the one deliberate divergence here.",
+    "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
+    "**the speed-solve mode, the three other chart classes, the catalogue, the deposit model and the property overrides are absent**; the chart type's other values are refused by name.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
     "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The isentropic efficiency and the reversible-work reference it divides.",
     "`validation/neqsim/captures/process_compressor.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.",
     "`validation/neqsim/captures/process_compressor_curve.tsv` - the reduced chart's rows and inverses, and `Compressor.run`'s fixed-speed branch on PR.",
+    "`validation/neqsim/captures/process_anti_surge.tsv` - the two boundary splines, the chart's generated surge and stonewall curves, the read-outs at a control margin, and the run-time recycle block in and out of surge.",
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
@@ -72,6 +76,29 @@ type = "enum"
 values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
 optional = true
 description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; **the other three are refused by name**, each naming its class.\n"
+[inputs.surge_curve]
+type = "record_list"
+row_type = "CompressorSurgePoint"
+optional = true
+description = "the surge boundary, `getSurgeCurve().setCurve`'s measured (flow, head) rows, in the same units as `curve`. **Absent is no boundary**: the surge read-outs are then null and the anti-surge block cannot fire. The class builds no curve from `setCurves` either.\n"
+[inputs.surge_curve.fields.flow]
+unit = "m**3/h"
+description = "the measured flow at the boundary, m3/hr.\n"
+[inputs.surge_curve.fields.head]
+unit = "m"
+description = "the measured head at the boundary, in metres; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.surge_control_margin]
+unit = "dimensionless"
+optional = true
+description = "`setSurgeControlMargin`: the control line as a fraction above the surge flow, `getControlLineFlow = surgeFlow (1 + margin)`. Absent takes the class's `0.0`, and a negative margin is refused as `setSurgeControlMargin` refuses it.\n"
+[inputs.anti_surge_active]
+type = "boolean"
+optional = true
+description = "`getAntiSurge().setActive(true)`: whether the run-time recycle block runs. Absent is the class's `false`.\n"
+[inputs.surge_control_factor]
+unit = "dimensionless"
+optional = true
+description = "`AntiSurge.surgeControlFactor`: the recycle target's multiple of the surge flow. Absent takes the class's `1.05`. Read only when `anti_surge_active` is set.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -99,6 +126,33 @@ description = "the chart polytropic efficiency the branch used, after the `[1e-6
 [outputs.power]
 unit = "W"
 description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"
+[outputs.surge_flow_rate]
+unit = "m**3/h"
+description = "`getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.\n"
+[outputs.surge_flow_rate_margin]
+unit = "m**3/h"
+description = "`getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.\n"
+[outputs.surge_flow_rate_std]
+unit = "m**3/h"
+description = "`getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.\n"
+[outputs.distance_to_surge]
+unit = "dimensionless"
+description = "`getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**\n"
+[outputs.control_line_flow]
+unit = "m**3/h"
+description = "`getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.\n"
+[outputs.distance_to_control_line]
+unit = "dimensionless"
+description = "`getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.\n"
+[outputs.required_recycle_fraction]
+unit = "dimensionless"
+description = "`getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.\n"
+[outputs.anti_surge_recycle_power]
+unit = "W"
+description = "`getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.\n"
+[outputs.recycle_fraction]
+unit = "dimensionless"
+description = "`AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0
@@ -113,6 +167,12 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "the reduced variables divide by the speed"
+[[valid_range]]
+quantity = "surge_control_margin"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "`setSurgeControlMargin` throws on a negative fraction"
 [[valid_range]]
 quantity = "inlet_t"
 min = 0

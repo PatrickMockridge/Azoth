@@ -774,8 +774,9 @@ a claim nothing holds.
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
-  speed-solve mode, its three alternative chart classes and its catalogue and readers,
-  anti-surge machinery, deposit model and `useGERG2008`/`useLeachman`/`useVega` property
+  speed-solve mode, its three alternative chart classes and its catalogue and readers, the
+  anti-surge recycle calculators and controllers (its surge curve, read-outs and run-time
+  recycle block have landed), deposit model and `useGERG2008`/`useLeachman`/`useVega` property
   overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s
   thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; `Separator`'s
@@ -789,7 +790,12 @@ a claim nothing holds.
   `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
   (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls;
   `MapTurboExpanderCompressor`, a different shaft that reuses `CompressorChartKhader2015`; and
-  the class's `toJson` report. Anti-surge is next, over the compressor chart that has landed.
+  the class's `toJson` report. **Anti-surge landed** - the two boundary splines, the chart's
+  generated surge and stonewall curves, the machine's surge read-outs and `run`'s recycle
+  block. What it left owed is the steady `AntiSurgeRecycleCalculator`, the legacy
+  `Calculator.runAntiSurgeCalc` step, `AntiSurgeController` and the dynamic/application layer
+  (`AntiSurgeDynamicBenchmark`, `AdvancedAntiSurgeControlSystem`, `CompressorAntiSurgeApplication`,
+  `CompressorOperatingHistory`, `RecycleFlowCoordinator`).
 - **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
   clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
   port returns the root the equation gives, so the negative flash stays visible;

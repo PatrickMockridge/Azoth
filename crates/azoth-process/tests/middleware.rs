@@ -492,7 +492,7 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
     // tenth, the compressor's speed the eleventh, and the expander's polytropic efficiency the
     // twelfth.
-    assert_eq!(checked, 118, "the bounds this test walked");
+    assert_eq!(checked, 119, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -631,7 +631,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `polytropic_efficiency` and `number_of_steps`. `491 + 3 = 494`. **And then the
     // turbo-expander's twenty-nine**, all on `process.turbo_expander_compressor`: two component
     // lists, eight feed quantities, five design numbers, and fourteen optional - `494 + 29 = 523`.
-    assert_eq!(walked, 523, "the inputs this test walked");
+    // **And then the compressor's surge surface's four**, all on `process.compressor`:
+    // `surge_curve`, `surge_control_margin`, `anti_surge_active` and `surge_control_factor` -
+    // `523 + 4 = 527`.
+    assert_eq!(walked, 527, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

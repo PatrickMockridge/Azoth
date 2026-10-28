@@ -20,6 +20,10 @@ fn the_isentropic_power_is_the_enthalpy_step() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state compresses");
 
@@ -49,6 +53,10 @@ fn the_other_chart_types_are_refused_by_name() {
             None,
             None,
             Some(chart_type),
+            None,
+            None,
+            None,
+            None,
         )
         .expect_err("the chart type is a declared refusal");
         assert_eq!(error.field(), Some("chart_type"), "{chart_type}");

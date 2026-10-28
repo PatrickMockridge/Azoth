@@ -121,6 +121,15 @@ impl CalcResult for CompressorResult {
         "polytropic_head",
         "polytropic_efficiency",
         "power",
+        "surge_flow_rate",
+        "surge_flow_rate_margin",
+        "surge_flow_rate_std",
+        "distance_to_surge",
+        "control_line_flow",
+        "distance_to_control_line",
+        "required_recycle_fraction",
+        "anti_surge_recycle_power",
+        "recycle_fraction",
         "warnings",
     ];
 

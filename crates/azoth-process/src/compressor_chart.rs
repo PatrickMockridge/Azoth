@@ -12,17 +12,20 @@
 //! separate `flowPolytropicEfficiency` matrix; every oracle row states the same flows, so the
 //! model carries one `flow` per point and this module fits the efficiency against it.
 //!
-//! **The surge and stonewall lookups are per curve, and no curve is built from the table.**
-//! `setCurves` builds no boundary curve; `getSurgeFlowAtSpeed` and its siblings take the
-//! measured curve closest to the requested speed and read its minimum or maximum flow. The
-//! spline boundary curves (`SafeSplineSurgeCurve`/`SafeSplineStoneWallCurve`) belong to the
-//! anti-surge machinery and are not here.
+//! **The boundary curves are carried, and `setCurves` still builds none.** `getSurgeFlowAtSpeed`
+//! and its siblings take the measured curve closest to the requested speed and read its
+//! minimum or maximum flow; the spline boundaries (`SafeSplineSurgeCurve` /
+//! `SafeSplineStoneWallCurve`) are set explicitly or built by `generateSurgeCurve` /
+//! `generateStoneWallCurve` from those same extreme points, which is what the class does - its
+//! `setCurves` does not call the generators either.
 //!
 //! **The dead fan-law correction is not repeated.** `setCurves` fits a third polynomial over
 //! `speed/speed[0]` that no getter reads.
 
 use azoth_core::{AzothError, Result};
 use azoth_reactions::linalg::solve_least_squares;
+
+use crate::surge_curve::{StoneWallCurve, SurgeCurve};
 
 /// The class's degree-2 polynomial fit has three coefficients.
 const COEFFICIENTS: usize = 3;
@@ -74,6 +77,8 @@ pub struct CompressorChart {
     min_speed: f64,
     max_speed: f64,
     curves: Vec<SpeedCurve>,
+    surge: Option<SurgeCurve>,
+    stonewall: Option<StoneWallCurve>,
 }
 
 impl CompressorChart {
@@ -170,6 +175,8 @@ impl CompressorChart {
             min_speed,
             max_speed,
             curves,
+            surge: None,
+            stonewall: None,
         })
     }
 
@@ -342,6 +349,108 @@ impl CompressorChart {
             }
             None => f64::NAN,
         }
+    }
+
+    /// `setSurgeCurve`: the explicit surge boundary, in the chart's head unit.
+    pub fn set_surge_curve(&mut self, curve: SurgeCurve) {
+        self.surge = Some(curve);
+    }
+
+    /// `setStoneWallCurve`: the explicit stonewall boundary, in the chart's head unit.
+    pub fn set_stonewall_curve(&mut self, curve: StoneWallCurve) {
+        self.stonewall = Some(curve);
+    }
+
+    /// The surge curve, where one is set.
+    #[must_use]
+    pub fn surge_curve(&self) -> Option<&SurgeCurve> {
+        self.surge.as_ref()
+    }
+
+    /// The stonewall curve, where one is set.
+    #[must_use]
+    pub fn stonewall_curve(&self) -> Option<&StoneWallCurve> {
+        self.stonewall.as_ref()
+    }
+
+    /// `getSurgeCurve().getSurgeFlow(head)`: the curve's flow at a head, or `None` without one.
+    #[must_use]
+    pub fn surge_flow(&self, head: f64) -> Option<f64> {
+        self.surge.as_ref().map(|curve| curve.flow_at_head(head))
+    }
+
+    /// `getStoneWallCurve().getStoneWallFlow(head)`, or `None` without a curve.
+    #[must_use]
+    pub fn stonewall_flow(&self, head: f64) -> Option<f64> {
+        self.stonewall
+            .as_ref()
+            .map(|curve| curve.flow_at_head(head))
+    }
+
+    /// `isSurge(head, flow)`: false where no surge curve is set, the class's inactive answer.
+    #[must_use]
+    pub fn is_surge(&self, head: f64, flow: f64) -> bool {
+        self.surge
+            .as_ref()
+            .is_some_and(|curve| curve.is_limit(head, flow))
+    }
+
+    /// `isStoneWall(head, flow)`: false where no stonewall curve is set.
+    #[must_use]
+    pub fn is_stonewall(&self, head: f64, flow: f64) -> bool {
+        self.stonewall
+            .as_ref()
+            .is_some_and(|curve| curve.is_limit(head, flow))
+    }
+
+    /// `generateSurgeCurve`: one point per speed row - its lowest flow - deduped by flow.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] if the chart carries no speed rows, or if the points do not
+    /// make a curve (one speed line, or every row sharing a flow).
+    pub fn generate_surge_curve(&mut self) -> Result<()> {
+        let (flow, head) = self.extreme_points(true)?;
+        self.surge = Some(SurgeCurve::new(&flow, &head)?);
+        Ok(())
+    }
+
+    /// `generateStoneWallCurve`: one point per speed row - its highest flow - deduped by flow.
+    ///
+    /// # Errors
+    /// The same refusals as [`Self::generate_surge_curve`].
+    pub fn generate_stonewall_curve(&mut self) -> Result<()> {
+        let (flow, head) = self.extreme_points(false)?;
+        self.stonewall = Some(StoneWallCurve::new(&flow, &head)?);
+        Ok(())
+    }
+
+    /// The lowest-flow (surge) or highest-flow (stonewall) point of every speed row, in row
+    /// order and deduped by flow - the class's `TreeMap` with `containsKey`'s first wins.
+    fn extreme_points(&self, lowest: bool) -> Result<(Vec<f64>, Vec<f64>)> {
+        if self.curves.is_empty() {
+            return Err(AzothError::invalid_input(
+                "curve",
+                "the chart has no speed rows, so it has no boundary to generate",
+            ));
+        }
+        let mut seen: Vec<f64> = Vec::new();
+        let mut flow = Vec::new();
+        let mut head = Vec::new();
+        for curve in &self.curves {
+            let index = if lowest {
+                minimum_index(&curve.flow)
+            } else {
+                maximum_index(&curve.flow)
+            };
+            let value = curve.flow[index];
+            if seen.contains(&value) {
+                continue;
+            }
+            seen.push(value);
+            flow.push(value);
+            head.push(curve.head[index]);
+        }
+        Ok((flow, head))
     }
 
     /// `getFlowRangeStatus`: `IN_RANGE`, the two extrapolation names, or `NO_CHART`.
@@ -621,6 +730,51 @@ mod tests {
 
         let flow = chart.flow_for_head(70.0 * KJ_PER_KG_TO_M, 12913.0, 4000.0);
         assert!((flow - 5399.049830646614).abs() < 1.0e-2, "flow: {flow}");
+    }
+
+    #[test]
+    fn the_generated_boundaries_reproduce_the_class() {
+        // `process_anti_surge.tsv`'s `generated_boundaries` block: the class's own
+        // `generateSurgeCurve`/`generateStoneWallCurve` on this table, read at three heads
+        // (stated there in kJ/kg, as the class' head unit is set to) and at speed 11683.
+        let mut chart = CompressorChart::new(&table()).expect("a valid chart");
+        chart.generate_surge_curve().expect("a surge curve");
+        chart.generate_stonewall_curve().expect("a stonewall curve");
+        for (head_kj, expected) in [
+            (31.0, 1607.6343245574142),
+            (50.0, 2019.1008057284437),
+            (80.0, 2788.0154491600683),
+        ] {
+            let got = chart
+                .surge_flow(head_kj * KJ_PER_KG_TO_M)
+                .expect("the curve is set");
+            assert!(
+                (got - expected).abs() < 1.0e-8 * expected.abs(),
+                "surge flow at {head_kj} kJ/kg: {got} against {expected}"
+            );
+        }
+        for (head_kj, expected) in [
+            (31.0, 5078.449674683021),
+            (50.0, 6366.848696674117),
+            (80.0, 8428.226023409274),
+        ] {
+            let got = chart
+                .stonewall_flow(head_kj * KJ_PER_KG_TO_M)
+                .expect("the curve is set");
+            assert!(
+                (got - expected).abs() < 1.0e-8 * expected.abs(),
+                "stonewall flow at {head_kj} kJ/kg: {got} against {expected}"
+            );
+        }
+        // The per-speed lookups still agree with the generated curve's own extreme points.
+        assert!((chart.surge_flow_at_speed(11683.0) - 2415.3793).abs() < 1.0e-9);
+        assert!((chart.stonewall_flow_at_speed(11683.0) - 5138.7858).abs() < 1.0e-9);
+        // And the limit tests read the same curve.
+        let head = 50.0 * KJ_PER_KG_TO_M;
+        assert!(chart.is_surge(head, 1000.0));
+        assert!(!chart.is_surge(head, 3000.0));
+        assert!(chart.is_stonewall(head, 9000.0));
+        assert!(!chart.is_stonewall(head, 3000.0));
     }
 
     #[test]

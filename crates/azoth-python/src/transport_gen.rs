@@ -13992,6 +13992,33 @@ pub struct PyCompressorResult {
     /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     #[pyo3(get)]
     pub power: PyQty,
+    /// `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
+    #[pyo3(get)]
+    pub surge_flow_rate: Option<PyQty>,
+    /// `getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.
+    #[pyo3(get)]
+    pub surge_flow_rate_margin: Option<PyQty>,
+    /// `getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.
+    #[pyo3(get)]
+    pub surge_flow_rate_std: Option<PyQty>,
+    /// `getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**
+    #[pyo3(get)]
+    pub distance_to_surge: Option<f64>,
+    /// `getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.
+    #[pyo3(get)]
+    pub control_line_flow: Option<PyQty>,
+    /// `getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.
+    #[pyo3(get)]
+    pub distance_to_control_line: Option<f64>,
+    /// `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
+    #[pyo3(get)]
+    pub required_recycle_fraction: Option<f64>,
+    /// `getAntiSurgeRecyclePower(required fraction)`: the chart power times the required recycle fraction.
+    #[pyo3(get)]
+    pub anti_surge_recycle_power: Option<PyQty>,
+    /// `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
+    #[pyo3(get)]
+    pub recycle_fraction: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14001,7 +14028,7 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14010,6 +14037,15 @@ impl PyCompressorResult {
             self.polytropic_head,
             self.polytropic_efficiency,
             self.power,
+            self.surge_flow_rate,
+            self.surge_flow_rate_margin,
+            self.surge_flow_rate_std,
+            self.distance_to_surge,
+            self.control_line_flow,
+            self.distance_to_control_line,
+            self.required_recycle_fraction,
+            self.anti_surge_recycle_power,
+            self.recycle_fraction,
             self.warnings.len()
         )
     }
@@ -14044,6 +14080,30 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),
             },
+            surge_flow_rate: r.surge_flow_rate.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            surge_flow_rate_margin: r.surge_flow_rate_margin.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            surge_flow_rate_std: r.surge_flow_rate_std.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            distance_to_surge: r.distance_to_surge,
+            control_line_flow: r.control_line_flow.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            distance_to_control_line: r.distance_to_control_line,
+            required_recycle_fraction: r.required_recycle_fraction,
+            anti_surge_recycle_power: r.anti_surge_recycle_power.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "W".to_string(),
+            }),
+            recycle_fraction: r.recycle_fraction,
             warnings: transport(&r.warnings),
         }
     }

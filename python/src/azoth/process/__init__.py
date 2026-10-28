@@ -1015,6 +1015,10 @@ def compressor(
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
     chart_type: str | None = None,
+    surge_curve: list[dict[str, Q]] | None = None,
+    surge_control_margin: float | None = None,
+    anti_surge_active: bool | None = None,
+    surge_control_factor: float | None = None,
 ) -> CompressorResult:
     """Raise a stream's pressure along an isentrope or the machine's chart.
 
@@ -1029,6 +1033,11 @@ def compressor(
     ``curve`` selects ``CompressorChart``'s fixed-speed branch instead: the pressure is solved
     from the head, ``speed`` reads the map, and ``chart_type`` names the map class (only the
     default ``fan_law`` is carried).
+
+    ``surge_curve`` is the anti-surge boundary in the same (flow, head) unit as ``curve``.
+    With it the result carries the machine's surge read-outs; with ``anti_surge_active`` set,
+    the run-time recycle block re-runs the machine above the surge flow and reports the
+    fraction and the boosted power.
 
     Raises:
         InvalidInputError: where the shapes disagree, the efficiency is outside ``(0, 1]``, or
@@ -1047,6 +1056,10 @@ def compressor(
         curve=curve,
         speed=speed,
         chart_type=chart_type,
+        surge_curve=surge_curve,
+        surge_control_margin=surge_control_margin,
+        anti_surge_active=anti_surge_active,
+        surge_control_factor=surge_control_factor,
     )
 
 

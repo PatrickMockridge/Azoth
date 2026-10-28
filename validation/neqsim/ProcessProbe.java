@@ -143,6 +143,9 @@ public class ProcessProbe {
       case "turbo_expander":
         turboExpanderRows();
         break;
+      case "anti_surge":
+        antiSurgeRows();
+        break;
       case "expander":
         isentropicRows("Expander");
         break;
@@ -859,6 +862,126 @@ public class ProcessProbe {
     System.out.println("igv_opening=" + machine.getIGVopening());
     System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
     printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
+  }
+
+  /// The anti-surge surface: the boundary splines, the chart's generators, the read-outs, and
+  /// `Compressor.run`'s own recycle block.
+  ///
+  /// **The spline rows are `SafeSplineSurgeCurveTest.testSurgeCurve10250`'s**, read at the
+  /// points that test asserts. The chart rows call the class's own `generateSurgeCurve` and
+  /// `generateStoneWallCurve` on the eight-speed `CompressorChartTest` table, so the generator
+  /// is held as well as the curve. The machine rows re-case the same nine-component gas at
+  /// 24 C and 48 bara: one state read out with a 10% control margin, then the 0.30 and
+  /// 4.00 MSm3/day states of `AntiSurgeRecycleCalculatorTest` with `AntiSurge` active and the
+  /// default 1.05 surge-control factor - one inside surge, one far above it.
+  static void antiSurgeRows() {
+    double[] flow10250 = new double[] {9758.49, 9578.11, 9397.9, 9248.64, 9006.93, 8749.97,
+        8508.5, 8179.81, 7799.81, 7111.75, 6480.26, 6007.91, 5607.45};
+    double[] head10250 = new double[] {112.65, 121.13, 127.56, 132.13, 137.29, 140.73, 142.98,
+        144.76, 146.14, 148.05, 148.83, 149.54, 150.0};
+    neqsim.process.equipment.compressor.SafeSplineSurgeCurve curve =
+        new neqsim.process.equipment.compressor.SafeSplineSurgeCurve(flow10250, head10250);
+    System.out.println("spline_10250");
+    System.out.println("surge_flow_at_130=" + curve.getSurgeFlow(130.0));
+    System.out.println("surge_flow_at_190=" + curve.getSurgeFlow(190.0));
+    System.out.println("surge_flow_at_10=" + curve.getSurgeFlow(10.0));
+    System.out.println("surge_head_at_9321_84315=" + curve.getSurgeHead(9321.84315));
+    System.out.println("surge_head_at_6000=" + curve.getSurgeHead(6000.0));
+    System.out.println("surge_head_at_9500=" + curve.getSurgeHead(9500.0));
+    System.out.println();
+
+    neqsim.process.equipment.compressor.CompressorChart chart = compressorChart();
+    chart.generateSurgeCurve();
+    chart.generateStoneWallCurve();
+    System.out.println("generated_boundaries");
+    for (double head : new double[] {31.0, 50.0, 80.0}) {
+      System.out.println("surge_flow_at_" + head + "=" + chart.getSurgeCurve().getSurgeFlow(head));
+    }
+    for (double head : new double[] {31.0, 50.0, 80.0}) {
+      System.out.println(
+          "stonewall_flow_at_" + head + "=" + chart.getStoneWallCurve().getStoneWallFlow(head));
+    }
+    System.out.println("surge_flow_at_speed_11683=" + chart.getSurgeFlowAtSpeed(11683.0));
+    System.out.println("stonewall_flow_at_speed_11683=" + chart.getStoneWallFlowAtSpeed(11683.0));
+    System.out.println();
+
+    antiSurgeReadoutRow("anti_surge_readout");
+    antiSurgeRunRow("anti_surge_run_in_surge", 0.30);
+    antiSurgeRunRow("anti_surge_run_above_surge", 4.00);
+  }
+
+  static neqsim.process.equipment.compressor.Compressor antiSurgeMachine(double msm3PerDay) {
+    SystemInterface fluid = new SystemPrEos(298.15, 50.0);
+    String[] names = new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane"};
+    double[] z = new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053};
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    fluid.setMultiPhaseCheck(true);
+    fluid.setTemperature(24.0, "C");
+    fluid.setPressure(48.0, "bara");
+    fluid.setTotalFlowRate(msm3PerDay, "MSm3/day");
+    Stream inlet = new Stream("suction", fluid);
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("export", inlet);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setSpeed(11918);
+    compressor.getCompressorChart().setCurves(compressorChart().getChartConditions(),
+        compressorChart().getSpeeds(), compressorChart().getFlows(),
+        compressorChart().getHeads(), compressorChart().getPolytropicEfficiencies());
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.getCompressorChart().setUseCompressorChart(true);
+    compressor.getCompressorChart().getSurgeCurve().setCurve(
+        compressorChart().getChartConditions(), new double[] {2789.0, 2550.0, 2500.0, 2200.0},
+        new double[] {80.0, 72.0, 70.0, 65.0});
+    return compressor;
+  }
+
+  static void printAntiSurge(String label,
+      neqsim.process.equipment.compressor.Compressor compressor) {
+    System.out.println(label);
+    System.out.println("speed_rpm=" + compressor.getSpeed());
+    System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicHead());
+    System.out.println("polytropic_fluid_head=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+    System.out.println("power_w=" + compressor.getPower("W"));
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    System.out.println("inlet_m3_per_hr=" + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("surge_flow_m3_per_hr=" + compressor.getSurgeFlowRate());
+    System.out.println("surge_flow_margin_m3_per_hr=" + compressor.getSurgeFlowRateMargin());
+    System.out.println("surge_flow_std_m3_per_hr=" + compressor.getSurgeFlowRateStd());
+    System.out.println("distance_to_surge=" + compressor.getDistanceToSurge());
+    System.out.println("control_line_flow_m3_per_hr=" + compressor.getControlLineFlow());
+    System.out.println("distance_to_control_line=" + compressor.getDistanceToControlLine());
+    System.out.println(
+        "required_recycle_fraction=" + compressor.getRequiredRecycleFractionToControlLine());
+    System.out.println("surge_fraction=" + compressor.getAntiSurge().getCurrentSurgeFraction());
+    System.out.println("recycle_power_kw="
+        + compressor.getAntiSurgeRecyclePower(
+            compressor.getAntiSurge().getCurrentSurgeFraction(), "kW"));
+    print("inlet", compressor.getInletStream());
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  static void antiSurgeReadoutRow(String label) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(1.0);
+    compressor.setSurgeControlMargin(0.10);
+    compressor.run();
+    printAntiSurge(label, compressor);
+  }
+
+  static void antiSurgeRunRow(String label, double msm3PerDay) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(msm3PerDay);
+    compressor.getAntiSurge().setActive(true);
+    compressor.getAntiSurge().setSurgeControlFactor(1.05);
+    compressor.run();
+    printAntiSurge(label, compressor);
   }
 
   /// `CompressorChart`, the default fan-law class, and `Compressor.run`'s chart branch.

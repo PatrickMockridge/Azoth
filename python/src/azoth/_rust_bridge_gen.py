@@ -5479,7 +5479,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, chart_type: str | None=None) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, chart_type: str | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -5493,6 +5493,10 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         None if curve is None else input_records_to_si(spec, "curve", curve),
         None if speed is None else speed,
         chart_type,
+        None if surge_curve is None else input_records_to_si(spec, "surge_curve", surge_curve),
+        None if surge_control_margin is None else surge_control_margin,
+        anti_surge_active,
+        None if surge_control_factor is None else surge_control_factor,
     )
     return CompressorResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5503,6 +5507,15 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         polytropic_head=from_si(result.polytropic_head.magnitude_si, result.polytropic_head.unit),
         polytropic_efficiency=result.polytropic_efficiency,
         power=from_si(result.power.magnitude_si, result.power.unit),
+        surge_flow_rate=None if result.surge_flow_rate is None else from_si(result.surge_flow_rate.magnitude_si, result.surge_flow_rate.unit),
+        surge_flow_rate_margin=None if result.surge_flow_rate_margin is None else from_si(result.surge_flow_rate_margin.magnitude_si, result.surge_flow_rate_margin.unit),
+        surge_flow_rate_std=None if result.surge_flow_rate_std is None else from_si(result.surge_flow_rate_std.magnitude_si, result.surge_flow_rate_std.unit),
+        distance_to_surge=result.distance_to_surge,
+        control_line_flow=None if result.control_line_flow is None else from_si(result.control_line_flow.magnitude_si, result.control_line_flow.unit),
+        distance_to_control_line=result.distance_to_control_line,
+        required_recycle_fraction=result.required_recycle_fraction,
+        anti_surge_recycle_power=None if result.anti_surge_recycle_power is None else from_si(result.anti_surge_recycle_power.magnitude_si, result.anti_surge_recycle_power.unit),
+        recycle_fraction=result.recycle_fraction,
         warnings=_warnings(result.warnings),
     )
 
