@@ -31,7 +31,11 @@ from dataclasses import dataclass, field
 from typing import Final
 
 from azoth.core.errors import InvalidInputError
-from azoth.process.reference.surge_curve import StoneWallCurve, SurgeCurve
+from azoth.process.reference.surge_curve import (
+    StoneWallCurve,
+    SurgeCurve,
+    _Spline,
+)
 
 #: The class's degree-2 polynomial fit has three coefficients.
 _COEFFICIENTS: Final = 3
@@ -63,18 +67,28 @@ class _SpeedCurve:
     speed: float
     flow: list[float] = field(default_factory=list)
     head: list[float] = field(default_factory=list)
+    efficiency: list[float] = field(default_factory=list)
+
+
+#: Which map the chart interpolates: the reduced quadratics, or the measured lines read
+#: directly (``CompressorChartAlternativeMapLookup`` and its extrapolating subclass).
+FAN_LAW = "fan_law"
+MAP_LOOKUP = "map_lookup"
+MAP_LOOKUP_EXTRAPOLATE = "map_lookup_extrapolate"
 
 
 class CompressorChart:
     """The reduced fits and the speed lines, as ``CompressorChart`` holds them."""
 
-    def __init__(self, points: list[CurvePoint]) -> None:
+    def __init__(self, points: list[CurvePoint], kind: str = FAN_LAW) -> None:
         """Build the fits and the speed lines from a flattened map.
 
         Raises:
-            InvalidInputError: for fewer than three points, a non-finite value, or a
-                non-positive speed.
+            InvalidInputError: for fewer than three points, a non-finite value, a
+                non-positive speed, or an unknown ``kind``.
         """
+        if kind not in (FAN_LAW, MAP_LOOKUP, MAP_LOOKUP_EXTRAPOLATE):
+            raise InvalidInputError("curve", f"'{kind}' is not a chart interpolation")
         if len(points) < _COEFFICIENTS:
             raise InvalidInputError(
                 "curve",
@@ -108,10 +122,14 @@ class CompressorChart:
             if curves and curves[-1].speed == point.speed:
                 curves[-1].flow.append(point.flow)
                 curves[-1].head.append(point.head)
+                curves[-1].efficiency.append(point.efficiency)
             else:
-                curves.append(_SpeedCurve(point.speed, [point.flow], [point.head]))
+                curves.append(
+                    _SpeedCurve(point.speed, [point.flow], [point.head], [point.efficiency])
+                )
         speeds = [point.speed for point in points]
         self._curves = curves
+        self._kind = kind
         self._surge: SurgeCurve | None = None
         self._stonewall: StoneWallCurve | None = None
         self._min_speed = min(speeds)
@@ -124,12 +142,74 @@ class CompressorChart:
         return self._reference_speed
 
     def polytropic_head(self, flow: float, speed: float) -> float:
-        """``getPolytropicHead(flow, speed)``, J/kg. No clamp."""
-        return _evaluate(self._head, flow / speed) * speed * speed
+        """``getPolytropicHead(flow, speed)``, J/kg. No clamp.
+
+        Raises:
+            InvalidInputError: a non-extrapolating lookup's flow outside a speed line's knots -
+                the class's spline throws there and the lookup does not catch it.
+        """
+        if self._kind == FAN_LAW:
+            return _evaluate(self._head, flow / speed) * speed * speed
+        return self._lookup(flow, speed, head=True)
 
     def polytropic_efficiency(self, flow: float, speed: float) -> float:
-        """``getPolytropicEfficiency(flow, speed)``, as a fraction. No clamp."""
-        return _evaluate(self._efficiency, flow / speed)
+        """``getPolytropicEfficiency(flow, speed)``, as a fraction. No clamp.
+
+        Raises:
+            InvalidInputError: the same refusal as :meth:`polytropic_head`.
+        """
+        if self._kind == FAN_LAW:
+            return _evaluate(self._efficiency, flow / speed)
+        return self._lookup(flow, speed, head=False)
+
+    @property
+    def kind(self) -> str:
+        """The interpolation scheme this chart uses."""
+        return self._kind
+
+    def _lookup(self, flow: float, speed: float, *, head: bool) -> float:
+        """The alternative lookups: the nearest line(s), splined along ``flow``."""
+        closest = self._closest_indices(speed)
+        if not closest:
+            raise InvalidInputError(
+                "curve", "the chart has no speed lines, so a map lookup has nothing to read"
+            )
+        extrapolate = self._kind == MAP_LOOKUP_EXTRAPOLATE
+        values: list[tuple[float, float]] = []
+        for index in closest:
+            curve = self._curves[index]
+            ordinates = curve.head if head else curve.efficiency
+            value = _line_value(
+                curve.flow, ordinates, flow, extrapolate=extrapolate, speed=curve.speed
+            )
+            values.append((curve.speed, value))
+        if self._kind == MAP_LOOKUP:
+            return sum(value for _, value in values) / len(values)
+        if len(values) == 1:
+            reference, value = values[0]
+            # The extrapolating class scales a single line's head by the speed ratio (not its
+            # square), and leaves the efficiency alone.
+            return value * speed / reference if head else value
+        (first, first_value), (second, second_value) = values
+        slope = (second_value - first_value) / (second - first)
+        blended = first_value + slope * (speed - first)
+        # **The pinned class scales the blended head by ``speed / max(s1, s2)``**, and leaves
+        # the efficiency unscaled.
+        return blended * speed / max(first, second) if head else blended
+
+    def _closest_indices(self, speed: float) -> list[int]:
+        """``getClosestRefSpeeds``: the line itself, the two it sits between, or the end line."""
+        order = sorted(range(len(self._curves)), key=lambda index: self._curves[index].speed)
+        index = 0
+        while index < len(order) and self._curves[order[index]].speed < speed:
+            index += 1
+        if index < len(order) and self._curves[order[index]].speed == speed:
+            return [order[index]]
+        if index == 0:
+            return [order[0]]
+        if index == len(order):
+            return [order[len(order) - 1]]
+        return [order[index - 1], order[index]]
 
     def speed_for_head(self, flow: float, head: float) -> float:
         """``getSpeedValue(flow, head)``: the speed that reaches a head, rpm."""
@@ -379,6 +459,34 @@ def _solve3(a: list[list[float]], b: list[float]) -> list[float]:
                 for value, pivot_value in zip(matrix[row], matrix[column], strict=True)
             ]
     return [matrix[row][_COEFFICIENTS] for row in range(_COEFFICIENTS)]
+
+
+def _line_value(
+    knots: list[float],
+    ordinates: list[float],
+    flow: float,
+    *,
+    extrapolate: bool,
+    speed: float,
+) -> float:
+    """One speed line's head or efficiency: the spline inside, a refusal or a line outside."""
+    n = len(knots)
+    if n < 2 or any(knots[i + 1] <= knots[i] for i in range(n - 1)):
+        raise InvalidInputError(
+            "curve", f"the speed line at {speed} rpm is not strictly increasing in flow"
+        )
+    if flow < knots[0] or flow > knots[n - 1]:
+        if not extrapolate:
+            raise InvalidInputError(
+                "curve",
+                f"the map lookup's spline at {speed} rpm covers {knots[0]} to {knots[n - 1]} "
+                f"m3/hr, and {flow} is outside it; only the extrapolating chart reads past the "
+                f"knots",
+            )
+        low, high = (0, 1) if flow < knots[0] else (n - 2, n - 1)
+        slope = (ordinates[high] - ordinates[low]) / (knots[high] - knots[low])
+        return ordinates[low] + slope * (flow - knots[low])
+    return _Spline(knots, ordinates).at(flow)
 
 
 def _evaluate(coefficients: tuple[float, float, float], x: float) -> float:

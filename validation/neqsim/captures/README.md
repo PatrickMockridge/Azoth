@@ -469,6 +469,8 @@ public surface of forty-odd getters.
   > captures/process_pipe_modes.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \
   > captures/process_compressor_curve.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_map_lookup \
+  > captures/process_compressor_map_lookup.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
@@ -689,6 +691,17 @@ gas, the same table in kJ/kg and speed `11918` - and prints the chart head, the 
 efficiency and the power beside both records. **The class's own test asserts `1163805.3` J,
 `55.404` kJ/kg and `0.43175` on SRK; on PR the same state answers its own numbers**, which is
 what the port is held to.
+
+**`ProcessProbe compressor_map_lookup` is the two alternative map lookups.**
+`CompressorChartAlternativeMapLookup` reads the measured speed lines directly - a natural cubic
+spline along each, averaged over the one or two nearest speeds, with no speed scaling - and its
+extrapolating subclass adds linear extrapolation past the flow knots and a head scaled by
+`speed / max(s1, s2)`. The rows are a three-speed synthetic table read at exact speeds, between
+them and outside them; the base class's flow outside the knots, where it prints the
+`OutOfRangeException` its spline throws; and `CompressorChartTest.runCurveTest`'s machine on PR
+with each class, which the two differ on (`155.99` against `158.26` bara). **The pinned jar's
+source scales the blended head and the working tree's does not**; the rows are the jar's, which
+is the oracle.
 
 **`ProcessProbe expander_steps` is `Expander.run`'s stepped polytropic branch.** The class's
 own `ExpanderPolytropicStepsTest` is a *relative* oracle - five steps against forty, to `0.1` K

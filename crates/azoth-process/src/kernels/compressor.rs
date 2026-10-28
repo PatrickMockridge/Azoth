@@ -167,12 +167,12 @@ pub fn compressor_with_chart(
     let (efficiency, head_m, head_j_per_kg, pressure_ratio) = loop {
         let flow_m3hr = fresh_flow_m3hr * (boosted_n / fresh_n);
         let efficiency = chart
-            .polytropic_efficiency(flow_m3hr, speed)
+            .polytropic_efficiency(flow_m3hr, speed)?
             .clamp(MIN_EFFICIENCY, 1.0);
         // **The chart's head crosses in metres, and the class's metre branch converts it with
         // `9.81`, not standard gravity**: `polytropicFluidHead = head/1000*9.81` kJ/kg, so the
         // specific work is `head * 9.81` J/kg.
-        let head_m = chart.polytropic_head(flow_m3hr, speed);
+        let head_m = chart.polytropic_head(flow_m3hr, speed)?;
         let head_j_per_kg = head_m * METRE_TO_JOULE_PER_KG;
         let n = 1.0 / (1.0 - (kappa - 1.0) / kappa / efficiency);
         let flow_work = n / (n - 1.0) * z * R_J_PER_MOL_K * feed.t.value / molar_mass;

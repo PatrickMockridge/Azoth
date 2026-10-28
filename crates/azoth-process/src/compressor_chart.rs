@@ -25,7 +25,7 @@
 use azoth_core::{AzothError, Result};
 use azoth_reactions::linalg::solve_least_squares;
 
-use crate::surge_curve::{StoneWallCurve, SurgeCurve};
+use crate::surge_curve::{Spline, StoneWallCurve, SurgeCurve};
 
 /// The class's degree-2 polynomial fit has three coefficients.
 const COEFFICIENTS: usize = 3;
@@ -60,12 +60,31 @@ pub struct CurvePoint {
     pub efficiency: f64,
 }
 
-/// One speed line, kept for the surge and stonewall lookups.
+/// One speed line, kept for the surge and stonewall lookups and the alternative maps.
 #[derive(Debug, Clone, PartialEq)]
 struct SpeedCurve {
     speed: f64,
     flow: Vec<f64>,
     head: Vec<f64>,
+    efficiency: Vec<f64>,
+}
+
+/// Which map the chart interpolates.
+///
+/// `FanLaw` is `CompressorChart`, the reduced quadratics. `MapLookup` and
+/// `MapLookupExtrapolate` are `CompressorChartAlternativeMapLookup` and its extrapolating
+/// subclass: the measured speed lines read directly, with a natural cubic spline along each
+/// line.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ChartKind {
+    /// `CompressorChart`: one reduced quadratic in `Q/N` per table.
+    #[default]
+    FanLaw,
+    /// `CompressorChartAlternativeMapLookup`: the mean of the nearest lines' splines.
+    MapLookup,
+    /// `CompressorChartAlternativeMapLookupExtrapolate`: the same, with linear extrapolation
+    /// past the flow knots and a linear speed blend.
+    MapLookupExtrapolate,
 }
 
 /// The reduced fits and the speed lines, as `CompressorChart` holds them.
@@ -77,12 +96,13 @@ pub struct CompressorChart {
     min_speed: f64,
     max_speed: f64,
     curves: Vec<SpeedCurve>,
+    kind: ChartKind,
     surge: Option<SurgeCurve>,
     stonewall: Option<StoneWallCurve>,
 }
 
 impl CompressorChart {
-    /// Build the reduced fits and the speed lines from a flattened map.
+    /// Build the reduced fits and the speed lines from a flattened map, the fan-law chart.
     ///
     /// **Three points are the fit's own requirement**, as the pump's chart states: the class
     /// delegates to `PolynomialCurveFitter.create(2)`, which refuses fewer.
@@ -91,6 +111,17 @@ impl CompressorChart {
     /// [`AzothError::InvalidInput`] for fewer than three points, a non-finite value or a
     /// non-positive speed.
     pub fn new(points: &[CurvePoint]) -> Result<Self> {
+        Self::with_kind(points, ChartKind::FanLaw)
+    }
+
+    /// Build the same speed lines under one of the alternative map lookups.
+    ///
+    /// The reduced fits are still built - they cost a few flops and keep one constructor - and
+    /// the two lookup kinds interpolate the lines instead of reading them.
+    ///
+    /// # Errors
+    /// The same refusals as [`Self::new`].
+    pub fn with_kind(points: &[CurvePoint], kind: ChartKind) -> Result<Self> {
         if points.len() < COEFFICIENTS {
             return Err(AzothError::invalid_input(
                 "curve",
@@ -151,11 +182,13 @@ impl CompressorChart {
                 Some(curve) if curve.speed == point.speed => {
                     curve.flow.push(point.flow);
                     curve.head.push(point.head);
+                    curve.efficiency.push(point.efficiency);
                 }
                 _ => curves.push(SpeedCurve {
                     speed: point.speed,
                     flow: vec![point.flow],
                     head: vec![point.head],
+                    efficiency: vec![point.efficiency],
                 }),
             }
         }
@@ -175,9 +208,16 @@ impl CompressorChart {
             min_speed,
             max_speed,
             curves,
+            kind,
             surge: None,
             stonewall: None,
         })
+    }
+
+    /// The interpolation scheme this chart uses.
+    #[must_use]
+    pub fn kind(&self) -> ChartKind {
+        self.kind
     }
 
     /// The midpoint of the measured speed range, rpm.
@@ -185,23 +225,125 @@ impl CompressorChart {
         self.reference_speed
     }
 
-    /// `getPolytropicHead(flow, speed)`, J/kg. **No clamp**: the class extrapolates.
-    pub fn polytropic_head(&self, flow: f64, speed: f64) -> f64 {
+    /// `getPolytropicHead(flow, speed)`, J/kg. **No clamp**: the fan law extrapolates its
+    /// quadratic, and the lookups refuse a flow outside their spline unless they extrapolate.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] where a non-extrapolating lookup's flow lies outside a
+    /// speed line's knots - the class's `SplineInterpolator` throws there and it does not catch
+    /// it.
+    pub fn polytropic_head(&self, flow: f64, speed: f64) -> Result<f64> {
+        match self.kind {
+            ChartKind::FanLaw => Ok(self.fan_law_head(flow, speed)),
+            _ => self.lookup(flow, speed, true),
+        }
+    }
+
+    /// The fan-law head, which cannot fail: the reduced quadratic read back at `Q/N`.
+    fn fan_law_head(&self, flow: f64, speed: f64) -> f64 {
         evaluate(&self.head, flow / speed) * speed * speed
     }
 
     /// `getPolytropicEfficiency(flow, speed)`, as a fraction. **No clamp**.
-    pub fn polytropic_efficiency(&self, flow: f64, speed: f64) -> f64 {
-        evaluate(&self.efficiency, flow / speed)
+    ///
+    /// # Errors
+    /// The same refusal as [`Self::polytropic_head`].
+    pub fn polytropic_efficiency(&self, flow: f64, speed: f64) -> Result<f64> {
+        if self.kind == ChartKind::FanLaw {
+            return Ok(evaluate(&self.efficiency, flow / speed));
+        }
+        self.lookup(flow, speed, false)
+    }
+
+    /// The alternative lookups: the nearest speed line(s), splined along `flow`.
+    fn lookup(&self, flow: f64, speed: f64, head: bool) -> Result<f64> {
+        let speeds = self.closest_speeds(speed);
+        if speeds.is_empty() {
+            return Err(AzothError::invalid_input(
+                "curve",
+                "the chart has no speed lines, so a map lookup has nothing to read",
+            ));
+        }
+        let extrapolate = self.kind == ChartKind::MapLookupExtrapolate;
+        let mut values: Vec<(f64, f64)> = Vec::with_capacity(speeds.len());
+        for index in speeds {
+            let curve = &self.curves[index];
+            let (knots, ordinates) = if head {
+                (&curve.flow, &curve.head)
+            } else {
+                (&curve.flow, &curve.efficiency)
+            };
+            let value = line_value(knots, ordinates, flow, extrapolate, curve.speed)?;
+            values.push((curve.speed, value));
+        }
+        match self.kind {
+            ChartKind::MapLookup => {
+                Ok(values.iter().map(|(_, value)| value).sum::<f64>() / values.len() as f64)
+            }
+            _ => {
+                if values.len() == 1 {
+                    let (reference, value) = values[0];
+                    // The extrapolating class scales a single line's head by the speed ratio
+                    // (not its square), and leaves the efficiency alone.
+                    if head {
+                        Ok(value * speed / reference)
+                    } else {
+                        Ok(value)
+                    }
+                } else {
+                    let (first, first_value) = values[0];
+                    let (second, second_value) = values[1];
+                    let slope = (second_value - first_value) / (second - first);
+                    let blended = first_value + slope * (speed - first);
+                    // **The pinned class scales the blended head by `speed / max(s1, s2)`**,
+                    // and leaves the efficiency unscaled. The rule is in
+                    // `neqsim-f0c7436.jar`'s source; the later working-tree source drops it,
+                    // and the capture is the jar's.
+                    if head {
+                        Ok(blended * speed / first.max(second))
+                    } else {
+                        Ok(blended)
+                    }
+                }
+            }
+        }
+    }
+
+    /// `getClosestRefSpeeds`: the line itself on an exact match, the two it sits between, and
+    /// the end line outside the range.
+    fn closest_speeds(&self, speed: f64) -> Vec<usize> {
+        let mut order: Vec<usize> = (0..self.curves.len()).collect();
+        order.sort_by(|a, b| self.curves[*a].speed.total_cmp(&self.curves[*b].speed));
+        // `bisect_left`: the first line at or above the speed.
+        let mut index = 0;
+        while index < order.len() && self.curves[order[index]].speed < speed {
+            index += 1;
+        }
+        if index < order.len() && self.curves[order[index]].speed == speed {
+            return vec![order[index]];
+        }
+        if index == 0 {
+            return vec![order[0]];
+        }
+        if index == order.len() {
+            return vec![order[order.len() - 1]];
+        }
+        vec![index - 1, index]
+            .into_iter()
+            .map(|position| order[position])
+            .collect()
     }
 
     /// `getSpeedValue(flow, head)`: the speed that reaches a head at a flow, rpm.
+    ///
+    /// **The fan-law inverse.** The alternative classes override `getSpeedValue` with their
+    /// own Newton; that is the speed-solve tranche's, and this reads the fan-law quadratic.
     ///
     /// The class's fan-law guess, damped Newton (`0.7`, a `30 %` step cap), and its
     /// bisection fallback with the bounds doubled or halved when the target is outside. The
     /// two constants are the class's own and are kept rather than re-tuned.
     pub fn speed_for_head(&self, flow: f64, head: f64) -> f64 {
-        let reference_head = self.polytropic_head(flow, self.reference_speed);
+        let reference_head = self.fan_law_head(flow, self.reference_speed);
         let initial = if reference_head > 0.0 && head > 0.0 {
             self.reference_speed * (head / reference_head).sqrt()
         } else {
@@ -216,9 +358,9 @@ impl CompressorChart {
         let mut speed = initial.clamp(lower, upper);
 
         let mut old_speed = speed * 1.01;
-        let mut old_error = self.polytropic_head(flow, old_speed) - head;
+        let mut old_error = self.fan_law_head(flow, old_speed) - head;
         for _ in 0..MAX_NEWTON {
-            let new_head = self.polytropic_head(flow, speed);
+            let new_head = self.fan_law_head(flow, speed);
             let error = new_head - head;
             if error.abs() < SPEED_TOLERANCE {
                 return speed;
@@ -244,8 +386,8 @@ impl CompressorChart {
 
         let mut low = lower;
         let mut high = upper;
-        let head_at_low = self.polytropic_head(flow, low);
-        let head_at_high = self.polytropic_head(flow, high);
+        let head_at_low = self.fan_law_head(flow, low);
+        let head_at_high = self.fan_law_head(flow, high);
         if head < head_at_low && head < head_at_high {
             low *= 0.5;
             high = if head_at_low < head_at_high {
@@ -259,7 +401,7 @@ impl CompressorChart {
 
         for _ in 0..MAX_BISECTION {
             let mid = 0.5 * (low + high);
-            let mid_head = self.polytropic_head(flow, mid);
+            let mid_head = self.fan_law_head(flow, mid);
             if (mid_head - head).abs() < SPEED_TOLERANCE {
                 return mid;
             }
@@ -288,13 +430,13 @@ impl CompressorChart {
     pub fn flow_for_head(&self, head: f64, speed: f64, guess: f64) -> f64 {
         let mut flow = guess;
         let mut old_flow = flow * 1.1;
-        let mut old_error = self.polytropic_head(old_flow, speed) - head;
+        let mut old_error = self.fan_law_head(old_flow, speed) - head;
         let mut error;
         let mut iteration = 1;
         loop {
             iteration += 1;
             let new_head =
-                self.polytropic_head(flow, speed) / self.polytropic_efficiency(flow, speed);
+                self.fan_law_head(flow, speed) / evaluate(&self.efficiency, flow / speed);
             error = new_head - head;
             let derivative = (error - old_error) / (flow - old_flow);
             if derivative.abs() < 1.0e-10 {
@@ -499,6 +641,47 @@ impl CompressorChart {
         }
         best
     }
+}
+
+/// One speed line's head or efficiency at a flow: the natural spline inside the knots, and
+/// either a refusal or a linear extrapolation outside them.
+fn line_value(
+    knots: &[f64],
+    ordinates: &[f64],
+    flow: f64,
+    extrapolate: bool,
+    speed: f64,
+) -> Result<f64> {
+    let n = knots.len();
+    if n < 2 || knots.windows(2).any(|window| window[1] <= window[0]) {
+        return Err(AzothError::invalid_input(
+            "curve",
+            format!("the speed line at {speed} rpm is not strictly increasing in flow"),
+        ));
+    }
+    if flow < knots[0] || flow > knots[n - 1] {
+        if !extrapolate {
+            // The class's `PolynomialSplineFunction` throws outside its knots and the lookup
+            // does not catch it; the refusal is that throw.
+            return Err(AzothError::invalid_input(
+                "curve",
+                format!(
+                    "the map lookup's spline at {speed} rpm covers {} to {} m3/hr, and {flow} \
+                     is outside it; only the extrapolating chart reads past the knots",
+                    knots[0],
+                    knots[n - 1]
+                ),
+            ));
+        }
+        let (low, high) = if flow < knots[0] {
+            (0, 1)
+        } else {
+            (n - 2, n - 1)
+        };
+        let slope = (ordinates[high] - ordinates[low]) / (knots[high] - knots[low]);
+        return Ok(ordinates[low] + slope * (flow - knots[low]));
+    }
+    Ok(Spline::new(knots.to_vec(), ordinates.to_vec()).at(flow))
 }
 
 fn minimum_index(values: &[f64]) -> usize {
@@ -722,14 +905,28 @@ mod tests {
             let head = head_kj * KJ_PER_KG_TO_M;
             let efficiency = efficiency_percent / 100.0;
             assert!(
-                (chart.polytropic_head(flow, speed) - head).abs() < 1.0e-9 * head.abs(),
+                (chart
+                    .polytropic_head(flow, speed)
+                    .expect("fan law never refuses")
+                    - head)
+                    .abs()
+                    < 1.0e-9 * head.abs(),
                 "head at {flow} m3/hr and {speed} rpm: {} against {head}",
-                chart.polytropic_head(flow, speed)
+                chart
+                    .polytropic_head(flow, speed)
+                    .expect("fan law never refuses")
             );
             assert!(
-                (chart.polytropic_efficiency(flow, speed) - efficiency).abs() < 1.0e-12,
+                (chart
+                    .polytropic_efficiency(flow, speed)
+                    .expect("fan law never refuses")
+                    - efficiency)
+                    .abs()
+                    < 1.0e-12,
                 "efficiency at {flow} m3/hr and {speed} rpm: {} against {efficiency}",
-                chart.polytropic_efficiency(flow, speed)
+                chart
+                    .polytropic_efficiency(flow, speed)
+                    .expect("fan law never refuses")
             );
         }
 
@@ -789,6 +986,106 @@ mod tests {
         assert!(!chart.is_surge(head, 3000.0));
         assert!(chart.is_stonewall(head, 9000.0));
         assert!(!chart.is_stonewall(head, 3000.0));
+    }
+
+    /// The three-speed table `CompressorChartSpeedInterpolationTest` reads.
+    fn interpolation_table() -> Vec<CurvePoint> {
+        let mut points = Vec::new();
+        for (speed, heads) in [
+            (6000.0, [65.0, 60.0, 50.0]),
+            (7000.0, [85.0, 80.0, 70.0]),
+            (8000.0, [105.0, 100.0, 90.0]),
+        ] {
+            for (index, flow) in [1000.0, 2000.0, 3000.0].into_iter().enumerate() {
+                points.push(CurvePoint {
+                    speed,
+                    flow,
+                    head: heads[index],
+                    efficiency: [0.75, 0.80, 0.75][index],
+                });
+            }
+        }
+        points
+    }
+
+    #[test]
+    fn the_extrapolating_lookup_reproduces_the_capture() {
+        // `process_compressor_map_lookup.tsv`'s `speed_interpolation_extrapolate` block, on
+        // the three-speed table. **The pinned class blends in speed and then scales the head by
+        // `speed / max(s1, s2)`** - which is why 6500 rpm reads 65, not the later source's 70.
+        let chart =
+            CompressorChart::with_kind(&interpolation_table(), ChartKind::MapLookupExtrapolate)
+                .expect("the table fits");
+        for (speed, expected) in [
+            (6000.0, 60.0),
+            (6001.0, 51.454_288_571_428_58),
+            (6500.0, 65.0),
+            (7000.0, 80.0),
+            (7500.0, 84.375),
+            (8000.0, 100.0),
+            (0.0, 0.0),
+            (5000.0, 50.0),
+            (9000.0, 112.5),
+        ] {
+            let got = chart
+                .polytropic_head(2000.0, speed)
+                .expect("inside the knots, or the end line");
+            assert!(
+                (got - expected).abs() < 1.0e-9,
+                "head at {speed} rpm: {got} against {expected}"
+            );
+        }
+        assert!(
+            (chart
+                .polytropic_efficiency(2000.0, 7000.0)
+                .expect("a number")
+                - 0.80)
+                .abs()
+                < 1.0e-12
+        );
+        // A single line scales by the speed ratio too: 60 at 6000 rpm gives 70 at 7000.
+        let single = CompressorChart::with_kind(
+            &interpolation_table()
+                .into_iter()
+                .filter(|point| point.speed == 6000.0)
+                .collect::<Vec<CurvePoint>>(),
+            ChartKind::MapLookupExtrapolate,
+        )
+        .expect("one line fits");
+        assert!((single.polytropic_head(2000.0, 7000.0).expect("a number") - 70.0).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn the_base_lookup_is_the_mean_of_the_bracketing_lines() {
+        let table = table();
+        let chart = CompressorChart::with_kind(&table, ChartKind::MapLookup).expect("the table");
+        let flow = 3000.0;
+        let lower = chart
+            .polytropic_head(flow, 11683.0)
+            .expect("the line's own spline");
+        let upper = chart
+            .polytropic_head(flow, 12298.0)
+            .expect("the line's own spline");
+        let bracket = chart
+            .polytropic_head(flow, 12000.0)
+            .expect("between two lines");
+        assert!((bracket - 0.5 * (lower + upper)).abs() < 1.0e-9);
+        // Outside the speed range the end line is read alone, with no scaling.
+        let below = chart.polytropic_head(flow, 7000.0).expect("the end line");
+        let lowest = chart.polytropic_head(flow, 8200.0).expect("the end line");
+        assert!((below - lowest).abs() < 1.0e-9);
+        let above = chart.polytropic_head(flow, 14000.0).expect("the end line");
+        let highest = chart.polytropic_head(flow, 12913.0).expect("the end line");
+        assert!((above - highest).abs() < 1.0e-9);
+    }
+
+    #[test]
+    fn a_base_lookup_refuses_a_flow_outside_the_knots() {
+        let chart = CompressorChart::with_kind(&table(), ChartKind::MapLookup).expect("the table");
+        assert!(chart.polytropic_head(100.0, 11683.0).is_err());
+        let extrapolating = CompressorChart::with_kind(&table(), ChartKind::MapLookupExtrapolate)
+            .expect("the table");
+        assert!(extrapolating.polytropic_head(100.0, 11683.0).is_ok());
     }
 
     #[test]

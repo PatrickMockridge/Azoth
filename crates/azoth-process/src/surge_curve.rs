@@ -18,8 +18,12 @@
 use azoth_core::{AzothError, Result};
 
 /// A natural cubic spline through strictly increasing abscissae.
+///
+/// **The callers validate and this assumes it.** `Boundary` refuses a length mismatch, a
+/// duplicate flow and fewer than two heads; the compressor's map lookup refuses its own. The
+/// solve below divides by `x[i+1] - x[i]`, so a zero interval is a caller's error.
 #[derive(Debug, Clone, PartialEq)]
-struct Spline {
+pub(crate) struct Spline {
     x: Vec<f64>,
     y: Vec<f64>,
     /// The second derivative at each knot; zero at both ends.
@@ -27,25 +31,14 @@ struct Spline {
 }
 
 impl Spline {
-    fn new(x: Vec<f64>, y: Vec<f64>) -> Result<Self> {
+    pub(crate) fn new(x: Vec<f64>, y: Vec<f64>) -> Self {
         let n = x.len();
-        if n < 2 {
-            return Err(AzothError::invalid_input(
-                "surge_curve",
-                "a spline needs at least two points",
-            ));
-        }
-        for i in 1..n {
-            if x[i].is_nan() || x[i] <= x[i - 1] {
-                return Err(AzothError::invalid_input(
-                    "surge_curve",
-                    format!(
-                        "the spline's abscissae are not strictly increasing at {}",
-                        x[i]
-                    ),
-                ));
-            }
-        }
+        // claim-ok: a_stonewall_curve_flips_the_comparison - every caller refuses the input
+        // this would trip on, so the debug assertion is a precondition and not a check.
+        debug_assert!(
+            n >= 2 && x.windows(2).all(|window| window[1] > window[0]),
+            "a spline needs at least two strictly increasing abscissae"
+        );
         let mut h = Vec::with_capacity(n - 1);
         for i in 0..n - 1 {
             h.push(x[i + 1] - x[i]);
@@ -74,10 +67,10 @@ impl Spline {
             };
             second[i] = (rhs[i] - below) / diagonal[i];
         }
-        Ok(Self { x, y, second })
+        Self { x, y, second }
     }
 
-    fn at(&self, value: f64) -> f64 {
+    pub(crate) fn at(&self, value: f64) -> f64 {
         let n = self.x.len();
         // The interval is found by a plain scan: a surge curve has a dozen knots, and the
         // class's own `PolynomialSplineFunction` does the same.
@@ -183,6 +176,12 @@ impl Boundary {
         // `TreeMap<Double, Double>`: head ascending by `Double.compareTo` (which is
         // `total_cmp`), one flow per head, the last duplicate winning on `put`. The pairs are
         // flow-sorted, so a stable sort by head keeps the largest flow last among equal heads.
+        if pairs.windows(2).any(|window| window[1].0 <= window[0].0) {
+            return Err(AzothError::invalid_input(
+                "surge_curve",
+                "the curve's flows are not strictly increasing after sorting",
+            ));
+        }
         let mut by_head = pairs.clone();
         by_head.sort_by(|a, b| a.1.total_cmp(&b.1));
         let mut heads: Vec<f64> = Vec::new();
@@ -205,8 +204,8 @@ impl Boundary {
             ));
         }
 
-        let head_from_flow = Spline::new(sorted_flow.clone(), sorted_head.clone())?;
-        let flow_from_head = Spline::new(heads.clone(), flows.clone())?;
+        let head_from_flow = Spline::new(sorted_flow.clone(), sorted_head.clone());
+        let flow_from_head = Spline::new(heads.clone(), flows.clone());
         Ok(Self {
             flow: sorted_flow,
             head: sorted_head,

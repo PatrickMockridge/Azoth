@@ -40,26 +40,49 @@ fn the_isentropic_power_is_the_enthalpy_step() {
 }
 
 #[test]
-fn the_other_chart_types_are_refused_by_name() {
-    for chart_type in ["interpolate", "interpolate_and_extrapolate", "khader_2015"] {
-        let error = compressor(
-            &["methane".to_string()],
-            1.0,
-            &[1.0],
-            pascals(3_000_000.0),
-            kelvins(320.0),
-            Some(pascals(6_000_000.0)),
-            0.75,
-            None,
-            None,
-            Some(chart_type),
-            None,
-            None,
-            None,
-            None,
-        )
-        .expect_err("the chart type is a declared refusal");
-        assert_eq!(error.field(), Some("chart_type"), "{chart_type}");
+fn the_khader_chart_is_refused_by_name() {
+    // `interpolate` and `interpolate_and_extrapolate` are carried now; `khader_2015` is the
+    // one remaining declared refusal.
+    let error = compressor(
+        &["methane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(3_000_000.0),
+        kelvins(320.0),
+        Some(pascals(6_000_000.0)),
+        0.75,
+        None,
+        None,
+        Some("khader_2015"),
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect_err("the Khader chart is a declared refusal");
+    assert_eq!(error.field(), Some("chart_type"));
+    for chart_type in ["interpolate", "interpolate_and_extrapolate"] {
+        // No curve on this state, so the isentropic branch runs; the type itself is accepted.
+        assert!(
+            compressor(
+                &["methane".to_string()],
+                1.0,
+                &[1.0],
+                pascals(3_000_000.0),
+                kelvins(320.0),
+                Some(pascals(6_000_000.0)),
+                0.75,
+                None,
+                None,
+                Some(chart_type),
+                None,
+                None,
+                None,
+                None,
+            )
+            .is_ok(),
+            "{chart_type} is carried"
+        );
     }
 }
 

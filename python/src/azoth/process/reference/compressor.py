@@ -143,13 +143,14 @@ def compressor(
         )
 
     chart_type = "fan_law" if chart_type is None else chart_type
-    if chart_type == "interpolate":
-        _unported.refuse("chart_type=interpolate")
-    if chart_type == "interpolate_and_extrapolate":
-        _unported.refuse("chart_type=interpolate_and_extrapolate")
-    if chart_type == "khader_2015":
-        _unported.refuse("chart_type=khader_2015")
-    if chart_type != "fan_law":
+    kind = {
+        "fan_law": compressor_chart.FAN_LAW,
+        "interpolate": compressor_chart.MAP_LOOKUP,
+        "interpolate_and_extrapolate": compressor_chart.MAP_LOOKUP_EXTRAPOLATE,
+    }.get(chart_type)
+    if kind is None:
+        if chart_type == "khader_2015":
+            _unported.refuse("chart_type=khader_2015")
         raise InvalidInputError(
             "chart_type", f"'{chart_type}' is not one of the four declared chart types"
         )
@@ -201,7 +202,7 @@ def compressor(
             recycle_fraction=None,
         )
     else:
-        chart = compressor_chart.CompressorChart(points)
+        chart = compressor_chart.CompressorChart(points, kind)
         if surge_rows:
             chart.set_surge_curve(
                 SurgeCurve.from_points(

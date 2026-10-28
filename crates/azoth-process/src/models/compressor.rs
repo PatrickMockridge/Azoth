@@ -12,7 +12,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
-use crate::compressor_chart::{CompressorChart, CurvePoint};
+use crate::compressor_chart::{ChartKind, CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
 use crate::kernels::compressor::{SurgeSettings, compressor_with_chart};
 use crate::model_gen;
@@ -120,13 +120,11 @@ pub fn compressor(
         &mut warnings,
     )?;
 
-    // The chart type's three non-default values are the declaration's `[[unported]]` rows.
-    match chart_type.unwrap_or("fan_law") {
-        "fan_law" => {}
-        "interpolate" => return Err(unported::refuse("chart_type=interpolate")),
-        "interpolate_and_extrapolate" => {
-            return Err(unported::refuse("chart_type=interpolate_and_extrapolate"));
-        }
+    // `khader_2015` is the declaration's one remaining `[[unported]]` row.
+    let kind = match chart_type.unwrap_or("fan_law") {
+        "fan_law" => ChartKind::FanLaw,
+        "interpolate" => ChartKind::MapLookup,
+        "interpolate_and_extrapolate" => ChartKind::MapLookupExtrapolate,
         "khader_2015" => return Err(unported::refuse("chart_type=khader_2015")),
         other => {
             return Err(AzothError::invalid_input(
@@ -134,7 +132,7 @@ pub fn compressor(
                 format!("'{other}' is not one of the four declared chart types"),
             ));
         }
-    }
+    };
 
     let feed = Stream::from_pt(
         components.to_vec(),
@@ -184,7 +182,7 @@ pub fn compressor(
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
         (out, 0.0, 0.0, power)
     } else {
-        let mut chart = CompressorChart::new(&points)?;
+        let mut chart = CompressorChart::with_kind(&points, kind)?;
         if !surge_flow.is_empty() {
             chart.set_surge_curve(SurgeCurve::new(&surge_flow, &surge_head)?);
         }

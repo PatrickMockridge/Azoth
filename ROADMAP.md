@@ -774,10 +774,10 @@ a claim nothing holds.
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
-  speed-solve mode, its three alternative chart classes and its catalogue and readers, the
-  anti-surge recycle calculators and controllers (its surge curve, read-outs and run-time
-  recycle block have landed), deposit model and `useGERG2008`/`useLeachman`/`useVega` property
-  overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
+  speed-solve mode, the `CompressorChartKhader2015` chart (its two alternative map lookups have
+  landed) and its catalogue and readers, the anti-surge recycle calculators and controllers
+  (its surge curve, read-outs and run-time recycle block have landed), deposit model and
+  `useGERG2008`/`useLeachman`/`useVega` property overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s
   thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; `Separator`'s
   capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s levels and
@@ -789,7 +789,7 @@ a claim nothing holds.
   machine, the chart's only reader. What the tranche left owed is the map surface around it:
   `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
   (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls;
-  `MapTurboExpanderCompressor`, a different shaft that reuses `CompressorChartKhader2015`; and
+  `MapTurboExpanderCompressor`, a different shaft that reuses the Khader 2015 chart; and
   the class's `toJson` report. **Anti-surge landed** - the two boundary splines, the chart's
   generated surge and stonewall curves, the machine's surge read-outs and `run`'s recycle
   block. What it left owed is the steady `AntiSurgeRecycleCalculator`, the legacy

@@ -146,6 +146,9 @@ public class ProcessProbe {
       case "anti_surge":
         antiSurgeRows();
         break;
+      case "compressor_map_lookup":
+        compressorMapLookupRows();
+        break;
       case "expander":
         isentropicRows("Expander");
         break;
@@ -862,6 +865,126 @@ public class ProcessProbe {
     System.out.println("igv_opening=" + machine.getIGVopening());
     System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
     printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
+  }
+
+  /// The two alternative compressor map lookups, and a machine run on the extrapolating one.
+  ///
+  /// **The speed-interpolation block is `CompressorChartSpeedInterpolationTest`'s table**, read
+  /// at the points that test asserts (the linear-in-speed head, the zero-speed short circuit,
+  /// the two ends scaled by the speed ratio, the single line at `7000/6000`). The base lookup
+  /// has no extrapolation: its spline throws outside the flow knots, and the block prints that
+  /// exception beside the extrapolating class's answer. The machine row re-cases
+  /// `CompressorChartTest.runCurveTest` on PR - twelve components, 29.96 C, 75.73 bara, speed
+  /// 8765, the nine-speed table - on both classes.
+  static void compressorMapLookupRows() {
+    double[] conditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {6000, 7000, 8000};
+    double[][] flow = new double[][] {
+        {1000, 2000, 3000}, {1000, 2000, 3000}, {1000, 2000, 3000}};
+    double[][] head = new double[][] {
+        {65, 60, 50}, {85, 80, 70}, {105, 100, 90}};
+    double[][] efficiency = new double[][] {
+        {75, 80, 75}, {75, 80, 75}, {75, 80, 75}};
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate extrapolate =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate();
+    extrapolate.setCurves(conditions, speed, flow, head, efficiency);
+    System.out.println("speed_interpolation_extrapolate");
+    for (double rpm : new double[] {6001, 6500, 7000, 7500, 8000}) {
+      System.out.println("head_2000_at_" + rpm + "=" + extrapolate.getPolytropicHead(2000.0, rpm));
+    }
+    System.out.println("head_2000_at_0=" + extrapolate.getPolytropicHead(2000.0, 0.0));
+    System.out.println("head_2000_at_5000=" + extrapolate.getPolytropicHead(2000.0, 5000.0));
+    System.out.println("head_2000_at_9000=" + extrapolate.getPolytropicHead(2000.0, 9000.0));
+    System.out.println("efficiency_2000_at_7000="
+        + extrapolate.getPolytropicEfficiency(2000.0, 7000.0));
+    System.out.println("head_500_at_7000=" + extrapolate.getPolytropicHead(500.0, 7000.0));
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate single =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate();
+    single.setCurves(conditions, new double[] {6000}, new double[][] {{1000, 2000, 3000}},
+        new double[][] {{65, 60, 50}}, new double[][] {{75, 80, 75}});
+    System.out.println("single_line_head_2000_at_7000=" + single.getPolytropicHead(2000.0, 7000.0));
+    System.out.println();
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookup lookup =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookup();
+    lookup.setCurves(conditions, speed, flow, head, efficiency);
+    System.out.println("map_lookup");
+    for (double rpm : new double[] {6000, 6500, 7000, 8000, 12000}) {
+      System.out.println("head_2000_at_" + rpm + "=" + lookup.getPolytropicHead(2000.0, rpm));
+    }
+    System.out.println("efficiency_2000_at_6500=" + lookup.getPolytropicEfficiency(2000.0, 6500.0));
+    try {
+      System.out.println("head_500_at_7000=" + lookup.getPolytropicHead(500.0, 7000.0));
+    } catch (RuntimeException refused) {
+      System.out.println("head_500_at_7000=" + refused.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    compressorMapRunRow("map_lookup_run_extrapolate", "interpolate and extrapolate");
+    compressorMapRunRow("map_lookup_run_lookup", "interpolate");
+  }
+
+  static void compressorMapRunRow(String label, String chartType) {
+    SystemInterface fluid = new SystemPrEos(273.15 + 29.96, 75.73);
+    String[] names = new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane", "n-hexane", "n-heptane", "n-octane", "water"};
+    double[] z = new double[] {0.7823, 1.245, 88.4681, 4.7652, 2.3669, 0.3848, 0.873, 0.243,
+        0.2947, 0.2455, 0.1735, 0.064, 0.076};
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule("classic");
+    fluid.setTemperature(29.96, "C");
+    fluid.setPressure(75.73, "bara");
+    fluid.setTotalFlowRate(559401.418270102, "kg/hr");
+    Stream inlet = new Stream("Stream1", fluid);
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("compressor 1", inlet);
+    compressor.setCompressorChartType(chartType);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setSpeed(8765);
+    double[] conditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {7000, 7500, 8000, 8500, 9000, 9500, 9659, 10000, 10500};
+    double[][] flow = new double[][] {{4512.7, 5120.8, 5760.9, 6401, 6868.27},
+        {4862.47, 5486.57, 6172.39, 6858.21, 7550.89}, {5237.84, 5852.34, 6583.88, 7315.43, 8046.97, 8266.43},
+        {5642.94, 6218.11, 6995.38, 7772.64, 8549.9, 9000.72}, {6221.77, 6583.88, 7406.87, 8229.85, 9052.84, 9768.84},
+        {6888.85, 6949.65, 7818.36, 8687.07, 9555.77, 10424.5, 10546.1},
+        {7109.83, 7948.87, 8832.08, 9715.29, 10598.5, 10801.6}, {7598.9, 8229.85, 9144.28, 10058.7, 10973.1, 11338.9},
+        {8334.1, 8641.35, 9601.5, 10561.6, 11521.8, 11963.5}};
+    double[][] head = new double[][] {{61.885, 59.639, 56.433, 52.481, 49.132},
+        {71.416, 69.079, 65.589, 61.216, 55.858}, {81.621, 79.311, 75.545, 70.727, 64.867, 62.879,},
+        {92.493, 90.312, 86.3, 81.079, 74.658, 70.216}, {103.512, 102.073, 97.83, 92.254, 85.292, 77.638},
+        {114.891, 114.632, 110.169, 104.221, 96.727, 87.002, 85.262},
+        {118.595, 114.252, 108.203, 100.55, 90.532, 87.54}, {126.747, 123.376, 117.113, 109.056, 98.369, 92.632},
+        {139.082, 137.398, 130.867, 122.264, 110.548, 103.247},};
+    double[][] polyEff = new double[][] {{78.3, 78.2, 77.2, 75.4, 73.4},
+        {78.3, 78.3, 77.5, 75.8, 73}, {78.2, 78.4, 77.7, 76.1, 73.5, 72.5}, {78.2, 78.4, 77.9, 76.4, 74, 71.9},
+        {78.3, 78.4, 78, 76.7, 74.5, 71.2}, {78.3, 78.4, 78.1, 77, 74.9, 71.3, 70.5},
+        {78.4, 78.1, 77.1, 75, 71.4, 70.2}, {78.3, 78.2, 77.2, 75.2, 71.7, 69.5}, {78.2, 78.2, 77.3, 75.5, 72.2, 69.6}};
+    compressor.getCompressorChart().setCurves(conditions, speed, flow, head, polyEff);
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.getCompressorChart().getSurgeCurve().setCurve(conditions,
+        new double[] {4512.7, 4862.47, 5237.84, 5642.94, 6221.77, 6888.85, 7109.83, 7598.9},
+        new double[] {61.885, 71.416, 81.621, 92.493, 103.512, 114.891, 118.595, 126.747});
+    compressor.getAntiSurge().setSurgeControlFactor(1.0);
+    compressor.run();
+
+    System.out.println(label);
+    System.out.println("chart_type=" + chartType);
+    System.out.println("inlet_m3_per_hr=" + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    System.out.println("power_w=" + compressor.getPower("W"));
+    System.out.println("distance_to_surge=" + compressor.getDistanceToSurge());
+    print("inlet", inlet);
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
   }
 
   /// The anti-surge surface: the boundary splines, the chart's generators, the read-outs, and
