@@ -226,7 +226,7 @@ fn the_catalogue_is_the_palette_the_process_loaded() {
     assert_eq!(status, 200);
     assert_eq!(
         catalogue["unit_ops"].as_array().map(Vec::len),
-        Some(30),
+        Some(31),
         "the shipped palette, entry by entry"
     );
     // A form carries the parameters a unit-op window is drawn from, which is the whole point of

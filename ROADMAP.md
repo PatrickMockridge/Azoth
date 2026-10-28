@@ -779,10 +779,11 @@ a claim nothing holds.
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
-  speed-solve mode (its two alternative map lookups and the `CompressorChartKhader2015` map
-  have landed), its catalogue and readers, the anti-surge recycle calculators and controllers
-  (its surge curve, read-outs and run-time recycle block have landed), deposit model and
-  `useGERG2008`/`useLeachman`/`useVega` property overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
+  catalogue and readers, the anti-surge recycle calculators and controllers (its surge curve,
+  read-outs and run-time recycle block have landed), deposit model and
+  `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
+  lookups, the `CompressorChartKhader2015` map and the speed-solve mode have landed**;
+  `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s
   thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; `Separator`'s
   capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s levels and

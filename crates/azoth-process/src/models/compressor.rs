@@ -15,7 +15,9 @@ use azoth_eos::Cubic;
 
 use crate::compressor_chart::{ChartKind, CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
-use crate::kernels::compressor::{SurgeSettings, compressor_with_chart};
+use crate::kernels::compressor::{
+    SpeedSolveSettings, SurgeSettings, compressor_speed_solve, compressor_with_chart,
+};
 use crate::model_gen;
 use crate::stream::Stream;
 use crate::surge_curve::SurgeCurve;
@@ -61,6 +63,8 @@ pub struct CompressorResult {
     pub polytropic_efficiency: f64,
     /// The shaft power, W - the recycled flow's where the anti-surge block ran.
     pub power: Power,
+    /// The speed the chart was read at, rpm: the stated one or the solved one.
+    pub shaft_speed: f64,
     /// `getSurgeFlowRate()`, m3/hr, where a surge curve is set.
     pub surge_flow_rate: Option<f64>,
     /// `getSurgeFlowRateMargin()`, m3/hr.
@@ -100,6 +104,10 @@ pub fn compressor(
     isentropic_efficiency: f64,
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
+    solve_speed: Option<bool>,
+    min_speed: Option<f64>,
+    max_speed: Option<f64>,
+    limit_speed: Option<bool>,
     chart_type: Option<&str>,
     chart_conditions: Option<&[f64]>,
     impeller_diameter: Option<Length>,
@@ -160,7 +168,14 @@ pub fn compressor(
     };
 
     let mut read_outs: [Option<f64>; 9] = [None; 9];
-    let (out, head, efficiency, power) = if points.is_empty() {
+    let field_speed = speed.unwrap_or(3000.0);
+    let (out, head, efficiency, power, shaft_speed) = if points.is_empty() {
+        if solve_speed.unwrap_or(false) {
+            return Err(AzothError::invalid_input(
+                "curve",
+                "the speed-solve mode reads a chart, and this machine states none",
+            ));
+        }
         let pressure = outlet_pressure.ok_or_else(|| {
             AzothError::invalid_input(
                 "outlet_pressure",
@@ -170,7 +185,7 @@ pub fn compressor(
         })?;
         let out = kernel(&feed, pressure, isentropic_efficiency)?;
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
-        (out, 0.0, 0.0, power)
+        (out, 0.0, 0.0, power, field_speed)
     } else {
         let mut chart = build_chart(
             components,
@@ -185,7 +200,29 @@ pub fn compressor(
         if !surge_flow.is_empty() {
             chart.set_surge_curve(SurgeCurve::new(&surge_flow, &surge_head)?);
         }
-        let outcome = compressor_with_chart(&feed, &chart, speed.unwrap_or(3000.0), &settings)?;
+        let outcome = if solve_speed.unwrap_or(false) {
+            let target = outlet_pressure.ok_or_else(|| {
+                AzothError::invalid_input(
+                    "outlet_pressure",
+                    "the speed-solve mode drives the chart to a stated pressure, and this \
+                     machine states none",
+                )
+            })?;
+            compressor_speed_solve(
+                &feed,
+                &chart,
+                &SpeedSolveSettings {
+                    target,
+                    initial_speed: field_speed,
+                    min_speed: min_speed.unwrap_or(0.0),
+                    max_speed: max_speed.unwrap_or(30000.0),
+                    limit_speed: limit_speed.unwrap_or(false),
+                },
+                &settings,
+            )?
+        } else {
+            compressor_with_chart(&feed, &chart, field_speed, &settings)?
+        };
         // The kernel works in m3/hr, the class's chart unit; the record crosses in SI.
         read_outs = [
             outcome.surge_flow_rate.map(|value| value / 3600.0),
@@ -203,6 +240,7 @@ pub fn compressor(
             outcome.polytropic_head,
             outcome.polytropic_efficiency,
             outcome.power,
+            outcome.speed,
         )
     };
 
@@ -215,6 +253,7 @@ pub fn compressor(
         polytropic_head: meters(head),
         polytropic_efficiency: efficiency,
         power,
+        shaft_speed,
         surge_flow_rate: read_outs[0],
         surge_flow_rate_margin: read_outs[1],
         surge_flow_rate_std: read_outs[2],

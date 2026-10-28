@@ -689,3 +689,458 @@ outlet_p = 6764695.168024433
 outlet_t = 326.50936538890613
 outlet_h = 757.8077785526409
 power = 1408499.207140201
+
+[[cases]]
+id = "the_speed_lands_above_the_map_without_a_limit"
+tolerance = 0.001
+source = "The capture's `speed_solve_row_1`: the target 240 bara is reached at 10992.86 rpm, above the map's 10500 ceiling and allowed to stand because `limit_speed` is off."
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane"]
+inlet_n = 8457.70618999345
+inlet_z = [0.007911185990233128, 0.012590344570932182, 0.8946537048479399, 0.048189164617996806, 0.023935812501959336, 0.0038913771814415286, 0.008828410289497022]
+inlet_p = 7573000.0
+inlet_t = 303.10999999999996
+isentropic_efficiency = 0.75
+outlet_pressure = 24000000.0
+speed = 9000.0
+solve_speed = true
+min_speed = 7000.0
+max_speed = 10500.0
+limit_speed = false
+curve = [
+    { speed = 7000.0, flow = 4512.7, head = 6308.358817533129, efficiency = 0.7829999999999999 },
+    { speed = 7000.0, flow = 5120.8, head = 6079.408766564729, efficiency = 0.782 },
+    { speed = 7000.0, flow = 5760.9, head = 5752.599388379204, efficiency = 0.772 },
+    { speed = 7000.0, flow = 6401.0, head = 5349.745158002039, efficiency = 0.754 },
+    { speed = 7000.0, flow = 6868.27, head = 5008.358817533129, efficiency = 0.7340000000000001 },
+    { speed = 7500.0, flow = 4862.47, head = 7279.918450560652, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 5486.57, head = 7041.692150866463, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 6172.39, head = 6685.932721712538, efficiency = 0.775 },
+    { speed = 7500.0, flow = 6858.21, head = 6240.163098878695, efficiency = 0.758 },
+    { speed = 7500.0, flow = 7550.89, head = 5693.9857288481135, efficiency = 0.73 },
+    { speed = 8000.0, flow = 5237.84, head = 8320.183486238531, efficiency = 0.782 },
+    { speed = 8000.0, flow = 5852.34, head = 8084.709480122324, efficiency = 0.784 },
+    { speed = 8000.0, flow = 6583.88, head = 7700.815494393476, efficiency = 0.777 },
+    { speed = 8000.0, flow = 7315.43, head = 7209.683995922528, efficiency = 0.7609999999999999 },
+    { speed = 8000.0, flow = 8046.97, head = 6612.334352701326, efficiency = 0.735 },
+    { speed = 8000.0, flow = 8266.43, head = 6409.683995922528, efficiency = 0.725 },
+    { speed = 8500.0, flow = 5642.94, head = 9428.440366972476, efficiency = 0.782 },
+    { speed = 8500.0, flow = 6218.11, head = 9206.11620795107, efficiency = 0.784 },
+    { speed = 8500.0, flow = 6995.38, head = 8797.145769622834, efficiency = 0.779 },
+    { speed = 8500.0, flow = 7772.64, head = 8264.93374108053, efficiency = 0.764 },
+    { speed = 8500.0, flow = 8549.9, head = 7610.397553516819, efficiency = 0.74 },
+    { speed = 8500.0, flow = 9000.72, head = 7157.594291539245, efficiency = 0.7190000000000001 },
+    { speed = 9000.0, flow = 6221.77, head = 10551.681957186544, efficiency = 0.7829999999999999 },
+    { speed = 9000.0, flow = 6583.88, head = 10404.99490316004, efficiency = 0.784 },
+    { speed = 9000.0, flow = 7406.87, head = 9972.477064220184, efficiency = 0.78 },
+    { speed = 9000.0, flow = 8229.85, head = 9404.07747196738, efficiency = 0.767 },
+    { speed = 9000.0, flow = 9052.84, head = 8694.393476044852, efficiency = 0.745 },
+    { speed = 9000.0, flow = 9768.84, head = 7914.169215086646, efficiency = 0.7120000000000001 },
+    { speed = 9500.0, flow = 6888.85, head = 11711.620795107034, efficiency = 0.7829999999999999 },
+    { speed = 9500.0, flow = 6949.65, head = 11685.219164118245, efficiency = 0.784 },
+    { speed = 9500.0, flow = 7818.36, head = 11230.275229357798, efficiency = 0.7809999999999999 },
+    { speed = 9500.0, flow = 8687.07, head = 10623.955147808358, efficiency = 0.77 },
+    { speed = 9500.0, flow = 9555.77, head = 9860.040774719673, efficiency = 0.7490000000000001 },
+    { speed = 9500.0, flow = 10424.5, head = 8868.705402650356, efficiency = 0.713 },
+    { speed = 9500.0, flow = 10546.1, head = 8691.335372069316, efficiency = 0.705 },
+    { speed = 9659.0, flow = 7109.83, head = 12089.194699286441, efficiency = 0.784 },
+    { speed = 9659.0, flow = 7948.87, head = 11646.483180428135, efficiency = 0.7809999999999999 },
+    { speed = 9659.0, flow = 8832.08, head = 11029.86748216106, efficiency = 0.7709999999999999 },
+    { speed = 9659.0, flow = 9715.29, head = 10249.745158002039, efficiency = 0.75 },
+    { speed = 9659.0, flow = 10598.5, head = 9228.542303771661, efficiency = 0.7140000000000001 },
+    { speed = 9659.0, flow = 10801.6, head = 8923.54740061162, efficiency = 0.7020000000000001 },
+    { speed = 10000.0, flow = 7598.9, head = 12920.183486238531, efficiency = 0.7829999999999999 },
+    { speed = 10000.0, flow = 8229.85, head = 12576.554536187563, efficiency = 0.782 },
+    { speed = 10000.0, flow = 9144.28, head = 11938.124362895005, efficiency = 0.772 },
+    { speed = 10000.0, flow = 10058.7, head = 11116.819571865442, efficiency = 0.752 },
+    { speed = 10000.0, flow = 10973.1, head = 10027.420998980631, efficiency = 0.7170000000000001 },
+    { speed = 10000.0, flow = 11338.9, head = 9442.609582059124, efficiency = 0.695 },
+    { speed = 10500.0, flow = 8334.1, head = 14177.573904179408, efficiency = 0.782 },
+    { speed = 10500.0, flow = 8641.35, head = 14005.9123343527, efficiency = 0.782 },
+    { speed = 10500.0, flow = 9601.5, head = 13340.163098878693, efficiency = 0.773 },
+    { speed = 10500.0, flow = 10561.6, head = 12463.200815494392, efficiency = 0.755 },
+    { speed = 10500.0, flow = 11521.8, head = 11268.909276248725, efficiency = 0.722 },
+    { speed = 10500.0, flow = 11963.5, head = 10524.66870540265, efficiency = 0.696 },
+]
+surge_curve = [
+    { flow = 4512.7, head = 6308.358817533129 },
+    { flow = 4862.47, head = 7279.918450560652 },
+    { flow = 5237.84, head = 8320.183486238531 },
+    { flow = 5642.94, head = 9428.440366972476 },
+    { flow = 6221.77, head = 10551.681957186544 },
+    { flow = 6888.85, head = 11711.620795107034 },
+    { flow = 7109.83, head = 12089.194699286441 },
+    { flow = 7598.9, head = 12920.183486238531 },
+]
+[cases.expected]
+shaft_speed = 10992.861911250584
+outlet_p = 24000000.0
+outlet_t = 403.38183516100275
+outlet_h = 2946.456287817164
+power = 29446234.599197924
+polytropic_head = 15112.506122463965
+polytropic_efficiency = 0.7823422370685094
+
+[[cases]]
+id = "the_limit_pegs_the_speed_at_the_map_ceiling"
+tolerance = 0.001
+source = "The capture's `speed_solve_row_2`: the same target with `limit_speed` on, pegged at 10500 rpm, and the outlet is the chart's own 215.44 bara there."
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane"]
+inlet_n = 8457.70618999345
+inlet_z = [0.007911185990233128, 0.012590344570932182, 0.8946537048479399, 0.048189164617996806, 0.023935812501959336, 0.0038913771814415286, 0.008828410289497022]
+inlet_p = 7573000.0
+inlet_t = 303.10999999999996
+isentropic_efficiency = 0.75
+outlet_pressure = 24000000.0
+speed = 10992.861911250584
+solve_speed = true
+min_speed = 7000.0
+max_speed = 10500.0
+limit_speed = true
+curve = [
+    { speed = 7000.0, flow = 4512.7, head = 6308.358817533129, efficiency = 0.7829999999999999 },
+    { speed = 7000.0, flow = 5120.8, head = 6079.408766564729, efficiency = 0.782 },
+    { speed = 7000.0, flow = 5760.9, head = 5752.599388379204, efficiency = 0.772 },
+    { speed = 7000.0, flow = 6401.0, head = 5349.745158002039, efficiency = 0.754 },
+    { speed = 7000.0, flow = 6868.27, head = 5008.358817533129, efficiency = 0.7340000000000001 },
+    { speed = 7500.0, flow = 4862.47, head = 7279.918450560652, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 5486.57, head = 7041.692150866463, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 6172.39, head = 6685.932721712538, efficiency = 0.775 },
+    { speed = 7500.0, flow = 6858.21, head = 6240.163098878695, efficiency = 0.758 },
+    { speed = 7500.0, flow = 7550.89, head = 5693.9857288481135, efficiency = 0.73 },
+    { speed = 8000.0, flow = 5237.84, head = 8320.183486238531, efficiency = 0.782 },
+    { speed = 8000.0, flow = 5852.34, head = 8084.709480122324, efficiency = 0.784 },
+    { speed = 8000.0, flow = 6583.88, head = 7700.815494393476, efficiency = 0.777 },
+    { speed = 8000.0, flow = 7315.43, head = 7209.683995922528, efficiency = 0.7609999999999999 },
+    { speed = 8000.0, flow = 8046.97, head = 6612.334352701326, efficiency = 0.735 },
+    { speed = 8000.0, flow = 8266.43, head = 6409.683995922528, efficiency = 0.725 },
+    { speed = 8500.0, flow = 5642.94, head = 9428.440366972476, efficiency = 0.782 },
+    { speed = 8500.0, flow = 6218.11, head = 9206.11620795107, efficiency = 0.784 },
+    { speed = 8500.0, flow = 6995.38, head = 8797.145769622834, efficiency = 0.779 },
+    { speed = 8500.0, flow = 7772.64, head = 8264.93374108053, efficiency = 0.764 },
+    { speed = 8500.0, flow = 8549.9, head = 7610.397553516819, efficiency = 0.74 },
+    { speed = 8500.0, flow = 9000.72, head = 7157.594291539245, efficiency = 0.7190000000000001 },
+    { speed = 9000.0, flow = 6221.77, head = 10551.681957186544, efficiency = 0.7829999999999999 },
+    { speed = 9000.0, flow = 6583.88, head = 10404.99490316004, efficiency = 0.784 },
+    { speed = 9000.0, flow = 7406.87, head = 9972.477064220184, efficiency = 0.78 },
+    { speed = 9000.0, flow = 8229.85, head = 9404.07747196738, efficiency = 0.767 },
+    { speed = 9000.0, flow = 9052.84, head = 8694.393476044852, efficiency = 0.745 },
+    { speed = 9000.0, flow = 9768.84, head = 7914.169215086646, efficiency = 0.7120000000000001 },
+    { speed = 9500.0, flow = 6888.85, head = 11711.620795107034, efficiency = 0.7829999999999999 },
+    { speed = 9500.0, flow = 6949.65, head = 11685.219164118245, efficiency = 0.784 },
+    { speed = 9500.0, flow = 7818.36, head = 11230.275229357798, efficiency = 0.7809999999999999 },
+    { speed = 9500.0, flow = 8687.07, head = 10623.955147808358, efficiency = 0.77 },
+    { speed = 9500.0, flow = 9555.77, head = 9860.040774719673, efficiency = 0.7490000000000001 },
+    { speed = 9500.0, flow = 10424.5, head = 8868.705402650356, efficiency = 0.713 },
+    { speed = 9500.0, flow = 10546.1, head = 8691.335372069316, efficiency = 0.705 },
+    { speed = 9659.0, flow = 7109.83, head = 12089.194699286441, efficiency = 0.784 },
+    { speed = 9659.0, flow = 7948.87, head = 11646.483180428135, efficiency = 0.7809999999999999 },
+    { speed = 9659.0, flow = 8832.08, head = 11029.86748216106, efficiency = 0.7709999999999999 },
+    { speed = 9659.0, flow = 9715.29, head = 10249.745158002039, efficiency = 0.75 },
+    { speed = 9659.0, flow = 10598.5, head = 9228.542303771661, efficiency = 0.7140000000000001 },
+    { speed = 9659.0, flow = 10801.6, head = 8923.54740061162, efficiency = 0.7020000000000001 },
+    { speed = 10000.0, flow = 7598.9, head = 12920.183486238531, efficiency = 0.7829999999999999 },
+    { speed = 10000.0, flow = 8229.85, head = 12576.554536187563, efficiency = 0.782 },
+    { speed = 10000.0, flow = 9144.28, head = 11938.124362895005, efficiency = 0.772 },
+    { speed = 10000.0, flow = 10058.7, head = 11116.819571865442, efficiency = 0.752 },
+    { speed = 10000.0, flow = 10973.1, head = 10027.420998980631, efficiency = 0.7170000000000001 },
+    { speed = 10000.0, flow = 11338.9, head = 9442.609582059124, efficiency = 0.695 },
+    { speed = 10500.0, flow = 8334.1, head = 14177.573904179408, efficiency = 0.782 },
+    { speed = 10500.0, flow = 8641.35, head = 14005.9123343527, efficiency = 0.782 },
+    { speed = 10500.0, flow = 9601.5, head = 13340.163098878693, efficiency = 0.773 },
+    { speed = 10500.0, flow = 10561.6, head = 12463.200815494392, efficiency = 0.755 },
+    { speed = 10500.0, flow = 11521.8, head = 11268.909276248725, efficiency = 0.722 },
+    { speed = 10500.0, flow = 11963.5, head = 10524.66870540265, efficiency = 0.696 },
+]
+surge_curve = [
+    { flow = 4512.7, head = 6308.358817533129 },
+    { flow = 4862.47, head = 7279.918450560652 },
+    { flow = 5237.84, head = 8320.183486238531 },
+    { flow = 5642.94, head = 9428.440366972476 },
+    { flow = 6221.77, head = 10551.681957186544 },
+    { flow = 6888.85, head = 11711.620795107034 },
+    { flow = 7109.83, head = 12089.194699286441 },
+    { flow = 7598.9, head = 12920.183486238531 },
+]
+[cases.expected]
+shaft_speed = 10500.0
+outlet_p = 21544392.217369016
+outlet_t = 394.35177113554454
+outlet_h = 2596.1897767990936
+power = 26483783.360812977
+polytropic_head = 13542.620728635906
+polytropic_efficiency = 0.7794939427971309
+
+[[cases]]
+id = "the_limit_pegs_the_speed_at_the_map_floor"
+tolerance = 0.001
+source = "The capture's `speed_solve_row_3`: a 100 bara target the map cannot reach at its slowest line, pegged at 7000 rpm with the chart's 106.16 bara."
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane"]
+inlet_n = 8457.70618999345
+inlet_z = [0.007911185990233128, 0.012590344570932182, 0.8946537048479399, 0.048189164617996806, 0.023935812501959336, 0.0038913771814415286, 0.008828410289497022]
+inlet_p = 7573000.0
+inlet_t = 303.10999999999996
+isentropic_efficiency = 0.75
+outlet_pressure = 10000000.0
+speed = 10500.0
+solve_speed = true
+min_speed = 7000.0
+max_speed = 10500.0
+limit_speed = true
+curve = [
+    { speed = 7000.0, flow = 4512.7, head = 6308.358817533129, efficiency = 0.7829999999999999 },
+    { speed = 7000.0, flow = 5120.8, head = 6079.408766564729, efficiency = 0.782 },
+    { speed = 7000.0, flow = 5760.9, head = 5752.599388379204, efficiency = 0.772 },
+    { speed = 7000.0, flow = 6401.0, head = 5349.745158002039, efficiency = 0.754 },
+    { speed = 7000.0, flow = 6868.27, head = 5008.358817533129, efficiency = 0.7340000000000001 },
+    { speed = 7500.0, flow = 4862.47, head = 7279.918450560652, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 5486.57, head = 7041.692150866463, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 6172.39, head = 6685.932721712538, efficiency = 0.775 },
+    { speed = 7500.0, flow = 6858.21, head = 6240.163098878695, efficiency = 0.758 },
+    { speed = 7500.0, flow = 7550.89, head = 5693.9857288481135, efficiency = 0.73 },
+    { speed = 8000.0, flow = 5237.84, head = 8320.183486238531, efficiency = 0.782 },
+    { speed = 8000.0, flow = 5852.34, head = 8084.709480122324, efficiency = 0.784 },
+    { speed = 8000.0, flow = 6583.88, head = 7700.815494393476, efficiency = 0.777 },
+    { speed = 8000.0, flow = 7315.43, head = 7209.683995922528, efficiency = 0.7609999999999999 },
+    { speed = 8000.0, flow = 8046.97, head = 6612.334352701326, efficiency = 0.735 },
+    { speed = 8000.0, flow = 8266.43, head = 6409.683995922528, efficiency = 0.725 },
+    { speed = 8500.0, flow = 5642.94, head = 9428.440366972476, efficiency = 0.782 },
+    { speed = 8500.0, flow = 6218.11, head = 9206.11620795107, efficiency = 0.784 },
+    { speed = 8500.0, flow = 6995.38, head = 8797.145769622834, efficiency = 0.779 },
+    { speed = 8500.0, flow = 7772.64, head = 8264.93374108053, efficiency = 0.764 },
+    { speed = 8500.0, flow = 8549.9, head = 7610.397553516819, efficiency = 0.74 },
+    { speed = 8500.0, flow = 9000.72, head = 7157.594291539245, efficiency = 0.7190000000000001 },
+    { speed = 9000.0, flow = 6221.77, head = 10551.681957186544, efficiency = 0.7829999999999999 },
+    { speed = 9000.0, flow = 6583.88, head = 10404.99490316004, efficiency = 0.784 },
+    { speed = 9000.0, flow = 7406.87, head = 9972.477064220184, efficiency = 0.78 },
+    { speed = 9000.0, flow = 8229.85, head = 9404.07747196738, efficiency = 0.767 },
+    { speed = 9000.0, flow = 9052.84, head = 8694.393476044852, efficiency = 0.745 },
+    { speed = 9000.0, flow = 9768.84, head = 7914.169215086646, efficiency = 0.7120000000000001 },
+    { speed = 9500.0, flow = 6888.85, head = 11711.620795107034, efficiency = 0.7829999999999999 },
+    { speed = 9500.0, flow = 6949.65, head = 11685.219164118245, efficiency = 0.784 },
+    { speed = 9500.0, flow = 7818.36, head = 11230.275229357798, efficiency = 0.7809999999999999 },
+    { speed = 9500.0, flow = 8687.07, head = 10623.955147808358, efficiency = 0.77 },
+    { speed = 9500.0, flow = 9555.77, head = 9860.040774719673, efficiency = 0.7490000000000001 },
+    { speed = 9500.0, flow = 10424.5, head = 8868.705402650356, efficiency = 0.713 },
+    { speed = 9500.0, flow = 10546.1, head = 8691.335372069316, efficiency = 0.705 },
+    { speed = 9659.0, flow = 7109.83, head = 12089.194699286441, efficiency = 0.784 },
+    { speed = 9659.0, flow = 7948.87, head = 11646.483180428135, efficiency = 0.7809999999999999 },
+    { speed = 9659.0, flow = 8832.08, head = 11029.86748216106, efficiency = 0.7709999999999999 },
+    { speed = 9659.0, flow = 9715.29, head = 10249.745158002039, efficiency = 0.75 },
+    { speed = 9659.0, flow = 10598.5, head = 9228.542303771661, efficiency = 0.7140000000000001 },
+    { speed = 9659.0, flow = 10801.6, head = 8923.54740061162, efficiency = 0.7020000000000001 },
+    { speed = 10000.0, flow = 7598.9, head = 12920.183486238531, efficiency = 0.7829999999999999 },
+    { speed = 10000.0, flow = 8229.85, head = 12576.554536187563, efficiency = 0.782 },
+    { speed = 10000.0, flow = 9144.28, head = 11938.124362895005, efficiency = 0.772 },
+    { speed = 10000.0, flow = 10058.7, head = 11116.819571865442, efficiency = 0.752 },
+    { speed = 10000.0, flow = 10973.1, head = 10027.420998980631, efficiency = 0.7170000000000001 },
+    { speed = 10000.0, flow = 11338.9, head = 9442.609582059124, efficiency = 0.695 },
+    { speed = 10500.0, flow = 8334.1, head = 14177.573904179408, efficiency = 0.782 },
+    { speed = 10500.0, flow = 8641.35, head = 14005.9123343527, efficiency = 0.782 },
+    { speed = 10500.0, flow = 9601.5, head = 13340.163098878693, efficiency = 0.773 },
+    { speed = 10500.0, flow = 10561.6, head = 12463.200815494392, efficiency = 0.755 },
+    { speed = 10500.0, flow = 11521.8, head = 11268.909276248725, efficiency = 0.722 },
+    { speed = 10500.0, flow = 11963.5, head = 10524.66870540265, efficiency = 0.696 },
+]
+surge_curve = [
+    { flow = 4512.7, head = 6308.358817533129 },
+    { flow = 4862.47, head = 7279.918450560652 },
+    { flow = 5237.84, head = 8320.183486238531 },
+    { flow = 5642.94, head = 9428.440366972476 },
+    { flow = 6221.77, head = 10551.681957186544 },
+    { flow = 6888.85, head = 11711.620795107034 },
+    { flow = 7109.83, head = 12089.194699286441 },
+    { flow = 7598.9, head = 12920.183486238531 },
+]
+[cases.expected]
+shaft_speed = 7000.0
+outlet_p = 10616307.446189562
+outlet_t = 335.91433246820316
+outlet_h = 582.3187366676397
+power = 9451053.798844632
+polytropic_head = 4078.8719155300128
+polytropic_efficiency = 0.657884853980343
+
+[[cases]]
+id = "an_unlimited_solve_below_the_floor_finds_the_target"
+tolerance = 0.001
+source = "The capture's `speed_solve_row_4`: starting from 15000 rpm with `limit_speed` off, the Newton passes below the 7000 rpm floor and reaches 100 bara at 6669.27 rpm."
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane"]
+inlet_n = 8457.70618999345
+inlet_z = [0.007911185990233128, 0.012590344570932182, 0.8946537048479399, 0.048189164617996806, 0.023935812501959336, 0.0038913771814415286, 0.008828410289497022]
+inlet_p = 7573000.0
+inlet_t = 303.10999999999996
+isentropic_efficiency = 0.75
+outlet_pressure = 10000000.0
+speed = 15000.0
+solve_speed = true
+min_speed = 7000.0
+max_speed = 10500.0
+limit_speed = false
+curve = [
+    { speed = 7000.0, flow = 4512.7, head = 6308.358817533129, efficiency = 0.7829999999999999 },
+    { speed = 7000.0, flow = 5120.8, head = 6079.408766564729, efficiency = 0.782 },
+    { speed = 7000.0, flow = 5760.9, head = 5752.599388379204, efficiency = 0.772 },
+    { speed = 7000.0, flow = 6401.0, head = 5349.745158002039, efficiency = 0.754 },
+    { speed = 7000.0, flow = 6868.27, head = 5008.358817533129, efficiency = 0.7340000000000001 },
+    { speed = 7500.0, flow = 4862.47, head = 7279.918450560652, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 5486.57, head = 7041.692150866463, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 6172.39, head = 6685.932721712538, efficiency = 0.775 },
+    { speed = 7500.0, flow = 6858.21, head = 6240.163098878695, efficiency = 0.758 },
+    { speed = 7500.0, flow = 7550.89, head = 5693.9857288481135, efficiency = 0.73 },
+    { speed = 8000.0, flow = 5237.84, head = 8320.183486238531, efficiency = 0.782 },
+    { speed = 8000.0, flow = 5852.34, head = 8084.709480122324, efficiency = 0.784 },
+    { speed = 8000.0, flow = 6583.88, head = 7700.815494393476, efficiency = 0.777 },
+    { speed = 8000.0, flow = 7315.43, head = 7209.683995922528, efficiency = 0.7609999999999999 },
+    { speed = 8000.0, flow = 8046.97, head = 6612.334352701326, efficiency = 0.735 },
+    { speed = 8000.0, flow = 8266.43, head = 6409.683995922528, efficiency = 0.725 },
+    { speed = 8500.0, flow = 5642.94, head = 9428.440366972476, efficiency = 0.782 },
+    { speed = 8500.0, flow = 6218.11, head = 9206.11620795107, efficiency = 0.784 },
+    { speed = 8500.0, flow = 6995.38, head = 8797.145769622834, efficiency = 0.779 },
+    { speed = 8500.0, flow = 7772.64, head = 8264.93374108053, efficiency = 0.764 },
+    { speed = 8500.0, flow = 8549.9, head = 7610.397553516819, efficiency = 0.74 },
+    { speed = 8500.0, flow = 9000.72, head = 7157.594291539245, efficiency = 0.7190000000000001 },
+    { speed = 9000.0, flow = 6221.77, head = 10551.681957186544, efficiency = 0.7829999999999999 },
+    { speed = 9000.0, flow = 6583.88, head = 10404.99490316004, efficiency = 0.784 },
+    { speed = 9000.0, flow = 7406.87, head = 9972.477064220184, efficiency = 0.78 },
+    { speed = 9000.0, flow = 8229.85, head = 9404.07747196738, efficiency = 0.767 },
+    { speed = 9000.0, flow = 9052.84, head = 8694.393476044852, efficiency = 0.745 },
+    { speed = 9000.0, flow = 9768.84, head = 7914.169215086646, efficiency = 0.7120000000000001 },
+    { speed = 9500.0, flow = 6888.85, head = 11711.620795107034, efficiency = 0.7829999999999999 },
+    { speed = 9500.0, flow = 6949.65, head = 11685.219164118245, efficiency = 0.784 },
+    { speed = 9500.0, flow = 7818.36, head = 11230.275229357798, efficiency = 0.7809999999999999 },
+    { speed = 9500.0, flow = 8687.07, head = 10623.955147808358, efficiency = 0.77 },
+    { speed = 9500.0, flow = 9555.77, head = 9860.040774719673, efficiency = 0.7490000000000001 },
+    { speed = 9500.0, flow = 10424.5, head = 8868.705402650356, efficiency = 0.713 },
+    { speed = 9500.0, flow = 10546.1, head = 8691.335372069316, efficiency = 0.705 },
+    { speed = 9659.0, flow = 7109.83, head = 12089.194699286441, efficiency = 0.784 },
+    { speed = 9659.0, flow = 7948.87, head = 11646.483180428135, efficiency = 0.7809999999999999 },
+    { speed = 9659.0, flow = 8832.08, head = 11029.86748216106, efficiency = 0.7709999999999999 },
+    { speed = 9659.0, flow = 9715.29, head = 10249.745158002039, efficiency = 0.75 },
+    { speed = 9659.0, flow = 10598.5, head = 9228.542303771661, efficiency = 0.7140000000000001 },
+    { speed = 9659.0, flow = 10801.6, head = 8923.54740061162, efficiency = 0.7020000000000001 },
+    { speed = 10000.0, flow = 7598.9, head = 12920.183486238531, efficiency = 0.7829999999999999 },
+    { speed = 10000.0, flow = 8229.85, head = 12576.554536187563, efficiency = 0.782 },
+    { speed = 10000.0, flow = 9144.28, head = 11938.124362895005, efficiency = 0.772 },
+    { speed = 10000.0, flow = 10058.7, head = 11116.819571865442, efficiency = 0.752 },
+    { speed = 10000.0, flow = 10973.1, head = 10027.420998980631, efficiency = 0.7170000000000001 },
+    { speed = 10000.0, flow = 11338.9, head = 9442.609582059124, efficiency = 0.695 },
+    { speed = 10500.0, flow = 8334.1, head = 14177.573904179408, efficiency = 0.782 },
+    { speed = 10500.0, flow = 8641.35, head = 14005.9123343527, efficiency = 0.782 },
+    { speed = 10500.0, flow = 9601.5, head = 13340.163098878693, efficiency = 0.773 },
+    { speed = 10500.0, flow = 10561.6, head = 12463.200815494392, efficiency = 0.755 },
+    { speed = 10500.0, flow = 11521.8, head = 11268.909276248725, efficiency = 0.722 },
+    { speed = 10500.0, flow = 11963.5, head = 10524.66870540265, efficiency = 0.696 },
+]
+surge_curve = [
+    { flow = 4512.7, head = 6308.358817533129 },
+    { flow = 4862.47, head = 7279.918450560652 },
+    { flow = 5237.84, head = 8320.183486238531 },
+    { flow = 5642.94, head = 9428.440366972476 },
+    { flow = 6221.77, head = 10551.681957186544 },
+    { flow = 6888.85, head = 11711.620795107034 },
+    { flow = 7109.83, head = 12089.194699286441 },
+    { flow = 7598.9, head = 12920.183486238531 },
+]
+[cases.expected]
+shaft_speed = 6669.273861975294
+outlet_p = 10000000.0
+outlet_t = 330.9935439804392
+outlet_h = 426.20270426327676
+power = 8130670.265221033
+polytropic_head = 3337.3774121797983
+polytropic_efficiency = 0.6257041406258511
+
+[[cases]]
+id = "an_unbounded_solve_extrapolates_the_reduced_curve"
+tolerance = 0.001
+source = "The capture's `speed_solve_row_5`: a 90 bara target and no floor finds 6064.93 rpm, below the map's measured 7000 rpm - the fan law extrapolates its reduced curve."
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane"]
+inlet_n = 8457.70618999345
+inlet_z = [0.007911185990233128, 0.012590344570932182, 0.8946537048479399, 0.048189164617996806, 0.023935812501959336, 0.0038913771814415286, 0.008828410289497022]
+inlet_p = 7573000.0
+inlet_t = 303.10999999999996
+isentropic_efficiency = 0.75
+outlet_pressure = 9000000.0
+speed = 3000.0
+solve_speed = true
+min_speed = 0.0
+max_speed = 10500.0
+limit_speed = false
+curve = [
+    { speed = 7000.0, flow = 4512.7, head = 6308.358817533129, efficiency = 0.7829999999999999 },
+    { speed = 7000.0, flow = 5120.8, head = 6079.408766564729, efficiency = 0.782 },
+    { speed = 7000.0, flow = 5760.9, head = 5752.599388379204, efficiency = 0.772 },
+    { speed = 7000.0, flow = 6401.0, head = 5349.745158002039, efficiency = 0.754 },
+    { speed = 7000.0, flow = 6868.27, head = 5008.358817533129, efficiency = 0.7340000000000001 },
+    { speed = 7500.0, flow = 4862.47, head = 7279.918450560652, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 5486.57, head = 7041.692150866463, efficiency = 0.7829999999999999 },
+    { speed = 7500.0, flow = 6172.39, head = 6685.932721712538, efficiency = 0.775 },
+    { speed = 7500.0, flow = 6858.21, head = 6240.163098878695, efficiency = 0.758 },
+    { speed = 7500.0, flow = 7550.89, head = 5693.9857288481135, efficiency = 0.73 },
+    { speed = 8000.0, flow = 5237.84, head = 8320.183486238531, efficiency = 0.782 },
+    { speed = 8000.0, flow = 5852.34, head = 8084.709480122324, efficiency = 0.784 },
+    { speed = 8000.0, flow = 6583.88, head = 7700.815494393476, efficiency = 0.777 },
+    { speed = 8000.0, flow = 7315.43, head = 7209.683995922528, efficiency = 0.7609999999999999 },
+    { speed = 8000.0, flow = 8046.97, head = 6612.334352701326, efficiency = 0.735 },
+    { speed = 8000.0, flow = 8266.43, head = 6409.683995922528, efficiency = 0.725 },
+    { speed = 8500.0, flow = 5642.94, head = 9428.440366972476, efficiency = 0.782 },
+    { speed = 8500.0, flow = 6218.11, head = 9206.11620795107, efficiency = 0.784 },
+    { speed = 8500.0, flow = 6995.38, head = 8797.145769622834, efficiency = 0.779 },
+    { speed = 8500.0, flow = 7772.64, head = 8264.93374108053, efficiency = 0.764 },
+    { speed = 8500.0, flow = 8549.9, head = 7610.397553516819, efficiency = 0.74 },
+    { speed = 8500.0, flow = 9000.72, head = 7157.594291539245, efficiency = 0.7190000000000001 },
+    { speed = 9000.0, flow = 6221.77, head = 10551.681957186544, efficiency = 0.7829999999999999 },
+    { speed = 9000.0, flow = 6583.88, head = 10404.99490316004, efficiency = 0.784 },
+    { speed = 9000.0, flow = 7406.87, head = 9972.477064220184, efficiency = 0.78 },
+    { speed = 9000.0, flow = 8229.85, head = 9404.07747196738, efficiency = 0.767 },
+    { speed = 9000.0, flow = 9052.84, head = 8694.393476044852, efficiency = 0.745 },
+    { speed = 9000.0, flow = 9768.84, head = 7914.169215086646, efficiency = 0.7120000000000001 },
+    { speed = 9500.0, flow = 6888.85, head = 11711.620795107034, efficiency = 0.7829999999999999 },
+    { speed = 9500.0, flow = 6949.65, head = 11685.219164118245, efficiency = 0.784 },
+    { speed = 9500.0, flow = 7818.36, head = 11230.275229357798, efficiency = 0.7809999999999999 },
+    { speed = 9500.0, flow = 8687.07, head = 10623.955147808358, efficiency = 0.77 },
+    { speed = 9500.0, flow = 9555.77, head = 9860.040774719673, efficiency = 0.7490000000000001 },
+    { speed = 9500.0, flow = 10424.5, head = 8868.705402650356, efficiency = 0.713 },
+    { speed = 9500.0, flow = 10546.1, head = 8691.335372069316, efficiency = 0.705 },
+    { speed = 9659.0, flow = 7109.83, head = 12089.194699286441, efficiency = 0.784 },
+    { speed = 9659.0, flow = 7948.87, head = 11646.483180428135, efficiency = 0.7809999999999999 },
+    { speed = 9659.0, flow = 8832.08, head = 11029.86748216106, efficiency = 0.7709999999999999 },
+    { speed = 9659.0, flow = 9715.29, head = 10249.745158002039, efficiency = 0.75 },
+    { speed = 9659.0, flow = 10598.5, head = 9228.542303771661, efficiency = 0.7140000000000001 },
+    { speed = 9659.0, flow = 10801.6, head = 8923.54740061162, efficiency = 0.7020000000000001 },
+    { speed = 10000.0, flow = 7598.9, head = 12920.183486238531, efficiency = 0.7829999999999999 },
+    { speed = 10000.0, flow = 8229.85, head = 12576.554536187563, efficiency = 0.782 },
+    { speed = 10000.0, flow = 9144.28, head = 11938.124362895005, efficiency = 0.772 },
+    { speed = 10000.0, flow = 10058.7, head = 11116.819571865442, efficiency = 0.752 },
+    { speed = 10000.0, flow = 10973.1, head = 10027.420998980631, efficiency = 0.7170000000000001 },
+    { speed = 10000.0, flow = 11338.9, head = 9442.609582059124, efficiency = 0.695 },
+    { speed = 10500.0, flow = 8334.1, head = 14177.573904179408, efficiency = 0.782 },
+    { speed = 10500.0, flow = 8641.35, head = 14005.9123343527, efficiency = 0.782 },
+    { speed = 10500.0, flow = 9601.5, head = 13340.163098878693, efficiency = 0.773 },
+    { speed = 10500.0, flow = 10561.6, head = 12463.200815494392, efficiency = 0.755 },
+    { speed = 10500.0, flow = 11521.8, head = 11268.909276248725, efficiency = 0.722 },
+    { speed = 10500.0, flow = 11963.5, head = 10524.66870540265, efficiency = 0.696 },
+]
+surge_curve = [
+    { flow = 4512.7, head = 6308.358817533129 },
+    { flow = 4862.47, head = 7279.918450560652 },
+    { flow = 5237.84, head = 8320.183486238531 },
+    { flow = 5642.94, head = 9428.440366972476 },
+    { flow = 6221.77, head = 10551.681957186544 },
+    { flow = 6888.85, head = 11711.620795107034 },
+    { flow = 7109.83, head = 12089.194699286441 },
+    { flow = 7598.9, head = 12920.183486238531 },
+]
+[cases.expected]
+shaft_speed = 6064.925729905601
+outlet_p = 9000000.0
+outlet_t = 322.08139640730434
+outlet_h = 141.8958732034089
+power = 5726086.620308567
+polytropic_head = 2050.462530582578
+polytropic_efficiency = 0.5458634046611106

@@ -14,7 +14,8 @@ assumptions = [
     "**the run-time loop is capped at 20 passes.** The class's `do-while` is uncapped and would spin on a curve it cannot leave; this stops and reports the last pass, which is the one deliberate divergence here.",
     "**the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.",
     "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
-    "**the speed-solve mode, the catalogue, the deposit model and the property overrides are absent.** `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
+    "**the speed-solve mode is a Newton on the speed.** It reads the chart at the trial speed, forms the pressure ratio and updates through a `100` rpm numerical derivative with relaxation `min(0.8, i/(i+3))`, 200 iterations to `1e-3` bar. `limit_speed` pegs an out-of-range answer at the bound.",
+    "**the catalogue, the deposit model and the property overrides are absent.** `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
@@ -24,10 +25,11 @@ references = [
     "`validation/neqsim/captures/process_anti_surge.tsv` - the two boundary splines, the chart's generated surge and stonewall curves, the read-outs at a control margin, and the run-time recycle block in and out of surge.",
     "`validation/neqsim/captures/process_compressor_map_lookup.tsv` - the two alternative map lookups: their interpolation rows, the base class's out-of-range throw, and a machine run on each.",
     "`validation/neqsim/captures/process_compressor_khader.tsv` - the Mach-number normalised map on PR: the reference and process sound speeds, the corrected factors, the real curves, and two machine runs.",
+    "`validation/neqsim/captures/process_compressor_speed_solve.tsv` - the speed-solve mode's five runs on PR: converged above the map, pegged at each bound, and the two unlimited solves.",
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
-edition = "Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`; and the fixed-speed chart branch - the reduced head and polytropic efficiency, the kappa-based pressure ratio, and the head's shaft work."
+edition = "Its no-chart `run`; the fixed-speed chart branch - the reduced head and polytropic efficiency, the kappa ratio and the head's shaft work; and the speed-solve mode's Newton on the speed, with its numerical derivative, relaxation and bounds."
 [inputs]
 [inputs.components]
 type = "components"
@@ -73,7 +75,23 @@ description = "the measured polytropic efficiency as a fraction; the class's per
 [inputs.speed]
 unit = "dimensionless"
 optional = true
-description = "the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch.\n"
+description = "the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch. In the speed-solve mode it is the Newton's starting point.\n"
+[inputs.solve_speed]
+type = "boolean"
+optional = true
+description = "`setSolveSpeed`: solve the speed that reaches `outlet_pressure` through the chart, rather than read the chart at `speed`. Absent is `false`. Needs `curve` and `outlet_pressure`.\n"
+[inputs.min_speed]
+unit = "dimensionless"
+optional = true
+description = "`setMinimumSpeed`: the speed-solve mode's floor, rpm. Absent takes the class's `0`, so the Newton is unbounded below until `limit_speed` asks for the peg.\n"
+[inputs.max_speed]
+unit = "dimensionless"
+optional = true
+description = "`setMaximumSpeed`: the speed-solve mode's ceiling, rpm. Absent takes the class's `30000`.\n"
+[inputs.limit_speed]
+type = "boolean"
+optional = true
+description = "`setLimitSpeed`: peg the solve at `min_speed`/`max_speed` when it leaves them, and report the chart's own pressure at the peg. Absent is `false`, which lets an out-of-range speed stand.\n"
 [inputs.chart_type]
 type = "enum"
 values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
@@ -139,6 +157,9 @@ description = "the chart polytropic efficiency the branch used, after the `[1e-6
 [outputs.power]
 unit = "W"
 description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"
+[outputs.shaft_speed]
+unit = "dimensionless"
+description = "the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.\n"
 [outputs.surge_flow_rate]
 unit = "m**3/h"
 description = "`getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.\n"

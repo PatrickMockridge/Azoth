@@ -526,6 +526,34 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "solve_speed",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "min_speed",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "max_speed",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "limit_speed",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
                 name: "chart_type",
                 kind: "enum",
                 values: &[

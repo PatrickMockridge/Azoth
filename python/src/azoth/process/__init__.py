@@ -1017,6 +1017,10 @@ def compressor(
     outlet_pressure: Q | None = None,
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
+    solve_speed: bool | None = None,
+    min_speed: float | None = None,
+    max_speed: float | None = None,
+    limit_speed: bool | None = None,
     chart_type: str | None = None,
     chart_conditions: list[float] | None = None,
     impeller_diameter: Q | None = None,
@@ -1037,7 +1041,9 @@ def compressor(
 
     ``curve`` selects ``CompressorChart``'s fixed-speed branch instead: the pressure is solved
     from the head, ``speed`` reads the map, and ``chart_type`` names the map class (only the
-    default ``fan_law`` is carried).
+    default ``fan_law`` is carried). With ``solve_speed`` the speed is the unknown: a Newton
+    drives the chart's pressure ratio to ``outlet_pressure``, and ``min_speed``/``max_speed``
+    bound it, with ``limit_speed`` pegging an out-of-range answer at the bound.
 
     ``surge_curve`` is the anti-surge boundary in the same (flow, head) unit as ``curve``.
     With it the result carries the machine's surge read-outs; with ``anti_surge_active`` set,
@@ -1060,6 +1066,10 @@ def compressor(
         outlet_pressure=outlet_pressure,
         curve=curve,
         speed=speed,
+        solve_speed=solve_speed,
+        min_speed=min_speed,
+        max_speed=max_speed,
+        limit_speed=limit_speed,
         chart_type=chart_type,
         chart_conditions=chart_conditions,
         impeller_diameter=impeller_diameter,

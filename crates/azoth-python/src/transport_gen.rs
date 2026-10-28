@@ -14044,6 +14044,9 @@ pub struct PyCompressorResult {
     /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     #[pyo3(get)]
     pub power: PyQty,
+    /// the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.
+    #[pyo3(get)]
+    pub shaft_speed: f64,
     /// `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
     #[pyo3(get)]
     pub surge_flow_rate: Option<PyQty>,
@@ -14080,7 +14083,7 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14089,6 +14092,7 @@ impl PyCompressorResult {
             self.polytropic_head,
             self.polytropic_efficiency,
             self.power,
+            self.shaft_speed,
             self.surge_flow_rate,
             self.surge_flow_rate_margin,
             self.surge_flow_rate_std,
@@ -14132,6 +14136,7 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),
             },
+            shaft_speed: r.shaft_speed,
             surge_flow_rate: r.surge_flow_rate.map(|v| PyQty {
                 magnitude_si: v,
                 unit: "m**3/h".to_string(),

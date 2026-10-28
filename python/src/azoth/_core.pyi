@@ -2596,6 +2596,7 @@ class CompressorResult:
     polytropic_head: Qty
     polytropic_efficiency: float
     power: Qty
+    shaft_speed: float
     surge_flow_rate: Qty | None
     surge_flow_rate_margin: Qty | None
     surge_flow_rate_std: Qty | None
@@ -5182,6 +5183,10 @@ def compressor(
     outlet_pressure: float | None = None,
     curve: list[CompressorCurvePoint] | None = None,
     speed: float | None = None,
+    solve_speed: bool | None = None,
+    min_speed: float | None = None,
+    max_speed: float | None = None,
+    limit_speed: bool | None = None,
     chart_type: str | None = None,
     surge_curve: list[CompressorSurgePoint] | None = None,
     surge_control_margin: float | None = None,

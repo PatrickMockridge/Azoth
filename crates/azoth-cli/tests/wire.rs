@@ -41,20 +41,20 @@ fn the_palette_comes_back_as_a_form_per_entry() {
     assert!(output.status.success(), "it should print");
     let document = json(&output);
     let entries = document["unit_ops"].as_array().expect("an array");
-    assert_eq!(entries.len(), 30);
+    assert_eq!(entries.len(), 31);
     assert_eq!(
         entries
             .iter()
             .filter(|entry| !entry["model"].is_null())
             .count(),
-        29
+        30
     );
     assert_eq!(
         entries
             .iter()
             .filter(|entry| entry["runnable"] == true)
             .count(),
-        29
+        30
     );
 
     // The pump, field by field: the unit comes from the vocabulary and the kind from the model's
@@ -167,7 +167,7 @@ fn the_tool_schema_is_the_command_model() {
             .as_array()
             .expect("an array")
             .len(),
-        30
+        31
     );
     assert_eq!(
         add["required"],

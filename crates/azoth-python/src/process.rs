@@ -412,10 +412,10 @@ pub fn pipe(
 /// refuses; the row is built from the generated mapping here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn compressor(
@@ -429,6 +429,10 @@ pub fn compressor(
     outlet_pressure: Option<f64>,
     curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
     speed: Option<f64>,
+    solve_speed: Option<bool>,
+    min_speed: Option<f64>,
+    max_speed: Option<f64>,
+    limit_speed: Option<bool>,
     chart_type: Option<&str>,
     chart_conditions: Option<Vec<f64>>,
     impeller_diameter: Option<f64>,
@@ -471,6 +475,10 @@ pub fn compressor(
         isentropic_efficiency,
         points.as_deref(),
         speed,
+        solve_speed,
+        min_speed,
+        max_speed,
+        limit_speed,
         chart_type,
         chart_conditions.as_deref(),
         impeller_diameter.map(meters),

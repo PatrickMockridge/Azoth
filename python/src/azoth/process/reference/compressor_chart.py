@@ -188,6 +188,14 @@ class CompressorChart:
         """The midpoint of the measured speed range, rpm."""
         return self._reference_speed
 
+    def min_curve_speed(self) -> float:
+        """``getMinSpeedCurve``: the lowest measured speed line, rpm."""
+        return min(curve.speed for curve in self._curves)
+
+    def max_curve_speed(self) -> float:
+        """``getMaxSpeedCurve``: the highest measured speed line, rpm."""
+        return max(curve.speed for curve in self._curves)
+
     def polytropic_head(self, flow: float, speed: float) -> float:
         """``getPolytropicHead(flow, speed)``, J/kg. No clamp.
 

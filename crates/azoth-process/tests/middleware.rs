@@ -634,8 +634,10 @@ fn the_generated_input_table_is_the_models_own() {
     // **And then the compressor's surge surface's four**, all on `process.compressor`:
     // `surge_curve`, `surge_control_margin`, `anti_surge_active` and `surge_control_factor` -
     // `523 + 4 = 527`. **And then the Khader chart's two**, on the same model:
-    // `chart_conditions` and `impeller_diameter` - `527 + 2 = 529`.
-    assert_eq!(walked, 553, "the inputs this test walked");
+    // `chart_conditions` and `impeller_diameter` - `527 + 2 = 529`. **And then the
+    // speed-solve mode's four**, on the same model: `solve_speed`, `min_speed`, `max_speed` and
+    // `limit_speed` - `553 + 4 = 557`.
+    assert_eq!(walked, 557, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

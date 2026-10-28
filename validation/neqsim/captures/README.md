@@ -473,6 +473,8 @@ public surface of forty-odd getters.
   > captures/process_compressor_map_lookup.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_khader \
   > captures/process_compressor_khader.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_speed_solve \
+  > captures/process_compressor_speed_solve.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
@@ -720,6 +722,20 @@ speed 10000, then the test's own reference-like three-component gas. **The three
 row's machine run is not cased**: its outlet lands on a state where our `PHflash` refuses
 (`SolverNotConverged`, residual `0.193`) while the class converges, so the capture prints it as
 a finding; the chart read itself matches the class to `1e-5` in both rows.
+
+**`ProcessProbe compressor_speed_solve` is `Compressor.run`'s `solveSpeed` branch.** The
+state is `CompressorChartTest.runCurveTestMaxMinSpeed`'s - the PR seven-component gas at
+75.73 bara and 29.96 C, 559401.4 kg/hr, the fan-law chart's 7000-10500 rpm lines, its surge
+curve and a control factor of 1.0, with anti-surge inactive. The rows are five successive
+runs on one machine, so each starting speed is the previous run's answer: a 240 bara target
+reaches `10992.86` rpm **above the map's ceiling**, because `limit_speed` is off; with the
+limit on the same target pegs at `10500` and reports the chart's `215.4439` bara; a 100 bara
+target pegs at the `7000` floor with `106.1631` bara; from 15000 rpm and the limit off the
+Newton passes below the floor and reaches 100 bara at `6669.27` rpm; and a 90 bara target
+with no floor finds `6064.93` rpm, below the map's measured lines, by the fan law's reduced
+extrapolation. **The pinned test's fourth block is stale against the jar**: it asserts
+`106.16307446` bara and `7000` rpm after `setSpeed(15000)`, which are the third block's
+numbers, while the jar reaches its stated 100 bara at `6669.27` rpm. The capture is the jar's.
 
 **`ProcessProbe expander_steps` is `Expander.run`'s stepped polytropic branch.** The class's
 own `ExpanderPolytropicStepsTest` is a *relative* oracle - five steps against forty, to `0.1` K

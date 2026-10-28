@@ -67,6 +67,10 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         ),
         ("unit_ops.heater", Some(models::HeaterResult::FIELDS)),
         ("unit_ops.manifold", None),
+        // The map machine's executor arm runs the specified-pressure mode with no chart, so it
+        // publishes its two outlets and nothing else; the speed and the powers are the model's
+        // record, not the wire's.
+        ("unit_ops.map_turbo_expander_compressor", None),
         ("unit_ops.mixer", None),
         ("unit_ops.pipe", Some(models::PipeResult::FIELDS)),
         (

@@ -5613,6 +5613,9 @@ class CompressorResult(_HasWarnings):
     #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     power: Q
 
+    #: the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.
+    shaft_speed: float
+
     #: `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
     surge_flow_rate: Q | None
 
