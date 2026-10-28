@@ -1061,6 +1061,16 @@ NO_INTERIOR: dict[str, str] = {
         "them against the same capture, so a dumper would add a key-by-key comparison of "
         "numbers the case compares and no layer behind them"
     ),
+    "process.map_turbo_expander_compressor": (
+        "the kernel forms both outlet states, the shaft speed, the available and consumed "
+        "powers, the residual and the status, and **every one of them is on the model's own "
+        "record** beside the two outlet streams - the model function copies the outcome field "
+        "for field. The case's expected block already asserts them against the same capture, "
+        "so a dumper would compare numbers the case compares and no layer behind them. **The "
+        "one intermediate the record does not carry is the bisection's own trial powers**, "
+        "which are `process.compressor`'s chart arithmetic on the same map - held by that id's "
+        "dumper and its Khader cases"
+    ),
 }
 
 

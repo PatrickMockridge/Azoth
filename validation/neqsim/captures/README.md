@@ -735,8 +735,8 @@ optimum U/C; and the head round-trip with no reference fluid (`37.0` kJ/kg at th
 The second block gives the reference fluid and a CO2-rich fluid the composition-aware row needs:
 **the class's cached reference sound speed is the *phase* value (`415.42` m/s) while its
 `getStageHeadDrop` reads `SystemInterface.getSoundSpeed()`, which is twice that** (`830.84`),
-so the capture prints both and the port takes them as stated inputs - azoth has no real-fluid
-sound-speed model.
+so the capture prints both and the port takes them as stated inputs; reading them from
+`eos.sound_speed` is owed.
 
 **`ProcessProbe turbo_expander` is `TurboExpanderCompressor`.** The rows are
 `TurboExpanderCompressorTest`'s reference state re-cased on PR - the nine-component gas at

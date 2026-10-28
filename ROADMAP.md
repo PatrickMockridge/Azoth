@@ -761,6 +761,11 @@ a claim nothing holds.
   `eos.soreide_whitson_phase`'s two newer parameterisations, **Chabab 2019** and
   **Burgoyne-Nielsen 2026**. The CPA rules and the hydrate coupling are P7's and P9's, each
   gated on a component family or a system type this crate does not carry.
+- **`PhaseEos.getSoundSpeed` is `eos.sound_speed`** — the phase value, the beta-weighted system
+  value and the phase. The system value doubles on an unflashed system (two phase objects, both
+  `beta = 1.0`), which the port records and does not reproduce; `PhaseGE`'s constant `1470.0`
+  m/s and `PhaseDefault`'s `NaN` are not models. **`EquilibriumSoundSpeed`**, the re-flash
+  finite-difference utility for two-phase screening, is owed.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to
@@ -774,8 +779,8 @@ a claim nothing holds.
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
-  speed-solve mode, the `CompressorChartKhader2015` chart (its two alternative map lookups have
-  landed) and its catalogue and readers, the anti-surge recycle calculators and controllers
+  speed-solve mode (its two alternative map lookups and the `CompressorChartKhader2015` map
+  have landed), its catalogue and readers, the anti-surge recycle calculators and controllers
   (its surge curve, read-outs and run-time recycle block have landed), deposit model and
   `useGERG2008`/`useLeachman`/`useVega` property overrides; `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s
@@ -786,11 +791,14 @@ a claim nothing holds.
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
   turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled
-  machine, the chart's only reader. What the tranche left owed is the map surface around it:
+  machine, the chart's only reader. **`MapTurboExpanderCompressor` landed as its own id**,
+  `process.map_turbo_expander_compressor`: the second shaft, its speed bisected over the same
+  chart's measured lines. What is still owed is the map surface around it:
   `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
-  (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls;
-  `MapTurboExpanderCompressor`, a different shaft that reuses the Khader 2015 chart; and
-  the class's `toJson` report. **Anti-surge landed** - the two boundary splines, the chart's
+  (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls; both
+  classes' `toJson`/`toMap` reports and the map machine's `feasible` flag; and
+  `ExpanderChartKhader`'s two **stated** sound speeds, which the class reads and this port
+  takes as inputs - `eos.sound_speed` now exists to close that. **Anti-surge landed** - the two boundary splines, the chart's
   generated surge and stonewall curves, the machine's surge read-outs and `run`'s recycle
   block. What it left owed is the steady `AntiSurgeRecycleCalculator`, the legacy
   `Calculator.runAntiSurgeCalc` step, `AntiSurgeController` and the dynamic/application layer

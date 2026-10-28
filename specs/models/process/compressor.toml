@@ -12,8 +12,9 @@ assumptions = [
     "**the chart's head crosses in metres.** A curve quoted in kJ/kg is multiplied by `1000/9.81` - the class's own `polytropicHeadMeter` - and the branch converts back with `9.81`, not standard gravity, so the pressure ratio is the class's.",
     "**the surge surface is the compressor's own; the recycle calculators are not.** A stated `surge_curve` sets the boundary curve, the read-outs are `getSurgeFlowRate`'s family, and `anti_surge_active` runs `run`'s recycle block. The calculators and controllers are named in `ROADMAP.md`.",
     "**the run-time loop is capped at 20 passes.** The class's `do-while` is uncapped and would spin on a curve it cannot leave; this stops and reports the last pass, which is the one deliberate divergence here.",
+    "**the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.",
     "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
-    "**the speed-solve mode, the catalogue, the deposit model and the property overrides are absent**, and so is `MapTurboExpanderCompressor`, the second shaft that reuses the Khader chart.",
+    "**the speed-solve mode, the catalogue, the deposit model and the property overrides are absent.** `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",

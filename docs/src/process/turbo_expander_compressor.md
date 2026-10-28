@@ -95,7 +95,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the outlet-temperature inverse back-calculates the design efficiency.** A stated `expander_out_temperature` gives the required efficiency before the map's value is replaced, and the design efficiency is the required one over the converged efficiency ratio.
 - **the IGV is held or recomputed.** `igv_control_mode` holds the stated opening; otherwise the opening is recomputed from the stage drop and flow by the class's area rule, and the penalty curve multiplies the efficiency.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- **`RadialExpanderGeometryMap`, `TurboExpanderMapIngestion`, `MapTurboExpanderCompressor` and the class's `toJson` report are outside this surface.** The synthetic-map generator has no caller in this tree, and the map machine is a different shaft; `ROADMAP.md` carries both as owed.
+- **`RadialExpanderGeometryMap`, `TurboExpanderMapIngestion` and the class's `toJson` report are outside this surface.** The generator has no caller here; `MapTurboExpanderCompressor` is a different shaft with its own id, `process.map_turbo_expander_compressor`.
 
 ## Cases
 

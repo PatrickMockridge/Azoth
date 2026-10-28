@@ -2460,8 +2460,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.compressor': {
         "calc_id": 'process.compressor',
         "name": 'Compressor',
-        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '64f1dee905c2a939ea486f58b06ca8308ce9e1baea6aa4e4cd8f2112664e39ec'},
-        "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': '47044cce3096b6ed5d24d9085c705e2b8e01f9ca02341d51b007a16266965b6a'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': 'e3e99a1b0b23b5ed30509b9644b6ab248374d1e3a6c2216e1d24667eefd918eb'}],
+        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '17715393b82c5a15b573c8f87bc6b991c61f631f9aabc20ea5abac83d0fa9749'},
+        "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': 'fc01725d81d7154d93f33a341941faf761ac654dc75ff2b8d5c87cf33d3da7f4'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': 'e3e99a1b0b23b5ed30509b9644b6ab248374d1e3a6c2216e1d24667eefd918eb'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2757,7 +2757,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.turbo_expander_compressor': {
         "calc_id": 'process.turbo_expander_compressor',
         "name": 'Turbo-expander compressor',
-        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '8892d7d616852d960a666bd4589b0e988efd05d4a379eb9f5d2bcf6cc73a3806'},
+        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '1a608f37f5c0a34e2e5f930f26612069848c912fa030e6694dd8f7de15139f48'},
         "code": [{'path': 'python/src/azoth/process/reference/turbo_expander_compressor.py', 'sha256': '2eba3ab8d45c16d2bc94002146a38dae9072ae0d04d8c88ec302d2ae251f5e7b'}, {'path': 'crates/azoth-process/src/models/turbo_expander_compressor.rs', 'sha256': '74a8b646738bb512c440df6756cffdb7728bf0dfc468a86865ebdc83343cc8f4'}],
         "source": 'NeqSim process/equipment/expander/TurboExpanderCompressor.java',
         "verification": 'partially_verified',
