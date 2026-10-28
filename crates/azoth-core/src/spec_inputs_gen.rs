@@ -235,6 +235,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/manifold.toml
+//!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
@@ -3026,6 +3027,101 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.manifold", "feed_p", "pressure"),
     ("process.manifold", "feed_t", "thermodynamic_temperature"),
     ("process.manifold", "split_factors", "dimensionless"),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_n",
+        "molar_flow",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_z",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_p",
+        "pressure",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_n",
+        "molar_flow",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_z",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_p",
+        "pressure",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_out_pressure",
+        "pressure",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "expander_isentropic_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "mechanical_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "bearing_loss",
+        "power",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_outlet_pressure",
+        "pressure",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_isentropic_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "compressor_speed",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "min_shaft_speed",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "max_shaft_speed",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "chart_conditions",
+        "dimensionless",
+    ),
+    (
+        "process.map_turbo_expander_compressor",
+        "impeller_diameter",
+        "length",
+    ),
     ("process.mixer", "feed_n", "molar_flow"),
     ("process.mixer", "feed_z", "dimensionless"),
     ("process.mixer", "feed_p", "pressure"),

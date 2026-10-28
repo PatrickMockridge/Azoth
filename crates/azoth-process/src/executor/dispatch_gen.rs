@@ -12,9 +12,10 @@
 use crate::executor::dispatch::{
     Kernel, absorption_column, component_splitter, compressor, cooler, distillation_column,
     ejector, expander, filter, flare, gas_scrubber, gibbs_reactor, heat_exchanger, heater,
-    manifold, mixer, packed_column, pipe, plug_flow_reactor, pump, rate_based_packed_column,
-    separator, shortcut_distillation_column, splitter, stirred_tank_reactor, stripping_column,
-    tank, three_phase_separator, throttling_valve, turbo_expander_compressor,
+    manifold, map_turbo_expander_compressor, mixer, packed_column, pipe, plug_flow_reactor, pump,
+    rate_based_packed_column, separator, shortcut_distillation_column, splitter,
+    stirred_tank_reactor, stripping_column, tank, three_phase_separator, throttling_valve,
+    turbo_expander_compressor,
 };
 
 /// **The table.** One entry per palette id that has a kernel.
@@ -33,6 +34,10 @@ pub const DISPATCH: &[(&str, Kernel)] = &[
     ("unit_ops.heat_exchanger", heat_exchanger),
     ("unit_ops.heater", heater),
     ("unit_ops.manifold", manifold),
+    (
+        "unit_ops.map_turbo_expander_compressor",
+        map_turbo_expander_compressor,
+    ),
     ("unit_ops.mixer", mixer),
     ("unit_ops.packed_column", packed_column),
     ("unit_ops.pipe", pipe),

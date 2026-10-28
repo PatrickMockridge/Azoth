@@ -310,6 +310,24 @@ impl CompressorChart {
         self.kind
     }
 
+    /// `getMinSpeedCurve`: the lowest measured speed line, rpm.
+    #[must_use]
+    pub fn min_curve_speed(&self) -> f64 {
+        self.curves
+            .iter()
+            .map(|curve| curve.speed)
+            .fold(f64::INFINITY, f64::min)
+    }
+
+    /// `getMaxSpeedCurve`: the highest measured speed line, rpm.
+    #[must_use]
+    pub fn max_curve_speed(&self) -> f64 {
+        self.curves
+            .iter()
+            .map(|curve| curve.speed)
+            .fold(f64::NEG_INFINITY, f64::max)
+    }
+
     /// The Khader map, where one is built.
     #[must_use]
     pub fn khader(&self) -> bool {

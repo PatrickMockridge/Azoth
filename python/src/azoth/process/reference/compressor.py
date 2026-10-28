@@ -29,8 +29,8 @@ and the branch converts it with ``9.81`` - the class's own ``polytropicHeadMeter
 from __future__ import annotations
 
 import math
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for

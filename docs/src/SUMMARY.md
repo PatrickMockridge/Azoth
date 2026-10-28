@@ -260,6 +260,7 @@
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
   - [Manifold](./process/manifold.md)
+  - [Map turbo-expander compressor](./process/map_turbo_expander_compressor.md)
   - [Mixer](./process/mixer.md)
   - [Packed column](./process/packed_column.md)
   - [Pipe](./process/pipe.md)

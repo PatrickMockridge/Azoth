@@ -9,6 +9,7 @@
 //!   - specs/unit_ops/column/simple_absorber.toml
 //!   - specs/unit_ops/column/stripping_column.toml
 //!   - specs/unit_ops/heat_exchanger/heat_exchanger.toml
+//!   - specs/unit_ops/machine/map_turbo_expander_compressor.toml
 //!   - specs/unit_ops/machine/turbo_expander_compressor.toml
 //!   - specs/unit_ops/mixer/component_splitter.toml
 //!   - specs/unit_ops/mixer/mixer.toml
@@ -73,6 +74,10 @@ pub static PALETTE: &[(&str, &str)] = &[
     (
         "heat_exchanger/heat_exchanger.toml",
         include_str!("../../../specs/unit_ops/heat_exchanger/heat_exchanger.toml"),
+    ),
+    (
+        "machine/map_turbo_expander_compressor.toml",
+        include_str!("../../../specs/unit_ops/machine/map_turbo_expander_compressor.toml"),
     ),
     (
         "machine/turbo_expander_compressor.toml",

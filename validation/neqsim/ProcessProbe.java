@@ -155,6 +155,9 @@ public class ProcessProbe {
       case "compressor_khader":
         compressorKhaderRows();
         break;
+      case "map_turbo_expander":
+        mapTurboExpanderRows();
+        break;
       case "expander":
         isentropicRows("Expander");
         break;
@@ -871,6 +874,128 @@ public class ProcessProbe {
     System.out.println("igv_opening=" + machine.getIGVopening());
     System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
     printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
+  }
+
+  /// `MapTurboExpanderCompressor`, the map-based single shaft, re-cased on PR.
+  ///
+  /// The three states of `MapTurboExpanderCompressorTest` - the balanced-speed mode, the
+  /// specified-pressure mode (whose compressor is isentropic, not the map) and the turndown
+  /// row whose expander drop is too small to drive the brake compressor. Each prints the
+  /// speeds, both powers, the residual and the operating status.
+  static void mapTurboExpanderRows() {
+    mapTurboExpanderRow("map_turbo_expander_balanced", 25.0, 60.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.BALANCED_SPEED,
+        true, 58.0);
+    mapTurboExpanderRow("map_turbo_expander_specified", 25.0, 60.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.SPECIFIED_PRESSURES,
+        false, 58.0);
+    mapTurboExpanderRow("map_turbo_expander_turndown", 25.0, 31.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.BALANCED_SPEED,
+        true, 58.0);
+  }
+
+  static SystemInterface mapTurboGas(double celsius, double bara) {
+    SystemInterface fluid = new SystemPrEos(273.15 + celsius, bara);
+    fluid.addComponent("nitrogen", 1.205);
+    fluid.addComponent("CO2", 1.340);
+    fluid.addComponent("methane", 87.974);
+    fluid.addComponent("ethane", 5.258);
+    fluid.addComponent("propane", 3.283);
+    fluid.addComponent("i-butane", 0.082);
+    fluid.addComponent("n-butane", 0.487);
+    fluid.setMixingRule(2);
+    fluid.setTemperature(celsius, "C");
+    fluid.setPressure(bara, "bara");
+    return fluid;
+  }
+
+  static void mapTurboExpanderRow(String label, double expanderCelsius, double expanderBara,
+      neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode mode,
+      boolean attachChart, double compressorOutletBara) {
+    Stream expanderFeed = new Stream("expFeed", mapTurboGas(expanderCelsius, expanderBara));
+    expanderFeed.setFlowRate(3.0, "MSm3/day");
+    expanderFeed.run();
+    Stream compressorFeed = new Stream("compFeed", mapTurboGas(20.0, 48.0));
+    compressorFeed.setFlowRate(3.0, "MSm3/day");
+    compressorFeed.run();
+
+    neqsim.process.equipment.expander.MapTurboExpanderCompressor machine =
+        new neqsim.process.equipment.expander.MapTurboExpanderCompressor("TEC", expanderFeed,
+            compressorFeed);
+    machine.setExpanderOutletPressure(30.0);
+    machine.setExpanderIsentropicEfficiency(0.85);
+    machine.setMechanicalEfficiency(0.98);
+    if (attachChart) {
+      machine.getCompressor().setCompressorChart(
+          mapTurboChart(compressorFeed));
+      machine.getCompressor().getCompressorChart().setHeadUnit("kJ/kg");
+      machine.getCompressor().setUsePolytropicCalc(true);
+    } else {
+      machine.setCompressorOutletPressure(compressorOutletBara);
+      machine.getCompressor().setIsentropicEfficiency(0.78);
+    }
+    machine.setShaftMode(mode);
+    machine.run(java.util.UUID.randomUUID());
+
+    System.out.println(label);
+    System.out.println("shaft_mode=" + machine.getShaftMode());
+    System.out.println("shaft_speed_rpm=" + machine.getShaftSpeed());
+    System.out.println("available_shaft_power_w=" + machine.getAvailableShaftPower());
+    System.out.println("consumed_compressor_power_w=" + machine.getConsumedCompressorPower());
+    System.out.println("power_balance_residual_w=" + machine.getPowerBalanceResidual());
+    System.out.println("speed_limited=" + machine.isSpeedLimited());
+    System.out.println("operating_status=" + machine.getOperatingStatus());
+    System.out.println("feasible=" + machine.isFeasible());
+    System.out.println("expander_outlet_p_bara="
+        + machine.getExpanderOutStream().getPressure("bara"));
+    System.out.println("expander_outlet_t_k="
+        + machine.getExpanderOutStream().getTemperature("K"));
+    System.out.println("compressor_outlet_p_bara="
+        + machine.getCompressorOutStream().getPressure("bara"));
+    System.out.println("compressor_outlet_t_k="
+        + machine.getCompressorOutStream().getTemperature("K"));
+    System.out.println("compressor_flow_m3_per_hr="
+        + compressorFeed.getFlowRate("m3/hr"));
+    print("expander_inlet", expanderFeed);
+    print("expander_outlet", machine.getExpanderOutStream());
+    print("compressor_inlet", compressorFeed);
+    print("compressor_outlet", machine.getCompressorOutStream());
+    System.out.println();
+  }
+
+  static neqsim.process.equipment.compressor.CompressorChartKhader2015 mapTurboChart(
+      Stream compressorFeed) {
+    double[] chartConditions = new double[] {25.0, 50.0, 50.0, 20.0};
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {{80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] polyEff = new double[][] {{77.245, 79.415, 80.738, 80.523, 79.221, 75.472, 69.603, 58.732},
+        {77.011, 79.307, 80.894, 80.719, 79.531, 75.591, 69.685, 60.004},
+        {77.004, 79.169, 80.804, 80.654, 78.853, 73.666, 66.274, 57.672},
+        {77.072, 80.463, 81.139, 79.637, 75.381, 69.533, 63.800, 58.812},
+        {76.971, 79.834, 80.947, 80.581, 78.046, 73.040, 66.557, 59.862},
+        {77.506, 80.206, 81.034, 79.609, 76.381, 70.803, 64.644, 60.530},
+        {77.818, 80.065, 81.063, 79.896, 76.198, 69.290, 60.857},
+        {78.092, 80.935, 80.790, 78.864, 75.217, 70.311, 65.551, 61.039}};
+    neqsim.process.equipment.compressor.CompressorChartKhader2015 chart =
+        new neqsim.process.equipment.compressor.CompressorChartKhader2015(compressorFeed, 0.9);
+    chart.setCurves(chartConditions, speed, flow, head, flow, polyEff);
+    return chart;
   }
 
   /// `CompressorChartKhader2015`, the Mach-number normalised map, re-cased on PR.

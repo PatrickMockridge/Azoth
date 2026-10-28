@@ -367,6 +367,14 @@ class FilterBetaPoint(TypedDict):
     particle_size: float
     beta_ratio: float
 
+class MapCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+
 class PipeFitting(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -2794,6 +2802,26 @@ class ManifoldResult:
     products_p: list[Qty]
     products_t: list[Qty]
     products_h: list[Qty]
+    warnings: list[Warning]
+
+@final
+class MapTurboExpanderResult:
+    expander_outlet_n: Qty
+    expander_outlet_z: list[float]
+    expander_outlet_p: Qty
+    expander_outlet_t: Qty
+    expander_outlet_h: Qty
+    compressor_outlet_n: Qty
+    compressor_outlet_z: list[float]
+    compressor_outlet_p: Qty
+    compressor_outlet_t: Qty
+    compressor_outlet_h: Qty
+    shaft_speed: float
+    available_shaft_power: Qty
+    consumed_compressor_power: Qty
+    power_balance_residual: Qty
+    speed_limited: bool
+    operating_status: str
     warnings: list[Warning]
 
 @final
@@ -5367,6 +5395,32 @@ def manifold(
     feed_t: list[float],
     split_factors: list[float],
 ) -> ManifoldResult: ...
+def map_turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: float,
+    expander_z: list[float],
+    expander_p: float,
+    expander_t: float,
+    compressor_n: float,
+    compressor_z: list[float],
+    compressor_p: float,
+    compressor_t: float,
+    expander_out_pressure: float,
+    expander_isentropic_efficiency: float,
+    shaft_mode: str | None = None,
+    mechanical_efficiency: float | None = None,
+    bearing_loss: float | None = None,
+    compressor_outlet_pressure: float | None = None,
+    compressor_isentropic_efficiency: float | None = None,
+    compressor_speed: float | None = None,
+    min_shaft_speed: float | None = None,
+    max_shaft_speed: float | None = None,
+    curve: list[MapCurvePoint] | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: float | None = None,
+) -> MapTurboExpanderResult: ...
 def mixer(
     components: list[str],
     feed_n: list[float],

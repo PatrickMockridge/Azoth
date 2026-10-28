@@ -39,7 +39,7 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **261 ids** — 86 calculations and 175 models.
+azoth has **262 ids** — 86 calculations and 176 models.
 
 ## The ledger
 
@@ -95,10 +95,10 @@ exclusion list, and the port's NeqSim probe and its capture.
 
 **Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
 wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
-**197** of the registered ids and hand-written for **64**: a kernel that takes a record or a
+**197** of the registered ids and hand-written for **65**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
-for **259** and hand-written for **2**, and its rule is narrower because its boundary is a Python
+for **260** and hand-written for **2**, and its rule is narrower because its boundary is a Python
 signature rather than a Rust one: its signature is the public wrapper's, its call is the
 `#[pyfunction]`'s own order, and every argument on either side must be an input the spec declares,
 a field of the `params` record the wrapper's annotation names, or one expression a boundary object
@@ -106,7 +106,7 @@ resolves into. A `molar_mass` is the one expansion that is not an expression - a
 carries none and the correlation cannot default one, so it crosses behind a guard whose sentence is
 read from the id's own reference implementation.
 
-**The result dataclass is generated for **261** and hand-written for **0**.** One frozen class per registered id, its fields
+**The result dataclass is generated for **262** and hand-written for **0**.** One frozen class per registered id, its fields
 in `CalcResult::FIELDS` order, each annotation from the transport's Rust type beside the unit the
 spec declares, and each doc from the spec's own `description` — so the field prose has one home
 and `tools/gen_python_result.py` can emit the whole file without a paraphrase. What stays
@@ -371,7 +371,7 @@ page:
   [Processes and channels](../calculus/process.md) states a unit operation as a
   process on typed, directional channels, and that statement is what tranche P11
   builds the tier against. **It is no longer a bare specification**: `specs/unit_ops/`
-  declares 30 unit operations with typed channels, `crates/azoth-process` carries the
+  declares 31 unit operations with typed channels, `crates/azoth-process` carries the
   loader and `azoth_process::validate`, and a cargo test holds every shipped palette entry
   and flowsheet to the calculus's rules. **The interpreter is built too** — tranche P12's
   `executor` module runs a flowsheet to its steady state, and what it reaches is named in

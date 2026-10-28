@@ -15643,6 +15643,154 @@ impl From<&azoth_process::models::manifold::ManifoldResult> for PyManifoldResult
         }
     }
 }
+/// Result of `process.map_turbo_expander_compressor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MapTurboExpanderResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMapTurboExpanderResult {
+    /// the expander outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub expander_outlet_n: PyQty,
+    /// the expander outlet's composition.
+    #[pyo3(get)]
+    pub expander_outlet_z: Vec<f64>,
+    /// the expander outlet's pressure.
+    #[pyo3(get)]
+    pub expander_outlet_p: PyQty,
+    /// the expander outlet's temperature.
+    #[pyo3(get)]
+    pub expander_outlet_t: PyQty,
+    /// the expander outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub expander_outlet_h: PyQty,
+    /// the compressor outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub compressor_outlet_n: PyQty,
+    /// the compressor outlet's composition.
+    #[pyo3(get)]
+    pub compressor_outlet_z: Vec<f64>,
+    /// the compressor outlet's pressure: the map's solved ratio or the stated one.
+    #[pyo3(get)]
+    pub compressor_outlet_p: PyQty,
+    /// the compressor outlet's temperature.
+    #[pyo3(get)]
+    pub compressor_outlet_t: PyQty,
+    /// the compressor outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub compressor_outlet_h: PyQty,
+    /// the shaft speed: the bisected speed, or the specified-mode compressor's.
+    #[pyo3(get)]
+    pub shaft_speed: f64,
+    /// the expander's power less the mechanical and bearing losses, floored at zero.
+    #[pyo3(get)]
+    pub available_shaft_power: PyQty,
+    /// the compressor's absorbed power.
+    #[pyo3(get)]
+    pub consumed_compressor_power: PyQty,
+    /// `available_shaft_power - consumed_compressor_power`; zero when a balanced run is not speed-limited.
+    #[pyo3(get)]
+    pub power_balance_residual: PyQty,
+    /// whether the speed was pegged at a bound.
+    #[pyo3(get)]
+    pub speed_limited: bool,
+    /// which outcome the shaft reached: `balanced`, `under_power_surge` (pegged at the map's lowest speed) or `over_power_max_speed` (at its highest).
+    #[pyo3(get)]
+    pub operating_status: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMapTurboExpanderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MapTurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, shaft_speed={:?}, available_shaft_power={:?}, consumed_compressor_power={:?}, power_balance_residual={:?}, speed_limited={:?}, operating_status={:?}, {} warning(s))",
+            self.expander_outlet_n,
+            self.expander_outlet_z,
+            self.expander_outlet_p,
+            self.expander_outlet_t,
+            self.expander_outlet_h,
+            self.compressor_outlet_n,
+            self.compressor_outlet_z,
+            self.compressor_outlet_p,
+            self.compressor_outlet_t,
+            self.compressor_outlet_h,
+            self.shaft_speed,
+            self.available_shaft_power,
+            self.consumed_compressor_power,
+            self.power_balance_residual,
+            self.speed_limited,
+            self.operating_status,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult>
+    for PyMapTurboExpanderResult
+{
+    fn from(
+        r: &azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult,
+    ) -> Self {
+        Self {
+            expander_outlet_n: PyQty {
+                magnitude_si: r.expander_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            expander_outlet_z: r.expander_outlet_z.clone(),
+            expander_outlet_p: PyQty {
+                magnitude_si: r.expander_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            expander_outlet_t: PyQty {
+                magnitude_si: r.expander_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            expander_outlet_h: PyQty {
+                magnitude_si: r.expander_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            compressor_outlet_n: PyQty {
+                magnitude_si: r.compressor_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            compressor_outlet_z: r.compressor_outlet_z.clone(),
+            compressor_outlet_p: PyQty {
+                magnitude_si: r.compressor_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            compressor_outlet_t: PyQty {
+                magnitude_si: r.compressor_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            compressor_outlet_h: PyQty {
+                magnitude_si: r.compressor_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            shaft_speed: r.shaft_speed,
+            available_shaft_power: PyQty {
+                magnitude_si: r.available_shaft_power.value,
+                unit: "W".to_string(),
+            },
+            consumed_compressor_power: PyQty {
+                magnitude_si: r.consumed_compressor_power.value,
+                unit: "W".to_string(),
+            },
+            power_balance_residual: PyQty {
+                magnitude_si: r.power_balance_residual.value,
+                unit: "W".to_string(),
+            },
+            speed_limited: r.speed_limited,
+            operating_status: r.operating_status.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.mixer`, transported.
 #[pyclass(
     frozen,

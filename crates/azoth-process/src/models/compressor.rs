@@ -122,18 +122,7 @@ pub fn compressor(
         &mut warnings,
     )?;
 
-    let kind = match chart_type.unwrap_or("fan_law") {
-        "fan_law" => ChartKind::FanLaw,
-        "interpolate" => ChartKind::MapLookup,
-        "interpolate_and_extrapolate" => ChartKind::MapLookupExtrapolate,
-        "khader_2015" => ChartKind::Khader2015,
-        other => {
-            return Err(AzothError::invalid_input(
-                "chart_type",
-                format!("'{other}' is not one of the four declared chart types"),
-            ));
-        }
-    };
+    let kind = chart_kind(chart_type)?;
 
     let feed = Stream::from_pt(
         components.to_vec(),
@@ -171,29 +160,6 @@ pub fn compressor(
     };
 
     let mut read_outs: [Option<f64>; 9] = [None; 9];
-    let khader = |kind: ChartKind, points: &[CurvePoint]| -> Result<CompressorChart> {
-        if kind != ChartKind::Khader2015 {
-            return CompressorChart::with_kind(points, kind);
-        }
-        let conditions = chart_conditions.ok_or_else(|| {
-            AzothError::invalid_input(
-                "chart_conditions",
-                "the Khader chart builds its reference fluid at the chart conditions, and this \
-                 machine states none",
-            )
-        })?;
-        let reference = reference_sound_speed(conditions)?;
-        let process = azoth_eos::sound_speed(components, inlet_t, inlet_p, inlet_z)?
-            .system_sound_speed
-            .value;
-        CompressorChart::with_khader(
-            points,
-            reference,
-            process,
-            impeller_diameter.map_or(0.3, |diameter| diameter.value),
-        )
-    };
-
     let (out, head, efficiency, power) = if points.is_empty() {
         let pressure = outlet_pressure.ok_or_else(|| {
             AzothError::invalid_input(
@@ -206,7 +172,16 @@ pub fn compressor(
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
         (out, 0.0, 0.0, power)
     } else {
-        let mut chart = khader(kind, &points)?;
+        let mut chart = build_chart(
+            components,
+            inlet_t,
+            inlet_p,
+            inlet_z,
+            &points,
+            kind,
+            chart_conditions,
+            impeller_diameter,
+        )?;
         if !surge_flow.is_empty() {
             chart.set_surge_curve(SurgeCurve::new(&surge_flow, &surge_head)?);
         }
@@ -259,7 +234,7 @@ pub fn compressor(
 /// The class instantiates the *same EOS class* by reflection; azoth's cubic is the one this
 /// model runs, so the reference fluid is built the same way and the speed comes from
 /// [`azoth_eos::sound_speed`].
-fn reference_sound_speed(conditions: &[f64]) -> Result<f64> {
+pub(crate) fn reference_sound_speed(conditions: &[f64]) -> Result<f64> {
     if conditions.len() != 4 {
         return Err(AzothError::invalid_input(
             "chart_conditions",
@@ -296,4 +271,55 @@ fn reference_sound_speed(conditions: &[f64]) -> Result<f64> {
     )?
     .sound_speed
     .value)
+}
+
+/// The `chart_type` input, as the chart's kind.
+pub(crate) fn chart_kind(chart_type: Option<&str>) -> Result<ChartKind> {
+    match chart_type.unwrap_or("fan_law") {
+        "fan_law" => Ok(ChartKind::FanLaw),
+        "interpolate" => Ok(ChartKind::MapLookup),
+        "interpolate_and_extrapolate" => Ok(ChartKind::MapLookupExtrapolate),
+        "khader_2015" => Ok(ChartKind::Khader2015),
+        other => Err(AzothError::invalid_input(
+            "chart_type",
+            format!("'{other}' is not one of the four declared chart types"),
+        )),
+    }
+}
+
+/// The machine's chart, built from its curve and the kind.
+///
+/// Shared with `process.map_turbo_expander_compressor`, which runs the same map on its
+/// compressor side.
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
+pub(crate) fn build_chart(
+    components: &[String],
+    inlet_t: ThermodynamicTemperature,
+    inlet_p: Pressure,
+    inlet_z: &[f64],
+    points: &[CurvePoint],
+    kind: ChartKind,
+    chart_conditions: Option<&[f64]>,
+    impeller_diameter: Option<Length>,
+) -> Result<CompressorChart> {
+    if kind != ChartKind::Khader2015 {
+        return CompressorChart::with_kind(points, kind);
+    }
+    let conditions = chart_conditions.ok_or_else(|| {
+        AzothError::invalid_input(
+            "chart_conditions",
+            "the Khader chart builds its reference fluid at the chart conditions, and this \
+             machine states none",
+        )
+    })?;
+    let reference = reference_sound_speed(conditions)?;
+    let process = azoth_eos::sound_speed(components, inlet_t, inlet_p, inlet_z)?
+        .system_sound_speed
+        .value;
+    CompressorChart::with_khader(
+        points,
+        reference,
+        process,
+        impeller_diameter.map_or(0.3, |diameter| diameter.value),
+    )
 }

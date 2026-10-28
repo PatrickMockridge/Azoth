@@ -1,0 +1,221 @@
+id = "process.map_turbo_expander_compressor"
+name = "Map turbo-expander compressor"
+kind = "direct"
+assumptions = [
+    "**two inlets, two outlets, one shaft.** The expander's feed and the compressor's feed are separate fluids; the expander's outlet and the compressor's outlet are two records. The shaft's available power is the expander's less `mechanical_efficiency` and the bearing loss, floored at zero.",
+    "**the speed is bisected over the map.** In `balanced_speed` the map's own lowest and highest measured speeds bracket the speed, 80 iterations to `1e-3` rpm; pegged at the low bound the status is `under_power_surge`, at the high bound `over_power_max_speed`, and `speed_limited` is set.",
+    "**in `specified_pressures` the compressor runs at its own setting.** A stated outlet pressure and isentropic efficiency run the isentropic route; a stated curve runs the map at `compressor_speed`. The residual is reported, not solved.",
+    "**the brake compressor is the map machine.** The curve's `chart_type = khader_2015` builds the similarity map from the two sound speeds, as `process.compressor` does; the same builder is shared.",
+    "**the expander takes no speed.** `setSpeed` on the class's expander does not change its isentropic power, and this port does not carry an expander map; the expander's efficiency is stated.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**the class's `toJson`/`toMap` report and its `feasible` flag are absent**; `speed_limited` and `operating_status` are the two facts the report derives from.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/expander/MapTurboExpanderCompressor.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_map_turbo_expander.tsv` - the balanced-speed, specified-pressure and turndown rows, re-cased on PR.",
+]
+[source]
+standard = "NeqSim process/equipment/expander/MapTurboExpanderCompressor.java"
+edition = "Its `run`: the expander's power less the mechanical and bearing losses, the specified-pressure run, and the bisection over the compressor chart's measured speed range, with `UNDER_POWER_SURGE`/`OVER_POWER_MAX_SPEED` at the bounds."
+[inputs]
+[inputs.expander_components]
+type = "components"
+description = "the expander feed's substances, by name.\n"
+[inputs.expander_n]
+unit = "mol/s"
+description = "the expander feed's molar flow.\n"
+[inputs.expander_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the expander feed's composition.\n"
+[inputs.expander_p]
+unit = "Pa"
+description = "the expander feed's pressure.\n"
+[inputs.expander_t]
+unit = "K"
+description = "the expander feed's temperature.\n"
+[inputs.compressor_components]
+type = "components"
+description = "the compressor feed's substances, by name.\n"
+[inputs.compressor_n]
+unit = "mol/s"
+description = "the compressor feed's molar flow.\n"
+[inputs.compressor_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the compressor feed's composition.\n"
+[inputs.compressor_p]
+unit = "Pa"
+description = "the compressor feed's pressure.\n"
+[inputs.compressor_t]
+unit = "K"
+description = "the compressor feed's temperature.\n"
+[inputs.expander_out_pressure]
+unit = "Pa"
+description = "the expander's stated outlet pressure.\n"
+[inputs.expander_isentropic_efficiency]
+unit = "dimensionless"
+description = "the expander's isentropic efficiency, in `(0, 1]`.\n"
+[inputs.shaft_mode]
+type = "enum"
+values = ["specified_pressures", "balanced_speed"]
+optional = true
+description = "which solve runs: the compressor at its own setting, or the speed bisected against the available power. Absent is `specified_pressures`.\n"
+[inputs.mechanical_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the expander power that reaches the shaft. Absent takes the class's `0.98`.\n"
+[inputs.bearing_loss]
+unit = "W"
+optional = true
+description = "the bearing loss taken off the shaft power. Absent takes the class's `0.0`.\n"
+[inputs.compressor_outlet_pressure]
+unit = "Pa"
+optional = true
+description = "the isentropic compressor's outlet pressure in `specified_pressures`. Ignored where a curve is stated, because the map solves its own.\n"
+[inputs.compressor_isentropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the isentropic compressor's efficiency in `specified_pressures`. Absent takes `Compressor`'s `0.75`.\n"
+[inputs.compressor_speed]
+unit = "dimensionless"
+optional = true
+description = "the speed the map is read at in `specified_pressures`, rpm. Absent takes `Compressor.speed`'s `3000`.\n"
+[inputs.min_shaft_speed]
+unit = "dimensionless"
+optional = true
+description = "the bisection's lower bound, rpm. Absent takes the map's lowest measured speed.\n"
+[inputs.max_shaft_speed]
+unit = "dimensionless"
+optional = true
+description = "the bisection's upper bound, rpm. Absent takes the map's highest measured speed.\n"
+[inputs.curve]
+type = "record_list"
+row_type = "MapCurvePoint"
+optional = true
+description = "the compressor's measured map, as `process.compressor`'s `curve`. **Absent means the compressor has no map**, so `balanced_speed` cannot run and `specified_pressures` takes the isentropic route.\n"
+[inputs.curve.fields.speed]
+unit = "dimensionless"
+description = "the measured speed, rpm.\n"
+[inputs.curve.fields.flow]
+unit = "m**3/h"
+description = "the measured flow, m3/hr.\n"
+[inputs.curve.fields.head]
+unit = "m"
+description = "the measured polytropic head in metres.\n"
+[inputs.curve.fields.efficiency]
+unit = "dimensionless"
+description = "the measured polytropic efficiency, as a fraction.\n"
+[inputs.chart_type]
+type = "enum"
+values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
+optional = true
+description = "which map class the curve is read by. Absent is `fan_law`; `khader_2015` needs `chart_conditions`.\n"
+[inputs.chart_conditions]
+type = "vector"
+unit = "dimensionless"
+length = "four"
+optional = true
+description = "`setCurves`' chart conditions (T C, P bara, density, MW g/mol), required for the Khader map.\n"
+[inputs.impeller_diameter]
+unit = "m"
+optional = true
+description = "the impeller's outer diameter for the Khader map. Absent takes the class's `0.3`.\n"
+[outputs]
+[outputs.expander_outlet_n]
+unit = "mol/s"
+description = "the expander outlet's molar flow, which is its feed's.\n"
+[outputs.expander_outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the expander outlet's composition.\n"
+[outputs.expander_outlet_p]
+unit = "Pa"
+description = "the expander outlet's pressure.\n"
+[outputs.expander_outlet_t]
+unit = "K"
+description = "the expander outlet's temperature.\n"
+[outputs.expander_outlet_h]
+unit = "J/mol"
+description = "the expander outlet's molar enthalpy.\n"
+[outputs.compressor_outlet_n]
+unit = "mol/s"
+description = "the compressor outlet's molar flow, which is its feed's.\n"
+[outputs.compressor_outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the compressor outlet's composition.\n"
+[outputs.compressor_outlet_p]
+unit = "Pa"
+description = "the compressor outlet's pressure: the map's solved ratio or the stated one.\n"
+[outputs.compressor_outlet_t]
+unit = "K"
+description = "the compressor outlet's temperature.\n"
+[outputs.compressor_outlet_h]
+unit = "J/mol"
+description = "the compressor outlet's molar enthalpy.\n"
+[outputs.shaft_speed]
+unit = "dimensionless"
+description = "the shaft speed: the bisected speed, or the specified-mode compressor's.\n"
+[outputs.available_shaft_power]
+unit = "W"
+description = "the expander's power less the mechanical and bearing losses, floored at zero.\n"
+[outputs.consumed_compressor_power]
+unit = "W"
+description = "the compressor's absorbed power.\n"
+[outputs.power_balance_residual]
+unit = "W"
+description = "`available_shaft_power - consumed_compressor_power`; zero when a balanced run is not speed-limited.\n"
+[outputs.speed_limited]
+type = "boolean"
+description = "whether the speed was pegged at a bound.\n"
+[outputs.operating_status]
+type = "string"
+description = "which outcome the shaft reached: `balanced`, `under_power_surge` (pegged at the map's lowest speed) or `over_power_max_speed` (at its highest).\n"
+[[valid_range]]
+quantity = "expander_isentropic_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an isentropic efficiency is a fraction"
+[[valid_range]]
+quantity = "mechanical_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the mechanical efficiency is a fraction of the expander's power"
+[[valid_range]]
+quantity = "expander_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "expander_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[[valid_range]]
+quantity = "compressor_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "compressor_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[implementations]
+python = "azoth.process.map_turbo_expander_compressor"
+rust = "azoth_process::map_turbo_expander_compressor"

@@ -479,6 +479,8 @@ public surface of forty-odd getters.
   > captures/process_expander_chart.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \
   > captures/process_turbo_expander.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe map_turbo_expander \
+  > captures/process_map_turbo_expander.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
   > captures/process_anti_surge.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe sound_speed \
@@ -748,6 +750,20 @@ stated back and the design efficiency returns at `0.8800000059`. The last row is
 to `0.76261`. Each row prints the solved speed, both powers, both efficiencies, the polytropic
 head, UC/QN, the IGV opening and both outlet records; `getMassBalance` is exactly zero on both
 sides.
+
+**`ProcessProbe map_turbo_expander` is `MapTurboExpanderCompressor`, the second shaft.** The
+nine-component gas at 60 bara and 25 C expands to 30 bara at `0.85`, and the same fluid at
+48 bara and 20 C is compressed on the Khader map at a 0.9 m impeller and chart conditions
+25 C/50 bara/20 g/mol, with a `0.98` mechanical efficiency. **The balanced row bisects over the
+map's own measured speeds**, 8200 to 12913 rpm, to `1e-3` rpm: it settles at `10418.06` rpm with
+both powers at `1.6387` MW and a residual of `-0.10` W, which is the bisection's tolerance and
+not zero. The specified row runs the compressor on its isentropic route to 58 bara at `0.78` and
+stops at the class's default 3000 rpm, reporting `0.7705` MW consumed against `1.6387` MW
+available - the residual is a read-out, not a solve. **The turndown row is the pegged one**: the
+expander at 31 bara leaves only `90.8` kW on the shaft, less than the slowest map line draws, so
+the speed is clamped at 8200 rpm, the status is `UNDER_POWER_SURGE` and the class's own
+`feasible` is false. The row prints both outlet records, the shaft speed, the available and
+consumed powers, the residual and the class's `ShaftMode`/`OperatingStatus` enums.
 
 **`ProcessProbe anti_surge` is the compressor's surge surface.** Three blocks: the
 `SafeSplineSurgeCurveTest.testSurgeCurve10250` table read at the points that test asserts

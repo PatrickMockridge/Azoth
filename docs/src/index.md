@@ -70,8 +70,8 @@ Five sections, and the difference between them is the point:
   quantities with units.
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
-- **Unit operations** — the palette and the flowsheet: 30 unit operations declared on
-  typed channels, 29 of them with kernels, and the checker that holds a flowsheet to the
+- **Unit operations** — the palette and the flowsheet: 31 unit operations declared on
+  typed channels, 30 of them with kernels, and the checker that holds a flowsheet to the
   calculus's rules. **The executor that runs one is built** — it converges the shipped
   flowsheet's recycle, against a NeqSim `ProcessSystem` capture.
 - **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
@@ -334,6 +334,7 @@ Five sections, and the difference between them is the point:
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.manifold`](./process/manifold.md) — Manifold
+- [`process.map_turbo_expander_compressor`](./process/map_turbo_expander_compressor.md) — Map turbo-expander compressor
 - [`process.mixer`](./process/mixer.md) — Mixer
 - [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe

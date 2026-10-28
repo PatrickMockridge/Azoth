@@ -374,9 +374,9 @@ fn every_palette_entry_has_a_form_and_every_form_a_palette_entry() {
 fn the_one_entry_that_does_not_run_declares_no_parameter() {
     let palette = palette();
     let forms = forms(&palette);
-    assert_eq!(forms.len(), 30);
-    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 29);
-    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 29);
+    assert_eq!(forms.len(), 31);
+    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 30);
+    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 30);
 
     let refused: Vec<&FormSpec> = forms.iter().filter(|f| !f.runnable).collect();
     assert_eq!(refused.len(), 1);
@@ -492,7 +492,7 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
     // tenth, the compressor's speed the eleventh, and the expander's polytropic efficiency the
     // twelfth.
-    assert_eq!(checked, 119, "the bounds this test walked");
+    assert_eq!(checked, 125, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -635,7 +635,7 @@ fn the_generated_input_table_is_the_models_own() {
     // `surge_curve`, `surge_control_margin`, `anti_surge_active` and `surge_control_factor` -
     // `523 + 4 = 527`. **And then the Khader chart's two**, on the same model:
     // `chart_conditions` and `impeller_diameter` - `527 + 2 = 529`.
-    assert_eq!(walked, 529, "the inputs this test walked");
+    assert_eq!(walked, 553, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
@@ -1378,7 +1378,7 @@ fn the_embedded_palette_is_the_directory() {
         bundled, files,
         "the bundle and the directory list the same files"
     );
-    assert_eq!(bundled.len(), 30);
+    assert_eq!(bundled.len(), 31);
 }
 
 /// And the two sources parse to one palette, which is what makes the loader shared rather than
@@ -1390,5 +1390,5 @@ fn the_two_palette_loaders_agree() {
     let from_disk = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
     let from_text = azoth_process::load_palette_text(PALETTE).expect("the bundle parses");
     assert_eq!(from_disk, from_text);
-    assert_eq!(from_text.len(), 30);
+    assert_eq!(from_text.len(), 31);
 }

@@ -25,6 +25,7 @@ use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
 use crate::models::manifold::ManifoldResult;
+use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
 use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
 use crate::models::pipe::PipeResult;
@@ -398,6 +399,33 @@ impl CalcResult for ManifoldResult {
         "products_p",
         "products_t",
         "products_h",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for MapTurboExpanderResult {
+    const CALC_ID: &'static str = "process.map_turbo_expander_compressor";
+    const FIELDS: &'static [&'static str] = &[
+        "expander_outlet_n",
+        "expander_outlet_z",
+        "expander_outlet_p",
+        "expander_outlet_t",
+        "expander_outlet_h",
+        "compressor_outlet_n",
+        "compressor_outlet_z",
+        "compressor_outlet_p",
+        "compressor_outlet_t",
+        "compressor_outlet_h",
+        "shaft_speed",
+        "available_shaft_power",
+        "consumed_compressor_power",
+        "power_balance_residual",
+        "speed_limited",
+        "operating_status",
         "warnings",
     ];
 

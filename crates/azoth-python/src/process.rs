@@ -608,6 +608,88 @@ pub fn turbo_expander_compressor(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.map_turbo_expander_compressor` - the map-based single shaft as a registered id.
+///
+/// **Hand-written, because `curve` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, expander_isentropic_efficiency, shaft_mode = None, mechanical_efficiency = None, bearing_loss = None, compressor_outlet_pressure = None, compressor_isentropic_efficiency = None, compressor_speed = None, min_shaft_speed = None, max_shaft_speed = None, curve = None, chart_type = None, chart_conditions = None, impeller_diameter = None)
+)]
+#[pyo3(
+    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, expander_isentropic_efficiency, shaft_mode=None, mechanical_efficiency=None, bearing_loss=None, compressor_outlet_pressure=None, compressor_isentropic_efficiency=None, compressor_speed=None, min_shaft_speed=None, max_shaft_speed=None, curve=None, chart_type=None, chart_conditions=None, impeller_diameter=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn map_turbo_expander_compressor(
+    py: Python<'_>,
+    expander_components: Vec<String>,
+    compressor_components: Vec<String>,
+    expander_n: f64,
+    expander_z: Vec<f64>,
+    expander_p: f64,
+    expander_t: f64,
+    compressor_n: f64,
+    compressor_z: Vec<f64>,
+    compressor_p: f64,
+    compressor_t: f64,
+    expander_out_pressure: f64,
+    expander_isentropic_efficiency: f64,
+    shaft_mode: Option<&str>,
+    mechanical_efficiency: Option<f64>,
+    bearing_loss: Option<f64>,
+    compressor_outlet_pressure: Option<f64>,
+    compressor_isentropic_efficiency: Option<f64>,
+    compressor_speed: Option<f64>,
+    min_shaft_speed: Option<f64>,
+    max_shaft_speed: Option<f64>,
+    curve: Option<Vec<crate::records_gen::MapCurvePoint>>,
+    chart_type: Option<&str>,
+    chart_conditions: Option<Vec<f64>>,
+    impeller_diameter: Option<f64>,
+) -> PyResult<crate::transport_gen::PyMapTurboExpanderResult> {
+    let points: Option<Vec<azoth_process::models::map_turbo_expander_compressor::MapCurvePoint>> =
+        curve.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::map_turbo_expander_compressor::MapCurvePoint {
+                        speed: row.speed,
+                        flow: cubic_meters_per_second(row.flow),
+                        head: meters(row.head),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    azoth_process::map_turbo_expander_compressor(
+        &expander_components,
+        expander_n,
+        &expander_z,
+        pascals(expander_p),
+        kelvins(expander_t),
+        &compressor_components,
+        compressor_n,
+        &compressor_z,
+        pascals(compressor_p),
+        kelvins(compressor_t),
+        pascals(expander_out_pressure),
+        expander_isentropic_efficiency,
+        shaft_mode,
+        mechanical_efficiency,
+        bearing_loss.map(watts),
+        compressor_outlet_pressure.map(pascals),
+        compressor_isentropic_efficiency,
+        compressor_speed,
+        min_shaft_speed,
+        max_shaft_speed,
+        points.as_deref(),
+        chart_type,
+        chart_conditions.as_deref(),
+        impeller_diameter.map(meters),
+    )
+    .map(|r| crate::transport_gen::PyMapTurboExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.absorption_column` - the tray absorber as a registered id.
 ///
 /// **The column's own profile shape with the class's own product names**, and two inlets where

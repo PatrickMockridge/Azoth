@@ -557,6 +557,49 @@ pub(crate) fn turbo_expander_compressor(
     ]))
 }
 
+/// `unit_ops.map_turbo_expander_compressor`: two feeds on one shaft, two outlets.
+///
+/// **The palette carries no compressor map**, so this runs the specified-pressure mode with
+/// the isentropic compressor. A balanced-speed run needs the map and reaches it through
+/// `process.map_turbo_expander_compressor`.
+pub(crate) fn map_turbo_expander_compressor(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
+    use kernels::map_turbo_expander_compressor::{
+        DEFAULT_BEARING_LOSS, DEFAULT_COMPRESSOR_SPEED, DEFAULT_MECHANICAL_EFFICIENCY,
+        MapMachineSettings, ShaftMode, map_turbo_expander,
+    };
+    let mode = match p.optional_text("shaft_mode")?.as_deref() {
+        Some("balanced_speed") => ShaftMode::BalancedSpeed,
+        _ => ShaftMode::SpecifiedPressures,
+    };
+    let settings = MapMachineSettings {
+        expander_out_pressure: pascals(p.si("expander_out_pressure")?),
+        expander_efficiency: p.number("expander_isentropic_efficiency")?,
+        mode,
+        mechanical_efficiency: p
+            .optional_number("mechanical_efficiency")?
+            .unwrap_or(DEFAULT_MECHANICAL_EFFICIENCY),
+        bearing_loss: p
+            .optional_si("bearing_loss")?
+            .unwrap_or(DEFAULT_BEARING_LOSS),
+        min_speed: None,
+        max_speed: None,
+        chart: None,
+        compressor_speed: p
+            .optional_number("compressor_speed")?
+            .unwrap_or(DEFAULT_COMPRESSOR_SPEED),
+        compressor_outlet_pressure: Some(pascals(p.si("compressor_outlet_pressure")?)),
+        compressor_isentropic_efficiency: p.number("compressor_isentropic_efficiency")?,
+    };
+    let outcome = map_turbo_expander(&inlets[0], &inlets[1], &settings)?;
+    Ok(KernelOutcome::streams_only(vec![
+        outcome.expander_outlet,
+        outcome.compressor_outlet,
+    ]))
+}
+
 pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::heat_exchanger::heat_exchanger(
         &inlets[0],

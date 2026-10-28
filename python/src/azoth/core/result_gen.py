@@ -6214,6 +6214,64 @@ class ManifoldResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class MapTurboExpanderResult(_HasWarnings):
+    """Result of ``process.map_turbo_expander_compressor``."""
+
+    CALC_ID: ClassVar[str] = "process.map_turbo_expander_compressor"
+
+    #: the expander outlet's molar flow, which is its feed's.
+    expander_outlet_n: Q
+
+    #: the expander outlet's composition.
+    expander_outlet_z: tuple[float, ...]
+
+    #: the expander outlet's pressure.
+    expander_outlet_p: Q
+
+    #: the expander outlet's temperature.
+    expander_outlet_t: Q
+
+    #: the expander outlet's molar enthalpy.
+    expander_outlet_h: Q
+
+    #: the compressor outlet's molar flow, which is its feed's.
+    compressor_outlet_n: Q
+
+    #: the compressor outlet's composition.
+    compressor_outlet_z: tuple[float, ...]
+
+    #: the compressor outlet's pressure: the map's solved ratio or the stated one.
+    compressor_outlet_p: Q
+
+    #: the compressor outlet's temperature.
+    compressor_outlet_t: Q
+
+    #: the compressor outlet's molar enthalpy.
+    compressor_outlet_h: Q
+
+    #: the shaft speed: the bisected speed, or the specified-mode compressor's.
+    shaft_speed: float
+
+    #: the expander's power less the mechanical and bearing losses, floored at zero.
+    available_shaft_power: Q
+
+    #: the compressor's absorbed power.
+    consumed_compressor_power: Q
+
+    #: `available_shaft_power - consumed_compressor_power`; zero when a balanced run is not speed-limited.
+    power_balance_residual: Q
+
+    #: whether the speed was pegged at a bound.
+    speed_limited: bool
+
+    #: which outcome the shaft reached: `balanced`, `under_power_surge` (pegged at the map's lowest speed) or `over_power_max_speed` (at its highest).
+    operating_status: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MixerResult(_HasWarnings):
     """Result of ``process.mixer``."""
 

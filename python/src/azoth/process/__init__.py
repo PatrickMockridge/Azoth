@@ -33,6 +33,7 @@ from azoth.core.result import (
     HeaterResult,
     HeatExchangerResult,
     ManifoldResult,
+    MapTurboExpanderResult,
     MixerResult,
     PackedColumnResult,
     PipeResult,
@@ -87,6 +88,7 @@ __all__ = [
     "heater",
     "load_flowsheet",
     "manifold",
+    "map_turbo_expander_compressor",
     "mixer",
     "packed_column",
     "pipe",
@@ -122,6 +124,7 @@ _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
 _TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
+_MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
@@ -1103,6 +1106,70 @@ def expander(
         use_polytropic_calc=use_polytropic_calc,
         polytropic_efficiency=polytropic_efficiency,
         number_of_steps=number_of_steps,
+    )
+
+
+def map_turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: Q,
+    expander_z: list[float],
+    expander_p: Q,
+    expander_t: Q,
+    compressor_n: Q,
+    compressor_z: list[float],
+    compressor_p: Q,
+    compressor_t: Q,
+    expander_out_pressure: Q,
+    expander_isentropic_efficiency: float,
+    shaft_mode: str | None = None,
+    mechanical_efficiency: float | None = None,
+    bearing_loss: Q | None = None,
+    compressor_outlet_pressure: Q | None = None,
+    compressor_isentropic_efficiency: float | None = None,
+    compressor_speed: float | None = None,
+    min_shaft_speed: float | None = None,
+    max_shaft_speed: float | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: Q | None = None,
+) -> MapTurboExpanderResult:
+    """Balance a map-driven brake compressor against an expander on one shaft.
+
+    The expander's power, less the mechanical and bearing losses, is what the compressor may
+    consume. ``shaft_mode="balanced_speed"`` bisects the shaft speed over the compressor
+    map's own measured range until the compressor's power meets the available power - pegged
+    at a bound with ``under_power_surge`` or ``over_power_max_speed`` when it cannot.
+    ``specified_pressures`` runs the compressor at its own setting and reports the residual.
+
+    See :func:`azoth.process.reference.map_turbo_expander_compressor`.
+    """
+    return resolve(_MAP_TURBO_EXPANDER_COMPRESSOR)(  # type: ignore[no-any-return]
+        expander_components=expander_components,
+        compressor_components=compressor_components,
+        expander_n=expander_n,
+        expander_z=expander_z,
+        expander_p=expander_p,
+        expander_t=expander_t,
+        compressor_n=compressor_n,
+        compressor_z=compressor_z,
+        compressor_p=compressor_p,
+        compressor_t=compressor_t,
+        expander_out_pressure=expander_out_pressure,
+        expander_isentropic_efficiency=expander_isentropic_efficiency,
+        shaft_mode=shaft_mode,
+        mechanical_efficiency=mechanical_efficiency,
+        bearing_loss=bearing_loss,
+        compressor_outlet_pressure=compressor_outlet_pressure,
+        compressor_isentropic_efficiency=compressor_isentropic_efficiency,
+        compressor_speed=compressor_speed,
+        min_shaft_speed=min_shaft_speed,
+        max_shaft_speed=max_shaft_speed,
+        curve=curve,
+        chart_type=chart_type,
+        chart_conditions=chart_conditions,
+        impeller_diameter=impeller_diameter,
     )
 
 

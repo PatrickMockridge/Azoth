@@ -15,6 +15,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/manifold.toml
+//!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
@@ -13681,6 +13682,2626 @@ pub static MANIFOLD_SPEC: ModelSpec = ModelSpec {
     cases: MANIFOLD_CASES,
 };
 
+static MAP_TURBO_EXPANDER_COMPRESSOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "expander_isentropic_efficiency",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an isentropic efficiency is a fraction",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "mechanical_efficiency",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the mechanical efficiency is a fraction of the expander's power",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "expander_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "expander_p",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "compressor_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "compressor_p",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static MAP_TURBO_EXPANDER_COMPRESSOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_balanced_shaft_bisects_the_map",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 1468.4911810697297),
+            ("expander_p", 6000000.0),
+            ("expander_t", 298.15),
+            ("compressor_n", 1468.4911810697297),
+            ("compressor_p", 4800000.0),
+            ("compressor_t", 293.15),
+            ("expander_out_pressure", 3000000.0),
+            ("expander_isentropic_efficiency", 0.85),
+            ("mechanical_efficiency", 0.98),
+            ("impeller_diameter", 0.9),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+        ],
+        strings: &[
+            ("shaft_mode", "balanced_speed"),
+            ("chart_type", "khader_2015"),
+        ],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+            ("chart_conditions", &[25.0, 50.0, 50.0, 20.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("shaft_speed", 10418.063973844051),
+            ("available_shaft_power", 1638745.0315610631),
+            ("consumed_compressor_power", 1638745.1321155457),
+            ("expander_outlet_p", 3000000.0),
+            ("expander_outlet_t", 254.96038791173373),
+            ("expander_outlet_h", -1568.571286184492),
+            ("compressor_outlet_p", 7157765.79270582),
+            ("compressor_outlet_t", 327.51963431090405),
+            ("compressor_outlet_h", 737.118164226853),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("operating_status", "balanced")],
+        records: &[(
+            "curve",
+            &[
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2789.1285),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(8158.766564729867),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7724522384095729),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3174.0375),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(8042.1406727828735),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.794154186459363),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3689.2288),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7769.031600407748),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.80737960012489),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4179.4503),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7325.9734964322115),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.805229826589649),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4570.2768),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6830.39755351682),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.792210931638144),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4954.7728),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6177.991845056064),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.754719133864634),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5246.0329),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5407.737003058104),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.696034181197298),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5661.0331),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4049.7451580020384),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.587322388482707),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2571.1753),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7361.0805300713555),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770107837113504),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2943.7254),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7322.82364933741),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7930699741363889),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3440.2675),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7023.537206931702),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8089411890211351),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3837.4448),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6710.917431192661),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.807190194665918),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4253.0898),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6189.266055045871),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.795313242980328),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4668.6643),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5576.146788990825),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7559126228963671),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4997.1926),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4819.051987767584),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.696846136362097),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5387.4952),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3643.9449541284407),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.600043057990909),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2415.3793),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6641.957186544343),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770043065299874),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2763.0706),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6577.50254841998),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.791690958847856),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3141.7095),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6382.446483180428),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8080381699756749),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3594.7436),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6030.774719673802),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.806543975614197),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4047.6467),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5509.225280326197),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7885323891027051),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4494.1889),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4791.630988786951),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7366647742706129),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4853.7353),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3995.412844036697),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.662735600426727),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5138.7858),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3225.1478083588177),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.57671664571658),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2247.2043),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5975.06625891947),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770716623789093),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2799.7342),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5806.595310907237),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.804629750233093),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3178.3428),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5572.344546381244),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8113908111690721),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3656.1551),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5142.324159021407),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.796374242667478),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4102.778),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4529.2762487257905),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.75380928428817),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4394.1591),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3915.840978593272),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.695332969549779),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4648.3224),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3354.576962283384),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.637997587622339),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4840.4998),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2936.890927624873),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.588120614497758),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2072.8397),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5334.301732925586),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.769705872525642),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2463.9483),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5204.617737003057),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.798335492585324),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2836.4078),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5048.756371049949),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.809468133671171),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3202.5266),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4722.9969418960245),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.805806471927835),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3599.6333),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4318.909276248725),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7804621582254261),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3978.0203),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3797.16615698267),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.730403707523258),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4257.0022),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3209.826707441386),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.665572286338589),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4517.345),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2609.3781855249745),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.598624822515064),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1835.9552),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4144.525993883793),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.775063036680357),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2208.455),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4040.937818552497),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.802056198362559),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2618.1322),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3832.9051987767584),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.810339108025933),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2940.8034),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3533.1600407747196),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7960859626879391),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3244.7852),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3154.974515800204),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7638145344044049),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3530.1279),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2763.669724770642),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.708027503005902),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3753.3738),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2372.201834862385),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6464373671605711),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3895.9746),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2085.076452599388),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6052993499823419),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1711.3386),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3595.3618756371047),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.778175271586685),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1965.8848),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3530.6727828746175),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.80065165942218),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2356.9431),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3335.65749235474),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.810631362122632),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2685.9247),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3166.615698267074),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7989550517712991),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3008.5154),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2762.334352701325),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.761983240929369),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3337.2855),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2318.8786952089704),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.69289982774309),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3591.5092),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1836.0142711518856),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.608567149372229),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1636.5807),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3281.549439347604),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.780924334304045),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2002.8708),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3177.9408766564725),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8093535515686671),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2338.0319),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2969.714576962283),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8079044377662341),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2642.1245),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2735.2701325178386),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.788639325223295),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2896.4894),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2435.3618756371047),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.752170936751143),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3113.6264),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2174.5565749235475),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.703105081673411),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3274.8764),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1913.61875637105),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6555075685335691),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3411.2977),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1665.6778797145769),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.610391468300337),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_specified_pressure_run_reports_its_residual",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 1468.4911810697297),
+            ("expander_p", 6000000.0),
+            ("expander_t", 298.15),
+            ("compressor_n", 1468.4911810697297),
+            ("compressor_p", 4800000.0),
+            ("compressor_t", 293.15),
+            ("expander_out_pressure", 3000000.0),
+            ("expander_isentropic_efficiency", 0.85),
+            ("mechanical_efficiency", 0.98),
+            ("compressor_outlet_pressure", 5800000.0),
+            ("compressor_isentropic_efficiency", 0.78),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+        ],
+        strings: &[("shaft_mode", "specified_pressures")],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("shaft_speed", 3000.0),
+            ("available_shaft_power", 1638745.0315610631),
+            ("consumed_compressor_power", 770477.3165568791),
+            ("power_balance_residual", 868267.715004184),
+            ("compressor_outlet_p", 5800000.0),
+            ("compressor_outlet_t", 309.4220402237255),
+            ("compressor_outlet_h", 145.85290723962848),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("operating_status", "balanced")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_turndown_row_pegs_at_the_lowest_map_speed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.03,
+        numbers: &[
+            ("expander_n", 1468.4911810697297),
+            ("expander_p", 3100000.0),
+            ("expander_t", 298.15),
+            ("compressor_n", 1468.4911810697297),
+            ("compressor_p", 4800000.0),
+            ("compressor_t", 293.15),
+            ("expander_out_pressure", 3000000.0),
+            ("expander_isentropic_efficiency", 0.85),
+            ("mechanical_efficiency", 0.98),
+            ("impeller_diameter", 0.9),
+        ],
+        flags: &[],
+        lists: &[
+            (
+                "expander_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+            (
+                "compressor_components",
+                &[
+                    "nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+                ],
+            ),
+        ],
+        strings: &[
+            ("shaft_mode", "balanced_speed"),
+            ("chart_type", "khader_2015"),
+        ],
+        vectors: &[
+            (
+                "expander_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+            (
+                "compressor_z",
+                &[
+                    0.012094871975027354,
+                    0.01344989912575656,
+                    0.8830159893203787,
+                    0.05277579821136417,
+                    0.03295225285810357,
+                    0.000823053528591073,
+                    0.004888134980778689,
+                ],
+            ),
+            ("chart_conditions", &[25.0, 50.0, 50.0, 20.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("shaft_speed", 8200.0),
+            ("available_shaft_power", 90817.12969417433),
+            ("consumed_compressor_power", 1069664.0541159206),
+            ("power_balance_residual", -978846.9244217463),
+            ("compressor_outlet_p", 6295292.371840347),
+            ("compressor_outlet_t", 315.93194644486465),
+            ("compressor_outlet_h", 349.59041783271044),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("operating_status", "under_power_surge")],
+        records: &[(
+            "curve",
+            &[
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2789.1285),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(8158.766564729867),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7724522384095729),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3174.0375),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(8042.1406727828735),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.794154186459363),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3689.2288),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7769.031600407748),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.80737960012489),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4179.4503),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7325.9734964322115),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.805229826589649),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4570.2768),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6830.39755351682),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.792210931638144),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4954.7728),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6177.991845056064),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.754719133864634),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5246.0329),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5407.737003058104),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.696034181197298),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12913.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5661.0331),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4049.7451580020384),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.587322388482707),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2571.1753),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7361.0805300713555),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770107837113504),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2943.7254),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7322.82364933741),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7930699741363889),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3440.2675),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(7023.537206931702),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8089411890211351),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3837.4448),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6710.917431192661),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.807190194665918),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4253.0898),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6189.266055045871),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.795313242980328),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4668.6643),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5576.146788990825),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7559126228963671),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4997.1926),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4819.051987767584),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.696846136362097),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(12298.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5387.4952),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3643.9449541284407),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.600043057990909),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2415.3793),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6641.957186544343),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770043065299874),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2763.0706),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6577.50254841998),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.791690958847856),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3141.7095),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6382.446483180428),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8080381699756749),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3594.7436),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(6030.774719673802),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.806543975614197),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4047.6467),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5509.225280326197),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7885323891027051),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4494.1889),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4791.630988786951),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7366647742706129),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4853.7353),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3995.412844036697),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.662735600426727),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11683.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(5138.7858),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3225.1478083588177),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.57671664571658),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2247.2043),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5975.06625891947),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.770716623789093),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2799.7342),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5806.595310907237),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.804629750233093),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3178.3428),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5572.344546381244),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8113908111690721),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3656.1551),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5142.324159021407),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.796374242667478),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4102.778),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4529.2762487257905),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.75380928428817),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4394.1591),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3915.840978593272),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.695332969549779),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4648.3224),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3354.576962283384),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.637997587622339),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(11098.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4840.4998),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2936.890927624873),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.588120614497758),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2072.8397),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5334.301732925586),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.769705872525642),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2463.9483),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5204.617737003057),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.798335492585324),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2836.4078),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(5048.756371049949),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.809468133671171),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3202.5266),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4722.9969418960245),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.805806471927835),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3599.6333),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4318.909276248725),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7804621582254261),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3978.0203),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3797.16615698267),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.730403707523258),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4257.0022),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3209.826707441386),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.665572286338589),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(10453.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(4517.345),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2609.3781855249745),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.598624822515064),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1835.9552),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4144.525993883793),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.775063036680357),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2208.455),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(4040.937818552497),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.802056198362559),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2618.1322),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3832.9051987767584),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.810339108025933),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2940.8034),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3533.1600407747196),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7960859626879391),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3244.7852),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3154.974515800204),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7638145344044049),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3530.1279),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2763.669724770642),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.708027503005902),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3753.3738),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2372.201834862385),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6464373671605711),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(9224.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3895.9746),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2085.076452599388),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6052993499823419),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1711.3386),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3595.3618756371047),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.778175271586685),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1965.8848),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3530.6727828746175),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.80065165942218),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2356.9431),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3335.65749235474),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.810631362122632),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2685.9247),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3166.615698267074),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.7989550517712991),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3008.5154),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2762.334352701325),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.761983240929369),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3337.2855),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2318.8786952089704),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.69289982774309),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8609.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3591.5092),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1836.0142711518856),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.608567149372229),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(1636.5807),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3281.549439347604),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.780924334304045),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2002.8708),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(3177.9408766564725),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8093535515686671),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2338.0319),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2969.714576962283),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.8079044377662341),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2642.1245),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2735.2701325178386),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.788639325223295),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(2896.4894),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2435.3618756371047),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.752170936751143),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3113.6264),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(2174.5565749235475),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.703105081673411),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3274.8764),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1913.61875637105),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.6555075685335691),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "speed",
+                        value: FieldValue::Number(8200.0),
+                    },
+                    RecordField {
+                        name: "flow",
+                        value: FieldValue::Number(3411.2977),
+                    },
+                    RecordField {
+                        name: "head",
+                        value: FieldValue::Number(1665.6778797145769),
+                    },
+                    RecordField {
+                        name: "efficiency",
+                        value: FieldValue::Number(0.610391468300337),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `process.map_turbo_expander_compressor`.
+pub static MAP_TURBO_EXPANDER_COMPRESSOR_SPEC: ModelSpec = ModelSpec {
+    id: "process.map_turbo_expander_compressor",
+    kind: "direct",
+    algorithm: None,
+    checks: MAP_TURBO_EXPANDER_COMPRESSOR_CHECKS,
+    cases: MAP_TURBO_EXPANDER_COMPRESSOR_CASES,
+};
+
 static MIXER_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -22070,6 +24691,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HEAT_EXCHANGER_SPEC,
     &HEATER_SPEC,
     &MANIFOLD_SPEC,
+    &MAP_TURBO_EXPANDER_COMPRESSOR_SPEC,
     &MIXER_SPEC,
     &PACKED_COLUMN_SPEC,
     &PIPE_SPEC,
