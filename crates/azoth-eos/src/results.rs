@@ -6443,3 +6443,68 @@ impl CalcResult for SoundSpeedResult {
         &self.warnings
     }
 }
+
+/// One accepted pressure sample of `eos.equilibrium_sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EquilibriumSoundSpeedSample {
+    /// Absolute pressure.
+    pub pressure: Pressure,
+    /// Temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// Mass over EOS total volume, kg/m**3.
+    pub density: f64,
+    /// Signed specific-entropy error, J/(kg*K).
+    pub entropy_residual: f64,
+    /// What the flash found.
+    pub phase: Phase,
+    /// The vapour fraction where the state is two-phase.
+    pub vapour_fraction: Option<f64>,
+}
+
+/// Result of `eos.equilibrium_sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EquilibriumSoundSpeedResult {
+    /// The acoustic speed, m/s; absent when no step converged.
+    pub sound_speed: Option<f64>,
+    /// The convergence or failure category.
+    pub status: String,
+    /// The class's own message for that category.
+    pub message: String,
+    /// The final pressure step, Pa.
+    pub pressure_step: f64,
+    /// The successive-derivative difference at that step, relative.
+    pub relative_step_error: Option<f64>,
+    /// The target specific entropy, J/(kg*K).
+    pub specific_entropy: f64,
+    /// The accepted stencil.
+    pub stencil: String,
+    /// Whether any sampled stencil changed the phase assemblage.
+    pub phase_boundary_encountered: bool,
+    /// `tp`/quality evaluations, including rejected trials.
+    pub flash_evaluations: u32,
+    /// The final stencil's states: centre first.
+    pub samples: Vec<EquilibriumSoundSpeedSample>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for EquilibriumSoundSpeedResult {
+    const CALC_ID: &'static str = "eos.equilibrium_sound_speed";
+    const FIELDS: &'static [&'static str] = &[
+        "sound_speed",
+        "status",
+        "message",
+        "pressure_step",
+        "relative_step_error",
+        "specific_entropy",
+        "stencil",
+        "phase_boundary_encountered",
+        "flash_evaluations",
+        "samples",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

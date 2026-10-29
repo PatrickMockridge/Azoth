@@ -200,6 +200,7 @@ Five sections, and the difference between them is the point:
 - [`eos.effective_diffusion`](./eos/effective_diffusion.md) — Effective diffusion coefficients from a binary matrix
 - [`eos.electrolyte_cpa_statoil_phase`](./eos/electrolyte_cpa_statoil_phase.md) — Phase state of an electrolyte-CPA fluid
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
+- [`eos.equilibrium_sound_speed`](./eos/equilibrium_sound_speed.md) — Homogeneous-equilibrium speed of sound
 - [`eos.filippov_conductivity`](./eos/filippov_conductivity.md) — Liquid thermal conductivity from the Filippov mixing rule
 - [`eos.flowline_scale_profile`](./eos/flowline_scale_profile.md) — Mineral-scale saturation indices along a flowline's temperature and pressure profile
 - [`eos.freezing_point`](./eos/freezing_point.md) — Freezing-point temperature

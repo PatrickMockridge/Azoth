@@ -471,6 +471,17 @@ class BrineMixingPointRow:
     si_srso4: float
 
 @final
+class EquilibriumSoundSpeedSample:
+    """the accepted stencil's states, centre first."""
+
+    pressure: Qty
+    temperature: Qty
+    density: Qty
+    entropy_residual: Qty
+    phase: str
+    vapour_fraction: float | None
+
+@final
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 
@@ -1044,6 +1055,20 @@ class EosCgPhaseResult:
     cv: Qty
     cp: Qty
     g: Qty
+    warnings: list[Warning]
+
+@final
+class EquilibriumSoundSpeedResult:
+    sound_speed: Qty | None
+    status: str
+    message: str
+    pressure_step: Qty
+    relative_step_error: float | None
+    specific_entropy: Qty
+    stencil: str
+    phase_boundary_encountered: bool
+    flash_evaluations: int
+    samples: list[EquilibriumSoundSpeedSample]
     warnings: list[Warning]
 
 @final
@@ -3643,6 +3668,14 @@ def emulsion_viscosity(
     demulsifier_efficiency: float,
 ) -> EmulsionViscosityResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def equilibrium_sound_speed(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    relative_pressure_step: float | None = None,
+    specific_entropy: float | None = None,
+) -> EquilibriumSoundSpeedResult: ...
 def erosion_prediction(
     mixture_density: float,
     mixture_velocity: float,

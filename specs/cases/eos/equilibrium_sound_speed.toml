@@ -1,0 +1,117 @@
+model = "eos.equilibrium_sound_speed"
+
+[[cases]]
+id = "the_dense_single_phase_matches_the_frozen_phase_speed"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `dense_co2` row: CO2 at 298.15 K and 150 bara, where the equilibrium speed (`456.226`) and the frozen phase value (`456.226`) coincide."
+[cases.inputs]
+components = ["CO2"]
+T = 298.15
+P = 15000000.0
+z = [1.0]
+[cases.expected]
+sound_speed = 456.22605621637035
+status = "converged"
+stencil = "central"
+specific_entropy = -1537.9517199354361
+
+[[cases]]
+id = "the_dilute_gas_is_the_ideal_gas_limit"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `dilute_nitrogen` row: nitrogen at 350 K and 100 Pa, within `2e-4` of `sqrt(gamma R T / M)` in the pinned test."
+[cases.inputs]
+components = ["nitrogen"]
+T = 350.0
+P = 100.0
+z = [1.0]
+[cases.expected]
+sound_speed = 381.164655551199
+status = "converged"
+stencil = "central"
+specific_entropy = 2311.7371165344334
+
+[[cases]]
+id = "the_pure_two_phase_state_needs_its_entropy"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `two_phase_co2` row: the feed's isentrope at 40 bara, a two-phase state whose equilibrium speed (`57.08`) is a fifth of the frozen phase value (`408.76`). The state's entropy is stated because a pure fluid on its saturation line has no unique temperature at a pressure."
+[cases.inputs]
+components = ["CO2"]
+T = 278.5666675376772
+P = 4000000.0
+z = [1.0]
+specific_entropy = -1537.9517199354361
+[cases.expected]
+sound_speed = 57.08170902262859
+status = "converged"
+stencil = "central"
+
+[[cases]]
+id = "the_mixture_isentrope_at_50_bara"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `mixture_nitrogen_50` row: CO2 with 2% nitrogen on the feed's isentrope at 50 bara."
+[cases.inputs]
+components = ["CO2", "nitrogen"]
+T = 281.25682342699747
+P = 5000000.0
+z = [0.98, 0.02]
+[cases.expected]
+sound_speed = 65.07419681239787
+status = "converged"
+stencil = "central"
+
+[[cases]]
+id = "the_mixture_isentrope_at_40_bara"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `mixture_nitrogen_40` row: the same fluid at 40 bara, the pinned test's checked-root state (`273.845 K`, density `642.53` kg/m3 in the test's shift-free frame)."
+[cases.inputs]
+components = ["CO2", "nitrogen"]
+T = 273.8452560336327
+P = 4000000.0
+z = [0.98, 0.02]
+[cases.expected]
+sound_speed = 74.59183532302463
+status = "converged"
+stencil = "central"
+
+[[cases]]
+id = "the_mixture_isentrope_at_20_bara"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `mixture_nitrogen_20` row: the same fluid at 20 bara."
+[cases.inputs]
+components = ["CO2", "nitrogen"]
+T = 251.43555697412125
+P = 2000000.0
+z = [0.98, 0.02]
+[cases.expected]
+sound_speed = 98.59046444891426
+status = "converged"
+stencil = "central"
+
+[[cases]]
+id = "the_hydrogen_impurity_isentrope"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `mixture_hydrogen_40` row: CO2 with 2% hydrogen at 40 bara, the second impurity the pinned test runs."
+[cases.inputs]
+components = ["CO2", "hydrogen"]
+T = 272.9851566013508
+P = 4000000.0
+z = [0.98, 0.02]
+[cases.expected]
+sound_speed = 82.66230938135733
+status = "converged"
+stencil = "central"
+
+[[cases]]
+id = "a_wide_pressure_step_agrees_with_the_default"
+tolerance = 0.001
+source = "`process_equilibrium_sound_speed.tsv`'s `step_0_01` row: the 40 bara state at a relative step of `0.01`, within `0.2%` of the `1e-3` answer in the pinned test."
+[cases.inputs]
+components = ["CO2", "nitrogen"]
+T = 273.8452560336327
+P = 4000000.0
+z = [0.98, 0.02]
+relative_pressure_step = 0.01
+[cases.expected]
+sound_speed = 74.59166484463425
+status = "converged"
+stencil = "central"

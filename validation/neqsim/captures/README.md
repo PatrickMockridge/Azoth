@@ -483,6 +483,8 @@ public surface of forty-odd getters.
   > captures/process_turbo_expander.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe map_turbo_expander \
   > captures/process_map_turbo_expander.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe equilibrium_sound_speed \
+  > captures/process_equilibrium_sound_speed.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
   > captures/process_anti_surge.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe sound_speed \
@@ -793,6 +795,21 @@ disagree**: after a recycle the class recomputes the fluid head as the recycled 
 *restored* flow, which inflates it by `1 + fraction` (`680.5` against `67.6` kJ/kg), and every
 read-out is evaluated at the inflated number. Its discharge pressure is the one number the case
 does not record: it belongs to a pass whose head the run does not report.
+
+**`ProcessProbe equilibrium_sound_speed` is `EquilibriumSoundSpeed`, the HEM derivative.** The
+rows are `EquilibriumSoundSpeedTest`'s states re-cased on PR, with volume correction left at its
+default (the test disables it; azoth's PR carries the Peneloux shift, so the capture is only
+comparable on one convention): dense CO2 at 298.15 K and 150 bara, where the equilibrium speed
+and the frozen phase value coincide at `456.226` m/s; nitrogen at 350 K and 100 Pa, the ideal-gas
+limit; the CO2 feed's isentrope at 40 bara, two-phase, where the equilibrium speed `57.082` is a
+seventh of the phase value `408.758`; the CO2/2% N2 isentropes at 50, 40 and 20 bara and the
+CO2/2% H2 one at 40 bara, each built by the test's wide temperature bracket; and the same 40 bara
+state at relative steps `2e-4`, `2e-3` and `0.01`. **The phase-entry row is a finding and is not
+cased**: at 46.5 bara and `284.3849043789973` K the state sits on the saturation line, and the
+class's flash returns the dense liquid root labelled `GAS` with the liquid entropy, on which it
+reports `392.303` m/s and a forward stencil; this library's flash selects the vapour root there,
+whose own entropy gives a two-phase isentrope, so the two implementations are answering at
+different roots of a degenerate state rather than disagreeing about the arithmetic.
 
 **`ProcessProbe sound_speed` is the cubic's isentropic speed.** `PhaseEos.getSoundSpeed` is
 `c^2 = -gamma (v^2/M) (dP/dv)_T` with `gamma = cp/cv`, and its two derivatives are closed forms

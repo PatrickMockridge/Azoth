@@ -75,6 +75,8 @@ from azoth.core.result import (
     EmulsionViscosityResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
+    EquilibriumSoundSpeedResult,
+    EquilibriumSoundSpeedSample,
     ErosionPredictionResult,
     ErosionRiskLevel,
     ExpanderResult,
@@ -391,6 +393,7 @@ __all__ = [
     "emulsion_viscosity",
     "eos_cg_phase",
     "equilibrium_constant",
+    "equilibrium_sound_speed",
     "erosion_prediction",
     "expander",
     "filippov_conductivity",
@@ -1655,6 +1658,32 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def equilibrium_sound_speed(components: list[str], T: Q, P: Q, z: list[float], relative_pressure_step: float | None=None, specific_entropy: Q | None=None) -> EquilibriumSoundSpeedResult:
+    """``eos.equilibrium_sound_speed``, computed in Rust."""
+    spec = _models_gen.model("eos.equilibrium_sound_speed")
+    result = _core.equilibrium_sound_speed(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        None if relative_pressure_step is None else relative_pressure_step,
+        None if specific_entropy is None else input_to_si(spec, "specific_entropy", specific_entropy),
+    )
+    return EquilibriumSoundSpeedResult(
+        sound_speed=None if result.sound_speed is None else from_si(result.sound_speed.magnitude_si, result.sound_speed.unit),
+        status=result.status,
+        message=result.message,
+        pressure_step=from_si(result.pressure_step.magnitude_si, result.pressure_step.unit),
+        relative_step_error=result.relative_step_error,
+        specific_entropy=from_si(result.specific_entropy.magnitude_si, result.specific_entropy.unit),
+        stencil=result.stencil,
+        phase_boundary_encountered=result.phase_boundary_encountered,
+        flash_evaluations=result.flash_evaluations,
+        samples=tuple(EquilibriumSoundSpeedSample(pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), entropy_residual=from_si(c.entropy_residual.magnitude_si, c.entropy_residual.unit), phase=c.phase, vapour_fraction=c.vapour_fraction) for c in result.samples),
         warnings=_warnings(result.warnings),
     )
 

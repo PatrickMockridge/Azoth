@@ -69,6 +69,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.electrolyte_scale_calculator" => azoth_eos::results::ElectrolyteScaleCalculatorResult::FIELDS.to_vec(),
         "eos.emulsion_viscosity" => azoth_eos::results::EmulsionViscosityResult::FIELDS.to_vec(),
         "eos.eos_cg_phase" => azoth_eos::results::EosCgPhaseResult::FIELDS.to_vec(),
+        "eos.equilibrium_sound_speed" => azoth_eos::results::EquilibriumSoundSpeedResult::FIELDS.to_vec(),
         "eos.erosion_prediction" => azoth_eos::results::ErosionPredictionResult::FIELDS.to_vec(),
         "eos.filippov_conductivity" => azoth_eos::results::FilippovConductivityResult::FIELDS.to_vec(),
         "eos.firozabadi_ramley_interface_tension" => azoth_eos::results::FirozabadiRamleyInterfaceTensionResult::FIELDS.to_vec(),

@@ -360,6 +360,75 @@ impl From<&azoth_eos::results::DepositionSegmentRow> for PyDepositionSegmentRow 
     }
 }
 
+/// the accepted stencil's states, centre first.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EquilibriumSoundSpeedSample"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEquilibriumSoundSpeedSample {
+    /// the sample's absolute pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the sample's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the sample's mass over EOS total volume.
+    #[pyo3(get)]
+    pub density: PyQty,
+    /// the signed specific-entropy error.
+    #[pyo3(get)]
+    pub entropy_residual: PyQty,
+    /// what the flash found at the sample.
+    #[pyo3(get)]
+    pub phase: String,
+    /// the vapour fraction where the sample is two-phase.
+    #[pyo3(get)]
+    pub vapour_fraction: Option<f64>,
+}
+
+#[pymethods]
+impl PyEquilibriumSoundSpeedSample {
+    fn __repr__(&self) -> String {
+        format!(
+            "EquilibriumSoundSpeedSample(pressure={:?}, temperature={:?}, density={:?}, entropy_residual={:?}, phase={}, vapour_fraction={:?})",
+            self.pressure,
+            self.temperature,
+            self.density,
+            self.entropy_residual,
+            self.phase,
+            self.vapour_fraction
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EquilibriumSoundSpeedSample> for PyEquilibriumSoundSpeedSample {
+    fn from(row: &azoth_eos::results::EquilibriumSoundSpeedSample) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            density: PyQty {
+                magnitude_si: row.density,
+                unit: "kg/m**3".to_string(),
+            },
+            entropy_residual: PyQty {
+                magnitude_si: row.entropy_residual,
+                unit: "J/(kg*K)".to_string(),
+            },
+            phase: row.phase.as_str().to_string(),
+            vapour_fraction: row.vapour_fraction,
+        }
+    }
+}
+
 /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
 #[pyclass(
     frozen,

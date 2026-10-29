@@ -1378,6 +1378,34 @@ pub fn eos_cg_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Homogeneous-equilibrium speed of sound.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, relative_pressure_step, specific_entropy))]
+#[pyo3(text_signature = "(components, T, P, z, relative_pressure_step, specific_entropy)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn equilibrium_sound_speed(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    relative_pressure_step: Option<f64>,
+    specific_entropy: Option<f64>,
+) -> PyResult<crate::transport_gen::PyEquilibriumSoundSpeedResult> {
+    azoth_eos::equilibrium_sound_speed::equilibrium_sound_speed(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        relative_pressure_step,
+        specific_entropy.map(joules_per_kilogram_kelvin),
+    )
+    .map(|r| crate::transport_gen::PyEquilibriumSoundSpeedResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// API RP 14E erosional velocity and DNV RP O501 sand erosion.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

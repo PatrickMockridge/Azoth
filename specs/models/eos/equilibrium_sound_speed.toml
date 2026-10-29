@@ -1,0 +1,123 @@
+id = "eos.equilibrium_sound_speed"
+name = "Homogeneous-equilibrium speed of sound"
+kind = "procedure"
+assumptions = [
+    "**the derivative is `c^2 = (dp/drho)` at fixed specific entropy and total composition.** Phase amounts and compositions relax to equilibrium; slip, finite-rate transfer and reactions are excluded. The volume is the EOS total volume, with no density correction.",
+    "**mixtures take a bracketed TP entropy root at each pressure sample**, deliberately avoiding `PSflash`; a pure fluid first solves the saturation quality through `eos.pure_saturation` and falls back to the TP root when the target is outside the saturated phases.",
+    "**a sample is accepted only when** its specific-entropy residual is within `1e-7` J/(kg K), the component balance within `1e-8` and the log-fugacity residual within `1e-6`; central else one-sided stencils, halving up to ten times until successive derivatives differ by `2e-3`.",
+    "**the status and message are outputs, and a failed calculation reports a null `sound_speed` rather than the class's NaN** - the one divergence, so no bare NaN crosses the boundary.",
+    "**the component-balance and log-fugacity residuals are internal**: every accepted sample has them within their bounds by construction, so the status is their report and only the entropy residual varies enough to carry.",
+    "**a sample carries the flash's phase and its vapour fraction.** The class carries typed phase-name and fraction arrays; a cubic state has at most one gas and one liquid phase, so the pair is the same fact.",
+    "**the fixed entropy is the state's own**, read from the equilibrium flash at the stated `(T, P, z)`. A pure fluid on its saturation line has no unique temperature at a pressure, so `specific_entropy` has to be stated there; that is the class's PSflash-built two-phase state.",
+    "**`eos.pure_saturation` declines above about `0.94 Tc`.** A sample pressure above every saturation pressure that can be bracketed falls back to the TP root, and where that cannot close the state is reported as `flash_failed`.",
+    "**the class's unsupported-state checks have no counterpart**: this fluid is a nonreacting PR mixture with no forced phases, solids or hydrates, so `unsupported_state` is declared but not reachable.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/util/EquilibriumSoundSpeed.java` is the port source, through `calculate`.",
+    "`validation/neqsim/captures/process_equilibrium_sound_speed.tsv` - the class on `EquilibriumSoundSpeedTest`'s states, re-cased on PR: the dense and dilute single phases, the pure two-phase state, the CO2/nitrogen and CO2/hydrogen isentropes, and the step sensitivity.",
+]
+[source]
+standard = "NeqSim thermo/util/EquilibriumSoundSpeed.java"
+edition = "Its `calculate`: the fixed-entropy pressure stencil, the bracketed TP entropy root (and the pure-fluid saturation quality), the closure checks, and the step refinement."
+[algorithm]
+scheme = "fixed_entropy_pressure_stencil"
+initialisation = "flash_at_stated_state"
+convergence = "relative"
+tolerance = 2.0e-3
+max_iterations = 11
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name.\n"
+[inputs.T]
+unit = "K"
+description = "the state's absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "the state's absolute pressure.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised.\n"
+[inputs.relative_pressure_step]
+unit = "dimensionless"
+optional = true
+description = "the first pressure increment divided by the centre pressure, in `[1e-6, 0.05]`. Absent takes `1e-3`.\n"
+[inputs.specific_entropy]
+unit = "J/(kg*K)"
+optional = true
+description = "the fixed specific entropy. **Absent takes the equilibrium flash's value at `(T, P, z)`**; a pure fluid on its saturation line has no unique temperature at a pressure, so its entropy has to be stated.\n"
+[outputs]
+[outputs.sound_speed]
+unit = "m/s"
+description = "the homogeneous-equilibrium acoustic speed, or null when no step converged.\n"
+[outputs.status]
+type = "string"
+description = "`converged`, `flash_failed`, `unsupported_state` or `derivative_not_converged`.\n"
+[outputs.message]
+type = "string"
+description = "the class's detail for that status.\n"
+[outputs.pressure_step]
+unit = "Pa"
+description = "the final pressure increment, Pa; NaN when no stencil was evaluated.\n"
+[outputs.relative_step_error]
+unit = "dimensionless"
+optional = true
+description = "the successive-derivative difference at the accepted step; absent until two stencils agree in shape.\n"
+[outputs.specific_entropy]
+unit = "J/(kg*K)"
+description = "the target specific entropy the calculation held fixed.\n"
+[outputs.stencil]
+type = "string"
+description = "`central`, `forward`, `backward` or `unavailable`.\n"
+[outputs.phase_boundary_encountered]
+type = "boolean"
+description = "whether any sampled stencil changed the phase assemblage.\n"
+[outputs.flash_evaluations]
+unit = "dimensionless"
+description = "TP or quality evaluations, including rejected trials.\n"
+[outputs.samples]
+type = "record_list"
+description = "the accepted stencil's states, centre first.\n"
+[outputs.samples.fields.pressure]
+unit = "Pa"
+description = "the sample's absolute pressure.\n"
+[outputs.samples.fields.temperature]
+unit = "K"
+description = "the sample's temperature.\n"
+[outputs.samples.fields.density]
+unit = "kg/m**3"
+description = "the sample's mass over EOS total volume.\n"
+[outputs.samples.fields.entropy_residual]
+unit = "J/(kg*K)"
+description = "the signed specific-entropy error.\n"
+[outputs.samples.fields.phase]
+type = "enum"
+values = ["all_vapour", "all_liquid", "two_phase", "trivial"]
+description = "what the flash found at the sample.\n"
+[outputs.samples.fields.vapour_fraction]
+unit = "dimensionless"
+optional = true
+description = "the vapour fraction where the sample is two-phase.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[[valid_range]]
+quantity = "relative_pressure_step"
+min = 1.0e-6
+max = 0.05
+severity = "error"
+rationale = "the class refuses a step outside this band"
+[implementations]
+python = "azoth.eos.equilibrium_sound_speed"
+rust = "azoth_eos::equilibrium_sound_speed"

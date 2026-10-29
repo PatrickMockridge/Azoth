@@ -50,6 +50,7 @@
 //!   - specs/calcs/eos/electrolyte_scale_calculator.toml
 //!   - specs/calcs/eos/emulsion_viscosity.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/equilibrium_sound_speed.toml
 //!   - specs/calcs/eos/erosion_prediction.toml
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/calcs/eos/firozabadi_ramley_interface_tension.toml
@@ -868,6 +869,23 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.eos_cg_phase", "T", "thermodynamic_temperature"),
     ("eos.eos_cg_phase", "P", "pressure"),
     ("eos.eos_cg_phase", "z", "dimensionless"),
+    (
+        "eos.equilibrium_sound_speed",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.equilibrium_sound_speed", "P", "pressure"),
+    ("eos.equilibrium_sound_speed", "z", "dimensionless"),
+    (
+        "eos.equilibrium_sound_speed",
+        "relative_pressure_step",
+        "dimensionless",
+    ),
+    (
+        "eos.equilibrium_sound_speed",
+        "specific_entropy",
+        "specific_heat_capacity",
+    ),
     ("eos.erosion_prediction", "mixture_density", "mass_density"),
     ("eos.erosion_prediction", "mixture_velocity", "velocity"),
     ("eos.erosion_prediction", "pipe_diameter", "length"),

@@ -101,6 +101,7 @@ from azoth.core.result import (
     ElectrolyteScaleCalculatorResult,
     EmulsionViscosityResult,
     EosCgPhaseResult,
+    EquilibriumSoundSpeedResult,
     ErosionPredictionResult,
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
@@ -312,6 +313,7 @@ __all__ = [
     "effective_diffusion",
     "electrolyte_cpa_statoil_phase",
     "eos_cg_phase",
+    "equilibrium_sound_speed",
     "from_model",
     "from_names",
     "fuller_schettler_giddings_diffusivity",
@@ -537,6 +539,7 @@ _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
+_EQUILIBRIUM_SOUND_SPEED = "eos.equilibrium_sound_speed"
 _SOUND_SPEED = "eos.sound_speed"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
@@ -1045,6 +1048,42 @@ def sound_speed(components: list[str], T: Q, P: Q, z: list[float]) -> SoundSpeed
     """
     return resolve(_SOUND_SPEED)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z
+    )
+
+
+def equilibrium_sound_speed(
+    components: list[str],
+    T: Q,
+    P: Q,
+    z: list[float],
+    relative_pressure_step: float | None = None,
+    specific_entropy: Q | None = None,
+) -> EquilibriumSoundSpeedResult:
+    """The homogeneous-equilibrium acoustic speed of a mixture at a state.
+
+    ``c^2 = (dp/drho)`` at fixed specific entropy and total composition: each pressure
+    sample is re-equilibrated at fixed ``s`` and differentiated on a central or one-sided
+    stencil that stays on the centre state's phase branch. **This is not
+    :func:`sound_speed`**: that is the frozen phase speed off one phase, while this one lets
+    the phase split relax with pressure.
+
+    ``specific_entropy`` is the fixed state variable; absent takes the equilibrium flash's
+    value. A pure fluid on its saturation line has no unique temperature at a pressure, so
+    its entropy has to be stated.
+
+    Raises:
+        InvalidInputError: for a step outside ``[1e-6, 0.05]``, a non-positive state, or a
+            composition of the wrong length.
+
+    See :func:`azoth.eos.reference.equilibrium_sound_speed`.
+    """
+    return resolve(_EQUILIBRIUM_SOUND_SPEED)(  # type: ignore[no-any-return]
+        components=components,
+        T=T,
+        P=P,
+        z=z,
+        relative_pressure_step=relative_pressure_step,
+        specific_entropy=specific_entropy,
     )
 
 

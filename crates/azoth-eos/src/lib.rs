@@ -86,6 +86,7 @@ pub mod emulsion_viscosity;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
+pub mod equilibrium_sound_speed;
 pub mod erosion_prediction;
 pub mod filippov_conductivity;
 pub mod firozabadi_ramley_interface_tension;

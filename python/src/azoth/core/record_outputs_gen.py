@@ -140,6 +140,29 @@ class DepositionSegmentRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class EquilibriumSoundSpeedSample:
+    """the accepted stencil's states, centre first."""
+
+    #: the sample's absolute pressure.
+    pressure: Q
+
+    #: the sample's temperature.
+    temperature: Q
+
+    #: the sample's mass over EOS total volume.
+    density: Q
+
+    #: the signed specific-entropy error.
+    entropy_residual: Q
+
+    #: what the flash found at the sample.
+    phase: str
+
+    #: the vapour fraction where the sample is two-phase.
+    vapour_fraction: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 

@@ -554,6 +554,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'eos.equilibrium_sound_speed': {
+        "calc_id": 'eos.equilibrium_sound_speed',
+        "name": 'Homogeneous-equilibrium speed of sound',
+        "spec": {'path': 'specs/models/eos/equilibrium_sound_speed.toml', 'sha256': 'f4c2579ed825583cb642f3d1be576128ca5d8d5bfd8c7959b87d0c2623c2450a'},
+        "code": [{'path': 'python/src/azoth/eos/reference/equilibrium_sound_speed.py', 'sha256': 'caf2558dbca776506d90a154c546248eea62ed6571d54bca3bb9b24f1317bd9e'}, {'path': 'crates/azoth-eos/src/equilibrium_sound_speed.rs', 'sha256': '61a0023f1ee11ca6e8d9e974942beb014b7ca34b736f1b43d1fc0c642280e59d'}],
+        "source": 'NeqSim thermo/util/EquilibriumSoundSpeed.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 8,
+        "tests_skipped": 0,
+    },
     'eos.erosion_prediction': {
         "calc_id": 'eos.erosion_prediction',
         "name": 'API RP 14E erosional velocity and DNV RP O501 sand erosion',

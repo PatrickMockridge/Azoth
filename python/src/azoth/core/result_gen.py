@@ -27,6 +27,7 @@ from azoth.core.record_outputs_gen import (
     CharacterizationComponent,
     ChemicalWarningRow,
     DepositionSegmentRow,
+    EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
     HydrateRiskPoint,
     KComponent,
@@ -1304,6 +1305,46 @@ class EosCgPhaseResult(_HasWarnings):
 
     #: the Gibbs energy, `h - T s`
     g: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EquilibriumSoundSpeedResult(_HasWarnings):
+    """Result of ``eos.equilibrium_sound_speed``."""
+
+    CALC_ID: ClassVar[str] = "eos.equilibrium_sound_speed"
+
+    #: the homogeneous-equilibrium acoustic speed, or null when no step converged.
+    sound_speed: Q | None
+
+    #: `converged`, `flash_failed`, `unsupported_state` or `derivative_not_converged`.
+    status: str
+
+    #: the class's detail for that status.
+    message: str
+
+    #: the final pressure increment, Pa; NaN when no stencil was evaluated.
+    pressure_step: Q
+
+    #: the successive-derivative difference at the accepted step; absent until two stencils agree in shape.
+    relative_step_error: float | None
+
+    #: the target specific entropy the calculation held fixed.
+    specific_entropy: Q
+
+    #: `central`, `forward`, `backward` or `unavailable`.
+    stencil: str
+
+    #: whether any sampled stencil changed the phase assemblage.
+    phase_boundary_encountered: bool
+
+    #: TP or quality evaluations, including rejected trials.
+    flash_evaluations: int
+
+    #: the accepted stencil's states, centre first.
+    samples: tuple[EquilibriumSoundSpeedSample, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

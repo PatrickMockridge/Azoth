@@ -68,6 +68,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyElectrolyteScaleCalculatorResult>()?;
     m.add_class::<crate::transport_gen::PyEmulsionViscosityResult>()?;
     m.add_class::<crate::transport_gen::PyEosCgPhaseResult>()?;
+    m.add_class::<crate::transport_gen::PyEquilibriumSoundSpeedResult>()?;
     m.add_class::<crate::transport_gen::PyErosionPredictionResult>()?;
     m.add_class::<crate::transport_gen::PyFilippovConductivityResult>()?;
     m.add_class::<crate::transport_gen::PyFirozabadiRamleyInterfaceTensionResult>()?;
@@ -286,6 +287,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyCharacterizationComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyEquilibriumSoundSpeedSample>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
@@ -445,6 +447,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::eos_cg_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::equilibrium_sound_speed,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::erosion_prediction,
         m

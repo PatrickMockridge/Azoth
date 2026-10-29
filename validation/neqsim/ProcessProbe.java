@@ -137,6 +137,9 @@ public class ProcessProbe {
       case "compressor_speed_solve":
         compressorSpeedSolveRows();
         break;
+      case "equilibrium_sound_speed":
+        equilibriumSoundSpeedRows();
+        break;
       case "expander_steps":
         expanderStepRows();
         break;
@@ -1467,6 +1470,156 @@ public class ProcessProbe {
     System.out.println();
 
     compressorRunRow("compressor_chart_run", chart);
+  }
+
+  /**
+   * `EquilibriumSoundSpeedTest`'s states on the pinned class.
+   *
+   * The test disables `useVolumeCorrection`; this probe keeps the default, because azoth's PR
+   * carries the Peneloux shift and the capture is only comparable on the same convention.
+   */
+  static void equilibriumSoundSpeedRows() {
+    eqSpeedRow("dense_co2", eqCo2Feed(null), 1.0e-3);
+    eqSpeedRow("dilute_nitrogen", eqIdealGas(), 1.0e-3);
+
+    SystemInterface twoPhase = eqCo2Feed(null);
+    double entropy = twoPhase.getEntropy("J/kgK");
+    twoPhase.setPressure(40.0);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(twoPhase).PSflash(entropy, "J/kgK");
+    twoPhase.init(3);
+    eqSpeedRow("two_phase_co2", twoPhase, 1.0e-3);
+
+    for (double pressure : new double[] {50.0, 40.0, 20.0}) {
+      SystemInterface mixture = eqReferenceTpRoot(eqCo2Feed("nitrogen"), pressure,
+          eqCo2Feed("nitrogen").getEntropy("J/kgK"));
+      eqSpeedRow("mixture_nitrogen_" + (int) pressure, mixture, 1.0e-3);
+    }
+    SystemInterface hydrogen = eqReferenceTpRoot(eqCo2Feed("hydrogen"), 40.0,
+        eqCo2Feed("hydrogen").getEntropy("J/kgK"));
+    eqSpeedRow("mixture_hydrogen_40", hydrogen, 1.0e-3);
+
+    // **Through a Stream, because a bare setT/setP + TPflash + init(3) leaves `s` stale** -
+    // the state the pinned test hands the class reads the feed's entropy at the new T and P.
+    // The class's own closure cannot see that; the probe can, by building the state the way a
+    // solver does.
+    SystemInterface boundaryFluid = eqCo2Feed(null);
+    boundaryFluid.setPressure(46.5);
+    boundaryFluid.setTemperature(284.3849043789973);
+    Stream boundaryStream = new Stream("boundary", boundaryFluid);
+    boundaryStream.run();
+    eqSpeedRow("phase_entry_46_5", boundaryStream.getThermoSystem(), 0.05);
+
+    SystemInterface steps = eqReferenceTpRoot(eqCo2Feed("nitrogen"), 40.0,
+        eqCo2Feed("nitrogen").getEntropy("J/kgK"));
+    eqSpeedRow("step_0_0002", steps, 2.0e-4);
+    eqSpeedRow("step_0_002", steps, 2.0e-3);
+    eqSpeedRow("step_0_01", steps, 1.0e-2);
+  }
+
+  static SystemInterface eqCo2Feed(String impurity) {
+    SystemInterface fluid = new SystemPrEos(298.15, 150.0);
+    fluid.addComponent("CO2", impurity == null ? 1.0 : 0.98);
+    if (impurity != null) {
+      fluid.addComponent(impurity, 0.02);
+    }
+    fluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    return fluid;
+  }
+
+  static SystemInterface eqIdealGas() {
+    SystemInterface gas = new SystemPrEos(350.0, 0.001);
+    gas.addComponent("nitrogen", 1.0);
+    gas.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(gas).TPflash();
+    gas.init(3);
+    return gas;
+  }
+
+  static SystemInterface eqReferenceTpRoot(SystemInterface original, double pressure,
+      double entropy) {
+    double lower = 200.0;
+    double upper = 350.0;
+    SystemInterface trial = null;
+    for (int i = 0; i < 60; i++) {
+      trial = original.clone();
+      trial.setPressure(pressure);
+      trial.setTemperature((lower + upper) / 2.0);
+      new neqsim.thermodynamicoperations.ThermodynamicOperations(trial).TPflash();
+      trial.init(3);
+      double error = trial.getEntropy("J/kgK") - entropy;
+      if (Math.abs(error) < 1.0e-9) {
+        break;
+      }
+      if (error > 0.0) {
+        upper = trial.getTemperature();
+      } else {
+        lower = trial.getTemperature();
+      }
+    }
+    return trial;
+  }
+
+  static void eqSpeedRow(String label, SystemInterface fluid, double step) {
+    double targetEntropy = fluid.getEntropy("J/kgK");
+    double phaseSpeed = fluid.getSoundSpeed();
+    double temperature = fluid.getTemperature();
+    double pressure = fluid.getPressure();
+    int phases = fluid.getNumberOfPhases();
+    StringBuilder types = new StringBuilder();
+    StringBuilder fractions = new StringBuilder();
+    for (int i = 0; i < phases; i++) {
+      types.append(i == 0 ? "" : ",").append(fluid.getPhase(i).getType().name());
+      fractions.append(i == 0 ? "" : ",").append(fluid.getBeta(i));
+    }
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":")
+          .append(fluid.getPhase(0).getComponent(i).getz());
+    }
+
+    neqsim.thermo.util.EquilibriumSoundSpeed.Result result =
+        neqsim.thermo.util.EquilibriumSoundSpeed.calculate(fluid, step);
+
+    System.out.println(label);
+    System.out.println("input_p_bara=" + pressure);
+    System.out.println("input_t_k=" + temperature);
+    System.out.println("input_z=" + z);
+    System.out.println("input_phase_count=" + phases);
+    System.out.println("input_phase_types=" + types);
+    System.out.println("input_phase_fractions=" + fractions);
+    System.out.println("specific_entropy_j_per_kgk=" + targetEntropy);
+    System.out.println("phase_sound_speed_m_per_s=" + phaseSpeed);
+    System.out.println("relative_pressure_step=" + step);
+    System.out.println("status=" + result.getStatus());
+    System.out.println("message=" + result.getMessage());
+    System.out.println("sound_speed_m_per_s=" + result.getSoundSpeed());
+    System.out.println("pressure_step_pa=" + result.getPressureStepPa());
+    System.out.println("relative_step_error=" + result.getRelativeStepError());
+    System.out.println("stencil=" + result.getStencil());
+    System.out.println("phase_boundary_encountered=" + result.isPhaseBoundaryEncountered());
+    System.out.println("flash_evaluations=" + result.getFlashEvaluations());
+    int sample = 0;
+    for (neqsim.thermo.util.EquilibriumSoundSpeed.State state : result.getSamples()) {
+      StringBuilder phaseTypes = new StringBuilder();
+      StringBuilder phaseFractions = new StringBuilder();
+      for (int i = 0; i < state.getPhaseTypes().length; i++) {
+        phaseTypes.append(i == 0 ? "" : ",").append(state.getPhaseTypes()[i]);
+        phaseFractions.append(i == 0 ? "" : ",").append(state.getPhaseFractions()[i]);
+      }
+      System.out.println("sample_" + sample + "_p_pa=" + state.getPressurePa());
+      System.out.println("sample_" + sample + "_t_k=" + state.getTemperatureK());
+      System.out.println("sample_" + sample + "_density_kg_per_m3=" + state.getDensity());
+      System.out.println("sample_" + sample + "_entropy_residual=" + state.getEntropyResidual());
+      System.out.println("sample_" + sample + "_component_residual=" + state.getComponentResidual());
+      System.out.println("sample_" + sample + "_fugacity_residual=" + state.getFugacityResidual());
+      System.out.println("sample_" + sample + "_phase_types=" + phaseTypes);
+      System.out.println("sample_" + sample + "_phase_fractions=" + phaseFractions);
+      sample++;
+    }
+    System.out.println();
   }
 
   /** `CompressorChartTest.runCurveTestMaxMinSpeed`'s five runs, on the pinned class. */

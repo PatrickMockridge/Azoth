@@ -15,10 +15,10 @@
 
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
-    PyChemicalWarningRow, PyDepositionSegmentRow, PyFlowlineScaleSegment, PyHydrateRiskPoint,
-    PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
-    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
-    PySubFraction, PyWaterMixingResult,
+    PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
+    PyFlowlineScaleSegment, PyHydrateRiskPoint, PyKComponent, PyMineralEquilibriumRow,
+    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
+    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -3277,6 +3277,100 @@ impl From<&azoth_eos::results::EosCgPhaseResult> for PyEosCgPhaseResult {
                 magnitude_si: r.g.value,
                 unit: "J/mol".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.equilibrium_sound_speed`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EquilibriumSoundSpeedResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEquilibriumSoundSpeedResult {
+    /// the homogeneous-equilibrium acoustic speed, or null when no step converged.
+    #[pyo3(get)]
+    pub sound_speed: Option<PyQty>,
+    /// `converged`, `flash_failed`, `unsupported_state` or `derivative_not_converged`.
+    #[pyo3(get)]
+    pub status: String,
+    /// the class's detail for that status.
+    #[pyo3(get)]
+    pub message: String,
+    /// the final pressure increment, Pa; NaN when no stencil was evaluated.
+    #[pyo3(get)]
+    pub pressure_step: PyQty,
+    /// the successive-derivative difference at the accepted step; absent until two stencils agree in shape.
+    #[pyo3(get)]
+    pub relative_step_error: Option<f64>,
+    /// the target specific entropy the calculation held fixed.
+    #[pyo3(get)]
+    pub specific_entropy: PyQty,
+    /// `central`, `forward`, `backward` or `unavailable`.
+    #[pyo3(get)]
+    pub stencil: String,
+    /// whether any sampled stencil changed the phase assemblage.
+    #[pyo3(get)]
+    pub phase_boundary_encountered: bool,
+    /// TP or quality evaluations, including rejected trials.
+    #[pyo3(get)]
+    pub flash_evaluations: u32,
+    /// the accepted stencil's states, centre first.
+    #[pyo3(get)]
+    pub samples: Vec<PyEquilibriumSoundSpeedSample>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEquilibriumSoundSpeedResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EquilibriumSoundSpeedResult(sound_speed={:?}, status={:?}, message={:?}, pressure_step={:?}, relative_step_error={:?}, specific_entropy={:?}, stencil={:?}, phase_boundary_encountered={:?}, flash_evaluations={:?}, samples={:?}, {} warning(s))",
+            self.sound_speed,
+            self.status,
+            self.message,
+            self.pressure_step,
+            self.relative_step_error,
+            self.specific_entropy,
+            self.stencil,
+            self.phase_boundary_encountered,
+            self.flash_evaluations,
+            self.samples,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EquilibriumSoundSpeedResult> for PyEquilibriumSoundSpeedResult {
+    fn from(r: &azoth_eos::results::EquilibriumSoundSpeedResult) -> Self {
+        Self {
+            sound_speed: r.sound_speed.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m/s".to_string(),
+            }),
+            status: r.status.clone(),
+            message: r.message.clone(),
+            pressure_step: PyQty {
+                magnitude_si: r.pressure_step,
+                unit: "Pa".to_string(),
+            },
+            relative_step_error: r.relative_step_error,
+            specific_entropy: PyQty {
+                magnitude_si: r.specific_entropy,
+                unit: "J/(kg*K)".to_string(),
+            },
+            stencil: r.stencil.clone(),
+            phase_boundary_encountered: r.phase_boundary_encountered,
+            flash_evaluations: r.flash_evaluations,
+            samples: r
+                .samples
+                .iter()
+                .map(PyEquilibriumSoundSpeedSample::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

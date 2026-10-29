@@ -133,6 +133,7 @@
   - [Effective diffusion coefficients from a binary matrix](./eos/effective_diffusion.md)
   - [Phase state of an electrolyte-CPA fluid](./eos/electrolyte_cpa_statoil_phase.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
+  - [Homogeneous-equilibrium speed of sound](./eos/equilibrium_sound_speed.md)
   - [Liquid thermal conductivity from the Filippov mixing rule](./eos/filippov_conductivity.md)
   - [Mineral-scale saturation indices along a flowline's temperature and pressure profile](./eos/flowline_scale_profile.md)
   - [Freezing-point temperature](./eos/freezing_point.md)
