@@ -68,6 +68,7 @@ not an equation, and both implementations read it from here.
 - **the fixed entropy is the state's own**, read from the equilibrium flash at the stated `(T, P, z)`. A pure fluid on its saturation line has no unique temperature at a pressure, so `specific_entropy` has to be stated there; that is the class's PSflash-built two-phase state.
 - **`eos.pure_saturation` declines above about `0.94 Tc`.** A sample pressure above every saturation pressure that can be bracketed falls back to the TP root, and where that cannot close the state is reported as `flash_failed`.
 - **the class's unsupported-state checks have no counterpart**: this fluid is a nonreacting PR mixture with no forced phases, solids or hydrates, so `unsupported_state` is declared but not reachable.
+- **the consumer is the HEM release model.** `HomogeneousEquilibriumReleaseModel` calls `SystemInterface.calculateEquilibriumSoundSpeed()` for its throat speed; the release family in `process/safety/release/` is outside this model and named in `ROADMAP.md`.
 
 ## Cases
 

@@ -46,7 +46,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the system value is the beta-weighted arithmetic mean** of the phase speeds. NeqSim's own `getSoundSpeed()` sums beta times the phase value; on a two-phase state that mean is not a physical mixture speed and is reported as the class's reading, not as physics.
 - **an unflashed NeqSim system doubles the system value**, because two phase objects carry `beta = 1.0` each. Every row here flashes first; the port reports the flashed value and does not reproduce the artefact.
 - **the mixture is PR with the classic mixing rule**, because the databank's `mixture_of` has no other route here; SRK and RK share the same `PhaseEos` formula.
-- **`PhaseGE`'s constant 1470 m/s and `PhaseDefault`'s NaN are not models** and have no row here; `EquilibriumSoundSpeed`, the re-flash finite-difference utility, is owed and named in `ROADMAP.md`.
+- **`PhaseGE`'s constant 1470 m/s and `PhaseDefault`'s NaN are not models** and have no row here; `EquilibriumSoundSpeed`, the re-flash derivative, is `eos.equilibrium_sound_speed`.
 
 ## Cases
 
