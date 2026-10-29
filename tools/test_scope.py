@@ -285,6 +285,9 @@ EXTENSION_TESTS: tuple[str, ...] = (
     f"{TESTS}/test_gen_python_registry.py",
     f"{TESTS}/test_gen_python_transport.py",
     f"{TESTS}/test_gen_python_wrappers.py",
+    # A hand-written `#[pyfunction]` whose parameter order has moved away from its spec is a
+    # stub drift, and this is the test that names it.
+    f"{TESTS}/test_gen_stub.py",
 )
 
 #: **One registered id per namespace**, the smoke that a core or binding change has not broken
@@ -446,8 +449,17 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
     (
         "specs/unit_ops/",
         Claim(
-            commands=(Command("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),),
-            files=(f"{TESTS}/test_check_ui.py",),
+            commands=(
+                Command("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),
+                # A palette entry moves the command model's `unit` enum, which the envelope
+                # fixture carries - so the fixture check is part of this claim.
+                Command(
+                    "the fixtures a palette entry moves",
+                    SCRIPT,
+                    "python tools/gen_ui_fixtures.py --check",
+                ),
+            ),
+            files=(f"{TESTS}/test_check_ui.py", f"{TESTS}/test_gen_ui_fixtures.py"),
             generated=True,
         ),
     ),

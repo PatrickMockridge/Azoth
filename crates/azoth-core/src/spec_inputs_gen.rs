@@ -2652,13 +2652,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.compressor", "speed", "dimensionless"),
     ("process.compressor", "min_speed", "dimensionless"),
     ("process.compressor", "max_speed", "dimensionless"),
+    ("process.compressor", "chart_conditions", "dimensionless"),
+    ("process.compressor", "impeller_diameter", "length"),
     (
         "process.compressor",
         "surge_control_margin",
         "dimensionless",
     ),
-    ("process.compressor", "chart_conditions", "dimensionless"),
-    ("process.compressor", "impeller_diameter", "length"),
     (
         "process.compressor",
         "surge_control_factor",

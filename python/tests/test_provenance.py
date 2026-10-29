@@ -142,7 +142,8 @@ def test_the_block_exists_for_every_registered_id() -> None:
     registered = {entry["id"] for entry in [*CALCS, *MODELS]}
 
     assert set(PROVENANCE) == registered
-    assert len(registered) == 260
+    # 260 -> 262: the sound speed and the map machine (2026-10-28).
+    assert len(registered) == 262
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

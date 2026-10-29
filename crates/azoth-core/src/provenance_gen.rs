@@ -3348,7 +3348,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.compressor",
         name: "Compressor",
         spec_path: "specs/models/process/compressor.toml",
-        spec_sha256: "4b8c59a6a038b2551363bbe64fcb15cf9ba236bd0d000384afa0ef5caeb21072",
+        spec_sha256: "0099fc03e8fb1186c254a15dcad77e0c6a8d3dee38bbc0bd526289bad7acea61",
         python_path: "python/src/azoth/process/reference/compressor.py",
         python_sha256: "76ba3d8687499cdda38f96d4d9f17b2230b140461043e0b029c3f91a6fd3ced9",
         rust_path: "crates/azoth-process/src/models/compressor.rs",

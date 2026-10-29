@@ -1422,6 +1422,7 @@
               "unit_ops.simple_absorber",
               "unit_ops.stripping_column",
               "unit_ops.heat_exchanger",
+              "unit_ops.map_turbo_expander_compressor",
               "unit_ops.turbo_expander_compressor",
               "unit_ops.component_splitter",
               "unit_ops.mixer",
@@ -4684,6 +4685,260 @@
     },
     {
       "family": "machine",
+      "id": "unit_ops.map_turbo_expander_compressor",
+      "model": "process.map_turbo_expander_compressor",
+      "name": "Map turbo-expander compressor",
+      "parameters": [
+        {
+          "description": "the bearing loss taken off the shaft power; the class defaults it to 0",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "bearing_loss",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the isentropic compressor's efficiency, between 0 and 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "compressor_isentropic_efficiency",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the isentropic compressor's outlet pressure; the palette carries no map, so the specified-pressure mode is the one it runs",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "compressor_outlet_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the speed the specified mode reports, rpm; the class defaults it to 3000",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "compressor_speed",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the expander's isentropic efficiency, between 0 and 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "expander_isentropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an isentropic efficiency is a fraction",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the expander's outlet pressure",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "expander_out_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the expander power that reaches the shaft; the class defaults it to 0.98",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "mechanical_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the mechanical efficiency is a fraction of the expander's power",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "which solve runs, `specified_pressures` or `balanced_speed`; the runnable palette default is the specified mode, because balanced speed needs a map",
+          "dimension": null,
+          "kind": "enum",
+          "name": "shaft_mode",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "specified_pressures",
+            "balanced_speed"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "expander_feed"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "compressor_feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "expander_outlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "compressor_outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/expander/MapTurboExpanderCompressor.java",
+      "unmodelled_ranges": [
+        "expander_t",
+        "expander_p",
+        "compressor_t",
+        "compressor_p"
+      ]
+    },
+    {
+      "family": "machine",
       "id": "unit_ops.turbo_expander_compressor",
       "model": "process.turbo_expander_compressor",
       "name": "Turbo-expander compressor",
@@ -6820,6 +7075,7 @@
       "source": "NeqSim process/equipment/compressor/Compressor.java",
       "unmodelled_ranges": [
         "speed",
+        "surge_control_margin",
         "inlet_t"
       ]
     },

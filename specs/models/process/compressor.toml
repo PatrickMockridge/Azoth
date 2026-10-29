@@ -97,6 +97,16 @@ type = "enum"
 values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
 optional = true
 description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; `interpolate` and `interpolate_and_extrapolate` are the two alternative map lookups; `khader_2015` is the Mach-number normalised map.\n"
+[inputs.chart_conditions]
+type = "vector"
+unit = "dimensionless"
+length = "four"
+optional = true
+description = "`setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps.\n"
+[inputs.impeller_diameter]
+unit = "m"
+optional = true
+description = "the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps.\n"
 [inputs.surge_curve]
 type = "record_list"
 row_type = "CompressorSurgePoint"
@@ -116,16 +126,6 @@ description = "`setSurgeControlMargin`: the control line as a fraction above the
 type = "boolean"
 optional = true
 description = "`getAntiSurge().setActive(true)`: whether the run-time recycle block runs. Absent is the class's `false`.\n"
-[inputs.chart_conditions]
-type = "vector"
-unit = "dimensionless"
-length = "four"
-optional = true
-description = "`setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps.\n"
-[inputs.impeller_diameter]
-unit = "m"
-optional = true
-description = "the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps.\n"
 [inputs.surge_control_factor]
 unit = "dimensionless"
 optional = true

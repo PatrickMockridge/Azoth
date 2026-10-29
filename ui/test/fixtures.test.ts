@@ -54,13 +54,13 @@ const refused = decodeEnvelope(brokenJson);
 
 describe("the catalogue", () => {
   it("is the palette, with a model for all but one and a kernel for all but one", () => {
-    // **The two counts moved together, and that is the entry that moved them.** The rate-based
-    // packed column was a refusal by name and is now a kernel with a model of its own, so the
-    // library the fixture captures has twenty-eight of each - and `simple_absorber` is the one
-    // entry left with neither, refused on measured evidence rather than for want of a port.
-    expect(catalogue.unit_ops).toHaveLength(30);
-    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(29);
-    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(29);
+    // **The two counts move together, and that is the entry that moved them.** The map machine
+    // was the last palette entry to land, so thirty of the thirty-one carry a model and a kernel
+    // - and `simple_absorber` is the one entry left with neither, refused on measured evidence
+    // rather than for want of a port.
+    expect(catalogue.unit_ops).toHaveLength(31);
+    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(30);
+    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(30);
     expect(catalogue.unit_ops.filter((entry) => entry.model === null).map((e) => e.id)).toEqual([
       "unit_ops.simple_absorber",
     ]);

@@ -33,11 +33,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `max_speed` | dimensionless | *Optional.* `setMaximumSpeed`: the speed-solve mode's ceiling, rpm. Absent takes the class's `30000`. |
 | `limit_speed` | - | *Optional.* `setLimitSpeed`: peg the solve at `min_speed`/`max_speed` when it leaves them, and report the chart's own pressure at the peg. Absent is `false`, which lets an out-of-range speed stand. |
 | `chart_type` | fan_law / interpolate / interpolate_and_extrapolate / khader_2015 | *Optional.* `setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; `interpolate` and `interpolate_and_extrapolate` are the two alternative map lookups; `khader_2015` is the Mach-number normalised map. |
+| `chart_conditions` | dimensionless | *Optional.* `setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps. |
+| `impeller_diameter` | m | *Optional.* the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps. |
 | `surge_curve` | - | *Optional.* the surge boundary, `getSurgeCurve().setCurve`'s measured (flow, head) rows, in the same units as `curve`. **Absent is no boundary**: the surge read-outs are then null and the anti-surge block cannot fire. The class builds no curve from `setCurves` either. |
 | `surge_control_margin` | dimensionless | *Optional.* `setSurgeControlMargin`: the control line as a fraction above the surge flow, `getControlLineFlow = surgeFlow (1 + margin)`. Absent takes the class's `0.0`, and a negative margin is refused as `setSurgeControlMargin` refuses it. |
 | `anti_surge_active` | - | *Optional.* `getAntiSurge().setActive(true)`: whether the run-time recycle block runs. Absent is the class's `false`. |
-| `chart_conditions` | dimensionless | *Optional.* `setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps. |
-| `impeller_diameter` | m | *Optional.* the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps. |
 | `surge_control_factor` | dimensionless | *Optional.* `AntiSurge.surgeControlFactor`: the recycle target's multiple of the surge flow. Absent takes the class's `1.05`. Read only when `anti_surge_active` is set. |
 
 

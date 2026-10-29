@@ -5188,11 +5188,11 @@ def compressor(
     max_speed: float | None = None,
     limit_speed: bool | None = None,
     chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: float | None = None,
     surge_curve: list[CompressorSurgePoint] | None = None,
     surge_control_margin: float | None = None,
     anti_surge_active: bool | None = None,
-    chart_conditions: list[float] | None = None,
-    impeller_diameter: float | None = None,
     surge_control_factor: float | None = None,
 ) -> CompressorResult: ...
 def cooler(
