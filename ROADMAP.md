@@ -797,9 +797,10 @@ a claim nothing holds.
   chart's measured lines. What is still owed is the map surface around it:
   `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
   (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls; both
-  classes' `toJson`/`toMap` reports and the map machine's `feasible` flag; and
-  `ExpanderChartKhader`'s two **stated** sound speeds, which the class reads and this port
-  takes as inputs - `eos.sound_speed` now exists to close that. **Anti-surge landed** - the two boundary splines, the chart's
+  classes' `toJson`/`toMap` reports and the map machine's `feasible` flag. **The expander
+  chart's two stated sound speeds are closed**: its own surface reads them from
+  `eos.sound_speed`, and the class's `830.84` m/s is recorded as its unflashed doubling.
+  **Anti-surge landed** - the two boundary splines, the chart's
   generated surge and stonewall curves, the machine's surge read-outs and `run`'s recycle
   block. What it left owed is the steady `AntiSurgeRecycleCalculator`, the legacy
   `Calculator.runAntiSurgeCalc` step, `AntiSurgeController` and the dynamic/application layer

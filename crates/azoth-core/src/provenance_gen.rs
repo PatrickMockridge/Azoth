@@ -3768,7 +3768,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.turbo_expander_compressor",
         name: "Turbo-expander compressor",
         spec_path: "specs/models/process/turbo_expander_compressor.toml",
-        spec_sha256: "1a608f37f5c0a34e2e5f930f26612069848c912fa030e6694dd8f7de15139f48",
+        spec_sha256: "65963a2d3b77b0fda767f8de991b9df6fa3a70b43120204bc867edf2d93798ef",
         python_path: "python/src/azoth/process/reference/turbo_expander_compressor.py",
         python_sha256: "2eba3ab8d45c16d2bc94002146a38dae9072ae0d04d8c88ec302d2ae251f5e7b",
         rust_path: "crates/azoth-process/src/models/turbo_expander_compressor.rs",

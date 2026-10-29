@@ -311,12 +311,41 @@ mod tests {
 
     #[test]
     fn the_head_scales_with_the_local_sound_speed() {
-        // The capture's reference phase sound speed and two system-level ones.
+        // The class's numbers on the capture's SRK reference fluid: its phase value fits the
+        // map, and its **unflashed** system value is twice that, which is the artefact the
+        // README records. The port reads the flashed value, which is the phase value.
         let chart = ExpanderChart::new(&table(), 415.419842626026).expect("a valid map");
         let reference = chart.stage_head_drop(0.7, 1.0, 830.839685252052);
         let carbon_dioxide = chart.stage_head_drop(0.7, 1.0, 459.52905504799423);
         assert!((reference - 148_000.00000000003).abs() < 1.0e-6);
         assert!((carbon_dioxide - 45_274.45202145469).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn the_two_speeds_are_read_from_the_sound_speed_model() {
+        use azoth_core::units::{kelvins, pascals};
+        use azoth_eos::Cubic;
+        use azoth_eos::databank;
+
+        // The reference fluid the class fits its map in: methane/ethane at 50 bara, 298.15 K.
+        // azoth's cubic is PR, so its phase value is the port's own (the capture's `415.4198`
+        // is the same fluid on SRK); what the test holds is that the chart is *built* and read
+        // from a computed speed rather than a stated one.
+        let names = ["methane".to_string(), "ethane".to_string()];
+        let (mixture, _ideal) =
+            databank::mixture_of(&["methane", "ethane"], Cubic::Pr, None).expect("resolves");
+        let speed =
+            azoth_eos::sound_speed(&names, kelvins(298.15), pascals(5_000_000.0), &[0.9, 0.1])
+                .expect("the state gives a speed");
+        assert!(speed.sound_speed.value > 300.0 && speed.sound_speed.value < 500.0);
+
+        let chart = ExpanderChart::new(&table(), speed.sound_speed.value).expect("a valid map");
+        // **A flashed system reports the phase value**, so the round trip is the map's own head
+        // and not the doubled one the class reads on an unflashed system.
+        assert!((speed.system_sound_speed.value - speed.sound_speed.value).abs() < 1.0e-9);
+        let head = chart.stage_head_drop(0.7, 1.0, speed.system_sound_speed.value);
+        assert!((head - 37_000.0).abs() < 1.0e-6, "head: {head}");
+        let _ = mixture;
     }
 
     #[test]

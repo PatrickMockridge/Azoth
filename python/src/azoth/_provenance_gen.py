@@ -2768,7 +2768,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.turbo_expander_compressor': {
         "calc_id": 'process.turbo_expander_compressor',
         "name": 'Turbo-expander compressor',
-        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '1a608f37f5c0a34e2e5f930f26612069848c912fa030e6694dd8f7de15139f48'},
+        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '65963a2d3b77b0fda767f8de991b9df6fa3a70b43120204bc867edf2d93798ef'},
         "code": [{'path': 'python/src/azoth/process/reference/turbo_expander_compressor.py', 'sha256': '2eba3ab8d45c16d2bc94002146a38dae9072ae0d04d8c88ec302d2ae251f5e7b'}, {'path': 'crates/azoth-process/src/models/turbo_expander_compressor.rs', 'sha256': '74a8b646738bb512c440df6756cffdb7728bf0dfc468a86865ebdc83343cc8f4'}],
         "source": 'NeqSim process/equipment/expander/TurboExpanderCompressor.java',
         "verification": 'partially_verified',
