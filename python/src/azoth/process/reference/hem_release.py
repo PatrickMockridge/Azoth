@@ -354,7 +354,7 @@ def _states(
                     diagnostics.append(
                         (
                             "THROAT_MACH_MISMATCH",
-                            f"Equilibrium Mach={mach}; phase-boundary maximum may be nonsmooth",
+                            f"Equilibrium Mach={mach:.6}; phase-boundary maximum may be nonsmooth",
                         )
                     )
             else:

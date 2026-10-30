@@ -569,7 +569,7 @@ pub fn hem_release(
                             diagnostics.push(HemReleaseDiagnostic {
                                 code: "THROAT_MACH_MISMATCH".to_string(),
                                 message: format!(
-                                    "Equilibrium Mach={mach}; phase-boundary maximum may be \
+                                    "Equilibrium Mach={mach:.6}; phase-boundary maximum may be \
                                      nonsmooth"
                                 ),
                             });
