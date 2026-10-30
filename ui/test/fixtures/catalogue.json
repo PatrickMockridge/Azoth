@@ -8567,6 +8567,11 @@
       "factor": 1000000.0,
       "offset": 0.0
     },
+    "N": {
+      "dimension": "force",
+      "factor": 1.0,
+      "offset": 0.0
+    },
     "N/m": {
       "dimension": "surface_tension",
       "factor": 1.0,

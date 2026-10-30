@@ -52,7 +52,7 @@ authority is a generator rather than a proof.
 
 **The axiom gate is what makes a proof count.** `tools/check_lean_axioms.py` refuses a
 theorem resting on anything outside the three axioms Lean permits — **68** `#print axioms`
-lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, **76** in the generated
+lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, **77** in the generated
 `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the
 dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the
 palette's input table to the vocabulary's own exponents - and **9** in the generated

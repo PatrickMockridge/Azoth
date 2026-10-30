@@ -49,6 +49,9 @@ exponents = [1, 0, -1, 0, 0, 0, 0]
 id = "pressure"
 exponents = [-1, 1, -2, 0, 0, 0, 0]
 [[dimensions]]
+id = "force"
+exponents = [1, 1, -2, 0, 0, 0, 0]
+[[dimensions]]
 id = "dynamic_viscosity"
 exponents = [-1, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
@@ -208,6 +211,12 @@ dimension = "pressure"
 pint = "pascal"
 uom = "pressure::pascal"
 rust_ctor = "pascals"
+[[units]]
+id = "N"
+dimension = "force"
+pint = "newton"
+uom = "force::newton"
+rust_ctor = "newtons"
 [[units]]
 id = "s"
 dimension = "time"

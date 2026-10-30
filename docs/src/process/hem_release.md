@@ -74,7 +74,7 @@ not an equation, and both implementations read it from here.
 - **the fluid is PR with the classic mixing rule**, because this library's databank route resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other. NeqSim's own release tests are on SRK, so the oracle capture is re-cased on PR and the SRK rows are evidence beside it.
 - **a station carries the flash's phase and the gas mass fraction**: a cubic flash has at most one gas and one liquid phase, so the class's phase-mass-fraction map is the same fact. The class's `OIL` and `AQUEOUS` are unreachable here and are not fabricated.
 - **the class's warm-start K-value toggle has no counterpart**: this library's flashes are deterministic and carry no warm start.
-- **`SourceTermFrame`'s payload is this result.** Its schema, UUID, sequence, time and fingerprint are session state, and this library's provenance block is the envelope; its advective momentum is left to the consumer because the vocabulary has no force unit.
+- **`SourceTermFrame`'s payload is this result.** Its schema, UUID, sequence, time and fingerprint are session state, and this library's provenance block is the envelope; its advective momentum is `mass_flow_rate` times the exit station's velocity, left to the consumer.
 
 ## Cases
 

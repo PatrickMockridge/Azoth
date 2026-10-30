@@ -89,6 +89,8 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (-2, 1, -1, 0, 0, 0, 0): "MassFlux",
     (2, 0, -1, 0, 0, 0, 0): "DiffusionCoefficient",
     (-1, 1, -2, 0, 0, 0, 0): "Pressure",
+    # `F = ma`, over the existing length, mass and time slots: no new base slot.
+    (1, 1, -2, 0, 0, 0, 0): "Force",
     (-1, 1, -1, 0, 0, 0, 0): "DynamicViscosity",
     (0, 0, 0, 0, 1, 0, 0): "ThermodynamicTemperature",
     (2, 1, -3, 0, 0, 0, 0): "Power",
@@ -182,6 +184,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "W/(m*K)": "Dimension.Power / (Dimension.Length * Dimension.Temperature)",
     "W/(m**2*K)": "Dimension.Power / (Dimension.Area * Dimension.Temperature)",
     "W/K": "Dimension.Power / Dimension.Temperature",
+    "N": "Dimension.Force",
     "N/m": "Dimension.Force / Dimension.Length",
     "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
     "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",

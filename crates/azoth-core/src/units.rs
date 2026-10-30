@@ -17,7 +17,7 @@
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
-    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
+    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy, Force,
     HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate, Molality, MolarConcentration,
     MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
     SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
@@ -27,17 +27,17 @@ pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
     area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::btu_it, energy::joule,
-    energy::kilojoule, energy::megajoule, heat_transfer::watt_per_square_meter_kelvin,
-    length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
-    length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
-    mass_flux::kilogram_per_square_meter_second, mass_rate::kilogram_per_hour,
-    mass_rate::kilogram_per_second, mass_rate::ton_per_hour, molality::mole_per_kilogram,
-    molar_concentration::kilomole_per_cubic_meter, molar_concentration::mole_per_cubic_meter,
-    molar_energy::joule_per_mole, molar_energy::kilojoule_per_mole,
-    molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
-    molar_volume::cubic_meter_per_mole, power::kilowatt, power::megawatt, power::watt,
-    pressure::atmosphere, pressure::bar, pressure::kilopascal, pressure::megapascal,
-    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
+    energy::kilojoule, energy::megajoule, force::newton,
+    heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::centimeter,
+    length::foot, length::inch, length::meter, length::millimeter, mass::kilogram, mass::ton,
+    mass_density::kilogram_per_cubic_meter, mass_flux::kilogram_per_square_meter_second,
+    mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
+    molality::mole_per_kilogram, molar_concentration::kilomole_per_cubic_meter,
+    molar_concentration::mole_per_cubic_meter, molar_energy::joule_per_mole,
+    molar_energy::kilojoule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
+    molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::kilowatt,
+    power::megawatt, power::watt, pressure::atmosphere, pressure::bar, pressure::kilopascal,
+    pressure::megapascal, pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
     specific_heat_capacity::kilojoule_per_kilogram_kelvin, surface_tension::newton_per_meter,
     temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
     thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
@@ -234,6 +234,12 @@ pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
 #[must_use]
 pub fn watts_per_kelvin(value: f64) -> ThermalConductance {
     ThermalConductance::new::<watt_per_kelvin>(value)
+}
+
+/// A force in newtons.
+#[must_use]
+pub fn newtons(value: f64) -> Force {
+    Force::new::<newton>(value)
 }
 
 /// A surface tension in newtons per metre.
