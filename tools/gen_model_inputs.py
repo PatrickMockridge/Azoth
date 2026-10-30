@@ -295,6 +295,16 @@ def format_rust(text: str, generator: str) -> str:
     return proc.stdout
 
 
+#: Process models that are calculations rather than flowsheet units.
+#:
+#: Every other `process.*` id is a unit operation a palette entry names. A release source
+#: term is a calculation over a fluid with no ports and no place in a flowsheet, so it is
+#: reached by its case and its Python wrapper and by no palette entry - a fact, not a defect.
+NON_UNIT_MODELS = {
+    "process.hem_release": "a release source term is a calculation over a fluid, not a unit",
+}
+
+
 def main() -> None:
     check = "--check" in sys.argv
     palette = load_palette()
@@ -311,9 +321,10 @@ def main() -> None:
     rows.sort(key=lambda row: row[0]["id"])
 
     # A model no palette entry can reach is a spec nothing runs, which is a defect rather than
-    # a curiosity - so it stops the generator rather than being left out of the table.
+    # a curiosity - so it stops the generator rather than being left out of the table. The
+    # exception is the declared calculation above, which no palette entry *should* reach.
     claimed = {model_id_for(entry["id"]) for entry in palette}
-    orphans = sorted(set(models) - claimed)
+    orphans = sorted(set(models) - claimed - set(NON_UNIT_MODELS))
     if orphans:
         sys.exit(
             "gen_model_inputs: these models are named by no palette entry, so nothing can run "

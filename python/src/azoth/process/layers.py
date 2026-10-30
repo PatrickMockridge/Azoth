@@ -916,7 +916,41 @@ def _plug_flow_reactor(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _hem_release(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.hem_release`'s stations, from the reference's own arithmetic.
+
+    **The enthalpy and entropy are not dumped.** The capture prints NeqSim's specific `h`
+    and `s` on the ideal-gas datum, and this library's datum differs by a constant; every
+    other station field is a state or a flux and compares directly. The four stations are
+    the record's own rows, so the case holds the rate and this dump holds the profile.
+    """
+    from azoth.process.reference.hem_release import _states
+
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        [float(value) for value in inputs["upstream_z"]],
+        float(inputs["upstream_t"]),
+        float(inputs["upstream_p"]),
+        float(inputs["diameter"]),
+        float(inputs["discharge_coefficient"]),
+        float(inputs["back_pressure"]),
+    )
+    dumped: dict[str, float] = {
+        "mass_flow_kg_s": 0.0 if states.mass_flow is None else states.mass_flow
+    }
+    for index, row in enumerate(states.stations):
+        prefix = f"station_{index}_"
+        dumped[prefix + "p_pa"] = row.pressure
+        dumped[prefix + "t_k"] = row.temperature
+        dumped[prefix + "density_kg_m3"] = row.density
+        dumped[prefix + "velocity_m_per_s"] = row.velocity
+        dumped[prefix + "mass_flux_kg_m2_s"] = row.mass_flux
+        dumped[prefix + "gas_mass_fraction"] = row.gas_mass_fraction
+    return dumped
+
+
 DUMPERS: dict[str, Dumper] = {
+    "process.hem_release": _hem_release,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -1223,6 +1257,20 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    LayerCase(
+        model="process.hem_release",
+        case="methane_50bara_choked",
+        capture="process_hem_release.tsv",
+        block=0,
+        identified_by=("#label", "methane_50bara_choked"),
+    ),
+    LayerCase(
+        model="process.hem_release",
+        case="propane_flashes_through_the_opening",
+        capture="process_hem_release.tsv",
+        block=11,
+        identified_by=("#label", "propane_20bara"),
+    ),
     LayerCase(
         model="process.rate_based_packed_column",
         case="co2_water_absorber",

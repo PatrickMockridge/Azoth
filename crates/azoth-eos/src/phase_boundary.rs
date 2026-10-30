@@ -355,7 +355,7 @@ pub fn phase_boundary_pressure(
 }
 
 /// A composition must be one entry per component, in `[0, 1]`, summing to one.
-pub(crate) fn check_composition(values: &[f64], n: usize, field: &str) -> Result<()> {
+pub fn check_composition(values: &[f64], n: usize, field: &str) -> Result<()> {
     if values.len() != n {
         return Err(AzothError::invalid_input(
             field,

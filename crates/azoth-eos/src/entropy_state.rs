@@ -55,6 +55,8 @@ pub struct EntropyState {
     pub phase: Phase,
     /// The vapour fraction where the state is two-phase.
     pub vapour_fraction: Option<f64>,
+    /// The gas phase's share of the mass; zero or one when the state is one phase.
+    pub gas_mass_fraction: f64,
 }
 
 /// How one class stops its entropy root.
@@ -120,14 +122,28 @@ pub fn isentropic_state(
             "the pressure sample {pressure} Pa is not positive"
         )));
     }
-    if mixture.len() == 1 {
-        if let Some(state) = saturation_state(
+    if mixture.len() == 1
+        && let Some(bounds) = saturation_bounds(mixture, ideal_gas, z, pressure)?
+    {
+        let s_liquid = bounds.liquid_s / molar_mass;
+        let s_vapour = bounds.vapour_s / molar_mass;
+        if (s_liquid..=s_vapour).contains(&target) {
+            return quality_state(&bounds, pressure, molar_mass, target, evaluations);
+        }
+        let side = if target < s_liquid {
+            RootSide::Liquid
+        } else {
+            RootSide::Vapour
+        };
+        if let Some(state) = pure_single_phase_state(
             mixture,
             ideal_gas,
             z,
             molar_mass,
             target,
             pressure,
+            &bounds,
+            side,
             evaluations,
         )? {
             return Ok(state);
@@ -146,18 +162,24 @@ pub fn isentropic_state(
     )
 }
 
-/// The pure fluid's saturation-quality state, where the target entropy lies between the
-/// saturated phases. `None` sends the caller to the TP root.
-#[allow(clippy::too_many_arguments)] // one argument per input the assembly reads
-fn saturation_state(
+/// The pure fluid's saturated phases at one pressure.
+struct SaturationBounds {
+    temperature: f64,
+    liquid_s: f64,
+    vapour_s: f64,
+    liquid_h: f64,
+    vapour_h: f64,
+    liquid_root: f64,
+    vapour_root: f64,
+}
+
+/// The pure fluid's saturated phases, or `None` where the pressure has no bracket.
+fn saturation_bounds(
     mixture: &Mixture,
     ideal_gas: &IdealGasModel,
     z: &[f64],
-    molar_mass: f64,
-    target: f64,
     pressure: f64,
-    evaluations: &mut u32,
-) -> Result<Option<EntropyState>, EntropyStateError> {
+) -> Result<Option<SaturationBounds>, EntropyStateError> {
     let component = &mixture.components()[0];
     let tc = component.tc.value;
     let omega = component.omega;
@@ -194,22 +216,50 @@ fn saturation_state(
     }
     let mut lower = low_t;
     let mut upper = high_t;
+    let mut f_lower = p_low - pressure;
+    let mut f_upper = p_high - pressure;
+    let mut temperature = 0.5 * (lower + upper);
+    let mut side = 0_i32;
     for _ in 0..BISECTION_STEPS {
-        let middle = 0.5 * (lower + upper);
-        let trial = match pure_saturation(component.tc, component.pc, omega, kelvins(middle)) {
+        if f_upper == f_lower {
+            break;
+        }
+        // **Illinois, not plain bisection.** The saturation pressure is a smooth,
+        // exponentially varying function of temperature, so a secant on the bracket reaches
+        // the same root in a third of the evaluations - which is what the Python twin's
+        // forty-nine samples make a measurable cost rather than a curiosity.
+        let next = (lower * f_upper - upper * f_lower) / (f_upper - f_lower);
+        temperature = if next > lower && next < upper {
+            next
+        } else {
+            0.5 * (lower + upper)
+        };
+        let trial = match pure_saturation(component.tc, component.pc, omega, kelvins(temperature)) {
             Ok(result) => result.p_sat.value,
             Err(_) => return Ok(None),
         };
-        if trial < pressure {
-            lower = middle;
+        let residual = trial - pressure;
+        if residual < 0.0 {
+            lower = temperature;
+            f_lower = residual;
+            if side == -1 {
+                f_upper *= 0.5;
+            }
+            side = -1;
         } else {
-            upper = middle;
+            upper = temperature;
+            f_upper = residual;
+            if side == 1 {
+                f_lower *= 0.5;
+            }
+            side = 1;
         }
-        if upper - lower <= ROOT_TOLERANCE * 1.0_f64.max(middle) {
+        if residual.abs() <= 1.0e-9 * pressure
+            || upper - lower <= ROOT_TOLERANCE * 1.0_f64.max(temperature)
+        {
             break;
         }
     }
-    let temperature = 0.5 * (lower + upper);
     let reduced = match mixture.reduced_parameters(kelvins(temperature), pascals(pressure)) {
         Ok(reduced) => reduced,
         Err(_) => return Ok(None),
@@ -244,36 +294,226 @@ fn saturation_state(
     let (Ok(liquid), Ok(vapour)) = (liquid, vapour) else {
         return Ok(None);
     };
-    let s_liquid = liquid.s.value / molar_mass;
-    let s_vapour = vapour.s.value / molar_mass;
-    if s_vapour <= s_liquid || !(s_liquid..=s_vapour).contains(&target) {
-        return Ok(None);
-    }
+    Ok(Some(SaturationBounds {
+        temperature,
+        liquid_s: liquid.s.value,
+        vapour_s: vapour.s.value,
+        liquid_h: liquid.h.value,
+        vapour_h: vapour.h.value,
+        liquid_root,
+        vapour_root,
+    }))
+}
+
+/// The two-phase state at the target entropy, from the saturated phases.
+fn quality_state(
+    bounds: &SaturationBounds,
+    pressure: f64,
+    molar_mass: f64,
+    target: f64,
+    evaluations: &mut u32,
+) -> Result<EntropyState, EntropyStateError> {
+    let s_liquid = bounds.liquid_s / molar_mass;
+    let s_vapour = bounds.vapour_s / molar_mass;
     *evaluations += 1;
-    let quality = (target - s_liquid) / (s_vapour - s_liquid);
+    let quality = ((target - s_liquid) / (s_vapour - s_liquid)).clamp(0.0, 1.0);
     // **The EOS volume, unshifted.** The class uses `getVolume` with volume correction
     // off in its own tests - a density correction is not part of the acoustic derivative.
-    let v_liquid = liquid_root * MOLAR_GAS_CONSTANT * temperature / pressure;
-    let v_vapour = vapour_root * MOLAR_GAS_CONSTANT * temperature / pressure;
+    let v_liquid = bounds.liquid_root * MOLAR_GAS_CONSTANT * bounds.temperature / pressure;
+    let v_vapour = bounds.vapour_root * MOLAR_GAS_CONSTANT * bounds.temperature / pressure;
     let volume = (1.0 - quality) * v_liquid + quality * v_vapour;
     if volume <= 0.0 || !volume.is_finite() {
         return Err(EntropyStateError(format!(
             "the saturation-quality volume at {pressure} Pa is {volume} m3/mol"
         )));
     }
-    Ok(Some(EntropyState {
+    Ok(EntropyState {
         pressure,
-        temperature,
+        temperature: bounds.temperature,
         density: molar_mass / volume,
-        molar_enthalpy: (1.0 - quality) * liquid.h.value + quality * vapour.h.value,
-        molar_entropy: (1.0 - quality) * liquid.s.value + quality * vapour.s.value,
+        molar_enthalpy: (1.0 - quality) * bounds.liquid_h + quality * bounds.vapour_h,
+        molar_entropy: (1.0 - quality) * bounds.liquid_s + quality * bounds.vapour_s,
         entropy_residual: (1.0 - quality) * s_liquid + quality * s_vapour - target,
         component_residual: 0.0,
         fugacity_residual: 0.0,
         phase_composition_residual: 0.0,
         phase: Phase::TwoPhase,
         vapour_fraction: Some(quality),
-    }))
+        // A pure fluid's two phases share one molar mass, so the mass fraction is the
+        // molar quality.
+        gas_mass_fraction: quality,
+    })
+}
+
+/// The pure fluid's single-phase state outside the saturation band, by a root on the
+/// saturated root's own branch.
+///
+/// **The TP flash is discontinuous at the saturation line** - its entropy jumps from the
+/// liquid branch to the vapour one - so a target just outside the band is a root a bisection
+/// across the line cannot close. NeqSim solves the same state with its pure-fluid `PSflash`;
+/// this is that solve, on the branch the target is on.
+#[allow(clippy::too_many_arguments)] // one argument per input the root reads
+fn pure_single_phase_state(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    z: &[f64],
+    molar_mass: f64,
+    target: f64,
+    pressure: f64,
+    bounds: &SaturationBounds,
+    side: RootSide,
+    evaluations: &mut u32,
+) -> Result<Option<EntropyState>, EntropyStateError> {
+    let t_sat = bounds.temperature;
+    let s_sat = if matches!(side, RootSide::Liquid) {
+        bounds.liquid_s / molar_mass
+    } else {
+        bounds.vapour_s / molar_mass
+    };
+    let mut low;
+    let mut high;
+    if matches!(side, RootSide::Liquid) {
+        low = t_sat;
+        let mut low_error = s_sat - target;
+        let mut span = 1.0_f64.max(t_sat * 0.005);
+        for _ in 0..BRACKET_STEPS {
+            if low_error <= 0.0 {
+                break;
+            }
+            low = (low - span).max(1.0);
+            let Some(state) = pure_root_state(
+                mixture,
+                ideal_gas,
+                z,
+                molar_mass,
+                target,
+                pressure,
+                low,
+                side,
+                evaluations,
+            ) else {
+                return Ok(None);
+            };
+            low_error = state.entropy_residual;
+            span *= 1.6;
+        }
+        if low_error > 0.0 {
+            return Ok(None);
+        }
+        high = t_sat;
+    } else {
+        high = t_sat;
+        let mut high_error = s_sat - target;
+        let mut span = 1.0_f64.max(t_sat * 0.005);
+        for _ in 0..BRACKET_STEPS {
+            if high_error >= 0.0 {
+                break;
+            }
+            high += span;
+            let Some(state) = pure_root_state(
+                mixture,
+                ideal_gas,
+                z,
+                molar_mass,
+                target,
+                pressure,
+                high,
+                side,
+                evaluations,
+            ) else {
+                return Ok(None);
+            };
+            high_error = state.entropy_residual;
+            span *= 1.6;
+        }
+        if high_error < 0.0 {
+            return Ok(None);
+        }
+        low = t_sat;
+    }
+    for _ in 0..BISECTION_STEPS {
+        let temperature = 0.5 * (low + high);
+        let Some(state) = pure_root_state(
+            mixture,
+            ideal_gas,
+            z,
+            molar_mass,
+            target,
+            pressure,
+            temperature,
+            side,
+            evaluations,
+        ) else {
+            return Ok(None);
+        };
+        if state.entropy_residual.abs() <= ENTROPY_TOLERANCE {
+            return Ok(Some(state));
+        }
+        if state.entropy_residual > 0.0 {
+            high = temperature;
+        } else {
+            low = temperature;
+        }
+        if high - low <= ROOT_TOLERANCE * 1.0_f64.max(temperature) {
+            break;
+        }
+    }
+    Ok(None)
+}
+
+/// One point on a saturated root's own branch.
+#[allow(clippy::too_many_arguments)] // one argument per input the state reads
+fn pure_root_state(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    z: &[f64],
+    molar_mass: f64,
+    target: f64,
+    pressure: f64,
+    temperature: f64,
+    side: RootSide,
+    evaluations: &mut u32,
+) -> Option<EntropyState> {
+    *evaluations += 1;
+    let reduced = mixture
+        .reduced_parameters(kelvins(temperature), pascals(pressure))
+        .ok()?;
+    let root = mixture.phase_state(&reduced, z, side).ok()?.z;
+    let state = molar_enthalpy_entropy(
+        mixture,
+        ideal_gas,
+        kelvins(temperature),
+        pascals(pressure),
+        z,
+        root,
+    )
+    .ok()?;
+    let volume = root * MOLAR_GAS_CONSTANT * temperature / pressure;
+    if volume <= 0.0 || !volume.is_finite() {
+        return None;
+    }
+    Some(EntropyState {
+        pressure,
+        temperature,
+        density: molar_mass / volume,
+        molar_enthalpy: state.h.value,
+        molar_entropy: state.s.value,
+        entropy_residual: state.s.value / molar_mass - target,
+        component_residual: 0.0,
+        fugacity_residual: 0.0,
+        phase_composition_residual: 0.0,
+        phase: if matches!(side, RootSide::Liquid) {
+            Phase::AllLiquid
+        } else {
+            Phase::AllVapour
+        },
+        vapour_fraction: None,
+        gas_mass_fraction: if matches!(side, RootSide::Liquid) {
+            0.0
+        } else {
+            1.0
+        },
+    })
 }
 
 /// The equilibrium state at a pressure by the bracketed TP entropy root.
@@ -404,11 +644,70 @@ fn tp_at(
         ideal_gas,
         z,
         molar_mass,
-        target,
+        Some(target),
         pressure,
         temperature,
         &flash,
     )
+}
+
+/// The equilibrium state at a stated `(pressure, temperature)`, with no target entropy.
+///
+/// The upstream stagnation state the release model starts from: its own entropy is what the
+/// expansion holds fixed, and this is the state that states it.
+///
+/// # Errors
+/// Whatever the flash or the assembly refuses.
+#[allow(clippy::too_many_arguments)] // one argument per input the state reads
+pub fn flashed_state(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    z: &[f64],
+    molar_mass: f64,
+    pressure: f64,
+    temperature: f64,
+    evaluations: &mut u32,
+) -> Result<EntropyState, EntropyStateError> {
+    *evaluations += 1;
+    let flash = pt_flash(mixture, kelvins(temperature), pascals(pressure), z)
+        .map_err(|error| EntropyStateError(format!("{error}")))?;
+    assemble(
+        mixture,
+        ideal_gas,
+        z,
+        molar_mass,
+        None,
+        pressure,
+        temperature,
+        &flash,
+    )
+}
+
+/// The mixture's molar mass, kg/mol.
+///
+/// # Errors
+/// `InvalidInput` for a component carrying no molar mass, or a total that is not positive.
+pub fn molar_mass_of(mixture: &Mixture, composition: &[f64]) -> azoth_core::Result<f64> {
+    let mut total = 0.0;
+    for (index, (component, fraction)) in mixture.components().iter().zip(composition).enumerate() {
+        let mass = component.molar_mass.ok_or_else(|| {
+            azoth_core::AzothError::invalid_input(
+                "molar_mass",
+                format!(
+                    "component {index} carries no molar mass, and a specific entropy divides \
+                     by it"
+                ),
+            )
+        })?;
+        total += fraction * mass;
+    }
+    if total <= 0.0 || !total.is_finite() {
+        return Err(azoth_core::AzothError::invalid_input(
+            "molar_mass",
+            format!("the mixture's molar mass is {total} kg/mol"),
+        ));
+    }
+    Ok(total)
 }
 
 /// Turn a flash into the assembled state, or refuse it.
@@ -418,7 +717,7 @@ fn assemble(
     ideal_gas: &IdealGasModel,
     z: &[f64],
     molar_mass: f64,
-    target: f64,
+    target: Option<f64>,
     pressure: f64,
     temperature: f64,
     flash: &crate::results::PtFlashResult,
@@ -486,18 +785,30 @@ fn assemble(
             let phase_residual = (flash.x.iter().sum::<f64>() - 1.0)
                 .abs()
                 .max((flash.y.iter().sum::<f64>() - 1.0).abs());
+            let liquid_mass = (1.0 - beta) * phase_molar_mass(mixture, &flash.x)?;
+            let vapour_mass = beta * phase_molar_mass(mixture, &flash.y)?;
+            let total_mass = liquid_mass + vapour_mass;
+            if total_mass <= 0.0 || !total_mass.is_finite() {
+                return Err(EntropyStateError(format!(
+                    "the two-phase mass at {pressure} Pa is {total_mass} kg/mol"
+                )));
+            }
             Ok(EntropyState {
                 pressure,
                 temperature,
                 density: molar_mass / volume,
                 molar_enthalpy,
                 molar_entropy,
-                entropy_residual: molar_entropy / molar_mass - target,
+                entropy_residual: match target {
+                    Some(target) => molar_entropy / molar_mass - target,
+                    None => 0.0,
+                },
                 component_residual: balance,
                 fugacity_residual: fugacity,
                 phase_composition_residual: phase_residual,
                 phase: flash.phase,
                 vapour_fraction: flash.vapour_fraction,
+                gas_mass_fraction: vapour_mass / total_mass,
             })
         }
         Phase::AllVapour | Phase::AllLiquid | Phase::Trivial => {
@@ -534,13 +845,38 @@ fn assemble(
                 density: molar_mass / volume,
                 molar_enthalpy: state.h.value,
                 molar_entropy: state.s.value,
-                entropy_residual: state.s.value / molar_mass - target,
+                entropy_residual: match target {
+                    Some(target) => state.s.value / molar_mass - target,
+                    None => 0.0,
+                },
                 component_residual: 0.0,
                 fugacity_residual: 0.0,
                 phase_composition_residual: 0.0,
                 phase: flash.phase,
                 vapour_fraction: None,
+                gas_mass_fraction: if matches!(flash.phase, Phase::AllVapour) {
+                    1.0
+                } else {
+                    0.0
+                },
             })
         }
     }
+}
+
+/// The molar mass of one phase, kg/mol.
+fn phase_molar_mass(mixture: &Mixture, composition: &[f64]) -> Result<f64, EntropyStateError> {
+    let mut total = 0.0;
+    for (index, (component, fraction)) in mixture.components().iter().zip(composition).enumerate() {
+        let mass = component
+            .molar_mass
+            .ok_or_else(|| EntropyStateError(format!("component {index} carries no molar mass")))?;
+        total += fraction * mass;
+    }
+    if total <= 0.0 || !total.is_finite() {
+        return Err(EntropyStateError(format!(
+            "a phase molar mass is {total} kg/mol"
+        )));
+    }
+    Ok(total)
 }

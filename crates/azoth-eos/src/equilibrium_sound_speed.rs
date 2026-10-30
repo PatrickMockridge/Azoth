@@ -278,7 +278,7 @@ pub fn equilibrium_speed_of(
         ));
     }
     crate::phase_boundary::check_composition(z, mixture.len(), "z")?;
-    let molar_mass = molar_mass_of(mixture, z)?;
+    let molar_mass = entropy_state::molar_mass_of(mixture, z)?;
 
     // The entropy the class reads from the state it was handed: ours is the flash at the
     // stated `(T, P, z)`, which is the state a caller's fluid is in after its own flash.
@@ -543,30 +543,6 @@ fn same_assemblage(first: Phase, second: Phase) -> bool {
             | (Phase::AllLiquid, Phase::AllLiquid)
             | (Phase::Trivial, Phase::Trivial)
     )
-}
-
-/// The mixture's molar mass, kg/mol.
-fn molar_mass_of(mixture: &Mixture, composition: &[f64]) -> Result<f64> {
-    let mut total = 0.0;
-    for (index, component) in mixture.components().iter().enumerate() {
-        let mass = component.molar_mass.ok_or_else(|| {
-            AzothError::invalid_input(
-                "molar_mass",
-                format!(
-                    "component {index} carries no molar mass, and a specific entropy divides \
-                     by it"
-                ),
-            )
-        })?;
-        total += composition[index] * mass;
-    }
-    if total <= 0.0 || !total.is_finite() {
-        return Err(AzothError::invalid_input(
-            "molar_mass",
-            format!("the mixture's molar mass is {total} kg/mol"),
-        ));
-    }
-    Ok(total)
 }
 
 /// The flashed state's specific entropy, J/(kg K).

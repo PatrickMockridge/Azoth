@@ -24,6 +24,7 @@ use crate::models::gas_scrubber::GasScrubberResult;
 use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
+use crate::models::hem_release::HemReleaseResult;
 use crate::models::manifold::ManifoldResult;
 use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
 use crate::models::mixer::MixerResult;
@@ -384,6 +385,26 @@ impl CalcResult for HeaterResult {
         "outlet_t",
         "outlet_h",
         "outlet_duty",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for HemReleaseResult {
+    const CALC_ID: &'static str = "process.hem_release";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "mass_flow_rate",
+        "choked",
+        "throat_sound_speed",
+        "component_mole_fractions",
+        "component_mass_fractions",
+        "stations",
+        "diagnostics",
+        "diagnostic_codes",
         "warnings",
     ];
 

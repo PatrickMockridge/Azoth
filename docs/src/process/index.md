@@ -26,6 +26,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.gibbs_reactor`](./gibbs_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/GibbsReactor.java |
 | [`process.heat_exchanger`](./heat_exchanger.md) | `direct composition` | NeqSim process/equipment/heatexchanger/HeatExchanger.java |
 | [`process.heater`](./heater.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Heater.java |
+| [`process.hem_release`](./hem_release.md) | `log_pressure_scan_golden_section` | NeqSim process/safety/release/HomogeneousEquilibriumReleaseModel.java |
 | [`process.manifold`](./manifold.md) | `direct composition` | NeqSim process/equipment/manifold/Manifold.java |
 | [`process.map_turbo_expander_compressor`](./map_turbo_expander_compressor.md) | `direct composition` | NeqSim process/equipment/expander/MapTurboExpanderCompressor.java |
 | [`process.mixer`](./mixer.md) | `direct composition` | NeqSim process/equipment/mixer/Mixer.java |

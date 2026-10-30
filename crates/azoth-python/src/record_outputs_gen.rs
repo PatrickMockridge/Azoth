@@ -502,6 +502,140 @@ impl From<&azoth_eos::results::FlowlineScaleSegment> for PyFlowlineScaleSegment 
     }
 }
 
+/// the model's assumption and warning records, in the order it forms them.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseDiagnostic"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseDiagnostic {
+    /// the stable machine code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the engineering detail.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyHemReleaseDiagnostic {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseDiagnostic(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseDiagnostic> for PyHemReleaseDiagnostic {
+    fn from(row: &azoth_process::models::hem_release::HemReleaseDiagnostic) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseStation"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseStation {
+    /// which station this row is.
+    #[pyo3(get)]
+    pub station: String,
+    /// the station's absolute pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the station's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// mass over EOS total volume.
+    #[pyo3(get)]
+    pub density: PyQty,
+    /// the station's molar enthalpy. The expansion's drop is read against the stagnation value.
+    #[pyo3(get)]
+    pub molar_enthalpy: PyQty,
+    /// the station's molar entropy, which the expansion holds fixed.
+    #[pyo3(get)]
+    pub molar_entropy: PyQty,
+    /// `sqrt(2 (h0 - h))`, the zero-slip acceleration from the stagnation enthalpy.
+    #[pyo3(get)]
+    pub velocity: PyQty,
+    /// `rho times velocity`, before the discharge coefficient.
+    #[pyo3(get)]
+    pub mass_flux: PyQty,
+    /// what the flash found at the station.
+    #[pyo3(get)]
+    pub phase: String,
+    /// the gas phase's share of the station's mass; one for a vapour state and zero for a liquid one. **A mass fraction, not the molar vapour fraction.**
+    #[pyo3(get)]
+    pub gas_mass_fraction: f64,
+}
+
+#[pymethods]
+impl PyHemReleaseStation {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseStation(station={}, pressure={:?}, temperature={:?}, density={:?}, molar_enthalpy={:?}, molar_entropy={:?}, velocity={:?}, mass_flux={:?}, phase={}, gas_mass_fraction={})",
+            self.station,
+            self.pressure,
+            self.temperature,
+            self.density,
+            self.molar_enthalpy,
+            self.molar_entropy,
+            self.velocity,
+            self.mass_flux,
+            self.phase,
+            self.gas_mass_fraction
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseStation> for PyHemReleaseStation {
+    fn from(row: &azoth_process::models::hem_release::HemReleaseStation) -> Self {
+        Self {
+            station: row.station.as_str().to_string(),
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            density: PyQty {
+                magnitude_si: row.density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            molar_enthalpy: PyQty {
+                magnitude_si: row.molar_enthalpy.value,
+                unit: "J/mol".to_string(),
+            },
+            molar_entropy: PyQty {
+                magnitude_si: row.molar_entropy.value,
+                unit: "J/(mol*K)".to_string(),
+            },
+            velocity: PyQty {
+                magnitude_si: row.velocity.value,
+                unit: "m/s".to_string(),
+            },
+            mass_flux: PyQty {
+                magnitude_si: row.mass_flux.value,
+                unit: "kg/(m**2*s)".to_string(),
+            },
+            phase: row.phase.as_str().to_string(),
+            gas_mass_fraction: row.gas_mass_fraction,
+        }
+    }
+}
+
 /// One row per profile point, in the order the points were given.
 #[pyclass(
     frozen,

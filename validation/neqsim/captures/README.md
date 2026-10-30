@@ -1079,3 +1079,33 @@ that is not a question those captures answer.
 `furst_probe.tsv` was written in the readable shape and in the order the phase builds its
 layers, for exactly this reason, and `python/src/azoth/eos/layers.py` carries the dumper
 that meets it.
+
+## The release model
+
+`process_hem_release.tsv` is `HomogeneousEquilibriumReleaseModel.calculate` on the pinned
+`ReleaseFlowModelTest`, `ReleaseFlowBenchmarkTest` and `ReleaseFlowEnsembleTest` states, plus
+the states those tests only reach through a builder or a flag.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe hem_release \
+  > captures/process_hem_release.tsv
+```
+
+**The `pr` rows are the oracle** because this library's databank route resolves Peng-Robinson
+and no other fluid. The NeqSim tests build `SystemSrkEos`; their `srk` rows are here as
+evidence beside the oracle, not as cases, and the difference between the two EOS on the same
+state is visible row to row. Each row carries the request, the status, the rate, the choked
+flag, the throat sound speed, every diagnostic and every station's pressure, temperature,
+density, enthalpy, entropy, velocity, mass flux, gas mass fraction and composition.
+
+Two rows are not cases because azoth has no input that expresses them: an empty fluid, which
+the class refuses as `INVALID`, and `setHydrateCheck(true)`, which it refuses as
+`UNSUPPORTED`. Both are printed with their status.
+
+**One row is a measured divergence.** The 80/20 propane/n-butane state at 300 K and 20 bar
+into 3 bar is `INVALID` in the class on both EOS - its bracketed mixture entropy root does
+not close - and this port converges, returning a valid result. The port's flash is not the
+class's, and a root one finds and the other does not is a fact about the two numerical
+routes rather than a tolerance to widen. The row stays evidence, and the port's answer is
+not cased against a class that has none.

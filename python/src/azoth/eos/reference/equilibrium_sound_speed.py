@@ -29,6 +29,7 @@ from azoth.eos.reference._entropy_state import (
     EntropyStateFailure,
     Evaluations,
     isentropic_state,
+    molar_mass_of,
 )
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
@@ -138,7 +139,7 @@ def equilibrium_sound_speed(
             f"fractions, and {z!r} has {len(z)}",
         )
     check_composition(list(z), len(mixture.components), "z")
-    mass = _molar_mass(mixture, list(z))
+    mass = molar_mass_of(mixture, list(z))
     if target is None:
         target = _specific_entropy_at(mixture, ideal_gas, t, p, list(z), mass)
 
@@ -359,21 +360,6 @@ class _Calculation:
             f"{sample.component_residual:.3e}, log fugacity residual = "
             f"{sample.fugacity_residual:.3e}"
         )
-
-
-def _molar_mass(mixture: Any, z: list[float]) -> float:
-    """The mixture's molar mass, kg/mol."""
-    total = 0.0
-    for component, fraction in zip(mixture.components, z, strict=True):
-        if component.molar_mass is None:
-            raise InvalidInputError(
-                "molar_mass",
-                "a component carries no molar mass, and a specific entropy divides by it",
-            )
-        total += fraction * component.molar_mass.to("kg/mol").magnitude
-    if not total > 0.0:
-        raise InvalidInputError("molar_mass", f"the mixture's molar mass is {total} kg/mol")
-    return total
 
 
 def _specific_entropy_at(

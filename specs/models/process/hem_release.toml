@@ -1,0 +1,164 @@
+id = "process.hem_release"
+name = "Homogeneous-equilibrium orifice release"
+kind = "procedure"
+assumptions = [
+    "**an equilibrium isentropic short-opening model**, with zero slip and no pipe friction, heat transfer, solids or delayed flashing. It is not a pipe rupture; a zero-length opening aliases the exit to the accepted throat.",
+    "**48 intervals, 49 log-spaced samples** from the receiving pressure to the upstream pressure, the last at zero velocity; every interior local maximum is refined by golden section in linear pressure to `1e-7 P0` over 80 iterations, then the whole set is rescanned.",
+    "**each sample is the upstream specific-entropy state** through the shared helper: saturation quality for a pure fluid, a bracketed TP root for a mixture, targeting `1e-7` J/(kg K) over 100 bisections, and refusing a non-finite residual.",
+    "**the sample closures are the class's**: entropy residual at most `1e-5` J/(kg K), inventory at most `1e-8` of the total moles, phase-composition sum at most `1e-8`, interphase log-fugacity at most `1e-5`, and an enthalpy drop not below `-1e-5` J/kg. A trivial flash is `invalid`.",
+    "**the flow is choked when the throat pressure exceeds the receiving pressure by more than `1e-5` relative.** The throat's equilibrium sound speed is `eos.equilibrium_sound_speed` on the throat state; `|M - 1| > 0.05` is a warning, and a non-converged sound speed is a warning rather than a refusal.",
+    "**the CO2 guard is applied to every sample, not only upstream.** A CO2-bearing state below `216.592` K is `unsupported`; the number is the class's conservative screening threshold, not a solid-equilibrium boundary.",
+    "**no forward flow is a valid zero.** An upstream pressure at or below the receiving pressure reports `valid`, zero rate, no ambient station, and `NO_FORWARD_FLOW`.",
+    "**a failure carries no numeric payload**: the rate, the sound speed and the stations are absent, and one diagnostic says why. No `NaN` crosses the boundary.",
+    "**the status, station and phase words are this port's**: the class's `VALID` and `VALID_WITH_WARNINGS` are `valid` and `valid_with_warnings`, the four stations are snake case, and a cubic state's phases are `all_vapour`, `all_liquid` or `two_phase`.",
+    "**there is no inventory input.** The class's fluid amount sets the composition and not the rate, and its positive-inventory check has no counterpart in a calculation that never divides by an amount.",
+    "**the fluid is PR with the classic mixing rule**, because this library's databank route resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other. NeqSim's own release tests are on SRK, so the oracle capture is re-cased on PR and the SRK rows are evidence beside it.",
+    "**a station carries the flash's phase and the gas mass fraction**: a cubic flash has at most one gas and one liquid phase, so the class's phase-mass-fraction map is the same fact. The class's `OIL` and `AQUEOUS` are unreachable here and are not fabricated.",
+    "**the class's warm-start K-value toggle has no counterpart**: this library's flashes are deterministic and carry no warm start.",
+    "**`SourceTermFrame`'s payload is this result.** Its schema, UUID, sequence, time and fingerprint are session state, and this library's provenance block is the envelope; its advective momentum is left to the consumer because the vocabulary has no force unit.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/release/HomogeneousEquilibriumReleaseModel.java` is the port source, through its `calculate`. The class names no paper.",
+    "`validation/neqsim/captures/process_hem_release.tsv` - the class on the pinned release tests, re-cased on PR: the choked, unchoked and no-flow rows, the mixture, propane, both CO2 states and the scaling pair.",
+]
+[source]
+standard = "NeqSim process/safety/release/HomogeneousEquilibriumReleaseModel.java"
+edition = "Its `calculate`: the log-spaced pressure scan, the fixed-entropy sample at each pressure, the golden-section refinement of every sampled local maximum, the maximum-flux throat, the choked test, the throat equilibrium sound speed and its Mach warning, and the four stations."
+[algorithm]
+scheme = "log_pressure_scan_golden_section"
+initialisation = "log_spaced_pressure_scan"
+convergence = "relative"
+tolerance = 1.0e-7
+max_iterations = 80
+[implementations]
+python = "azoth.process.hem_release"
+rust = "azoth_process::hem_release"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. The order is the order of `upstream_z`, and a CO2 entry is the solid-capable guard's subject.\n"
+[inputs.upstream_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the upstream stagnation composition, checked rather than renormalised. The amount sets the composition and not the release rate, so no flow or inventory is stated.\n"
+[inputs.upstream_t]
+unit = "K"
+description = "the upstream stagnation temperature, which is also every sample's starting temperature for the entropy root.\n"
+[inputs.upstream_p]
+unit = "Pa"
+description = "the upstream stagnation pressure, which is the scan's upper end and the pressure the throat must beat to be choked.\n"
+[inputs.diameter]
+unit = "m"
+description = "the circular opening's diameter; the physical area is `pi d^2 / 4`.\n"
+[inputs.discharge_coefficient]
+unit = "dimensionless"
+description = "the effective-area factor in `(0, 1]`; the release rate is this times the area times the throat mass flux.\n"
+[inputs.back_pressure]
+unit = "Pa"
+description = "the receiving absolute pressure, which is the scan's lower end. At or above `upstream_p` the model reports no forward flow.\n"
+[outputs]
+[outputs.status]
+type = "string"
+description = "`valid`, `valid_with_warnings`, `invalid` or `unsupported`.\n"
+[outputs.mass_flow_rate]
+unit = "kg/s"
+optional = true
+description = "the release rate, or absent when the result is not usable. A valid no-forward-flow result states `0.0`.\n"
+[outputs.choked]
+type = "boolean"
+description = "whether the accepted flow is choked; false on failure and on no forward flow.\n"
+[outputs.throat_sound_speed]
+unit = "m/s"
+optional = true
+description = "the throat's equilibrium sound speed, when the flow is choked and the calculation converged; absent otherwise.\n"
+[outputs.component_mole_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the upstream overall mole fractions, which every station shares.\n"
+[outputs.component_mass_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the upstream overall mass fractions, `z_i M_i / sum(z M)`.\n"
+[outputs.stations]
+type = "record_list"
+description = "the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.\n"
+[outputs.stations.fields.station]
+type = "enum"
+values = ["upstream_stagnation", "throat_critical", "orifice_exit", "ambient_expanded"]
+description = "which station this row is.\n"
+[outputs.stations.fields.pressure]
+unit = "Pa"
+description = "the station's absolute pressure.\n"
+[outputs.stations.fields.temperature]
+unit = "K"
+description = "the station's temperature.\n"
+[outputs.stations.fields.density]
+unit = "kg/m**3"
+description = "mass over EOS total volume.\n"
+[outputs.stations.fields.molar_enthalpy]
+unit = "J/mol"
+description = "the station's molar enthalpy. The expansion's drop is read against the stagnation value.\n"
+[outputs.stations.fields.molar_entropy]
+unit = "J/(mol*K)"
+description = "the station's molar entropy, which the expansion holds fixed.\n"
+[outputs.stations.fields.velocity]
+unit = "m/s"
+description = "`sqrt(2 (h0 - h))`, the zero-slip acceleration from the stagnation enthalpy.\n"
+[outputs.stations.fields.mass_flux]
+unit = "kg/(m**2*s)"
+description = "`rho times velocity`, before the discharge coefficient.\n"
+[outputs.stations.fields.phase]
+type = "enum"
+values = ["all_vapour", "all_liquid", "two_phase"]
+description = "what the flash found at the station.\n"
+[outputs.stations.fields.gas_mass_fraction]
+unit = "dimensionless"
+description = "the gas phase's share of the station's mass; one for a vapour state and zero for a liquid one. **A mass fraction, not the molar vapour fraction.**\n"
+[outputs.diagnostics]
+type = "record_list"
+description = "the model's assumption and warning records, in the order it forms them.\n"
+[outputs.diagnostics.fields.code]
+type = "string"
+description = "the stable machine code.\n"
+[outputs.diagnostics.fields.message]
+type = "string"
+description = "the engineering detail.\n"
+[outputs.diagnostic_codes]
+type = "vector_string"
+length = "one per diagnostic"
+description = "the codes alone, so a case can hold the contract without asserting prose.\n"
+[[valid_range]]
+quantity = "upstream_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "upstream_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[[valid_range]]
+quantity = "diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an opening has a positive diameter"
+[[valid_range]]
+quantity = "discharge_coefficient"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "`ReleaseFlowRequest` refuses a coefficient outside `(0, 1]`"
+[[valid_range]]
+quantity = "back_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"

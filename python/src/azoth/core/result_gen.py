@@ -29,6 +29,8 @@ from azoth.core.record_outputs_gen import (
     DepositionSegmentRow,
     EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
+    HemReleaseDiagnostic,
+    HemReleaseStation,
     HydrateRiskPoint,
     KComponent,
     MineralEquilibriumRow,
@@ -6227,6 +6229,43 @@ class HeaterResult(_HasWarnings):
 
     #: the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.
     outlet_duty: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseResult(_HasWarnings):
+    """Result of ``process.hem_release``."""
+
+    CALC_ID: ClassVar[str] = "process.hem_release"
+
+    #: `valid`, `valid_with_warnings`, `invalid` or `unsupported`.
+    status: str
+
+    #: the release rate, or absent when the result is not usable. A valid no-forward-flow result states `0.0`.
+    mass_flow_rate: Q | None
+
+    #: whether the accepted flow is choked; false on failure and on no forward flow.
+    choked: bool
+
+    #: the throat's equilibrium sound speed, when the flow is choked and the calculation converged; absent otherwise.
+    throat_sound_speed: Q | None
+
+    #: the upstream overall mole fractions, which every station shares.
+    component_mole_fractions: tuple[float, ...]
+
+    #: the upstream overall mass fractions, `z_i M_i / sum(z M)`.
+    component_mass_fractions: tuple[float, ...]
+
+    #: the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+    stations: tuple[HemReleaseStation, ...]
+
+    #: the model's assumption and warning records, in the order it forms them.
+    diagnostics: tuple[HemReleaseDiagnostic, ...]
+
+    #: the codes alone, so a case can hold the contract without asserting prose.
+    diagnostic_codes: tuple[str, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

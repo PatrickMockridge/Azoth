@@ -93,6 +93,12 @@ import neqsim.process.equipment.util.AccelerationMethod;
 import neqsim.process.equipment.stream.StreamInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
+import neqsim.thermo.system.SystemSrkEos;
+import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
+import neqsim.process.safety.release.ReleaseFlowRequest;
+import neqsim.process.safety.release.ReleaseFlowResult;
+import neqsim.process.safety.release.ReleaseState;
+import java.util.Map;
 
 public class ProcessProbe {
   public static void main(String[] args) {
@@ -139,6 +145,9 @@ public class ProcessProbe {
         break;
       case "equilibrium_sound_speed":
         equilibriumSoundSpeedRows();
+        break;
+      case "hem_release":
+        hemReleaseRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -7372,5 +7381,149 @@ public class ProcessProbe {
       }
     }
     System.out.println(composition);
+  }
+
+  // === process.hem_release =====================================================
+
+  static void hemReleaseRows() {
+    // PR rows are the oracle: azoth's databank route resolves Peng-Robinson.
+    hemRow("methane_50bara_choked", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        50.0, 0.01, 0.62, 101325.0);
+    hemRow("methane_dilute_0_1bara", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        0.1, 0.01, 0.62, 500.0);
+    for (double ratio : new double[] {0.05, 0.30, 0.70, 0.90, 0.98}) {
+      hemRow("methane_dilute_back_" + ratio, false, new String[] {"methane"}, new double[] {1.0},
+          300.0, 0.1, 0.01, 0.62, ratio * 10000.0);
+    }
+    hemRow("methane_5bara_unchoked", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.62, 490000.0);
+    hemRow("methane_5bara_no_flow_at", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.62, 500000.0);
+    hemRow("methane_5bara_no_flow_above", false, new String[] {"methane"}, new double[] {1.0},
+        300.0, 5.0, 0.01, 0.62, 600000.0);
+    hemRow("methane_ethane_5bara", false, new String[] {"methane", "ethane"},
+        new double[] {1.0, 0.1}, 300.0, 5.0, 0.01, 0.62, 100000.0);
+    hemRow("propane_20bara", false, new String[] {"propane"}, new double[] {1.0}, 300.0, 20.0,
+        0.01, 0.62, 300000.0);
+    hemRow("dense_co2_120bara", false, new String[] {"CO2"}, new double[] {1.0}, 310.0, 120.0,
+        0.01, 0.62, 110.0e5);
+    hemRow("cold_co2_unsupported", false, new String[] {"CO2"}, new double[] {1.0}, 210.0, 20.0,
+        0.01, 0.62, 100000.0);
+    hemRow("methane_scale_d01_cd050", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.5, 100000.0);
+    hemRow("methane_scale_d02_cd100", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.02, 1.0, 100000.0);
+    hemRow("propane_butane_20bara", false, new String[] {"propane", "n-butane"},
+        new double[] {0.8, 0.2}, 300.0, 20.0, 0.01, 0.62, 300000.0);
+
+    // SRK rows are the pinned tests' own EOS, and evidence beside the PR oracle.
+    hemRow("srk_methane_50bara_choked", true, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        50.0, 0.01, 0.62, 101325.0);
+    hemRow("srk_propane_20bara", true, new String[] {"propane"}, new double[] {1.0}, 300.0, 20.0,
+        0.01, 0.62, 300000.0);
+    hemRow("srk_cold_co2_unsupported", true, new String[] {"CO2"}, new double[] {1.0}, 210.0,
+        20.0, 0.01, 0.62, 100000.0);
+    hemRow("srk_propane_butane_20bara", true, new String[] {"propane", "n-butane"},
+        new double[] {0.8, 0.2}, 300.0, 20.0, 0.01, 0.62, 300000.0);
+
+    // The two states no azoth input can express: an empty fluid and the hydrate flag.
+    hemLifecycleRow("pr_empty_fluid", new SystemPrEos(300.0, 5.0), 0.01, 0.62, 100000.0);
+    SystemInterface hydrate = hemFluid(false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0);
+    hydrate.setHydrateCheck(true);
+    hemLifecycleRow("pr_hydrate_flag", hydrate, 0.01, 0.62, 100000.0);
+  }
+
+  static SystemInterface hemFluid(boolean srk, String[] names, double[] amounts, double temperature,
+      double pressureBar) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    return fluid;
+  }
+
+  static void hemRow(String label, boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar, double diameter, double coefficient, double back) {
+    SystemInterface fluid = hemFluid(srk, names, amounts, temperature, pressureBar);
+    ReleaseFlowRequest request = new ReleaseFlowRequest(fluid, diameter, coefficient, back);
+    hemPrint(label, srk ? "srk" : "pr", fluid, request);
+  }
+
+  static void hemLifecycleRow(String label, SystemInterface fluid, double diameter,
+      double coefficient, double back) {
+    ReleaseFlowRequest request = new ReleaseFlowRequest(fluid, diameter, coefficient, back);
+    hemPrint(label, "pr", fluid, request);
+  }
+
+  static void hemPrint(String label, String eos, SystemInterface fluid,
+      ReleaseFlowRequest request) {
+    ReleaseFlowResult result = new HomogeneousEquilibriumReleaseModel().calculate(request);
+    System.out.println(label);
+    System.out.println("eos=" + eos);
+    System.out.println("input_t_k=" + fluid.getTemperature());
+    System.out.println("input_p_bara=" + fluid.getPressure());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < overall.length; i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(overall[i]);
+    }
+    System.out.println("input_z=" + z);
+    System.out.println("diameter_m=" + request.getDiameterM());
+    System.out.println("discharge_coefficient=" + request.getDischargeCoefficient());
+    System.out.println("back_pressure_pa=" + request.getBackPressurePa());
+    System.out.println("status=" + result.getStatus());
+    System.out.println("model_id=" + result.getModelId());
+    System.out.println("mass_flow_kg_s=" + (result.isUsable() ? result.getMassFlowRateKgS() : ""));
+    System.out.println("choked=" + result.isChoked());
+    System.out.println("throat_sound_speed_m_per_s="
+        + (result.getThroatSoundSpeedMs() == null ? "" : result.getThroatSoundSpeedMs()));
+    int d = 0;
+    for (ReleaseFlowResult.Diagnostic diagnostic : result.getDiagnostics()) {
+      System.out.println("diagnostic_" + d + "_code=" + diagnostic.getCode());
+      System.out.println("diagnostic_" + d + "_message=" + diagnostic.getMessage());
+      d++;
+    }
+    int i = 0;
+    for (Map.Entry<ReleaseFlowResult.Station, ReleaseState> entry : result.getStations().entrySet()) {
+      ReleaseState state = entry.getValue();
+      String prefix = "station_" + i + "_";
+      System.out.println(prefix + "name=" + entry.getKey().name());
+      System.out.println(prefix + "p_pa=" + state.getPressurePa());
+      System.out.println(prefix + "t_k=" + state.getTemperatureK());
+      System.out.println(prefix + "density_kg_m3=" + state.getDensityKgM3());
+      System.out.println(prefix + "h_j_per_kg=" + state.getEnthalpyJkg());
+      System.out.println(prefix + "s_j_per_kgk=" + state.getEntropyJkgK());
+      System.out.println(prefix + "velocity_m_per_s=" + state.getVelocityMs());
+      System.out.println(prefix + "mass_flux_kg_m2_s=" + state.getMassFluxKgM2s());
+      System.out.println(prefix + "gas_mass_fraction=" + state.getGasMassFraction());
+      System.out.println(prefix + "component_mole_fractions="
+          + hemFractions(state.getComponentMoleFractions()));
+      System.out.println(prefix + "component_mass_fractions="
+          + hemFractions(state.getComponentMassFractions()));
+      System.out.println(prefix + "phase_mass_fractions="
+          + hemFractions(state.getPhaseMassFractions()));
+      i++;
+    }
+  }
+
+  static String hemFractions(Map<String, Double> values) {
+    StringBuilder out = new StringBuilder();
+    for (Map.Entry<String, Double> entry : values.entrySet()) {
+      if (out.length() > 0) {
+        out.append(",");
+      }
+      out.append(entry.getKey()).append(":").append(entry.getValue());
+    }
+    return out.toString();
   }
 }

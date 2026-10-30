@@ -16,9 +16,10 @@
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
-    PyFlowlineScaleSegment, PyHydrateRiskPoint, PyKComponent, PyMineralEquilibriumRow,
-    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
-    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyFlowlineScaleSegment, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
+    PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
+    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
+    PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -15654,6 +15655,92 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.hem_release`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseResult {
+    /// `valid`, `valid_with_warnings`, `invalid` or `unsupported`.
+    #[pyo3(get)]
+    pub status: String,
+    /// the release rate, or absent when the result is not usable. A valid no-forward-flow result states `0.0`.
+    #[pyo3(get)]
+    pub mass_flow_rate: Option<PyQty>,
+    /// whether the accepted flow is choked; false on failure and on no forward flow.
+    #[pyo3(get)]
+    pub choked: bool,
+    /// the throat's equilibrium sound speed, when the flow is choked and the calculation converged; absent otherwise.
+    #[pyo3(get)]
+    pub throat_sound_speed: Option<PyQty>,
+    /// the upstream overall mole fractions, which every station shares.
+    #[pyo3(get)]
+    pub component_mole_fractions: Vec<f64>,
+    /// the upstream overall mass fractions, `z_i M_i / sum(z M)`.
+    #[pyo3(get)]
+    pub component_mass_fractions: Vec<f64>,
+    /// the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+    #[pyo3(get)]
+    pub stations: Vec<PyHemReleaseStation>,
+    /// the model's assumption and warning records, in the order it forms them.
+    #[pyo3(get)]
+    pub diagnostics: Vec<PyHemReleaseDiagnostic>,
+    /// the codes alone, so a case can hold the contract without asserting prose.
+    #[pyo3(get)]
+    pub diagnostic_codes: Vec<String>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHemReleaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseResult(status={:?}, mass_flow_rate={:?}, choked={:?}, throat_sound_speed={:?}, component_mole_fractions={:?}, component_mass_fractions={:?}, stations={:?}, diagnostics={:?}, diagnostic_codes={:?}, {} warning(s))",
+            self.status,
+            self.mass_flow_rate,
+            self.choked,
+            self.throat_sound_speed,
+            self.component_mole_fractions,
+            self.component_mass_fractions,
+            self.stations,
+            self.diagnostics,
+            self.diagnostic_codes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseResult> for PyHemReleaseResult {
+    fn from(r: &azoth_process::models::hem_release::HemReleaseResult) -> Self {
+        Self {
+            status: r.status.clone(),
+            mass_flow_rate: r.mass_flow_rate.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/s".to_string(),
+            }),
+            choked: r.choked,
+            throat_sound_speed: r.throat_sound_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            component_mole_fractions: r.component_mole_fractions.clone(),
+            component_mass_fractions: r.component_mass_fractions.clone(),
+            stations: r.stations.iter().map(PyHemReleaseStation::from).collect(),
+            diagnostics: r
+                .diagnostics
+                .iter()
+                .map(PyHemReleaseDiagnostic::from)
+                .collect(),
+            diagnostic_codes: r.diagnostic_codes.clone(),
             warnings: transport(&r.warnings),
         }
     }

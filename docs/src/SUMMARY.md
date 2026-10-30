@@ -260,6 +260,7 @@
   - [Gibbs reactor](./process/gibbs_reactor.md)
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
+  - [Homogeneous-equilibrium orifice release](./process/hem_release.md)
   - [Manifold](./process/manifold.md)
   - [Map turbo-expander compressor](./process/map_turbo_expander_compressor.md)
   - [Mixer](./process/mixer.md)

@@ -192,6 +192,52 @@ class FlowlineScaleSegment:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseDiagnostic:
+    """the model's assumption and warning records, in the order it forms them."""
+
+    #: the stable machine code.
+    code: str
+
+    #: the engineering detail.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseStation:
+    """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
+
+    #: which station this row is.
+    station: str
+
+    #: the station's absolute pressure.
+    pressure: Q
+
+    #: the station's temperature.
+    temperature: Q
+
+    #: mass over EOS total volume.
+    density: Q
+
+    #: the station's molar enthalpy. The expansion's drop is read against the stagnation value.
+    molar_enthalpy: Q
+
+    #: the station's molar entropy, which the expansion holds fixed.
+    molar_entropy: Q
+
+    #: `sqrt(2 (h0 - h))`, the zero-slip acceleration from the stagnation enthalpy.
+    velocity: Q
+
+    #: `rho times velocity`, before the discharge coefficient.
+    mass_flux: Q
+
+    #: what the flash found at the station.
+    phase: str
+
+    #: the gas phase's share of the station's mass; one for a vapour state and zero for a liquid one. **A mass fraction, not the molar vapour fraction.**
+    gas_mass_fraction: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateRiskPoint:
     """One row per profile point, in the order the points were given."""
 

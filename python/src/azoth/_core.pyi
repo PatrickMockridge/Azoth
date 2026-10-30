@@ -605,6 +605,28 @@ class WaterMixingResult:
     si_caso4: float | None
     si_feco3: float | None
 
+@final
+class HemReleaseStation:
+    """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
+
+    station: str
+    pressure: Qty
+    temperature: Qty
+    density: Qty
+    molar_enthalpy: Qty
+    molar_entropy: Qty
+    velocity: Qty
+    mass_flux: Qty
+    phase: str
+    gas_mass_fraction: float
+
+@final
+class HemReleaseDiagnostic:
+    """the model's assumption and warning records, in the order it forms them."""
+
+    code: str
+    message: str
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -2819,6 +2841,19 @@ class HeaterResult:
     outlet_t: Qty
     outlet_h: Qty
     outlet_duty: Qty
+    warnings: list[Warning]
+
+@final
+class HemReleaseResult:
+    status: str
+    mass_flow_rate: Qty | None
+    choked: bool
+    throat_sound_speed: Qty | None
+    component_mole_fractions: list[float]
+    component_mass_fractions: list[float]
+    stations: list[HemReleaseStation]
+    diagnostics: list[HemReleaseDiagnostic]
+    diagnostic_codes: list[str]
     warnings: list[Warning]
 
 @final
@@ -5425,6 +5460,15 @@ def heater(
     duty: float | None = None,
     pressure_drop: float | None = None,
 ) -> HeaterResult: ...
+def hem_release(
+    components: list[str],
+    upstream_z: list[float],
+    upstream_t: float,
+    upstream_p: float,
+    diameter: float,
+    discharge_coefficient: float,
+    back_pressure: float,
+) -> HemReleaseResult: ...
 def manifold(
     components: list[str],
     feed_n: list[float],

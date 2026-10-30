@@ -112,6 +112,9 @@ from azoth.core.result import (
     HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HemReleaseDiagnostic,
+    HemReleaseResult,
+    HemReleaseStation,
     HybridEosGeFlashResult,
     HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
@@ -427,6 +430,7 @@ __all__ = [
     "heat_of_vaporization",
     "heater",
     "helium_phase",
+    "hem_release",
     "hybrid_eos_ge_flash",
     "hydrate_equilibrium_line",
     "hydrate_formation_pressure",
@@ -5998,6 +6002,32 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hem_release(components: list[str], upstream_z: list[float], upstream_t: Q, upstream_p: Q, diameter: Q, discharge_coefficient: float, back_pressure: Q) -> HemReleaseResult:
+    """``process.hem_release``, computed in Rust."""
+    spec = _models_gen.model("process.hem_release")
+    result = _core.hem_release(
+        list(components),
+        list(upstream_z),
+        input_to_si(spec, "upstream_t", upstream_t),
+        input_to_si(spec, "upstream_p", upstream_p),
+        input_to_si(spec, "diameter", diameter),
+        discharge_coefficient,
+        input_to_si(spec, "back_pressure", back_pressure),
+    )
+    return HemReleaseResult(
+        status=result.status,
+        mass_flow_rate=None if result.mass_flow_rate is None else from_si(result.mass_flow_rate.magnitude_si, result.mass_flow_rate.unit),
+        choked=result.choked,
+        throat_sound_speed=None if result.throat_sound_speed is None else from_si(result.throat_sound_speed.magnitude_si, result.throat_sound_speed.unit),
+        component_mole_fractions=tuple(result.component_mole_fractions),
+        component_mass_fractions=tuple(result.component_mass_fractions),
+        stations=tuple(HemReleaseStation(station=c.station, pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), molar_enthalpy=from_si(c.molar_enthalpy.magnitude_si, c.molar_enthalpy.unit), molar_entropy=from_si(c.molar_entropy.magnitude_si, c.molar_entropy.unit), velocity=from_si(c.velocity.magnitude_si, c.velocity.unit), mass_flux=from_si(c.mass_flux.magnitude_si, c.mass_flux.unit), phase=c.phase, gas_mass_fraction=c.gas_mass_fraction) for c in result.stations),
+        diagnostics=tuple(HemReleaseDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
+        diagnostic_codes=tuple(result.diagnostic_codes),
         warnings=_warnings(result.warnings),
     )
 

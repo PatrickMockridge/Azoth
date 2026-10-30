@@ -19,6 +19,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+from azoth.core.errors import InvalidInputError
 from azoth.core.units import quantity
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
@@ -51,6 +52,7 @@ class EntropyState:
     phase_composition_residual: float
     phase: str
     vapour_fraction: float | None
+    gas_mass_fraction: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,9 +102,25 @@ def isentropic_state(
     if not pressure > 0.0 or not math.isfinite(pressure):
         raise EntropyStateFailure(f"the pressure sample {pressure} Pa is not positive")
     if len(mixture.components) == 1:
-        state = _saturation_state(mixture, ideal_gas, z, molar_mass, target, pressure, evaluations)
-        if state is not None:
-            return state
+        bounds = _saturation_bounds(mixture, ideal_gas, z, pressure)
+        if bounds is not None:
+            s_liquid = bounds.liquid_s / molar_mass
+            s_vapour = bounds.vapour_s / molar_mass
+            if s_liquid <= target <= s_vapour:
+                return _quality_state(bounds, pressure, molar_mass, target, evaluations)
+            state = _pure_single_phase_state(
+                mixture,
+                ideal_gas,
+                z,
+                molar_mass,
+                target,
+                pressure,
+                bounds,
+                liquid=target < s_liquid,
+                evaluations=evaluations,
+            )
+            if state is not None:
+                return state
     return _tp_root(
         mixture,
         ideal_gas,
@@ -116,16 +134,26 @@ def isentropic_state(
     )
 
 
-def _saturation_state(
+@dataclass(frozen=True, slots=True)
+class _SaturationBounds:
+    """The pure fluid's saturated phases at one pressure."""
+
+    temperature: float
+    liquid_s: float
+    vapour_s: float
+    liquid_h: float
+    vapour_h: float
+    liquid_root: float
+    vapour_root: float
+
+
+def _saturation_bounds(
     mixture: Any,
     ideal_gas: Any,
     z: list[float],
-    molar_mass: float,
-    target: float,
     pressure: float,
-    evaluations: Evaluations,
-) -> EntropyState | None:
-    """The pure fluid's saturation-quality state, or ``None`` for the TP root."""
+) -> _SaturationBounds | None:
+    """The pure fluid's saturated phases, or ``None`` where the pressure has no bracket."""
     component = mixture.components[0]
     if component.Tc is None or component.Pc is None:
         return None
@@ -159,9 +187,16 @@ def _saturation_state(
     if not high_t > 0.0 or not low_t > 0.0 or not (p_low < pressure < p_high):
         return None
     lower, upper = low_t, high_t
+    f_lower = p_low - pressure
+    f_upper = p_high - pressure
     temperature = 0.5 * (lower + upper)
+    side = 0
     for _ in range(BISECTION_STEPS):
-        temperature = 0.5 * (lower + upper)
+        if f_upper == f_lower:
+            break
+        temperature = (lower * f_upper - upper * f_lower) / (f_upper - f_lower)
+        if not lower < temperature < upper:
+            temperature = 0.5 * (lower + upper)
         try:
             trial = (
                 pure_saturation(
@@ -172,13 +207,21 @@ def _saturation_state(
             )
         except Exception:
             return None
-        if trial < pressure:
-            lower = temperature
+        residual = trial - pressure
+        if residual < 0.0:
+            lower, f_lower = temperature, residual
+            if side == -1:
+                f_upper *= 0.5
+            side = -1
         else:
-            upper = temperature
-        if upper - lower <= ROOT_TOLERANCE * max(1.0, temperature):
+            upper, f_upper = temperature, residual
+            if side == 1:
+                f_lower *= 0.5
+            side = 1
+        if abs(residual) <= 1.0e-9 * pressure or upper - lower <= (
+            ROOT_TOLERANCE * max(1.0, temperature)
+        ):
             break
-    temperature = 0.5 * (lower + upper)
     try:
         reduced = reduced_parameters(mixture, temperature, pressure)
     except Exception:
@@ -210,28 +253,41 @@ def _saturation_state(
         )
     except Exception:
         return None
-    s_liquid = liquid.s.to("J/(mol*K)").magnitude / molar_mass
-    s_vapour = vapour.s.to("J/(mol*K)").magnitude / molar_mass
-    if not s_vapour > s_liquid or not (s_liquid <= target <= s_vapour):
-        return None
+    return _SaturationBounds(
+        temperature=temperature,
+        liquid_s=liquid.s.to("J/(mol*K)").magnitude,
+        vapour_s=vapour.s.to("J/(mol*K)").magnitude,
+        liquid_h=liquid.h.to("J/mol").magnitude,
+        vapour_h=vapour.h.to("J/mol").magnitude,
+        liquid_root=liquid_root,
+        vapour_root=vapour_root,
+    )
+
+
+def _quality_state(
+    bounds: _SaturationBounds,
+    pressure: float,
+    molar_mass: float,
+    target: float,
+    evaluations: Evaluations,
+) -> EntropyState:
+    """The two-phase state at the target entropy, from the saturated phases."""
+    s_liquid = bounds.liquid_s / molar_mass
+    s_vapour = bounds.vapour_s / molar_mass
     evaluations.count += 1
-    quality = (target - s_liquid) / (s_vapour - s_liquid)
-    v_liquid = liquid_root * MOLAR_GAS_CONSTANT * temperature / pressure
-    v_vapour = vapour_root * MOLAR_GAS_CONSTANT * temperature / pressure
+    quality = min(1.0, max(0.0, (target - s_liquid) / (s_vapour - s_liquid)))
+    v_liquid = bounds.liquid_root * MOLAR_GAS_CONSTANT * bounds.temperature / pressure
+    v_vapour = bounds.vapour_root * MOLAR_GAS_CONSTANT * bounds.temperature / pressure
     volume = (1.0 - quality) * v_liquid + quality * v_vapour
     if not volume > 0.0 or not math.isfinite(volume):
         raise EntropyStateFailure(
             f"the saturation-quality volume at {pressure} Pa is {volume} m3/mol"
         )
-    molar_entropy = (1.0 - quality) * liquid.s.to("J/(mol*K)").magnitude + quality * vapour.s.to(
-        "J/(mol*K)"
-    ).magnitude
-    molar_enthalpy = (1.0 - quality) * liquid.h.to("J/mol").magnitude + quality * vapour.h.to(
-        "J/mol"
-    ).magnitude
+    molar_entropy = (1.0 - quality) * bounds.liquid_s + quality * bounds.vapour_s
+    molar_enthalpy = (1.0 - quality) * bounds.liquid_h + quality * bounds.vapour_h
     return EntropyState(
         pressure=pressure,
-        temperature=temperature,
+        temperature=bounds.temperature,
         density=molar_mass / volume,
         molar_enthalpy=molar_enthalpy,
         molar_entropy=molar_entropy,
@@ -241,6 +297,135 @@ def _saturation_state(
         phase_composition_residual=0.0,
         phase="two_phase",
         vapour_fraction=quality,
+        gas_mass_fraction=quality,
+    )
+
+
+def _pure_single_phase_state(
+    mixture: Any,
+    ideal_gas: Any,
+    z: list[float],
+    molar_mass: float,
+    target: float,
+    pressure: float,
+    bounds: _SaturationBounds,
+    liquid: bool,
+    evaluations: Evaluations,
+) -> EntropyState | None:
+    """The pure fluid's single-phase state outside the saturation band.
+
+    The TP flash is discontinuous at the saturation line, so a target just outside the band
+    is a root a bisection across the line cannot close. This is NeqSim's pure-fluid
+    ``PSflash`` solve, on the branch the target is on.
+    """
+    t_sat = bounds.temperature
+    s_sat = (bounds.liquid_s if liquid else bounds.vapour_s) / molar_mass
+    if liquid:
+        low = t_sat
+        low_error = s_sat - target
+        span = max(1.0, t_sat * 0.005)
+        for _ in range(BRACKET_STEPS):
+            if low_error <= 0.0:
+                break
+            low = max(1.0, low - span)
+            state = _pure_root_state(
+                mixture, ideal_gas, z, molar_mass, target, pressure, low, liquid, evaluations
+            )
+            if state is None:
+                return None
+            low_error = state.entropy_residual
+            span *= 1.6
+        if low_error > 0.0:
+            return None
+        high = t_sat
+    else:
+        high = t_sat
+        high_error = s_sat - target
+        span = max(1.0, t_sat * 0.005)
+        for _ in range(BRACKET_STEPS):
+            if high_error >= 0.0:
+                break
+            high += span
+            state = _pure_root_state(
+                mixture, ideal_gas, z, molar_mass, target, pressure, high, liquid, evaluations
+            )
+            if state is None:
+                return None
+            high_error = state.entropy_residual
+            span *= 1.6
+        if high_error < 0.0:
+            return None
+        low = t_sat
+    for _ in range(BISECTION_STEPS):
+        temperature = 0.5 * (low + high)
+        state = _pure_root_state(
+            mixture,
+            ideal_gas,
+            z,
+            molar_mass,
+            target,
+            pressure,
+            temperature,
+            liquid,
+            evaluations,
+        )
+        if state is None:
+            return None
+        if abs(state.entropy_residual) <= ENTROPY_TOLERANCE:
+            return state
+        if state.entropy_residual > 0.0:
+            high = temperature
+        else:
+            low = temperature
+        if high - low <= ROOT_TOLERANCE * max(1.0, temperature):
+            break
+    return None
+
+
+def _pure_root_state(
+    mixture: Any,
+    ideal_gas: Any,
+    z: list[float],
+    molar_mass: float,
+    target: float,
+    pressure: float,
+    temperature: float,
+    liquid: bool,
+    evaluations: Evaluations,
+) -> EntropyState | None:
+    """One point on a saturated root's own branch."""
+    evaluations.count += 1
+    try:
+        reduced = reduced_parameters(mixture, temperature, pressure)
+        kij = mixture.effective_kij(reduced.t_kelvin)
+        root = phase_state(reduced, kij, z, liquid=liquid).z
+        state = molar_enthalpy_entropy(
+            mixture,
+            ideal_gas,
+            quantity(temperature, "K"),
+            quantity(pressure, "Pa"),
+            z,
+            root,
+        )
+    except Exception:
+        return None
+    volume = root * MOLAR_GAS_CONSTANT * temperature / pressure
+    if not volume > 0.0 or not math.isfinite(volume):
+        return None
+    molar_entropy = state.s.to("J/(mol*K)").magnitude
+    return EntropyState(
+        pressure=pressure,
+        temperature=temperature,
+        density=molar_mass / volume,
+        molar_enthalpy=state.h.to("J/mol").magnitude,
+        molar_entropy=molar_entropy,
+        entropy_residual=molar_entropy / molar_mass - target,
+        component_residual=0.0,
+        fugacity_residual=0.0,
+        phase_composition_residual=0.0,
+        phase="all_liquid" if liquid else "all_vapour",
+        vapour_fraction=None,
+        gas_mass_fraction=0.0 if liquid else 1.0,
     )
 
 
@@ -331,7 +516,7 @@ def _assemble(
     ideal_gas: Any,
     z: list[float],
     molar_mass: float,
-    target: float,
+    target: float | None,
     pressure: float,
     temperature: float,
     flash: Any,
@@ -386,18 +571,24 @@ def _assemble(
                 )
                 fugacity = max(fugacity, abs(ln_ratio))
         phase_residual = max(abs(sum(flash.x) - 1.0), abs(sum(flash.y) - 1.0))
+        liquid_mass = (1.0 - beta) * _phase_molar_mass(mixture, list(flash.x))
+        vapour_mass = beta * _phase_molar_mass(mixture, list(flash.y))
+        total_mass = liquid_mass + vapour_mass
+        if not total_mass > 0.0 or not math.isfinite(total_mass):
+            raise EntropyStateFailure(f"the two-phase mass at {pressure} Pa is {total_mass} kg/mol")
         return EntropyState(
             pressure=pressure,
             temperature=temperature,
             density=molar_mass / volume,
             molar_enthalpy=molar_enthalpy,
             molar_entropy=molar_entropy,
-            entropy_residual=molar_entropy / molar_mass - target,
+            entropy_residual=(0.0 if target is None else molar_entropy / molar_mass - target),
             component_residual=balance,
             fugacity_residual=fugacity,
             phase_composition_residual=phase_residual,
             phase="two_phase",
             vapour_fraction=beta,
+            gas_mass_fraction=vapour_mass / total_mass,
         )
     reduced = reduced_parameters(mixture, temperature, pressure)
     kij = mixture.effective_kij(reduced.t_kelvin)
@@ -422,10 +613,61 @@ def _assemble(
         density=molar_mass / volume,
         molar_enthalpy=molar_enthalpy,
         molar_entropy=molar_entropy,
-        entropy_residual=molar_entropy / molar_mass - target,
+        entropy_residual=(0.0 if target is None else molar_entropy / molar_mass - target),
         component_residual=0.0,
         fugacity_residual=0.0,
         phase_composition_residual=0.0,
         phase=flash.phase,
         vapour_fraction=None,
+        gas_mass_fraction=1.0 if flash.phase == "all_vapour" else 0.0,
     )
+
+
+def flashed_state(
+    mixture: Any,
+    ideal_gas: Any,
+    z: list[float],
+    molar_mass: float,
+    pressure: float,
+    temperature: float,
+    evaluations: Evaluations,
+) -> EntropyState:
+    """The equilibrium state at a stated ``(pressure, temperature)``, with no target entropy.
+
+    The upstream stagnation state the release model starts from: its own entropy is what
+    the expansion holds fixed, and this is the state that states it.
+    """
+    evaluations.count += 1
+    flash = pt_flash(mixture, quantity(temperature, "K"), quantity(pressure, "Pa"), z)
+    return _assemble(mixture, ideal_gas, z, molar_mass, None, pressure, temperature, flash)
+
+
+def molar_mass_of(mixture: Any, composition: list[float]) -> float:
+    """The mixture's molar mass, kg/mol."""
+    total = 0.0
+    for index, (component, fraction) in enumerate(
+        zip(mixture.components, composition, strict=True)
+    ):
+        if component.molar_mass is None:
+            raise InvalidInputError(
+                "molar_mass",
+                f"component {index} carries no molar mass, and a specific entropy divides by it",
+            )
+        total += fraction * component.molar_mass.to("kg/mol").magnitude
+    if not total > 0.0 or not math.isfinite(total):
+        raise InvalidInputError("molar_mass", f"the mixture's molar mass is {total} kg/mol")
+    return total
+
+
+def _phase_molar_mass(mixture: Any, composition: list[float]) -> float:
+    """The molar mass of one phase, kg/mol."""
+    total = 0.0
+    for index, (component, fraction) in enumerate(
+        zip(mixture.components, composition, strict=True)
+    ):
+        if component.molar_mass is None:
+            raise EntropyStateFailure(f"component {index} carries no molar mass")
+        total += fraction * component.molar_mass.to("kg/mol").magnitude
+    if not total > 0.0 or not math.isfinite(total):
+        raise EntropyStateFailure(f"a phase molar mass is {total} kg/mol")
+    return total

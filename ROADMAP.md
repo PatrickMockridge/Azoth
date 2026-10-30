@@ -766,9 +766,15 @@ a claim nothing holds.
   `beta = 1.0`), which the port records and does not reproduce; `PhaseGE`'s constant `1470.0`
   m/s and `PhaseDefault`'s `NaN` are not models. **`EquilibriumSoundSpeed` is
   `eos.equilibrium_sound_speed`** - the fixed-entropy pressure stencil, the pure-fluid
-  saturation quality and the closure checks. What remains owed is its consumer, the HEM
-  release family: `HomogeneousEquilibriumReleaseModel` and `SourceTermFrame` in
-  `process/safety/release/`.
+  saturation quality and the closure checks. **Its consumer landed as `process.hem_release`**:
+  `HomogeneousEquilibriumReleaseModel`'s 49-sample isentropic scan, the throat flux maximum and
+  choked test, the throat's equilibrium sound speed and Mach warning, and the four stations,
+  held to `process_hem_release.tsv` on PR - the class's own tests are SRK and are captured as
+  evidence. `SourceTermFrame`'s payload is that result; its schema, UUID, sequence, time and
+  fingerprint are session state, with this library's provenance block as the envelope. What
+  remains owed in `process/safety/release/` is `LeakModel`'s legacy scalar/blowdown path,
+  `ReleaseFlowEnsemble`, `SourceTermSession`, `SourceTermResult`, `ReleaseOrientation`, and the
+  frame's canonical JSON envelope if byte-compatible output is ever required.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to

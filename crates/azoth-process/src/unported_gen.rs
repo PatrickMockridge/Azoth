@@ -14,6 +14,7 @@
 //!   - specs/models/process/gibbs_reactor.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
+//!   - specs/models/process/hem_release.toml
 //!   - specs/models/process/manifold.toml
 //!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml

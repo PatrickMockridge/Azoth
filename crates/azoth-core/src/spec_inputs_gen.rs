@@ -235,6 +235,7 @@
 //!   - specs/models/process/gibbs_reactor.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
+//!   - specs/models/process/hem_release.toml
 //!   - specs/models/process/manifold.toml
 //!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
@@ -3042,6 +3043,20 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.heater", "duty", "power"),
     ("process.heater", "pressure_drop", "pressure"),
+    ("process.hem_release", "upstream_z", "dimensionless"),
+    (
+        "process.hem_release",
+        "upstream_t",
+        "thermodynamic_temperature",
+    ),
+    ("process.hem_release", "upstream_p", "pressure"),
+    ("process.hem_release", "diameter", "length"),
+    (
+        "process.hem_release",
+        "discharge_coefficient",
+        "dimensionless",
+    ),
+    ("process.hem_release", "back_pressure", "pressure"),
     ("process.manifold", "feed_n", "molar_flow"),
     ("process.manifold", "feed_z", "dimensionless"),
     ("process.manifold", "feed_p", "pressure"),

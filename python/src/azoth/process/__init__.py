@@ -32,6 +32,7 @@ from azoth.core.result import (
     GibbsReactorResult,
     HeaterResult,
     HeatExchangerResult,
+    HemReleaseResult,
     ManifoldResult,
     MapTurboExpanderResult,
     MixerResult,
@@ -86,6 +87,7 @@ __all__ = [
     "gibbs_reactor",
     "heat_exchanger",
     "heater",
+    "hem_release",
     "load_flowsheet",
     "manifold",
     "map_turbo_expander_compressor",
@@ -128,6 +130,7 @@ _MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
+_HEM_RELEASE = "process.hem_release"
 _SEPARATOR = "process.separator"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
@@ -1671,6 +1674,45 @@ def three_phase_separator(
         aqueous_in_gas=aqueous_in_gas,
         aqueous_in_oil=aqueous_in_oil,
         heat_input=heat_input,
+    )
+
+
+def hem_release(
+    components: list[str],
+    upstream_z: list[float],
+    upstream_t: Q,
+    upstream_p: Q,
+    diameter: Q,
+    discharge_coefficient: float,
+    back_pressure: Q,
+) -> HemReleaseResult:
+    """The release rate of a homogeneous-equilibrium short-opening orifice.
+
+    The upstream stagnation state is expanded isentropically to a 49-pressure grid, and the
+    maximum of ``rho sqrt(2 (h0 - h))`` over that grid is the throat. The answer is **four
+    stations** - the stagnation state, the throat, the aliased exit and the receiving-pressure
+    state - with the rate, the choked flag and, when the flow is choked, the throat's
+    equilibrium sound speed.
+
+    A failure is the class's own result and not an exception: ``status`` is ``invalid`` or
+    ``unsupported``, the rate and stations are absent, and one diagnostic says why. **No NaN
+    crosses the boundary.**
+
+    Raises:
+        InvalidInputError: for a non-positive state or opening, a discharge coefficient
+            outside ``(0, 1]``, or a composition that is not one entry per component and sums
+            to one.
+
+    See :func:`azoth.process.reference.hem_release`.
+    """
+    return resolve(_HEM_RELEASE)(  # type: ignore[no-any-return]
+        components=components,
+        upstream_z=upstream_z,
+        upstream_t=upstream_t,
+        upstream_p=upstream_p,
+        diameter=diameter,
+        discharge_coefficient=discharge_coefficient,
+        back_pressure=back_pressure,
     )
 
 

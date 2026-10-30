@@ -253,6 +253,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyGibbsReactorResult>()?;
     m.add_class::<crate::transport_gen::PyHeatExchangerResult>()?;
     m.add_class::<crate::transport_gen::PyHeaterResult>()?;
+    m.add_class::<crate::transport_gen::PyHemReleaseResult>()?;
     m.add_class::<crate::transport_gen::PyManifoldResult>()?;
     m.add_class::<crate::transport_gen::PyMapTurboExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyMixerResult>()?;
@@ -289,6 +290,8 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyEquilibriumSoundSpeedSample>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
+    m.add_class::<crate::record_outputs_gen::PyHemReleaseDiagnostic>()?;
+    m.add_class::<crate::record_outputs_gen::PyHemReleaseStation>()?;
     m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
@@ -854,6 +857,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::gibbs_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::heater, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::hem_release, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::manifold, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::process::map_turbo_expander_compressor,
