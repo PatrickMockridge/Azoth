@@ -83,6 +83,7 @@ pub mod electrolyte;
 pub mod electrolyte_cpa_statoil_phase;
 pub mod electrolyte_scale_calculator;
 pub mod emulsion_viscosity;
+pub mod entropy_state;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;

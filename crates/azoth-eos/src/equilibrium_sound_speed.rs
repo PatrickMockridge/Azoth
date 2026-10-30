@@ -20,11 +20,10 @@ use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::cubic::Cubic;
 use crate::databank;
+use crate::entropy_state::{self, RootPolicy};
 use crate::mixture::{Mixture, RootSide};
 use crate::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
-use crate::pr_molar_volume::MOLAR_GAS_CONSTANT;
 use crate::pt_flash::pt_flash;
-use crate::pure_saturation::pure_saturation;
 use crate::results::{EquilibriumSoundSpeedResult, EquilibriumSoundSpeedSample, Phase};
 
 use crate::model_gen;
@@ -39,12 +38,6 @@ const FUGACITY_TOLERANCE: f64 = 1.0e-6;
 const DERIVATIVE_TOLERANCE: f64 = 2.0e-3;
 /// `MAX_REFINEMENTS`: the step is halved this many times after the first estimate.
 const MAX_REFINEMENTS: usize = 10;
-/// The bracket's temperature tolerance, relative.
-const ROOT_TOLERANCE: f64 = 1.0e-12;
-/// The entropy bracket may widen this many times before it is refused.
-const BRACKET_STEPS: usize = 30;
-/// The bisection cap.
-const BISECTION_STEPS: usize = 100;
 /// The class refuses a relative pressure step outside this band.
 const MIN_RELATIVE_STEP: f64 = 1.0e-6;
 /// See [`MIN_RELATIVE_STEP`].
@@ -471,327 +464,27 @@ impl Calculation<'_> {
 
     /// The checked equilibrium state at a pressure and the target entropy.
     fn solve(&mut self, pressure: f64) -> Calc<EquilibriumSample> {
-        if pressure <= 0.0 || !pressure.is_finite() {
-            return Err(CalcError::Flash(format!(
-                "the pressure sample {pressure} Pa is not positive"
-            )));
-        }
-        if self.mixture.len() == 1 {
-            if let Some(state) = self.saturation_state(pressure)? {
-                return Ok(state);
-            }
-        }
-        self.tp(pressure)
-    }
-
-    /// The pure fluid's saturation-quality state, where the target entropy lies between the
-    /// saturated phases. `None` sends the caller to the TP root.
-    fn saturation_state(&mut self, pressure: f64) -> Calc<Option<EquilibriumSample>> {
-        let component = &self.mixture.components()[0];
-        let tc = component.tc.value;
-        let omega = component.omega;
-        // **A tolerant bracket.** The cold end is where the cubic's liquid branch is hardest
-        // to find, so the first fraction that answers is the bound rather than 0.3 Tc by fiat.
-        let mut low_t = 0.0;
-        let mut p_low = f64::NAN;
-        for fraction in [0.3, 0.4, 0.5, 0.6] {
-            let candidate = (1.0_f64).max(fraction * tc);
-            if let Ok(result) =
-                pure_saturation(component.tc, component.pc, omega, kelvins(candidate))
-            {
-                low_t = candidate;
-                p_low = result.p_sat.value;
-                break;
-            }
-        }
-        // **The warm end is bounded by `eos.pure_saturation` itself**, which declines above
-        // about 0.94 Tc; the scan takes the first temperature whose saturation pressure is
-        // above the sample, and a state above all of them falls back to the TP root.
-        let mut high_t = 0.0;
-        let mut p_high = f64::NAN;
-        for fraction in [0.94, 0.92, 0.90, 0.85, 0.80] {
-            if let Ok(result) =
-                pure_saturation(component.tc, component.pc, omega, kelvins(fraction * tc))
-            {
-                if result.p_sat.value > pressure {
-                    high_t = fraction * tc;
-                    p_high = result.p_sat.value;
-                    break;
-                }
-            }
-        }
-        if high_t <= 0.0 || low_t <= 0.0 || pressure <= p_low || pressure >= p_high {
-            return Ok(None);
-        }
-        let mut lower = low_t;
-        let mut upper = high_t;
-        for _ in 0..BISECTION_STEPS {
-            let middle = 0.5 * (lower + upper);
-            let trial = match pure_saturation(component.tc, component.pc, omega, kelvins(middle)) {
-                Ok(result) => result.p_sat.value,
-                Err(_) => return Ok(None),
-            };
-            if trial < pressure {
-                lower = middle;
-            } else {
-                upper = middle;
-            }
-            if upper - lower <= ROOT_TOLERANCE * 1.0_f64.max(middle) {
-                break;
-            }
-        }
-        let temperature = 0.5 * (lower + upper);
-        let reduced = match self
-            .mixture
-            .reduced_parameters(kelvins(temperature), pascals(pressure))
-        {
-            Ok(reduced) => reduced,
-            Err(_) => return Ok(None),
-        };
-        let liquid_root = match self.mixture.phase_state(&reduced, self.z, RootSide::Liquid) {
-            Ok(state) => state.z,
-            Err(_) => return Ok(None),
-        };
-        let vapour_root = match self.mixture.phase_state(&reduced, self.z, RootSide::Vapour) {
-            Ok(state) => state.z,
-            Err(_) => return Ok(None),
-        };
-        if (vapour_root - liquid_root).abs() < 1.0e-12 {
-            return Ok(None);
-        }
-        let liquid = molar_enthalpy_entropy(
+        let state = entropy_state::isentropic_state(
             self.mixture,
             self.ideal_gas,
-            kelvins(temperature),
-            pascals(pressure),
             self.z,
-            liquid_root,
-        );
-        let vapour = molar_enthalpy_entropy(
-            self.mixture,
-            self.ideal_gas,
-            kelvins(temperature),
-            pascals(pressure),
-            self.z,
-            vapour_root,
-        );
-        let (Ok(liquid), Ok(vapour)) = (liquid, vapour) else {
-            return Ok(None);
-        };
-        let s_liquid = liquid.s.value / self.molar_mass;
-        let s_vapour = vapour.s.value / self.molar_mass;
-        if s_vapour <= s_liquid || !(s_liquid..=s_vapour).contains(&self.target) {
-            return Ok(None);
-        }
-        self.evaluations += 1;
-        let quality = (self.target - s_liquid) / (s_vapour - s_liquid);
-        // **The EOS volume, unshifted.** The class uses `getVolume` with volume correction
-        // off in its own tests - a density correction is not part of the acoustic derivative.
-        let v_liquid = liquid_root * MOLAR_GAS_CONSTANT * temperature / pressure;
-        let v_vapour = vapour_root * MOLAR_GAS_CONSTANT * temperature / pressure;
-        let volume = (1.0 - quality) * v_liquid + quality * v_vapour;
-        if volume <= 0.0 || !volume.is_finite() {
-            return Err(CalcError::Flash(format!(
-                "the saturation-quality volume at {pressure} Pa is {volume} m3/mol"
-            )));
-        }
-        self.checked(EquilibriumSample {
+            self.molar_mass,
+            self.target,
             pressure,
-            temperature,
-            density: self.molar_mass / volume,
-            entropy_residual: (1.0 - quality) * s_liquid + quality * s_vapour - self.target,
-            component_residual: 0.0,
-            fugacity_residual: 0.0,
-            phase: Phase::TwoPhase,
-            vapour_fraction: Some(quality),
-        })
-        .map(Some)
-    }
-
-    /// The equilibrium state at a pressure by the bracketed TP entropy root.
-    fn tp(&mut self, pressure: f64) -> Calc<EquilibriumSample> {
-        let guess = self.start_temperature;
-        let initial = self.tp_at(pressure, guess)?;
-        if initial.entropy_residual.abs() <= ENTROPY_TOLERANCE {
-            return self.checked(initial);
-        }
-        let mut lower = guess;
-        let mut upper = guess;
-        let mut low_error = initial.entropy_residual;
-        let mut high_error = initial.entropy_residual;
-        let mut span = 1.0_f64.max(guess * 0.005);
-        for _ in 0..BRACKET_STEPS {
-            if !(low_error > 0.0 || high_error < 0.0) {
-                break;
-            }
-            if low_error > 0.0 {
-                lower = (guess - span).max(1.0);
-                low_error = self.tp_at(pressure, lower)?.entropy_residual;
-            }
-            if high_error < 0.0 {
-                upper = guess + span;
-                high_error = self.tp_at(pressure, upper)?.entropy_residual;
-            }
-            span *= 1.6;
-        }
-        if !(low_error <= 0.0 && high_error >= 0.0) {
-            return Err(CalcError::Flash(format!(
-                "could not bracket the specific entropy at {:.6} Pa",
-                pressure
-            )));
-        }
-        let mut last_error = f64::NAN;
-        for _ in 0..BISECTION_STEPS {
-            let temperature = 0.5 * (lower + upper);
-            let trial = self.tp_at(pressure, temperature)?;
-            last_error = trial.entropy_residual;
-            if last_error.abs() <= ENTROPY_TOLERANCE {
-                return self.checked(trial);
-            }
-            if last_error > 0.0 {
-                upper = temperature;
-            } else {
-                lower = temperature;
-            }
-            if upper - lower <= ROOT_TOLERANCE * 1.0_f64.max(temperature) {
-                break;
-            }
-        }
-        Err(CalcError::Flash(format!(
-            "the entropy root did not close at {:.6} Pa; residual = {last_error} J/(kg K)",
-            pressure
-        )))
-    }
-
-    /// One TP flash and its checked sample.
-    fn tp_at(&mut self, pressure: f64, temperature: f64) -> Calc<EquilibriumSample> {
-        self.evaluations += 1;
-        let flash = pt_flash(
-            self.mixture,
-            kelvins(temperature),
-            pascals(pressure),
-            self.z,
+            self.start_temperature,
+            &mut self.evaluations,
+            RootPolicy::SOUND_SPEED,
         )
-        .map_err(|error| CalcError::Flash(format!("{error}")))?;
-        self.assemble(pressure, temperature, &flash)
-    }
-
-    /// Turn a flash into the checked sample, or refuse it.
-    fn assemble(
-        &self,
-        pressure: f64,
-        temperature: f64,
-        flash: &crate::results::PtFlashResult,
-    ) -> Calc<EquilibriumSample> {
-        let (entropy, density, balance, fugacity) = match flash.phase {
-            Phase::TwoPhase => {
-                let beta = flash.vapour_fraction.ok_or_else(|| {
-                    CalcError::Flash(
-                        "the flash split the feed and reported no vapour fraction".to_string(),
-                    )
-                })?;
-                if !(0.0..=1.0).contains(&beta) {
-                    return Err(CalcError::Flash(format!(
-                        "the vapour fraction {beta} is outside [0, 1]"
-                    )));
-                }
-                let liquid = molar_enthalpy_entropy(
-                    self.mixture,
-                    self.ideal_gas,
-                    kelvins(temperature),
-                    pascals(pressure),
-                    &flash.x,
-                    flash.z_liquid,
-                );
-                let vapour = molar_enthalpy_entropy(
-                    self.mixture,
-                    self.ideal_gas,
-                    kelvins(temperature),
-                    pascals(pressure),
-                    &flash.y,
-                    flash.z_vapour,
-                );
-                let (Ok(liquid), Ok(vapour)) = (liquid, vapour) else {
-                    return Err(CalcError::Flash(
-                        "the phase entropy is not finite".to_string(),
-                    ));
-                };
-                let entropy =
-                    ((1.0 - beta) * liquid.s.value + beta * vapour.s.value) / self.molar_mass;
-                let v_liquid = flash.z_liquid * MOLAR_GAS_CONSTANT * temperature / pressure;
-                let v_vapour = flash.z_vapour * MOLAR_GAS_CONSTANT * temperature / pressure;
-                let volume = (1.0 - beta) * v_liquid + beta * v_vapour;
-                if volume <= 0.0 || !volume.is_finite() {
-                    return Err(CalcError::Flash(format!(
-                        "the two-phase volume at {pressure} Pa is {volume} m3/mol"
-                    )));
-                }
-                let mut balance = 0.0_f64;
-                let mut fugacity = 0.0_f64;
-                for index in 0..self.z.len() {
-                    let recovered = (1.0 - beta) * flash.x[index] + beta * flash.y[index];
-                    balance = balance.max((recovered - self.z[index]).abs());
-                    if self.z[index] > 1.0e-12 {
-                        if flash.x[index] <= 0.0 || flash.y[index] <= 0.0 {
-                            return Err(CalcError::Flash(
-                                "a phase composition is not positive".to_string(),
-                            ));
-                        }
-                        let ln_ratio = flash.x[index].ln() + flash.ln_phi_liquid[index]
-                            - flash.y[index].ln()
-                            - flash.ln_phi_vapour[index];
-                        fugacity = fugacity.max(ln_ratio.abs());
-                    }
-                }
-                (entropy, self.molar_mass / volume, balance, fugacity)
-            }
-            Phase::AllVapour | Phase::AllLiquid | Phase::Trivial => {
-                let side = if matches!(flash.phase, Phase::AllVapour) {
-                    RootSide::Vapour
-                } else {
-                    RootSide::Liquid
-                };
-                let reduced = self
-                    .mixture
-                    .reduced_parameters(kelvins(temperature), pascals(pressure))
-                    .map_err(|error| CalcError::Flash(format!("{error}")))?;
-                let root = self
-                    .mixture
-                    .phase_state(&reduced, self.z, side)
-                    .map_err(|error| CalcError::Flash(format!("{error}")))?
-                    .z;
-                let state = molar_enthalpy_entropy(
-                    self.mixture,
-                    self.ideal_gas,
-                    kelvins(temperature),
-                    pascals(pressure),
-                    self.z,
-                    root,
-                )
-                .map_err(|error| CalcError::Flash(format!("{error}")))?;
-                let volume = root * MOLAR_GAS_CONSTANT * temperature / pressure;
-                if volume <= 0.0 || !volume.is_finite() {
-                    return Err(CalcError::Flash(format!(
-                        "the single-phase volume at {pressure} Pa is {volume} m3/mol"
-                    )));
-                }
-                (
-                    state.s.value / self.molar_mass,
-                    self.molar_mass / volume,
-                    0.0,
-                    0.0,
-                )
-            }
-        };
-        Ok(EquilibriumSample {
-            pressure,
-            temperature,
-            density,
-            entropy_residual: entropy - self.target,
-            component_residual: balance,
-            fugacity_residual: fugacity,
-            phase: flash.phase,
-            vapour_fraction: flash.vapour_fraction,
+        .map_err(|error| CalcError::Flash(error.0))?;
+        self.checked(EquilibriumSample {
+            pressure: state.pressure,
+            temperature: state.temperature,
+            density: state.density,
+            entropy_residual: state.entropy_residual,
+            component_residual: state.component_residual,
+            fugacity_residual: state.fugacity_residual,
+            phase: state.phase,
+            vapour_fraction: state.vapour_fraction,
         })
     }
 

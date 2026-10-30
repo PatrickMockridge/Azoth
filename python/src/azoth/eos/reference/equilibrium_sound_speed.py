@@ -24,11 +24,15 @@ from azoth.core.result import EquilibriumSoundSpeedResult
 from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
+from azoth.eos.reference._entropy_state import (
+    SOUND_SPEED,
+    EntropyStateFailure,
+    Evaluations,
+    isentropic_state,
+)
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
-from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 from azoth.eos.reference.pt_flash import check_composition, pt_flash
-from azoth.eos.reference.pure_saturation import pure_saturation
 
 MODEL_ID = "eos.equilibrium_sound_speed"
 
@@ -42,12 +46,6 @@ FUGACITY_TOLERANCE = 1.0e-6
 DERIVATIVE_TOLERANCE = 2.0e-3
 #: The step is halved this many times after the first estimate.
 MAX_REFINEMENTS = 10
-#: The temperature root's relative tolerance.
-ROOT_TOLERANCE = 1.0e-12
-#: Entropy-bracket widenings before the bracket is refused.
-BRACKET_STEPS = 30
-#: The bisection cap.
-BISECTION_STEPS = 100
 #: The class's relative-step band.
 MIN_RELATIVE_STEP = 1.0e-6
 MAX_RELATIVE_STEP = 0.05
@@ -193,7 +191,7 @@ class _Calculation:
         self.molar_mass = molar_mass
         self.target = target
         self.start_temperature = start_temperature
-        self.evaluations = 0
+        self.evaluations = Evaluations()
         self.boundary = False
 
     def run(self, pressure: float, relative_step: float) -> dict[str, Any]:
@@ -272,7 +270,7 @@ class _Calculation:
             "relative_step_error": relative_step_error,
             "stencil": stencil,
             "phase_boundary": self.boundary,
-            "evaluations": self.evaluations,
+            "evaluations": self.evaluations.count,
             "samples": samples,
         }
 
@@ -312,248 +310,31 @@ class _Calculation:
         return None
 
     def solve(self, pressure: float) -> _Sample:
-        if not pressure > 0.0 or not math.isfinite(pressure):
-            raise _FlashFailure(f"the pressure sample {pressure} Pa is not positive")
-        if len(self.mixture.components) == 1:
-            state = self.saturation_state(pressure)
-            if state is not None:
-                return state
-        return self.tp(pressure)
-
-    def saturation_state(self, pressure: float) -> _Sample | None:
-        component = self.mixture.components[0]
-        if component.Tc is None or component.Pc is None:
-            return None
-        tc = component.Tc.to("K").magnitude
-        low_t = 0.0
-        p_low = math.nan
-        for fraction in (0.3, 0.4, 0.5, 0.6):
-            candidate = max(1.0, fraction * tc)
-            try:
-                result = pure_saturation(
-                    component.Tc, component.Pc, component.omega, quantity(candidate, "K")
-                )
-            except Exception:
-                continue
-            low_t = candidate
-            p_low = result.p_sat.to("Pa").magnitude
-            break
-        high_t = 0.0
-        p_high = math.nan
-        for fraction in (0.94, 0.92, 0.90, 0.85, 0.80):
-            try:
-                result = pure_saturation(
-                    component.Tc, component.Pc, component.omega, quantity(fraction * tc, "K")
-                )
-            except Exception:
-                continue
-            if result.p_sat.to("Pa").magnitude > pressure:
-                high_t = fraction * tc
-                p_high = result.p_sat.to("Pa").magnitude
-                break
-        if not high_t > 0.0 or not low_t > 0.0 or not (p_low < pressure < p_high):
-            return None
-        lower, upper = low_t, high_t
-        temperature = 0.5 * (lower + upper)
-        for _ in range(BISECTION_STEPS):
-            temperature = 0.5 * (lower + upper)
-            try:
-                trial = (
-                    pure_saturation(
-                        component.Tc, component.Pc, component.omega, quantity(temperature, "K")
-                    )
-                    .p_sat.to("Pa")
-                    .magnitude
-                )
-            except Exception:
-                return None
-            if trial < pressure:
-                lower = temperature
-            else:
-                upper = temperature
-            if upper - lower <= ROOT_TOLERANCE * max(1.0, temperature):
-                break
-        temperature = 0.5 * (lower + upper)
         try:
-            reduced = reduced_parameters(self.mixture, temperature, pressure)
-        except Exception:
-            return None
-        kij = self.mixture.effective_kij(reduced.t_kelvin)
-        try:
-            liquid_root = phase_state(reduced, kij, self.z, liquid=True).z
-            vapour_root = phase_state(reduced, kij, self.z, liquid=False).z
-        except Exception:
-            return None
-        if abs(vapour_root - liquid_root) < 1.0e-12:
-            return None
-        try:
-            liquid = molar_enthalpy_entropy(
+            state = isentropic_state(
                 self.mixture,
                 self.ideal_gas,
-                quantity(temperature, "K"),
-                quantity(pressure, "Pa"),
                 self.z,
-                liquid_root,
+                self.molar_mass,
+                self.target,
+                pressure,
+                self.start_temperature,
+                self.evaluations,
+                SOUND_SPEED,
             )
-            vapour = molar_enthalpy_entropy(
-                self.mixture,
-                self.ideal_gas,
-                quantity(temperature, "K"),
-                quantity(pressure, "Pa"),
-                self.z,
-                vapour_root,
-            )
-        except Exception:
-            return None
-        s_liquid = liquid.s.to("J/(mol*K)").magnitude / self.molar_mass
-        s_vapour = vapour.s.to("J/(mol*K)").magnitude / self.molar_mass
-        if not s_vapour > s_liquid or not (s_liquid <= self.target <= s_vapour):
-            return None
-        self.evaluations += 1
-        quality = (self.target - s_liquid) / (s_vapour - s_liquid)
-        v_liquid = liquid_root * MOLAR_GAS_CONSTANT * temperature / pressure
-        v_vapour = vapour_root * MOLAR_GAS_CONSTANT * temperature / pressure
-        volume = (1.0 - quality) * v_liquid + quality * v_vapour
-        if not volume > 0.0 or not math.isfinite(volume):
-            raise _FlashFailure(
-                f"the saturation-quality volume at {pressure} Pa is {volume} m3/mol"
-            )
+        except EntropyStateFailure as failure:
+            raise _FlashFailure(str(failure)) from failure
         return self.checked(
             _Sample(
-                pressure=pressure,
-                temperature=temperature,
-                density=self.molar_mass / volume,
-                entropy_residual=(1.0 - quality) * s_liquid + quality * s_vapour - self.target,
-                component_residual=0.0,
-                fugacity_residual=0.0,
-                phase="two_phase",
-                vapour_fraction=quality,
+                pressure=state.pressure,
+                temperature=state.temperature,
+                density=state.density,
+                entropy_residual=state.entropy_residual,
+                component_residual=state.component_residual,
+                fugacity_residual=state.fugacity_residual,
+                phase=state.phase,
+                vapour_fraction=state.vapour_fraction,
             )
-        )
-
-    def tp(self, pressure: float) -> _Sample:
-        guess = self.start_temperature
-        initial = self.tp_at(pressure, guess)
-        if abs(initial.entropy_residual) <= ENTROPY_TOLERANCE:
-            return self.checked(initial)
-        lower = upper = guess
-        low_error = high_error = initial.entropy_residual
-        span = max(1.0, guess * 0.005)
-        for _ in range(BRACKET_STEPS):
-            if not (low_error > 0.0 or high_error < 0.0):
-                break
-            if low_error > 0.0:
-                lower = max(1.0, guess - span)
-                low_error = self.tp_at(pressure, lower).entropy_residual
-            if high_error < 0.0:
-                upper = guess + span
-                high_error = self.tp_at(pressure, upper).entropy_residual
-            span *= 1.6
-        if not (low_error <= 0.0 and high_error >= 0.0):
-            raise _FlashFailure(f"could not bracket the specific entropy at {pressure:.6f} Pa")
-        last_error = math.nan
-        for _ in range(BISECTION_STEPS):
-            temperature = 0.5 * (lower + upper)
-            trial = self.tp_at(pressure, temperature)
-            last_error = trial.entropy_residual
-            if abs(last_error) <= ENTROPY_TOLERANCE:
-                return self.checked(trial)
-            if last_error > 0.0:
-                upper = temperature
-            else:
-                lower = temperature
-            if upper - lower <= ROOT_TOLERANCE * max(1.0, temperature):
-                break
-        raise _FlashFailure(
-            f"the entropy root did not close at {pressure:.6f} Pa; residual = {last_error} J/(kg K)"
-        )
-
-    def tp_at(self, pressure: float, temperature: float) -> _Sample:
-        self.evaluations += 1
-        flash = pt_flash(self.mixture, quantity(temperature, "K"), quantity(pressure, "Pa"), self.z)
-        return self.assemble(pressure, temperature, flash)
-
-    def assemble(self, pressure: float, temperature: float, flash: Any) -> _Sample:
-        if flash.phase == "two_phase":
-            beta = flash.vapour_fraction
-            if beta is None:
-                raise _FlashFailure("the flash split the feed and reported no vapour fraction")
-            if not 0.0 <= beta <= 1.0:
-                raise _FlashFailure(f"the vapour fraction {beta} is outside [0, 1]")
-            liquid = molar_enthalpy_entropy(
-                self.mixture,
-                self.ideal_gas,
-                quantity(temperature, "K"),
-                quantity(pressure, "Pa"),
-                list(flash.x),
-                flash.z_liquid,
-            )
-            vapour = molar_enthalpy_entropy(
-                self.mixture,
-                self.ideal_gas,
-                quantity(temperature, "K"),
-                quantity(pressure, "Pa"),
-                list(flash.y),
-                flash.z_vapour,
-            )
-            entropy = (
-                (1.0 - beta) * liquid.s.to("J/(mol*K)").magnitude
-                + beta * vapour.s.to("J/(mol*K)").magnitude
-            ) / self.molar_mass
-            v_liquid = flash.z_liquid * MOLAR_GAS_CONSTANT * temperature / pressure
-            v_vapour = flash.z_vapour * MOLAR_GAS_CONSTANT * temperature / pressure
-            volume = (1.0 - beta) * v_liquid + beta * v_vapour
-            if not volume > 0.0 or not math.isfinite(volume):
-                raise _FlashFailure(f"the two-phase volume at {pressure} Pa is {volume} m3/mol")
-            balance = 0.0
-            fugacity = 0.0
-            for index, fraction in enumerate(self.z):
-                recovered = (1.0 - beta) * flash.x[index] + beta * flash.y[index]
-                balance = max(balance, abs(recovered - fraction))
-                if fraction > 1.0e-12:
-                    if not flash.x[index] > 0.0 or not flash.y[index] > 0.0:
-                        raise _FlashFailure("a phase composition is not positive")
-                    ln_ratio = (
-                        math.log(flash.x[index])
-                        + flash.ln_phi_liquid[index]
-                        - math.log(flash.y[index])
-                        - flash.ln_phi_vapour[index]
-                    )
-                    fugacity = max(fugacity, abs(ln_ratio))
-            density = self.molar_mass / volume
-            phase = "two_phase"
-            vapour_fraction = beta
-        else:
-            reduced = reduced_parameters(self.mixture, temperature, pressure)
-            kij = self.mixture.effective_kij(reduced.t_kelvin)
-            liquid_side = flash.phase != "all_vapour"
-            root = phase_state(reduced, kij, self.z, liquid=liquid_side).z
-            state = molar_enthalpy_entropy(
-                self.mixture,
-                self.ideal_gas,
-                quantity(temperature, "K"),
-                quantity(pressure, "Pa"),
-                self.z,
-                root,
-            )
-            entropy = state.s.to("J/(mol*K)").magnitude / self.molar_mass
-            volume = root * MOLAR_GAS_CONSTANT * temperature / pressure
-            if not volume > 0.0 or not math.isfinite(volume):
-                raise _FlashFailure(f"the single-phase volume at {pressure} Pa is {volume} m3/mol")
-            density = self.molar_mass / volume
-            balance = 0.0
-            fugacity = 0.0
-            phase = flash.phase
-            vapour_fraction = None
-        return _Sample(
-            pressure=pressure,
-            temperature=temperature,
-            density=density,
-            entropy_residual=entropy - self.target,
-            component_residual=balance,
-            fugacity_residual=fugacity,
-            phase=phase,
-            vapour_fraction=vapour_fraction,
         )
 
     def checked(self, sample: _Sample) -> _Sample:
