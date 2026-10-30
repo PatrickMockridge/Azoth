@@ -65,6 +65,7 @@ station_3_gas_mass_fraction=0.9836745540984078
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:0.9836745540984078,OIL:0.01632544590159213
+
 methane_dilute_0_1bara
 eos=pr
 input_t_k=300.0
@@ -132,6 +133,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_dilute_back_0.05
 eos=pr
 input_t_k=300.0
@@ -199,6 +201,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_dilute_back_0.3
 eos=pr
 input_t_k=300.0
@@ -266,6 +269,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_dilute_back_0.7
 eos=pr
 input_t_k=300.0
@@ -333,6 +337,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_dilute_back_0.9
 eos=pr
 input_t_k=300.0
@@ -400,6 +405,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_dilute_back_0.98
 eos=pr
 input_t_k=300.0
@@ -467,6 +473,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_5bara_unchoked
 eos=pr
 input_t_k=300.0
@@ -534,6 +541,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_5bara_no_flow_at
 eos=pr
 input_t_k=300.0
@@ -591,6 +599,7 @@ station_2_gas_mass_fraction=1.0
 station_2_component_mole_fractions=methane:1.0
 station_2_component_mass_fractions=methane:1.0
 station_2_phase_mass_fractions=GAS:1.0
+
 methane_5bara_no_flow_above
 eos=pr
 input_t_k=300.0
@@ -648,6 +657,7 @@ station_2_gas_mass_fraction=1.0
 station_2_component_mole_fractions=methane:1.0
 station_2_component_mass_fractions=methane:1.0
 station_2_phase_mass_fractions=GAS:1.0
+
 methane_ethane_5bara
 eos=pr
 input_t_k=300.0
@@ -715,6 +725,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=ethane:0.09090909090909091,methane:0.9090909090909091
 station_3_component_mass_fractions=ethane:0.15784776902887143,methane:0.8421522309711287
 station_3_phase_mass_fractions=GAS:1.0
+
 propane_20bara
 eos=pr
 input_t_k=300.0
@@ -784,6 +795,7 @@ station_3_gas_mass_fraction=0.24018413095507404
 station_3_component_mole_fractions=propane:1.0
 station_3_component_mass_fractions=propane:1.0
 station_3_phase_mass_fractions=GAS:0.24018413095507404,OIL:0.7598158690449259
+
 dense_co2_120bara
 eos=pr
 input_t_k=310.0
@@ -851,6 +863,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=CO2:1.0
 station_3_component_mass_fractions=CO2:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 cold_co2_unsupported
 eos=pr
 input_t_k=210.0
@@ -866,6 +879,7 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=UNSUPPORTED_PHYSICS
 diagnostic_0_message=CO2 below 216.592 K requires a separately assessed solid-capable model
+
 methane_scale_d01_cd050
 eos=pr
 input_t_k=300.0
@@ -933,6 +947,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 methane_scale_d02_cd100
 eos=pr
 input_t_k=300.0
@@ -1000,6 +1015,7 @@ station_3_gas_mass_fraction=1.0
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:1.0
+
 propane_butane_20bara
 eos=pr
 input_t_k=300.0
@@ -1015,6 +1031,7 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=CALCULATION_FAILED
 diagnostic_0_message=Mixture entropy root did not converge at 816359.8116510715 Pa
+
 srk_methane_50bara_choked
 eos=srk
 input_t_k=300.0
@@ -1082,6 +1099,7 @@ station_3_gas_mass_fraction=0.9829250259981295
 station_3_component_mole_fractions=methane:1.0
 station_3_component_mass_fractions=methane:1.0
 station_3_phase_mass_fractions=GAS:0.9829250259981295,OIL:0.017074974001870413
+
 srk_propane_20bara
 eos=srk
 input_t_k=300.0
@@ -1151,6 +1169,7 @@ station_3_gas_mass_fraction=0.2437205816911863
 station_3_component_mole_fractions=propane:1.0
 station_3_component_mass_fractions=propane:1.0
 station_3_phase_mass_fractions=GAS:0.2437205816911863,OIL:0.7562794183088136
+
 srk_cold_co2_unsupported
 eos=srk
 input_t_k=210.0
@@ -1166,6 +1185,7 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=UNSUPPORTED_PHYSICS
 diagnostic_0_message=CO2 below 216.592 K requires a separately assessed solid-capable model
+
 srk_propane_butane_20bara
 eos=srk
 input_t_k=300.0
@@ -1181,6 +1201,7 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=CALCULATION_FAILED
 diagnostic_0_message=Mixture entropy root did not converge at 823118.4346510068 Pa
+
 pr_empty_fluid
 eos=pr
 input_t_k=300.0
@@ -1196,6 +1217,7 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=CALCULATION_FAILED
 diagnostic_0_message=inventory must be finite and positive
+
 pr_hydrate_flag
 eos=pr
 input_t_k=300.0
@@ -1211,3 +1233,4 @@ choked=false
 throat_sound_speed_m_per_s=
 diagnostic_0_code=UNSUPPORTED_PHYSICS
 diagnostic_0_message=Reactions, forced phases, solids and hydrates are excluded
+

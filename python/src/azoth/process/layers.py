@@ -1936,6 +1936,12 @@ UNCASED_ROWS: dict[str, int] = {
     # `FALLBACK_PRODUCTS`, which the class's own warning says means the products are a single
     # flash of the mixed feeds rather than the tray solution.
     "process_packed_column.tsv": 13,
+    # The release capture's twenty-one. The probe prints the PR oracle, the SRK evidence,
+    # the two states no azoth input can express (an empty fluid and the hydrate flag) and the
+    # propane/n-butane row the class calls INVALID while this port converges. The layer diff
+    # reads the choked methane block and the flashing propane block; the rest are cases
+    # asserted on the rate and the sound speed, or evidence with no state to compare.
+    "process_hem_release.tsv": 21,
 }
 
 

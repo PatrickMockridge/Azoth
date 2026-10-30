@@ -7514,6 +7514,7 @@ public class ProcessProbe {
           + hemFractions(state.getPhaseMassFractions()));
       i++;
     }
+    System.out.println();
   }
 
   static String hemFractions(Map<String, Double> values) {
