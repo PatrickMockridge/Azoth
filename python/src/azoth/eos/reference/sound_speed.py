@@ -34,16 +34,12 @@ from azoth.core.result import SoundSpeedResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
-from azoth.eos.reference._mixture_state import phase_state, phase_state_at, reduced_parameters
-from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
+from azoth.eos.reference._heat_capacity import phase_capacity
+from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 from azoth.eos.reference.pt_flash import pt_flash
 
 MODEL_ID = "eos.sound_speed"
-
-#: Peng-Robinson's two geometry deltas, the mixture the model is stated on.
-DELTA1 = 1.0 + math.sqrt(2.0)
-DELTA2 = 1.0 - math.sqrt(2.0)
 
 
 def sound_speed(
@@ -135,40 +131,11 @@ def _phase_speed(
     root: float,
 ) -> float:
     """One phase's isentropic speed, m/s."""
-    constant = MOLAR_GAS_CONSTANT
-    state = phase_state_at(reduced, kij, composition, root)
+    capacity = phase_capacity(mixture, ideal_gas, reduced, kij, t, p, composition, root)
     molar_mass = sum(
         component.molar_mass.to("kg/mol").magnitude * fraction
         for component, fraction in zip(mixture.components, composition, strict=True)
     )
-    v = root * constant * t / p
-
-    # `A` is dimensionless (`aP/(RT)^2`), so the dimensional `a` and `b` are these.
-    a = state.a_mix * (constant * t) * (constant * t) / p
-    b = state.b_mix * constant * t / p
-    d_a_d_t = a * state.psi_bar / t
-    f = (v + DELTA1 * b) * (v + DELTA2 * b)
-    d_f = 2.0 * v + (DELTA1 + DELTA2) * b
-    d_p_d_v = -constant * t / ((v - b) * (v - b)) + a * d_f / (f * f)
-    d_p_d_t = constant / (v - b) - d_a_d_t / f
-    if not d_p_d_v < 0.0 or not math.isfinite(d_p_d_v) or not math.isfinite(d_p_d_t):
-        raise InvalidInputError(
-            "state",
-            f"the cubic's pressure-volume derivative is {d_p_d_v} Pa m3/mol at {t:.3} K and "
-            f"{p:.3} Pa, and a sound speed needs a stable phase",
-        )
-
-    cp = float(
-        molar_enthalpy_entropy(
-            mixture, ideal_gas, from_si(t, "K"), from_si(p, "Pa"), composition, root
-        )
-        .cp.to_base_units()
-        .magnitude
-    )
-    cv = cp + t * d_p_d_t * d_p_d_t / d_p_d_v
-    if not cv > 0.0 or not math.isfinite(cp):
-        raise InvalidInputError(
-            "state", f"the phase's heat capacities are cp={cp}, cv={cv}, and both must be positive"
-        )
-    gamma = cp / cv
-    return v * math.sqrt(-gamma * d_p_d_v / molar_mass)
+    v = root * MOLAR_GAS_CONSTANT * t / p
+    gamma = capacity.cp / capacity.cv
+    return v * math.sqrt(-gamma * capacity.d_p_d_v / molar_mass)

@@ -119,6 +119,7 @@ pub mod gerg2008_phase;
 pub mod gt_surface_tension;
 pub mod gt_surface_tension_simple;
 pub mod hayduk_minhas_diffusivity;
+pub mod heat_capacity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod henry;

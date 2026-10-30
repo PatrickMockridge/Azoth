@@ -1768,7 +1768,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'eos.sound_speed',
         "name": 'Speed of sound of a mixture',
         "spec": {'path': 'specs/models/eos/sound_speed.toml', 'sha256': '9b25b150768874ae419165a5a7530f495a555358bcac6828cfcb7e6c63daacf7'},
-        "code": [{'path': 'python/src/azoth/eos/reference/sound_speed.py', 'sha256': 'def4055ca747ac7cc6c1e2369730e76433e0a7aaa29ab1f4085cf96e9001e048'}, {'path': 'crates/azoth-eos/src/sound_speed.rs', 'sha256': '18cabb9ddf41e1f90c94ecaea14ef454a34996dfc0b50f46d7ff9158f02f45a9'}],
+        "code": [{'path': 'python/src/azoth/eos/reference/sound_speed.py', 'sha256': '2a1fb51aa7e5fc60d8ec6f9e180bf3239560a906465cb28f44063bb945911a9f'}, {'path': 'crates/azoth-eos/src/sound_speed.rs', 'sha256': '5930bf7051ad6d311fe079390200fa1f12caa53703ebcf58865b057b3a39a581'}],
         "source": 'NeqSim thermo/phase/PhaseEos.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
