@@ -308,7 +308,7 @@ def _route(
         # outlets share the temperature they came in at.
         flash = pt_flash(mixture, feed_t, from_si(p_out, "Pa"), feed_z)
         temperature = feed_t
-        x, y = list(flash.x), list(flash.y)
+        x, y = _phase_compositions(flash.phase, feed_z, list(flash.x), list(flash.y))
         beta = _vapour_fraction(flash.phase, flash.vapour_fraction)
     else:
         # W over (mol/s) is J/mol, for the reason `Heater.run` gives.
@@ -321,7 +321,7 @@ def _route(
             feed_z,
         )
         temperature = moved.T
-        x, y = list(moved.x), list(moved.y)
+        x, y = _phase_compositions(moved.phase, feed_z, list(moved.x), list(moved.y))
         beta = _vapour_fraction(moved.phase, moved.vapour_fraction)
 
     n_vapour = feed_n * beta
@@ -388,7 +388,27 @@ class CapacityStates:
     has_liquid: bool
 
 
-def _capacity_states(
+@dataclass(frozen=True, slots=True)
+class SizingStates:
+    """The sizing family's evidence, before the gas-load factor is formed.
+
+    **The assessment reads this and not the load factor.** `SeparatorCapacityAssessment` folds
+    the sizing velocity and the two flows; the load factor's near-dry floor is a getter it
+    never reports, so a state the floor refuses is not a state the assessment cannot evidence.
+    """
+
+    gas_density: float
+    liquid_density: float
+    gas_area: float
+    volumetric_flow: float
+    max_velocity: float
+    superficial_velocity: float
+    max_flow: float
+    utilization: float
+    has_liquid: bool
+
+
+def _sizing_states(
     components: list[str],
     t: float,
     p: float,
@@ -399,27 +419,20 @@ def _capacity_states(
     design_load_factor: float,
     orientation: str,
     level_fraction: float,
-) -> CapacityStates:
-    """`Separator`'s steady capacity getters, on the system ``run`` leaves behind.
+) -> SizingStates | None:
+    """The sizing half: densities, area, flows, velocity and utilisation.
 
-    **Two density rules, and they are not one.** The sizing family - the maximum velocity
-    and the utilisation over it - reads the liquid's own density and substitutes `1000.0`
-    only where there is no liquid, with **no floor**. The gas-load factor applies the
-    class's `10.0` floor to the same density first. A near-dry state makes the two disagree
-    by construction.
-
-    ``liquid_z`` is the outlet's liquid, which is the entrained composition after
-    `gas_in_liquid`; its density is taken at the root that composition's own flash puts it
-    on, because `initPhysicalProperties` recomputes it after the transfer.
+    ``None`` is the class's own first answer - a stream with no gas phase uses none of its
+    capacity - and is not an error. ``liquid_z`` is the entrained outlet's composition, whose
+    density is taken at the root that composition's own flash puts it on.
     """
     from azoth.eos.reference.hydrate_inhibitor_wt import GAS
     from azoth.process.reference.capacity import _labelled_phases, _mass_density, _molar_mass
 
-    mixture, labelled, _shares = _labelled_phases(components, t, p, feed_z)
+    mixture, labelled, _shares = _labelled_phases(components, t, p, feed_z, from_feed=True)
     gas = next((entry for entry in labelled if entry[0] == GAS), None)
     if gas is None:
-        # The class's own first answer: a stream with no gas phase uses none of its capacity.
-        return CapacityStates(0.0, None, None, None, False, None, None, None, None, None, False)
+        return None
     _label, gas_z, gas_root = gas
     gas_density = _mass_density(mixture, t, p, gas_z, gas_root)
     gas_molar_mass = _molar_mass(mixture, gas_z)
@@ -430,8 +443,9 @@ def _capacity_states(
             f"by its square root",
         )
 
+    has_liquid = any(entry[0] != GAS for entry in labelled)
     # The liquid's own density, or the sizing fallback where the system carries none.
-    if any(entry[0] != GAS for entry in labelled):
+    if has_liquid:
         entrained = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(liquid_z))
         liquid_density = _mass_density(mixture, t, p, list(liquid_z), entrained.z_liquid)
     else:
@@ -457,36 +471,98 @@ def _capacity_states(
             "capacity_utilization",
             f"the maximum allowable gas flow is {max_flow} m3/s, and utilisation divides by it",
         )
-    utilization = volumetric_flow / max_flow
-    superficial = volumetric_flow / gas_area
-
-    # **The load factor's own rule, applied after the sizing one.** The floor substitutes
-    # `1000.0` for a second phase no denser than the gas; the positivity check is repeated
-    # against the substituted value, which is a state the class would also answer NaN for.
-    floored = _load_factor_liquid_density(liquid_density, gas_density)
-    if not math.isfinite(floored) or floored <= gas_density:
-        raise InvalidInputError(
-            "gas_load_factor",
-            f"the liquid phase is {floored} kg/m3 after the near-dry floor against the gas's "
-            f"{gas_density}, and the load factor divides by their difference",
-        )
-    term = (floored - gas_density) / gas_density
-    load_factor = superficial * math.sqrt(1.0 / term)
-    if not math.isfinite(load_factor):
-        raise InvalidInputError("gas_load_factor", f"the gas load factor is {load_factor} m/s")
-    return CapacityStates(
-        utilization=utilization,
-        max_velocity=max_velocity,
-        superficial_velocity=superficial,
-        load_factor=load_factor,
-        overloaded=utilization > 1.0,
+    return SizingStates(
         gas_density=gas_density,
         liquid_density=liquid_density,
         gas_area=gas_area,
         volumetric_flow=volumetric_flow,
+        max_velocity=max_velocity,
+        superficial_velocity=volumetric_flow / gas_area,
         max_flow=max_flow,
-        has_liquid=any(entry[0] != GAS for entry in labelled),
+        utilization=volumetric_flow / max_flow,
+        has_liquid=has_liquid,
     )
+
+
+def _capacity_states(
+    components: list[str],
+    t: float,
+    p: float,
+    feed_z: list[float],
+    gas_n: float,
+    liquid_z: list[float],
+    diameter_m: float,
+    design_load_factor: float,
+    orientation: str,
+    level_fraction: float,
+) -> CapacityStates:
+    """`Separator`'s steady capacity getters, on the system ``run`` leaves behind.
+
+    **Two density rules, and they are not one.** The sizing family - the maximum velocity
+    and the utilisation over it - reads the liquid's own density and substitutes `1000.0`
+    only where there is no liquid, with **no floor**. The gas-load factor applies the
+    class's `10.0` floor to the same density first. A near-dry state makes the two disagree
+    by construction.
+    """
+    sizing = _sizing_states(
+        components,
+        t,
+        p,
+        feed_z,
+        gas_n,
+        liquid_z,
+        diameter_m,
+        design_load_factor,
+        orientation,
+        level_fraction,
+    )
+    if sizing is None:
+        # The class's own first answer: a stream with no gas phase uses none of its capacity.
+        return CapacityStates(0.0, None, None, None, False, None, None, None, None, None, False)
+
+    # **The load factor's own rule, applied after the sizing one.** The floor substitutes
+    # `1000.0` for a second phase no denser than the gas; the positivity check is repeated
+    # against the substituted value, which is a state the class would also answer NaN for.
+    floored = _load_factor_liquid_density(sizing.liquid_density, sizing.gas_density)
+    if not math.isfinite(floored) or floored <= sizing.gas_density:
+        raise InvalidInputError(
+            "gas_load_factor",
+            f"the liquid phase is {floored} kg/m3 after the near-dry floor against the gas's "
+            f"{sizing.gas_density}, and the load factor divides by their difference",
+        )
+    term = (floored - sizing.gas_density) / sizing.gas_density
+    load_factor = sizing.superficial_velocity * math.sqrt(1.0 / term)
+    if not math.isfinite(load_factor):
+        raise InvalidInputError("gas_load_factor", f"the gas load factor is {load_factor} m/s")
+    return CapacityStates(
+        utilization=sizing.utilization,
+        max_velocity=sizing.max_velocity,
+        superficial_velocity=sizing.superficial_velocity,
+        load_factor=load_factor,
+        overloaded=sizing.utilization > 1.0,
+        gas_density=sizing.gas_density,
+        liquid_density=sizing.liquid_density,
+        gas_area=sizing.gas_area,
+        volumetric_flow=sizing.volumetric_flow,
+        max_flow=sizing.max_flow,
+        has_liquid=sizing.has_liquid,
+    )
+
+
+def _phase_compositions(
+    phase: Phase, z: list[float], x: list[float], y: list[float]
+) -> tuple[list[float], list[float]]:
+    """The two compositions a flash's phase implies.
+
+    **A single phase has the feed's composition, and the flash's own ``x`` or ``y`` is not
+    it.** The flash answers a trial there - and on its negative-flash branch that trial is the
+    other side of the cubic, so a 95/5 methane/ethane gas at 50 bar would leave the vessel with
+    the trial composition and a density 2.6 times the feed's. The two-phase branch keeps the
+    flash's split.
+    """
+    if phase is Phase.TWO_PHASE:
+        return x, y
+    return list(z), list(z)
 
 
 def _load_factor_liquid_density(liquid_density: float, gas_density: float) -> float:

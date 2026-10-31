@@ -264,6 +264,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPumpResult>()?;
     m.add_class::<crate::transport_gen::PyRateBasedPackedColumnResult>()?;
     m.add_class::<crate::transport_gen::PySeparatorResult>()?;
+    m.add_class::<crate::transport_gen::PySeparatorCapacityAssessmentResult>()?;
     m.add_class::<crate::transport_gen::PyShortcutDistillationColumnResult>()?;
     m.add_class::<crate::transport_gen::PySplitterResult>()?;
     m.add_class::<crate::transport_gen::PyStirredTankReactorResult>()?;
@@ -877,6 +878,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::separator, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::separator_capacity_assessment,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::shortcut_distillation_column,
         m

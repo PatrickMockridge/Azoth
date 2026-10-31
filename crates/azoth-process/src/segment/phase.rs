@@ -10,8 +10,8 @@ use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
 use azoth_eos::phase_transport::{PhaseKind, phase_transport};
 use azoth_eos::results::{PhaseTransportResult, PtFlashResult};
 use azoth_eos::{
-    Cubic, IdealGasModel, Mixture, Phase, databank, molar_enthalpy_entropy, pr_mass_density,
-    pr_molar_volume, pt_flash,
+    Cubic, IdealGasModel, Mixture, Phase, RootSide, databank, molar_enthalpy_entropy,
+    pr_mass_density, pr_molar_volume, pt_flash,
 };
 
 use crate::stream::Stream;
@@ -267,18 +267,53 @@ pub(crate) fn labelled_phases_at(
     z: &[f64],
     flash: &PtFlashResult,
 ) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    labelled_phases_at_impl(mixture, t, p, z, flash, false)
+}
+
+/// [`labelled_phases_at`] with the single phase's **root** taken from the feed as well as its
+/// composition.
+///
+/// **The flash's root is a trial on a negative-flash answer, and it is the other side of the
+/// cubic.** A 95/5 methane/ethane gas at 50 bar reports `Z = 0.34` from the flash's trial and
+/// `0.93` from the feed, and NeqSim's `getPhase("gas")` is the feed's. The capacity surfaces of
+/// `process.separator` and `process.gas_scrubber` read this variant; the columns' capacity
+/// family keeps the flash's root, which is the state its own capture was taken against.
+pub(crate) fn labelled_phases_at_from_feed(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    flash: &PtFlashResult,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    labelled_phases_at_impl(mixture, t, p, z, flash, true)
+}
+
+fn labelled_phases_at_impl(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    flash: &PtFlashResult,
+    from_feed: bool,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
     let reduced = mixture.reduced_parameters(t, p)?;
+    let single = |side: RootSide| -> Result<f64> {
+        if from_feed {
+            Ok(mixture.phase_state(&reduced, z, side)?.z)
+        } else if side == RootSide::Vapour {
+            Ok(flash.z_vapour)
+        } else {
+            Ok(flash.z_liquid)
+        }
+    };
     Ok(match flash.phase {
         // **A single phase has the system's composition, and the flash's own `x` or `y` is not
         // it.** The flash answers a trial phase there - `column/tray.rs` records the
         // measurement - so the one phase *is* the system.
-        Phase::AllVapour => vec![(PhaseLabel::Gas, z.to_vec(), flash.z_vapour)],
+        Phase::AllVapour => vec![(PhaseLabel::Gas, z.to_vec(), single(RootSide::Vapour)?)],
         Phase::AllLiquid | Phase::Trivial => {
-            vec![(
-                label(mixture, &reduced, z, flash.z_liquid)?,
-                z.to_vec(),
-                flash.z_liquid,
-            )]
+            let root = single(RootSide::Liquid)?;
+            vec![(label(mixture, &reduced, z, root)?, z.to_vec(), root)]
         }
         Phase::TwoPhase => {
             if flash.vapour_fraction.is_none() {

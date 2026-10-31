@@ -1164,3 +1164,29 @@ methane/ethane/n-heptane at 90 bara and 25 C prints one `GAS` phase on both cubi
 `MIN_LIQUID_GAS_DENSITY_DIFFERENCE` floor the test exists to guard. The row stays as evidence
 that the floor is not reachable from that state; the port pins the floor on constructed
 densities instead.
+
+## The separator capacity assessment
+
+`process_separator_capacity_assessment.tsv` is `Separator.getCapacityAssessment` on the
+capacity capture's states plus the pin's #3154 state, swept over the status branches.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
+  > captures/process_separator_capacity_assessment.tsv
+```
+
+Each row prints the snapshot's every getter beside the state it was taken on. **The mechanical
+limit is stated as a fraction of the Souders-Brown flow and printed as the absolute number the
+probe set**: the class stores `maxDesignGassVolumeFlow` in m3/hr and the snapshot reports
+`/3600`, which is the port's input unit. The **PR rows are the oracle**; the SRK #3154 rows
+are evidence.
+
+**The #3154 state exposed a flash defect that the port now avoids.** At 50 bar and 303 K the
+port's `pt_flash` answers `all_vapour` through its negative-flash branch, whose trial
+composition's root is the *other* side of the cubic: `Z = 0.34` against the feed's `0.93`, and
+a gas density of `95.79` kg/m3 against NeqSim's `36.69`. The class reads the feed's composition
+and root for a single phase, and `labelled_phases_at`'s note already said so for the
+composition; the separator and gas-scrubber capacity surfaces now take the root from the feed
+too (`labelled_phases_at_from_feed`). The columns' capacity family keeps the flash's root,
+which is the state its own captures were taken against.

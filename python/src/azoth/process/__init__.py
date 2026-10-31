@@ -42,6 +42,7 @@ from azoth.core.result import (
     PlugFlowReactorResult,
     PumpResult,
     RateBasedPackedColumnResult,
+    SeparatorCapacityAssessmentResult,
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
@@ -101,6 +102,7 @@ __all__ = [
     "rate_based_packed_column",
     "run_flowsheet",
     "separator",
+    "separator_capacity_assessment",
     "shortcut_distillation_column",
     "splitter",
     "stirred_tank_reactor",
@@ -135,6 +137,7 @@ _HEATER = "process.heater"
 _HEM_RELEASE = "process.hem_release"
 _LEAK_BLOWDOWN = "process.leak_blowdown"
 _SEPARATOR = "process.separator"
+_SEPARATOR_CAPACITY_ASSESSMENT = "process.separator_capacity_assessment"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _GIBBS_REACTOR = "process.gibbs_reactor"
@@ -1850,6 +1853,52 @@ def separator(
         design_gas_load_factor=design_gas_load_factor,
         orientation=orientation,
         design_liquid_level_fraction=design_liquid_level_fraction,
+    )
+
+
+def separator_capacity_assessment(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    internal_diameter: Q,
+    design_gas_load_factor: Q,
+    orientation: str,
+    design_liquid_level_fraction: float,
+    design_basis_provenance: str,
+    heat_input: Q | None = None,
+    mechanical_design_max_gas_flow: Q | None = None,
+) -> SeparatorCapacityAssessmentResult:
+    """Assess a separator's gas capacity, fail-closed.
+
+    The pinned ``SeparatorCapacityAssessment.from``: a detached snapshot of the vessel, the
+    flashed state, the two limits and the utilisation. **A blank provenance, an unknown
+    orientation, non-positive geometry or K, no gas phase, a level outside ``[0, 1)`` and
+    non-finite evidence answer ``"unassessed"``** - statuses, not exceptions - and the numeric
+    evidence is absent there. ``mechanical_design_max_gas_flow`` is the class's
+    ``maxDesignGassVolumeFlow / 3600``; a positive limit at or below the Souders-Brown flow
+    governs.
+
+    See :func:`azoth.process.reference.separator_capacity_assessment`.
+    """
+    return resolve(_SEPARATOR_CAPACITY_ASSESSMENT)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        pressure_drop=pressure_drop,
+        gas_in_liquid=gas_in_liquid,
+        internal_diameter=internal_diameter,
+        design_gas_load_factor=design_gas_load_factor,
+        orientation=orientation,
+        design_liquid_level_fraction=design_liquid_level_fraction,
+        design_basis_provenance=design_basis_provenance,
+        heat_input=heat_input,
+        mechanical_design_max_gas_flow=mechanical_design_max_gas_flow,
     )
 
 

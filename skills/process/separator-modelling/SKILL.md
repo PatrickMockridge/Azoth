@@ -83,18 +83,20 @@ Not applicable — the fluid is the caller's composition and the databank resolv
 | `gas_load_factor` used as the design K | It is the **actual** Souders-Brown factor | `design_gas_load_factor` is the vessel's basis |
 | A horizontal vessel `max_allowable_gas_velocity` changed by `design_liquid_level_fraction` | The velocity is density-based; only the area derates | Compare `max_allowable_gas_flow` instead |
 | Half a vessel quietly ignored | Only one of diameter and K stated | Both are required; the port refuses one alone |
+| An `unassessed` report read as a zero utilisation | A blank provenance, bad geometry or no gas phase | Check `status`: `unassessed` is missing evidence, not spare capacity |
 
 ## Limitations
 
-One condensed phase only. The class's `SeparatorCapacityAssessment`, `getGasLoadFactor(int)`,
-`getDeRatedGasLoadFactor`, the droplet calculator, `sizeFromFlow`/`autoSize` and the
-mechanical design are not ported. Residence times are not computed.
+One condensed phase only. The class's `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`,
+the droplet calculator, `sizeFromFlow`/`autoSize` and the mechanical design are not ported.
+Residence times are not computed.
 
 ## Related Azoth functionality
 
 `process.separator`'s capacity surface (this skill's utilisation, velocities and load
-factor), and `process.gas_scrubber`, whose stream side is the same flash and whose own
-capacity metric is the utilisation alone.
+factor), `process.separator_capacity_assessment` (the same evidence as a fail-closed snapshot
+with a stated design basis and an optional mechanical limit), and `process.gas_scrubber`,
+whose stream side is the same flash and whose own capacity metric is the utilisation alone.
 
 ## References
 

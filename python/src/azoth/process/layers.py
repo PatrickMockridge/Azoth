@@ -1190,6 +1190,14 @@ NO_INTERIOR: dict[str, str] = {
         "feed - a construction-time state a kernel that is a pure function of its inlets "
         "has no way to reproduce"
     ),
+    "process.separator_capacity_assessment": (
+        "the kernel folds the same run and capacity arithmetic ``process.separator`` carries "
+        "into the snapshot, and every number in the snapshot is on the model's own record - "
+        "the status, the diagnostic and the two basis strings included. The capacity layers "
+        "are dumped under ``process.separator`` already, against the same numbers, so a "
+        "dumper here would be a second dump of that arithmetic under another name, which is "
+        "the thing this dict exists to refuse"
+    ),
     "process.turbo_expander_compressor": (
         "the kernel forms the speed, both powers, both efficiencies, the compressor's "
         "polytropic head, the two ratios and the IGV opening, and **every one of them is on "

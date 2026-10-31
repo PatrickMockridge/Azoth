@@ -17358,6 +17358,132 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
         }
     }
 }
+/// Result of `process.separator_capacity_assessment`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SeparatorCapacityAssessmentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySeparatorCapacityAssessmentResult {
+    /// `feasible`, `infeasible` or `unassessed` - the class's `FEASIBLE`/`INFEASIBLE`/`UNASSESSED` in the library's spelling.
+    #[pyo3(get)]
+    pub status: String,
+    /// the class's sentence for the status: one of seven fixed strings, not a composed message.
+    #[pyo3(get)]
+    pub diagnostic: String,
+    /// `equipment` when no mechanical limit was stated, `mechanicalDesign` when one was, and empty on `unassessed`.
+    #[pyo3(get)]
+    pub design_basis_source: String,
+    /// `soudersBrown` or `mechanicalDesignGasFlow`, and empty on `unassessed`.
+    #[pyo3(get)]
+    pub governing_capacity_basis: String,
+    /// the gas flow area: the full cross-section vertical, `(1 - design_liquid_level_fraction)` of it horizontal. **Absent on `unassessed`.**
+    #[pyo3(get)]
+    pub gas_area: Option<PyQty>,
+    /// the gas phase's mass density. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub gas_density: Option<PyQty>,
+    /// the liquid phase's mass density, or `1000.0` where the system carries no liquid. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub liquid_density: Option<PyQty>,
+    /// `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)`, the sizing rule's, with no `10.0` floor. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub maximum_gas_velocity: Option<PyQty>,
+    /// the gas phase's actual volumetric flow. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub current_gas_flow: Option<PyQty>,
+    /// the stated mechanical limit in m3/s, or `0.0` when none was stated - the class's snapshot field. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub mechanical_design_maximum_gas_flow: Option<PyQty>,
+    /// `getMaxAllowableGasFlowRate`: the maximum velocity times the gas area. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub souders_brown_maximum_gas_flow: Option<PyQty>,
+    /// the governed limit: the mechanical limit where it binds, the Souders-Brown flow otherwise. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub maximum_gas_flow: Option<PyQty>,
+    /// the current gas flow over the governed limit; `<= 1` is `feasible`. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub utilization: Option<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySeparatorCapacityAssessmentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SeparatorCapacityAssessmentResult(status={:?}, diagnostic={:?}, design_basis_source={:?}, governing_capacity_basis={:?}, gas_area={:?}, gas_density={:?}, liquid_density={:?}, maximum_gas_velocity={:?}, current_gas_flow={:?}, mechanical_design_maximum_gas_flow={:?}, souders_brown_maximum_gas_flow={:?}, maximum_gas_flow={:?}, utilization={:?}, {} warning(s))",
+            self.status,
+            self.diagnostic,
+            self.design_basis_source,
+            self.governing_capacity_basis,
+            self.gas_area,
+            self.gas_density,
+            self.liquid_density,
+            self.maximum_gas_velocity,
+            self.current_gas_flow,
+            self.mechanical_design_maximum_gas_flow,
+            self.souders_brown_maximum_gas_flow,
+            self.maximum_gas_flow,
+            self.utilization,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult>
+    for PySeparatorCapacityAssessmentResult
+{
+    fn from(
+        r: &azoth_process::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult,
+    ) -> Self {
+        Self {
+            status: r.status.clone(),
+            diagnostic: r.diagnostic.clone(),
+            design_basis_source: r.design_basis_source.clone(),
+            governing_capacity_basis: r.governing_capacity_basis.clone(),
+            gas_area: r.gas_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            gas_density: r.gas_density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            liquid_density: r.liquid_density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            maximum_gas_velocity: r.maximum_gas_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            current_gas_flow: r.current_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            mechanical_design_maximum_gas_flow: r.mechanical_design_maximum_gas_flow.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "m**3/s".to_string(),
+                }
+            }),
+            souders_brown_maximum_gas_flow: r.souders_brown_maximum_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            maximum_gas_flow: r.maximum_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            utilization: r.utilization,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.shortcut_distillation_column`, transported.
 #[pyclass(
     frozen,

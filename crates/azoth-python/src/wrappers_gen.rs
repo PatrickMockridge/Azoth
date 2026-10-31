@@ -6122,6 +6122,52 @@ pub fn separator(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Separator capacity assessment.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, design_basis_provenance, heat_input, mechanical_design_max_gas_flow))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, design_basis_provenance, heat_input, mechanical_design_max_gas_flow)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn separator_capacity_assessment(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    internal_diameter: f64,
+    design_gas_load_factor: f64,
+    orientation: &str,
+    design_liquid_level_fraction: f64,
+    design_basis_provenance: &str,
+    heat_input: Option<f64>,
+    mechanical_design_max_gas_flow: Option<f64>,
+) -> PyResult<crate::transport_gen::PySeparatorCapacityAssessmentResult> {
+    azoth_process::models::separator_capacity_assessment::separator_capacity_assessment(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        meters(internal_diameter),
+        meters_per_second(design_gas_load_factor),
+        orientation,
+        design_liquid_level_fraction,
+        design_basis_provenance,
+        heat_input.map(watts),
+        mechanical_design_max_gas_flow.map(cubic_meters_per_second),
+    )
+    .map(|r| crate::transport_gen::PySeparatorCapacityAssessmentResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Shortcut distillation column.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

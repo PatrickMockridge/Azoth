@@ -345,6 +345,7 @@ Five sections, and the difference between them is the point:
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column
 - [`process.separator`](./process/separator.md) — Separator
+- [`process.separator_capacity_assessment`](./process/separator_capacity_assessment.md) — Separator capacity assessment
 - [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
 - [`process.stirred_tank_reactor`](./process/stirred_tank_reactor.md) — Stirred-tank reactor

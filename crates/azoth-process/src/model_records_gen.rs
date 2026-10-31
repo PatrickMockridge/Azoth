@@ -35,6 +35,7 @@ use crate::models::plug_flow_reactor::PlugFlowReactorResult;
 use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
 use crate::models::separator::SeparatorResult;
+use crate::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult;
 use crate::models::shortcut_distillation_column::ShortcutDistillationColumnResult;
 use crate::models::splitter::SplitterResult;
 use crate::models::stirred_tank_reactor::StirredTankReactorResult;
@@ -677,6 +678,30 @@ impl CalcResult for SeparatorResult {
         "gas_superficial_velocity",
         "gas_load_factor",
         "is_overloaded",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for SeparatorCapacityAssessmentResult {
+    const CALC_ID: &'static str = "process.separator_capacity_assessment";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "diagnostic",
+        "design_basis_source",
+        "governing_capacity_basis",
+        "gas_area",
+        "gas_density",
+        "liquid_density",
+        "maximum_gas_velocity",
+        "current_gas_flow",
+        "mechanical_design_maximum_gas_flow",
+        "souders_brown_maximum_gas_flow",
+        "maximum_gas_flow",
+        "utilization",
         "warnings",
     ];
 

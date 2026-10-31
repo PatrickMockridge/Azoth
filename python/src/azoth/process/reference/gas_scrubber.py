@@ -268,7 +268,7 @@ def _capacity_utilization(
     ``initPhysicalProperties`` does recompute its density. The two are the same on a run with no
     entrainment, which is what the capture's dry row fixes.
     """
-    mixture, labelled, _shares = _labelled_phases(components, t, p, z)
+    mixture, labelled, _shares = _labelled_phases(components, t, p, z, from_feed=True)
     gas = next((entry for entry in labelled if entry[0] == GAS), None)
     if gas is None:
         # The class's own first answer: a stream with no gas phase uses none of its capacity.

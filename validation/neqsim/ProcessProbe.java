@@ -34,6 +34,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
 //       > captures/process_separator_capacity.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
+//       > captures/process_separator_capacity_assessment.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
@@ -122,6 +124,9 @@ public class ProcessProbe {
         break;
       case "separator_capacity":
         separatorCapacityRows();
+        break;
+      case "separator_capacity_assessment":
+        separatorCapacityAssessmentRows();
         break;
       case "throttling_valve":
         throttlingValve();
@@ -4823,6 +4828,162 @@ public class ProcessProbe {
     System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
     System.out.println("capacity_utilization=" + separator.getCapacityUtilization());
     System.out.println("is_overloaded=" + separator.isOverloaded());
+    System.out.println();
+  }
+
+  // === process.separator_capacity_assessment ==================================
+
+  /// `Separator.getCapacityAssessment`, the detached fail-closed snapshot.
+  ///
+  /// **The mechanical limit is stated as a fraction of the Souders-Brown flow**, because it
+  /// is the one number the pin's test derives rather than states: its `0.8` limit is
+  /// `0.8 * getSoudersBrownMaximumGasFlowM3PerS()`. The probe computes it after the run and
+  /// prints the absolute m3/s it set, which is what a case states.
+  ///
+  /// The failing states - a zero diameter, an orientation that is neither of the two, a
+  /// liquid level of one, a liquid-only feed, a blank provenance - are the class's own
+  /// `UNASSESSED` answers, not exceptions; each prints its diagnostic.
+  static void separatorCapacityAssessmentRows() {
+    assessmentRow("pr_feasible_sb_governs", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_infeasible", false, false, null, new String[] {"methane", "n-butane"},
+        new double[] {0.7, 0.3}, 300.0, 20.0, 50.0, null, 0.2, 0.11, "vertical", 0.8, null,
+        "an undersized vessel");
+    assessmentRow("pr_mechanical_governs", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.8, "mechanical design basis");
+    assessmentRow("pr_mechanical_above_sb", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 1.2, "a mechanical limit that does not bind");
+    assessmentRow("pr_blank_provenance", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, null, " ");
+    assessmentRow("pr_liquid_only", false, false, null, new String[] {"n-butane"},
+        new double[] {1.0}, 250.0, 5.0, 1.0, null, 1.0, 0.11, "vertical", 0.8, null,
+        "liquid only");
+    // The class checks the gas phase before the liquid level, so this answers the geometry
+    // sentence rather than the level's.
+    assessmentRow("pr_liquid_only_level_one", false, false, null, new String[] {"n-butane"},
+        new double[] {1.0}, 250.0, 5.0, 1.0, null, 1.0, 0.11, "vertical", 1.0, null,
+        "liquid only");
+    assessmentRow("pr_zero_k", false, false, null, new String[] {"methane", "n-butane"},
+        new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null, 1.0, 0.0, "vertical", 0.8, null,
+        "design basis A");
+    // `1e308 * sqrt((rho_l - rho_g)/rho_g)` overflows, which is the class's non-finite
+    // evidence branch rather than a geometry refusal.
+    assessmentRow("pr_overflowing_k", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 1.0e308, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_horizontal_feasible", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.8, null, "design basis A");
+    assessmentRow("pr_zero_diameter", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        0.0, 0.11, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_invalid_orientation", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "inclined", 0.8, null, "design basis A");
+    assessmentRow("pr_level_one", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 1.0, null, "design basis A");
+
+    // The pin's #3154 state, mirrored on PR: 3 m vertical, methane/ethane at 50000 kg/hr.
+    assessmentRow("pr_3154_feasible", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, "Issue #3154 design basis");
+    assessmentRow("pr_3154_mechanical", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, 0.8, "Issue #3154 mechanical design basis");
+    assessmentRow("pr_3154_blank_provenance", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, " ");
+
+    // SRK evidence, the cubic `SeparatorTest` itself uses.
+    assessmentRow("srk_3154_feasible", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, "Issue #3154 design basis");
+    assessmentRow("srk_3154_mechanical", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, 0.8, "Issue #3154 mechanical design basis");
+    assessmentRow("srk_3154_blank_provenance", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, " ");
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void assessmentRow(String label, boolean srk, boolean multiPhase, Double heatInputW,
+      String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter, double kFactor, String orientation,
+      double designLiquidLevelFraction, Double mechanicalFraction, String provenance) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    separator.setInternalDiameter(diameter);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.setOrientation(orientation);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.run();
+
+    Double mechanicalLimit = null;
+    if (mechanicalFraction != null) {
+      mechanicalLimit = mechanicalFraction * separator.getMaxAllowableGasFlowRate();
+      // The class stores m3/hr; the snapshot reports m3/s, which is the port's input unit.
+      separator.getMechanicalDesign().setMaxDesignGassVolumeFlow(mechanicalLimit * 3600.0);
+    }
+    neqsim.process.equipment.separator.SeparatorCapacityAssessment assessment =
+        separator.getCapacityAssessment(provenance);
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("flow_kg_hr=" + inlet.getFlowRate("kg/hr"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < inlet.getThermoSystem().getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(inlet.getThermoSystem().getPhase(0).getComponent(i).getName()).append(":")
+          .append(inlet.getThermoSystem().getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("orientation=" + orientation);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("mechanical_design_max_gas_flow_m3_s="
+        + (mechanicalLimit == null ? "none" : mechanicalLimit));
+    System.out.println("design_basis_provenance=" + provenance);
+    System.out.println("status=" + assessment.getStatus());
+    System.out.println("is_feasible=" + assessment.isFeasible());
+    System.out.println("diagnostic=" + assessment.getDiagnostic());
+    System.out.println("design_basis_provenance_echo=" + assessment.getDesignBasisProvenance());
+    System.out.println("design_basis_source=" + assessment.getDesignBasisSource());
+    System.out.println("design_basis_confidence=" + assessment.getDesignBasisConfidence());
+    System.out.println("governing_capacity_basis=" + assessment.getGoverningCapacityBasis());
+    System.out.println("assessment_orientation=" + assessment.getOrientation());
+    System.out.println("assessment_internal_diameter_m="
+        + assessment.getInternalDiameterM());
+    System.out.println("assessment_design_liquid_level_fraction="
+        + assessment.getDesignLiquidLevelFraction());
+    System.out.println("gas_area_m2=" + assessment.getGasAreaM2());
+    System.out.println("gas_density_kg_m3=" + assessment.getGasDensityKgM3());
+    System.out.println("liquid_density_kg_m3=" + assessment.getLiquidDensityKgM3());
+    System.out.println("design_gas_load_factor_assessed_m_per_s="
+        + assessment.getDesignGasLoadFactorMPerS());
+    System.out.println("maximum_gas_velocity_m_per_s="
+        + assessment.getMaximumGasVelocityMPerS());
+    System.out.println("current_gas_flow_m3_s=" + assessment.getCurrentGasFlowM3PerS());
+    System.out.println("mechanical_design_maximum_gas_flow_m3_s="
+        + assessment.getMechanicalDesignMaximumGasFlowM3PerS());
+    System.out.println("souders_brown_maximum_gas_flow_m3_s="
+        + assessment.getSoudersBrownMaximumGasFlowM3PerS());
+    System.out.println("maximum_gas_flow_m3_s=" + assessment.getMaximumGasFlowM3PerS());
+    System.out.println("utilization=" + assessment.getUtilization());
+    String trimmedProvenance = provenance.trim();
+    System.out.println("json_has_provenance="
+        + (trimmedProvenance.isEmpty() ? "n/a" : assessment.toJson().contains(trimmedProvenance)));
     System.out.println();
   }
 

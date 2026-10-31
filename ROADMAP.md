@@ -808,10 +808,12 @@ a claim nothing holds.
   thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; **`Separator`'s
   capacity surface landed** - utilisation, the maximum allowable and superficial velocities,
   the no-argument gas load factor and the overload flag, with the sizing rule's and the load
-  factor's density rules kept apart - and what remains owed there is
-  `SeparatorCapacityAssessment`, the droplet-performance calculator, `getGasLoadFactor(int)`'s
-  inventory derating, `getDeRatedGasLoadFactor`, the `sizeFromFlow`/`autoSize` gas-area sizing
-  and the mechanical design; `ThreePhaseSeparator`'s levels and
+  factor's density rules kept apart - **and `SeparatorCapacityAssessment` landed as
+  `process.separator_capacity_assessment`**, the fail-closed snapshot with its optional
+  mechanical-design gas limit; what remains owed there is the droplet-performance calculator,
+  `getGasLoadFactor(int)`'s inventory derating, `getDeRatedGasLoadFactor`, the
+  `sizeFromFlow`/`autoSize` gas-area sizing and the mechanical design;
+  `ThreePhaseSeparator`'s levels and
   outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity

@@ -3078,6 +3078,23 @@ class SeparatorResult:
     warnings: list[Warning]
 
 @final
+class SeparatorCapacityAssessmentResult:
+    status: str
+    diagnostic: str
+    design_basis_source: str
+    governing_capacity_basis: str
+    gas_area: Qty | None
+    gas_density: Qty | None
+    liquid_density: Qty | None
+    maximum_gas_velocity: Qty | None
+    current_gas_flow: Qty | None
+    mechanical_design_maximum_gas_flow: Qty | None
+    souders_brown_maximum_gas_flow: Qty | None
+    maximum_gas_flow: Qty | None
+    utilization: float | None
+    warnings: list[Warning]
+
+@final
 class ShortcutDistillationColumnResult:
     distillate_n: Qty
     distillate_z: list[float]
@@ -5714,6 +5731,22 @@ def separator(
     orientation: str | None = None,
     design_liquid_level_fraction: float | None = None,
 ) -> SeparatorResult: ...
+def separator_capacity_assessment(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    pressure_drop: float,
+    gas_in_liquid: float,
+    internal_diameter: float,
+    design_gas_load_factor: float,
+    orientation: str,
+    design_liquid_level_fraction: float,
+    design_basis_provenance: str,
+    heat_input: float | None = None,
+    mechanical_design_max_gas_flow: float | None = None,
+) -> SeparatorCapacityAssessmentResult: ...
 def shortcut_distillation_column(
     components: list[str],
     feed_n: float,

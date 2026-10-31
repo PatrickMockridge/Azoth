@@ -246,6 +246,7 @@
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml
 //!   - specs/models/process/separator.toml
+//!   - specs/models/process/separator_capacity_assessment.toml
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
 //!   - specs/models/process/stirred_tank_reactor.toml
@@ -3487,6 +3488,61 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.separator",
         "design_liquid_level_fraction",
         "dimensionless",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "feed_n",
+        "molar_flow",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "feed_z",
+        "dimensionless",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "feed_p",
+        "pressure",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "feed_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "pressure_drop",
+        "pressure",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "gas_in_liquid",
+        "dimensionless",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "internal_diameter",
+        "length",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "design_gas_load_factor",
+        "velocity",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "design_liquid_level_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "heat_input",
+        "power",
+    ),
+    (
+        "process.separator_capacity_assessment",
+        "mechanical_design_max_gas_flow",
+        "volume_rate",
     ),
     (
         "process.shortcut_distillation_column",

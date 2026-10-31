@@ -1,11 +1,11 @@
 //! `unit_ops.separator` - a flash, split into vapour and liquid outlets.
 
-use azoth_core::units::{Length, Power, Pressure, Velocity, joules_per_mole, pascals};
+use azoth_core::units::{Length, Power, Pressure, Velocity, VolumeRate, joules_per_mole, pascals};
 use azoth_core::{AzothError, Result};
 use azoth_eos::hydrate_inhibitor_wt::PhaseLabel;
 use azoth_eos::{Phase, RootSide, ph_flash, pt_flash};
 
-use crate::segment::phase::{labelled_phases_at, mass_density, molar_mass_of};
+use crate::segment::phase::{labelled_phases_at_from_feed, mass_density, molar_mass_of};
 use crate::stream::Stream;
 
 /// `Separator.DEFAULT_LIQUID_DENSITY_FOR_SIZING`, which the sizing velocity substitutes where
@@ -31,6 +31,16 @@ pub struct Capacity {
     pub load_factor: Option<f64>,
     /// `isOverloaded`: `utilization > 1.0`, exactly.
     pub overloaded: bool,
+    /// The gas phase's mass density, kg/m3; absent with no gas.
+    pub gas_density: Option<f64>,
+    /// The sizing family's liquid density, kg/m3; absent with no gas.
+    pub liquid_density: Option<f64>,
+    /// The design gas area, m2; absent with no gas.
+    pub gas_area: Option<f64>,
+    /// The gas phase's volumetric flow, m3/s; absent with no gas.
+    pub volumetric_flow: Option<f64>,
+    /// The Souders-Brown maximum gas flow, m3/s; absent with no gas.
+    pub max_flow: Option<f64>,
 }
 
 /// Flash a feed into vapour and liquid outlets.
@@ -91,19 +101,21 @@ pub fn separator(
                 joules_per_mole(target),
                 &feed.z,
             )?;
+            let (x, y) = phase_compositions(flash.phase, &feed.z, flash.x, flash.y);
             (
                 flash.temperature,
-                flash.x,
-                flash.y,
+                x,
+                y,
                 vapour_fraction(flash.phase, flash.vapour_fraction),
             )
         }
         None => {
             let flash = pt_flash(&mixture, feed.t, p_out, &feed.z)?;
+            let (x, y) = phase_compositions(flash.phase, &feed.z, flash.x, flash.y);
             (
                 feed.t,
-                flash.x,
-                flash.y,
+                x,
+                y,
                 vapour_fraction(flash.phase, flash.vapour_fraction),
             )
         }
@@ -167,25 +179,53 @@ pub fn separator(
     Ok((vapour, liquid))
 }
 
-/// `Separator`'s steady capacity getters, on the system [`separator`] leaves behind.
+// `Separator`'s steady capacity getters, on the system `separator` leaves behind.
+//
+// **Two density rules, and they are not one.** The sizing family - the maximum velocity and
+// the utilisation over it - reads the liquid's own density and substitutes
+// `DEFAULT_LIQUID_DENSITY_FOR_SIZING` only where there is no liquid, with **no floor**. The
+// gas-load factor applies `MIN_LIQUID_GAS_DENSITY_DIFFERENCE` to the same density first. A
+// near-dry state makes the two disagree by construction, and neither is corrected to agree.
+//
+// The metric reads the system `run` left: `gas_outlet`'s temperature and pressure, the vapour
+// that is *left* after entrainment, and the liquid that absorbed it - whose density
+// `initPhysicalProperties` recomputes, which is why `liquid_outlet`'s composition is re-flashed
+// rather than the feed's `x` read.
+
+/// The sizing family's evidence, before the gas-load factor is formed.
 ///
-/// **Two density rules, and they are not one.** The sizing family - the maximum velocity and
-/// the utilisation over it - reads the liquid's own density and substitutes
-/// [`DEFAULT_LIQUID_DENSITY_FOR_SIZING`] only where there is no liquid, with **no floor**.
-/// The gas-load factor applies [`MIN_LIQUID_GAS_DENSITY_DIFFERENCE`] to the same density
-/// first. A near-dry state makes the two disagree by construction, and neither is corrected
-/// to agree.
+/// **The assessment reads this and not the load factor.** `SeparatorCapacityAssessment` folds
+/// the sizing velocity and the two flows; `getGasLoadFactor()`'s near-dry floor is a getter it
+/// never reports, so a state the floor refuses is not a state the assessment cannot evidence.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CapacitySizing {
+    /// The gas phase's mass density, kg/m3.
+    pub gas_density: f64,
+    /// The sizing family's liquid density, kg/m3.
+    pub liquid_density: f64,
+    /// The design gas area, m2.
+    pub gas_area: f64,
+    /// The gas phase's volumetric flow, m3/s.
+    pub volumetric_flow: f64,
+    /// `getMaxAllowableGasVelocity`, m/s.
+    pub max_velocity: f64,
+    /// `getGasSuperficialVelocity`, m/s.
+    pub superficial_velocity: f64,
+    /// `getMaxAllowableGasFlowRate`, m3/s.
+    pub max_flow: f64,
+    /// `getCapacityUtilization`.
+    pub utilization: f64,
+}
+
+/// The sizing half of [`capacity_states`]: densities, area, flows, velocity and utilisation.
 ///
-/// The metric reads the system `run` left: `gas_outlet`'s temperature and pressure, the
-/// vapour that is *left* after entrainment, and the liquid that absorbed it - whose density
-/// `initPhysicalProperties` recomputes, which is why `liquid_outlet`'s composition is
-/// re-flashed rather than the feed's `x` read.
+/// `Ok(None)` is the class's own first answer - a stream with no gas phase uses none of its
+/// capacity - and is not an error.
 ///
 /// # Errors
-/// [`azoth_core::AzothError::InvalidInput`] where the gas density is not positive, the liquid
-/// is no denser than the gas (before or after the near-dry floor), or the gas area admits no
-/// flow. NeqSim answers `NaN` from its getters in those states; this refuses the state.
-pub fn capacity_states(
+/// The gas density, the liquid-minus-gas difference and the admissible flow are the class's
+/// own evidence checks; NeqSim answers `NaN` where this refuses.
+pub fn sizing_states(
     feed: &Stream,
     gas_outlet: &Stream,
     liquid_outlet: &Stream,
@@ -193,23 +233,17 @@ pub fn capacity_states(
     design_load_factor: Velocity,
     horizontal: bool,
     level_fraction: f64,
-) -> Result<Capacity> {
+) -> Result<Option<CapacitySizing>> {
     let (mixture, _ideal_gas) = feed.mixture()?;
     let flash = pt_flash(&mixture, gas_outlet.t, gas_outlet.p, &feed.z)?;
-    let labelled = labelled_phases_at(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
+    let labelled =
+        labelled_phases_at_from_feed(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
 
     let Some((_label, gas_z, gas_root)) = labelled
         .iter()
         .find(|(kind, _, _)| *kind == PhaseLabel::Gas)
     else {
-        // The class's own first answer: a stream with no gas phase uses none of its capacity.
-        return Ok(Capacity {
-            utilization: 0.0,
-            max_velocity: None,
-            superficial_velocity: None,
-            load_factor: None,
-            overloaded: false,
-        });
+        return Ok(None);
     };
     let gas_molar_mass = molar_mass_of(&mixture, gas_z)?;
     let gas_density = mass_density(
@@ -283,22 +317,69 @@ pub fn capacity_states(
     }
     let utilization = volumetric_flow / max_flow;
     let superficial_velocity = volumetric_flow / gas_area;
+    Ok(Some(CapacitySizing {
+        gas_density,
+        liquid_density,
+        gas_area,
+        volumetric_flow,
+        max_velocity,
+        superficial_velocity,
+        max_flow,
+        utilization,
+    }))
+}
+
+pub fn capacity_states(
+    feed: &Stream,
+    gas_outlet: &Stream,
+    liquid_outlet: &Stream,
+    internal_diameter: Length,
+    design_load_factor: Velocity,
+    horizontal: bool,
+    level_fraction: f64,
+) -> Result<Capacity> {
+    let Some(sizing) = sizing_states(
+        feed,
+        gas_outlet,
+        liquid_outlet,
+        internal_diameter,
+        design_load_factor,
+        horizontal,
+        level_fraction,
+    )?
+    else {
+        // The class's own first answer: a stream with no gas phase uses none of its capacity.
+        return Ok(Capacity {
+            utilization: 0.0,
+            max_velocity: None,
+            superficial_velocity: None,
+            load_factor: None,
+            overloaded: false,
+            gas_density: None,
+            liquid_density: None,
+            gas_area: None,
+            volumetric_flow: None,
+            max_flow: None,
+        });
+    };
 
     // **The load factor's own rule, applied after the sizing one.** The floor substitutes
     // `1000.0` for a second phase no denser than the gas, and the positivity is re-checked
     // against the substituted value.
-    let floored_liquid_density = load_factor_liquid_density(liquid_density, gas_density);
-    if !floored_liquid_density.is_finite() || floored_liquid_density <= gas_density {
+    let floored_liquid_density =
+        load_factor_liquid_density(sizing.liquid_density, sizing.gas_density);
+    if !floored_liquid_density.is_finite() || floored_liquid_density <= sizing.gas_density {
         return Err(AzothError::invalid_input(
             "gas_load_factor",
             format!(
                 "the liquid phase is {floored_liquid_density} kg/m3 after the near-dry floor \
-                 against the gas's {gas_density}, and the load factor divides by their difference"
+                 against the gas's {}, and the load factor divides by their difference",
+                sizing.gas_density
             ),
         ));
     }
-    let term = (floored_liquid_density - gas_density) / gas_density;
-    let load_factor = superficial_velocity * (1.0 / term).sqrt();
+    let term = (floored_liquid_density - sizing.gas_density) / sizing.gas_density;
+    let load_factor = sizing.superficial_velocity * (1.0 / term).sqrt();
     if !load_factor.is_finite() {
         return Err(AzothError::invalid_input(
             "gas_load_factor",
@@ -307,12 +388,207 @@ pub fn capacity_states(
     }
 
     Ok(Capacity {
-        utilization,
-        max_velocity: Some(max_velocity),
-        superficial_velocity: Some(superficial_velocity),
+        utilization: sizing.utilization,
+        max_velocity: Some(sizing.max_velocity),
+        superficial_velocity: Some(sizing.superficial_velocity),
         load_factor: Some(load_factor),
-        overloaded: utilization > 1.0,
+        overloaded: sizing.utilization > 1.0,
+        gas_density: Some(sizing.gas_density),
+        liquid_density: Some(sizing.liquid_density),
+        gas_area: Some(sizing.gas_area),
+        volumetric_flow: Some(sizing.volumetric_flow),
+        max_flow: Some(sizing.max_flow),
     })
+}
+
+/// `SeparatorCapacityAssessment`'s fixed diagnostics, verbatim.
+const PROVENANCE_REQUIRED: &str = "Design-basis provenance is required";
+const BAD_ORIENTATION: &str = "Separator orientation must be horizontal or vertical";
+const GEOMETRY_REQUIRED: &str =
+    "Finite geometry, design K-factor, and a calculated gas phase are required";
+const BAD_LEVEL: &str = "Design liquid level fraction must be in [0, 1)";
+const BAD_EVIDENCE: &str = "Separator capacity calculation returned non-finite evidence";
+const FEASIBLE: &str = "Gas capacity is within the evidenced design limit";
+const INFEASIBLE: &str = "Gas capacity exceeds the evidenced design limit";
+
+/// `SeparatorCapacityAssessment`'s snapshot, in the class's field order.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CapacityAssessment {
+    /// `feasible`, `infeasible` or `unassessed`.
+    pub status: &'static str,
+    /// The class's sentence for the status.
+    pub diagnostic: &'static str,
+    /// `equipment` or `mechanicalDesign`; empty on `unassessed`.
+    pub design_basis_source: &'static str,
+    /// `soudersBrown` or `mechanicalDesignGasFlow`; empty on `unassessed`.
+    pub governing_capacity_basis: &'static str,
+    /// The design gas area, m2; absent on `unassessed`.
+    pub gas_area: Option<f64>,
+    /// The gas phase's density, kg/m3; absent on `unassessed`.
+    pub gas_density: Option<f64>,
+    /// The sizing family's liquid density, kg/m3; absent on `unassessed`.
+    pub liquid_density: Option<f64>,
+    /// `getMaxAllowableGasVelocity`, m/s; absent on `unassessed`.
+    pub maximum_gas_velocity: Option<f64>,
+    /// The gas phase's volumetric flow, m3/s; absent on `unassessed`.
+    pub current_gas_flow: Option<f64>,
+    /// The stated mechanical limit, m3/s, or `0.0` with none; absent on `unassessed`.
+    pub mechanical_design_maximum_gas_flow: Option<f64>,
+    /// `getMaxAllowableGasFlowRate`, m3/s; absent on `unassessed`.
+    pub souders_brown_maximum_gas_flow: Option<f64>,
+    /// The governed limit, m3/s; absent on `unassessed`.
+    pub maximum_gas_flow: Option<f64>,
+    /// Current flow over the governed limit; absent on `unassessed`.
+    pub utilization: Option<f64>,
+}
+
+/// `SeparatorCapacityAssessment.from`, on the system [`separator`] leaves behind.
+///
+/// **Fail closed rather than refuse.** Blank provenance, an orientation that is neither of the
+/// two, non-positive geometry or design K, no gas phase, a level outside `[0, 1)` and
+/// non-finite evidence answer `unassessed` with the class's diagnostic. The checks run in the
+/// class's order, so a state failing two carries the earlier sentence.
+///
+/// The mechanical limit is the class's `maxDesignGassVolumeFlow / 3600`: a positive limit at or
+/// below the Souders-Brown flow governs, and a non-positive one is no mechanical basis.
+///
+/// # Errors
+/// The separator's own where the flash cannot run, and [`azoth_core::AzothError::InvalidInput`]
+/// for a stated mechanical limit that is not finite - an infinity is a value no snapshot
+/// publishes. The assessment's other failing states are statuses, not errors.
+#[allow(clippy::too_many_arguments)] // one per declared input the fold reads
+pub fn capacity_assessment(
+    feed: &Stream,
+    gas_outlet: &Stream,
+    liquid_outlet: &Stream,
+    internal_diameter: Length,
+    design_load_factor: Velocity,
+    orientation: &str,
+    level_fraction: f64,
+    provenance: &str,
+    mechanical_design_max_gas_flow: Option<VolumeRate>,
+) -> Result<CapacityAssessment> {
+    if provenance.trim().is_empty() {
+        return Ok(unassessed(PROVENANCE_REQUIRED));
+    }
+    if orientation != "horizontal" && orientation != "vertical" {
+        return Ok(unassessed(BAD_ORIENTATION));
+    }
+    if !finite_positive(internal_diameter.value) || !finite_positive(design_load_factor.value) {
+        return Ok(unassessed(GEOMETRY_REQUIRED));
+    }
+    // **The class checks the gas phase before the level.** A liquid-only feed with a level of
+    // one answers the geometry sentence, not the level's.
+    if !has_gas_phase(feed, gas_outlet)? {
+        return Ok(unassessed(GEOMETRY_REQUIRED));
+    }
+    // `contains` is the class's interval and also refuses a NaN, which is not in any range.
+    if !(0.0..1.0).contains(&level_fraction) {
+        return Ok(unassessed(BAD_LEVEL));
+    }
+
+    // **The sizing half only.** The assessment does not report `getGasLoadFactor`, so the
+    // load factor's near-dry refusal is not evidence `unassessed` may rest on.
+    let Some(sizing) = (match sizing_states(
+        feed,
+        gas_outlet,
+        liquid_outlet,
+        internal_diameter,
+        design_load_factor,
+        orientation == "horizontal",
+        level_fraction,
+    ) {
+        Ok(sizing) => sizing,
+        Err(_) => return Ok(unassessed(BAD_EVIDENCE)),
+    }) else {
+        return Ok(unassessed(GEOMETRY_REQUIRED));
+    };
+
+    let mechanical_flow = match mechanical_design_max_gas_flow {
+        Some(limit) if !limit.value.is_finite() => {
+            return Err(AzothError::invalid_input(
+                "mechanical_design_max_gas_flow",
+                format!(
+                    "a stated mechanical gas limit is a finite flow, and {} is not",
+                    limit.value
+                ),
+            ));
+        }
+        Some(limit) => limit.value,
+        None => 0.0,
+    };
+    let mechanical_positive = finite_positive(mechanical_flow);
+    let design_basis_source = if mechanical_positive {
+        "mechanicalDesign"
+    } else {
+        "equipment"
+    };
+    let mechanical_governs = mechanical_positive && mechanical_flow <= sizing.max_flow;
+    let maximum_flow = if mechanical_governs {
+        mechanical_flow
+    } else {
+        sizing.max_flow
+    };
+    let governing_capacity_basis = if mechanical_governs {
+        "mechanicalDesignGasFlow"
+    } else {
+        "soudersBrown"
+    };
+    if !finite_positive(maximum_flow) {
+        return Ok(unassessed(BAD_EVIDENCE));
+    }
+    let utilization = sizing.volumetric_flow / maximum_flow;
+    if !utilization.is_finite() || utilization < 0.0 {
+        return Ok(unassessed(BAD_EVIDENCE));
+    }
+    let feasible = utilization <= 1.0;
+
+    Ok(CapacityAssessment {
+        status: if feasible { "feasible" } else { "infeasible" },
+        diagnostic: if feasible { FEASIBLE } else { INFEASIBLE },
+        design_basis_source,
+        governing_capacity_basis,
+        gas_area: Some(sizing.gas_area),
+        gas_density: Some(sizing.gas_density),
+        liquid_density: Some(sizing.liquid_density),
+        maximum_gas_velocity: Some(sizing.max_velocity),
+        current_gas_flow: Some(sizing.volumetric_flow),
+        mechanical_design_maximum_gas_flow: Some(mechanical_flow),
+        souders_brown_maximum_gas_flow: Some(sizing.max_flow),
+        maximum_gas_flow: Some(maximum_flow),
+        utilization: Some(utilization),
+    })
+}
+
+/// Whether the system `run` left carries a gas phase - the class's `hasPhaseType("gas")`.
+fn has_gas_phase(feed: &Stream, gas_outlet: &Stream) -> Result<bool> {
+    let (mixture, _ideal_gas) = feed.mixture()?;
+    let flash = pt_flash(&mixture, gas_outlet.t, gas_outlet.p, &feed.z)?;
+    let labelled =
+        labelled_phases_at_from_feed(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
+    Ok(labelled.iter().any(|(kind, _, _)| *kind == PhaseLabel::Gas))
+}
+
+fn unassessed(diagnostic: &'static str) -> CapacityAssessment {
+    CapacityAssessment {
+        status: "unassessed",
+        diagnostic,
+        design_basis_source: "",
+        governing_capacity_basis: "",
+        gas_area: None,
+        gas_density: None,
+        liquid_density: None,
+        maximum_gas_velocity: None,
+        current_gas_flow: None,
+        mechanical_design_maximum_gas_flow: None,
+        souders_brown_maximum_gas_flow: None,
+        maximum_gas_flow: None,
+        utilization: None,
+    }
+}
+
+fn finite_positive(value: f64) -> bool {
+    value.is_finite() && value > 0.0
 }
 
 /// The gas-load factor's near-dry floor, kept apart from the sizing rule.
@@ -326,6 +602,20 @@ fn load_factor_liquid_density(liquid_density: f64, gas_density: f64) -> f64 {
         DEFAULT_LIQUID_DENSITY
     } else {
         liquid_density
+    }
+}
+
+/// The two compositions a flash's phase implies.
+///
+/// **A single phase has the feed's composition, and the flash's own `x` or `y` is not it.**
+/// The flash answers a trial there - and on its negative-flash branch that trial is the other
+/// side of the cubic, so a 95/5 methane/ethane gas at 50 bar would leave the vessel with the
+/// trial composition and a density 2.6 times the feed's. The two-phase branch keeps the flash's
+/// split.
+fn phase_compositions(phase: Phase, z: &[f64], x: Vec<f64>, y: Vec<f64>) -> (Vec<f64>, Vec<f64>) {
+    match phase {
+        Phase::TwoPhase => (x, y),
+        Phase::AllVapour | Phase::AllLiquid | Phase::Trivial => (z.to_vec(), z.to_vec()),
     }
 }
 

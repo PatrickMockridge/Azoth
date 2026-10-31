@@ -235,6 +235,7 @@ from azoth.core.result import (
     ScenarioChangeRow,
     ScenarioIndexRow,
     SchwartzentruberAlphaResult,
+    SeparatorCapacityAssessmentResult,
     SeparatorResult,
     SetHeavyTbpToPlusResult,
     ShortcutDistillationColumnResult,
@@ -541,6 +542,7 @@ __all__ = [
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
+    "separator_capacity_assessment",
     "set_heavy_tbp_to_plus",
     "shortcut_distillation_column",
     "siddiqi_lucas_diffusivity",
@@ -6478,6 +6480,43 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         gas_superficial_velocity=None if result.gas_superficial_velocity is None else from_si(result.gas_superficial_velocity.magnitude_si, result.gas_superficial_velocity.unit),
         gas_load_factor=None if result.gas_load_factor is None else from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
         is_overloaded=result.is_overloaded,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def separator_capacity_assessment(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q, design_gas_load_factor: Q, orientation: str, design_liquid_level_fraction: float, design_basis_provenance: str, heat_input: Q | None=None, mechanical_design_max_gas_flow: Q | None=None) -> SeparatorCapacityAssessmentResult:
+    """``process.separator_capacity_assessment``, computed in Rust."""
+    spec = _models_gen.model("process.separator_capacity_assessment")
+    result = _core.separator_capacity_assessment(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        gas_in_liquid,
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        orientation,
+        design_liquid_level_fraction,
+        design_basis_provenance,
+        None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if mechanical_design_max_gas_flow is None else input_to_si(spec, "mechanical_design_max_gas_flow", mechanical_design_max_gas_flow),
+    )
+    return SeparatorCapacityAssessmentResult(
+        status=result.status,
+        diagnostic=result.diagnostic,
+        design_basis_source=result.design_basis_source,
+        governing_capacity_basis=result.governing_capacity_basis,
+        gas_area=None if result.gas_area is None else from_si(result.gas_area.magnitude_si, result.gas_area.unit),
+        gas_density=None if result.gas_density is None else from_si(result.gas_density.magnitude_si, result.gas_density.unit),
+        liquid_density=None if result.liquid_density is None else from_si(result.liquid_density.magnitude_si, result.liquid_density.unit),
+        maximum_gas_velocity=None if result.maximum_gas_velocity is None else from_si(result.maximum_gas_velocity.magnitude_si, result.maximum_gas_velocity.unit),
+        current_gas_flow=None if result.current_gas_flow is None else from_si(result.current_gas_flow.magnitude_si, result.current_gas_flow.unit),
+        mechanical_design_maximum_gas_flow=None if result.mechanical_design_maximum_gas_flow is None else from_si(result.mechanical_design_maximum_gas_flow.magnitude_si, result.mechanical_design_maximum_gas_flow.unit),
+        souders_brown_maximum_gas_flow=None if result.souders_brown_maximum_gas_flow is None else from_si(result.souders_brown_maximum_gas_flow.magnitude_si, result.souders_brown_maximum_gas_flow.unit),
+        maximum_gas_flow=None if result.maximum_gas_flow is None else from_si(result.maximum_gas_flow.magnitude_si, result.maximum_gas_flow.unit),
+        utilization=result.utilization,
         warnings=_warnings(result.warnings),
     )
 

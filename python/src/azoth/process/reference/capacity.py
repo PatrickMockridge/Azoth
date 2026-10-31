@@ -30,7 +30,7 @@ from typing import Any
 
 from azoth.core.units import Q, quantity
 from azoth.eos import components as _components
-from azoth.eos.reference._mixture_state import reduced_parameters
+from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.hydrate_inhibitor_wt import GAS, phase_label
 from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
@@ -76,19 +76,31 @@ def _mass_density(mixture: Any, t: float, p: float, z: list[float], root: float)
 
 
 def _labelled_phases(
-    components: list[str], t: float, p: float, z: list[float]
+    components: list[str], t: float, p: float, z: list[float], *, from_feed: bool = False
 ) -> tuple[Any, list[tuple[str, list[float], float]], list[float]]:
-    """The phases, labelled and in the order the class's own system carries them: gas first."""
+    """The phases, labelled and in the order the class's own system carries them: gas first.
+
+    ``from_feed`` re-derives a single phase's **root** from the feed as well as its
+    composition. The flash returns a trial root on a negative-flash answer - the other side of
+    the cubic - and the separator family's capacity surfaces need the feed's, which is what
+    NeqSim's phase getter returns. The columns keep the flash's root: that is the state their
+    own capture was taken against.
+    """
     mixture, _ideal_gas = _components.mixture_of(components, eos="pr")
     flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(z))
     reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(t)
+
+    def single_root(liquid: bool) -> float:
+        if not from_feed:
+            return flash.z_liquid if liquid else flash.z_vapour
+        return phase_state(reduced, kij, list(z), liquid=liquid).z
 
     if flash.phase == "all_vapour":
-        labelled = [(GAS, list(z), flash.z_vapour)]
+        labelled = [(GAS, list(z), single_root(liquid=False))]
     elif flash.phase in ("all_liquid", "trivial"):
-        labelled = [
-            (phase_label(mixture, reduced, list(z), flash.z_liquid), list(z), flash.z_liquid)
-        ]
+        root = single_root(liquid=True)
+        labelled = [(phase_label(mixture, reduced, list(z), root), list(z), root)]
     else:
         labelled = [
             (GAS, list(flash.y), flash.z_vapour),

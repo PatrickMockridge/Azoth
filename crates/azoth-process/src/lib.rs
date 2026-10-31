@@ -61,8 +61,8 @@ pub use models::{
     distillation_column, ejector, expander, filter, flare, gas_scrubber, gibbs_reactor,
     heat_exchanger, heater, hem_release, leak_blowdown, manifold, map_turbo_expander_compressor,
     mixer, packed_column, pipe, plug_flow_reactor, pump, rate_based_packed_column, separator,
-    shortcut_distillation_column, splitter, stirred_tank_reactor, stripping_column, tank,
-    three_phase_separator, throttling_valve, turbo_expander_compressor,
+    separator_capacity_assessment, shortcut_distillation_column, splitter, stirred_tank_reactor,
+    stripping_column, tank, three_phase_separator, throttling_valve, turbo_expander_compressor,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

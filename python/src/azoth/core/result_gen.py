@@ -6857,6 +6857,55 @@ class SeparatorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SeparatorCapacityAssessmentResult(_HasWarnings):
+    """Result of ``process.separator_capacity_assessment``."""
+
+    CALC_ID: ClassVar[str] = "process.separator_capacity_assessment"
+
+    #: `feasible`, `infeasible` or `unassessed` - the class's `FEASIBLE`/`INFEASIBLE`/`UNASSESSED` in the library's spelling.
+    status: str
+
+    #: the class's sentence for the status: one of seven fixed strings, not a composed message.
+    diagnostic: str
+
+    #: `equipment` when no mechanical limit was stated, `mechanicalDesign` when one was, and empty on `unassessed`.
+    design_basis_source: str
+
+    #: `soudersBrown` or `mechanicalDesignGasFlow`, and empty on `unassessed`.
+    governing_capacity_basis: str
+
+    #: the gas flow area: the full cross-section vertical, `(1 - design_liquid_level_fraction)` of it horizontal. **Absent on `unassessed`.**
+    gas_area: Q | None
+
+    #: the gas phase's mass density. Absent on `unassessed`.
+    gas_density: Q | None
+
+    #: the liquid phase's mass density, or `1000.0` where the system carries no liquid. Absent on `unassessed`.
+    liquid_density: Q | None
+
+    #: `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)`, the sizing rule's, with no `10.0` floor. Absent on `unassessed`.
+    maximum_gas_velocity: Q | None
+
+    #: the gas phase's actual volumetric flow. Absent on `unassessed`.
+    current_gas_flow: Q | None
+
+    #: the stated mechanical limit in m3/s, or `0.0` when none was stated - the class's snapshot field. Absent on `unassessed`.
+    mechanical_design_maximum_gas_flow: Q | None
+
+    #: `getMaxAllowableGasFlowRate`: the maximum velocity times the gas area. Absent on `unassessed`.
+    souders_brown_maximum_gas_flow: Q | None
+
+    #: the governed limit: the mechanical limit where it binds, the Souders-Brown flow otherwise. Absent on `unassessed`.
+    maximum_gas_flow: Q | None
+
+    #: the current gas flow over the governed limit; `<= 1` is `feasible`. Absent on `unassessed`.
+    utilization: float | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ShortcutDistillationColumnResult(_HasWarnings):
     """Result of ``process.shortcut_distillation_column``."""
 
