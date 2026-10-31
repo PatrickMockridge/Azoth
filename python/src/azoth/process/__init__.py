@@ -1882,6 +1882,15 @@ def separator_capacity_assessment(
     ``maxDesignGassVolumeFlow / 3600``; a positive limit at or below the Souders-Brown flow
     governs.
 
+    **The run comes first**, as it does in the class: a feed that cannot flash is an error,
+    and the statuses are about the vessel's evidence rather than the feed. The checks then run
+    in the class's order, so a state failing two carries the earlier sentence.
+
+    Raises:
+        InvalidInputError: where the feed cannot flash or a stated mechanical limit is not
+            finite.
+        OutOfRangeError: for a non-finite quantity at the units boundary.
+
     See :func:`azoth.process.reference.separator_capacity_assessment`.
     """
     return resolve(_SEPARATOR_CAPACITY_ASSESSMENT)(  # type: ignore[no-any-return]
