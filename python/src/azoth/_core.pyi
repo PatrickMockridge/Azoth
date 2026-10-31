@@ -3070,6 +3070,11 @@ class SeparatorResult:
     liquid_p: Qty
     liquid_t: Qty
     liquid_h: Qty
+    capacity_utilization: float | None
+    max_allowable_gas_velocity: Qty | None
+    gas_superficial_velocity: Qty | None
+    gas_load_factor: Qty | None
+    is_overloaded: bool | None
     warnings: list[Warning]
 
 @final
@@ -5704,6 +5709,10 @@ def separator(
     pressure_drop: float,
     gas_in_liquid: float,
     heat_input: float | None = None,
+    internal_diameter: float | None = None,
+    design_gas_load_factor: float | None = None,
+    orientation: str | None = None,
+    design_liquid_level_fraction: float | None = None,
 ) -> SeparatorResult: ...
 def shortcut_distillation_column(
     components: list[str],

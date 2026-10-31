@@ -6837,6 +6837,21 @@ class SeparatorResult(_HasWarnings):
     #: the liquid outlet's molar enthalpy at its own state.
     liquid_h: Q
 
+    #: `getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.
+    capacity_utilization: float | None
+
+    #: `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.
+    max_allowable_gas_velocity: Q | None
+
+    #: `getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.
+    gas_superficial_velocity: Q | None
+
+    #: `getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.
+    gas_load_factor: Q | None
+
+    #: `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
+    is_overloaded: bool | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

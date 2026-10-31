@@ -1138,3 +1138,29 @@ and the port agree to `4.4e-4`, over thirty to `1.4e-1` and over sixty to `1.6e-
 short horizons are cased; the long rows stay here as the measurement of that sensitivity.
 The over-depletion row also shows the class's zero-filled tail - it allocates two slots and
 records one - which the port reports as `number_of_points` against `recorded_points`.
+
+## The separator capacity
+
+`process_separator_capacity.tsv` is `Separator`'s steady capacity getters on the same
+methane/n-butane fluid as `process_separator.tsv`, swept over the vessel, the orientation and
+the design liquid level, plus the pin's `SeparatorTest` states re-cased on SRK.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
+  > captures/process_separator_capacity.tsv
+```
+
+Each row prints the geometry and the class's own defaults beside the five getters it answers -
+utilisation, maximum allowable velocity, superficial velocity, the no-argument Souders-Brown
+load factor and the overload flag - and the densities, gas area and flows they were formed
+from. **The PR rows are the oracle**; the SRK rows are `SeparatorTest`'s own cubic as evidence,
+and the `GasScrubber` row at minimum setup prints the vertical/`0.1`/`0.11` defaults this port
+does not adopt.
+
+**The pin's near-dry scrubber state is single-phase in this jar.** `96/3/0.05`
+methane/ethane/n-heptane at 90 bara and 25 C prints one `GAS` phase on both cubics, so its
+`getGasLoadFactor` takes the dry `1000.0` fallback and never reaches the `10.0`
+`MIN_LIQUID_GAS_DENSITY_DIFFERENCE` floor the test exists to guard. The row stays as evidence
+that the floor is not reachable from that state; the port pins the floor on constructed
+densities instead.

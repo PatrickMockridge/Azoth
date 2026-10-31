@@ -250,6 +250,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # index crossing one, and NACE MR0175 sour service at 0.003 bar H2S.
         "feco3_scale_forming",
         "is_sour_service",
+        # `separator`'s overload flag, which is `capacity_utilization > 1.0` exactly and has
+        # no slot in `TestCase`. `python/tests/test_separator_capacity.py` reads the case's
+        # expected block from the raw spec and asserts the field, and `test_cross_impl`
+        # compares it on both results.
+        "is_overloaded",
     }
 )
 

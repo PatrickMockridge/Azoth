@@ -999,7 +999,75 @@ def _leak_blowdown(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.separator`'s capacity surface, from the reference's own factored arithmetic.
+
+    The five getters are the model's second fold, and the capture prints the intermediates
+    on the way to them. **The two density rules are two layers**: `liquid_density_kg_m3` is
+    the sizing family's - the liquid's own, or `1000.0` with no liquid - while
+    `gas_load_factor_m_per_s` is formed from the floored one. A port that collapsed them
+    would agree on every two-phase row here and disagree on a near-dry one.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.separator import _capacity_states, _route
+
+    components = [str(name) for name in inputs["components"]]
+    feed_z = [float(v) for v in inputs["feed_z"]]
+    states = _route(
+        components,
+        float(inputs["feed_n"]),
+        feed_z,
+        float(inputs["feed_p"]),
+        quantity(float(inputs["feed_t"]), "K"),
+        float(inputs["pressure_drop"]),
+        float(inputs["gas_in_liquid"]),
+        None if inputs.get("heat_input") is None else float(inputs["heat_input"]),
+    )
+    level = inputs.get("design_liquid_level_fraction")
+    capacity = _capacity_states(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        feed_z,
+        states.n_vapour,
+        list(states.liquid_z),
+        float(inputs["internal_diameter"]),
+        float(inputs["design_gas_load_factor"]),
+        str(inputs.get("orientation") or "horizontal"),
+        0.8 if level is None else float(level),
+    )
+    dump = {"capacity_utilization": capacity.utilization}
+    gas_density = capacity.gas_density
+    gas_area = capacity.gas_area
+    volumetric_flow = capacity.volumetric_flow
+    max_flow = capacity.max_flow
+    if gas_density is None or gas_area is None or volumetric_flow is None or max_flow is None:
+        return dump
+    dump |= {
+        "gas_density_kg_m3": gas_density,
+        "gas_area_m2": gas_area,
+        "gas_volumetric_flow_m3_s": volumetric_flow,
+        "max_allowable_gas_flow_m3_s": max_flow,
+    }
+    # `liquid_density_kg_m3` is the **liquid phase's**, and a dry system has none to print:
+    # the capture says `none` and the comparison would float it.
+    liquid_density = capacity.liquid_density
+    if capacity.has_liquid and liquid_density is not None:
+        dump["liquid_density_kg_m3"] = liquid_density
+    max_velocity = capacity.max_velocity
+    superficial = capacity.superficial_velocity
+    load_factor = capacity.load_factor
+    if max_velocity is not None and superficial is not None and load_factor is not None:
+        dump |= {
+            "max_allowable_gas_velocity_m_per_s": max_velocity,
+            "gas_superficial_velocity_m_per_s": superficial,
+            "gas_load_factor_m_per_s": load_factor,
+        }
+    return dump
+
+
 DUMPERS: dict[str, Dumper] = {
+    "process.separator": _separator,
     "process.hem_release": _hem_release,
     "process.leak_blowdown": _leak_blowdown,
     "process.rate_based_packed_column": _rate_based_packed_column,
@@ -1121,22 +1189,6 @@ NO_INTERIOR: dict[str, str] = {
         "liquid one and the two outlets come back swapped against `Separator`'s on the same "
         "feed - a construction-time state a kernel that is a pure function of its inlets "
         "has no way to reproduce"
-    ),
-    "process.separator": (
-        "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
-        "entrainment moves, and every one of the four is on the two outlet records - the "
-        "vapour fraction is their flow ratio and the compositions are their ``z``. "
-        "`Separator` exposes no getter for the state *before* the entrainment either: "
-        "`getThermoSystem()` is the working system with the fraction already applied. "
-        "**That state is not missing from the oracle, it is in the block beside it.** "
-        "Entrainment is a move applied after the flash, and the capture's first row runs "
-        "the same feed at the same conditions with no entrainment - so the fourth row's "
-        "flash is the first row's answer exactly, and it is: the vapour leaves at "
-        "`0.7773101311100368`, which is the first row's `0.8182211906421439` less the "
-        "stated `0.05`, at that row's composition and enthalpy to `1.3e-15`. The flash's "
-        "arithmetic is therefore already held by the three rows that state no entrainment, "
-        "and reaching for it again here would be a second implementation of the ported "
-        "arithmetic rather than a layer of it"
     ),
     "process.turbo_expander_compressor": (
         "the kernel forms the speed, both powers, both efficiencies, the compressor's "
@@ -1328,6 +1380,59 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_leak_blowdown.tsv",
         block=0,
         identified_by=("#label", "pr_methane_50bara_10s_1s"),
+    ),
+    # The separator's capacity surface. **Seven of the capture's fifteen blocks are these
+    # cases**, and the other eight are declared uncased: three PR rows the cases already
+    # state under another setting, four SRK rows re-casing the pin's own tests, and the
+    # `GasScrubber` defaults row the port deliberately does not adopt.
+    LayerCase(
+        model="process.separator",
+        case="the_capacity_at_the_design_vessel",
+        capture="process_separator_capacity.tsv",
+        block=0,
+        identified_by=("#label", "pr_two_phase_vertical_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_horizontal_vessel_derates_the_gas_area",
+        capture="process_separator_capacity.tsv",
+        block=1,
+        identified_by=("#label", "pr_two_phase_horizontal_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_vertical_area_ignores_the_design_liquid_level",
+        capture="process_separator_capacity.tsv",
+        block=3,
+        identified_by=("#label", "pr_two_phase_vertical_fg02"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_dry_gas_uses_the_sizing_fallback",
+        capture="process_separator_capacity.tsv",
+        block=5,
+        identified_by=("#label", "pr_dry_gas_vertical_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="an_overloaded_vessel_reports_overload",
+        capture="process_separator_capacity.tsv",
+        block=7,
+        identified_by=("#label", "pr_overloaded_vertical_d020_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="entrainment_moves_the_liquid_the_metric_reads",
+        capture="process_separator_capacity.tsv",
+        block=8,
+        identified_by=("#label", "pr_entrained_gas_in_liquid_005_vertical_d1000"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_metric_is_at_the_outlet_state",
+        capture="process_separator_capacity.tsv",
+        block=9,
+        identified_by=("#label", "pr_pressure_drop_outlet_state_vertical_d1000"),
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -1881,6 +1986,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
+    # The separator capacity capture's eight. **Three are the cases' own states under another
+    # stated setting** - the vertical vessel at the default `0.8`, and the horizontal one at
+    # `0.2` - kept as the measurement the design-liquid fraction moves a horizontal area by a
+    # quarter and a vertical one by nothing. **One is the pin's
+    # near-dry scrubber state, which is single-phase in this jar**: it exercises the
+    # `1000.0` fallback and not the `10.0` floor, so it is evidence for the floor's
+    # unreachability rather than an oracle for a floored state. **Four are SRK**, the cubic
+    # `SeparatorTest` itself uses: the port is PR, so they measure what the cubic moved.
+    # **The last is `GasScrubber` at minimum setup**, which prints the class defaults this
+    # id does not adopt - `vertical`, `0.1`, and the `0.11` m/s `K` it inherits.
+    "process_separator_capacity.tsv": 8,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as

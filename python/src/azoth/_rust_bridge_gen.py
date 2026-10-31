@@ -6445,7 +6445,7 @@ def rate_based_packed_column(gas_components: list[str], gas_n: Q, gas_z: list[fl
     )
 
 
-def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None) -> SeparatorResult:
+def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None) -> SeparatorResult:
     """``process.separator``, computed in Rust."""
     spec = _models_gen.model("process.separator")
     result = _core.separator(
@@ -6457,6 +6457,10 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         input_to_si(spec, "pressure_drop", pressure_drop),
         gas_in_liquid,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
+        None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        orientation,
+        None if design_liquid_level_fraction is None else design_liquid_level_fraction,
     )
     return SeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -6469,6 +6473,11 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        capacity_utilization=result.capacity_utilization,
+        max_allowable_gas_velocity=None if result.max_allowable_gas_velocity is None else from_si(result.max_allowable_gas_velocity.magnitude_si, result.max_allowable_gas_velocity.unit),
+        gas_superficial_velocity=None if result.gas_superficial_velocity is None else from_si(result.gas_superficial_velocity.magnitude_si, result.gas_superficial_velocity.unit),
+        gas_load_factor=None if result.gas_load_factor is None else from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
+        is_overloaded=result.is_overloaded,
         warnings=_warnings(result.warnings),
     )
 

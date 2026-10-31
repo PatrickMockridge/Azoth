@@ -26,19 +26,33 @@ from-phase or a to-phase that is not there has nothing to move.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Phase, SeparatorResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.process.reference._phase_outlet import phase_enthalpy
+
+#: The class's `DEFAULT_LIQUID_DENSITY_FOR_SIZING`, which the sizing velocity substitutes
+#: where the system carries no liquid.
+DEFAULT_LIQUID_DENSITY_FOR_SIZING = 1000.0
+#: The class's `DEFAULT_LIQUID_DENSITY`, which the gas-load factor substitutes twice: for a
+#: dry system and for a second phase no denser than the gas.
+DEFAULT_LIQUID_DENSITY = 1000.0
+#: The class's `MIN_LIQUID_GAS_DENSITY_DIFFERENCE`. **The load factor's rule and not the
+#: sizing family's**: the two are deliberately separate.
+MIN_LIQUID_GAS_DENSITY_DIFFERENCE = 10.0
+#: The class's constructor defaults for the two inputs that shape the gas area.
+DEFAULT_ORIENTATION = "horizontal"
+DEFAULT_DESIGN_LIQUID_LEVEL_FRACTION = 0.8
 
 
 def separator(
@@ -50,6 +64,10 @@ def separator(
     pressure_drop: Q,
     gas_in_liquid: float,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    design_gas_load_factor: Q | None = None,
+    orientation: str | None = None,
+    design_liquid_level_fraction: float | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -63,13 +81,23 @@ def separator(
         heat_input: heat added before the flash, or ``None`` for a flash at the feed's
             temperature.
         gas_in_liquid: the fraction of the vapour's moles carried into the liquid outlet.
+        internal_diameter: the vessel's internal diameter, or ``None`` for no capacity
+            check. Stated with ``design_gas_load_factor`` or not at all.
+        design_gas_load_factor: the Souders-Brown ``K`` the vessel is designed to.
+        orientation: ``"horizontal"`` or ``"vertical"``; absent is the class's
+            ``"horizontal"``.
+        design_liquid_level_fraction: the horizontal gas area's derating; absent is the
+            class's ``0.8``.
 
     Returns:
-        Both outlets' records.
+        Both outlets' records, and the five capacity getters where a vessel was stated.
 
     Raises:
-        InvalidInputError: where the pressure drop takes the outlet below zero or the
-            entrainment fraction is outside ``[0, 1]``.
+        InvalidInputError: where the pressure drop takes the outlet below zero, the
+            entrainment fraction is outside ``[0, 1]``, exactly one of the diameter and
+            the design load factor is stated, an orientation or liquid level is stated
+            without them, the orientation is not one of the two, or a density the
+            Souders-Brown velocity divides by is not positive.
         OutOfRangeError: for a pressure drop or a fraction the spec bounds.
 
     Example:
@@ -96,16 +124,93 @@ def separator(
     p = input_to_si(spec, "feed_p", feed_p)
     drop = input_to_si(spec, "pressure_drop", pressure_drop)
 
+    diameter = (
+        None
+        if internal_diameter is None
+        else input_to_si(spec, "internal_diameter", internal_diameter)
+    )
+    load_factor = (
+        None
+        if design_gas_load_factor is None
+        else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor)
+    )
+    # A dimensionless input crosses as its number, not as a quantity: there is no unit to
+    # convert, and `input_to_si` refuses a bare float where the spec's dimension is
+    # dimensionless - the same rule every other fraction here follows.
+    level_fraction = (
+        None if design_liquid_level_fraction is None else float(design_liquid_level_fraction)
+    )
     apply_checks(
         checks.on_input,
-        {"pressure_drop": drop, "gas_in_liquid": gas_in_liquid}.get,
+        {
+            "pressure_drop": drop,
+            "gas_in_liquid": gas_in_liquid,
+            "internal_diameter": diameter,
+            "design_gas_load_factor": load_factor,
+            "design_liquid_level_fraction": level_fraction,
+        }.get,
         warnings,
+    )
+
+    # **Both or neither.** The capacity is a function of the vessel, and a caller who stated
+    # half of it has stated nothing: a vessel with a size but no design basis, or the reverse,
+    # has no capacity to be using.
+    if (diameter is None) != (load_factor is None):
+        named, missing = (
+            ("internal_diameter", "design_gas_load_factor")
+            if diameter is not None
+            else ("design_gas_load_factor", "internal_diameter")
+        )
+        raise InvalidInputError(
+            missing,
+            f"`{named}` was stated and `{missing}` was not, and the Souders-Brown capacity "
+            f"metric needs both - a vessel with a size but no design basis, or the reverse, "
+            f"has nothing to check",
+        )
+    # The two that shape the gas area have no meaning without the vessel they shape.
+    if diameter is None:
+        for stated, value in (
+            ("orientation", orientation),
+            ("design_liquid_level_fraction", design_liquid_level_fraction),
+        ):
+            if value is not None:
+                raise InvalidInputError(
+                    stated,
+                    f"`{stated}` was stated without `internal_diameter` and "
+                    f"`design_gas_load_factor`, and the gas area it shapes is not computed "
+                    f"until the vessel is",
+                )
+    kind = DEFAULT_ORIENTATION if orientation is None else orientation
+    if kind not in ("horizontal", "vertical"):
+        raise InvalidInputError(
+            "orientation",
+            f"a vessel is `horizontal` or `vertical`, and {kind!r} is neither",
+        )
+    level = (
+        DEFAULT_DESIGN_LIQUID_LEVEL_FRACTION if level_fraction is None else float(level_fraction)
     )
 
     duty = None if heat_input is None else input_to_si(spec, "heat_input", heat_input)
     # The temperature crosses as the quantity, not as its magnitude: the flash takes one
     # and `enthalpy_at` takes the other, and the route is where those two meet.
     states = _route(components, n, feed_z, p, feed_t, drop, gas_in_liquid, duty)
+
+    capacity = (
+        None
+        if diameter is None or load_factor is None
+        else _capacity_states(
+            components,
+            states.temperature.to("K").magnitude,
+            states.p_out,
+            list(feed_z),
+            states.n_vapour,
+            list(states.liquid_z),
+            diameter,
+            load_factor,
+            kind,
+            level,
+        )
+    )
 
     return SeparatorResult(
         vapour_n=from_si(states.n_vapour, "mol/s"),
@@ -118,6 +223,23 @@ def separator(
         liquid_p=from_si(states.p_out, "Pa"),
         liquid_t=states.temperature,
         liquid_h=from_si(states.liquid_h, "J/mol"),
+        capacity_utilization=None if capacity is None else capacity.utilization,
+        max_allowable_gas_velocity=(
+            None
+            if capacity is None or capacity.max_velocity is None
+            else from_si(capacity.max_velocity, "m/s")
+        ),
+        gas_superficial_velocity=(
+            None
+            if capacity is None or capacity.superficial_velocity is None
+            else from_si(capacity.superficial_velocity, "m/s")
+        ),
+        gas_load_factor=(
+            None
+            if capacity is None or capacity.load_factor is None
+            else from_si(capacity.load_factor, "m/s")
+        ),
+        is_overloaded=None if capacity is None else capacity.overloaded,
         warnings=tuple(warnings),
     )
 
@@ -238,6 +360,146 @@ def _route(
         vapour_h=vapour_h,
         liquid_h=liquid_h,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class CapacityStates:
+    """The five capacity getters, in the order the class computes them.
+
+    The three velocities are absent where the system carries no gas: the class's getters
+    would read phase 0, which is then the liquid, and a metric formed from it is not a gas
+    metric. `gas_density`, `liquid_density`, `gas_area`, `volumetric_flow` and `max_flow`
+    are the intermediates on the way there, carried because `layers` dumps them under the
+    capture's own names rather than recomputing them.
+    """
+
+    utilization: float
+    max_velocity: float | None
+    superficial_velocity: float | None
+    load_factor: float | None
+    overloaded: bool
+    gas_density: float | None
+    liquid_density: float | None
+    gas_area: float | None
+    volumetric_flow: float | None
+    max_flow: float | None
+    #: Whether the system carries a condensed phase. **Not `liquid_density is not None`**:
+    #: the sizing fallback is a density too, and a dry system has none to print.
+    has_liquid: bool
+
+
+def _capacity_states(
+    components: list[str],
+    t: float,
+    p: float,
+    feed_z: list[float],
+    gas_n: float,
+    liquid_z: list[float],
+    diameter_m: float,
+    design_load_factor: float,
+    orientation: str,
+    level_fraction: float,
+) -> CapacityStates:
+    """`Separator`'s steady capacity getters, on the system ``run`` leaves behind.
+
+    **Two density rules, and they are not one.** The sizing family - the maximum velocity
+    and the utilisation over it - reads the liquid's own density and substitutes `1000.0`
+    only where there is no liquid, with **no floor**. The gas-load factor applies the
+    class's `10.0` floor to the same density first. A near-dry state makes the two disagree
+    by construction.
+
+    ``liquid_z`` is the outlet's liquid, which is the entrained composition after
+    `gas_in_liquid`; its density is taken at the root that composition's own flash puts it
+    on, because `initPhysicalProperties` recomputes it after the transfer.
+    """
+    from azoth.eos.reference.hydrate_inhibitor_wt import GAS
+    from azoth.process.reference.capacity import _labelled_phases, _mass_density, _molar_mass
+
+    mixture, labelled, _shares = _labelled_phases(components, t, p, feed_z)
+    gas = next((entry for entry in labelled if entry[0] == GAS), None)
+    if gas is None:
+        # The class's own first answer: a stream with no gas phase uses none of its capacity.
+        return CapacityStates(0.0, None, None, None, False, None, None, None, None, None, False)
+    _label, gas_z, gas_root = gas
+    gas_density = _mass_density(mixture, t, p, gas_z, gas_root)
+    gas_molar_mass = _molar_mass(mixture, gas_z)
+    if not math.isfinite(gas_density) or gas_density <= 0.0:
+        raise InvalidInputError(
+            "capacity_utilization",
+            f"the gas density is {gas_density} kg/m3, and the Souders-Brown velocity divides "
+            f"by its square root",
+        )
+
+    # The liquid's own density, or the sizing fallback where the system carries none.
+    if any(entry[0] != GAS for entry in labelled):
+        entrained = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(liquid_z))
+        liquid_density = _mass_density(mixture, t, p, list(liquid_z), entrained.z_liquid)
+    else:
+        liquid_density = DEFAULT_LIQUID_DENSITY_FOR_SIZING
+
+    area = math.pi * diameter_m * diameter_m / 4.0
+    gas_area = area * (1.0 - level_fraction) if orientation == "horizontal" else area
+    volumetric_flow = gas_n * gas_molar_mass / gas_density
+
+    # **The sizing rule has no floor**: a liquid denser than the gas is all it needs, and the
+    # class's `getCapacityUtilization` would answer NaN where this refuses.
+    if not math.isfinite(liquid_density) or liquid_density <= gas_density:
+        raise InvalidInputError(
+            "capacity_utilization",
+            f"the liquid phase is {liquid_density} kg/m3 against the gas's {gas_density}, so "
+            f"`rho_l - rho_g` is not positive and the Souders-Brown velocity is the square "
+            f"root of a negative number. NeqSim answers NaN there; this refuses the state",
+        )
+    max_velocity = design_load_factor * math.sqrt((liquid_density - gas_density) / gas_density)
+    max_flow = max_velocity * gas_area
+    if not math.isfinite(max_flow) or max_flow <= 0.0:
+        raise InvalidInputError(
+            "capacity_utilization",
+            f"the maximum allowable gas flow is {max_flow} m3/s, and utilisation divides by it",
+        )
+    utilization = volumetric_flow / max_flow
+    superficial = volumetric_flow / gas_area
+
+    # **The load factor's own rule, applied after the sizing one.** The floor substitutes
+    # `1000.0` for a second phase no denser than the gas; the positivity check is repeated
+    # against the substituted value, which is a state the class would also answer NaN for.
+    floored = _load_factor_liquid_density(liquid_density, gas_density)
+    if not math.isfinite(floored) or floored <= gas_density:
+        raise InvalidInputError(
+            "gas_load_factor",
+            f"the liquid phase is {floored} kg/m3 after the near-dry floor against the gas's "
+            f"{gas_density}, and the load factor divides by their difference",
+        )
+    term = (floored - gas_density) / gas_density
+    load_factor = superficial * math.sqrt(1.0 / term)
+    if not math.isfinite(load_factor):
+        raise InvalidInputError("gas_load_factor", f"the gas load factor is {load_factor} m/s")
+    return CapacityStates(
+        utilization=utilization,
+        max_velocity=max_velocity,
+        superficial_velocity=superficial,
+        load_factor=load_factor,
+        overloaded=utilization > 1.0,
+        gas_density=gas_density,
+        liquid_density=liquid_density,
+        gas_area=gas_area,
+        volumetric_flow=volumetric_flow,
+        max_flow=max_flow,
+        has_liquid=any(entry[0] != GAS for entry in labelled),
+    )
+
+
+def _load_factor_liquid_density(liquid_density: float, gas_density: float) -> float:
+    """The gas-load factor's near-dry floor, kept apart from the sizing rule.
+
+    `Separator.getGasLoadFactor()` substitutes `1000.0` whenever `rho_l - rho_g` is under
+    `MIN_LIQUID_GAS_DENSITY_DIFFERENCE`; the sizing family does **not**. A state two
+    kilograms apart therefore has two liquid densities by design, and the pair is the
+    reason this is a function rather than an inline expression.
+    """
+    if liquid_density - gas_density < MIN_LIQUID_GAS_DENSITY_DIFFERENCE:
+        return DEFAULT_LIQUID_DENSITY
+    return liquid_density
 
 
 def _vapour_fraction(phase: Phase, beta: float | None) -> float:

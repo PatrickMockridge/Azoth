@@ -1812,6 +1812,10 @@ def separator(
     pressure_drop: Q,
     gas_in_liquid: float,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    design_gas_load_factor: Q | None = None,
+    orientation: str | None = None,
+    design_liquid_level_fraction: float | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -1821,9 +1825,15 @@ def separator(
     pressure drop is not a throttling and the outlets do not carry the inlet's enthalpy; a
     ``heat_input`` is the one thing that moves it.
 
+    ``internal_diameter`` and ``design_gas_load_factor`` are the vessel's size and design
+    basis, **both or neither**, and add the five capacity getters: utilisation, the maximum
+    allowable and superficial velocities, the actual Souders-Brown load factor, and the
+    overload flag. ``orientation`` and ``design_liquid_level_fraction`` shape the gas area and
+    default to the class's ``horizontal`` and ``0.8``.
+
     Raises:
-        InvalidInputError: where the pressure drop takes the outlet below zero or the
-            entrainment fraction is outside ``[0, 1]``.
+        InvalidInputError: where the pressure drop takes the outlet below zero, the
+            entrainment fraction is outside ``[0, 1]``, or the vessel is half stated.
 
     See :func:`azoth.process.reference.separator`.
     """
@@ -1836,6 +1846,10 @@ def separator(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+        internal_diameter=internal_diameter,
+        design_gas_load_factor=design_gas_load_factor,
+        orientation=orientation,
+        design_liquid_level_fraction=design_liquid_level_fraction,
     )
 
 

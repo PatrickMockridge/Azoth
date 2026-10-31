@@ -17258,6 +17258,21 @@ pub struct PySeparatorResult {
     /// the liquid outlet's molar enthalpy at its own state.
     #[pyo3(get)]
     pub liquid_h: PyQty,
+    /// `getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.
+    #[pyo3(get)]
+    pub capacity_utilization: Option<f64>,
+    /// `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.
+    #[pyo3(get)]
+    pub max_allowable_gas_velocity: Option<PyQty>,
+    /// `getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.
+    #[pyo3(get)]
+    pub gas_superficial_velocity: Option<PyQty>,
+    /// `getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.
+    #[pyo3(get)]
+    pub gas_load_factor: Option<PyQty>,
+    /// `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
+    #[pyo3(get)]
+    pub is_overloaded: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -17267,7 +17282,7 @@ pub struct PySeparatorResult {
 impl PySeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, {} warning(s))",
+            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -17278,6 +17293,11 @@ impl PySeparatorResult {
             self.liquid_p,
             self.liquid_t,
             self.liquid_h,
+            self.capacity_utilization,
+            self.max_allowable_gas_velocity,
+            self.gas_superficial_velocity,
+            self.gas_load_factor,
+            self.is_overloaded,
             self.warnings.len()
         )
     }
@@ -17320,6 +17340,20 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
                 magnitude_si: r.liquid_h.value,
                 unit: "J/mol".to_string(),
             },
+            capacity_utilization: r.capacity_utilization,
+            max_allowable_gas_velocity: r.max_allowable_gas_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            gas_superficial_velocity: r.gas_superficial_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            gas_load_factor: r.gas_load_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            is_overloaded: r.is_overloaded,
             warnings: transport(&r.warnings),
         }
     }

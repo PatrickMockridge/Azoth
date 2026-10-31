@@ -662,8 +662,22 @@ impl CalcResult for RateBasedPackedColumnResult {
 impl CalcResult for SeparatorResult {
     const CALC_ID: &'static str = "process.separator";
     const FIELDS: &'static [&'static str] = &[
-        "vapour_n", "vapour_z", "vapour_p", "vapour_t", "vapour_h", "liquid_n", "liquid_z",
-        "liquid_p", "liquid_t", "liquid_h", "warnings",
+        "vapour_n",
+        "vapour_z",
+        "vapour_p",
+        "vapour_t",
+        "vapour_h",
+        "liquid_n",
+        "liquid_z",
+        "liquid_p",
+        "liquid_t",
+        "liquid_h",
+        "capacity_utilization",
+        "max_allowable_gas_velocity",
+        "gas_superficial_velocity",
+        "gas_load_factor",
+        "is_overloaded",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

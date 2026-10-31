@@ -32,8 +32,10 @@ fn root() -> PathBuf {
 ///
 /// `None` is a real answer and not a gap: a mixer's result *is* its mixed stream and a separator's
 /// *are* its two, so a run that published them here would be the same numbers under a second key.
-/// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names five of the same entries that
-/// way - that their kernel forms nothing their records do not carry.
+/// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names the models that way - that
+/// their kernel forms nothing their records do not carry - and six of them are entries that
+/// publish no record here. **`process.separator` left that table when its capacity surface
+/// arrived**: utilisation and the three velocities are numbers neither outlet record carries.
 fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
     vec![
         (

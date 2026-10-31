@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/separator/Separator.java**
 
-`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are absent**: no oil or aqueous phase exists here.
+`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless re-run; and the five capacity getters. **`oilInGas`/`waterInGas` are absent.**
 
 
 ## What this model is
@@ -27,6 +27,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `pressure_drop` | Pa | the pressure drop across the vessel, which is `unit_ops.separator`'s own parameter. NeqSim's is in the thermo system's pressure unit and this one is in pascals, as every other pressure here is. |
 | `gas_in_liquid` | dimensionless | the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment. |
 | `heat_input` | W | *Optional.* heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for. |
+| `internal_diameter` | m | *Optional.* the vessel's internal diameter, which the gas area is `pi d**2 / 4` over. **Stated with `design_gas_load_factor` or not at all**: half a vessel has nothing to check. Absent means the five capacity outputs are absent. |
+| `design_gas_load_factor` | m/s | *Optional.* the Souders-Brown `K` the vessel is designed to, m/s. **Stated with `internal_diameter` or not at all.** It is the design basis, not the gas's actual load factor - see `gas_load_factor`. |
+| `orientation` | horizontal / vertical | *Optional.* the vessel's orientation, which picks the gas area. **Absent is the class's `horizontal`**; refused without the diameter and load factor. |
+| `design_liquid_level_fraction` | dimensionless | *Optional.* the fraction of the cross-section the liquid occupies at design, which derates a horizontal vessel's gas area to `(1 - f)`. **Absent is the class's `0.8`**; vertical ignores it; refused without the diameter and load factor. |
 
 
 ## Outputs
@@ -43,11 +47,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `liquid_p` | Pa | the liquid outlet's pressure, the same as the vapour's. |
 | `liquid_t` | K | the liquid outlet's temperature, the same as the vapour's - one flash decides both. |
 | `liquid_h` | J/mol | the liquid outlet's molar enthalpy at its own state. |
+| `capacity_utilization` | dimensionless | *Optional.* `getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists. |
+| `max_allowable_gas_velocity` | m/s | *Optional.* `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists. |
+| `gas_superficial_velocity` | m/s | *Optional.* `getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above. |
+| `gas_load_factor` | m/s | *Optional.* `getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above. |
+| `is_overloaded` | - | *Optional.* `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `pressure_drop >= 0` | raises | a vessel passes pressure down, not up |
 | `gas_in_liquid >= 0 and gas_in_liquid <= 1` | raises | an entrainment fraction is a fraction |
+| `internal_diameter > 0` | raises | a diameter is a positive length, and the gas area is a zero area at zero - NeqSim's getCapacityUtilization answers NaN there, which this refuses at the input instead |
+| `design_gas_load_factor > 0` | raises | a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all |
+| `design_liquid_level_fraction >= 0 and design_liquid_level_fraction < 1` | raises | a fraction of the cross-section; at one it leaves no gas area, which is a division by zero rather than a vessel |
 
 ## Assumptions
 
@@ -59,7 +71,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.
 - **`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none of it here**. `oil_in_gas` and `water_in_gas` are absent: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.
+- **the capacity surface is a second fold on the same flash, and it is optional.** The diameter and design `K` are **both or neither**; `orientation` and the liquid level are refused without them, and the five outputs are absent.
+- **its two density rules are not one.** The sizing family reads the liquid's own density, `1000.0` where none exists, with **no floor**. `getGasLoadFactor()` applies `MIN_LIQUID_GAS_DENSITY_DIFFERENCE = 10.0`: under it, `1000.0` is substituted.
+- **the gas area is the design area**: full cross-section vertical, `(1 - design_liquid_level_fraction)` horizontal. **Horizontal and `0.8` are the class's defaults when the vessel states neither** - a foot-gun: a vertical scrubber on them derates five-fold. `GasScrubber`'s defaults are not adopted.
+- **no gas phase answers `0.0` utilisation and `false` overload, and the three velocity metrics are absent.** The class's velocity and load-factor getters still read phase 0, which is then the liquid; a metric formed from it is not a gas metric, so the port omits it rather than publishing one.
+- **the metric is read at the outlet state and on the entrained liquid.** `Q`, `rho_g` and `rho_l` are the system after `run` - `feed_p - pressure_drop`, the flash's temperature - and the liquid density is the one that absorbed `gas_in_liquid`.
+- **one liquid.** `getGasLoadFactor()` reads phase 1 and the sizing family prefers `oil` then `aqueous`; with one condensed phase the branch is that phase, and `process.three_phase_separator` owns the other.
+- NeqSim's `Separator` also carries `SeparatorCapacityAssessment`, the droplet calculator, `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`, `sizeFromFlow`/`autoSize`, the mechanical design and `runTransient`, **none of it here**. `oil_in_gas`/`water_in_gas` are absent.
 
 ## Cases
 
@@ -69,11 +87,18 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_pressure_drop_holds_the_temperature` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 200000.0, gas_in_liquid = 0.0 | vapour_n = 0.8360536845155941, vapour_z = [0.8203430710096191, 0.1796569289903808], vapour_p = 1800000.0, vapour_t = 300.0, vapour_h = 594.757372548732, liquid_n = 0.16394631548440586, liquid_z = [0.08630357366533918, 0.9136964263346607], liquid_p = 1800000.0, liquid_t = 300.0, liquid_h = -17457.57964433711 |
 | `a_heat_input_moves_the_flash` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, heat_input = 1000.0, gas_in_liquid = 0.0 | vapour_n = 0.8544688027651463, vapour_z = [0.8035773316657293, 0.19642266833427077], vapour_p = 2000000.0, vapour_t = 305.9744979880211, vapour_h = 821.1818312940813, liquid_n = 0.14553119723485375, liquid_z = [0.09185823889567003, 0.90814176110433], liquid_p = 2000000.0, liquid_t = 305.9744979880211, liquid_h = -16539.564427297686 |
 | `entrainment_carries_vapour_into_the_liquid` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.05 | vapour_n = 0.7773101311100368, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915928, liquid_n = 0.22268986888996328, liquid_z = [0.23253041230060956, 0.7674695876993904], liquid_p = 2000000.0, liquid_t = 300.0, liquid_h = -13999.027492525918 |
+| `the_capacity_at_the_design_vessel` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8 | capacity_utilization = 0.0021261272415043003, max_allowable_gas_velocity = 0.559861417115024, gas_superficial_velocity = 0.0011903366103954546, gas_load_factor = 0.0002338739965654731, is_overloaded = False |
+| `a_horizontal_vessel_derates_the_gas_area` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = horizontal, design_liquid_level_fraction = 0.8 | capacity_utilization = 0.010630636207521504, max_allowable_gas_velocity = 0.559861417115024, gas_superficial_velocity = 0.005951683051977274, gas_load_factor = 0.0011693699828273657, is_overloaded = False |
+| `the_vertical_area_ignores_the_design_liquid_level` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.2 | capacity_utilization = 0.0021261272415043003, max_allowable_gas_velocity = 0.559861417115024, gas_superficial_velocity = 0.0011903366103954546, gas_load_factor = 0.0002338739965654731, is_overloaded = False |
+| `a_dry_gas_uses_the_sizing_fallback` | components = ['methane'], feed_n = 1.0, feed_z = [1.0], feed_p = 5000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8 | capacity_utilization = 0.0010068944155178085, max_allowable_gas_velocity = 0.5754213218902637, gas_superficial_velocity = 0.0005793885155811818, gas_load_factor = 0.00011075838570695891, is_overloaded = False |
+| `entrainment_moves_the_liquid_the_metric_reads` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.05, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8 | capacity_utilization = 0.002138781911580242, max_allowable_gas_velocity = 0.5287214062139576, gas_superficial_velocity = 0.001130819779875682, gas_load_factor = 0.00023526601027382664, is_overloaded = False |
+| `an_overloaded_vessel_reports_overload` | components = ['methane', 'n-butane'], feed_n = 50.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 0.2, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8 | capacity_utilization = 2.6576590518803727, max_allowable_gas_velocity = 0.5598614171150242, gas_superficial_velocity = 1.487920762994317, gas_load_factor = 0.2923424957068409, is_overloaded = True |
+| `the_metric_is_at_the_outlet_state` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 200000.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8 | capacity_utilization = 0.002314461922247286, max_allowable_gas_velocity = 0.5866151059811591, gas_superficial_velocity = 0.001357698325808449, gas_load_factor = 0.0002545908114472015, is_overloaded = False |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 4 declared, every one run
+- Tests: 11 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -82,4 +107,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run`.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run` and its steady capacity getters.
+- `validation/neqsim/captures/process_separator_capacity.tsv` - fifteen rows: nine PR states that sweep the capacity surface, four SRK states re-casing `SeparatorTest`, and a `GasScrubber` at minimum setup that prints the defaults this id does not adopt.

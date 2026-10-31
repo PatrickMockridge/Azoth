@@ -491,8 +491,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // fourth, the pump's feed and speed the fifth and sixth, the filter's exponent, void
     // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
     // tenth, the compressor's speed the eleventh, and the expander's polytropic efficiency the
-    // twelfth.
-    assert_eq!(checked, 125, "the bounds this test walked");
+    // twelfth. **The separator's capacity surface adds three** - its diameter, its design gas
+    // load factor and its design liquid level - the thirteenth to fifteenth.
+    assert_eq!(checked, 128, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -636,8 +637,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `523 + 4 = 527`. **And then the Khader chart's two**, on the same model:
     // `chart_conditions` and `impeller_diameter` - `527 + 2 = 529`. **And then the
     // speed-solve mode's four**, on the same model: `solve_speed`, `min_speed`, `max_speed` and
-    // `limit_speed` - `553 + 4 = 557`.
-    assert_eq!(walked, 557, "the inputs this test walked");
+    // `limit_speed` - `553 + 4 = 557`. **And then the separator's capacity surface's four** -
+    // `internal_diameter`, `design_gas_load_factor`, `orientation` and
+    // `design_liquid_level_fraction` - `557 + 4 = 561`.
+    assert_eq!(walked, 561, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

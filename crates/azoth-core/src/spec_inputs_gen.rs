@@ -3481,6 +3481,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.separator", "pressure_drop", "pressure"),
     ("process.separator", "gas_in_liquid", "dimensionless"),
     ("process.separator", "heat_input", "power"),
+    ("process.separator", "internal_diameter", "length"),
+    ("process.separator", "design_gas_load_factor", "velocity"),
+    (
+        "process.separator",
+        "design_liquid_level_fraction",
+        "dimensionless",
+    ),
     (
         "process.shortcut_distillation_column",
         "feed_n",

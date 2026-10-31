@@ -92,3 +92,157 @@ liquid_z = [0.23253041230060956, 0.7674695876993904]
 liquid_p = 2000000.0
 liquid_t = 300.0
 liquid_h = -13999.027492525918
+[[cases]]
+id = "the_capacity_at_the_design_vessel"
+tolerance = 2e-04
+source = "The capacity capture's first block: the equilibrium fluid of the first case, with a 1 m vessel at a design `K` of `0.11` m/s and vertical orientation. **The sizing velocity is the Souders-Brown one**, `0.11 sqrt((542.322967 - 20.157311)/20.157311) = 0.5598614171` m/s, and the utilisation is the gas' `9.3488818763e-4` m3/s over `V_max A = 0.4397141288` m3/s. `gas_load_factor` is the *actual* K, `u sqrt(rho_g/(rho_l - rho_g))`, and not the design input, which is why the two are three orders apart on a vessel this empty.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 0.0021261272415043003
+max_allowable_gas_velocity = 0.559861417115024
+gas_superficial_velocity = 0.0011903366103954546
+gas_load_factor = 2.338739965654731e-4
+is_overloaded = false
+[[cases]]
+id = "a_horizontal_vessel_derates_the_gas_area"
+tolerance = 2e-04
+source = "The capture's second block: the same feed, vessel and `K` with `orientation = horizontal`, so the gas area is `(1 - 0.8)` of `pi d**2/4`. **`max_allowable_gas_velocity` does not move** - it is a function of the densities and the design `K`, not of the area - while the superficial velocity, the load factor and the utilisation are five times the vertical ones, and the maximum allowable flow is a fifth. That factor is the class's own `getSepCrossArea() * (1 - designLiquidLevelFraction)` and the reason a scrubber left on the horizontal default is over-read five-fold.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "horizontal"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 0.010630636207521504
+max_allowable_gas_velocity = 0.559861417115024
+gas_superficial_velocity = 0.005951683051977274
+gas_load_factor = 0.0011693699828273657
+is_overloaded = false
+[[cases]]
+id = "the_vertical_area_ignores_the_design_liquid_level"
+tolerance = 2e-04
+source = "The capture's fourth block: the first case's vessel at `design_liquid_level_fraction = 0.2`. **Every one of the five outputs is the first case's to the last digit**, which is the pin's #3154 statement - a vertical separator's gas area is the full cross-section and the horizontal liquid fraction cannot move it. The vertical pair is why the two inputs are separate even though one of them does nothing here.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.2
+[cases.expected]
+capacity_utilization = 0.0021261272415043003
+max_allowable_gas_velocity = 0.559861417115024
+gas_superficial_velocity = 0.0011903366103954546
+gas_load_factor = 2.338739965654731e-4
+is_overloaded = false
+[[cases]]
+id = "a_dry_gas_uses_the_sizing_fallback"
+tolerance = 2e-04
+source = "The capture's sixth block: pure methane at 50 bara, one phase, so **both density rules fall back to `1000.0`** and there is no second phase for the `10.0` floor to see. The sizing velocity is `0.11 sqrt((1000 - 35.255414)/35.255414) = 0.5754213219` m/s and the load factor `5.7938851558e-4 sqrt(35.255414/(1000 - 35.255414)) = 1.1075838571e-4` m/s. **The pin's own near-dry scrubber state is also single-phase in this jar**, so the floor is pinned by a unit test with constructed densities rather than by this row.\n"
+[cases.inputs]
+components = ["methane"]
+feed_n = 1.0
+feed_z = [1.0]
+feed_p = 5000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 0.0010068944155178085
+max_allowable_gas_velocity = 0.5754213218902637
+gas_superficial_velocity = 5.793885155811818e-4
+gas_load_factor = 1.1075838570695891e-4
+is_overloaded = false
+[[cases]]
+id = "entrainment_moves_the_liquid_the_metric_reads"
+tolerance = 2e-04
+source = "The capture's ninth block: the first case with `gas_in_liquid = 0.05`. **The liquid the metric reads is the entrained one**, because `initPhysicalProperties` recomputes its density after `addPhaseFractionToPhase`: `485.8517090078` kg/m3 against the dry `542.3229671`, which moves the sizing velocity to `0.5287214062` m/s. The gas side also reads the vapour that is *left*, `8.8814377825e-4` m3/s rather than the dry `9.3488818763e-4`, so both densities and the flow are the post-entrainment system's.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.05
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 0.002138781911580242
+max_allowable_gas_velocity = 0.5287214062139576
+gas_superficial_velocity = 0.001130819779875682
+gas_load_factor = 2.3526601027382664e-4
+is_overloaded = false
+[[cases]]
+id = "an_overloaded_vessel_reports_overload"
+tolerance = 2e-04
+source = "The capture's eighth block: the first fluid at `50` mol/s through a `0.2` m vessel. The gas' `0.0467444094` m3/s is nearly three times the `0.0175885652` m3/s the area admits, so utilisation is `2.6576590519` and **`is_overloaded` is `true`**. The flag is `utilisation > 1.0` exactly - the class's own comparison - and not a tolerance.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 50.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 0.2
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 2.6576590518803727
+max_allowable_gas_velocity = 0.5598614171150242
+gas_superficial_velocity = 1.487920762994317
+gas_load_factor = 0.2923424957068409
+is_overloaded = true
+[[cases]]
+id = "the_metric_is_at_the_outlet_state"
+tolerance = 2e-04
+source = "The capture's tenth block: the first case with a 2 bar drop, so the getters read the system at 18 bara and the liquid that state carries. The gas density falls to `18.5057860742` and the liquid rises to `544.8000684` kg/m3, moving the sizing velocity to `0.5866151060` m/s. **A port that evaluated the metric at the feed's pressure would be right on the no-drop rows and wrong here**, which is what this row is for.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 200000.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+[cases.expected]
+capacity_utilization = 0.002314461922247286
+max_allowable_gas_velocity = 0.5866151059811591
+gas_superficial_velocity = 0.001357698325808449
+gas_load_factor = 2.545908114472015e-4
+is_overloaded = false

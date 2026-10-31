@@ -32,6 +32,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
+//       > captures/process_separator_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
@@ -117,6 +119,9 @@ public class ProcessProbe {
         break;
       case "separator":
         separator();
+        break;
+      case "separator_capacity":
+        separatorCapacityRows();
         break;
       case "throttling_valve":
         throttlingValve();
@@ -4608,6 +4613,216 @@ public class ProcessProbe {
     print("feed", inlet);
     print("vapour", separator.getGasOutStream());
     print("liquid", separator.getLiquidOutStream());
+    System.out.println();
+  }
+
+  // === process.separator capacity ==============================================
+
+  /// The five steady capacity getters on the vessel `Separator.run` leaves behind.
+  ///
+  /// **`getCapacityUtilization` and `getGasLoadFactor()` are two density rules and not
+  /// one.** The sizing family (`getMaxAllowableGasVelocity`, and the utilisation over it)
+  /// reads the liquid's own density and falls back to `1000.0` when there is no liquid - no
+  /// floor. The load factor reads the same phases and then substitutes `1000.0` whenever
+  /// `rho_l - rho_g < 10.0`. A near-dry state therefore makes the two disagree by design,
+  /// which the near-dry rows are here to pin.
+  ///
+  /// **The PR rows are the oracle**, because azoth's databank route resolves
+  /// Peng-Robinson. The SRK rows re-case `SeparatorTest`'s own states as evidence, and the
+  /// scrubber row prints the defaults the port deliberately does not adopt.
+  static void separatorCapacityRows() {
+    // The two-phase fluid of `process_separator.tsv`, so the capacity rows sit on a state
+    // the port already carries.
+    separatorCapacityRow("pr_two_phase_vertical_d1000_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_horizontal_d1000_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.8, 0.0, 0.0);
+    // Issue #3154: vertical capacity is the full cross-section, whatever the design liquid
+    // fraction says; horizontal derates it by `1 - Fg`.
+    separatorCapacityRow("pr_two_phase_vertical_fg08", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_vertical_fg02", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.2, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_horizontal_fg02", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.2, 0.0, 0.0);
+    // Dry gas: the sizing rule's `1000.0` fallback, and `getMaxAllowableGasVelocity`'s
+    // `50.0` only applies where there is no gas at all - a state utilisation answers `0.0`
+    // for before it reaches the velocity.
+    separatorCapacityRow("pr_dry_gas_vertical_d1000_k011", false, false, null,
+        new String[] {"methane"}, new double[] {1.0}, 300.0, 50.0, 1.0, null, 1.0, 0.11,
+        "vertical", 0.8, 0.0, 0.0);
+    // The pin's near-dry scrubber state: a trace heavy end at 90 bara, where the two-phase
+    // densities sit close enough for the load factor's `10.0` floor to decide.
+    separatorCapacityRow("pr_near_dry_96_3_005_vertical_d3000", false, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {96.0, 3.0, 0.05}, 298.15,
+        90.0, null, 400000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    // A vessel far too small for its flow, so utilisation crosses one and the overload flag
+    // is reachable.
+    separatorCapacityRow("pr_overloaded_vertical_d020_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 50.0, null,
+        0.2, 0.11, "vertical", 0.8, 0.0, 0.0);
+    // Entrainment moves moles into the liquid before the getters read, so the liquid density
+    // is the entrained composition's.
+    separatorCapacityRow("pr_entrained_gas_in_liquid_005_vertical_d1000", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.05, 0.0);
+    // The metric is at the outlet state, which a pressure drop moves.
+    separatorCapacityRow("pr_pressure_drop_outlet_state_vertical_d1000", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 2.0);
+
+    // SRK evidence, re-casing the pin's own tests.
+    separatorCapacityRow("srk_two_phase_vertical_d1000_k011", true, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_near_dry_bounded_vertical_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {96.0, 3.0, 0.05}, 298.15,
+        90.0, null, 400000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_orientation_vertical_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {90.0, 6.0, 4.0}, 298.15,
+        80.0, null, 300000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_orientation_horizontal_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {90.0, 6.0, 4.0}, 298.15,
+        80.0, null, 300000.0, 3.0, 0.11, "horizontal", 0.8, 0.0, 0.0);
+
+    // `GasScrubber` at minimum setup - a diameter and nothing else - which is where the
+    // class's own vertical orientation and 0.1 design liquid level come from. The port
+    // adopts neither default and refuses a half-stated vessel.
+    scrubberCapacityDefaultsRow("srk_gas_scrubber_minimum_setup_d1200", true, true, null,
+        new String[] {"methane", "ethane", "n-hexane"}, new double[] {90.0, 5.0, 5.0}, 303.15,
+        50.0, null, 50000.0, 1.2);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void separatorCapacityRow(String label, boolean srk, boolean multiPhase,
+      Double heatInputW, String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter, double kFactor, String orientation,
+      double designLiquidLevelFraction, double gasInLiquid, double pressureDropBar) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    if (heatInputW != null) {
+      separator.setHeatInput(heatInputW);
+    }
+    if (pressureDropBar != 0.0) {
+      separator.setPressureDrop(pressureDropBar);
+    }
+    if (gasInLiquid != 0.0) {
+      separator.setEntrainment(gasInLiquid, "mole", "feed", "gas", "liquid");
+    }
+    separator.setInternalDiameter(diameter);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.setOrientation(orientation);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.run();
+    printCapacity(label, srk, inlet, separator, diameter, kFactor, orientation,
+        designLiquidLevelFraction, gasInLiquid, pressureDropBar);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void scrubberCapacityDefaultsRow(String label, boolean srk, boolean multiPhase,
+      Double heatInputW, String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.GasScrubber scrubber =
+        new neqsim.process.equipment.separator.GasScrubber("gs1", inlet);
+    scrubber.setInternalDiameter(diameter);
+    scrubber.run();
+    printCapacity(label, srk, inlet, scrubber, diameter, scrubber.getDesignGasLoadFactor(),
+        scrubber.getOrientation(), scrubber.getDesignLiquidLevelFraction(), 0.0, 0.0);
+  }
+
+  static Stream capacityFeed(boolean srk, boolean multiPhase, String[] names, double[] amounts,
+      double temperature, double pressureBar, Double molPerSecond, Double kgPerHour) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    fluid.setMixingRule(2);
+    if (multiPhase) {
+      fluid.setMultiPhaseCheck(true);
+    }
+    Stream stream = new Stream("feed", fluid);
+    if (molPerSecond != null) {
+      stream.setFlowRate(molPerSecond, "mol/sec");
+    } else {
+      stream.setFlowRate(kgPerHour, "kg/hr");
+    }
+    stream.run();
+    return stream;
+  }
+
+  /// The five getters, the phases they read, and the geometry they divide by.
+  ///
+  /// `gas_area_m2` is printed as the instrument computes it - full cross-section vertical,
+  /// `(1 - Fg)` of it horizontal - rather than read back, because the class has no getter
+  /// for it. `max_allowable_gas_flow_m3_s` is the getter itself.
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void printCapacity(String label, boolean srk, Stream inlet,
+      neqsim.process.equipment.separator.Separator separator, double diameter,
+      double kFactor, String orientation, double designLiquidLevelFraction, double gasInLiquid,
+      double pressureDropBar) {
+    SystemInterface system = separator.getThermoSystem();
+    // **`run` leaves the densities stale where it entrained**: the phase labels are not
+    // revisited but `initPhysicalProperties` recomputes the density of the oil that
+    // absorbed the carried moles, and every capacity getter calls it. Doing it here means
+    // the printed phase densities are the ones the getters below actually read.
+    system.initPhysicalProperties();
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("flow_kg_hr=" + inlet.getFlowRate("kg/hr"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < system.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",").append(system.getPhase(0).getComponent(i).getName())
+          .append(":").append(system.getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("orientation=" + orientation);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("gas_in_liquid=" + gasInLiquid);
+    System.out.println("pressure_drop_bara=" + pressureDropBar);
+    System.out.println("phase_count=" + system.getNumberOfPhases());
+    StringBuilder types = new StringBuilder();
+    StringBuilder densities = new StringBuilder();
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      types.append(i == 0 ? "" : ",").append(system.getPhase(i).getType().name());
+      densities.append(i == 0 ? "" : ",")
+          .append(system.getPhase(i).getPhysicalProperties().getDensity());
+    }
+    System.out.println("phase_types=" + types);
+    System.out.println("phase_densities_kg_m3=" + densities);
+    System.out.println("has_gas=" + system.hasPhaseType("gas"));
+    System.out.println("has_oil=" + system.hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + system.hasPhaseType("aqueous"));
+    System.out.println("gas_density_kg_m3=" + system.getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("liquid_density_kg_m3="
+        + (system.getNumberOfPhases() < 2 ? "none"
+            : system.getPhase(1).getPhysicalProperties().getDensity()));
+    System.out.println("gas_volumetric_flow_m3_s=" + system.getPhase(0).getFlowRate("m3/sec"));
+    double area = Math.PI * diameter * diameter / 4.0;
+    double gasArea = orientation.equals("horizontal") ? area * (1.0 - designLiquidLevelFraction)
+        : area;
+    System.out.println("gas_area_m2=" + gasArea);
+    System.out.println("max_allowable_gas_velocity_m_per_s="
+        + separator.getMaxAllowableGasVelocity());
+    System.out.println("max_allowable_gas_flow_m3_s=" + separator.getMaxAllowableGasFlowRate());
+    System.out.println("gas_superficial_velocity_m_per_s=" + separator.getGasSuperficialVelocity());
+    System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
+    System.out.println("capacity_utilization=" + separator.getCapacityUtilization());
+    System.out.println("is_overloaded=" + separator.isOverloaded());
     System.out.println();
   }
 

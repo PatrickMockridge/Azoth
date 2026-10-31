@@ -161,6 +161,11 @@ fn the_executor_s_answer_is_the_separators() {
         pascals(parameter(&session, "sep1", "pressure_drop")),
         parameter(&session, "sep1", "gas_in_liquid"),
         None,
+        // The demo states no vessel, so the capacity surface is absent here.
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the model runs");
 

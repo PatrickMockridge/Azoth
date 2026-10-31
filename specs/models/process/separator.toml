@@ -10,14 +10,21 @@ assumptions = [
     "**the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.",
     "**`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none of it here**. `oil_in_gas` and `water_in_gas` are absent: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.",
+    "**the capacity surface is a second fold on the same flash, and it is optional.** The diameter and design `K` are **both or neither**; `orientation` and the liquid level are refused without them, and the five outputs are absent.",
+    "**its two density rules are not one.** The sizing family reads the liquid's own density, `1000.0` where none exists, with **no floor**. `getGasLoadFactor()` applies `MIN_LIQUID_GAS_DENSITY_DIFFERENCE = 10.0`: under it, `1000.0` is substituted.",
+    "**the gas area is the design area**: full cross-section vertical, `(1 - design_liquid_level_fraction)` horizontal. **Horizontal and `0.8` are the class's defaults when the vessel states neither** - a foot-gun: a vertical scrubber on them derates five-fold. `GasScrubber`'s defaults are not adopted.",
+    "**no gas phase answers `0.0` utilisation and `false` overload, and the three velocity metrics are absent.** The class's velocity and load-factor getters still read phase 0, which is then the liquid; a metric formed from it is not a gas metric, so the port omits it rather than publishing one.",
+    "**the metric is read at the outlet state and on the entrained liquid.** `Q`, `rho_g` and `rho_l` are the system after `run` - `feed_p - pressure_drop`, the flash's temperature - and the liquid density is the one that absorbed `gas_in_liquid`.",
+    "**one liquid.** `getGasLoadFactor()` reads phase 1 and the sizing family prefers `oil` then `aqueous`; with one condensed phase the branch is that phase, and `process.three_phase_separator` owns the other.",
+    "NeqSim's `Separator` also carries `SeparatorCapacityAssessment`, the droplet calculator, `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`, `sizeFromFlow`/`autoSize`, the mechanical design and `runTransient`, **none of it here**. `oil_in_gas`/`water_in_gas` are absent.",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run` and its steady capacity getters.",
+    "`validation/neqsim/captures/process_separator_capacity.tsv` - fifteen rows: nine PR states that sweep the capacity surface, four SRK states re-casing `SeparatorTest`, and a `GasScrubber` at minimum setup that prints the defaults this id does not adopt.",
 ]
 [source]
 standard = "NeqSim process/equipment/separator/Separator.java"
-edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are absent**: no oil or aqueous phase exists here."
+edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless re-run; and the five capacity getters. **`oilInGas`/`waterInGas` are absent.**"
 [inputs]
 [inputs.components]
 type = "components"
@@ -46,6 +53,23 @@ description = "the fraction of the vapour's moles carried into the liquid outlet
 unit = "W"
 optional = true
 description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for.\n"
+[inputs.internal_diameter]
+unit = "m"
+optional = true
+description = "the vessel's internal diameter, which the gas area is `pi d**2 / 4` over. **Stated with `design_gas_load_factor` or not at all**: half a vessel has nothing to check. Absent means the five capacity outputs are absent.\n"
+[inputs.design_gas_load_factor]
+unit = "m/s"
+optional = true
+description = "the Souders-Brown `K` the vessel is designed to, m/s. **Stated with `internal_diameter` or not at all.** It is the design basis, not the gas's actual load factor - see `gas_load_factor`.\n"
+[inputs.orientation]
+type = "enum"
+values = ["horizontal", "vertical"]
+optional = true
+description = "the vessel's orientation, which picks the gas area. **Absent is the class's `horizontal`**; refused without the diameter and load factor.\n"
+[inputs.design_liquid_level_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of the cross-section the liquid occupies at design, which derates a horizontal vessel's gas area to `(1 - f)`. **Absent is the class's `0.8`**; vertical ignores it; refused without the diameter and load factor.\n"
 [outputs]
 [outputs.vapour_n]
 unit = "mol/s"
@@ -81,6 +105,26 @@ description = "the liquid outlet's temperature, the same as the vapour's - one f
 [outputs.liquid_h]
 unit = "J/mol"
 description = "the liquid outlet's molar enthalpy at its own state.\n"
+[outputs.capacity_utilization]
+unit = "dimensionless"
+optional = true
+description = "`getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.\n"
+[outputs.max_allowable_gas_velocity]
+unit = "m/s"
+optional = true
+description = "`getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.\n"
+[outputs.gas_superficial_velocity]
+unit = "m/s"
+optional = true
+description = "`getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.\n"
+[outputs.gas_load_factor]
+unit = "m/s"
+optional = true
+description = "`getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.\n"
+[outputs.is_overloaded]
+type = "boolean"
+optional = true
+description = "`isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
@@ -95,6 +139,26 @@ max = 1
 max_inclusive = true
 severity = "error"
 rationale = "an entrainment fraction is a fraction\n"
+[[valid_range]]
+quantity = "internal_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is a positive length, and the gas area is a zero area at zero - NeqSim's getCapacityUtilization answers NaN there, which this refuses at the input instead\n"
+[[valid_range]]
+quantity = "design_gas_load_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all\n"
+[[valid_range]]
+quantity = "design_liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a fraction of the cross-section; at one it leaves no gas area, which is a division by zero rather than a vessel\n"
 [implementations]
 python = "azoth.process.separator"
 rust = "azoth_process::separator"

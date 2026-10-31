@@ -558,7 +558,16 @@ def return_expr(field: str, transport: str, rust: str | None, declared: str | No
         return f"tuple({src})"
     if transport == "Vec<Vec<f64>>":
         return f"tuple(tuple(row) for row in {src})"
-    if transport in ("f64", "u32", "u64", "usize", "i64", "bool", "Option<f64>"):
+    if transport in (
+        "f64",
+        "u32",
+        "u64",
+        "usize",
+        "i64",
+        "bool",
+        "Option<f64>",
+        "Option<bool>",
+    ):
         return src
     if transport == "String":
         if declared != "enum" or rust in ENUMS_THAT_STAY_STRINGS:
