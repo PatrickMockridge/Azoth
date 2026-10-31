@@ -6,7 +6,7 @@
 //! is reported as a finding rather than a failure, and that a state azoth is not qualified on is
 //! refused rather than answered with something plausible.
 
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -68,15 +68,22 @@ fn run(args: &[&str], input: &str) -> std::process::Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("the built binary should run");
-    child
-        .stdin
-        .take()
-        .expect("a stdin pipe")
-        .write_all(input.as_bytes())
-        .expect("the sidecar is reading");
-    child
+    let mut stdin = child.stdin.take().expect("a stdin pipe");
+    let request = input.to_string();
+    // **The sidecar may exit before it has drained stdin** when its verdict is a refusal, which
+    // closes the pipe under the writer. That is a race in this harness, not a product failure:
+    // the assertion is on stdout. The thread also keeps a large request set from deadlocking the
+    // two pipes, since `wait_with_output` drains stdout while this writes.
+    let writer = std::thread::spawn(move || match stdin.write_all(request.as_bytes()) {
+        Ok(()) => {}
+        Err(error) if error.kind() == ErrorKind::BrokenPipe => {}
+        Err(error) => panic!("writing the request: {error}"),
+    });
+    let output = child
         .wait_with_output()
-        .expect("the sidecar should exit when its stdin closes")
+        .expect("the sidecar should exit when its stdin closes");
+    writer.join().expect("the writer finished");
+    output
 }
 
 /// Every answer the binary produced for one run.
