@@ -275,6 +275,46 @@ class KComponent:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownDiagnostic:
+    """the model's assumption, floor and failure records, in order."""
+
+    #: the stable machine code.
+    code: str
+
+    #: the engineering detail.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownPoint:
+    """one row per visited step, in time order."""
+
+    #: the step's time.
+    time: Q
+
+    #: the rate the class's simplified orifice gives at the recorded state.
+    mass_flow_rate: Q
+
+    #: the recorded state's temperature.
+    temperature: Q
+
+    #: the recorded state's pressure.
+    pressure: Q
+
+    #: the physical vapour mole fraction: 1 all-vapour, 0 all-liquid, beta two-phase.
+    vapour_mole_fraction: float
+
+    #: `mdot/(rho A Cd)`, capped at 1.2 times the ideal-gas sound speed.
+    jet_velocity: Q
+
+    #: `mdot v + (P-back) A`, unclamped.
+    jet_momentum: Q
+
+    #: the liquid Sauter mean diameter, zero for a single phase or a trace liquid.
+    droplet_smd: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MineralEquilibriumRow:
     """The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero."""
 

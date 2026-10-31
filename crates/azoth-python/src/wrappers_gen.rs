@@ -5874,6 +5874,46 @@ pub fn hem_release(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Vessel leak blowdown.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, initial_z, initial_t, initial_p, duration, vessel_volume, hole_diameter, discharge_coefficient, back_pressure, time_step, scenario_name))]
+#[pyo3(
+    text_signature = "(components, initial_z, initial_t, initial_p, duration, vessel_volume, hole_diameter, discharge_coefficient, back_pressure, time_step, scenario_name)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn leak_blowdown(
+    py: Python<'_>,
+    components: Vec<String>,
+    initial_z: Vec<f64>,
+    initial_t: f64,
+    initial_p: f64,
+    duration: f64,
+    vessel_volume: Option<f64>,
+    hole_diameter: Option<f64>,
+    discharge_coefficient: Option<f64>,
+    back_pressure: Option<f64>,
+    time_step: Option<f64>,
+    scenario_name: Option<&str>,
+) -> PyResult<crate::transport_gen::PyLeakBlowdownResult> {
+    azoth_process::models::leak_blowdown::leak_blowdown(
+        &components,
+        &initial_z,
+        kelvins(initial_t),
+        pascals(initial_p),
+        seconds(duration),
+        vessel_volume.map(cubic_meters),
+        hole_diameter.map(meters),
+        discharge_coefficient,
+        back_pressure.map(pascals),
+        time_step.map(seconds),
+        scenario_name,
+    )
+    .map(|r| crate::transport_gen::PyLeakBlowdownResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Manifold.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

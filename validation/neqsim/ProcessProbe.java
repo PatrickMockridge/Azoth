@@ -95,9 +95,11 @@ import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
+import neqsim.process.safety.release.LeakModel;
 import neqsim.process.safety.release.ReleaseFlowRequest;
 import neqsim.process.safety.release.ReleaseFlowResult;
 import neqsim.process.safety.release.ReleaseState;
+import neqsim.process.safety.release.SourceTermResult;
 import java.util.Map;
 
 public class ProcessProbe {
@@ -148,6 +150,9 @@ public class ProcessProbe {
         break;
       case "hem_release":
         hemReleaseRows();
+        break;
+      case "leak_blowdown":
+        leakBlowdownRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -7526,5 +7531,138 @@ public class ProcessProbe {
       out.append(entry.getKey()).append(":").append(entry.getValue());
     }
     return out.toString();
+  }
+
+  // === process.leak_blowdown ===================================================
+
+  static void leakBlowdownRows() {
+    leakBlowdownRow("pr_methane_50bara_10s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 10.0, 1.0);
+    leakBlowdownRow("pr_methane_50bara_60s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 60.0, 1.0);
+    leakBlowdownRow("pr_methane_export_30s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 5.0, 0.02, 0.62, 101325.0, 30.0, 1.0);
+    leakBlowdownRow("pr_propane_11bara_10s_1s", false, new String[] {"propane"},
+        new double[] {1.0}, 300.0, 11.0, 0.01, 0.01, 0.62, 101325.0, 10.0, 1.0);
+    leakBlowdownRow("pr_methane_no_forward_flow_3s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 5.0, 1.0, 0.01, 0.62, 600000.0, 3.0, 1.0);
+    leakBlowdownRow("pr_methane_2bara_subsonic_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 2.0, 1.0, 0.01, 0.62, 190000.0, 1.0, 1.0);
+    leakBlowdownRow("pr_methane_ethane_50bara_5s", false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 300.0, 50.0, 1.0, 0.01, 0.62,
+        101325.0, 5.0, 1.0);
+    leakBlowdownRow("pr_single_step_depletion_100s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 100.0, 100.0);
+    // SRK rows are the pinned tests' own EOS, and evidence beside the PR oracle.
+    leakBlowdownRow("srk_methane_50bara_60s_1s", true, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 60.0, 1.0);
+    leakBlowdownRow("srk_methane_export_30s_1s", true, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 5.0, 0.02, 0.62, 101325.0, 30.0, 1.0);
+    leakBlowdownRow("srk_propane_11bara_10s_1s", true, new String[] {"propane"},
+        new double[] {1.0}, 300.0, 11.0, 0.01, 0.01, 0.62, 101325.0, 10.0, 1.0);
+  }
+
+  static SystemInterface leakFluid(boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    fluid.initPhysicalProperties();
+    return fluid;
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void leakBlowdownRow(String label, boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar, double volume, double diameter, double coefficient,
+      double back, double duration, double step) {
+    SystemInterface fluid = leakFluid(srk, names, amounts, temperature, pressureBar);
+    LeakModel leak = LeakModel.builder().fluid(fluid).holeDiameter(diameter).vesselVolume(volume)
+        .dischargeCoefficient(coefficient).backPressure(back).scenarioName(label).build();
+    SourceTermResult result = leak.calculateSourceTerm(duration, step);
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("input_t_k=" + fluid.getTemperature());
+    System.out.println("input_p_bara=" + fluid.getPressure());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < overall.length; i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(overall[i]);
+    }
+    System.out.println("input_z=" + z);
+    System.out.println("vessel_volume_m3=" + volume);
+    System.out.println("hole_diameter_m=" + diameter);
+    System.out.println("discharge_coefficient=" + coefficient);
+    System.out.println("back_pressure_pa=" + back);
+    System.out.println("duration_s=" + duration);
+    System.out.println("time_step_s=" + step);
+    System.out.println("declared_points=" + result.getNumberOfPoints());
+    System.out.println("initial_density_kg_m3=" + fluid.getDensity("kg/m3"));
+    System.out.println("initial_gamma=" + fluid.getGamma());
+    System.out.println("initial_beta=" + fluid.getBeta());
+    System.out.println("initial_phase_count=" + fluid.getNumberOfPhases());
+    System.out.println("initial_mass_flow_kg_s=" + leak.calculateMassFlowRate(fluid));
+    System.out.println("initial_jet_velocity_m_per_s=" + leak.calculateJetVelocity(fluid));
+    System.out.println("initial_jet_momentum_n=" + leak.calculateJetMomentum(fluid));
+    System.out.println("initial_droplet_smd_m=" + leak.calculateDropletSMD(fluid));
+    System.out.println("total_mass_released_kg=" + result.getTotalMassReleased());
+    System.out.println("peak_mass_flow_kg_s=" + result.getPeakMassFlowRate());
+    System.out.println("time_to_empty_s=" + result.getTimeToEmpty());
+    double[] time = result.getTime();
+    double[] rate = result.getMassFlowRate();
+    double[] temp = result.getTemperature();
+    double[] pressure = result.getPressure();
+    double[] beta = result.getVaporMassFraction();
+    double[] velocity = result.getJetVelocity();
+    double[] momentum = result.getJetMomentum();
+    double[] smd = result.getLiquidDropletSMD();
+    int recorded = 0;
+    for (int i = 0; i < time.length; i++) {
+      if (temp[i] != 0.0) {
+        recorded = i + 1;
+      }
+    }
+    System.out.println("recorded_points=" + recorded);
+    double area = Math.PI * diameter * diameter / 4.0;
+    for (int i = 0; i < recorded; i++) {
+      String prefix = "point_" + i + "_";
+      System.out.println(prefix + "t_s=" + time[i]);
+      System.out.println(prefix + "mass_flow_kg_s=" + rate[i]);
+      System.out.println(prefix + "temperature_k=" + temp[i]);
+      System.out.println(prefix + "pressure_pa=" + pressure[i]);
+      System.out.println(prefix + "beta=" + beta[i]);
+      System.out.println(prefix + "jet_velocity_m_per_s=" + velocity[i]);
+      System.out.println(prefix + "jet_momentum_n=" + momentum[i]);
+      System.out.println(prefix + "droplet_smd_m=" + smd[i]);
+      SystemInterface probe = fluid.clone();
+      probe.setTemperature(temp[i]);
+      probe.setPressure(pressure[i] / 1e5);
+      new neqsim.thermodynamicoperations.ThermodynamicOperations(probe).TPflash();
+      probe.init(3);
+      probe.initPhysicalProperties();
+      System.out.println(prefix + "gamma=" + probe.getGamma());
+      System.out.println(prefix + "phase_count=" + probe.getNumberOfPhases());
+      StringBuilder types = new StringBuilder();
+      StringBuilder densities = new StringBuilder();
+      for (int j = 0; j < probe.getNumberOfPhases(); j++) {
+        types.append(j == 0 ? "" : ",").append(probe.getPhase(j).getType().name());
+        densities.append(j == 0 ? "" : ",").append(probe.getPhase(j).getDensity("kg/m3"));
+      }
+      System.out.println(prefix + "phase_types=" + types);
+      System.out.println(prefix + "phase_densities_kg_m3=" + densities);
+      System.out.println(prefix + "fresh_density_kg_m3=" + probe.getDensity("kg/m3"));
+      double implied = velocity[i] > 0.0 ? rate[i] / (velocity[i] * area * coefficient) : Double.NaN;
+      System.out.println(prefix + "implied_velocity_density_kg_m3=" + implied);
+    }
+    System.out.println();
   }
 }

@@ -949,8 +949,59 @@ def _hem_release(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _leak_blowdown(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.leak_blowdown`'s series, from the reference's own arithmetic.
+
+    **No `beta`, velocity, momentum or SMD.** The class's single-phase `getBeta()` and its
+    cached density make those a record of the class's behaviour rather than the state's; the
+    rate, pressure, temperature and gamma compare directly.
+    """
+    from azoth.process.reference.leak_blowdown import _states
+
+    volume = float(inputs.get("vessel_volume", 1.0))
+    diameter = float(inputs.get("hole_diameter", 0.01))
+    coefficient = float(inputs.get("discharge_coefficient", 0.62))
+    back = float(inputs.get("back_pressure", 101325.0))
+    step = float(inputs.get("time_step", 1.0))
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        [float(value) for value in inputs["initial_z"]],
+        float(inputs["initial_t"]),
+        float(inputs["initial_p"]),
+        float(inputs["duration"]),
+        volume,
+        diameter,
+        coefficient,
+        back,
+        step,
+        str(inputs.get("scenario_name", "Release")),
+    )
+    dumped: dict[str, float] = {
+        "initial_density_kg_m3": states.initial_mass / volume,
+        "initial_gamma": states.initial_gamma,
+        "total_mass_released_kg": (
+            0.0 if states.total_mass_released is None else states.total_mass_released
+        ),
+        "peak_mass_flow_kg_s": (
+            0.0 if states.peak_mass_flow_rate is None else states.peak_mass_flow_rate
+        ),
+        "time_to_empty_s": 0.0 if states.time_to_empty is None else states.time_to_empty,
+        "declared_points": float(states.number_of_points),
+        "recorded_points": float(len(states.points)),
+    }
+    for index, row in enumerate(states.points):
+        prefix = f"point_{index}_"
+        dumped[prefix + "t_s"] = row.time
+        dumped[prefix + "mass_flow_kg_s"] = row.mass_flow_rate
+        dumped[prefix + "temperature_k"] = row.temperature
+        dumped[prefix + "pressure_pa"] = row.pressure
+        dumped[prefix + "gamma"] = states.gammas[index]
+    return dumped
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.hem_release": _hem_release,
+    "process.leak_blowdown": _leak_blowdown,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -1270,6 +1321,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_hem_release.tsv",
         block=11,
         identified_by=("#label", "propane_20bara"),
+    ),
+    LayerCase(
+        model="process.leak_blowdown",
+        case="methane_50bara_ten_seconds",
+        capture="process_leak_blowdown.tsv",
+        block=0,
+        identified_by=("#label", "pr_methane_50bara_10s_1s"),
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -1942,6 +2000,10 @@ UNCASED_ROWS: dict[str, int] = {
     # reads the choked methane block and the flashing propane block; the rest are cases
     # asserted on the rate and the sound speed, or evidence with no state to compare.
     "process_hem_release.tsv": 21,
+    # The blowdown capture's ten: one block is layer-cased (the ten-second methane run); the
+    # rest are the long horizons held to the capture as evidence, the SRK rows, the propane
+    # row whose single-phase beta and cached density are class artefacts, and the refusals.
+    "process_leak_blowdown.tsv": 10,
 }
 
 

@@ -748,6 +748,132 @@ impl From<&azoth_hydraulics::results::KComponent> for PyKComponent {
     }
 }
 
+/// the model's assumption, floor and failure records, in order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownDiagnostic"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownDiagnostic {
+    /// the stable machine code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the engineering detail.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyLeakBlowdownDiagnostic {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownDiagnostic(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownDiagnostic>
+    for PyLeakBlowdownDiagnostic
+{
+    fn from(row: &azoth_process::models::leak_blowdown::LeakBlowdownDiagnostic) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// one row per visited step, in time order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownPoint"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownPoint {
+    /// the step's time.
+    #[pyo3(get)]
+    pub time: PyQty,
+    /// the rate the class's simplified orifice gives at the recorded state.
+    #[pyo3(get)]
+    pub mass_flow_rate: PyQty,
+    /// the recorded state's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the recorded state's pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the physical vapour mole fraction: 1 all-vapour, 0 all-liquid, beta two-phase.
+    #[pyo3(get)]
+    pub vapour_mole_fraction: f64,
+    /// `mdot/(rho A Cd)`, capped at 1.2 times the ideal-gas sound speed.
+    #[pyo3(get)]
+    pub jet_velocity: PyQty,
+    /// `mdot v + (P-back) A`, unclamped.
+    #[pyo3(get)]
+    pub jet_momentum: PyQty,
+    /// the liquid Sauter mean diameter, zero for a single phase or a trace liquid.
+    #[pyo3(get)]
+    pub droplet_smd: PyQty,
+}
+
+#[pymethods]
+impl PyLeakBlowdownPoint {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownPoint(time={:?}, mass_flow_rate={:?}, temperature={:?}, pressure={:?}, vapour_mole_fraction={}, jet_velocity={:?}, jet_momentum={:?}, droplet_smd={:?})",
+            self.time,
+            self.mass_flow_rate,
+            self.temperature,
+            self.pressure,
+            self.vapour_mole_fraction,
+            self.jet_velocity,
+            self.jet_momentum,
+            self.droplet_smd
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownPoint> for PyLeakBlowdownPoint {
+    fn from(row: &azoth_process::models::leak_blowdown::LeakBlowdownPoint) -> Self {
+        Self {
+            time: PyQty {
+                magnitude_si: row.time.value,
+                unit: "s".to_string(),
+            },
+            mass_flow_rate: PyQty {
+                magnitude_si: row.mass_flow_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            vapour_mole_fraction: row.vapour_mole_fraction,
+            jet_velocity: PyQty {
+                magnitude_si: row.jet_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            jet_momentum: PyQty {
+                magnitude_si: row.jet_momentum.value,
+                unit: "N".to_string(),
+            },
+            droplet_smd: PyQty {
+                magnitude_si: row.droplet_smd.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
 /// The registered minerals, in the class's order; a mineral whose ion is below the registration floor is absent rather than zero.
 #[pyclass(
     frozen,

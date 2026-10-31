@@ -17,9 +17,9 @@ use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
     PyFlowlineScaleSegment, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
-    PyKComponent, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
-    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
-    PySubFraction, PyWaterMixingResult,
+    PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint, PyMineralEquilibriumRow,
+    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
+    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -15739,6 +15739,108 @@ impl From<&azoth_process::models::hem_release::HemReleaseResult> for PyHemReleas
                 .diagnostics
                 .iter()
                 .map(PyHemReleaseDiagnostic::from)
+                .collect(),
+            diagnostic_codes: r.diagnostic_codes.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.leak_blowdown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownResult {
+    /// `valid`, `valid_with_warnings`, `invalid` or `unsupported`; `unsupported` is declared but unreachable.
+    #[pyo3(get)]
+    pub status: String,
+    /// the scenario label the caller stated, or the class's default.
+    #[pyo3(get)]
+    pub scenario_name: String,
+    /// the opening the calculation used.
+    #[pyo3(get)]
+    pub hole_diameter: PyQty,
+    /// the declared slots, `ceil(duration/time_step)+1`.
+    #[pyo3(get)]
+    pub number_of_points: u32,
+    /// the visited rows; the difference is the class's zero-filled tail.
+    #[pyo3(get)]
+    pub recorded_points: u32,
+    /// one row per visited step, in time order.
+    #[pyo3(get)]
+    pub points: Vec<PyLeakBlowdownPoint>,
+    /// the summed `mdot dt`, or absent on failure.
+    #[pyo3(get)]
+    pub total_mass_released: Option<PyQty>,
+    /// the largest recorded rate, or absent on failure.
+    #[pyo3(get)]
+    pub peak_mass_flow_rate: Option<PyQty>,
+    /// the class's `totalReleased/(0.5 peakRate)`, or absent on failure.
+    #[pyo3(get)]
+    pub time_to_empty: Option<PyQty>,
+    /// the model's assumption, floor and failure records, in order.
+    #[pyo3(get)]
+    pub diagnostics: Vec<PyLeakBlowdownDiagnostic>,
+    /// the codes alone.
+    #[pyo3(get)]
+    pub diagnostic_codes: Vec<String>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLeakBlowdownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownResult(status={:?}, scenario_name={:?}, hole_diameter={:?}, number_of_points={:?}, recorded_points={:?}, points={:?}, total_mass_released={:?}, peak_mass_flow_rate={:?}, time_to_empty={:?}, diagnostics={:?}, diagnostic_codes={:?}, {} warning(s))",
+            self.status,
+            self.scenario_name,
+            self.hole_diameter,
+            self.number_of_points,
+            self.recorded_points,
+            self.points,
+            self.total_mass_released,
+            self.peak_mass_flow_rate,
+            self.time_to_empty,
+            self.diagnostics,
+            self.diagnostic_codes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownResult> for PyLeakBlowdownResult {
+    fn from(r: &azoth_process::models::leak_blowdown::LeakBlowdownResult) -> Self {
+        Self {
+            status: r.status.clone(),
+            scenario_name: r.scenario_name.clone(),
+            hole_diameter: PyQty {
+                magnitude_si: r.hole_diameter.value,
+                unit: "m".to_string(),
+            },
+            number_of_points: r.number_of_points,
+            recorded_points: r.recorded_points,
+            points: r.points.iter().map(PyLeakBlowdownPoint::from).collect(),
+            total_mass_released: r.total_mass_released.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            peak_mass_flow_rate: r.peak_mass_flow_rate.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/s".to_string(),
+            }),
+            time_to_empty: r.time_to_empty.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            diagnostics: r
+                .diagnostics
+                .iter()
+                .map(PyLeakBlowdownDiagnostic::from)
                 .collect(),
             diagnostic_codes: r.diagnostic_codes.clone(),
             warnings: transport(&r.warnings),

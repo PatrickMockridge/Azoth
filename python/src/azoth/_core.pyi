@@ -627,6 +627,26 @@ class HemReleaseDiagnostic:
     code: str
     message: str
 
+@final
+class LeakBlowdownPoint:
+    """one row per visited step, in time order."""
+
+    time: Qty
+    mass_flow_rate: Qty
+    temperature: Qty
+    pressure: Qty
+    vapour_mole_fraction: float
+    jet_velocity: Qty
+    jet_momentum: Qty
+    droplet_smd: Qty
+
+@final
+class LeakBlowdownDiagnostic:
+    """the model's assumption, floor and failure records, in order."""
+
+    code: str
+    message: str
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -2853,6 +2873,21 @@ class HemReleaseResult:
     component_mass_fractions: list[float]
     stations: list[HemReleaseStation]
     diagnostics: list[HemReleaseDiagnostic]
+    diagnostic_codes: list[str]
+    warnings: list[Warning]
+
+@final
+class LeakBlowdownResult:
+    status: str
+    scenario_name: str
+    hole_diameter: Qty
+    number_of_points: int
+    recorded_points: int
+    points: list[LeakBlowdownPoint]
+    total_mass_released: Qty | None
+    peak_mass_flow_rate: Qty | None
+    time_to_empty: Qty | None
+    diagnostics: list[LeakBlowdownDiagnostic]
     diagnostic_codes: list[str]
     warnings: list[Warning]
 
@@ -5469,6 +5504,19 @@ def hem_release(
     discharge_coefficient: float,
     back_pressure: float,
 ) -> HemReleaseResult: ...
+def leak_blowdown(
+    components: list[str],
+    initial_z: list[float],
+    initial_t: float,
+    initial_p: float,
+    duration: float,
+    vessel_volume: float | None = None,
+    hole_diameter: float | None = None,
+    discharge_coefficient: float | None = None,
+    back_pressure: float | None = None,
+    time_step: float | None = None,
+    scenario_name: str | None = None,
+) -> LeakBlowdownResult: ...
 def manifold(
     components: list[str],
     feed_n: list[float],

@@ -1109,3 +1109,32 @@ not close - and this port converges, returning a valid result. The port's flash 
 class's, and a root one finds and the other does not is a fact about the two numerical
 routes rather than a tolerance to widen. The row stays evidence, and the port's answer is
 not cased against a class that has none.
+
+## The legacy blowdown
+
+`process_leak_blowdown.tsv` is `LeakModel.calculateSourceTerm` on the `LeakModelTest`
+states, re-cased on PR, plus the propane, subsonic, no-forward-flow, mixture and
+over-depletion rows. The SRK rows are the tests' own EOS and evidence beside the oracle.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe leak_blowdown \
+  > captures/process_leak_blowdown.tsv
+```
+
+**The class's density is cached.** `implied_velocity_density` is the density the class's
+jet velocity actually divided by, and on the methane row it is `35.2554` at every step
+while the fresh density falls to `19.38` - the class initialises physical properties once
+and the `PhysicalProperties` density never updates. The port flashes each step and uses the
+fresh corrected density, so the rate on the choked branch (density-independent) agrees while
+the velocity, momentum and SMD on a later state do not; that is a class defect the port
+records rather than reproduces. The class's `getBeta()` is also a *molar* phase fraction and
+a single-phase state reports `1.0` whatever its phase type; the probe prints the phase count
+and types beside it.
+
+**The long horizons are evidence, not cases.** The isentropic recurrence multiplies a
+`3e-5` difference in the initial `getGamma` through the pressure: over ten steps the class
+and the port agree to `4.4e-4`, over thirty to `1.4e-1` and over sixty to `1.6e-1`. The
+short horizons are cased; the long rows stay here as the measurement of that sensitivity.
+The over-depletion row also shows the class's zero-filled tail - it allocates two slots and
+records one - which the port reports as `number_of_points` against `recorded_points`.

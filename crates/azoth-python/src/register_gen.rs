@@ -254,6 +254,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyHeatExchangerResult>()?;
     m.add_class::<crate::transport_gen::PyHeaterResult>()?;
     m.add_class::<crate::transport_gen::PyHemReleaseResult>()?;
+    m.add_class::<crate::transport_gen::PyLeakBlowdownResult>()?;
     m.add_class::<crate::transport_gen::PyManifoldResult>()?;
     m.add_class::<crate::transport_gen::PyMapTurboExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyMixerResult>()?;
@@ -294,6 +295,8 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyHemReleaseStation>()?;
     m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
+    m.add_class::<crate::record_outputs_gen::PyLeakBlowdownDiagnostic>()?;
+    m.add_class::<crate::record_outputs_gen::PyLeakBlowdownPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
     m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRiskRow>()?;
@@ -858,6 +861,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::heater, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::hem_release, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::leak_blowdown, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::manifold, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::process::map_turbo_expander_compressor,

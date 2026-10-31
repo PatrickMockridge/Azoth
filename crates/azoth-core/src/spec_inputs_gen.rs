@@ -236,6 +236,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/hem_release.toml
+//!   - specs/models/process/leak_blowdown.toml
 //!   - specs/models/process/manifold.toml
 //!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
@@ -3057,6 +3058,23 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.hem_release", "back_pressure", "pressure"),
+    ("process.leak_blowdown", "initial_z", "dimensionless"),
+    (
+        "process.leak_blowdown",
+        "initial_t",
+        "thermodynamic_temperature",
+    ),
+    ("process.leak_blowdown", "initial_p", "pressure"),
+    ("process.leak_blowdown", "duration", "time"),
+    ("process.leak_blowdown", "vessel_volume", "volume"),
+    ("process.leak_blowdown", "hole_diameter", "length"),
+    (
+        "process.leak_blowdown",
+        "discharge_coefficient",
+        "dimensionless",
+    ),
+    ("process.leak_blowdown", "back_pressure", "pressure"),
+    ("process.leak_blowdown", "time_step", "time"),
     ("process.manifold", "feed_n", "molar_flow"),
     ("process.manifold", "feed_z", "dimensionless"),
     ("process.manifold", "feed_p", "pressure"),

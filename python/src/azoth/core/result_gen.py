@@ -33,6 +33,8 @@ from azoth.core.record_outputs_gen import (
     HemReleaseStation,
     HydrateRiskPoint,
     KComponent,
+    LeakBlowdownDiagnostic,
+    LeakBlowdownPoint,
     MineralEquilibriumRow,
     RemediationOptionRow,
     ScaleControlRiskRow,
@@ -6265,6 +6267,49 @@ class HemReleaseResult(_HasWarnings):
     diagnostics: tuple[HemReleaseDiagnostic, ...]
 
     #: the codes alone, so a case can hold the contract without asserting prose.
+    diagnostic_codes: tuple[str, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownResult(_HasWarnings):
+    """Result of ``process.leak_blowdown``."""
+
+    CALC_ID: ClassVar[str] = "process.leak_blowdown"
+
+    #: `valid`, `valid_with_warnings`, `invalid` or `unsupported`; `unsupported` is declared but unreachable.
+    status: str
+
+    #: the scenario label the caller stated, or the class's default.
+    scenario_name: str
+
+    #: the opening the calculation used.
+    hole_diameter: Q
+
+    #: the declared slots, `ceil(duration/time_step)+1`.
+    number_of_points: int
+
+    #: the visited rows; the difference is the class's zero-filled tail.
+    recorded_points: int
+
+    #: one row per visited step, in time order.
+    points: tuple[LeakBlowdownPoint, ...]
+
+    #: the summed `mdot dt`, or absent on failure.
+    total_mass_released: Q | None
+
+    #: the largest recorded rate, or absent on failure.
+    peak_mass_flow_rate: Q | None
+
+    #: the class's `totalReleased/(0.5 peakRate)`, or absent on failure.
+    time_to_empty: Q | None
+
+    #: the model's assumption, floor and failure records, in order.
+    diagnostics: tuple[LeakBlowdownDiagnostic, ...]
+
+    #: the codes alone.
     diagnostic_codes: tuple[str, ...]
 
     #: Caveats.

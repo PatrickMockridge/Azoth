@@ -25,6 +25,7 @@ use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
 use crate::models::hem_release::HemReleaseResult;
+use crate::models::leak_blowdown::LeakBlowdownResult;
 use crate::models::manifold::ManifoldResult;
 use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
 use crate::models::mixer::MixerResult;
@@ -403,6 +404,28 @@ impl CalcResult for HemReleaseResult {
         "component_mole_fractions",
         "component_mass_fractions",
         "stations",
+        "diagnostics",
+        "diagnostic_codes",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for LeakBlowdownResult {
+    const CALC_ID: &'static str = "process.leak_blowdown";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "scenario_name",
+        "hole_diameter",
+        "number_of_points",
+        "recorded_points",
+        "points",
+        "total_mass_released",
+        "peak_mass_flow_rate",
+        "time_to_empty",
         "diagnostics",
         "diagnostic_codes",
         "warnings",

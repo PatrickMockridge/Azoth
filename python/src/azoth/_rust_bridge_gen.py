@@ -136,6 +136,9 @@ from azoth.core.result import (
     KFactorsResult,
     KineticRateLawResult,
     KineticsResult,
+    LeakBlowdownDiagnostic,
+    LeakBlowdownPoint,
+    LeakBlowdownResult,
     LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
@@ -447,6 +450,7 @@ __all__ = [
     "kent_eisenberg_phase",
     "kinetic_rate_law",
     "kinetics",
+    "leak_blowdown",
     "lgt_surface_tension",
     "liquid_conductivity_polynom",
     "liquid_heat_capacity",
@@ -6027,6 +6031,38 @@ def hem_release(components: list[str], upstream_z: list[float], upstream_t: Q, u
         component_mass_fractions=tuple(result.component_mass_fractions),
         stations=tuple(HemReleaseStation(station=c.station, pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), molar_enthalpy=from_si(c.molar_enthalpy.magnitude_si, c.molar_enthalpy.unit), molar_entropy=from_si(c.molar_entropy.magnitude_si, c.molar_entropy.unit), velocity=from_si(c.velocity.magnitude_si, c.velocity.unit), mass_flux=from_si(c.mass_flux.magnitude_si, c.mass_flux.unit), phase=c.phase, gas_mass_fraction=c.gas_mass_fraction) for c in result.stations),
         diagnostics=tuple(HemReleaseDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
+        diagnostic_codes=tuple(result.diagnostic_codes),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def leak_blowdown(components: list[str], initial_z: list[float], initial_t: Q, initial_p: Q, duration: Q, vessel_volume: Q | None=None, hole_diameter: Q | None=None, discharge_coefficient: float | None=None, back_pressure: Q | None=None, time_step: Q | None=None, scenario_name: str | None=None) -> LeakBlowdownResult:
+    """``process.leak_blowdown``, computed in Rust."""
+    spec = _models_gen.model("process.leak_blowdown")
+    result = _core.leak_blowdown(
+        list(components),
+        list(initial_z),
+        input_to_si(spec, "initial_t", initial_t),
+        input_to_si(spec, "initial_p", initial_p),
+        input_to_si(spec, "duration", duration),
+        None if vessel_volume is None else input_to_si(spec, "vessel_volume", vessel_volume),
+        None if hole_diameter is None else input_to_si(spec, "hole_diameter", hole_diameter),
+        None if discharge_coefficient is None else discharge_coefficient,
+        None if back_pressure is None else input_to_si(spec, "back_pressure", back_pressure),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        scenario_name,
+    )
+    return LeakBlowdownResult(
+        status=result.status,
+        scenario_name=result.scenario_name,
+        hole_diameter=from_si(result.hole_diameter.magnitude_si, result.hole_diameter.unit),
+        number_of_points=result.number_of_points,
+        recorded_points=result.recorded_points,
+        points=tuple(LeakBlowdownPoint(time=from_si(c.time.magnitude_si, c.time.unit), mass_flow_rate=from_si(c.mass_flow_rate.magnitude_si, c.mass_flow_rate.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), vapour_mole_fraction=c.vapour_mole_fraction, jet_velocity=from_si(c.jet_velocity.magnitude_si, c.jet_velocity.unit), jet_momentum=from_si(c.jet_momentum.magnitude_si, c.jet_momentum.unit), droplet_smd=from_si(c.droplet_smd.magnitude_si, c.droplet_smd.unit)) for c in result.points),
+        total_mass_released=None if result.total_mass_released is None else from_si(result.total_mass_released.magnitude_si, result.total_mass_released.unit),
+        peak_mass_flow_rate=None if result.peak_mass_flow_rate is None else from_si(result.peak_mass_flow_rate.magnitude_si, result.peak_mass_flow_rate.unit),
+        time_to_empty=None if result.time_to_empty is None else from_si(result.time_to_empty.magnitude_si, result.time_to_empty.unit),
+        diagnostics=tuple(LeakBlowdownDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
         diagnostic_codes=tuple(result.diagnostic_codes),
         warnings=_warnings(result.warnings),
     )

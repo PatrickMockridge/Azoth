@@ -255,6 +255,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "process.heat_exchanger" => azoth_process::models::heat_exchanger::HeatExchangerResult::FIELDS.to_vec(),
         "process.heater" => azoth_process::models::heater::HeaterResult::FIELDS.to_vec(),
         "process.hem_release" => azoth_process::models::hem_release::HemReleaseResult::FIELDS.to_vec(),
+        "process.leak_blowdown" => azoth_process::models::leak_blowdown::LeakBlowdownResult::FIELDS.to_vec(),
         "process.manifold" => azoth_process::models::manifold::ManifoldResult::FIELDS.to_vec(),
         "process.map_turbo_expander_compressor" => azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult::FIELDS.to_vec(),
         "process.mixer" => azoth_process::models::mixer::MixerResult::FIELDS.to_vec(),

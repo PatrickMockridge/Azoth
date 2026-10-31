@@ -770,11 +770,22 @@ a claim nothing holds.
   `HomogeneousEquilibriumReleaseModel`'s 49-sample isentropic scan, the throat flux maximum and
   choked test, the throat's equilibrium sound speed and Mach warning, and the four stations,
   held to `process_hem_release.tsv` on PR - the class's own tests are SRK and are captured as
-  evidence. `SourceTermFrame`'s payload is that result; its schema, UUID, sequence, time and
-  fingerprint are session state, with this library's provenance block as the envelope. What
-  remains owed in `process/safety/release/` is `LeakModel`'s legacy scalar/blowdown path,
-  `ReleaseFlowEnsemble`, `SourceTermSession`, `SourceTermResult`, `ReleaseOrientation`, and the
-  frame's canonical JSON envelope if byte-compatible output is ever required.
+  evidence. **`LeakModel.calculateSourceTerm` landed as `process.leak_blowdown`**: the
+  inventory from the corrected density and the vessel volume, the record-then-update loop with
+  its simplified orifice, capped jet velocity, unclamped momentum and droplet SMD, and the
+  isentropic update with its initial-mass denominator and back-pressure floor. Its scalar
+  methods are its internal arithmetic, not ids; the class's four silent fallbacks are refused,
+  its cached density is not reproduced (the port flashes every step), and its single-phase
+  `getBeta()` is recorded as the molar artefact it is. `SourceTermFrame`'s payload is that
+  result; its schema, UUID, sequence, time and fingerprint are session state, with this
+  library's provenance block as the envelope. What remains owed in `process/safety/release/` is
+  `SourceTermResult`'s six file exporters (PHAST, FLACS, KFX, OpenFOAM, CSV, JSON - the
+  time-series container is the result, the writers are session output), `ReleaseOrientation`
+  (stored and read by no arithmetic), `ReleaseFlowEnsemble` (zero callers), `SourceTermSession`
+  and the Fanno/pipe-decompression pair (they need `runTransient`), and the frame's canonical
+  JSON envelope if byte-compatible output is ever required. The package's `ReleaseInventory`,
+  `ReleaseModelEvidence`, `ReleaseSolidRiskAssessment` and `CoupledReleaseSource` are named here
+  as neither ported nor refused: they are a later scoping, not silently dropped.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to

@@ -2600,6 +2600,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 10,
         "tests_skipped": 0,
     },
+    'process.leak_blowdown': {
+        "calc_id": 'process.leak_blowdown',
+        "name": 'Vessel leak blowdown',
+        "spec": {'path': 'specs/models/process/leak_blowdown.toml', 'sha256': '11f5d8c3745537d6819eafd834690af6d922fbe79a3d65b3b068ce4636dde5d8'},
+        "code": [{'path': 'python/src/azoth/process/reference/leak_blowdown.py', 'sha256': 'e12146e71d3802151130fce984e3124c760624cc32df713ab3a2255c3a94e0dc'}, {'path': 'crates/azoth-process/src/models/leak_blowdown.rs', 'sha256': '27f68b2d39122822c9f7d817741fc19e3c5e5f84e6b6987133dd521e44060f21'}],
+        "source": 'NeqSim process/safety/release/LeakModel.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
+        "tests_skipped": 0,
+    },
     'process.manifold': {
         "calc_id": 'process.manifold',
         "name": 'Manifold',

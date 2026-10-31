@@ -143,8 +143,9 @@ def test_the_block_exists_for_every_registered_id() -> None:
 
     assert set(PROVENANCE) == registered
     # 260 -> 262: the sound speed and the map machine (2026-10-28); 263: the
-    # equilibrium sound speed; 264: the homogeneous-equilibrium release.
-    assert len(registered) == 264
+    # equilibrium sound speed; 264: the homogeneous-equilibrium release; 265: the
+    # vessel blowdown.
+    assert len(registered) == 265
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

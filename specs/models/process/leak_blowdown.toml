@@ -1,0 +1,195 @@
+id = "process.leak_blowdown"
+name = "Vessel leak blowdown"
+kind = "procedure"
+assumptions = [
+    "**the legacy `LeakModel.calculateSourceTerm` path**, not the modern `calculateReleaseFlow` (which is `process.hem_release`). `calculateMassFlowRate`, `calculateJetVelocity`, `calculateJetMomentum` and `calculateDropletSMD` are this calculation's internal arithmetic and are not separate ids.",
+    "**the inventory is the corrected total density times `vessel_volume`**; the fluid's amount sets only the composition. The vessel is one homogeneous, adiabatic, rigid control volume.",
+    "**each step records then updates**: `mass -= mdot dt`, `total += mdot dt`, and above 1% of the initial mass `P2 = P1 (mass/initialMass)^gamma` - the **initial** mass denominator, as the code has it - floored at `back_pressure`, with `T2 = T1 (P2/P1)^((gamma-1)/gamma)` and a TP flash.",
+    "**the rate is the class's simplified orifice**: choked `Cd A P sqrt(gamma MW/(8314 T)) (2/(gamma+1))^((gamma+1)/(2(gamma-1)))` with `MW` in kg/kmol, else subsonic `Cd A sqrt(2 rho (P-back))`; zero when `P <= back`. `R = 8314` is the class's number.",
+    "**the jet is capped, the momentum is not**: `v = min(mdot/(rho A Cd), 1.2 sqrt(gamma 8314 T/MW))`; `momentum = mdot v + (P-back) A`, negative when the pressure is at or below the back pressure.",
+    "**the droplet SMD** is the class's Nukiyama-Tanasawa form with `0.02 N/m` as a fixed surrogate surface tension: only for two phases with liquid fraction `>= 0.001`, `585 d/sqrt(We) sqrt(rho_l/rho_v) (1-beta)^0.45`, capped at `d/2`; otherwise zero.",
+    "**gamma is the class's `getGamma()`**: `Cp/Cv`, summed over the phases, from the cubic's `cp` and `cv = cp + T (dP/dT)^2/(dP/dV)`; the port refuses a gamma outside `(1, 2]` rather than substituting the class's `1.3`.",
+    "**the class's silent fallbacks are refused**: ideal-gas density, `gamma = 1.3`, `MW = 16`, `rho = 1`, a NaN rate as zero, and the `init(3)` retry. A state that would need one is `invalid`, with the value in the diagnostic.",
+    "**the class's density cache is not reproduced.** It initialises physical properties once and reuses the density through the loop; this port flashes each step and uses the fresh corrected density (EOS volume less the Peneloux shift), a measured divergence.",
+    "**the series stops at the 1% floor or the declared points**. At the back-pressure floor the rate is zero, so the mass never reaches 1% and the loop runs to `ceil(duration/time_step)+1` in a zero-flow plateau.",
+    "**only visited rows are published.** The class allocates the declared slots and leaves unvisited ones as zeros; a zero row is not a state, so the result carries `number_of_points` and `recorded_points` and the rows themselves.",
+    "**`vapour_mole_fraction` is molar.** The class's `vaporMassFraction` is `getBeta()`, a mole fraction; this port publishes the physical value - 1 all-vapour, 0 all-liquid, beta two-phase - which differs from the class's single-phase `1.0`.",
+    "**`time_to_empty` is the class's estimate**, `totalReleased/(0.5 peakRate)`, not the time the series empties; `scenario_name` is report-only; `ReleaseOrientation` is stored by the class and read by no arithmetic, so it is owed.",
+    "**the fluid is PR with the classic mixing rule**; NeqSim's own `LeakModelTest` is SRK and is captured as evidence. `SourceTermResult`'s six exporters, `ReleaseFlowEnsemble`, `SourceTermSession`, the Fanno/pipe models and the frame envelope are owed and named in `ROADMAP.md`.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/release/LeakModel.java` is the port source, through `calculateSourceTerm(duration, timeStep)`; its scalar methods are the internal arithmetic.",
+    "`validation/neqsim/captures/process_leak_blowdown.tsv` - the class on the `LeakModelTest` states, re-cased on PR, plus the two-phase, subsonic, no-forward-flow and over-depletion rows, with SRK evidence beside them.",
+]
+[source]
+standard = "NeqSim process/safety/release/LeakModel.java"
+edition = "Its `calculateSourceTerm`: the inventory from the corrected density and volume, the record-then-update loop, the choked/subsonic rate, the capped jet velocity, the unclamped momentum, the droplet SMD, the 1% floor, the isentropic update, and the totals."
+[algorithm]
+scheme = "explicit_euler_isentropic_blowdown"
+initialisation = "tp_flash_at_the_initial_state"
+convergence = "relative"
+tolerance = 0.01
+max_iterations = 100000
+[implementations]
+python = "azoth.process.leak_blowdown"
+rust = "azoth_process::leak_blowdown"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.initial_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vessel's initial composition, checked rather than renormalised. The fluid's moles set the composition and not the inventory.\n"
+[inputs.initial_t]
+unit = "K"
+description = "the vessel's initial temperature.\n"
+[inputs.initial_p]
+unit = "Pa"
+description = "the vessel's initial pressure.\n"
+[inputs.duration]
+unit = "s"
+description = "the simulated duration; the declared point count is `ceil(duration/time_step)+1`.\n"
+[inputs.vessel_volume]
+unit = "m**3"
+optional = true
+description = "the control volume the inventory fills. Absent takes the class's `1.0` m3.\n"
+[inputs.hole_diameter]
+unit = "m"
+optional = true
+description = "the circular opening's diameter. Absent takes the class's `0.01` m.\n"
+[inputs.discharge_coefficient]
+unit = "dimensionless"
+optional = true
+description = "the effective-area factor in `(0, 1]`. Absent takes the class's `0.62`.\n"
+[inputs.back_pressure]
+unit = "Pa"
+optional = true
+description = "the receiving absolute pressure, and the pressure update's floor. Absent takes the class's `101325` Pa.\n"
+[inputs.time_step]
+unit = "s"
+optional = true
+description = "the explicit step. Absent takes the class's one-argument overload default of `1.0` s.\n"
+[inputs.scenario_name]
+type = "string"
+optional = true
+description = "the class's scenario label, echoed back. Absent takes its `Release`; it is read by no arithmetic.\n"
+[outputs]
+[outputs.status]
+type = "string"
+description = "`valid`, `valid_with_warnings`, `invalid` or `unsupported`; `unsupported` is declared but unreachable.\n"
+[outputs.scenario_name]
+type = "string"
+description = "the scenario label the caller stated, or the class's default.\n"
+[outputs.hole_diameter]
+unit = "m"
+description = "the opening the calculation used.\n"
+[outputs.number_of_points]
+unit = "dimensionless"
+description = "the declared slots, `ceil(duration/time_step)+1`.\n"
+[outputs.recorded_points]
+unit = "dimensionless"
+description = "the visited rows; the difference is the class's zero-filled tail.\n"
+[outputs.points]
+type = "record_list"
+description = "one row per visited step, in time order.\n"
+[outputs.points.fields.time]
+unit = "s"
+description = "the step's time.\n"
+[outputs.points.fields.mass_flow_rate]
+unit = "kg/s"
+description = "the rate the class's simplified orifice gives at the recorded state.\n"
+[outputs.points.fields.temperature]
+unit = "K"
+description = "the recorded state's temperature.\n"
+[outputs.points.fields.pressure]
+unit = "Pa"
+description = "the recorded state's pressure.\n"
+[outputs.points.fields.vapour_mole_fraction]
+unit = "dimensionless"
+description = "the physical vapour mole fraction: 1 all-vapour, 0 all-liquid, beta two-phase.\n"
+[outputs.points.fields.jet_velocity]
+unit = "m/s"
+description = "`mdot/(rho A Cd)`, capped at 1.2 times the ideal-gas sound speed.\n"
+[outputs.points.fields.jet_momentum]
+unit = "N"
+description = "`mdot v + (P-back) A`, unclamped.\n"
+[outputs.points.fields.droplet_smd]
+unit = "m"
+description = "the liquid Sauter mean diameter, zero for a single phase or a trace liquid.\n"
+[outputs.total_mass_released]
+unit = "kg"
+optional = true
+description = "the summed `mdot dt`, or absent on failure.\n"
+[outputs.peak_mass_flow_rate]
+unit = "kg/s"
+optional = true
+description = "the largest recorded rate, or absent on failure.\n"
+[outputs.time_to_empty]
+unit = "s"
+optional = true
+description = "the class's `totalReleased/(0.5 peakRate)`, or absent on failure.\n"
+[outputs.diagnostics]
+type = "record_list"
+description = "the model's assumption, floor and failure records, in order.\n"
+[outputs.diagnostics.fields.code]
+type = "string"
+description = "the stable machine code.\n"
+[outputs.diagnostics.fields.message]
+type = "string"
+description = "the engineering detail.\n"
+[outputs.diagnostic_codes]
+type = "vector_string"
+length = "one per diagnostic"
+description = "the codes alone.\n"
+[[valid_range]]
+quantity = "initial_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "initial_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[[valid_range]]
+quantity = "vessel_volume"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a vessel has a positive volume"
+[[valid_range]]
+quantity = "hole_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an opening has a positive diameter"
+[[valid_range]]
+quantity = "discharge_coefficient"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the class's effective-area factor is in `(0, 1]`"
+[[valid_range]]
+quantity = "back_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[[valid_range]]
+quantity = "duration"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a positive simulated duration"
+[[valid_range]]
+quantity = "time_step"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a positive explicit step"

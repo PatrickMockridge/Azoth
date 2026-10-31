@@ -302,6 +302,7 @@ def format_rust(text: str, generator: str) -> str:
 #: reached by its case and its Python wrapper and by no palette entry - a fact, not a defect.
 NON_UNIT_MODELS = {
     "process.hem_release": "a release source term is a calculation over a fluid, not a unit",
+    "process.leak_blowdown": "a vessel blowdown is a calculation over a fluid, not a unit",
 }
 
 

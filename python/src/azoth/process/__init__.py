@@ -33,6 +33,7 @@ from azoth.core.result import (
     HeaterResult,
     HeatExchangerResult,
     HemReleaseResult,
+    LeakBlowdownResult,
     ManifoldResult,
     MapTurboExpanderResult,
     MixerResult,
@@ -88,6 +89,7 @@ __all__ = [
     "heat_exchanger",
     "heater",
     "hem_release",
+    "leak_blowdown",
     "load_flowsheet",
     "manifold",
     "map_turbo_expander_compressor",
@@ -131,6 +133,7 @@ _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
 _HEM_RELEASE = "process.hem_release"
+_LEAK_BLOWDOWN = "process.leak_blowdown"
 _SEPARATOR = "process.separator"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
@@ -1713,6 +1716,54 @@ def hem_release(
         diameter=diameter,
         discharge_coefficient=discharge_coefficient,
         back_pressure=back_pressure,
+    )
+
+
+def leak_blowdown(
+    components: list[str],
+    initial_z: list[float],
+    initial_t: Q,
+    initial_p: Q,
+    duration: Q,
+    vessel_volume: Q | None = None,
+    hole_diameter: Q | None = None,
+    discharge_coefficient: float | None = None,
+    back_pressure: Q | None = None,
+    time_step: Q | None = None,
+    scenario_name: str | None = None,
+) -> LeakBlowdownResult:
+    """Blow a vessel down through a circular opening.
+
+    The legacy ``LeakModel.calculateSourceTerm`` path: the inventory is the flashed
+    corrected density times ``vessel_volume``; each step records the simplified orifice
+    rate, the capped jet velocity, the unclamped momentum and the droplet SMD, then depletes
+    the mass and updates the pressure and temperature isentropically. The modern
+    ``calculateReleaseFlow`` path is :func:`hem_release`.
+
+    **The class's silent fallbacks are refused** - an ideal-gas density, ``gamma = 1.3``,
+    methane's molar mass, ``rho = 1``, a NaN rate as zero - so a state needing one is an
+    ``invalid`` result with the value in its diagnostic. Only visited rows are published;
+    ``number_of_points`` and ``recorded_points`` carry the class's zero-filled tail.
+
+    Raises:
+        InvalidInputError: for a non-positive state, volume, opening, duration or step, a
+            discharge coefficient outside ``(0, 1]``, a composition that is not one entry per
+            component and sums to one, or a declared point count over the port's cap.
+
+    See :func:`azoth.process.reference.leak_blowdown`.
+    """
+    return resolve(_LEAK_BLOWDOWN)(  # type: ignore[no-any-return]
+        components=components,
+        initial_z=initial_z,
+        initial_t=initial_t,
+        initial_p=initial_p,
+        duration=duration,
+        vessel_volume=vessel_volume,
+        hole_diameter=hole_diameter,
+        discharge_coefficient=discharge_coefficient,
+        back_pressure=back_pressure,
+        time_step=time_step,
+        scenario_name=scenario_name,
     )
 
 
