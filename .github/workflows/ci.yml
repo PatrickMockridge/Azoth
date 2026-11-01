@@ -213,6 +213,14 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # **pyo3 links `libpython`.** `cargo test -p azoth-python --all-targets` builds a test
+      # binary against the interpreter, and a runner whose system Python has no shared library
+      # fails to link it (`unable to find library -lpython3.12`) - a failure that hides until a
+      # change to a crate the binding depends on invalidates the cached binary. `setup-python`
+      # supplies one; this job is still not the Python suite, which builds the extension.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       # **What this change reaches, which is not the whole workspace.** The full set runs in
       # `.github/workflows/nightly.yml` on a 24-hour cycle. A push runs the crates its diff
       # touches and every crate that depends on them - read off the manifests by
