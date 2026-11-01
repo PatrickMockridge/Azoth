@@ -1254,3 +1254,25 @@ the port's charted case), but the loop drives the *ratio* to the control line, s
 inlet, surge flow and control flow agree to `6e-5` and the recycle mass to `6.1e-5`. The
 `iterations` count is five in both active rows on both implementations, which is why the case
 pins it.
+
+## The flare's radiation, dispersion and capacity surface
+
+`process_flare.tsv`'s first four blocks are `Flare.run` on four gases: the record through,
+the duty and the CO2 emission beside it. **Five blocks append the surface `run` never reads**:
+the point-source radiation flux at a stated ground distance and its inverse for a stated
+threshold, the tip's dispersion surrogate, and the three-axis capacity check.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe flare \
+  > captures/process_flare.tsv
+```
+
+**The radiation model puts a point source at the flame height**, `flameHeight` (30 m by
+default): the flux at a horizontal distance is `radiantFraction * heatDuty / (4 pi (d^2 +
+h^2))`, and the distance for a threshold is its inverse with the flame-height sphere removed -
+so at 1 mol/s every contour falls inside the sphere and the class answers zero. The
+`performance_high_duty` row is 100 mol/s, where the 1 kW/m2 contour is at `24.48` m. The
+capacity check divides the operating point by three optional design limits; the probe states
+each as a multiple of the state it checks, so the printed design value is the oracle rather
+than a typed number. **`performance_clamped_fields` pins the setters' clamps**: a negative
+height is zero, a fraction above one is one, and a zero tip diameter is `1e-4` m.

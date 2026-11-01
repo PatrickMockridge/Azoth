@@ -15138,6 +15138,33 @@ pub struct PyFlareResult {
     /// the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.
     #[pyo3(get)]
     pub co2_emission: PyQty,
+    /// `estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`.
+    #[pyo3(get)]
+    pub radiation_flux: Option<PyQty>,
+    /// `radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold.
+    #[pyo3(get)]
+    pub radiation_distance: Option<PyQty>,
+    /// `getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero.
+    #[pyo3(get)]
+    pub exit_velocity: PyQty,
+    /// the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors.
+    #[pyo3(get)]
+    pub momentum_flux: PyQty,
+    /// the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate.
+    #[pyo3(get)]
+    pub standard_volume_rate: PyQty,
+    /// `evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive.
+    #[pyo3(get)]
+    pub heat_utilization: Option<f64>,
+    /// the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is.
+    #[pyo3(get)]
+    pub mass_utilization: Option<f64>,
+    /// the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is.
+    #[pyo3(get)]
+    pub molar_utilization: Option<f64>,
+    /// `isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists.
+    #[pyo3(get)]
+    pub overloaded: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15147,7 +15174,7 @@ pub struct PyFlareResult {
 impl PyFlareResult {
     fn __repr__(&self) -> String {
         format!(
-            "FlareResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, co2_emission={:?}, {} warning(s))",
+            "FlareResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, co2_emission={:?}, radiation_flux={:?}, radiation_distance={:?}, exit_velocity={:?}, momentum_flux={:?}, standard_volume_rate={:?}, heat_utilization={:?}, mass_utilization={:?}, molar_utilization={:?}, overloaded={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -15155,6 +15182,15 @@ impl PyFlareResult {
             self.product_h,
             self.heat_duty,
             self.co2_emission,
+            self.radiation_flux,
+            self.radiation_distance,
+            self.exit_velocity,
+            self.momentum_flux,
+            self.standard_volume_rate,
+            self.heat_utilization,
+            self.mass_utilization,
+            self.molar_utilization,
+            self.overloaded,
             self.warnings.len()
         )
     }
@@ -15188,6 +15224,30 @@ impl From<&azoth_process::models::flare::FlareResult> for PyFlareResult {
                 magnitude_si: r.co2_emission.value,
                 unit: "kg/s".to_string(),
             },
+            radiation_flux: r.radiation_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            radiation_distance: r.radiation_distance.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            exit_velocity: PyQty {
+                magnitude_si: r.exit_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            momentum_flux: PyQty {
+                magnitude_si: r.momentum_flux.value,
+                unit: "Pa".to_string(),
+            },
+            standard_volume_rate: PyQty {
+                magnitude_si: r.standard_volume_rate.value,
+                unit: "m**3/s".to_string(),
+            },
+            heat_utilization: r.heat_utilization,
+            mass_utilization: r.mass_utilization,
+            molar_utilization: r.molar_utilization,
+            overloaded: r.overloaded,
             warnings: transport(&r.warnings),
         }
     }

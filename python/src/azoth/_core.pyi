@@ -2799,6 +2799,15 @@ class FlareResult:
     product_h: Qty
     heat_duty: Qty
     co2_emission: Qty
+    radiation_flux: Qty | None
+    radiation_distance: Qty | None
+    exit_velocity: Qty
+    momentum_flux: Qty
+    standard_volume_rate: Qty
+    heat_utilization: float | None
+    mass_utilization: float | None
+    molar_utilization: float | None
+    overloaded: bool | None
     warnings: list[Warning]
 
 @final
@@ -5479,6 +5488,14 @@ def flare(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
+    flame_height: float | None = None,
+    radiant_fraction: float | None = None,
+    tip_diameter: float | None = None,
+    ground_distance: float | None = None,
+    radiation_flux_threshold: float | None = None,
+    design_heat_duty_capacity: float | None = None,
+    design_mass_flow_capacity: float | None = None,
+    design_molar_flow_capacity: float | None = None,
 ) -> FlareResult: ...
 def gas_scrubber(
     components: list[str],

@@ -18,16 +18,16 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy, Force,
-    HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate, Molality, MolarConcentration,
-    MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
-    SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
-    ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
+    HeatFluxDensity, HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate, Molality,
+    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure,
+    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductance,
+    ThermalConductivity, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
     area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::btu_it, energy::joule,
-    energy::kilojoule, energy::megajoule, force::newton,
+    energy::kilojoule, energy::megajoule, force::newton, heat_flux_density::watt_per_square_meter,
     heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::centimeter,
     length::foot, length::inch, length::meter, length::millimeter, mass::kilogram, mass::ton,
     mass_density::kilogram_per_cubic_meter, mass_flux::kilogram_per_square_meter_second,
@@ -225,6 +225,16 @@ pub fn watts_per_meter_kelvin(value: f64) -> ThermalConductivity {
 #[must_use]
 pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
     HeatTransfer::new::<watt_per_square_meter_kelvin>(value)
+}
+
+/// A heat flux density in watts per square metre.
+///
+/// The radiant flux a flare's point source delivers at a ground distance; `uom` carries it
+/// as `HeatFluxDensity`, the same exponents as a heat-transfer coefficient without the
+/// temperature.
+#[must_use]
+pub fn watts_per_square_meter(value: f64) -> HeatFluxDensity {
+    HeatFluxDensity::new::<watt_per_square_meter>(value)
 }
 
 /// A thermal conductance in watts per kelvin.

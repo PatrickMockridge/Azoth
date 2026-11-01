@@ -73,6 +73,9 @@ exponents = [1, 1, -3, 0, -1, 0, 0]
 id = "heat_transfer"
 exponents = [0, 1, -3, 0, -1, 0, 0]
 [[dimensions]]
+id = "heat_flux_density"
+exponents = [0, 1, -3, 0, 0, 0, 0]
+[[dimensions]]
 id = "thermal_conductance"
 exponents = [2, 1, -3, 0, -1, 0, 0]
 [[dimensions]]
@@ -253,6 +256,12 @@ dimension = "thermal_conductivity"
 pint = "watt/(meter*kelvin)"
 uom = "thermal_conductivity::watt_per_meter_kelvin"
 rust_ctor = "watts_per_meter_kelvin"
+[[units]]
+id = "W/m**2"
+dimension = "heat_flux_density"
+pint = "watt/meter**2"
+uom = "heat_flux_density::watt_per_square_meter"
+rust_ctor = "watts_per_square_meter"
 [[units]]
 id = "W/(m**2*K)"
 dimension = "heat_transfer"

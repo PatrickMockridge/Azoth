@@ -37,6 +37,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "specific_heat_capacity",
     "thermal_conductivity",
     "heat_transfer",
+    "heat_flux_density",
     "thermal_conductance",
     "surface_tension",
     "molar_mass",
@@ -82,6 +83,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("specific_heat_capacity", [2, 0, -2, 0, -1, 0, 0]),
     ("thermal_conductivity", [1, 1, -3, 0, -1, 0, 0]),
     ("heat_transfer", [0, 1, -3, 0, -1, 0, 0]),
+    ("heat_flux_density", [0, 1, -3, 0, 0, 0, 0]),
     ("thermal_conductance", [2, 1, -3, 0, -1, 0, 0]),
     ("surface_tension", [0, 1, -2, 0, 0, 0, 0]),
     ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
@@ -154,6 +156,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "W",
     "J/(kg*K)",
     "W/(m*K)",
+    "W/m**2",
     "W/(m**2*K)",
     "W/K",
     "N/m",
@@ -234,6 +237,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("W", [2, 1, -3, 0, 0, 0, 0]),
     ("J/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
     ("W/(m*K)", [1, 1, -3, 0, -1, 0, 0]),
+    ("W/m**2", [0, 1, -3, 0, 0, 0, 0]),
     ("W/(m**2*K)", [0, 1, -3, 0, -1, 0, 0]),
     ("W/K", [2, 1, -3, 0, -1, 0, 0]),
     ("N/m", [0, 1, -2, 0, 0, 0, 0]),
@@ -343,6 +347,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
         crate::units::joules_per_kilogram_kelvin(v).value
     }),
     ("W/(m*K)", |v| crate::units::watts_per_meter_kelvin(v).value),
+    ("W/m**2", |v| crate::units::watts_per_square_meter(v).value),
     ("W/(m**2*K)", |v| {
         crate::units::watts_per_square_meter_kelvin(v).value
     }),
@@ -591,6 +596,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Power = crate::units::watts(1.0);
     let _: uom::si::f64::SpecificHeatCapacity = crate::units::joules_per_kilogram_kelvin(1.0);
     let _: uom::si::f64::ThermalConductivity = crate::units::watts_per_meter_kelvin(1.0);
+    let _: uom::si::f64::HeatFluxDensity = crate::units::watts_per_square_meter(1.0);
     let _: uom::si::f64::HeatTransfer = crate::units::watts_per_square_meter_kelvin(1.0);
     let _: uom::si::f64::ThermalConductance = crate::units::watts_per_kelvin(1.0);
     let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);

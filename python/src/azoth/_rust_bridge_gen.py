@@ -5864,7 +5864,7 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
     )
 
 
-def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q) -> FlareResult:
+def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, flame_height: Q | None=None, radiant_fraction: float | None=None, tip_diameter: Q | None=None, ground_distance: Q | None=None, radiation_flux_threshold: Q | None=None, design_heat_duty_capacity: Q | None=None, design_mass_flow_capacity: Q | None=None, design_molar_flow_capacity: Q | None=None) -> FlareResult:
     """``process.flare``, computed in Rust."""
     spec = _models_gen.model("process.flare")
     result = _core.flare(
@@ -5873,6 +5873,14 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
+        None if flame_height is None else input_to_si(spec, "flame_height", flame_height),
+        None if radiant_fraction is None else radiant_fraction,
+        None if tip_diameter is None else input_to_si(spec, "tip_diameter", tip_diameter),
+        None if ground_distance is None else input_to_si(spec, "ground_distance", ground_distance),
+        None if radiation_flux_threshold is None else input_to_si(spec, "radiation_flux_threshold", radiation_flux_threshold),
+        None if design_heat_duty_capacity is None else input_to_si(spec, "design_heat_duty_capacity", design_heat_duty_capacity),
+        None if design_mass_flow_capacity is None else input_to_si(spec, "design_mass_flow_capacity", design_mass_flow_capacity),
+        None if design_molar_flow_capacity is None else input_to_si(spec, "design_molar_flow_capacity", design_molar_flow_capacity),
     )
     return FlareResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -5882,6 +5890,15 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
         co2_emission=from_si(result.co2_emission.magnitude_si, result.co2_emission.unit),
+        radiation_flux=None if result.radiation_flux is None else from_si(result.radiation_flux.magnitude_si, result.radiation_flux.unit),
+        radiation_distance=None if result.radiation_distance is None else from_si(result.radiation_distance.magnitude_si, result.radiation_distance.unit),
+        exit_velocity=from_si(result.exit_velocity.magnitude_si, result.exit_velocity.unit),
+        momentum_flux=from_si(result.momentum_flux.magnitude_si, result.momentum_flux.unit),
+        standard_volume_rate=from_si(result.standard_volume_rate.magnitude_si, result.standard_volume_rate.unit),
+        heat_utilization=result.heat_utilization,
+        mass_utilization=result.mass_utilization,
+        molar_utilization=result.molar_utilization,
+        overloaded=result.overloaded,
         warnings=_warnings(result.warnings),
     )
 

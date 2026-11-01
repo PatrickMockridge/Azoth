@@ -1261,9 +1261,10 @@ NO_INTERIOR: dict[str, str] = {
     ),
     "process.flare": (
         "the kernel is a *pass-through*: `run` clones the inlet into the outlet, so the whole "
-        "record is the answer and there is no intermediate between the two ports. Its two "
-        "reported numbers - the duty and the CO2 emission - are outputs rather than layers, "
-        "and the capture prints them beside the record exactly as the model does"
+        "record is the answer and there is no intermediate between the two ports. Its reported "
+        "numbers - the duty, the CO2 emission, and the radiation, dispersion and capacity "
+        "surface - are outputs rather than layers, and the capture prints them beside the "
+        "record exactly as the model does; each is a closed form over the record itself"
     ),
     "process.ejector": (
         "the kernel forms the mixing pressure, four velocities, two efficiencies' enthalpy "

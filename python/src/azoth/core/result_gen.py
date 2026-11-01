@@ -6052,6 +6052,33 @@ class FlareResult(_HasWarnings):
     #: the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.
     co2_emission: Q
 
+    #: `estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`.
+    radiation_flux: Q | None
+
+    #: `radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold.
+    radiation_distance: Q | None
+
+    #: `getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero.
+    exit_velocity: Q
+
+    #: the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors.
+    momentum_flux: Q
+
+    #: the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate.
+    standard_volume_rate: Q
+
+    #: `evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive.
+    heat_utilization: float | None
+
+    #: the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is.
+    mass_utilization: float | None
+
+    #: the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is.
+    molar_utilization: float | None
+
+    #: `isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists.
+    overloaded: bool | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

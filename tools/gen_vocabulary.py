@@ -101,6 +101,9 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (2, 0, -2, 0, -1, 0, 0): "SpecificHeatCapacity",
     (1, 1, -3, 0, -1, 0, 0): "ThermalConductivity",
     (0, 1, -3, 0, -1, 0, 0): "HeatTransfer",
+    # A radiated flux, `W/m2`: uom's `HeatFluxDensity`, which is the same exponents as
+    # `HeatTransfer` without the temperature slot.
+    (0, 1, -3, 0, 0, 0, 0): "HeatFluxDensity",
     (0, 1, -2, 0, 0, 0, 0): "SurfaceTension",
     (0, 1, 0, 0, 0, -1, 0): "MolarMass",
     (3, 0, 0, 0, 0, -1, 0): "MolarVolume",
@@ -180,6 +183,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "Pa*s": "Dimension.Pressure * Dimension.Time",
     "K": "Dimension.Temperature",
     "W": "Dimension.Power",
+    "W/m**2": "Dimension.Power / Dimension.Area",
     "J/(kg*K)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
     "W/(m*K)": "Dimension.Power / (Dimension.Length * Dimension.Temperature)",
     "W/(m**2*K)": "Dimension.Power / (Dimension.Area * Dimension.Temperature)",

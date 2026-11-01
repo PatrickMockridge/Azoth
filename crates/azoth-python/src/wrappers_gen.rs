@@ -13,7 +13,7 @@ use azoth_core::units::{
     joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms_per_cubic_meter,
     kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
     meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, seconds, square_meters,
-    watts, watts_per_meter_kelvin, watts_per_square_meter_kelvin,
+    watts, watts_per_meter_kelvin, watts_per_square_meter, watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -5738,8 +5738,11 @@ pub fn expander(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t)")]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, flame_height, radiant_fraction, tip_diameter, ground_distance, radiation_flux_threshold, design_heat_duty_capacity, design_mass_flow_capacity, design_molar_flow_capacity))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, flame_height, radiant_fraction, tip_diameter, ground_distance, radiation_flux_threshold, design_heat_duty_capacity, design_mass_flow_capacity, design_molar_flow_capacity)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn flare(
     py: Python<'_>,
     components: Vec<String>,
@@ -5747,6 +5750,14 @@ pub fn flare(
     inlet_z: Vec<f64>,
     inlet_p: f64,
     inlet_t: f64,
+    flame_height: Option<f64>,
+    radiant_fraction: Option<f64>,
+    tip_diameter: Option<f64>,
+    ground_distance: Option<f64>,
+    radiation_flux_threshold: Option<f64>,
+    design_heat_duty_capacity: Option<f64>,
+    design_mass_flow_capacity: Option<f64>,
+    design_molar_flow_capacity: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyFlareResult> {
     azoth_process::models::flare::flare(
         &components,
@@ -5754,6 +5765,14 @@ pub fn flare(
         &inlet_z,
         pascals(inlet_p),
         kelvins(inlet_t),
+        flame_height.map(meters),
+        radiant_fraction,
+        tip_diameter.map(meters),
+        ground_distance.map(meters),
+        radiation_flux_threshold.map(watts_per_square_meter),
+        design_heat_duty_capacity.map(watts),
+        design_mass_flow_capacity.map(kilograms_per_second),
+        design_molar_flow_capacity,
     )
     .map(|r| crate::transport_gen::PyFlareResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

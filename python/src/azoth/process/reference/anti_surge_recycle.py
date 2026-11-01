@@ -38,7 +38,8 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.process.reference import capacity
-from azoth.process.reference import compressor as compressor_model
+from azoth.process.reference.compressor import _feed_state
+from azoth.process.reference.compressor import compressor as compressor_run
 from azoth.process.reference.mixer import _route
 
 #: ``Compressor.speed``'s initialiser, rpm.
@@ -236,7 +237,7 @@ def _machine(
     recycle. The isentropic efficiency is stated only because the compressor's boundary
     requires one; its chart branch never reads it.
     """
-    return compressor_model.compressor(
+    return compressor_run(
         components,
         from_si(n, "mol/s"),
         list(z),
@@ -257,7 +258,7 @@ def _volume_flow(components: list[str], n: float, z: list[float], t: float, p: f
     ``getFlowRate("m3/hr")`` on the machine's inlet - so the loop compares one convention.
     """
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
-    _, _, molar_volume = compressor_model._feed_state(mixture, ideal_gas, t, p, list(z))
+    _, _, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(z))
     return n * molar_volume * 3600.0
 
 

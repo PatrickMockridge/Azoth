@@ -1569,8 +1569,16 @@ def flare(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
+    flame_height: Q | None = None,
+    radiant_fraction: float | None = None,
+    tip_diameter: Q | None = None,
+    ground_distance: Q | None = None,
+    radiation_flux_threshold: Q | None = None,
+    design_heat_duty_capacity: Q | None = None,
+    design_mass_flow_capacity: Q | None = None,
+    design_molar_flow_capacity: Q | None = None,
 ) -> FlareResult:
-    """A flare's steady state: the record through, and the two numbers beside it.
+    """A flare's steady state: the record through, and the numbers beside it.
 
     ``Flare.run`` clones the inlet into the outlet and changes nothing in it, so the record is
     a pass-through. What the machine computes is its own report: ``heatDuty``, the gas's
@@ -1581,6 +1589,13 @@ def flare(
     **The duty multiplies two reference states**: the calorific value is per *normal* cubic
     metre at 0 C and the flow is at 15 C, which the class's own arithmetic does and this
     reproduces - the case records the ratio.
+
+    ``flame_height``, ``radiant_fraction`` and ``tip_diameter`` are the class's setters, and
+    they clamp rather than refuse. A stated ``ground_distance`` reports the point-source
+    radiation flux at it; a stated ``radiation_flux_threshold`` reports the horizontal distance
+    the flux falls to. **The three design capacities are the class's NaN when unstated**: a
+    utilisation exists only where its design is finite and positive, and ``overloaded`` only
+    where one does.
 
     Raises:
         InvalidInputError: where a component has no row in ISO 6976's table or none in the
@@ -1594,6 +1609,14 @@ def flare(
         inlet_z=inlet_z,
         inlet_p=inlet_p,
         inlet_t=inlet_t,
+        flame_height=flame_height,
+        radiant_fraction=radiant_fraction,
+        tip_diameter=tip_diameter,
+        ground_distance=ground_distance,
+        radiation_flux_threshold=radiation_flux_threshold,
+        design_heat_duty_capacity=design_heat_duty_capacity,
+        design_mass_flow_capacity=design_mass_flow_capacity,
+        design_molar_flow_capacity=design_molar_flow_capacity,
     )
 
 

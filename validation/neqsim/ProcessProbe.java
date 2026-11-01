@@ -5611,6 +5611,89 @@ public class ProcessProbe {
     runFlare("sales_gas", sales, salesZ);
     runFlare("sour_gas", sour, sourZ);
     runFlare("heavy", heavy, heavyZ);
+    flarePerformanceRows(binary, binaryZ, sales, salesZ);
+  }
+
+  /// The radiation model, the dispersion surrogate and the capacity check.
+  ///
+  /// **The radiation model is a point source at the flame height**:
+  /// `radiantFraction * duty / (4 pi (d^2 + h^2))`, and its inverse for a threshold. The
+  /// surrogate is the tip's exit velocity and momentum flux from the inlet's own density;
+  /// the capacity check divides the operating point by three optional design limits. **Each
+  /// limit is stated as a multiple of the state it is checked against**, so the printed
+  /// design value is the oracle the port is held to rather than a typed number.
+  static void flarePerformanceRows(String[] binary, double[] binaryZ, String[] sales,
+      double[] salesZ) {
+    runFlarePerformance("performance_defaults", binary, binaryZ, 1.0, null, null, null, 30.0,
+        4000.0, null, null, null);
+    runFlarePerformance("performance_design_capacities", binary, binaryZ, 1.0, null, null, null,
+        50.0, 1500.0, 0.8, 0.5, 0.5);
+    runFlarePerformance("performance_hot_flame", sales, salesZ, 1.0, 60.0, 0.3, 0.6, 10.0, 2000.0,
+        null, null, null);
+    // **A threshold the horizontal distance can satisfy**: at 1 mol/s the 30 m flame height
+    // puts every contour inside its own sphere, so the inverse answers zero. A hundredfold
+    // flow and a 1 kW/m2 threshold put the contour outside it.
+    runFlarePerformance("performance_high_duty", binary, binaryZ, 100.0, null, null, null, 60.0,
+        1000.0, null, null, null);
+    // The class's setters clamp rather than refuse: a negative height is zero, a fraction
+    // above one is one, and a zero tip diameter is 1e-4 m.
+    runFlarePerformance("performance_clamped_fields", binary, binaryZ, 1.0, -5.0, 5.0, 0.0, 30.0,
+        4000.0, null, null, null);
+  }
+
+  static void runFlarePerformance(String label, String[] names, double[] z, double molPerSecond,
+      Double flameHeight, Double radiantFraction, Double tipDiameter, double groundDistance,
+      double fluxThreshold, Double heatFactor, Double massFactor, Double molarFactor) {
+    Stream inlet = feed(names, z, 288.15, 1.01325, molPerSecond);
+    neqsim.process.equipment.flare.Flare flare =
+        new neqsim.process.equipment.flare.Flare("flare", inlet);
+    if (flameHeight != null) {
+      flare.setFlameHeight(flameHeight);
+    }
+    if (radiantFraction != null) {
+      flare.setRadiantFraction(radiantFraction);
+    }
+    if (tipDiameter != null) {
+      flare.setTipDiameter(tipDiameter);
+    }
+    flare.run();
+    if (heatFactor != null) {
+      flare.setDesignHeatDutyCapacity(heatFactor * flare.getHeatDuty(), "W");
+    }
+    if (massFactor != null) {
+      flare.setDesignMassFlowCapacity(massFactor * inlet.getFlowRate("kg/sec"), "kg/sec");
+    }
+    if (molarFactor != null) {
+      flare.setDesignMolarFlowCapacity(molarFactor * inlet.getFlowRate("mole/sec"), "mole/sec");
+    }
+    neqsim.process.equipment.flare.Flare.CapacityCheckResult capacity = flare.evaluateCapacity();
+    neqsim.process.equipment.flare.dto.FlareDispersionSurrogateDTO dispersion =
+        flare.getDispersionSurrogate();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    System.out.println("heat_duty_W=" + flare.getHeatDuty());
+    System.out.println("co2_emission_kg_per_s=" + flare.getCO2Emission());
+    System.out.println("ground_distance_m=" + groundDistance);
+    System.out.println("radiation_flux_W_per_m2=" + flare.estimateRadiationHeatFlux(groundDistance));
+    System.out.println("radiation_flux_threshold_W_per_m2=" + fluxThreshold);
+    System.out.println("radiation_distance_m=" + flare.radiationDistanceForFlux(fluxThreshold));
+    System.out.println("dispersion_exit_velocity_m_per_s=" + dispersion.getExitVelocityMs());
+    System.out.println("dispersion_momentum_flux_Pa=" + dispersion.getMomentumFlux());
+    System.out.println("dispersion_momentum_per_mass=" + dispersion.getMomentumPerMass());
+    System.out.println(
+        "dispersion_standard_volume_m3_per_s=" + dispersion.getStandardVolumeSm3PerSec());
+    System.out.println("capacity_heat_duty_W=" + capacity.getHeatDutyW());
+    System.out.println("capacity_design_heat_duty_W=" + capacity.getDesignHeatDutyW());
+    System.out.println("capacity_heat_utilization=" + capacity.getHeatUtilization());
+    System.out.println("capacity_mass_rate_kg_s=" + capacity.getMassRateKgS());
+    System.out.println("capacity_design_mass_rate_kg_s=" + capacity.getDesignMassRateKgS());
+    System.out.println("capacity_mass_utilization=" + capacity.getMassUtilization());
+    System.out.println("capacity_molar_rate_mole_s=" + capacity.getMolarRateMoleS());
+    System.out.println("capacity_design_molar_rate_mole_s=" + capacity.getDesignMolarRateMoleS());
+    System.out.println("capacity_molar_utilization=" + capacity.getMolarUtilization());
+    System.out.println("capacity_overloaded=" + capacity.isOverloaded());
+    System.out.println();
   }
 
   static void runFlare(String label, String[] names, double[] z) {

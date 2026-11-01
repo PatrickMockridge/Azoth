@@ -305,6 +305,15 @@ impl CalcResult for FlareResult {
         "product_h",
         "heat_duty",
         "co2_emission",
+        "radiation_flux",
+        "radiation_distance",
+        "exit_velocity",
+        "momentum_flux",
+        "standard_volume_rate",
+        "heat_utilization",
+        "mass_utilization",
+        "molar_utilization",
+        "overloaded",
         "warnings",
     ];
 

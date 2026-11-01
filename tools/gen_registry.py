@@ -260,6 +260,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # backend and compares the declared flag, and `test_cross_impl` compares it on both
         # results.
         "recycle_active",
+        # `flare`'s capacity flag, read the same way: `python/tests/models/test_model_cases.py`
+        # compares it on the design-capacities row, and `test_cross_impl` compares it on both
+        # results.
+        "overloaded",
     }
 )
 

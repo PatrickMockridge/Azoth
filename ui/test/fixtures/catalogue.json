@@ -6966,7 +6966,11 @@
       "runnable": true,
       "source": "NeqSim process/equipment/separator/ThreePhaseSeparator.java",
       "unmodelled_ranges": [
-        "feed_t"
+        "feed_t",
+        "internal_diameter",
+        "separator_length",
+        "nll_fraction",
+        "nil_fraction"
       ]
     },
     {
@@ -8205,7 +8209,9 @@
       "runnable": true,
       "source": "NeqSim process/equipment/flare/Flare.java",
       "unmodelled_ranges": [
-        "inlet_n"
+        "inlet_n",
+        "ground_distance",
+        "radiation_flux_threshold"
       ]
     },
     {
@@ -8613,6 +8619,11 @@
     },
     "W/K": {
       "dimension": "thermal_conductance",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "W/m**2": {
+      "dimension": "heat_flux_density",
       "factor": 1.0,
       "offset": 0.0
     },

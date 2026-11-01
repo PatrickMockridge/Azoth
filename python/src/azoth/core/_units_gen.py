@@ -46,6 +46,7 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "W": "watt",
     "J/(kg*K)": "joule/(kilogram*kelvin)",
     "W/(m*K)": "watt/(meter*kelvin)",
+    "W/m**2": "watt/meter**2",
     "W/(m**2*K)": "watt/(meter**2*kelvin)",
     "W/K": "watt/kelvin",
     "N/m": "newton/meter",
