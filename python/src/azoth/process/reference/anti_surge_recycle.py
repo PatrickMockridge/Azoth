@@ -104,8 +104,10 @@ def anti_surge_recycle(
     warnings: list[Warning] = []
 
     if len(feed_z) != len(components):
+        # The field name is `z`, the flash's own: the Rust side reaches the same refusal
+        # through `Stream::from_pt`, and the degenerate sweep holds the two to one name.
         raise InvalidInputError(
-            "feed_z", f"a feed for {len(components)} components has {len(feed_z)} entries"
+            "z", f"a feed for {len(components)} components has {len(feed_z)} entries"
         )
     n = input_to_si(spec, "feed_n", feed_n)
     p = input_to_si(spec, "feed_p", feed_p)
