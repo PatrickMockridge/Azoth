@@ -65,6 +65,20 @@ pub fn index_of(components: &[String], name: &str) -> Option<usize> {
 
 /// The phase the class picks out of `stream`'s system.
 pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
+    phase_view_of(stream, pick, false)
+}
+
+/// [`phase_view`] with a **single phase's root taken from the feed**.
+///
+/// The flash's negative-flash branch reports the *trial* composition's root for a single
+/// phase - the other side of the cubic - and the columns' capacity family reads the outlet
+/// state as `getPhase(0)` does, which is the feed's. The designer keeps [`phase_view`]'s root:
+/// that is the state its own capture was taken against. See `column/capacity.rs`.
+pub fn phase_view_from_feed(stream: &Stream, pick: Pick) -> Result<PhaseView> {
+    phase_view_of(stream, pick, true)
+}
+
+fn phase_view_of(stream: &Stream, pick: Pick, from_feed: bool) -> Result<PhaseView> {
     let (mixture, ideal_gas) = stream.mixture()?;
     let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
 
@@ -73,7 +87,11 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
     // volume ratio past `1.75` is the gas, and of the two liquids the one whose hydrocarbons
     // outweigh its aqueous components is the oil. It is the same rule `three_phase_separator`
     // and `pipe` already read, and it is public in `azoth-eos` for exactly this reason.
-    let labelled = labelled_phases(stream, &mixture, &flash)?;
+    let labelled = if from_feed {
+        labelled_phases_at_from_feed(&mixture, stream.t, stream.p, &stream.z, &flash)?
+    } else {
+        labelled_phases(stream, &mixture, &flash)?
+    };
 
     let chosen = match pick {
         // `getGasPhase` asks for the gas phase and falls back to phase zero, which on a system
@@ -341,9 +359,17 @@ fn labelled_phases_at_impl(
 /// two-phase outlet neither is either phase's: the capture's over-cooled overhead row reads a
 /// system density of `15.34351809893286` beside a gas phase of `14.4273646532561`.
 fn system_per_mole(stream: &Stream) -> Result<(f64, f64)> {
+    system_per_mole_of(stream, false)
+}
+
+fn system_per_mole_of(stream: &Stream, from_feed: bool) -> Result<(f64, f64)> {
     let (mixture, _) = stream.mixture()?;
     let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
-    let phases = labelled_phases(stream, &mixture, &flash)?;
+    let phases = if from_feed {
+        labelled_phases_at_from_feed(&mixture, stream.t, stream.p, &stream.z, &flash)?
+    } else {
+        labelled_phases(stream, &mixture, &flash)?
+    };
     let mut mass = 0.0;
     let mut volume = 0.0;
     for (kind, z, root) in &phases {
@@ -371,6 +397,17 @@ pub fn system_mass_density(stream: &Stream) -> Result<f64> {
     Ok(mass / volume)
 }
 
+/// [`system_mass_density`] with a single phase's root taken from the feed.
+///
+/// The columns' capacity family reads the outlet as `getPhase(0)`/`getDensity` do, and for a
+/// negative-flash single phase the flash's trial root is the wrong side of the cubic. The
+/// public function keeps the flash's root because pump, filter, valve and the reactor
+/// mechanical design were measured against it; see `column/capacity.rs`.
+pub fn system_mass_density_from_feed(stream: &Stream) -> Result<f64> {
+    let (mass, volume) = system_per_mole_of(stream, true)?;
+    Ok(mass / volume)
+}
+
 /// The whole stream's volumetric flow, m³/s - `SystemInterface.getFlowRate("m3/sec")`.
 ///
 /// **The identity the capacity capture holds**: `n*M/rho` equals NeqSim's own `m3/sec` on every
@@ -380,6 +417,12 @@ pub fn system_mass_density(stream: &Stream) -> Result<f64> {
 /// Whatever the flash, the label rule or a phase's own density raises.
 pub fn system_volumetric_flow(stream: &Stream) -> Result<f64> {
     let (_, volume) = system_per_mole(stream)?;
+    Ok(stream.n * volume)
+}
+
+/// [`system_volumetric_flow`] with a single phase's root taken from the feed.
+pub fn system_volumetric_flow_from_feed(stream: &Stream) -> Result<f64> {
+    let (_, volume) = system_per_mole_of(stream, true)?;
     Ok(stream.n * volume)
 }
 

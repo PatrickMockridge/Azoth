@@ -474,3 +474,37 @@ def test_a_pumparound_and_a_side_draw_flow_are_refused_together() -> None:
             side_draw_flow_phase="liquid",
             side_draw_flow_target=q(0.02, "kg/s"),
         )
+
+
+def test_the_column_capacity_reads_a_single_phase_at_the_feeds_root() -> None:
+    """**The negative-flash branch's trial root is not the outlet's state.**
+
+    A 95/5 methane/ethane stream at 50 bar and 303.15 K flashes `all_vapour` through the
+    negative-flash branch, whose trial composition sits on the other side of the cubic: the
+    flash root reads 95.794 kg/m3 and the feed's 36.692 - the density NeqSim's
+    `process_separator_capacity_assessment.tsv` records. The columns' capacity family reads the
+    outlet as `getPhase(0)` does, so `fs_limits` must use the second.
+    """
+    import math
+
+    from azoth.process.reference import capacity
+
+    q = azoth.ureg.Quantity
+    feed = process.Stream.from_pt(
+        ["methane", "ethane"], [0.95, 0.05], 1.0, q(5_000_000.0, "Pa"), q(303.15, "K")
+    )
+    components = list(feed.components)
+    t = feed.t.to("K").magnitude
+    p = feed.p.to("Pa").magnitude
+    z = list(feed.z)
+
+    assert capacity.system_mass_density(components, t, p, z) == pytest.approx(
+        95.79432907719706, rel=1e-9
+    )
+    feed_root = capacity.system_mass_density(components, t, p, z, from_feed=True)
+    assert feed_root == pytest.approx(36.69246246008776, rel=1e-9)
+
+    limits = capacity.fs_limits(feed, q(1.0, "m"), 2.5)
+    flow = capacity.system_volumetric_flow(components, t, p, z, feed.n, from_feed=True)
+    expected = flow / (math.pi / 4.0) * math.sqrt(feed_root)
+    assert limits["fs_factor"] == pytest.approx(expected, rel=1e-12)

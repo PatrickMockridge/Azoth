@@ -764,3 +764,52 @@ fn the_stripper_row_publishes_the_post_init_density() {
     assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
     assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
 }
+
+/// **A single phase reached through the negative-flash branch reads the feed's root.**
+///
+/// The flash answers `all_vapour` there with the *trial* composition's root - the other side of
+/// the cubic - so `system_mass_density` gives 95.794 kg/m3 at this state. NeqSim's
+/// `getPhase("gas")` gives the feed's: `process_separator_capacity_assessment.tsv` records
+/// 36.692464746744186 at 95/5 methane/ethane, 303.15 K and 50 bar. The columns' capacity family
+/// reads the outlet as the class does, and `process.separator`'s capacity surface already does.
+#[test]
+fn the_column_capacity_reads_a_single_phase_at_the_feeds_root() {
+    use azoth_process::segment::phase::{
+        system_mass_density, system_mass_density_from_feed, system_volumetric_flow_from_feed,
+    };
+
+    let feed = Stream::from_pt(
+        vec!["methane".to_string(), "ethane".to_string()],
+        vec![0.95, 0.05],
+        1.0,
+        pascals(5_000_000.0),
+        kelvins(303.15),
+    )
+    .expect("the state flashes");
+
+    let trial = system_mass_density(&feed).expect("the trial density");
+    let feed_root = system_mass_density_from_feed(&feed).expect("the feed density");
+    relative(
+        trial,
+        95.794_329_077_197_06,
+        1.0e-9,
+        "the trial-root density",
+    );
+    relative(
+        feed_root,
+        36.692_462_460_087_76,
+        1.0e-9,
+        "the feed-root density",
+    );
+
+    // And the Fs family uses the feed's: `Q / A * sqrt(rho)` is written from those values.
+    let limits = fs_limits(&feed, meters(1.0), 2.5).expect("the Fs limits");
+    let flow = system_volumetric_flow_from_feed(&feed).expect("the feed flow");
+    let area = std::f64::consts::PI / 4.0;
+    relative(
+        limits.fs_factor,
+        flow / area * feed_root.sqrt(),
+        1.0e-12,
+        "fs_factor reads the feed root",
+    );
+}

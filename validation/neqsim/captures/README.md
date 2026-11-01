@@ -387,6 +387,15 @@ stated `0.5` row reads back `0.5` and moves the factor to `0.08158631462070312`,
 column's stage count, and the capacity family is indifferent to the packing. Both packed rows also
 read `max_allowable_fs_factor=2.5`, so `PackedColumn` overrides neither default.
 
+**A single phase carries the feed's root, and none of these rows is such a state.** The flash's
+negative-flash branch reports the *trial* composition's root for an `all_vapour`/`all_liquid`
+answer - 95.79 kg/m3 against the feed's 36.69 at 95/5 methane/ethane, 50 bar and 303 K - and the
+columns' capacity family now reads the feed's, as NeqSim's `getPhase(0)` does. Every row here is
+two-phase (where the two roots agree) or a stable single phase whose flash root is already the
+feed's, so no captured number moves. The negative-flash state is pinned by
+`process_separator_capacity_assessment.tsv`'s `36.692464746744186` and by the two unit tests that
+mount it.
+
 **`ProcessProbe designer` is `ColumnInternalsDesigner`'s trayed half - the class the tray
 calculator is driven *by*.** It walks the column's trays, picks the **controlling** one by the
 largest vapour mass flow, sizes a diameter off that one and runs a calculator per tray at the
