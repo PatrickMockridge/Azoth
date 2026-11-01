@@ -152,12 +152,18 @@ pub fn flare(
     // **The setters clamp rather than refuse**, and so does the boundary: a negative height is
     // zero, a fraction outside `[0, 1]` is the near end (a NaN keeps the default), and a tip
     // below `1e-4` m is `1e-4`.
+    //
+    // The class's two setters are `Math.max(0, value)` and `Math.min(Math.max(value, 0), 1)`,
+    // and the port reproduces them rather than tightening into a refusal the class does not
+    // make.
+    // numerics-ok: `setRadiantFraction`'s own clamp, on the statement's first line.
     let settings = FlareSettings {
         flame_height: flame_height.map_or(DEFAULT_FLAME_HEIGHT, |value| value.value.max(0.0)),
         radiant_fraction: radiant_fraction.map_or(DEFAULT_RADIANT_FRACTION, |value| {
             if value.is_nan() {
                 DEFAULT_RADIANT_FRACTION
             } else {
+                // numerics-ok: `setRadiantFraction` is `Math.min(Math.max(value, 0), 1)`.
                 value.clamp(0.0, 1.0)
             }
         }),
