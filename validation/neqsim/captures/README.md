@@ -1197,8 +1197,9 @@ composition's root is the *other* side of the cubic: `Z = 0.34` against the feed
 a gas density of `95.79` kg/m3 against NeqSim's `36.69`. The class reads the feed's composition
 and root for a single phase, and `labelled_phases_at`'s note already said so for the
 composition; the separator and gas-scrubber capacity surfaces now take the root from the feed
-too (`labelled_phases_at_from_feed`). The columns' capacity family keeps the flash's root,
-which is the state its own captures were taken against.
+too (`labelled_phases_at_from_feed`), and so does the columns' capacity family. Its own
+capture rows are single-phase, so the change does not move one of them - which is why the
+family's regression is a unit test at the measured negative-flash state rather than a row.
 
 ## The three-phase separator's vessel state
 
@@ -1223,3 +1224,33 @@ the port stores seconds. **The level setters do not enter it**: `setWaterLevel` 
 the stated-level row carries the same two times as the bare-vessel row.
 `calcInterfaceSettlingTime` is printed as evidence and is not ported - it reads the oil
 phase's NeqSim-default viscosity.
+
+## The anti-surge recycle calculator
+
+`process_anti_surge_recycle.tsv` is `AntiSurgeRecycleCalculator.solve` on the charted machine
+`anti_surgeMachine` builds: the nine-component gas at 24 C and 48 bara, the eight-speed
+`CompressorChartTest` table, speed `11918`, and the surge curve `{2789, 2550, 2500, 2200}`
+m3/hr over `{80, 72, 70, 65}` kJ/kg. **Three states**: 0.30 MSm3/day at a 0.05 control margin,
+4.00 MSm3/day at the same margin, and 0.30 again at 0.10 - the two inside the control line and
+the one above it.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
+  > captures/process_anti_surge_recycle.tsv
+```
+
+**The calculator is a loop around the machine, not a machine.** `solve` runs the compressor
+once, compares `getInletStream().getFlowRate("m3/hr")` with `getSurgeFlowRate() * (1 + margin)`,
+and - where the natural point is short - clones the suction fluid at the cooler's temperature
+and the suction pressure, sets the recycle mass in kg/hr, and joins it to the natural suction
+through a `Mixer`. The fixed point updates the recycle mass by the volume-flow error over the
+mixed inlet's volume per unit mass, damped at 0.8, and stops when the error is under 0.5% of
+the control flow. Each block prints the result's own getters and the machine state the last
+run left behind.
+
+**The converged state is the oracle's own, to six figures.** The port's inlet volume flow is
+2.9% below NeqSim's on the same natural state (the capture's `compressor_inlet_m3_hr` against
+the port's charted case), but the loop drives the *ratio* to the control line, so the converged
+inlet, surge flow and control flow agree to `6e-5` and the recycle mass to `6.1e-5`. The
+`iterations` count is five in both active rows on both implementations, which is why the case
+pins it.

@@ -36,6 +36,8 @@
 //       > captures/process_separator_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
 //       > captures/process_separator_capacity_assessment.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
+//       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
@@ -175,6 +177,9 @@ public class ProcessProbe {
         break;
       case "anti_surge":
         antiSurgeRows();
+        break;
+      case "anti_surge_recycle":
+        antiSurgeRecycleRows();
         break;
       case "compressor_map_lookup":
         compressorMapLookupRows();
@@ -1427,6 +1432,54 @@ public class ProcessProbe {
             compressor.getAntiSurge().getCurrentSurgeFraction(), "kW"));
     print("inlet", compressor.getInletStream());
     print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  // === process.anti_surge_recycle =============================================
+
+  /// `AntiSurgeRecycleCalculator.solve` on the charted machine `antiSurgeMachine` builds - the
+  /// pinned `AntiSurgeRecycleCalculatorTest` states, re-cased on PR.
+  ///
+  /// The natural suction is the machine's own inlet; `solve` runs it, and when its inlet volume
+  /// flow is below the control line it wires a cooled clone of the suction through a mixer and
+  /// converges the recycle mass with the calculator's damped fixed point. The class reports
+  /// m3/hr for the flows and kg/hr for the recycle mass.
+  static void antiSurgeRecycleRows() {
+    antiSurgeRecycleRow("low_flow_margin_005", 0.30, 0.05);
+    antiSurgeRecycleRow("high_flow_no_recycle", 4.00, 0.05);
+    antiSurgeRecycleRow("low_flow_margin_010", 0.30, 0.10);
+  }
+
+  static void antiSurgeRecycleRow(String label, double msm3PerDay, double margin) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(msm3PerDay);
+    Stream suction = (Stream) compressor.getInletStream();
+    neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator calculator =
+        new neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator(compressor, suction);
+    calculator.setSurgeControlMargin(margin);
+    calculator.setRecycleCoolerTemperature(40.0, "C");
+    neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator.Result result =
+        calculator.solve();
+
+    System.out.println(label);
+    System.out.println("surge_control_margin=" + margin);
+    System.out.println("recycle_cooler_temperature_c=40.0");
+    System.out.println("recycle_active=" + result.isRecycleActive());
+    System.out.println("converged=" + result.isConverged());
+    System.out.println("iterations=" + result.getIterations());
+    System.out.println("recycle_mass_flow_kg_hr=" + result.getRecycleMassFlow());
+    System.out.println("inlet_volume_flow_m3_hr=" + result.getInletVolumeFlow());
+    System.out.println("surge_flow_m3_hr=" + result.getSurgeFlow());
+    System.out.println("control_flow_m3_hr=" + result.getControlFlow());
+    System.out.println("distance_to_surge=" + result.getDistanceToSurge());
+    System.out.println("compressor_inlet_m3_hr="
+        + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("compressor_inlet_kg_hr="
+        + compressor.getInletStream().getFlowRate("kg/hr"));
+    System.out.println("compressor_power_kw=" + compressor.getPower("kW"));
+    System.out.println("compressor_outlet_p_bara="
+        + compressor.getOutletStream().getPressure("bara"));
+    print("compressor_inlet", compressor.getInletStream());
+    print("compressor_outlet", compressor.getOutletStream());
     System.out.println();
   }
 

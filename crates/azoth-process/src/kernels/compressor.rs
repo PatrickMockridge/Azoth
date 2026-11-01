@@ -572,7 +572,7 @@ fn polytropic_pressure_ratio(
 /// reports the *incipient* phase's root, whose composition can sit far from the feed's; the
 /// class reads the one phase it holds. A two-phase feed is the beta-weighted mean of its
 /// phases, which is what the system flow sums.
-fn feed_volumetric_flow(feed: &Stream) -> Result<f64> {
+pub(crate) fn feed_volumetric_flow(feed: &Stream) -> Result<f64> {
     let (mixture, _) = feed.mixture()?;
     let flash = pt_flash(&mixture, feed.t, feed.p, &feed.z)?;
     let reduced = mixture.reduced_parameters(feed.t, feed.p)?;

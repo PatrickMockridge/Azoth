@@ -19,6 +19,7 @@ from azoth.core.result import (
     AbsorptionColumnResult,
     ActivityCoefficientRow,
     AmmoniaPhaseResult,
+    AntiSurgeRecycleResult,
     AntoineVaporPressureResult,
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
@@ -352,6 +353,7 @@ from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 __all__ = [
     "absorption_column",
     "ammonia_phase",
+    "anti_surge_recycle",
     "antoine_vapor_pressure",
     "aqueous_viscosity",
     "argon_solid_phase",
@@ -5509,6 +5511,37 @@ def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], g
         reboiler_duty_kw=from_si(result.reboiler_duty_kw.magnitude_si, result.reboiler_duty_kw.unit),
         condenser_duty_kw=from_si(result.condenser_duty_kw.magnitude_si, result.condenser_duty_kw.unit),
         material_grade=result.material_grade,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def anti_surge_recycle(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, curve: list[dict[str, Q]], surge_curve: list[dict[str, Q]], speed: float | None=None, surge_control_margin: float | None=None, recycle_cooler_temperature: Q | None=None, damping: float | None=None, tolerance: float | None=None, max_iterations: int | None=None) -> AntiSurgeRecycleResult:
+    """``process.anti_surge_recycle``, computed in Rust."""
+    spec = _models_gen.model("process.anti_surge_recycle")
+    result = _core.anti_surge_recycle(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_records_to_si(spec, "curve", curve),
+        input_records_to_si(spec, "surge_curve", surge_curve),
+        None if speed is None else speed,
+        None if surge_control_margin is None else surge_control_margin,
+        None if recycle_cooler_temperature is None else input_to_si(spec, "recycle_cooler_temperature", recycle_cooler_temperature),
+        None if damping is None else damping,
+        None if tolerance is None else tolerance,
+        None if max_iterations is None else _count("max_iterations", max_iterations),
+    )
+    return AntiSurgeRecycleResult(
+        recycle_active=result.recycle_active,
+        converged=result.converged,
+        iterations=result.iterations,
+        recycle_mass_flow=from_si(result.recycle_mass_flow.magnitude_si, result.recycle_mass_flow.unit),
+        inlet_volume_flow=from_si(result.inlet_volume_flow.magnitude_si, result.inlet_volume_flow.unit),
+        surge_flow=from_si(result.surge_flow.magnitude_si, result.surge_flow.unit),
+        control_flow=from_si(result.control_flow.magnitude_si, result.control_flow.unit),
+        distance_to_surge=result.distance_to_surge,
         warnings=_warnings(result.warnings),
     )
 

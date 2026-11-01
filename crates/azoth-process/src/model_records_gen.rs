@@ -12,6 +12,7 @@
 use azoth_core::{CalcResult, Warning};
 
 use crate::models::absorption_column::AbsorptionColumnResult;
+use crate::models::anti_surge_recycle::AntiSurgeRecycleResult;
 use crate::models::component_splitter::ComponentSplitterResult;
 use crate::models::compressor::CompressorResult;
 use crate::models::cooler::CoolerResult;
@@ -85,6 +86,25 @@ impl CalcResult for AbsorptionColumnResult {
         "reboiler_duty_kw",
         "condenser_duty_kw",
         "material_grade",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for AntiSurgeRecycleResult {
+    const CALC_ID: &'static str = "process.anti_surge_recycle";
+    const FIELDS: &'static [&'static str] = &[
+        "recycle_active",
+        "converged",
+        "iterations",
+        "recycle_mass_flow",
+        "inlet_volume_flow",
+        "surge_flow",
+        "control_flow",
+        "distance_to_surge",
         "warnings",
     ];
 

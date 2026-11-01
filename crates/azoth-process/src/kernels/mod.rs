@@ -7,6 +7,7 @@
 //! `azoth-eos` rather than adding new physics.
 
 pub mod absorption_column;
+pub mod anti_surge_recycle;
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;

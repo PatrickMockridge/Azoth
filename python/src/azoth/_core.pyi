@@ -2640,6 +2640,18 @@ class AbsorptionColumnResult:
     warnings: list[Warning]
 
 @final
+class AntiSurgeRecycleResult:
+    recycle_active: bool
+    converged: bool
+    iterations: int
+    recycle_mass_flow: Qty
+    inlet_volume_flow: Qty
+    surge_flow: Qty
+    control_flow: Qty
+    distance_to_surge: float
+    warnings: list[Warning]
+
+@final
 class ComponentSplitterResult:
     overhead_n: Qty
     overhead_z: list[float]
@@ -5295,6 +5307,21 @@ def absorption_column(
     material_grade: str | None = None,
     max_operation_pressure: float | None = None,
 ) -> AbsorptionColumnResult: ...
+def anti_surge_recycle(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    curve: list[CompressorCurvePoint],
+    surge_curve: list[CompressorSurgePoint],
+    speed: float | None = None,
+    surge_control_margin: float | None = None,
+    recycle_cooler_temperature: float | None = None,
+    damping: float | None = None,
+    tolerance: float | None = None,
+    max_iterations: float | None = None,
+) -> AntiSurgeRecycleResult: ...
 def component_splitter(
     components: list[str],
     feed_n: float,

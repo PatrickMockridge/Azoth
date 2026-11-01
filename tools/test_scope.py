@@ -331,6 +331,7 @@ NAMESPACE_SMOKE_IDS: dict[str, tuple[str, ...]] = {
         "process.packed_column",
         "process.rate_based_packed_column",
         "process.compressor",
+        "process.anti_surge_recycle",
         "process.tank",
     ),
 }
@@ -343,7 +344,10 @@ NAMESPACE_SMOKE_IDS: dict[str, tuple[str, ...]] = {
 #: table does not name, so a new caller is a gate failure rather than a silent miss.
 KERNEL_CONSUMERS: dict[str, tuple[str, ...]] = {
     "absorption_column": ("stripping_column",),
-    "compressor": ("map_turbo_expander_compressor",),
+    "compressor": (
+        "anti_surge_recycle",
+        "map_turbo_expander_compressor",
+    ),
     # `stripping_column` reaches distillation through `absorption_column`'s kernel.
     "distillation_column": (
         "absorption_column",
@@ -352,7 +356,7 @@ KERNEL_CONSUMERS: dict[str, tuple[str, ...]] = {
     ),
     "expander": ("map_turbo_expander_compressor", "turbo_expander_compressor"),
     "heater": ("cooler",),
-    "mixer": ("ejector", "manifold", "tank"),
+    "mixer": ("anti_surge_recycle", "ejector", "manifold", "tank"),
     "pump": ("compressor",),
     "separator": ("gas_scrubber", "separator_capacity_assessment", "tank"),
     "splitter": ("manifold",),

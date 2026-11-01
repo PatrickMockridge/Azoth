@@ -20,6 +20,7 @@ from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AbsorptionColumnResult,
+    AntiSurgeRecycleResult,
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
@@ -75,6 +76,7 @@ __all__ = [
     "Stream",
     "TearResult",
     "absorption_column",
+    "anti_surge_recycle",
     "catalogue",
     "component_splitter",
     "compressor",
@@ -147,6 +149,7 @@ _SPLITTER = "process.splitter"
 _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
 _TANK = "process.tank"
 _THREE_PHASE_SEPARATOR = "process.three_phase_separator"
+_ANTI_SURGE_RECYCLE = "process.anti_surge_recycle"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -978,6 +981,53 @@ def filter(
         particle_size=particle_size,
         nominal_removal_efficiency=nominal_removal_efficiency,
         inlet_particle_concentration=inlet_particle_concentration,
+    )
+
+
+def anti_surge_recycle(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    curve: list[dict[str, Q]],
+    surge_curve: list[dict[str, Q]],
+    speed: float | None = None,
+    surge_control_margin: float | None = None,
+    recycle_cooler_temperature: Q | None = None,
+    damping: float | None = None,
+    tolerance: float | None = None,
+    max_iterations: int | None = None,
+) -> AntiSurgeRecycleResult:
+    """Converge the cooled recycle that holds a charted compressor on its control line.
+
+    **The object is a loop around :func:`compressor`'s chart branch, not a machine.** It runs
+    the natural suction, compares its inlet volume flow with ``surge * (1 + margin)``, and -
+    where the point is short - wires a cooled clone of the suction through a mixer and converges
+    the recycle mass with a damped fixed point. The run-time recycle block is off throughout,
+    because this loop owns the recycle.
+
+    **A converged pass breaks before updating**, so the reported recycle mass is the one the
+    machine last ran at; an exhausted ``max_iterations`` reports the last update instead. A
+    natural inlet at or above the control line opens nothing and reports ``converged`` true
+    with zero passes.
+
+    See :func:`azoth.process.reference.anti_surge_recycle`.
+    """
+    return resolve(_ANTI_SURGE_RECYCLE)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        curve=curve,
+        surge_curve=surge_curve,
+        speed=speed,
+        surge_control_margin=surge_control_margin,
+        recycle_cooler_temperature=recycle_cooler_temperature,
+        damping=damping,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
     )
 
 

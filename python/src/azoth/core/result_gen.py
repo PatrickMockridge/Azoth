@@ -5589,6 +5589,40 @@ class AbsorptionColumnResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AntiSurgeRecycleResult(_HasWarnings):
+    """Result of ``process.anti_surge_recycle``."""
+
+    CALC_ID: ClassVar[str] = "process.anti_surge_recycle"
+
+    #: whether a recycle was opened: the natural inlet volume flow below the control line.
+    recycle_active: bool
+
+    #: whether a pass met `|control - inlet| < tolerance * control`. **True on the inactive branch**, which performs no pass.
+    converged: bool
+
+    #: passes through the loop: five on the captured low-flow rows, zero when inactive.
+    iterations: int
+
+    #: the converged recycle mass, in the class's own unit. **An exhausted cap reports the last update**, which the machine was not run at.
+    recycle_mass_flow: Q
+
+    #: the machine inlet's actual volumetric flow at the final state, as `getFlowRate("m3/hr")` reports it.
+    inlet_volume_flow: Q
+
+    #: `getSurgeFlowRate()` at the final machine state: the surge curve's flow at the running head.
+    surge_flow: Q
+
+    #: the control line, `surge_flow * (1 + surge_control_margin)`, recomputed at each pass's surge flow.
+    control_flow: Q
+
+    #: `getDistanceToSurge()` at the final machine state: the inlet flow over the surge flow less one.
+    distance_to_surge: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ComponentSplitterResult(_HasWarnings):
     """Result of ``process.component_splitter``."""
 

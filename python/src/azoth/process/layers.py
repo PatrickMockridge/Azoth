@@ -1066,6 +1066,113 @@ def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dump
 
 
+def _anti_surge_recycle(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.anti_surge_recycle`'s layers: the machine the loop converged.
+
+    The record carries the four flows and the distance to surge; **the machine that produced
+    them is the interior**, and the capture prints its inlet's molar flow, pressure,
+    temperature and enthalpy beside the shaft power and the discharge state at the converged
+    recycle mass. This rebuilds that state from the result's own recycle mass through the
+    reference's mixer and machine, so a wrong recycle mass or a wrong mixed state moves the
+    numbers. On the inactive row the recycle is zero and the reconstruction is the natural
+    suction, which is the state `solve` leaves untouched.
+    """
+    from azoth import _models_gen
+    from azoth.core.units import ureg
+    from azoth.eos import components as databank
+    from azoth.process.reference import capacity
+    from azoth.process.reference.anti_surge_recycle import (
+        DEFAULT_COOLER_TEMPERATURE,
+        DEFAULT_DAMPING,
+        DEFAULT_MARGIN,
+        DEFAULT_MAX_ITERATIONS,
+        DEFAULT_SPEED,
+        DEFAULT_TOLERANCE,
+        _machine,
+    )
+    from azoth.process.reference.anti_surge_recycle import (
+        anti_surge_recycle as model,
+    )
+    from azoth.process.reference.mixer import _route
+
+    spec = _models_gen.model("process.anti_surge_recycle")
+
+    def quantity(value: Any, unit: str) -> Any:
+        return ureg.Quantity(float(value), unit)
+
+    def records(name: str) -> list[dict[str, Any]]:
+        fields = spec["inputs"][name]["fields"]
+        return [
+            {
+                key: quantity(value, fields[key]["unit"])
+                for key, value in row.items()
+                if value is not None
+            }
+            for row in inputs[name]
+        ]
+
+    components = [str(name) for name in inputs["components"]]
+    feed_z = [float(value) for value in inputs["feed_z"]]
+    feed_n = float(inputs["feed_n"])
+    feed_p = float(inputs["feed_p"])
+    feed_t = float(inputs["feed_t"])
+    cooler = float(inputs.get("recycle_cooler_temperature", DEFAULT_COOLER_TEMPERATURE))
+    speed = float(inputs.get("speed", DEFAULT_SPEED))
+    margin = float(inputs.get("surge_control_margin", DEFAULT_MARGIN))
+    curve = records("curve")
+    surge_curve = records("surge_curve")
+
+    result = model(
+        components,
+        quantity(feed_n, "mol/s"),
+        feed_z,
+        quantity(feed_p, "Pa"),
+        quantity(feed_t, "K"),
+        curve,
+        surge_curve,
+        speed=speed,
+        surge_control_margin=margin,
+        recycle_cooler_temperature=quantity(cooler, "K"),
+        damping=float(inputs.get("damping", DEFAULT_DAMPING)),
+        tolerance=float(inputs.get("tolerance", DEFAULT_TOLERANCE)),
+        max_iterations=int(inputs.get("max_iterations", DEFAULT_MAX_ITERATIONS)),
+    )
+
+    mixture, _ = databank.mixture_of(components, eos="pr")
+    molar_mass = capacity._molar_mass(mixture, feed_z)
+    recycle_n = result.recycle_mass_flow.to("kg/s").magnitude / molar_mass
+    mixed = _route(
+        components,
+        [feed_n, recycle_n],
+        [list(feed_z), list(feed_z)],
+        [feed_p, feed_p],
+        [feed_t, cooler],
+        None,
+    )
+    machine = _machine(
+        components,
+        mixed.n_total,
+        list(mixed.z),
+        mixed.pressure,
+        mixed.product_t.to("K").magnitude,
+        curve,
+        surge_curve,
+        speed,
+        margin,
+    )
+    return {
+        "compressor_inlet_n": mixed.n_total,
+        "compressor_inlet_P": mixed.pressure / 1.0e5,
+        "compressor_inlet_T": mixed.product_t.to("K").magnitude,
+        "compressor_inlet_h": mixed.h_out,
+        "compressor_inlet_kg_hr": mixed.n_total * molar_mass * 3600.0,
+        "compressor_power_kw": machine.power.to("kW").magnitude,
+        "compressor_outlet_p_bara": machine.outlet_p.to("bar").magnitude,
+        "compressor_outlet_T": machine.outlet_t.to("K").magnitude,
+        "compressor_outlet_h": machine.outlet_h.to("J/mol").magnitude,
+    }
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.separator": _separator,
     "process.hem_release": _hem_release,
@@ -1085,6 +1192,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.gibbs_reactor": _gibbs_reactor,
     "process.plug_flow_reactor": _plug_flow_reactor,
     "process.compressor": _compressor,
+    "process.anti_surge_recycle": _anti_surge_recycle,
     "process.heat_exchanger": _heat_exchanger,
     "process.shortcut_distillation_column": _shortcut_distillation_column,
 }
@@ -1982,6 +2090,30 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_gibbs_reactor.tsv",
         block=5,
         identified_by=(LABEL_KEY, "rwgs_1200k"),
+    ),
+    # The calculator's three states: two recycles below the control line at 0.05 and 0.10
+    # margins, and one natural flow above it. **The block's machine state is the layer**, and
+    # the inactive row's reconstruction is the natural suction, which is what `solve` leaves.
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="the_recycle_holds_the_margin_at_five_percent",
+        capture="process_anti_surge_recycle.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "low_flow_margin_005"),
+    ),
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="a_natural_flow_above_the_control_line_opens_nothing",
+        capture="process_anti_surge_recycle.tsv",
+        block=1,
+        identified_by=(LABEL_KEY, "high_flow_no_recycle"),
+    ),
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="a_ten_percent_margin_moves_the_converged_state",
+        capture="process_anti_surge_recycle.tsv",
+        block=2,
+        identified_by=(LABEL_KEY, "low_flow_margin_010"),
     ),
 )
 

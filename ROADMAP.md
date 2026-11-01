@@ -799,8 +799,8 @@ a claim nothing holds.
   design and a performance or control surface the steady `run` never reads. Owed entry by
   entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
-  catalogue and readers, the anti-surge recycle calculators and controllers (its surge curve,
-  read-outs and run-time recycle block have landed), deposit model and
+  catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
+  recycle block and steady recycle calculator have landed), deposit model and
   `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
   lookups, the `CompressorChartKhader2015` map and the speed-solve mode have landed**;
   `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
@@ -830,8 +830,9 @@ a claim nothing holds.
   chart's two stated sound speeds are closed**: its own surface reads them from
   `eos.sound_speed`, and the class's `830.84` m/s is recorded as its unflashed doubling.
   **Anti-surge landed** - the two boundary splines, the chart's
-  generated surge and stonewall curves, the machine's surge read-outs and `run`'s recycle
-  block. What it left owed is the steady `AntiSurgeRecycleCalculator`, the legacy
+  generated surge and stonewall curves, the machine's surge read-outs, `run`'s recycle
+  block and the steady `AntiSurgeRecycleCalculator` (`process.anti_surge_recycle`). What it
+  left owed is the legacy
   `Calculator.runAntiSurgeCalc` step, `AntiSurgeController` and the dynamic/application layer
   (`AntiSurgeDynamicBenchmark`, `AdvancedAntiSurgeControlSystem`, `CompressorAntiSurgeApplication`,
   `CompressorOperatingHistory`, `RecycleFlowCoordinator`).

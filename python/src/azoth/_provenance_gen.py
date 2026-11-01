@@ -2457,6 +2457,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 2,
         "tests_skipped": 0,
     },
+    'process.anti_surge_recycle': {
+        "calc_id": 'process.anti_surge_recycle',
+        "name": 'Anti-surge recycle calculator',
+        "spec": {'path': 'specs/models/process/anti_surge_recycle.toml', 'sha256': 'fa8cd3f52a05e8c4fa2c2a6b35bf6c6b9572a94b6856386cf220803211f63ec7'},
+        "code": [{'path': 'python/src/azoth/process/reference/anti_surge_recycle.py', 'sha256': 'da2344fbae83401d3b2e5a3ca7be143dcb8193c1cb265ab7c9a8a45d28806afc'}, {'path': 'crates/azoth-process/src/models/anti_surge_recycle.rs', 'sha256': '3b46613397202e3d673d2ce8edf84127d1e9374c5e1b3ae018c2d406ee2efb76'}],
+        "source": 'NeqSim process/equipment/compressor/AntiSurgeRecycleCalculator.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'process.component_splitter': {
         "calc_id": 'process.component_splitter',
         "name": 'Component splitter',

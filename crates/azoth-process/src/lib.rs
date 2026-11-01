@@ -50,15 +50,15 @@ pub use recycle::{Acceleration, RecycleSettings, Residuals};
 // connection carries, while a model takes the record field by field so that a case, a
 // cross-impl test and a NeqSim capture can address it.
 pub use models::{
-    AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
-    DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
-    GasScrubberResult, GibbsReactorResult, HeatExchangerResult, HeaterResult, HemReleaseResult,
-    LeakBlowdownResult, ManifoldResult, MapTurboExpanderResult, MixerResult, PackedColumnResult,
-    PipeResult, PlugFlowReactorResult, PumpResult, RateBasedPackedColumnResult, SeparatorResult,
-    ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
+    AbsorptionColumnResult, AntiSurgeRecycleResult, ComponentSplitterResult, CompressorResult,
+    CoolerResult, DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult,
+    FlareResult, GasScrubberResult, GibbsReactorResult, HeatExchangerResult, HeaterResult,
+    HemReleaseResult, LeakBlowdownResult, ManifoldResult, MapTurboExpanderResult, MixerResult,
+    PackedColumnResult, PipeResult, PlugFlowReactorResult, PumpResult, RateBasedPackedColumnResult,
+    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
-    TurboExpanderResult, absorption_column, component_splitter, compressor, cooler,
-    distillation_column, ejector, expander, filter, flare, gas_scrubber, gibbs_reactor,
+    TurboExpanderResult, absorption_column, anti_surge_recycle, component_splitter, compressor,
+    cooler, distillation_column, ejector, expander, filter, flare, gas_scrubber, gibbs_reactor,
     heat_exchanger, heater, hem_release, leak_blowdown, manifold, map_turbo_expander_compressor,
     mixer, packed_column, pipe, plug_flow_reactor, pump, rate_based_packed_column, separator,
     separator_capacity_assessment, shortcut_distillation_column, splitter, stirred_tank_reactor,

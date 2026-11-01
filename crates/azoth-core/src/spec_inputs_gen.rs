@@ -223,6 +223,7 @@
 //!   - specs/calcs/hydraulics/reynolds_number.toml
 //!   - specs/calcs/hydraulics/tray_hydraulics.toml
 //!   - specs/models/process/absorption_column.toml
+//!   - specs/models/process/anti_surge_recycle.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
 //!   - specs/models/process/cooler.toml
@@ -2646,6 +2647,32 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.absorption_column",
         "max_operation_pressure",
         "pressure",
+    ),
+    ("process.anti_surge_recycle", "feed_n", "molar_flow"),
+    ("process.anti_surge_recycle", "feed_z", "dimensionless"),
+    ("process.anti_surge_recycle", "feed_p", "pressure"),
+    (
+        "process.anti_surge_recycle",
+        "feed_t",
+        "thermodynamic_temperature",
+    ),
+    ("process.anti_surge_recycle", "speed", "dimensionless"),
+    (
+        "process.anti_surge_recycle",
+        "surge_control_margin",
+        "dimensionless",
+    ),
+    (
+        "process.anti_surge_recycle",
+        "recycle_cooler_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("process.anti_surge_recycle", "damping", "dimensionless"),
+    ("process.anti_surge_recycle", "tolerance", "dimensionless"),
+    (
+        "process.anti_surge_recycle",
+        "max_iterations",
+        "dimensionless",
     ),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),

@@ -1,0 +1,180 @@
+id = "process.anti_surge_recycle"
+name = "Anti-surge recycle calculator"
+kind = "procedure"
+assumptions = [
+    "**the run-time recycle block stays off.** The calculator owns the recycle, so every machine run here is the chart's fixed-speed branch with `anti_surge_active` false; the class's `run` block is `process.compressor`'s own input.",
+    "**the control line is the surge flow times `1 + margin`.** The class resolves a margin set on the calculator first, then the compressor's, then 0.05; this id carries the one input, and absent is the calculator's 0.05.",
+    "**the recycle is a cooled clone of the suction.** Its composition is the feed's, its pressure the suction's and its temperature `recycle_cooler_temperature`; a mixer joins it to the natural suction isenthalpically.",
+    "**the loop is a damped fixed point on the recycle mass.** Each pass divides the volume-flow error by the mixed inlet's volume per unit mass, applies `damping`, and floors the result at zero.",
+    "**convergence is relative to the control flow**: `|control - inlet| < tolerance * control`, and a solve that exhausts `max_iterations` reports the last pass with `converged` false.",
+    "**the recycle mass reported is the one last run when converged, and the last update when not.** The class breaks before updating, so an exhausted cap names a mass the machine was not run at.",
+    "**an inactive solve performs no pass.** A natural inlet at or above the control flow reports `recycle_active` false, zero recycle, `iterations` zero and the natural distance to surge.",
+    "**the machine is the charted one, so the polytropic efficiency is the chart's.** The chart branch never reads an isentropic efficiency; this id states the reversible limit only because `process.compressor` requires one to refuse a state it never uses.",
+    "**the speed is the class field's, not the calculator's.** Absent is `Compressor.speed`'s 3000 rpm; the captured machine runs at 11918.",
+    "**`distance_to_surge` is the final machine's.** It is the mixed inlet flow over the surge flow less one, so a converged recycle sits just above the margin rather than exactly on it.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/AntiSurgeRecycleCalculator.java` is the port source, through its `solve`.",
+    "`validation/neqsim/captures/process_anti_surge_recycle.tsv` - three PR rows: two below the control line at 0.05 and 0.10 margins, and one above it with no recycle.",
+]
+[source]
+standard = "NeqSim process/equipment/compressor/AntiSurgeRecycleCalculator.java"
+edition = "`solve`: the natural run, the control-line comparison, and the damped fixed point that mixes a cooled clone of the suction back into the machine."
+[algorithm]
+scheme = "damped_fixed_point_recycle"
+initialisation = "shortfall_over_inlet_volume_times_feed_mass"
+convergence = "relative"
+tolerance = 0.005
+max_iterations = 20
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the natural suction's molar flow, before any recycle.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural suction's composition, which the recycle clone shares.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the suction pressure, which the recycle clone is set to and the mixer's outlet keeps.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the suction temperature, which fixes the natural inlet's volume flow.\n"
+[inputs.curve]
+type = "record_list"
+row_type = "CompressorCurvePoint"
+description = "the manufacturer's map, one row per point, in the order the chart states them. The head is in metres; a kJ/kg curve is multiplied by `1000/9.81`.\n"
+[inputs.curve.fields.speed]
+unit = "dimensionless"
+description = "the speed the point was measured at, rpm; the reduced variables divide by it.\n"
+[inputs.curve.fields.flow]
+unit = "m**3/h"
+description = "the measured actual flow, which becomes `Q/N`.\n"
+[inputs.curve.fields.head]
+unit = "m"
+description = "the measured polytropic head in metres, the class's default `headUnit`; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.curve.fields.efficiency]
+unit = "dimensionless"
+description = "the measured polytropic efficiency as a fraction; the class's percent column is divided by `100`. Fitted against the same `flow`.\n"
+[inputs.surge_curve]
+type = "record_list"
+row_type = "CompressorSurgePoint"
+description = "the surge boundary's measured (flow, head) rows, in the same units as `curve`. **A machine with no boundary has no surge flow to hold to**, which is why this is required.\n"
+[inputs.surge_curve.fields.flow]
+unit = "m**3/h"
+description = "the measured flow at the boundary, m3/hr.\n"
+[inputs.surge_curve.fields.head]
+unit = "m"
+description = "the measured head at the boundary, in metres; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.speed]
+unit = "dimensionless"
+optional = true
+description = "the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`.\n"
+[inputs.surge_control_margin]
+unit = "dimensionless"
+optional = true
+description = "`setSurgeControlMargin`: the control line as a fraction above the surge flow. Absent takes the calculator's `0.05`, and a negative margin is refused as the class's compressor setter refuses it.\n"
+[inputs.recycle_cooler_temperature]
+unit = "K"
+optional = true
+description = "`setRecycleCoolerTemperature`: the recycle clone's temperature. Absent takes the class's 40 C, `313.15` K.\n"
+[inputs.damping]
+unit = "dimensionless"
+optional = true
+description = "`setDamping`: the fixed-point relaxation in `(0, 1]`. Absent takes the class's `0.8`.\n"
+[inputs.tolerance]
+unit = "dimensionless"
+optional = true
+description = "`setTolerance`: the convergence gate, as a fraction of the control flow. Absent takes the class's `0.005`.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+optional = true
+description = "`setMaxIterations`: the fixed-point cap. Absent takes the class's `20`.\n"
+[outputs]
+[outputs.recycle_active]
+type = "boolean"
+description = "whether a recycle was opened: the natural inlet volume flow below the control line.\n"
+[outputs.converged]
+type = "boolean"
+description = "whether a pass met `|control - inlet| < tolerance * control`. **True on the inactive branch**, which performs no pass.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "passes through the loop: five on the captured low-flow rows, zero when inactive.\n"
+[outputs.recycle_mass_flow]
+unit = "kg/h"
+description = "the converged recycle mass, in the class's own unit. **An exhausted cap reports the last update**, which the machine was not run at.\n"
+[outputs.inlet_volume_flow]
+unit = "m**3/h"
+description = "the machine inlet's actual volumetric flow at the final state, as `getFlowRate(\"m3/hr\")` reports it.\n"
+[outputs.surge_flow]
+unit = "m**3/h"
+description = "`getSurgeFlowRate()` at the final machine state: the surge curve's flow at the running head.\n"
+[outputs.control_flow]
+unit = "m**3/h"
+description = "the control line, `surge_flow * (1 + surge_control_margin)`, recomputed at each pass's surge flow.\n"
+[outputs.distance_to_surge]
+unit = "dimensionless"
+description = "`getDistanceToSurge()` at the final machine state: the inlet flow over the surge flow less one.\n"
+[[valid_range]]
+quantity = "feed_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a suction that carries nothing has no volume flow to hold to a control line"
+[[valid_range]]
+quantity = "feed_p"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure, and the recycle clone is set to it"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the reduced variables divide by the speed"
+[[valid_range]]
+quantity = "surge_control_margin"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "`setSurgeControlMargin` throws on a negative fraction"
+[[valid_range]]
+quantity = "recycle_cooler_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "damping"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the class documents the relaxation as `(0, 1]`; zero never moves the first guess and above one overshoots it"
+[[valid_range]]
+quantity = "tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a zero gate asks for an exact fixed point, which no pass can prove"
+[[valid_range]]
+quantity = "max_iterations"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a cap below one runs no pass, so nothing is calculated"
+[implementations]
+python = "azoth.process.anti_surge_recycle"
+rust = "azoth_process::anti_surge_recycle"

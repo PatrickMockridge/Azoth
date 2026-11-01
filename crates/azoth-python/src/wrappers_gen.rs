@@ -5434,6 +5434,71 @@ pub fn reynolds_number(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Anti-surge recycle calculator.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, curve, surge_curve, speed, surge_control_margin, recycle_cooler_temperature, damping, tolerance, max_iterations))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, curve, surge_curve, speed, surge_control_margin, recycle_cooler_temperature, damping, tolerance, max_iterations)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn anti_surge_recycle(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    curve: Vec<crate::records_gen::CompressorCurvePoint>,
+    surge_curve: Vec<crate::records_gen::CompressorSurgePoint>,
+    speed: Option<f64>,
+    surge_control_margin: Option<f64>,
+    recycle_cooler_temperature: Option<f64>,
+    damping: Option<f64>,
+    tolerance: Option<f64>,
+    max_iterations: Option<usize>,
+) -> PyResult<crate::transport_gen::PyAntiSurgeRecycleResult> {
+    let curve_records: Vec<azoth_process::models::compressor::CompressorCurvePoint> = curve
+        .into_iter()
+        .map(
+            |row| azoth_process::models::compressor::CompressorCurvePoint {
+                speed: row.speed,
+                flow: cubic_meters_per_second(row.flow),
+                head: meters(row.head),
+                efficiency: row.efficiency,
+            },
+        )
+        .collect();
+    let surge_curve_records: Vec<azoth_process::models::compressor::CompressorSurgePoint> =
+        surge_curve
+            .into_iter()
+            .map(
+                |row| azoth_process::models::compressor::CompressorSurgePoint {
+                    flow: cubic_meters_per_second(row.flow),
+                    head: meters(row.head),
+                },
+            )
+            .collect();
+    azoth_process::models::anti_surge_recycle::anti_surge_recycle(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        &curve_records,
+        &surge_curve_records,
+        speed,
+        surge_control_margin,
+        recycle_cooler_temperature.map(kelvins),
+        damping,
+        tolerance,
+        max_iterations,
+    )
+    .map(|r| crate::transport_gen::PyAntiSurgeRecycleResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Component splitter.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

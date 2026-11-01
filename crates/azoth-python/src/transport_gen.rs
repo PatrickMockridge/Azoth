@@ -13999,6 +13999,91 @@ impl From<&azoth_process::models::absorption_column::AbsorptionColumnResult>
         }
     }
 }
+/// Result of `process.anti_surge_recycle`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AntiSurgeRecycleResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAntiSurgeRecycleResult {
+    /// whether a recycle was opened: the natural inlet volume flow below the control line.
+    #[pyo3(get)]
+    pub recycle_active: bool,
+    /// whether a pass met `|control - inlet| < tolerance * control`. **True on the inactive branch**, which performs no pass.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// passes through the loop: five on the captured low-flow rows, zero when inactive.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// the converged recycle mass, in the class's own unit. **An exhausted cap reports the last update**, which the machine was not run at.
+    #[pyo3(get)]
+    pub recycle_mass_flow: PyQty,
+    /// the machine inlet's actual volumetric flow at the final state, as `getFlowRate("m3/hr")` reports it.
+    #[pyo3(get)]
+    pub inlet_volume_flow: PyQty,
+    /// `getSurgeFlowRate()` at the final machine state: the surge curve's flow at the running head.
+    #[pyo3(get)]
+    pub surge_flow: PyQty,
+    /// the control line, `surge_flow * (1 + surge_control_margin)`, recomputed at each pass's surge flow.
+    #[pyo3(get)]
+    pub control_flow: PyQty,
+    /// `getDistanceToSurge()` at the final machine state: the inlet flow over the surge flow less one.
+    #[pyo3(get)]
+    pub distance_to_surge: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAntiSurgeRecycleResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AntiSurgeRecycleResult(recycle_active={:?}, converged={:?}, iterations={:?}, recycle_mass_flow={:?}, inlet_volume_flow={:?}, surge_flow={:?}, control_flow={:?}, distance_to_surge={:?}, {} warning(s))",
+            self.recycle_active,
+            self.converged,
+            self.iterations,
+            self.recycle_mass_flow,
+            self.inlet_volume_flow,
+            self.surge_flow,
+            self.control_flow,
+            self.distance_to_surge,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult>
+    for PyAntiSurgeRecycleResult
+{
+    fn from(r: &azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult) -> Self {
+        Self {
+            recycle_active: r.recycle_active,
+            converged: r.converged,
+            iterations: r.iterations,
+            recycle_mass_flow: PyQty {
+                magnitude_si: r.recycle_mass_flow.value,
+                unit: "kg/h".to_string(),
+            },
+            inlet_volume_flow: PyQty {
+                magnitude_si: r.inlet_volume_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            surge_flow: PyQty {
+                magnitude_si: r.surge_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            control_flow: PyQty {
+                magnitude_si: r.control_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            distance_to_surge: r.distance_to_surge,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.component_splitter`, transported.
 #[pyclass(
     frozen,

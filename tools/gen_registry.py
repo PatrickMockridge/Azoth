@@ -255,6 +255,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # expected block from the raw spec and asserts the field, and `test_cross_impl`
         # compares it on both results.
         "is_overloaded",
+        # `anti_surge_recycle`'s recycle flag, a boolean with no slot in `TestCase`.
+        # `python/tests/models/test_model_cases.py` runs every case through the selected
+        # backend and compares the declared flag, and `test_cross_impl` compares it on both
+        # results.
+        "recycle_active",
     }
 )
 
