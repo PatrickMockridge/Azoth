@@ -7234,6 +7234,21 @@ class ThreePhaseSeparatorResult(_HasWarnings):
     #: the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.
     heavy_liquid_h: Q
 
+    #: the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default.
+    water_level: Q | None
+
+    #: the stored oil level, clamped at zero. Present as `water_level` is.
+    oil_level: Q | None
+
+    #: `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are.
+    oil_thickness: Q | None
+
+    #: `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.**
+    oil_retention_time: Q | None
+
+    #: `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
+    water_retention_time: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

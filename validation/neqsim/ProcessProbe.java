@@ -4363,10 +4363,39 @@ public class ProcessProbe {
     double[] dryZ = new double[] { 0.7, 0.3 };
     runThreePhase("dry_feed pressure_drop_bara=0 heat_input_W=0 entrainment=none", dry, dryZ,
         feed(dry, dryZ, 300.0, 20.0, 1.0), 0.0, null, null, null, 0.0);
+
+    // The vessel rows. **Retention is a mechanical-design read**: NLL and NIL are fractions
+    // of the internal diameter (0.5 and 0.2 by default) and the effective liquid length is
+    // `0.82 * separatorLength`, so the geometry is what makes the numbers exist.
+    threePhaseVessel("vessel_d1000_l3000_retention", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, null, null);
+    // The level setters clamp at zero; a stated level does not move the retention times,
+    // which read the mechanical design's NLL/NIL rather than these fields.
+    threePhaseVessel("levels_water_030_oil_060", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, 0.3, 0.6);
+    threePhaseVessel("levels_negative_clamped", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, -1.0, -0.5);
+    threePhaseVessel("vessel_dry_feed", dry, dryZ, feed(dry, dryZ, 300.0, 20.0, 1.0), 1.0, 3.0,
+        null, null);
   }
 
   static void runThreePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
       Double heatInputW, String fromPhase, String toPhase, double entrainment) {
+    threePhase(label, names, z, inlet, dropBara, heatInputW, fromPhase, toPhase, entrainment, null,
+        null, null, null);
+  }
+
+  /// A row that also states the vessel: geometry for the retention times, and the levels the
+  /// class's setters clamp.
+  static void threePhaseVessel(String label, String[] names, double[] z, Stream inlet,
+      double diameterM, double lengthM, Double waterLevelM, Double oilLevelM) {
+    threePhase(label, names, z, inlet, 0.0, null, null, null, 0.0, diameterM, lengthM,
+        waterLevelM, oilLevelM);
+  }
+
+  static void threePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
+      Double heatInputW, String fromPhase, String toPhase, double entrainment, Double diameterM,
+      Double lengthM, Double waterLevelM, Double oilLevelM) {
     neqsim.process.equipment.separator.ThreePhaseSeparator separator =
         new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
     if (dropBara != 0.0) {
@@ -4381,12 +4410,47 @@ public class ProcessProbe {
       // per direction, and a direction it does not name is silently ignored upstream.
       separator.setEntrainment(entrainment, "mole", "feed", fromPhase, toPhase);
     }
+    if (diameterM != null) {
+      separator.setInternalDiameter(diameterM);
+    }
+    if (lengthM != null) {
+      separator.setSeparatorLength(lengthM);
+    }
+    if (waterLevelM != null) {
+      separator.setWaterLevel(waterLevelM);
+    }
+    if (oilLevelM != null) {
+      separator.setOilLevel(oilLevelM);
+    }
     separator.run();
     System.out.println(label);
     print("feed", inlet);
     printOrEmpty("vapour", separator.getGasOutStream());
     printOrEmpty("light_liquid", separator.getOilOutStream());
     printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    if (diameterM != null || waterLevelM != null || oilLevelM != null) {
+      System.out.println("water_level_m=" + separator.getWaterLevel());
+      System.out.println("oil_level_m=" + separator.getOilLevel());
+      System.out.println("oil_thickness_m=" + separator.getOilThickness());
+    }
+    if (diameterM != null) {
+      SystemInterface system = separator.getThermoSystem();
+      System.out.println("nll_m=" + separator.getMechanicalDesign().getNLL());
+      System.out.println("nil_m=" + separator.getMechanicalDesign().getNIL());
+      System.out.println("effective_liquid_length_m="
+          + separator.getMechanicalDesign().getEffectiveLengthLiquid());
+      for (String phase : new String[] {"oil", "aqueous"}) {
+        if (system.hasPhaseType(phase)) {
+          System.out.println(phase + "_density_kg_m3="
+              + system.getPhase(phase).getDensity("kg/m3"));
+          System.out.println(phase + "_flow_m3_hr="
+              + system.getPhase(phase).getFlowRate("m3/hr"));
+        }
+      }
+      System.out.println("oil_retention_time_min=" + separator.calcOilRetentionTime());
+      System.out.println("water_retention_time_min=" + separator.calcWaterRetentionTime());
+      System.out.println("interface_settling_time_min=" + separator.calcInterfaceSettlingTime());
+    }
     System.out.println();
   }
 

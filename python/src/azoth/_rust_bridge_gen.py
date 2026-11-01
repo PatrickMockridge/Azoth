@@ -6728,7 +6728,7 @@ def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed
     )
 
 
-def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None) -> ThreePhaseSeparatorResult:
+def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None, internal_diameter: Q | None=None, separator_length: Q | None=None, nll_fraction: float | None=None, nil_fraction: float | None=None, water_level: Q | None=None, oil_level: Q | None=None) -> ThreePhaseSeparatorResult:
     """``process.three_phase_separator``, computed in Rust."""
     spec = _models_gen.model("process.three_phase_separator")
     result = _core.three_phase_separator(
@@ -6745,6 +6745,12 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         aqueous_in_gas,
         aqueous_in_oil,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
+        None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
+        None if nll_fraction is None else nll_fraction,
+        None if nil_fraction is None else nil_fraction,
+        None if water_level is None else input_to_si(spec, "water_level", water_level),
+        None if oil_level is None else input_to_si(spec, "oil_level", oil_level),
     )
     return ThreePhaseSeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -6762,6 +6768,11 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         heavy_liquid_p=from_si(result.heavy_liquid_p.magnitude_si, result.heavy_liquid_p.unit),
         heavy_liquid_t=from_si(result.heavy_liquid_t.magnitude_si, result.heavy_liquid_t.unit),
         heavy_liquid_h=from_si(result.heavy_liquid_h.magnitude_si, result.heavy_liquid_h.unit),
+        water_level=None if result.water_level is None else from_si(result.water_level.magnitude_si, result.water_level.unit),
+        oil_level=None if result.oil_level is None else from_si(result.oil_level.magnitude_si, result.oil_level.unit),
+        oil_thickness=None if result.oil_thickness is None else from_si(result.oil_thickness.magnitude_si, result.oil_thickness.unit),
+        oil_retention_time=None if result.oil_retention_time is None else from_si(result.oil_retention_time.magnitude_si, result.oil_retention_time.unit),
+        water_retention_time=None if result.water_retention_time is None else from_si(result.water_retention_time.magnitude_si, result.water_retention_time.unit),
         warnings=_warnings(result.warnings),
     )
 

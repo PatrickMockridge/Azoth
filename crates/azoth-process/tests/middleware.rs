@@ -492,8 +492,10 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
     // tenth, the compressor's speed the eleventh, and the expander's polytropic efficiency the
     // twelfth. **The separator's capacity surface adds three** - its diameter, its design gas
-    // load factor and its design liquid level - the thirteenth to fifteenth.
-    assert_eq!(checked, 128, "the bounds this test walked");
+    // load factor and its design liquid level - the thirteenth to fifteenth. **The three-phase
+    // separator's vessel adds four** - its diameter, its tan-tan length and its two level
+    // fractions - the sixteenth to nineteenth.
+    assert_eq!(checked, 132, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -639,8 +641,10 @@ fn the_generated_input_table_is_the_models_own() {
     // speed-solve mode's four**, on the same model: `solve_speed`, `min_speed`, `max_speed` and
     // `limit_speed` - `553 + 4 = 557`. **And then the separator's capacity surface's four** -
     // `internal_diameter`, `design_gas_load_factor`, `orientation` and
-    // `design_liquid_level_fraction` - `557 + 4 = 561`.
-    assert_eq!(walked, 561, "the inputs this test walked");
+    // `design_liquid_level_fraction` - `557 + 4 = 561`. **And the three-phase separator's
+    // vessel's six** - `internal_diameter`, `separator_length`, `nll_fraction`, `nil_fraction`,
+    // `water_level` and `oil_level` - `561 + 6 = 567`.
+    assert_eq!(walked, 567, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

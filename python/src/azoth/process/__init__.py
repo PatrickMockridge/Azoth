@@ -1648,6 +1648,12 @@ def three_phase_separator(
     aqueous_in_gas: float = 0.0,
     aqueous_in_oil: float = 0.0,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    separator_length: Q | None = None,
+    nll_fraction: float | None = None,
+    nil_fraction: float | None = None,
+    water_level: Q | None = None,
+    oil_level: Q | None = None,
 ) -> ThreePhaseSeparatorResult:
     """Flash a stream into vapour, oil and aqueous outlets.
 
@@ -1660,9 +1666,15 @@ def three_phase_separator(
     each moves a share of the *current* from-phase's moles, component by component, in
     ``run``'s own order, so a later pair reads what an earlier one left.
 
+    ``internal_diameter`` and ``separator_length`` are both or neither and add the two
+    retention times: the class's mechanical-design NLL/NIL (``nll_fraction``, ``nil_fraction``,
+    defaults ``0.5`` and ``0.2``) turn the vessel into the oil and water volumes, over each
+    phase's own flow. ``water_level``/``oil_level`` are the class's stored, zero-clamped level
+    state and do not move the retention times.
+
     Raises:
-        InvalidInputError: where the pressure drop takes the outlet below zero or a fraction
-            is outside ``[0, 1]``.
+        InvalidInputError: where the pressure drop takes the outlet below zero, a fraction
+            is outside ``[0, 1]``, or half a vessel is stated.
 
     See :func:`azoth.process.reference.three_phase_separator`.
     """
@@ -1680,6 +1692,12 @@ def three_phase_separator(
         aqueous_in_gas=aqueous_in_gas,
         aqueous_in_oil=aqueous_in_oil,
         heat_input=heat_input,
+        internal_diameter=internal_diameter,
+        separator_length=separator_length,
+        nll_fraction=nll_fraction,
+        nil_fraction=nil_fraction,
+        water_level=water_level,
+        oil_level=oil_level,
     )
 
 

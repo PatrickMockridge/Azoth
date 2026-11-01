@@ -32,6 +32,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `aqueous_in_gas` | dimensionless | the fraction of the aqueous phase's moles carried into the vapour. |
 | `aqueous_in_oil` | dimensionless | the fraction of the aqueous phase's moles carried into the oil. |
 | `heat_input` | W | *Optional.* heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies, and the temperature that carries it is solved for. |
+| `internal_diameter` | m | *Optional.* the vessel's internal diameter, which the retention geometry divides. **Stated with `separator_length` or not at all**; absent means the two retention outputs are absent. |
+| `separator_length` | m | *Optional.* the tan-tan length, which `getEffectiveLengthLiquid` is `0.82` of. Stated with the diameter or not at all. |
+| `nll_fraction` | dimensionless | *Optional.* the normal liquid level as a fraction of the internal diameter; absent is the mechanical design's `0.5`. Refused without the diameter and length. |
+| `nil_fraction` | dimensionless | *Optional.* the normal oil-water interface as a fraction of the internal diameter; absent is `0.2`. Refused without the vessel. |
+| `water_level` | m | *Optional.* the water level the class's setter stores, clamped at zero. **It does not move the retention times**, which read NLL and NIL. |
+| `oil_level` | m | *Optional.* the oil level the class's setter stores, clamped at zero; `oil_thickness` is this less `water_level`. |
 
 
 ## Outputs
@@ -53,6 +59,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `heavy_liquid_p` | Pa | the aqueous outlet's pressure, the same as the vapour's. |
 | `heavy_liquid_t` | K | the aqueous outlet's temperature, the same as the vapour's. |
 | `heavy_liquid_h` | J/mol | the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing. |
+| `water_level` | m | *Optional.* the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default. |
+| `oil_level` | m | *Optional.* the stored oil level, clamped at zero. Present as `water_level` is. |
+| `oil_thickness` | m | *Optional.* `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are. |
+| `oil_retention_time` | s | *Optional.* `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.** |
+| `water_retention_time` | s | *Optional.* `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -64,6 +75,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `aqueous_in_gas >= 0 and aqueous_in_gas <= 1` | raises | a fraction of a phase's moles, which cannot exceed the phase |
 | `aqueous_in_oil >= 0 and aqueous_in_oil <= 1` | raises | a fraction of a phase's moles, which cannot exceed the phase |
 | `feed_t > 0` | raises | an absolute temperature, and the feed's is the one it resolves |
+| `internal_diameter > 0` | raises | a diameter is a positive length, and the segment areas are zero at zero |
+| `separator_length > 0` | raises | a length is a positive length, and the effective liquid length is a fraction of it |
+| `nll_fraction >= 0 and nll_fraction <= 1` | raises | a level fraction of the internal diameter |
+| `nil_fraction >= 0 and nil_fraction <= 1` | raises | a level fraction of the internal diameter |
 
 ## Assumptions
 
@@ -76,7 +91,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the six fractions are declared, and their order is part of the answer.** Each moves a share of the *current* from-phase's moles, so `gas_in_oil` after `gas_in_aqueous` moves a share of what is left - the order `run` applies them in is the order here.
 - **an absent phase is a zero-flow outlet.** NeqSim answers with a `1e-20 kg/hr` clone of the whole system, whose composition need not sum to one and whose enthalpy is that clone's own; both rows of the capture that have one are declared rather than pinned.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `ThreePhaseSeparator` also carries water and oil levels, three outlet valve fractions, a droplet-performance calculator and a `runTransient`. **None is here**: every one of them reads a transient or mechanical state the steady `run` does not.
+- **levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.
+- **a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.
+- **the three outlet valve fractions are not parameters here.** The class stores and clamps them, and its steady `run` split never reads them - only its mass and energy-balance reporting does, which this port does not publish. A parameter nothing here can honour is not declared.
+- **`calcInterfaceSettlingTime` is owed.** It reads the oil phase's viscosity through NeqSim's default `PhysicalProperties` model, which the port does not carry; the droplet-performance calculator and `runTransient` are owed with it.
 
 ## Cases
 
@@ -88,11 +106,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `an_entrainment_moves_a_share_of_the_vapour_into_the_oil` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.05, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0 | vapour_n = 0.5455533078606538, vapour_z = [0.8323862772745304, 0.1660566096135076, 0.0015571131119619512], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.2999342332541, light_liquid_n = 0.25541845667948126, light_liquid_z = [0.17966168473187838, 0.819859574971875, 0.00047874029624656907], light_liquid_p = 2000000.0, light_liquid_t = 300.0, light_liquid_h = -15266.81397537301, heavy_liquid_n = 0.199028235459865, heavy_liquid_z = [1.3949914078317068e-08, 1.299159027526262e-15, 0.9999999860500847], heavy_liquid_p = 2000000.0, heavy_liquid_t = 300.0, heavy_liquid_h = -44702.48623278945 |
 | `an_entrainment_out_of_the_oil_re_runs_the_vapour` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.05, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0 | vapour_n = 0.5856018960876607, vapour_z = [0.8181515293017343, 0.1803148749555399, 0.0015335957427256757], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 185.79332639291266, light_liquid_n = 0.21536986845247452, light_liquid_z = [0.09699086751349374, 0.9026669734727175, 0.0003421590138866759], light_liquid_p = 2000000.0, light_liquid_t = 300.0, light_liquid_h = -17267.597049152402, heavy_liquid_n = 0.199028235459865, heavy_liquid_z = [1.3949914078317068e-08, 1.299159027526262e-15, 0.9999999860500847], heavy_liquid_p = 2000000.0, heavy_liquid_t = 300.0, heavy_liquid_h = -44702.48623278945 |
 | `a_dry_feed_has_no_aqueous_outlet` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0 | vapour_n = 0.8182211906421439, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915932, light_liquid_n = 0.18177880935785606, light_liquid_z = [0.09718095876744991, 0.9028190412325501], light_liquid_p = 2000000.0, light_liquid_t = 300.0, light_liquid_h = -17268.958496924708, heavy_liquid_n = 0.0, heavy_liquid_p = 2000000.0, heavy_liquid_t = 300.0 |
+| `the_oil_and_water_retention_times` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0 | oil_retention_time = 30594.1093051814, water_retention_time = 75509.66866276872 |
+| `a_stated_level_is_stored_and_clamped` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0, water_level = 0.3, oil_level = 0.6 | water_level = 0.3, oil_level = 0.6, oil_thickness = 0.3, oil_retention_time = 30594.1093051814, water_retention_time = 75509.66866276872 |
+| `a_negative_level_clamps_to_zero` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0, water_level = -1.0, oil_level = -0.5 | water_level = 0.0, oil_level = 0.0, oil_thickness = 0.0 |
+| `a_dry_feed_has_no_water_retention` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0 | oil_retention_time = 38150.41417616906 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 6 declared, every one run
+- Tests: 10 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -102,4 +124,4 @@ declared checks *that call* could not evaluate.
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.
-- `validation/neqsim/captures/process_three_phase_separator.tsv` - six rows: no drop, a 2 bar drop, a 1000 W heat input, the two entrainment directions, and a dry feed whose aqueous outlet is the empty clone.
+- `validation/neqsim/captures/process_three_phase_separator.tsv` - ten rows: no drop, a 2 bar drop, a 1000 W heat input, the two entrainment directions and a dry feed; then a stated vessel, a stated pair of levels, a negative pair, and the dry feed in the same vessel.

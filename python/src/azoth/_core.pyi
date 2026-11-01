@@ -3207,6 +3207,11 @@ class ThreePhaseSeparatorResult:
     heavy_liquid_p: Qty
     heavy_liquid_t: Qty
     heavy_liquid_h: Qty
+    water_level: Qty | None
+    oil_level: Qty | None
+    oil_thickness: Qty | None
+    oil_retention_time: Qty | None
+    water_retention_time: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5852,6 +5857,12 @@ def three_phase_separator(
     aqueous_in_gas: float,
     aqueous_in_oil: float,
     heat_input: float | None = None,
+    internal_diameter: float | None = None,
+    separator_length: float | None = None,
+    nll_fraction: float | None = None,
+    nil_fraction: float | None = None,
+    water_level: float | None = None,
+    oil_level: float | None = None,
 ) -> ThreePhaseSeparatorResult: ...
 def throttling_valve(
     components: list[str],

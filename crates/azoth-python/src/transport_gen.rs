@@ -18260,6 +18260,21 @@ pub struct PyThreePhaseSeparatorResult {
     /// the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.
     #[pyo3(get)]
     pub heavy_liquid_h: PyQty,
+    /// the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default.
+    #[pyo3(get)]
+    pub water_level: Option<PyQty>,
+    /// the stored oil level, clamped at zero. Present as `water_level` is.
+    #[pyo3(get)]
+    pub oil_level: Option<PyQty>,
+    /// `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are.
+    #[pyo3(get)]
+    pub oil_thickness: Option<PyQty>,
+    /// `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.**
+    #[pyo3(get)]
+    pub oil_retention_time: Option<PyQty>,
+    /// `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
+    #[pyo3(get)]
+    pub water_retention_time: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18269,7 +18284,7 @@ pub struct PyThreePhaseSeparatorResult {
 impl PyThreePhaseSeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, {} warning(s))",
+            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, water_level={:?}, oil_level={:?}, oil_thickness={:?}, oil_retention_time={:?}, water_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -18285,6 +18300,11 @@ impl PyThreePhaseSeparatorResult {
             self.heavy_liquid_p,
             self.heavy_liquid_t,
             self.heavy_liquid_h,
+            self.water_level,
+            self.oil_level,
+            self.oil_thickness,
+            self.oil_retention_time,
+            self.water_retention_time,
             self.warnings.len()
         )
     }
@@ -18346,6 +18366,26 @@ impl From<&azoth_process::models::three_phase_separator::ThreePhaseSeparatorResu
                 magnitude_si: r.heavy_liquid_h.value,
                 unit: "J/mol".to_string(),
             },
+            water_level: r.water_level.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_level: r.oil_level.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_thickness: r.oil_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_retention_time: r.oil_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            water_retention_time: r.water_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

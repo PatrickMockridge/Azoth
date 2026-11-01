@@ -3816,6 +3816,28 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.three_phase_separator", "heat_input", "power"),
+    (
+        "process.three_phase_separator",
+        "internal_diameter",
+        "length",
+    ),
+    (
+        "process.three_phase_separator",
+        "separator_length",
+        "length",
+    ),
+    (
+        "process.three_phase_separator",
+        "nll_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.three_phase_separator",
+        "nil_fraction",
+        "dimensionless",
+    ),
+    ("process.three_phase_separator", "water_level", "length"),
+    ("process.three_phase_separator", "oil_level", "length"),
     ("process.throttling_valve", "inlet_n", "molar_flow"),
     ("process.throttling_valve", "inlet_z", "dimensionless"),
     ("process.throttling_valve", "inlet_p", "pressure"),

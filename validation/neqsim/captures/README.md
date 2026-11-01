@@ -1199,3 +1199,27 @@ and root for a single phase, and `labelled_phases_at`'s note already said so for
 composition; the separator and gas-scrubber capacity surfaces now take the root from the feed
 too (`labelled_phases_at_from_feed`). The columns' capacity family keeps the flash's root,
 which is the state its own captures were taken against.
+
+## The three-phase separator's vessel state
+
+`process_three_phase_separator.tsv` is `ThreePhaseSeparator.run` on a 0.5/0.3/0.2
+methane/n-butane/water feed at 300 K and 20 bar: the plain flash, a pressure drop, a heat
+input, two entrainment transfers and a dry feed. **Four rows append the vessel**: a 1 m
+diameter and 3 m tan-tan length, a stated pair of levels, a negative pair, and the dry feed in
+the same vessel.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_separator \
+  > captures/process_three_phase_separator.tsv
+```
+
+**The retention times are a mechanical-design read.** `calcOilRetentionTime` takes NLL and NIL
+from `getMechanicalDesign()` - `0.5` and `0.2` of the internal diameter by default - and the
+effective liquid length from `getEffectiveLengthLiquid()`, which is `0.82 * separatorLength`.
+The oil's volume is the circular segment between NIL and NLL, the water's the segment below
+NIL, each times that length, over the phase's own volumetric flow. The class reports minutes;
+the port stores seconds. **The level setters do not enter it**: `setWaterLevel` and
+`setOilLevel` store separate fields, clamp at zero, and only `getOilThickness` reads them, so
+the stated-level row carries the same two times as the bare-vessel row.
+`calcInterfaceSettlingTime` is printed as evidence and is not ported - it reads the oil
+phase's NeqSim-default viscosity.

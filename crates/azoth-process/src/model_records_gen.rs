@@ -850,6 +850,11 @@ impl CalcResult for ThreePhaseSeparatorResult {
         "heavy_liquid_p",
         "heavy_liquid_t",
         "heavy_liquid_h",
+        "water_level",
+        "oil_level",
+        "oil_thickness",
+        "oil_retention_time",
+        "water_retention_time",
         "warnings",
     ];
 

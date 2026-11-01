@@ -42,6 +42,7 @@ end at the same temperature, so the balance across the transfer is open by what 
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -74,6 +75,12 @@ def three_phase_separator(
     aqueous_in_gas: float,
     aqueous_in_oil: float,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    separator_length: Q | None = None,
+    nll_fraction: float | None = None,
+    nil_fraction: float | None = None,
+    water_level: Q | None = None,
+    oil_level: Q | None = None,
 ) -> ThreePhaseSeparatorResult:
     """Flash a stream into vapour, oil and aqueous outlets.
 
@@ -92,9 +99,15 @@ def three_phase_separator(
         aqueous_in_oil: the fraction of the aqueous phase's moles carried into the oil.
         heat_input: heat added before the flash, or ``None`` for a flash at the feed's
             temperature.
+        internal_diameter: the vessel's diameter, with ``separator_length`` or not at all.
+        separator_length: the tan-tan length, which the effective liquid length is 0.82 of.
+        nll_fraction: the normal liquid level as a fraction of the diameter; absent is 0.5.
+        nil_fraction: the normal interface level as a fraction of the diameter; absent is 0.2.
+        water_level: the stored water level, clamped at zero.
+        oil_level: the stored oil level, clamped at zero.
 
     Returns:
-        All three outlets' records.
+        All three outlets' records, and the vessel state where one was stated.
 
     Raises:
         InvalidInputError: where the pressure drop takes the outlet below zero or a
@@ -139,14 +152,73 @@ def three_phase_separator(
         "aqueous_in_gas": aqueous_in_gas,
         "aqueous_in_oil": aqueous_in_oil,
     }
+    # **The vessel block is both or neither**, and the two fractions shape it: a retention
+    # time needs a diameter and a length, and half a vessel has none.
+    diameter = (
+        None
+        if internal_diameter is None
+        else input_to_si(spec, "internal_diameter", internal_diameter)
+    )
+    length = (
+        None
+        if separator_length is None
+        else input_to_si(spec, "separator_length", separator_length)
+    )
     apply_checks(
         checks.on_input,
-        {"feed_t": t, "pressure_drop": drop, **fractions}.get,
+        {
+            "feed_t": t,
+            "pressure_drop": drop,
+            **fractions,
+            "internal_diameter": diameter,
+            "separator_length": length,
+            "nll_fraction": nll_fraction,
+            "nil_fraction": nil_fraction,
+        }.get,
         warnings,
     )
+    if (diameter is None) != (length is None):
+        named, missing = (
+            ("internal_diameter", "separator_length")
+            if diameter is not None
+            else ("separator_length", "internal_diameter")
+        )
+        raise InvalidInputError(
+            missing,
+            f"`{named}` was stated and `{missing}` was not, and a retention time needs both",
+        )
+    if diameter is None:
+        for stated, value in (("nll_fraction", nll_fraction), ("nil_fraction", nil_fraction)):
+            if value is not None:
+                raise InvalidInputError(
+                    stated, f"`{stated}` was stated without the vessel it is a fraction of"
+                )
+    nll = 0.5 if nll_fraction is None else float(nll_fraction)
+    nil = 0.2 if nil_fraction is None else float(nil_fraction)
 
     duty = None if heat_input is None else input_to_si(spec, "heat_input", heat_input)
     states = _route(components, n, feed_z, p, feed_t, drop, fractions, duty)
+
+    # **A level is stored state, and the setter clamps at zero.** It does not enter the
+    # retention times, which read NLL and NIL - the class's own split of the two.
+    clamped_water = (
+        None if water_level is None else max(0.0, _finite(spec, "water_level", water_level))
+    )
+    clamped_oil = None if oil_level is None else max(0.0, _finite(spec, "oil_level", oil_level))
+    has_levels = clamped_water is not None or clamped_oil is not None
+    water = 0.0 if clamped_water is None else clamped_water
+    oil = 0.0 if clamped_oil is None else clamped_oil
+
+    oil_time: float | None = None
+    water_time: float | None = None
+    if diameter is not None and length is not None:
+        t_out = states.temperature.to("K").magnitude
+        oil_time = _retention(
+            components, t_out, states.p_out, states.oil, diameter, length, nll, nil, oil=True
+        )
+        water_time = _retention(
+            components, t_out, states.p_out, states.aqueous, diameter, length, nll, nil, oil=False
+        )
 
     return ThreePhaseSeparatorResult(
         vapour_n=from_si(states.vapour.n, "mol/s"),
@@ -164,6 +236,11 @@ def three_phase_separator(
         heavy_liquid_p=from_si(states.p_out, "Pa"),
         heavy_liquid_t=states.temperature,
         heavy_liquid_h=from_si(states.aqueous.h, "J/mol"),
+        water_level=None if not has_levels else from_si(water, "m"),
+        oil_level=None if not has_levels else from_si(oil, "m"),
+        oil_thickness=None if not has_levels else from_si(max(0.0, oil - water), "m"),
+        oil_retention_time=None if oil_time is None else from_si(oil_time, "s"),
+        water_retention_time=None if water_time is None else from_si(water_time, "s"),
         warnings=tuple(warnings),
     )
 
@@ -413,6 +490,84 @@ def _solve_temperature(
         else:
             high = middle
     return 0.5 * (low + high)
+
+
+def _finite(spec: dict[str, object], field: str, value: Q) -> float:
+    """A stated level in SI, refused when it is not finite.
+
+    A negative level is the class's to clamp, so it is not refused here; a NaN or an infinity
+    is a value no state carries, and ``Math.max(0, NaN)`` would store it.
+    """
+    number = input_to_si(spec, field, value)
+    if not math.isfinite(number):
+        raise InvalidInputError(field, f"a level is a finite length, and {number} is not")
+    return number
+
+
+def _segment_area(diameter: float, level_height: float) -> float:
+    """``Separator.calcSegmentArea``: the circular segment below a stated height.
+
+    The height is clamped to the diameter, and the upper half is the full circle less its
+    complement - the class's own two branches.
+    """
+    radius = diameter / 2.0
+    height = min(level_height, diameter)
+    if height <= 0.0:
+        return 0.0
+    if height <= radius:
+        theta = math.acos((radius - height) / radius)
+        return radius * radius * theta - (radius - height) * math.sqrt(
+            2.0 * radius * height - height * height
+        )
+    complement = diameter - height
+    theta = math.acos((radius - complement) / radius)
+    lower = radius * radius * theta - (radius - complement) * math.sqrt(
+        2.0 * radius * complement - complement * complement
+    )
+    return math.pi * radius * radius - lower
+
+
+def _retention(
+    components: list[str],
+    t: float,
+    p: float,
+    outlet: Outlet,
+    diameter: float,
+    length: float,
+    nll_fraction: float,
+    nil_fraction: float,
+    *,
+    oil: bool,
+) -> float | None:
+    """One retention time in seconds, or ``None`` where the class answers ``Infinity``.
+
+    The oil's volume is the segment between NIL and NLL; the water's is the segment below
+    NIL. Both times the effective liquid length, `0.82 * length`, over the phase's own
+    volumetric flow. An absent phase, or a zero flow, has no retention time to report.
+    """
+    from azoth.process.reference.capacity import _mass_density, _molar_mass
+
+    if outlet.n <= 0.0:
+        return None
+    mixture, _ = _components.mixture_of(components, eos="pr")
+    reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(t)
+    composition = list(outlet.z)
+    root = phase_state(reduced, kij, composition, liquid=True).z
+    density = _mass_density(mixture, t, p, composition, root)
+    if not density > 0.0 or not math.isfinite(density):
+        return None
+    flow = outlet.n * _molar_mass(mixture, composition) / density
+    if not flow > 0.0 or not math.isfinite(flow):
+        return None
+    nll = nll_fraction * diameter
+    nil = nil_fraction * diameter
+    area = (
+        _segment_area(diameter, nll) - _segment_area(diameter, nil)
+        if oil
+        else _segment_area(diameter, nil)
+    )
+    return area * 0.82 * length / flow
 
 
 def _spec() -> dict[str, object]:

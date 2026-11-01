@@ -813,8 +813,10 @@ a claim nothing holds.
   mechanical-design gas limit; what remains owed there is the droplet-performance calculator,
   `getGasLoadFactor(int)`'s inventory derating, `getDeRatedGasLoadFactor`, the
   `sizeFromFlow`/`autoSize` gas-area sizing and the mechanical design;
-  `ThreePhaseSeparator`'s levels and
-  outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
+  **`ThreePhaseSeparator`'s levels and its oil/water retention times landed**; still owed there
+  are the three outlet valve fractions (stored but read only by the class's mass-balance
+  report), `calcInterfaceSettlingTime` (NeqSim's default phase viscosity) and the droplet
+  calculator; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The

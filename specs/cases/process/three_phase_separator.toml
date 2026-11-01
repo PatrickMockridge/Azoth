@@ -197,3 +197,102 @@ light_liquid_h = -17268.958496924708
 heavy_liquid_n = 0.0
 heavy_liquid_p = 2000000.0
 heavy_liquid_t = 300.0
+
+[[cases]]
+id = "the_oil_and_water_retention_times"
+tolerance = 0.0002
+source = "The capture's seventh row: the three-way feed in a 1 m vessel 3 m long. **Retention is a mechanical-design read**: NLL is `0.5 * ID`, NIL `0.2 * ID` and the effective liquid length `0.82 * 3 = 2.46` m, so the oil's volume is the segment between them and the water's the segment below NIL. The class reports minutes; this pins seconds - `30594.1093` and `75509.6687`. **The vessel is what makes the numbers exist**, so the outputs are absent without it.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.0
+separator_length = 3.0
+[cases.expected]
+oil_retention_time = 30594.1093051814
+water_retention_time = 75509.66866276872
+
+[[cases]]
+id = "a_stated_level_is_stored_and_clamped"
+tolerance = 0.0002
+source = "The capture's eighth row: `setWaterLevel(0.3)` and `setOilLevel(0.6)` on the same vessel. **The levels are stored state and do not move the retention times**, which read NLL/NIL - the two rows carry the same `30594.1093` and `75509.6687` - and `getOilThickness` is the difference, `0.3` m.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.0
+separator_length = 3.0
+water_level = 0.3
+oil_level = 0.6
+[cases.expected]
+water_level = 0.3
+oil_level = 0.6
+oil_thickness = 0.3
+oil_retention_time = 30594.1093051814
+water_retention_time = 75509.66866276872
+
+[[cases]]
+id = "a_negative_level_clamps_to_zero"
+tolerance = 0.0002
+source = "The capture's ninth row: `setWaterLevel(-1.0)` and `setOilLevel(-0.5)`. **Both setters clamp at zero**, so the stored levels are `0.0` and the thickness `0.0` - the class accepts the input and reports the clamp, which is why this id does not refuse a negative level at the boundary.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.0
+separator_length = 3.0
+water_level = -1.0
+oil_level = -0.5
+[cases.expected]
+water_level = 0.0
+oil_level = 0.0
+oil_thickness = 0.0
+
+[[cases]]
+id = "a_dry_feed_has_no_water_retention"
+tolerance = 0.0002
+source = "The capture's tenth row: the two-phase methane/n-butane feed in the same vessel. The oil retention is `38150.4142` s; **the water retention is absent**, because the class answers `Infinity` with no aqueous phase and this port does not publish an infinity.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.0
+separator_length = 3.0
+[cases.expected]
+oil_retention_time = 38150.414176169064
