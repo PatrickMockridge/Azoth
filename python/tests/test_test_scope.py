@@ -299,6 +299,74 @@ def test_the_smoke_ids_do_not_open_a_registry_sweep() -> None:
     assert module.selection_terms(commands) == ""
     joined = " ".join(entry.command for entry in commands if entry.kind == module.PYTEST)
     assert "eos.pt_flash" in joined
+    # And the bounded process sample is policy too: a shared file selects it in the cross-impl
+    # command and must not narrow a sweep to it.
+    commands, _ = module.scope(["python/src/azoth/process/layers.py"], module.crate_edges())
+    assert module.selection_terms(commands) == ""
+    joined = " ".join(entry.command for entry in commands if entry.kind == module.PYTEST)
+    assert "process.separator" in joined
+
+
+def test_a_process_model_source_names_its_id_not_the_namespace() -> None:
+    """**The 48-minute push, in one assertion.** A one-model change selected all 33 process
+    ids; the model file names its own id and the bounded sample stays out of it."""
+    joined = " ".join(commands_for(["crates/azoth-process/src/models/separator.rs"]))
+    assert "process.separator" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined, "a leaf does not pull in the sample"
+
+
+def test_a_process_kernel_names_its_same_stem_model() -> None:
+    joined = " ".join(commands_for(["crates/azoth-process/src/kernels/pipe.rs"]))
+    assert "process.pipe" in joined
+    assert '-k "process."' not in joined
+
+
+def test_a_separator_kernel_reaches_its_consumers() -> None:
+    """`kernels/separator.rs` serves gas_scrubber, tank and the assessment as well."""
+    joined = " ".join(commands_for(["crates/azoth-process/src/kernels/separator.rs"]))
+    for consumer in (
+        "process.separator",
+        "process.gas_scrubber",
+        "process.tank",
+        "process.separator_capacity_assessment",
+    ):
+        assert consumer in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_reference_module_names_its_model() -> None:
+    joined = " ".join(commands_for(["python/src/azoth/process/reference/heater.py"]))
+    assert "process.heater" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_model_spec_selects_only_its_id() -> None:
+    joined = " ".join(commands_for(["specs/models/process/heater.toml"]))
+    assert "process.heater" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_shared_process_file_selects_the_bounded_sample() -> None:
+    module = tool()
+    joined = " ".join(commands_for(["python/src/azoth/process/reference/_phase_outlet.py"]))
+    assert '-k "process."' not in joined
+    for smoke in module.NAMESPACE_SMOKE_IDS["process"]:
+        assert smoke in joined
+
+
+def test_a_namespace_without_a_sample_keeps_the_dot() -> None:
+    """The bound is opt-in: a namespace with no entry behaves exactly as before."""
+    joined = " ".join(commands_for(["python/src/azoth/eos/flash.py"]))
+    assert '-k "eos."' in joined
+
+
+def test_every_namespace_sample_is_registered_and_local() -> None:
+    module = tool()
+    assert module.table_problems() == []
 
 
 def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:

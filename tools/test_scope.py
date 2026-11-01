@@ -211,6 +211,11 @@ class Claim:
     #: A path that reaches no test **and that no test should reach** - a licence, a gitignore.
     #: The distinction from an empty claim is the whole point: this one has to say why.
     inert: str = ""
+    #: The path names a **namespace**, not one of its ids - so the bounded sample applies.
+    #: A model or kernel file names its own id and does not need the sample; a spec names its
+    #: id too. A shared file (`layers.py`, `segment/phase.rs`, `__init__.py`) is what the
+    #: sample is for.
+    shared: bool = False
 
     def empty(self) -> bool:
         """True when the claim places the path nowhere and names no reason."""
@@ -304,6 +309,54 @@ SMOKE_IDS: tuple[str, ...] = (
     "characterization.delumping",
     "standards.iso6976",
 )
+
+#: A bounded per-namespace sample, for a namespace whose change would otherwise select every
+#: id it has. **A namespace with no entry keeps the `ns.` term**, so this is opt-in and the
+#: other namespaces' golden behaviour is untouched.
+#:
+#: `process` is the first entry because its 33 ids are what made the push `python-test` job
+#: take 48m23s of a 60-minute ceiling: a one-model change selected all of them. The sample is
+#: the families the shared process code serves, so a change to `segment/phase.rs`,
+#: `layers.py` or `__init__.py` still runs the separator, column, rotating and vessel paths.
+#:
+#: **A sample is not a reached set.** `selection_terms` subtracts it before narrowing a
+#: registry-wide sweep, for the same reason it subtracts `SMOKE_IDS`: narrowing to a policy
+#: sample would be the whole sweep wearing a shorter name.
+NAMESPACE_SMOKE_IDS: dict[str, tuple[str, ...]] = {
+    "process": (
+        "process.separator",
+        "process.gas_scrubber",
+        "process.distillation_column",
+        "process.absorption_column",
+        "process.packed_column",
+        "process.rate_based_packed_column",
+        "process.compressor",
+        "process.tank",
+    ),
+}
+
+#: The models a kernel file also serves, beyond its own stem.
+#:
+#: `kernels/separator.rs` is the separator's arithmetic, and `gas_scrubber`, `tank` and the
+#: capacity assessment call it; a change to it reaches all four. `table_problems` parses every
+#: `models/*.rs` and `kernels/*.rs` for `kernels::<stem>` imports and refuses a consumer the
+#: table does not name, so a new caller is a gate failure rather than a silent miss.
+KERNEL_CONSUMERS: dict[str, tuple[str, ...]] = {
+    "absorption_column": ("stripping_column",),
+    "compressor": ("map_turbo_expander_compressor",),
+    # `stripping_column` reaches distillation through `absorption_column`'s kernel.
+    "distillation_column": (
+        "absorption_column",
+        "packed_column",
+        "stripping_column",
+    ),
+    "expander": ("map_turbo_expander_compressor", "turbo_expander_compressor"),
+    "heater": ("cooler",),
+    "mixer": ("ejector", "manifold", "tank"),
+    "pump": ("compressor",),
+    "separator": ("gas_scrubber", "separator_capacity_assessment", "tank"),
+    "splitter": ("manifold",),
+}
 
 #: The wall-clock budget each lane is held to, in minutes. The tool enforces the local run
 #: with a process-group watchdog and renders a matching `timeout` for CI; `--max-minutes`
@@ -673,6 +726,22 @@ def namespace_targets(namespace: str) -> tuple[str, ...]:
     return targets
 
 
+def kernel_importers() -> dict[str, set[str]]:
+    """The model and kernel stems that import each ``kernels::<stem>``, read from the sources.
+
+    Only ``src/models/*.rs`` and ``src/kernels/*.rs`` are scanned: those are the files a
+    registered id names, and an internal helper module (``column/designer.rs``) belongs to the
+    model whose directory it sits in rather than being an id of its own.
+    """
+    out: dict[str, set[str]] = {}
+    root = ROOT / "crates" / "azoth-process" / "src"
+    for sub in ("models", "kernels"):
+        for path in (root / sub).glob("*.rs"):
+            for match in re.finditer(r"kernels::([a-z_]+)", path.read_text(encoding="utf-8")):
+                out.setdefault(match.group(1), set()).add(path.stem)
+    return out
+
+
 def table_problems() -> list[str]:
     """Everything wrong with the tables, as messages. Empty is the only good answer."""
     problems: list[str] = []
@@ -708,6 +777,46 @@ def table_problems() -> list[str]:
             f"SMOKE_IDS names {unknown_smoke}, which are not registered ids - a `-k` on one "
             "selects nothing, and that looks like a pass"
         )
+    for namespace, sample in NAMESPACE_SMOKE_IDS.items():
+        if namespace not in discovered_namespaces():
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS names {namespace!r}, which is not a namespace the "
+                "specs or the sources declare"
+            )
+        if not sample:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] is empty, so the namespace would select "
+                "no id at all - give it a sample or remove the entry"
+            )
+        unknown = sorted(set(sample) - registered_ids())
+        if unknown:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] names {unknown}, which are not registered "
+                "ids - a `-k` on one selects nothing, and that looks like a pass"
+            )
+        foreign = sorted(id_ for id_ in sample if not id_.startswith(f"{namespace}."))
+        if foreign:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] names {foreign}, which are another "
+                "namespace's ids"
+            )
+    for stem, consumers in KERNEL_CONSUMERS.items():
+        kernel_file = ROOT / "crates" / "azoth-process" / "src" / "kernels" / f"{stem}.rs"
+        if not kernel_file.exists():
+            problems.append(f"KERNEL_CONSUMERS names {stem!r}, and {kernel_file} does not exist")
+        unknown = sorted({f"process.{consumer}" for consumer in consumers} - registered_ids())
+        if unknown:
+            problems.append(
+                f"KERNEL_CONSUMERS[{stem!r}] names {unknown}, which are not registered ids"
+            )
+    for stem, importers in kernel_importers().items():
+        expected = {stem} | set(KERNEL_CONSUMERS.get(stem, ()))
+        missing = sorted(importers - expected)
+        if missing:
+            problems.append(
+                f"the kernel {stem!r} is imported by {missing}, which KERNEL_CONSUMERS does "
+                "not name - a change to it would reach them and the scope would not run them"
+            )
     triggered = SPEC_GENERATORS | DATA_GENERATORS | CAPTURE_GENERATORS
     for entry in generator_sweep():
         stem = Path(entry.command.split()[1]).stem
@@ -723,6 +832,29 @@ def table_problems() -> list[str]:
                 "to it would reach no Python test"
             )
     return problems
+
+
+def model_ids_for_crate_path(parts: list[str]) -> tuple[str, ...]:
+    """The registered ids a model-shaped crate source names, possibly none.
+
+    ``models/<leaf>.rs`` names the model of its stem. ``kernels/<leaf>.rs`` names that model
+    and every consumer `KERNEL_CONSUMERS` lists for it - `kernels/separator.rs` is four ids,
+    not one. A shared file (``mod.rs``, ``lib.rs``, ``segment/...``) names none and keeps the
+    namespace claim, which is what `NAMESPACE_SMOKE_IDS` bounds.
+    """
+    if len(parts) != 5 or parts[3] not in ("models", "kernels"):
+        return ()
+    namespace = crate_namespaces().get(parts[1])
+    if namespace is None:
+        return ()
+    stem = parts[4].removesuffix(".rs")
+    found: list[str] = []
+    candidate = f"{namespace}.{stem}"
+    if candidate in registered_ids():
+        found.append(candidate)
+    if parts[3] == "kernels":
+        found.extend(f"{namespace}.{consumer}" for consumer in KERNEL_CONSUMERS.get(stem, ()))
+    return tuple(dict.fromkeys(found))
 
 
 def claims(path: str) -> Claim:
@@ -741,7 +873,8 @@ def claims(path: str) -> Claim:
         # otherwise name all twelve members, because every crate reads it.
         if parts[-1].endswith("_gen.rs"):
             return Claim(generated=True)
-        return Claim(crates=(parts[1],))
+        ids = model_ids_for_crate_path(parts)
+        return Claim(crates=(parts[1],), ids=ids, shared=not ids)
 
     if parts[0] == "python":
         return python_claim(path, parts)
@@ -937,7 +1070,14 @@ def python_claim(path: str, parts: list[str]) -> Claim:
                 f" so a change to it reaches nothing. Known: {sorted(MODULE_TESTS)}."
             )
         return Claim(files=targets)
-    return Claim(namespaces=(parts[3],))
+    # **A reference module names its model.** `reference/<leaf>.py` is the Python twin of the
+    # registered id's kernel, so it can say which id it reaches rather than the namespace; a
+    # shared helper (`_column_mesh.py`, `capacity.py`) matches no id and keeps the claim.
+    if len(parts) == 6 and parts[4] == "reference":
+        candidate = f"{parts[3]}.{parts[5].removesuffix('.py')}"
+        if candidate in registered_ids():
+            return Claim(ids=(candidate,), namespaces=(parts[3],))
+    return Claim(namespaces=(parts[3],), shared=True)
 
 
 def specs_claim(path: str, parts: list[str]) -> Claim:
@@ -1182,7 +1322,9 @@ def id_named_files(ids: set[str]) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
-def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> list[Command]:
+def python_commands(
+    namespaces: set[str], ids: set[str], files: set[str], shared: set[str]
+) -> list[Command]:
     """The pytest invocations for those namespaces, ids and files."""
     out: list[Command] = []
     for path in sorted(files):
@@ -1202,19 +1344,39 @@ def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> lis
             out.append(Command(f"the {namespace} namespace's own tests", PYTEST, target))
             if (ROOT / target).is_dir():
                 covered.append(str(ROOT / target) + "/")
-        # **A change inside a namespace reaches that whole namespace**, whether or not a spec
+        # **A change inside a namespace reaches that namespace's ids**, whether or not a spec
         # moved with it: only a `specs/` path contributed ids before, so `azoth/standards/...`
-        # reached nothing - and the file it changed was real code. The term is the namespace and
-        # a dot, which pytest accepts (`-k "process."` selects 106 of 431), rather than a hundred
-        # ids that nobody can check by reading.
+        # reached nothing - and the file it changed was real code.
+        #
+        # **A bounded namespace uses its sample rather than the dot.** `process`'s 33 ids were
+        # what made a one-model push take 48 minutes of a 60-minute ceiling; its sample is the
+        # families the shared process code serves. A namespace with no sample keeps the dot,
+        # so the other namespaces are unchanged.
         namespace_ids = set(ids_of(namespace))
         if namespace_ids:
-            terms.add(f"{namespace}.")
-            named |= set(id_named_files(namespace_ids))
+            sample = NAMESPACE_SMOKE_IDS.get(namespace)
+            if sample is None:
+                terms.add(f"{namespace}.")
+                named |= set(id_named_files(namespace_ids))
+            else:
+                # **The sample is for a namespace reached as a namespace.** A model or kernel
+                # file names its own ids, and a spec names its id; adding the sample to those
+                # would run every family for a one-model change - the over-selection this
+                # exists to remove. A path with no id in this namespace (a shared file, or a
+                # lockfile that reaches every crate) still gets the sample.
+                reached = {id_ for id_ in ids if id_.startswith(f"{namespace}.")}
+                if namespace in shared or not reached:
+                    terms |= set(sample)
+                named |= set(id_named_files(reached))
     named = {path for path in named if not any(str(ROOT / path).startswith(d) for d in covered)}
 
     if terms:
-        unknown = sorted(ids - registered_ids())
+        # **Every term, not just the spec-contributed ids.** A sample that has drifted would
+        # otherwise emit a `-k` that selects less in silence; `table_problems` catches it at
+        # `--audit`, and this catches it on the run.
+        unknown = sorted(
+            term for term in terms if not term.endswith(".") and term not in registered_ids()
+        )
         if unknown:
             raise SystemExit(
                 f"test_scope: {unknown} are not registered ids, so a `-k` naming them selects "
@@ -1251,6 +1413,7 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
     """Every command the paths reach, and the paths nothing claimed."""
     crates: set[str] = set()
     namespaces: set[str] = set()
+    shared: set[str] = set()
     ids: set[str] = set()
     files: set[str] = set()
     tools: set[str] = set()
@@ -1269,6 +1432,8 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
             continue
         crates |= set(claim.crates)
         namespaces |= set(claim.namespaces)
+        if claim.shared:
+            shared |= set(claim.namespaces)
         ids |= set(claim.ids)
         files |= set(claim.files)
         tools |= set(claim.tools)
@@ -1291,7 +1456,7 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
         jobs |= set(crate_side.jobs)
 
     commands = rust_scope(crates, edges) + commands
-    commands += python_commands(namespaces, ids, files)
+    commands += python_commands(namespaces, ids, files, shared)
 
     for tool in sorted(tools):
         script = next(
@@ -1660,10 +1825,13 @@ def sweep_line(
 
 
 def selection_terms(commands: list[Command]) -> str:
-    """The ids and namespace terms the scope selected, minus the smoke.
+    """The ids and namespace terms the scope selected, minus the samples.
 
-    The smoke ids are one per namespace by construction, not a reached set: narrowing a
-    registry-wide sweep to them would be the full sweep wearing nine names.
+    The smoke ids are one per namespace by construction, and `NAMESPACE_SMOKE_IDS` is a
+    bounded per-namespace sample; neither is a reached set, so narrowing a registry-wide sweep
+    to one would be the full sweep wearing a shorter name. An id a spec or a model file really
+    names is subtracted too when it happens to be in a sample (already true of
+    `process.compressor`), which skips that sweep rather than widening it - the safe direction.
     """
     terms: set[str] = set()
     for entry in commands:
@@ -1673,6 +1841,8 @@ def selection_terms(commands: list[Command]) -> str:
         if found:
             terms |= {term.strip() for term in found.group(1).split(" or ")}
     terms -= set(SMOKE_IDS)
+    for sample in NAMESPACE_SMOKE_IDS.values():
+        terms -= set(sample)
     return " or ".join(sorted(terms))
 
 
