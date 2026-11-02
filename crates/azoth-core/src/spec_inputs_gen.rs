@@ -248,6 +248,7 @@
 //!   - specs/models/process/rate_based_packed_column.toml
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/separator_capacity_assessment.toml
+//!   - specs/models/process/separator_performance.toml
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
 //!   - specs/models/process/stirred_tank_reactor.toml
@@ -3582,6 +3583,124 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.separator_capacity_assessment",
         "mechanical_design_max_gas_flow",
         "volume_rate",
+    ),
+    (
+        "process.separator_performance",
+        "gas_density",
+        "mass_density",
+    ),
+    (
+        "process.separator_performance",
+        "oil_density",
+        "mass_density",
+    ),
+    (
+        "process.separator_performance",
+        "water_density",
+        "mass_density",
+    ),
+    (
+        "process.separator_performance",
+        "gas_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "process.separator_performance",
+        "oil_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "process.separator_performance",
+        "water_viscosity",
+        "dynamic_viscosity",
+    ),
+    ("process.separator_performance", "gas_velocity", "velocity"),
+    ("process.separator_performance", "vessel_diameter", "length"),
+    ("process.separator_performance", "vessel_length", "length"),
+    (
+        "process.separator_performance",
+        "liquid_level_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "gas_liquid_characteristic_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "gas_liquid_spread",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "gas_bubble_characteristic_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "gas_bubble_spread",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "oil_in_water_characteristic_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "oil_in_water_spread",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "water_in_oil_characteristic_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "water_in_oil_spread",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "mist_eliminator_cut_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "mist_eliminator_sharpness",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "mist_eliminator_max_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "oil_water_coalescer_cut_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "oil_water_coalescer_max_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "liquid_in_gas_calibration_factor",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "gas_carry_under_calibration_factor",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "liquid_liquid_calibration_factor",
+        "dimensionless",
     ),
     (
         "process.shortcut_distillation_column",

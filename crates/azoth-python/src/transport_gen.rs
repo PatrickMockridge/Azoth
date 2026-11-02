@@ -17629,6 +17629,97 @@ impl From<&azoth_process::models::separator_capacity_assessment::SeparatorCapaci
         }
     }
 }
+/// Result of `process.separator_performance`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SeparatorPerformanceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySeparatorPerformanceResult {
+    /// the oil fraction carried out with the gas: `1 - overall_gas_liquid_efficiency` when an oil phase and a gas-liquid distribution exist.
+    #[pyo3(get)]
+    pub oil_in_gas: f64,
+    /// the water fraction carried out with the gas. **In a three-phase state this is the whole entrainment too**, not a split of it.
+    #[pyo3(get)]
+    pub water_in_gas: f64,
+    /// the gas fraction carried under into the oil: `1 - ` the bubble gravity efficiency.
+    #[pyo3(get)]
+    pub gas_in_oil: f64,
+    /// the gas fraction carried under into the water, which is the same value as `gas_in_oil`.
+    #[pyo3(get)]
+    pub gas_in_water: f64,
+    /// the oil fraction left in the water after the 300 s gravity stage and the coalescer.
+    #[pyo3(get)]
+    pub oil_in_water: f64,
+    /// the water fraction left in the oil after the 300 s gravity stage and the coalescer.
+    #[pyo3(get)]
+    pub water_in_oil: f64,
+    /// the gravity stage's integrated capture efficiency; zero when the gravity section is excluded or no gas-liquid distribution is stated.
+    #[pyo3(get)]
+    pub gravity_section_efficiency: f64,
+    /// the mist eliminator's integrated capture efficiency; zero without one.
+    #[pyo3(get)]
+    pub mist_eliminator_efficiency: f64,
+    /// the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present.
+    #[pyo3(get)]
+    pub overall_gas_liquid_efficiency: f64,
+    /// the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated.
+    #[pyo3(get)]
+    pub liquid_liquid_gravity_efficiency: f64,
+    /// the gas section's critical droplet diameter; zero without a gas-liquid distribution.
+    #[pyo3(get)]
+    pub gravity_cut_diameter: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySeparatorPerformanceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, {} warning(s))",
+            self.oil_in_gas,
+            self.water_in_gas,
+            self.gas_in_oil,
+            self.gas_in_water,
+            self.oil_in_water,
+            self.water_in_oil,
+            self.gravity_section_efficiency,
+            self.mist_eliminator_efficiency,
+            self.overall_gas_liquid_efficiency,
+            self.liquid_liquid_gravity_efficiency,
+            self.gravity_cut_diameter,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::separator_performance::SeparatorPerformanceResult>
+    for PySeparatorPerformanceResult
+{
+    fn from(r: &azoth_process::models::separator_performance::SeparatorPerformanceResult) -> Self {
+        Self {
+            oil_in_gas: r.oil_in_gas,
+            water_in_gas: r.water_in_gas,
+            gas_in_oil: r.gas_in_oil,
+            gas_in_water: r.gas_in_water,
+            oil_in_water: r.oil_in_water,
+            water_in_oil: r.water_in_oil,
+            gravity_section_efficiency: r.gravity_section_efficiency,
+            mist_eliminator_efficiency: r.mist_eliminator_efficiency,
+            overall_gas_liquid_efficiency: r.overall_gas_liquid_efficiency,
+            liquid_liquid_gravity_efficiency: r.liquid_liquid_gravity_efficiency,
+            gravity_cut_diameter: PyQty {
+                magnitude_si: r.gravity_cut_diameter.value,
+                unit: "m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.shortcut_distillation_column`, transported.
 #[pyclass(
     frozen,

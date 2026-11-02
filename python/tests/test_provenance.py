@@ -145,8 +145,8 @@ def test_the_block_exists_for_every_registered_id() -> None:
     # 260 -> 262: the sound speed and the map machine (2026-10-28); 263: the
     # equilibrium sound speed; 264: the homogeneous-equilibrium release; 265: the
     # vessel blowdown; 266: the separator capacity assessment; 267: the anti-surge
-    # recycle calculator.
-    assert len(registered) == 267
+    # recycle calculator; 268: the separator performance calculator.
+    assert len(registered) == 268
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

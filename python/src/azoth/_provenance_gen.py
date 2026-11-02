@@ -2713,7 +2713,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator': {
         "calc_id": 'process.separator',
         "name": 'Separator',
-        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '0d7858bb87016bc65a431f45afe79cb11c161671e4525d65da828ebadd2c3140'},
+        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '8b5a53e1d72df3495f18d5c8ad4a4ff98baaf5dc36ffabd5a1ff2c9b5f819529'},
         "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': 'e690e64d8fd7b4ebbcb21012d585c85b4e5fc300d7544501a7ac898de35fa152'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': 'debe01b2e7802400cb8622ecd6bbb3acb9e667888be0ae504c5954c275f21e2e'}],
         "source": 'NeqSim process/equipment/separator/Separator.java',
         "verification": 'partially_verified',
@@ -2730,6 +2730,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "verification": 'partially_verified',
         "validation_cases": 0,
         "tests_active": 16,
+        "tests_skipped": 0,
+    },
+    'process.separator_performance': {
+        "calc_id": 'process.separator_performance',
+        "name": 'Separator performance calculator',
+        "spec": {'path': 'specs/models/process/separator_performance.toml', 'sha256': '8f1ba70b9a9e777426f3b871aa694442b9e229ac73c6088f05bca989eb8ff0f3'},
+        "code": [{'path': 'python/src/azoth/process/reference/separator_performance.py', 'sha256': 'e979cbfadaa291b2fe15c69350ee109b6fd308619cea7da0470527d8b37c3783'}, {'path': 'crates/azoth-process/src/models/separator_performance.rs', 'sha256': '06a0296678939d04b9942919104ebf06691b77fbf403f4eadd21a14ad27fbc4f'}],
+        "source": 'NeqSim process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 10,
         "tests_skipped": 0,
     },
     'process.shortcut_distillation_column': {
@@ -2790,7 +2801,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.three_phase_separator': {
         "calc_id": 'process.three_phase_separator',
         "name": 'Three-phase separator',
-        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': '76e9e5648ee1d27962b6fc4a10e13a669c1741d5419c05bc5c6293ad3dbae90b'},
+        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': '39d2f223e26201c4c10d124143ac66703f5dab6fc0da85a35c6c57a10d5cbf44'},
         "code": [{'path': 'python/src/azoth/process/reference/three_phase_separator.py', 'sha256': '3422095ac8eba7d422dd9a0e1565ab8d4f746c49100398dbb5ea48f2d6ee2058'}, {'path': 'crates/azoth-process/src/models/three_phase_separator.rs', 'sha256': '5a8e47dce237433dedf998970494cec197251cc77ad5fcade9887bb06efdb4c4'}],
         "source": 'NeqSim process/equipment/separator/ThreePhaseSeparator.java',
         "verification": 'partially_verified',

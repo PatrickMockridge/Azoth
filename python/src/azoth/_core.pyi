@@ -390,6 +390,12 @@ class PumpCurvePoint(TypedDict):
     efficiency: float
     npsh_required: float | None
 
+class EfficiencyPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    diameter: float
+    efficiency: float
+
 class TurboUcPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -3116,6 +3122,21 @@ class SeparatorCapacityAssessmentResult:
     warnings: list[Warning]
 
 @final
+class SeparatorPerformanceResult:
+    oil_in_gas: float
+    water_in_gas: float
+    gas_in_oil: float
+    gas_in_water: float
+    oil_in_water: float
+    water_in_oil: float
+    gravity_section_efficiency: float
+    mist_eliminator_efficiency: float
+    overall_gas_liquid_efficiency: float
+    liquid_liquid_gravity_efficiency: float
+    gravity_cut_diameter: Qty
+    warnings: list[Warning]
+
+@final
 class ShortcutDistillationColumnResult:
     distillate_n: Qty
     distillate_z: list[float]
@@ -5796,6 +5817,44 @@ def separator_capacity_assessment(
     heat_input: float | None = None,
     mechanical_design_max_gas_flow: float | None = None,
 ) -> SeparatorCapacityAssessmentResult: ...
+def separator_performance(
+    gas_density: float,
+    oil_density: float,
+    water_density: float,
+    gas_viscosity: float,
+    oil_viscosity: float,
+    water_viscosity: float,
+    gas_velocity: float,
+    vessel_diameter: float,
+    vessel_length: float,
+    orientation: str,
+    liquid_level_fraction: float,
+    gas_liquid_distribution: str | None = None,
+    gas_liquid_characteristic_diameter: float | None = None,
+    gas_liquid_spread: float | None = None,
+    gas_bubble_distribution: str | None = None,
+    gas_bubble_characteristic_diameter: float | None = None,
+    gas_bubble_spread: float | None = None,
+    oil_in_water_distribution: str | None = None,
+    oil_in_water_characteristic_diameter: float | None = None,
+    oil_in_water_spread: float | None = None,
+    water_in_oil_distribution: str | None = None,
+    water_in_oil_characteristic_diameter: float | None = None,
+    water_in_oil_spread: float | None = None,
+    mist_eliminator: str | None = None,
+    mist_eliminator_cut_diameter: float | None = None,
+    mist_eliminator_sharpness: float | None = None,
+    mist_eliminator_max_efficiency: float | None = None,
+    mist_eliminator_points: list[EfficiencyPoint] | None = None,
+    oil_water_coalescer: str | None = None,
+    oil_water_coalescer_cut_diameter: float | None = None,
+    oil_water_coalescer_max_efficiency: float | None = None,
+    oil_water_coalescer_points: list[EfficiencyPoint] | None = None,
+    include_gravity_section: bool | None = None,
+    liquid_in_gas_calibration_factor: float | None = None,
+    gas_carry_under_calibration_factor: float | None = None,
+    liquid_liquid_calibration_factor: float | None = None,
+) -> SeparatorPerformanceResult: ...
 def shortcut_distillation_column(
     components: list[str],
     feed_n: float,

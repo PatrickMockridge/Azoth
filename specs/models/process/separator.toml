@@ -16,7 +16,7 @@ assumptions = [
     "**no gas phase answers `0.0` utilisation and `false` overload, and the three velocity metrics are absent.** The class's velocity and load-factor getters still read phase 0, which is then the liquid; a metric formed from it is not a gas metric, so the port omits it rather than publishing one.",
     "**the metric is read at the outlet state and on the entrained liquid.** `Q`, `rho_g` and `rho_l` are the system after `run` - `feed_p - pressure_drop`, the flash's temperature - and the liquid density is the one that absorbed `gas_in_liquid`.",
     "**one liquid.** `getGasLoadFactor()` reads phase 1 and the sizing family prefers `oil` then `aqueous`; with one condensed phase the branch is that phase, and `process.three_phase_separator` owns the other.",
-    "NeqSim's `Separator` also carries `SeparatorCapacityAssessment`, the droplet calculator, `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`, `sizeFromFlow`/`autoSize`, the mechanical design and `runTransient`, **none of it here**. `oil_in_gas`/`water_in_gas` are absent.",
+    "NeqSim's `Separator` also carries `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`, `sizeFromFlow`/`autoSize`, the mechanical design and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run` and its steady capacity getters.",

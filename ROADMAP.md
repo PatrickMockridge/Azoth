@@ -814,13 +814,16 @@ a claim nothing holds.
   the no-argument gas load factor and the overload flag, with the sizing rule's and the load
   factor's density rules kept apart - **and `SeparatorCapacityAssessment` landed as
   `process.separator_capacity_assessment`**, the fail-closed snapshot with its optional
-  mechanical-design gas limit; what remains owed there is the droplet-performance calculator,
+  mechanical-design gas limit; **the droplet-performance calculator landed as
+  `process.separator_performance`** - the standard path's six fractions and four efficiencies
+  over the class's droplet distributions, grade curves and settling solve, with the enhanced
+  chain, auto-calibration and the API 12J DTO left owed; what remains owed there is
   `getGasLoadFactor(int)`'s inventory derating, `getDeRatedGasLoadFactor`, the
   `sizeFromFlow`/`autoSize` gas-area sizing and the mechanical design;
   **`ThreePhaseSeparator`'s levels and its oil/water retention times landed**; still owed there
   are the three outlet valve fractions (stored but read only by the class's mass-balance
-  report), `calcInterfaceSettlingTime` (NeqSim's default phase viscosity) and the droplet
-  calculator; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
+  report) and `calcInterfaceSettlingTime` (NeqSim's default phase viscosity), the droplet
+  calculator being `process.separator_performance`; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The

@@ -56,6 +56,7 @@ pub mod pump;
 pub mod rate_based_packed_column;
 pub mod separator;
 pub mod separator_capacity_assessment;
+pub mod separator_performance;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod stirred_tank_reactor;
@@ -93,6 +94,7 @@ pub use separator::{SeparatorResult, separator};
 pub use separator_capacity_assessment::{
     SeparatorCapacityAssessmentResult, separator_capacity_assessment,
 };
+pub use separator_performance::{SeparatorPerformanceResult, separator_performance};
 pub use shortcut_distillation_column::{
     ShortcutDistillationColumnResult, shortcut_distillation_column,
 };

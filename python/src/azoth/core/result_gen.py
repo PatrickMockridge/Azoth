@@ -6967,6 +6967,49 @@ class SeparatorCapacityAssessmentResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SeparatorPerformanceResult(_HasWarnings):
+    """Result of ``process.separator_performance``."""
+
+    CALC_ID: ClassVar[str] = "process.separator_performance"
+
+    #: the oil fraction carried out with the gas: `1 - overall_gas_liquid_efficiency` when an oil phase and a gas-liquid distribution exist.
+    oil_in_gas: float
+
+    #: the water fraction carried out with the gas. **In a three-phase state this is the whole entrainment too**, not a split of it.
+    water_in_gas: float
+
+    #: the gas fraction carried under into the oil: `1 - ` the bubble gravity efficiency.
+    gas_in_oil: float
+
+    #: the gas fraction carried under into the water, which is the same value as `gas_in_oil`.
+    gas_in_water: float
+
+    #: the oil fraction left in the water after the 300 s gravity stage and the coalescer.
+    oil_in_water: float
+
+    #: the water fraction left in the oil after the 300 s gravity stage and the coalescer.
+    water_in_oil: float
+
+    #: the gravity stage's integrated capture efficiency; zero when the gravity section is excluded or no gas-liquid distribution is stated.
+    gravity_section_efficiency: float
+
+    #: the mist eliminator's integrated capture efficiency; zero without one.
+    mist_eliminator_efficiency: float
+
+    #: the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present.
+    overall_gas_liquid_efficiency: float
+
+    #: the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated.
+    liquid_liquid_gravity_efficiency: float
+
+    #: the gas section's critical droplet diameter; zero without a gas-liquid distribution.
+    gravity_cut_diameter: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ShortcutDistillationColumnResult(_HasWarnings):
     """Result of ``process.shortcut_distillation_column``."""
 

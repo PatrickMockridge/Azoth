@@ -9,8 +9,8 @@ use std::path::Path;
 
 use azoth_core::units::{
     cubic_meters_per_second, joules_per_mole, kelvins, kilograms_per_cubic_meter, meters,
-    pascal_seconds, pascals, square_meters, square_meters_per_second, watts, watts_per_kelvin,
-    watts_per_square_meter_kelvin,
+    meters_per_second, pascal_seconds, pascals, square_meters, square_meters_per_second, watts,
+    watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -1415,5 +1415,132 @@ pub fn rate_based_packed_column(
         column_solver,
     )
     .map(|out| crate::transport_gen::PyRateBasedPackedColumnResult::from(&out))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.separator_performance` - the droplet-based calculator as a registered id.
+///
+/// **Hand-written, because the two configured curves are optional record slices** the wrapper
+/// generator refuses; the rows are built from the generated mapping here.
+#[pyfunction]
+#[pyo3(signature = (
+    gas_density, oil_density, water_density, gas_viscosity, oil_viscosity, water_viscosity,
+    gas_velocity, vessel_diameter, vessel_length, orientation, liquid_level_fraction,
+    gas_liquid_distribution = None, gas_liquid_characteristic_diameter = None,
+    gas_liquid_spread = None, gas_bubble_distribution = None,
+    gas_bubble_characteristic_diameter = None, gas_bubble_spread = None,
+    oil_in_water_distribution = None, oil_in_water_characteristic_diameter = None,
+    oil_in_water_spread = None, water_in_oil_distribution = None,
+    water_in_oil_characteristic_diameter = None, water_in_oil_spread = None,
+    mist_eliminator = None, mist_eliminator_cut_diameter = None,
+    mist_eliminator_sharpness = None, mist_eliminator_max_efficiency = None,
+    mist_eliminator_points = None, oil_water_coalescer = None,
+    oil_water_coalescer_cut_diameter = None, oil_water_coalescer_max_efficiency = None,
+    oil_water_coalescer_points = None, include_gravity_section = None,
+    liquid_in_gas_calibration_factor = None, gas_carry_under_calibration_factor = None,
+    liquid_liquid_calibration_factor = None
+))]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn separator_performance(
+    py: Python<'_>,
+    gas_density: f64,
+    oil_density: f64,
+    water_density: f64,
+    gas_viscosity: f64,
+    oil_viscosity: f64,
+    water_viscosity: f64,
+    gas_velocity: f64,
+    vessel_diameter: f64,
+    vessel_length: f64,
+    orientation: &str,
+    liquid_level_fraction: f64,
+    gas_liquid_distribution: Option<&str>,
+    gas_liquid_characteristic_diameter: Option<f64>,
+    gas_liquid_spread: Option<f64>,
+    gas_bubble_distribution: Option<&str>,
+    gas_bubble_characteristic_diameter: Option<f64>,
+    gas_bubble_spread: Option<f64>,
+    oil_in_water_distribution: Option<&str>,
+    oil_in_water_characteristic_diameter: Option<f64>,
+    oil_in_water_spread: Option<f64>,
+    water_in_oil_distribution: Option<&str>,
+    water_in_oil_characteristic_diameter: Option<f64>,
+    water_in_oil_spread: Option<f64>,
+    mist_eliminator: Option<&str>,
+    mist_eliminator_cut_diameter: Option<f64>,
+    mist_eliminator_sharpness: Option<f64>,
+    mist_eliminator_max_efficiency: Option<f64>,
+    mist_eliminator_points: Option<Vec<crate::records_gen::EfficiencyPoint>>,
+    oil_water_coalescer: Option<&str>,
+    oil_water_coalescer_cut_diameter: Option<f64>,
+    oil_water_coalescer_max_efficiency: Option<f64>,
+    oil_water_coalescer_points: Option<Vec<crate::records_gen::EfficiencyPoint>>,
+    include_gravity_section: Option<bool>,
+    liquid_in_gas_calibration_factor: Option<f64>,
+    gas_carry_under_calibration_factor: Option<f64>,
+    liquid_liquid_calibration_factor: Option<f64>,
+) -> PyResult<crate::transport_gen::PySeparatorPerformanceResult> {
+    let mist_points: Option<Vec<azoth_process::models::separator_performance::EfficiencyPoint>> =
+        mist_eliminator_points.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::separator_performance::EfficiencyPoint {
+                        diameter: meters(row.diameter),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    let coalescer_points: Option<
+        Vec<azoth_process::models::separator_performance::EfficiencyPoint>,
+    > = oil_water_coalescer_points.map(|rows| {
+        rows.into_iter()
+            .map(
+                |row| azoth_process::models::separator_performance::EfficiencyPoint {
+                    diameter: meters(row.diameter),
+                    efficiency: row.efficiency,
+                },
+            )
+            .collect()
+    });
+    azoth_process::separator_performance(
+        kilograms_per_cubic_meter(gas_density),
+        kilograms_per_cubic_meter(oil_density),
+        kilograms_per_cubic_meter(water_density),
+        pascal_seconds(gas_viscosity),
+        pascal_seconds(oil_viscosity),
+        pascal_seconds(water_viscosity),
+        meters_per_second(gas_velocity),
+        meters(vessel_diameter),
+        meters(vessel_length),
+        orientation,
+        liquid_level_fraction,
+        gas_liquid_distribution,
+        gas_liquid_characteristic_diameter.map(meters),
+        gas_liquid_spread,
+        gas_bubble_distribution,
+        gas_bubble_characteristic_diameter.map(meters),
+        gas_bubble_spread,
+        oil_in_water_distribution,
+        oil_in_water_characteristic_diameter.map(meters),
+        oil_in_water_spread,
+        water_in_oil_distribution,
+        water_in_oil_characteristic_diameter.map(meters),
+        water_in_oil_spread,
+        mist_eliminator,
+        mist_eliminator_cut_diameter.map(meters),
+        mist_eliminator_sharpness,
+        mist_eliminator_max_efficiency,
+        mist_points.as_deref(),
+        oil_water_coalescer,
+        oil_water_coalescer_cut_diameter.map(meters),
+        oil_water_coalescer_max_efficiency,
+        coalescer_points.as_deref(),
+        include_gravity_section,
+        liquid_in_gas_calibration_factor,
+        gas_carry_under_calibration_factor,
+        liquid_liquid_calibration_factor,
+    )
+    .map(|r| crate::transport_gen::PySeparatorPerformanceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

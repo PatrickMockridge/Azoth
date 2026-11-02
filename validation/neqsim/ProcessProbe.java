@@ -130,6 +130,9 @@ public class ProcessProbe {
       case "separator_capacity_assessment":
         separatorCapacityAssessmentRows();
         break;
+      case "separator_performance":
+        separatorPerformanceRows();
+        break;
       case "throttling_valve":
         throttlingValve();
         break;
@@ -4945,6 +4948,199 @@ public class ProcessProbe {
     System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
     System.out.println("capacity_utilization=" + separator.getCapacityUtilization());
     System.out.println("is_overloaded=" + separator.isOverloaded());
+    System.out.println();
+  }
+
+  // === process.separator_performance ==========================================
+
+  /// `SeparatorPerformanceCalculator`'s standard path.
+  ///
+  /// **The configurations are the class's own test states**, so the capture pins the
+  /// arithmetic the test only bounds: the two-phase wire mesh, the vertical vane-pack scrubber,
+  /// the three-phase state, gravity alone, the gas-bubble carry-under and the plate-pack
+  /// coalescer with no gas-liquid distribution. Two rows follow the calibration test's base and
+  /// tuned machines, one turns the gravity section off, and one uses a log-normal distribution
+  /// with custom lookup tables on both internals and coalescer.
+  static void separatorPerformanceRows() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator twoPhase =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    twoPhase.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    twoPhase.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    runSeparatorPerformance("two_phase_horizontal_wire_mesh", twoPhase, 50.0, 800.0, 0.0, 1.5e-5,
+        2.0e-3, 0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vertical =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    vertical.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            30.0e-6, 2.6));
+    vertical.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    runSeparatorPerformance("vertical_scrubber_vane_pack", vertical, 60.0, 850.0, 0.0, 1.5e-5,
+        3.0e-3, 0.0, 2.0, 1.0, 4.0, "vertical", 0.1, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator threePhase =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    threePhase.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            80.0e-6, 2.6));
+    threePhase.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    threePhase.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            300.0e-6, 2.0));
+    threePhase.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            200.0e-6, 2.0));
+    runSeparatorPerformance("three_phase_horizontal", threePhase, 40.0, 800.0, 1020.0, 1.5e-5,
+        5.0e-3, 8.0e-4, 1.5, 2.5, 10.0, "horizontal", 0.6, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator gravityOnly =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    gravityOnly.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            20.0e-6, 2.6));
+    runSeparatorPerformance("gravity_only_no_mist_eliminator", gravityOnly, 30.0, 750.0, 0.0,
+        1.2e-5, 2.0e-3, 0.0, 0.5, 3.0, 12.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator bubble =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    bubble.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    bubble.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    bubble.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500.0e-6, 2.0));
+    runSeparatorPerformance("gas_bubble_carry_under", bubble, 50.0, 800.0, 0.0, 1.5e-5, 3.0e-3,
+        0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator plate =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    plate.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.0));
+    plate.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            80.0e-6, 2.0));
+    plate.setOilWaterCoalescerCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.platePack(30.0e-6,
+            0.98));
+    runSeparatorPerformance("liquid_liquid_plate_pack_no_gas_liquid", plate, 40.0, 800.0, 1020.0,
+        1.5e-5, 5.0e-3, 8.0e-4, 1.5, 2.5, 10.0, "horizontal", 0.6, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calibrationBase =
+        calibrationMachine();
+    runSeparatorPerformance("calibration_base", calibrationBase, 50.0, 800.0, 1020.0, 1.5e-5,
+        3.0e-3, 8.0e-4, 1.2, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calibrationTuned =
+        calibrationMachine();
+    runSeparatorPerformance("calibration_tuned", calibrationTuned, 50.0, 800.0, 1020.0, 1.5e-5,
+        3.0e-3, 8.0e-4, 1.2, 2.0, 8.0, "horizontal", 0.5, 1.5, 1.25, 0.8);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator custom =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    custom.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(50.0e-6,
+            0.8));
+    custom.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.custom(
+            new double[] {1.0e-6, 10.0e-6, 100.0e-6}, new double[] {0.1, 0.5, 0.99}));
+    custom.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(400.0e-6,
+            0.7));
+    custom.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(150.0e-6,
+            0.7));
+    custom.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(100.0e-6,
+            0.9));
+    custom.setOilWaterCoalescerCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.custom(
+            new double[] {5.0e-6, 50.0e-6, 500.0e-6}, new double[] {0.05, 0.4, 0.95}));
+    runSeparatorPerformance("log_normal_custom_curves", custom, 40.0, 820.0, 1010.0, 1.4e-5,
+        2.5e-3, 9.0e-4, 0.8, 2.2, 9.0, "horizontal", 0.55, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator noGravity =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    noGravity.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    noGravity.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    noGravity.setIncludeGravitySection(false);
+    runSeparatorPerformance("gravity_section_off", noGravity, 50.0, 800.0, 0.0, 1.5e-5, 2.0e-3,
+        0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+  }
+
+  /// The calibration test's machine, before either factor is set.
+  static neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator
+      calibrationMachine() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    calc.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.2));
+    calc.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    calc.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            400.0e-6, 2.0));
+    calc.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.0));
+    calc.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.0));
+    return calc;
+  }
+
+  static void runSeparatorPerformance(String label,
+      neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc,
+      double gasDensity, double oilDensity, double waterDensity, double gasViscosity,
+      double oilViscosity, double waterViscosity, double gasVelocity, double diameter,
+      double length, String orientation, double level, Double liquidInGasFactor,
+      Double gasCarryUnderFactor, Double liquidLiquidFactor) {
+    if (liquidInGasFactor != null) {
+      calc.setLiquidInGasCalibrationFactor(liquidInGasFactor);
+    }
+    if (gasCarryUnderFactor != null) {
+      calc.setGasCarryUnderCalibrationFactor(gasCarryUnderFactor);
+    }
+    if (liquidLiquidFactor != null) {
+      calc.setLiquidLiquidCalibrationFactor(liquidLiquidFactor);
+    }
+    calc.calculate(gasDensity, oilDensity, waterDensity, gasViscosity, oilViscosity,
+        waterViscosity, gasVelocity, diameter, length, orientation, level);
+    System.out.println(label);
+    System.out.println("gas_density_kg_m3=" + gasDensity);
+    System.out.println("oil_density_kg_m3=" + oilDensity);
+    System.out.println("water_density_kg_m3=" + waterDensity);
+    System.out.println("gas_viscosity_Pa_s=" + gasViscosity);
+    System.out.println("oil_viscosity_Pa_s=" + oilViscosity);
+    System.out.println("water_viscosity_Pa_s=" + waterViscosity);
+    System.out.println("gas_velocity_m_per_s=" + gasVelocity);
+    System.out.println("vessel_diameter_m=" + diameter);
+    System.out.println("vessel_length_m=" + length);
+    System.out.println("orientation=" + orientation);
+    System.out.println("liquid_level_fraction=" + level);
+    System.out.println("oil_in_gas_fraction=" + calc.getOilInGasFraction());
+    System.out.println("water_in_gas_fraction=" + calc.getWaterInGasFraction());
+    System.out.println("gas_in_oil_fraction=" + calc.getGasInOilFraction());
+    System.out.println("gas_in_water_fraction=" + calc.getGasInWaterFraction());
+    System.out.println("oil_in_water_fraction=" + calc.getOilInWaterFraction());
+    System.out.println("water_in_oil_fraction=" + calc.getWaterInOilFraction());
+    System.out.println("gravity_section_efficiency=" + calc.getGravitySectionEfficiency());
+    System.out.println("mist_eliminator_efficiency=" + calc.getMistEliminatorEfficiency());
+    System.out.println("overall_gas_liquid_efficiency=" + calc.getOverallGasLiquidEfficiency());
+    System.out.println(
+        "liquid_liquid_gravity_efficiency=" + calc.getLiquidLiquidGravityEfficiency());
+    System.out.println("gravity_cut_diameter_m=" + calc.getGravityCutDiameter());
     System.out.println();
   }
 

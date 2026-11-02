@@ -259,12 +259,13 @@ jobs:
   python-test:
     name: python-test
     runs-on: ubuntu-latest
-    # **60, and the reason is measured.** The full suite's slowest target,
+    # **75, and the reason is measured.** The full suite's slowest target,
     # `test_every_declared_range_check_runs`, runs every model case on both backends and took
-    # 1681 s on 2026-10-23; with the rest of the nightly on four xdist workers the job crossed
-    # the old 45-minute ceiling and was cancelled at it. The ceiling is a ceiling, not a budget
-    # to spend: this is the number that lets the whole surface finish.
-    timeout-minutes: 60
+    # 3082 s on 2026-11-01 - 51 of the 53 minutes the step spent, and nearly double the 1681 s
+    # it cost on 2026-10-23 as the model set grew. The old 60-minute ceiling left seven minutes;
+    # the ceiling is a ceiling, not a budget to spend, and the next model's cases must not be
+    # what makes a release run fail on time.
+    timeout-minutes: 75
     needs: scope
     if: needs.scope.outputs.python-test == 'true'
     env:

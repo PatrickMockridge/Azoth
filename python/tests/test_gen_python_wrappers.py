@@ -95,7 +95,8 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 63 -> 64 when `process.turbo_expander_compressor` brought four optional record lists at
 #: once - the UC curve, the two Q/N curves, the map and the IGV penalty curve.
 #: 64 -> 65 when `process.map_turbo_expander_compressor` brought the same optional `curve`.
-KNOWN_HAND_WRITTEN = 65
+#: 65 -> 66 when `process.separator_performance` brought its two optional curve tables.
+KNOWN_HAND_WRITTEN = 66
 
 
 def _tools_module(name: str) -> ModuleType:

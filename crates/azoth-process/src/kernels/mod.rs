@@ -29,6 +29,7 @@ pub mod plug_flow_reactor;
 pub mod pump;
 pub mod rate_based_packed_column;
 pub mod separator;
+pub mod separator_performance;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod stirred_tank_reactor;
@@ -59,6 +60,10 @@ pub use mixer::mixer;
 pub use pipe::{FlowRegime, PipeOutcome, pipe};
 pub use pump::pump;
 pub use separator::separator;
+pub use separator_performance::{
+    CurveSettings, DistributionKind, DropletDistribution, Internals, LookupPoint, Orientation,
+    PerformanceOutcome, PerformanceSettings, separator_performance,
+};
 pub use shortcut_distillation_column::{ShortcutColumn, shortcut_distillation_column};
 pub use splitter::splitter;
 pub use stirred_tank_reactor::{ReactorSetup, stirred_tank_reactor};

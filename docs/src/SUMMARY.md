@@ -273,6 +273,7 @@
   - [Rate-based packed column](./process/rate_based_packed_column.md)
   - [Separator](./process/separator.md)
   - [Separator capacity assessment](./process/separator_capacity_assessment.md)
+  - [Separator performance calculator](./process/separator_performance.md)
   - [Shortcut distillation column](./process/shortcut_distillation_column.md)
   - [Splitter](./process/splitter.md)
   - [Stirred-tank reactor](./process/stirred_tank_reactor.md)

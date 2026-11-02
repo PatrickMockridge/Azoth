@@ -14,7 +14,7 @@ assumptions = [
     "**levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.",
     "**a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.",
     "**the three outlet valve fractions are not parameters here.** The class stores and clamps them, and its steady `run` split never reads them - only its mass and energy-balance reporting does, which this port does not publish. A parameter nothing here can honour is not declared.",
-    "**`calcInterfaceSettlingTime` is owed.** It reads the oil phase's viscosity through NeqSim's default `PhysicalProperties` model, which the port does not carry; the droplet-performance calculator and `runTransient` are owed with it.",
+    "**`calcInterfaceSettlingTime` is owed.** It reads the oil phase's viscosity through NeqSim's default `PhysicalProperties` model, which the port does not carry; `runTransient` is owed with it. **The droplet-performance calculator is `process.separator_performance`.**",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.",

@@ -37,6 +37,7 @@ use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
 use crate::models::separator::SeparatorResult;
 use crate::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult;
+use crate::models::separator_performance::SeparatorPerformanceResult;
 use crate::models::shortcut_distillation_column::ShortcutDistillationColumnResult;
 use crate::models::splitter::SplitterResult;
 use crate::models::stirred_tank_reactor::StirredTankReactorResult;
@@ -731,6 +732,28 @@ impl CalcResult for SeparatorCapacityAssessmentResult {
         "souders_brown_maximum_gas_flow",
         "maximum_gas_flow",
         "utilization",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for SeparatorPerformanceResult {
+    const CALC_ID: &'static str = "process.separator_performance";
+    const FIELDS: &'static [&'static str] = &[
+        "oil_in_gas",
+        "water_in_gas",
+        "gas_in_oil",
+        "gas_in_water",
+        "oil_in_water",
+        "water_in_oil",
+        "gravity_section_efficiency",
+        "mist_eliminator_efficiency",
+        "overall_gas_liquid_efficiency",
+        "liquid_liquid_gravity_efficiency",
+        "gravity_cut_diameter",
         "warnings",
     ];
 

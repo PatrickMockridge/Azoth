@@ -1307,6 +1307,12 @@ NO_INTERIOR: dict[str, str] = {
         "dumper here would be a second dump of that arithmetic under another name, which is "
         "the thing this dict exists to refuse"
     ),
+    "process.separator_performance": (
+        "the calculator's every number is a top-level output - the six fractions, the four "
+        "efficiencies and the cut diameter - and the droplet size classes it integrates over "
+        "are derived inside the kernel rather than carried on the record, so there is no "
+        "interior the capture could name"
+    ),
     "process.turbo_expander_compressor": (
         "the kernel forms the speed, both powers, both efficiencies, the compressor's "
         "polytropic head, the two ratios and the IGV opening, and **every one of them is on "

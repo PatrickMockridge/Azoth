@@ -44,6 +44,7 @@ from azoth.core.result import (
     PumpResult,
     RateBasedPackedColumnResult,
     SeparatorCapacityAssessmentResult,
+    SeparatorPerformanceResult,
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
@@ -140,6 +141,7 @@ _HEM_RELEASE = "process.hem_release"
 _LEAK_BLOWDOWN = "process.leak_blowdown"
 _SEPARATOR = "process.separator"
 _SEPARATOR_CAPACITY_ASSESSMENT = "process.separator_capacity_assessment"
+_SEPARATOR_PERFORMANCE = "process.separator_performance"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _GIBBS_REACTOR = "process.gibbs_reactor"
@@ -1999,6 +2001,143 @@ def separator_capacity_assessment(
         design_basis_provenance=design_basis_provenance,
         heat_input=heat_input,
         mechanical_design_max_gas_flow=mechanical_design_max_gas_flow,
+    )
+
+
+def separator_performance(
+    gas_density: Q,
+    oil_density: Q,
+    water_density: Q,
+    gas_viscosity: Q,
+    oil_viscosity: Q,
+    water_viscosity: Q,
+    gas_velocity: Q,
+    vessel_diameter: Q,
+    vessel_length: Q,
+    orientation: str,
+    liquid_level_fraction: float,
+    gas_liquid_distribution: str | None = None,
+    gas_liquid_characteristic_diameter: Q | None = None,
+    gas_liquid_spread: float | None = None,
+    gas_bubble_distribution: str | None = None,
+    gas_bubble_characteristic_diameter: Q | None = None,
+    gas_bubble_spread: float | None = None,
+    oil_in_water_distribution: str | None = None,
+    oil_in_water_characteristic_diameter: Q | None = None,
+    oil_in_water_spread: float | None = None,
+    water_in_oil_distribution: str | None = None,
+    water_in_oil_characteristic_diameter: Q | None = None,
+    water_in_oil_spread: float | None = None,
+    mist_eliminator: str | None = None,
+    mist_eliminator_cut_diameter: Q | None = None,
+    mist_eliminator_sharpness: float | None = None,
+    mist_eliminator_max_efficiency: float | None = None,
+    mist_eliminator_points: list[dict[str, Q]] | None = None,
+    oil_water_coalescer: str | None = None,
+    oil_water_coalescer_cut_diameter: Q | None = None,
+    oil_water_coalescer_max_efficiency: float | None = None,
+    oil_water_coalescer_points: list[dict[str, Q]] | None = None,
+    include_gravity_section: bool | None = None,
+    liquid_in_gas_calibration_factor: float | None = None,
+    gas_carry_under_calibration_factor: float | None = None,
+    liquid_liquid_calibration_factor: float | None = None,
+) -> SeparatorPerformanceResult:
+    """Compute a separator's droplet-based entrainment and efficiencies.
+
+    ``SeparatorPerformanceCalculator``'s standard path: the gas-liquid gravity stage, a mist
+    eliminator when one is named, the gas bubble carry-under, and the two liquid-liquid stages,
+    each integrated over a droplet size distribution and a grade efficiency curve. **The
+    fractions are the separator ids' own entrainment inputs**, so the calculator composes with
+    a vessel rather than being a flag on it.
+
+    **The three-phase gas entrainment is the whole ``1 - overall`` on both liquid phases**, and
+    the gas carry-under is one fraction written to both; the liquid-liquid stage uses the
+    class's fixed 300 s. Those are the class's answers and are reproduced.
+
+    Args:
+        gas_density: the gas phase's mass density; zero is absent.
+        oil_density: the oil phase's mass density; zero is absent.
+        water_density: the water phase's mass density; zero is absent.
+        gas_viscosity: the gas phase's dynamic viscosity.
+        oil_viscosity: the oil phase's dynamic viscosity.
+        water_viscosity: the water phase's dynamic viscosity.
+        gas_velocity: the superficial gas velocity in the gas section.
+        vessel_diameter: the vessel's internal diameter.
+        vessel_length: the vessel's tangent-to-tangent length.
+        orientation: ``horizontal`` or ``vertical``.
+        liquid_level_fraction: the liquid's share of the cross-section or height.
+        gas_liquid_distribution: the entrained liquid's distribution, ``rosin_rammler`` or
+            ``log_normal``; absent leaves the gas-liquid branch unrun.
+        gas_liquid_characteristic_diameter: its ``d_63.2`` or ``d_50``.
+        gas_liquid_spread: its spread.
+        gas_bubble_distribution: the entrained gas's distribution.
+        gas_bubble_characteristic_diameter: its characteristic diameter.
+        gas_bubble_spread: its spread.
+        oil_in_water_distribution: the dispersed oil's distribution in water.
+        oil_in_water_characteristic_diameter: its characteristic diameter.
+        oil_in_water_spread: its spread.
+        water_in_oil_distribution: the dispersed water's distribution in oil.
+        water_in_oil_characteristic_diameter: its characteristic diameter.
+        water_in_oil_spread: its spread.
+        mist_eliminator: ``wire_mesh``, ``vane_pack``, ``axial_cyclone``, ``plate_pack`` or
+            ``custom``; absent is no eliminator.
+        mist_eliminator_cut_diameter: its ``d_50``; absent takes the type's default.
+        mist_eliminator_sharpness: its sigmoid sharpness; absent takes the type's default.
+        mist_eliminator_max_efficiency: its ``eta_max``; absent takes the type's default.
+        mist_eliminator_points: a custom curve's lookup table.
+        oil_water_coalescer: ``plate_pack`` or ``custom``; absent is no coalescer.
+        oil_water_coalescer_cut_diameter: the plate pack's ``d_50``.
+        oil_water_coalescer_max_efficiency: the plate pack's maximum efficiency.
+        oil_water_coalescer_points: a custom coalescer's lookup table.
+        include_gravity_section: whether the gravity stage is included; absent is true.
+        liquid_in_gas_calibration_factor: the multiplier on the two gas entrainments.
+        gas_carry_under_calibration_factor: the multiplier on the two carry-unders.
+        liquid_liquid_calibration_factor: the multiplier on the two liquid-liquid fractions.
+
+    Raises:
+        InvalidInputError: for a value outside its declared range, an undeclared name, a
+            distribution whose fields are not stated together, a curve missing what its type
+            requires, or a lookup table on a type that does not read one.
+
+    See :func:`azoth.process.reference.separator_performance`.
+    """
+    return resolve(_SEPARATOR_PERFORMANCE)(  # type: ignore[no-any-return]
+        gas_density=gas_density,
+        oil_density=oil_density,
+        water_density=water_density,
+        gas_viscosity=gas_viscosity,
+        oil_viscosity=oil_viscosity,
+        water_viscosity=water_viscosity,
+        gas_velocity=gas_velocity,
+        vessel_diameter=vessel_diameter,
+        vessel_length=vessel_length,
+        orientation=orientation,
+        liquid_level_fraction=liquid_level_fraction,
+        gas_liquid_distribution=gas_liquid_distribution,
+        gas_liquid_characteristic_diameter=gas_liquid_characteristic_diameter,
+        gas_liquid_spread=gas_liquid_spread,
+        gas_bubble_distribution=gas_bubble_distribution,
+        gas_bubble_characteristic_diameter=gas_bubble_characteristic_diameter,
+        gas_bubble_spread=gas_bubble_spread,
+        oil_in_water_distribution=oil_in_water_distribution,
+        oil_in_water_characteristic_diameter=oil_in_water_characteristic_diameter,
+        oil_in_water_spread=oil_in_water_spread,
+        water_in_oil_distribution=water_in_oil_distribution,
+        water_in_oil_characteristic_diameter=water_in_oil_characteristic_diameter,
+        water_in_oil_spread=water_in_oil_spread,
+        mist_eliminator=mist_eliminator,
+        mist_eliminator_cut_diameter=mist_eliminator_cut_diameter,
+        mist_eliminator_sharpness=mist_eliminator_sharpness,
+        mist_eliminator_max_efficiency=mist_eliminator_max_efficiency,
+        mist_eliminator_points=mist_eliminator_points,
+        oil_water_coalescer=oil_water_coalescer,
+        oil_water_coalescer_cut_diameter=oil_water_coalescer_cut_diameter,
+        oil_water_coalescer_max_efficiency=oil_water_coalescer_max_efficiency,
+        oil_water_coalescer_points=oil_water_coalescer_points,
+        include_gravity_section=include_gravity_section,
+        liquid_in_gas_calibration_factor=liquid_in_gas_calibration_factor,
+        gas_carry_under_calibration_factor=gas_carry_under_calibration_factor,
+        liquid_liquid_calibration_factor=liquid_liquid_calibration_factor,
     )
 
 

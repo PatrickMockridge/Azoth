@@ -39,6 +39,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.rate_based_packed_column`](./rate_based_packed_column.md) | `counter_current_fixed_point_profile` | NeqSim process/equipment/distillation/RateBasedPackedColumn.java |
 | [`process.separator`](./separator.md) | `direct composition` | NeqSim process/equipment/separator/Separator.java |
 | [`process.separator_capacity_assessment`](./separator_capacity_assessment.md) | `direct composition` | NeqSim process/equipment/separator/SeparatorCapacityAssessment.java |
+| [`process.separator_performance`](./separator_performance.md) | `direct composition` | NeqSim process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java |
 | [`process.shortcut_distillation_column`](./shortcut_distillation_column.md) | `underwood_bisection` | NeqSim process/equipment/distillation/ShortcutDistillationColumn.java |
 | [`process.splitter`](./splitter.md) | `direct composition` | NeqSim process/equipment/splitter/Splitter.java |
 | [`process.stirred_tank_reactor`](./stirred_tank_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/StirredTankReactor.java |
