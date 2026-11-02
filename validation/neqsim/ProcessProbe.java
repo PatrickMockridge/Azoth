@@ -44,6 +44,8 @@
 //       > captures/process_gas_scrubber_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
 //       > captures/process_three_phase_settling.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance_enhanced \
+//       > captures/process_separator_performance_enhanced.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
 //       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
@@ -149,6 +151,9 @@ public class ProcessProbe {
         break;
       case "three_phase_settling":
         threePhaseSettlingRows();
+        break;
+      case "separator_performance_enhanced":
+        separatorPerformanceEnhancedRows();
         break;
       case "separator_performance":
         separatorPerformanceRows();
@@ -5515,6 +5520,171 @@ public class ProcessProbe {
       System.out.println("oil_outlet_fraction=" + separator.getOilOutletFlowFraction());
       System.out.println("water_outlet_fraction=" + separator.getWaterOutletFlowFraction());
       System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    }
+    System.out.println();
+  }
+
+  // === process.separator_performance, the enhanced chain =====================
+
+  /// `SeparatorPerformanceCalculator.calculateEnhanced` on the class's own test states.
+  ///
+  /// The chain is flow regime -> inlet device -> geometry -> gravity -> mist eliminator ->
+  /// liquid-liquid. **Every row prints each stage's intermediates**, because the enhanced
+  /// path is a second solver and a capture of the final efficiency cannot say which stage
+  /// moved. The constants are `EnhancedPerformanceCalculatorTest`'s own.
+  static void separatorPerformanceEnhancedRows() {
+    double gasDensity = 50.0;
+    double oilDensity = 750.0;
+    double waterDensity = 1025.0;
+    double gasViscosity = 1.2e-5;
+    double oilViscosity = 2.0e-3;
+    double waterViscosity = 8.0e-4;
+    double velocity = 2.0;
+    double diameter = 2.4;
+    double length = 7.0;
+    double level = 0.5;
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator twoPhase =
+        enhancedCalculator();
+    twoPhase.setInletPipeDiameter(0.2);
+    twoPhase.setSurfaceTension(0.025);
+    twoPhase.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("two_phase_horizontal", twoPhase, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator threePhase =
+        enhancedCalculator();
+    threePhase.setInletPipeDiameter(0.25);
+    threePhase.setSurfaceTension(0.025);
+    threePhase.setOilWaterInterfacialTension(0.030);
+    threePhase.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    threePhase.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(
+            200e-6, 0.6));
+    threePhase.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(
+            150e-6, 0.5));
+    runEnhanced("three_phase_horizontal", threePhase, gasDensity, oilDensity, waterDensity,
+        gasViscosity, oilViscosity, waterViscosity, velocity, diameter, length, "horizontal",
+        level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vertical =
+        enhancedCalculator();
+    vertical.setInletPipeDiameter(0.15);
+    vertical.setSurfaceTension(0.025);
+    runEnhanced("two_phase_vertical", vertical, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, 1.5, 5.0, "vertical", 0.4);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator none =
+        enhancedCalculator();
+    none.setInletDeviceModel(
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType.NONE));
+    runEnhanced("inlet_device_none", none, gasDensity, oilDensity, 0.0, gasViscosity, oilViscosity,
+        0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator cyclone =
+        enhancedCalculator();
+    cyclone.setInletDeviceModel(
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType.INLET_CYCLONE));
+    runEnhanced("inlet_device_cyclone", cyclone, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator flooding =
+        enhancedCalculator();
+    runEnhanced("high_velocity_flooding", flooding, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, 15.0, diameter, length, "horizontal", level);
+  }
+
+  static neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator
+      enhancedCalculator() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    calc.setUseEnhancedCalculation(true);
+    calc.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    return calc;
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void runEnhanced(String label,
+      neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc,
+      double gasDensity, double oilDensity, double waterDensity, double gasViscosity,
+      double oilViscosity, double waterViscosity, double gasVelocity, double diameter,
+      double length, String orientation, double level) {
+    calc.calculate(gasDensity, oilDensity, waterDensity, gasViscosity, oilViscosity,
+        waterViscosity, gasVelocity, diameter, length, orientation, level);
+    System.out.println(label);
+    System.out.println("gas_density_kg_m3=" + gasDensity);
+    System.out.println("oil_density_kg_m3=" + oilDensity);
+    System.out.println("water_density_kg_m3=" + waterDensity);
+    System.out.println("gas_velocity_m_per_s=" + gasVelocity);
+    System.out.println("diameter_m=" + diameter);
+    System.out.println("length_m=" + length);
+    System.out.println("orientation=" + orientation);
+    System.out.println("liquid_level_fraction=" + level);
+    System.out.println("inlet_pipe_diameter_m=" + calc.getInletPipeDiameter());
+    System.out.println("surface_tension_n_per_m=" + calc.getSurfaceTension());
+    System.out.println("oil_water_interfacial_tension_n_per_m="
+        + calc.getOilWaterInterfacialTension());
+    System.out.println("overall_gas_liquid_efficiency=" + calc.getOverallGasLiquidEfficiency());
+    System.out.println("gravity_section_efficiency=" + calc.getGravitySectionEfficiency());
+    System.out.println("mist_eliminator_efficiency=" + calc.getMistEliminatorEfficiency());
+    System.out.println("gravity_cut_diameter_m=" + calc.getGravityCutDiameter());
+    System.out.println("liquid_liquid_gravity_efficiency="
+        + calc.getLiquidLiquidGravityEfficiency());
+    System.out.println("oil_in_gas_fraction=" + calc.getOilInGasFraction());
+    System.out.println("water_in_gas_fraction=" + calc.getWaterInGasFraction());
+    System.out.println("gas_in_oil_fraction=" + calc.getGasInOilFraction());
+    System.out.println("gas_in_water_fraction=" + calc.getGasInWaterFraction());
+    System.out.println("oil_in_water_fraction=" + calc.getOilInWaterFraction());
+    System.out.println("water_in_oil_fraction=" + calc.getWaterInOilFraction());
+    System.out.println("k_factor_m_per_s=" + calc.getKFactor());
+    System.out.println("k_factor_utilization=" + calc.getKFactorUtilization());
+    System.out.println("inlet_flow_regime="
+        + (calc.getInletFlowRegime() == null ? "null" : calc.getInletFlowRegime().name()));
+    System.out.println("inlet_device_bulk_efficiency=" + calc.getInletDeviceBulkEfficiency());
+    neqsim.process.equipment.separator.entrainment.InletDeviceModel device =
+        calc.getInletDeviceModel();
+    if (device != null) {
+      System.out.println("inlet_device_type=" + device.getDeviceType().name());
+      System.out.println("inlet_device_bulk_separation_efficiency="
+          + device.getBulkSeparationEfficiency());
+      System.out.println("inlet_device_pressure_drop_pa=" + device.getPressureDrop());
+      System.out.println("inlet_nozzle_velocity_m_per_s=" + device.getNozzleVelocity());
+      System.out.println("inlet_momentum_flux_pa=" + device.getMomentumFlux());
+    }
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator geometry =
+        calc.getGeometryCalculator();
+    if (geometry != null) {
+      System.out.println("geometry_gas_area_m2=" + geometry.getGasArea());
+      System.out.println("geometry_liquid_area_m2=" + geometry.getLiquidArea());
+      System.out.println("geometry_gas_settling_height_m="
+          + geometry.getEffectiveGasSettlingHeight());
+      System.out.println("geometry_liquid_settling_height_m="
+          + geometry.getEffectiveLiquidSettlingHeight());
+      System.out.println("geometry_gas_residence_time_s=" + geometry.getGasResidenceTime());
+      System.out.println("geometry_liquid_residence_time_s=" + geometry.getLiquidResidenceTime());
+      System.out.println("geometry_gravity_section_length_m="
+          + geometry.getGravitySectionLength());
+      System.out.println("geometry_oil_pad_thickness_m=" + geometry.getOilPadThickness());
+      System.out.println("geometry_water_layer_height_m=" + geometry.getWaterLayerHeight());
+    }
+    neqsim.process.equipment.separator.entrainment.DropletSettlingCalculator.ApiComplianceResult
+        api = calc.getApiComplianceResult();
+    if (api != null) {
+      System.out.println("api_gas_liquid_compliant=" + api.gasLiquidSectionCompliant);
+      System.out.println("api_liquid_compliant=" + api.liquidSectionCompliant);
+      System.out.println("api_fully_compliant=" + api.isFullyCompliant());
+      System.out.println("api_gravity_cut_diameter_um=" + api.gravityCutDiameter_um);
+      System.out.println("api_k_factor_utilization=" + api.kFactorUtilization);
+      System.out.println("api_gas_liquid_comment=" + api.gasLiquidComment);
+      System.out.println("api_liquid_comment=" + api.liquidComment);
     }
     System.out.println();
   }

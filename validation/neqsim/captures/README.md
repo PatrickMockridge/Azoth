@@ -1312,6 +1312,28 @@ row prints that answer beside the same call after `initPhysicalProperties()`, an
 reproduces the initialised one - `0.1239` and `0.1487` min, both below the class's one-minute
 limit.
 
+## The separator performance enhanced chain
+
+`process_separator_performance_enhanced.tsv` is
+`SeparatorPerformanceCalculator.calculateEnhanced` on `EnhancedPerformanceCalculatorTest`'s
+own six states: two-phase horizontal, three-phase horizontal, vertical, the no-device and
+inlet-cyclone pair, and the high-velocity flooding row.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance_enhanced \
+  > captures/process_separator_performance_enhanced.tsv
+```
+
+**The enhanced path is a second solver, and a capture of the final efficiency cannot say
+which stage moved.** Every row prints the chain's own intermediates: the predicted flow
+regime, the inlet device's bulk efficiency, pressure drop, nozzle velocity and momentum
+flux, the geometry's areas, settling heights and residence times, the gravity and mist
+efficiencies, the K factor and its utilisation, and the API 12J compliance record with its
+two comments. The default device is `HALF_PIPE`, not none; the pair sets `NONE` and
+`INLET_CYCLONE` explicitly. This is the oracle the enhanced port is held to; it is not yet
+a model.
+
 ## The anti-surge recycle calculator
 
 `process_anti_surge_recycle.tsv` is `AntiSurgeRecycleCalculator.solve` on the charted machine
