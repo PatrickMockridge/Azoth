@@ -68,6 +68,9 @@ def separator(
     design_gas_load_factor: Q | None = None,
     orientation: str | None = None,
     design_liquid_level_fraction: float | None = None,
+    separator_length: Q | None = None,
+    liquid_level_fraction: float | None = None,
+    safety_factor: float | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -88,6 +91,12 @@ def separator(
             ``"horizontal"``.
         design_liquid_level_fraction: the horizontal gas area's derating; absent is the
             class's ``0.8``.
+        separator_length: the vessel's tangent-to-tangent length; absent is the class's
+            ``5.0`` m. Requires the diameter and design load factor.
+        liquid_level_fraction: the operating level as a fraction of the maximum liquid
+            height, which is what ``setLiquidLevel`` takes; absent is the class's ``0.5``.
+        safety_factor: the factor ``sizeFromFlow`` multiplies the gas flow by; absent
+            leaves ``required_diameter`` absent.
 
     Returns:
         Both outlets' records, and the five capacity getters where a vessel was stated.
@@ -140,6 +149,13 @@ def separator(
     level_fraction = (
         None if design_liquid_level_fraction is None else float(design_liquid_level_fraction)
     )
+    length = (
+        None
+        if separator_length is None
+        else input_to_si(spec, "separator_length", separator_length)
+    )
+    operating_level = None if liquid_level_fraction is None else float(liquid_level_fraction)
+    safety = None if safety_factor is None else float(safety_factor)
     apply_checks(
         checks.on_input,
         {
@@ -148,6 +164,9 @@ def separator(
             "internal_diameter": diameter,
             "design_gas_load_factor": load_factor,
             "design_liquid_level_fraction": level_fraction,
+            "separator_length": length,
+            "liquid_level_fraction": operating_level,
+            "safety_factor": safety,
         }.get,
         warnings,
     )
@@ -172,6 +191,9 @@ def separator(
         for stated, value in (
             ("orientation", orientation),
             ("design_liquid_level_fraction", design_liquid_level_fraction),
+            ("separator_length", separator_length),
+            ("liquid_level_fraction", liquid_level_fraction),
+            ("safety_factor", safety_factor),
         ):
             if value is not None:
                 raise InvalidInputError(
@@ -211,6 +233,25 @@ def separator(
             level,
         )
     )
+    sizing = (
+        None
+        if diameter is None or load_factor is None
+        else _sizing_getters(
+            components,
+            states.temperature.to("K").magnitude,
+            states.p_out,
+            list(feed_z),
+            states.n_vapour,
+            list(states.liquid_z),
+            diameter,
+            load_factor,
+            kind,
+            level,
+            5.0 if length is None else length,
+            0.5 if operating_level is None else operating_level,
+            safety,
+        )
+    )
 
     return SeparatorResult(
         vapour_n=from_si(states.n_vapour, "mol/s"),
@@ -240,6 +281,17 @@ def separator(
             else from_si(capacity.load_factor, "m/s")
         ),
         is_overloaded=None if capacity is None else capacity.overloaded,
+        gas_area_fraction=None if sizing is None else sizing.gas_area_fraction,
+        rated_gas_load_factor_by_phase=(
+            None
+            if sizing is None or not sizing.rated_by_phase
+            else tuple(from_si(value, "m/s") for value in sizing.rated_by_phase)
+        ),
+        required_diameter=(
+            None
+            if sizing is None or sizing.required_diameter is None
+            else from_si(sizing.required_diameter, "m")
+        ),
         warnings=tuple(warnings),
     )
 
@@ -547,6 +599,162 @@ def _capacity_states(
         max_flow=sizing.max_flow,
         has_liquid=sizing.has_liquid,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class SizingGetters:
+    """`getGasLoadFactor(int)` and `sizeFromFlow(safety)`, in SI.
+
+    ``rated_by_phase`` is one entry per liquid phase, in the class's phase order; the
+    phase-indexed overload divides its radicand by the **operating** gas area fraction while
+    the superficial velocity itself is the design-area one.
+    """
+
+    gas_area_fraction: float
+    liquid_volume: float
+    separator_volume: float
+    rated_by_phase: tuple[float, ...]
+    required_diameter: float | None
+
+
+def _sizing_getters(
+    components: list[str],
+    t: float,
+    p: float,
+    feed_z: list[float],
+    gas_n: float,
+    liquid_z: list[float],
+    diameter_m: float,
+    design_load_factor: float,
+    orientation: str,
+    design_level_fraction: float,
+    separator_length_m: float,
+    liquid_level_fraction: float,
+    safety_factor: float | None,
+) -> SizingGetters | None:
+    """The phase-indexed load factors and the closed-form sizing.
+
+    ``None`` is the class's own first answer for a system with no gas phase: the sizing
+    returns without a diameter and the capacity family publishes nothing.
+    """
+    from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, GAS, OIL
+    from azoth.process.reference.capacity import _labelled_phases, _mass_density
+
+    sizing = _sizing_states(
+        components,
+        t,
+        p,
+        feed_z,
+        gas_n,
+        liquid_z,
+        diameter_m,
+        design_load_factor,
+        orientation,
+        design_level_fraction,
+    )
+    if sizing is None:
+        return None
+
+    horizontal = orientation == "horizontal"
+    cross_area = math.pi * diameter_m * diameter_m / 4.0
+    separator_volume = cross_area * separator_length_m
+    level = liquid_level_fraction * (diameter_m if horizontal else separator_length_m)
+    liquid_volume = (
+        _liquid_area(level, diameter_m) * separator_length_m if horizontal else cross_area * level
+    )
+    gas_area_fraction = 1.0 - liquid_volume / separator_volume if horizontal else 1.0
+    if not math.isfinite(gas_area_fraction) or gas_area_fraction <= 0.0:
+        raise InvalidInputError(
+            "liquid_level_fraction",
+            f"the operating liquid level of {liquid_level_fraction} leaves a gas area "
+            f"fraction of {gas_area_fraction}, and the phase-indexed load factor divides by it",
+        )
+
+    mixture, labelled, _shares = _labelled_phases(components, t, p, feed_z, from_feed=True)
+    rated: list[float] = []
+    oil_density: float | None = None
+    aqueous_density: float | None = None
+    for label, phase_z, root in labelled:
+        if label == GAS:
+            continue
+        density = _mass_density(mixture, t, p, list(phase_z), root)
+        if label == OIL:
+            oil_density = density
+        elif label == AQUEOUS:
+            aqueous_density = density
+        floored = _load_factor_liquid_density(density, sizing.gas_density)
+        if not math.isfinite(floored) or floored <= sizing.gas_density:
+            raise InvalidInputError(
+                "gas_load_factor",
+                f"the liquid phase is {floored} kg/m3 after the near-dry floor against the "
+                f"gas's {sizing.gas_density}, and the indexed load factor divides by their "
+                f"difference",
+            )
+        term = (1.0 / gas_area_fraction) * (floored - sizing.gas_density) / sizing.gas_density
+        if not math.isfinite(term) or term <= 0.0:
+            raise InvalidInputError(
+                "gas_load_factor",
+                f"the phase-indexed load factor's radicand is {term}",
+            )
+        rated.append(sizing.superficial_velocity * math.sqrt(1.0 / term))
+
+    required_diameter: float | None = None
+    if safety_factor is not None:
+        liquid_density = (
+            oil_density
+            if oil_density is not None
+            else aqueous_density
+            if aqueous_density is not None
+            else DEFAULT_LIQUID_DENSITY_FOR_SIZING
+        )
+        if not math.isfinite(liquid_density) or liquid_density <= sizing.gas_density:
+            raise InvalidInputError(
+                "safety_factor",
+                f"the liquid phase is {liquid_density} kg/m3 against the gas's "
+                f"{sizing.gas_density}, so the Souders-Brown velocity `sizeFromFlow` divides "
+                f"by is not positive",
+            )
+        max_velocity = design_load_factor * math.sqrt(
+            (liquid_density - sizing.gas_density) / sizing.gas_density
+        )
+        gas_area_share = 1.0 - design_level_fraction if horizontal else 1.0
+        required_gas_area = sizing.volumetric_flow * safety_factor / max_velocity
+        total_area = required_gas_area / gas_area_share
+        if not math.isfinite(total_area) or total_area <= 0.0:
+            raise InvalidInputError(
+                "safety_factor",
+                f"`sizeFromFlow` answers a total area of {total_area} m2",
+            )
+        required_diameter = math.sqrt(4.0 * total_area / math.pi)
+
+    return SizingGetters(
+        gas_area_fraction=gas_area_fraction,
+        liquid_volume=liquid_volume,
+        separator_volume=separator_volume,
+        rated_by_phase=tuple(rated),
+        required_diameter=required_diameter,
+    )
+
+
+def _liquid_area(level: float, diameter: float) -> float:
+    """`Separator.liquidArea` on a horizontal vessel: the circular segment below ``level``."""
+    cross_area = math.pi * diameter * diameter / 4.0
+    if level <= 0.0:
+        return 0.0
+    if level >= diameter:
+        return cross_area
+    radius = diameter / 2.0
+    if level < radius:
+        d = radius - level
+        theta = math.acos(d / radius)
+        a = radius * math.sin(theta)
+        return theta * radius * radius - a * d
+    if level > radius:
+        d = level - radius
+        theta = math.acos(d / radius)
+        a = radius * math.sin(theta)
+        return (math.pi - theta) * radius * radius + a * d
+    return 0.5 * math.pi * radius * radius
 
 
 def _phase_compositions(

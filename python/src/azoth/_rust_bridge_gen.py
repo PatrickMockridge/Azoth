@@ -6499,7 +6499,7 @@ def rate_based_packed_column(gas_components: list[str], gas_n: Q, gas_z: list[fl
     )
 
 
-def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None) -> SeparatorResult:
+def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None) -> SeparatorResult:
     """``process.separator``, computed in Rust."""
     spec = _models_gen.model("process.separator")
     result = _core.separator(
@@ -6515,6 +6515,9 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
         orientation,
         None if design_liquid_level_fraction is None else design_liquid_level_fraction,
+        None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
+        None if liquid_level_fraction is None else liquid_level_fraction,
+        None if safety_factor is None else safety_factor,
     )
     return SeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -6532,6 +6535,9 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         gas_superficial_velocity=None if result.gas_superficial_velocity is None else from_si(result.gas_superficial_velocity.magnitude_si, result.gas_superficial_velocity.unit),
         gas_load_factor=None if result.gas_load_factor is None else from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
         is_overloaded=result.is_overloaded,
+        gas_area_fraction=result.gas_area_fraction,
+        rated_gas_load_factor_by_phase=None if result.rated_gas_load_factor_by_phase is None else tuple(from_si(q.magnitude_si, q.unit) for q in result.rated_gas_load_factor_by_phase),
+        required_diameter=None if result.required_diameter is None else from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
         warnings=_warnings(result.warnings),
     )
 

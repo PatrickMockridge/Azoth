@@ -16,7 +16,10 @@ assumptions = [
     "**no gas phase answers `0.0` utilisation and `false` overload, and the three velocity metrics are absent.** The class's velocity and load-factor getters still read phase 0, which is then the liquid; a metric formed from it is not a gas metric, so the port omits it rather than publishing one.",
     "**the metric is read at the outlet state and on the entrained liquid.** `Q`, `rho_g` and `rho_l` are the system after `run` - `feed_p - pressure_drop`, the flash's temperature - and the liquid density is the one that absorbed `gas_in_liquid`.",
     "**one liquid.** `getGasLoadFactor()` reads phase 1 and the sizing family prefers `oil` then `aqueous`; with one condensed phase the branch is that phase, and `process.three_phase_separator` owns the other.",
-    "NeqSim's `Separator` also carries `getGasLoadFactor(int)`, `getDeRatedGasLoadFactor`, `sizeFromFlow`/`autoSize`, the mechanical design and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.",
+    "**the phase-number load factor reads the holdup, not the design level.** `getGasLoadFactor(int)` divides its term by `1 - liquidVolume/separatorVolume` horizontal; the no-argument form uses `1 - design_liquid_level_fraction`. On the capture's `0.8`/`0.5` state they differ by `sqrt(2)`.",
+    "**`sizeFromFlow` is a closed form and sizes one diameter**: the gas flow times the safety factor over the design `K` velocity, the oil-then-aqueous liquid density, and the orientation's design gas area. A system with no gas returns unsized.",
+    "**the derating getter reads a stale interphase clone**: it reports `0.0` N/m where the live Parachor answers `0.0089`, so every two-phase state answers `0.5`. The capture prints both factors; the port publishes no derated factor, because a stale clone's value is not a state function.",
+    "NeqSim's `Separator` also carries `autoSize`, the mechanical design and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run` and its steady capacity getters.",
@@ -24,7 +27,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/separator/Separator.java"
-edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless re-run; and the five capacity getters. **`oilInGas`/`waterInGas` are absent.**"
+edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless re-run; the five capacity getters; `getGasLoadFactor(int)`; and `sizeFromFlow(safety)`."
 [inputs]
 [inputs.components]
 type = "components"
@@ -70,6 +73,18 @@ description = "the vessel's orientation, which picks the gas area. **Absent is t
 unit = "dimensionless"
 optional = true
 description = "the fraction of the cross-section the liquid occupies at design, which derates a horizontal vessel's gas area to `(1 - f)`. **Absent is the class's `0.8`**; vertical ignores it; refused without the diameter and load factor.\n"
+[inputs.separator_length]
+unit = "m"
+optional = true
+description = "the vessel's tangent-to-tangent length, which the horizontal liquid volume and the vertical liquid height both divide. **Absent is the class's `5.0` m**; refused without the diameter and load factor.\n"
+[inputs.liquid_level_fraction]
+unit = "dimensionless"
+optional = true
+description = "the operating liquid level, as the fraction of the maximum liquid height the class's `setLiquidLevel` takes - the diameter on a horizontal vessel and the length on a vertical one. **Absent is the class's `0.5`**; refused without the diameter and load factor.\n"
+[inputs.safety_factor]
+unit = "dimensionless"
+optional = true
+description = "the factor `sizeFromFlow` multiplies the gas volumetric flow by before it solves for the diameter. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor.\n"
 [outputs]
 [outputs.vapour_n]
 unit = "mol/s"
@@ -125,6 +140,20 @@ description = "`getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sq
 type = "boolean"
 optional = true
 description = "`isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.\n"
+[outputs.gas_area_fraction]
+unit = "dimensionless"
+optional = true
+description = "`1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.\n"
+[outputs.rated_gas_load_factor_by_phase]
+type = "vector"
+unit = "m/s"
+length = "one per liquid phase"
+optional = true
+description = "`getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.\n"
+[outputs.required_diameter]
+unit = "m"
+optional = true
+description = "`sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
@@ -159,6 +188,26 @@ max = 1
 max_inclusive = false
 severity = "error"
 rationale = "a fraction of the cross-section; at one it leaves no gas area, which is a division by zero rather than a vessel\n"
+[[valid_range]]
+quantity = "separator_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a tangent-to-tangent length is a positive length, and the horizontal liquid volume is zero at zero\n"
+[[valid_range]]
+quantity = "liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "the class's setLiquidLevel takes a fraction of the maximum liquid height; at one the vessel is all liquid and has no gas area\n"
+[[valid_range]]
+quantity = "safety_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "sizeFromFlow multiplies the gas flow by it, and zero is a vessel that sizes to nothing\n"
 [implementations]
 python = "azoth.process.separator"
 rust = "azoth_process::separator"

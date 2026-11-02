@@ -708,6 +708,9 @@ impl CalcResult for SeparatorResult {
         "gas_superficial_velocity",
         "gas_load_factor",
         "is_overloaded",
+        "gas_area_fraction",
+        "rated_gas_load_factor_by_phase",
+        "required_diameter",
         "warnings",
     ];
 

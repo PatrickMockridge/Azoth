@@ -1912,6 +1912,9 @@ def separator(
     design_gas_load_factor: Q | None = None,
     orientation: str | None = None,
     design_liquid_level_fraction: float | None = None,
+    separator_length: Q | None = None,
+    liquid_level_fraction: float | None = None,
+    safety_factor: float | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -1925,7 +1928,10 @@ def separator(
     basis, **both or neither**, and add the five capacity getters: utilisation, the maximum
     allowable and superficial velocities, the actual Souders-Brown load factor, and the
     overload flag. ``orientation`` and ``design_liquid_level_fraction`` shape the gas area and
-    default to the class's ``horizontal`` and ``0.8``.
+    default to the class's ``horizontal`` and ``0.8``. ``separator_length`` and
+    ``liquid_level_fraction`` are the class's ``5.0`` m and ``0.5`` when absent, and add the
+    operating gas area fraction and the phase-indexed load factors; ``safety_factor`` adds
+    ``sizeFromFlow``'s required diameter.
 
     Raises:
         InvalidInputError: where the pressure drop takes the outlet below zero, the
@@ -1946,6 +1952,9 @@ def separator(
         design_gas_load_factor=design_gas_load_factor,
         orientation=orientation,
         design_liquid_level_fraction=design_liquid_level_fraction,
+        separator_length=separator_length,
+        liquid_level_fraction=liquid_level_fraction,
+        safety_factor=safety_factor,
     )
 
 

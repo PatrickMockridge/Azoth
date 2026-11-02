@@ -3102,6 +3102,9 @@ class SeparatorResult:
     gas_superficial_velocity: Qty | None
     gas_load_factor: Qty | None
     is_overloaded: bool | None
+    gas_area_fraction: float | None
+    rated_gas_load_factor_by_phase: list[Qty] | None
+    required_diameter: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5800,6 +5803,9 @@ def separator(
     design_gas_load_factor: float | None = None,
     orientation: str | None = None,
     design_liquid_level_fraction: float | None = None,
+    separator_length: float | None = None,
+    liquid_level_fraction: float | None = None,
+    safety_factor: float | None = None,
 ) -> SeparatorResult: ...
 def separator_capacity_assessment(
     components: list[str],

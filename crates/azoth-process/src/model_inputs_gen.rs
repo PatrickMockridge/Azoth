@@ -3285,6 +3285,27 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("dimensionless"),
             },
+            ModelInput {
+                name: "separator_length",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
+                name: "liquid_level_fraction",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "safety_factor",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
         ],
     },
     ModelInputs {

@@ -817,9 +817,14 @@ a claim nothing holds.
   mechanical-design gas limit; **the droplet-performance calculator landed as
   `process.separator_performance`** - the standard path's six fractions and four efficiencies
   over the class's droplet distributions, grade curves and settling solve, with the enhanced
-  chain, auto-calibration and the API 12J DTO left owed; what remains owed there is
-  `getGasLoadFactor(int)`'s inventory derating, `getDeRatedGasLoadFactor`, the
-  `sizeFromFlow`/`autoSize` gas-area sizing and the mechanical design;
+  chain, auto-calibration and the API 12J DTO left owed; **`getGasLoadFactor(int)`'s
+  phase-indexed and `sizeFromFlow` landed** - the operating holdup against the design gas
+  area, and the closed-form diameter; what remains owed there is `autoSize` and the
+  mechanical design, and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
+  class's interphase model is a pre-flash clone whose zero-density phases answer a surface
+  tension of `0.0`, so the getter's factor is exactly `0.5` on every two-phase state where
+  the live Parachor answers `0.0089` and the formula would give `0.946` (capture
+  `process_separator_sizing.tsv`);
   **`ThreePhaseSeparator`'s levels and its oil/water retention times landed**; still owed there
   are the three outlet valve fractions (stored but read only by the class's mass-balance
   report) and `calcInterfaceSettlingTime` (NeqSim's default phase viscosity), the droplet

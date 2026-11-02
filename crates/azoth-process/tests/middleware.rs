@@ -496,8 +496,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // separator's vessel adds four** - its diameter, its tan-tan length and its two level
     // fractions - the sixteenth to nineteenth. **The flare's radiation surface adds two** - its
     // ground distance and its flux threshold, which the form does not carry - the twentieth and
-    // twenty-first.
-    assert_eq!(checked, 134, "the bounds this test walked");
+    // twenty-first. **The separator's sizing surface adds three bounds** - its length, its
+    // operating level fraction and its safety factor - the twenty-second to twenty-fourth.
+    assert_eq!(checked, 137, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -648,8 +649,9 @@ fn the_generated_input_table_is_the_models_own() {
     // `water_level` and `oil_level` - `561 + 6 = 567`. **And the flare's radiation, dispersion
     // and capacity surface's eight** - `flame_height`, `radiant_fraction`, `tip_diameter`,
     // `ground_distance`, `radiation_flux_threshold` and the three design capacities -
-    // `567 + 8 = 575`.
-    assert_eq!(walked, 575, "the inputs this test walked");
+    // `567 + 8 = 575`. **And then the separator's sizing surface's three** -
+    // `separator_length`, `liquid_level_fraction` and `safety_factor` - `575 + 3 = 578`.
+    assert_eq!(walked, 578, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

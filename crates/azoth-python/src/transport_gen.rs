@@ -17418,6 +17418,15 @@ pub struct PySeparatorResult {
     /// `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
     #[pyo3(get)]
     pub is_overloaded: Option<bool>,
+    /// `1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.
+    #[pyo3(get)]
+    pub gas_area_fraction: Option<f64>,
+    /// `getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.
+    #[pyo3(get)]
+    pub rated_gas_load_factor_by_phase: Option<Vec<PyQty>>,
+    /// `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
+    #[pyo3(get)]
+    pub required_diameter: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -17427,7 +17436,7 @@ pub struct PySeparatorResult {
 impl PySeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, {} warning(s))",
+            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -17443,6 +17452,9 @@ impl PySeparatorResult {
             self.gas_superficial_velocity,
             self.gas_load_factor,
             self.is_overloaded,
+            self.gas_area_fraction,
+            self.rated_gas_load_factor_by_phase,
+            self.required_diameter,
             self.warnings.len()
         )
     }
@@ -17499,6 +17511,22 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
                 unit: "m/s".to_string(),
             }),
             is_overloaded: r.is_overloaded,
+            gas_area_fraction: r.gas_area_fraction,
+            rated_gas_load_factor_by_phase: r.rated_gas_load_factor_by_phase.as_ref().map(
+                |values| {
+                    values
+                        .iter()
+                        .map(|v| PyQty {
+                            magnitude_si: *v,
+                            unit: "m/s".to_string(),
+                        })
+                        .collect()
+                },
+            ),
+            required_diameter: r.required_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

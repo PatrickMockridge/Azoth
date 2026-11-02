@@ -42,6 +42,9 @@ fn run(
         load_factor.map(meters_per_second),
         orientation,
         level_fraction,
+        None,
+        None,
+        None,
     )
     .expect("the captured state separates")
 }
@@ -268,6 +271,9 @@ fn half_a_vessel_is_refused_both_ways() {
             load_factor.map(meters_per_second),
             None,
             None,
+            None,
+            None,
+            None,
         )
     };
     assert!(refused(Some(1.0), None).is_err());
@@ -291,6 +297,9 @@ fn the_gas_area_inputs_need_the_vessel() {
             None,
             orientation,
             level,
+            None,
+            None,
+            None,
         )
     };
     assert!(refused(Some("vertical"), None).is_err());
@@ -312,6 +321,120 @@ fn an_orientation_that_is_neither_is_refused() {
         Some(meters_per_second(0.11)),
         Some("inclined"),
         None,
+        None,
+        None,
+        None,
     );
     assert!(result.is_err());
+}
+
+/// The sizing capture's first block, and the two fractions it separates.
+#[test]
+fn the_phase_indexed_load_factor_reads_the_operating_level() {
+    let result = separator(
+        &names(),
+        1.0,
+        &[0.7, 0.3],
+        pascals(2_000_000.0),
+        kelvins(300.0),
+        pascals(0.0),
+        0.0,
+        None,
+        Some(meters(1.0)),
+        Some(meters_per_second(0.11)),
+        Some("horizontal"),
+        Some(0.8),
+        Some(meters(5.0)),
+        Some(0.5),
+        Some(1.0),
+    )
+    .expect("the captured state sizes");
+    close(
+        result.gas_area_fraction.expect("a stated vessel"),
+        0.5,
+        1.0e-12,
+        "the operating gas area fraction",
+    );
+    let rated = result
+        .rated_gas_load_factor_by_phase
+        .expect("one liquid phase");
+    assert_eq!(rated.len(), 1);
+    close(
+        rated[0],
+        8.268_694_445_732_268e-4,
+        2.0e-4,
+        "the phase-indexed load factor",
+    );
+    close(
+        result
+            .required_diameter
+            .expect("a stated safety factor")
+            .value,
+        0.103_104_976_637_995_05,
+        2.0e-4,
+        "sizeFromFlow's diameter",
+    );
+}
+
+/// A vertical vessel's operating fraction is one, and a dry gas has nothing to index.
+#[test]
+fn the_vertical_and_dry_gas_edges() {
+    let vertical = separator(
+        &names(),
+        1.0,
+        &[0.7, 0.3],
+        pascals(2_000_000.0),
+        kelvins(300.0),
+        pascals(0.0),
+        0.0,
+        None,
+        Some(meters(1.0)),
+        Some(meters_per_second(0.11)),
+        Some("vertical"),
+        Some(0.8),
+        Some(meters(5.0)),
+        Some(0.5),
+        Some(1.0),
+    )
+    .expect("the captured state sizes");
+    close(
+        vertical.gas_area_fraction.expect("a stated vessel"),
+        1.0,
+        1.0e-12,
+        "a vertical vessel's gas area fraction",
+    );
+    close(
+        vertical
+            .rated_gas_load_factor_by_phase
+            .expect("one liquid phase")[0],
+        2.338_739_965_654_731e-4,
+        2.0e-4,
+        "a vertical vessel's indexed load factor",
+    );
+
+    let dry = separator(
+        &["methane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(5_000_000.0),
+        kelvins(300.0),
+        pascals(0.0),
+        0.0,
+        None,
+        Some(meters(1.0)),
+        Some(meters_per_second(0.11)),
+        Some("vertical"),
+        Some(0.8),
+        Some(meters(5.0)),
+        Some(0.5),
+        Some(1.0),
+    )
+    .expect("the captured dry gas sizes");
+    assert!(dry.rated_gas_load_factor_by_phase.is_none());
+    close(
+        dry.required_diameter.expect("a gas phase").value,
+        0.031_731_599_636_920_42,
+        2.0e-4,
+        "the dry-gas diameter",
+    );
 }

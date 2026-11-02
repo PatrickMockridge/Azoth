@@ -3529,6 +3529,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "design_liquid_level_fraction",
         "dimensionless",
     ),
+    ("process.separator", "separator_length", "length"),
+    (
+        "process.separator",
+        "liquid_level_fraction",
+        "dimensionless",
+    ),
+    ("process.separator", "safety_factor", "dimensionless"),
     (
         "process.separator_capacity_assessment",
         "feed_n",

@@ -6913,6 +6913,15 @@ class SeparatorResult(_HasWarnings):
     #: `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
     is_overloaded: bool | None
 
+    #: `1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.
+    gas_area_fraction: float | None
+
+    #: `getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.
+    rated_gas_load_factor_by_phase: tuple[Q, ...] | None
+
+    #: `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
+    required_diameter: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

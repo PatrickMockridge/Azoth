@@ -36,6 +36,8 @@
 //       > captures/process_separator_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
 //       > captures/process_separator_capacity_assessment.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
+//       > captures/process_separator_sizing.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
 //       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
@@ -129,6 +131,9 @@ public class ProcessProbe {
         break;
       case "separator_capacity_assessment":
         separatorCapacityAssessmentRows();
+        break;
+      case "separator_sizing":
+        separatorSizingRows();
         break;
       case "separator_performance":
         separatorPerformanceRows();
@@ -4948,6 +4953,175 @@ public class ProcessProbe {
     System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
     System.out.println("capacity_utilization=" + separator.getCapacityUtilization());
     System.out.println("is_overloaded=" + separator.isOverloaded());
+    System.out.println();
+  }
+
+  // === process.separator sizing and derating ==================================
+
+  /// `Separator`'s sizing and derating getters, on the state `run` leaves behind.
+  ///
+  /// **The phase-number overload is not the no-argument one.** It divides the Souders-Brown
+  /// term by the horizontal gas-area fraction `1 - liquidVolume / separatorVolume` and reads
+  /// the stated phase's density; the no-argument form reads phase 1 and the design liquid
+  /// level fraction. Both are printed on every row, so a state where they agree (vertical, or
+  /// a level equal to the design fraction) does not hide the difference.
+  ///
+  /// **The derating is the interphase surface tension's**: `1 - 0.5 (10e-3 - sigma)/10e-3`
+  /// below `10e-3` N/m, applied to the superficial velocity. The rows include a near-critical
+  /// light gas where the tension falls under the threshold, and print the tension each
+  /// overload reads.
+  ///
+  /// **`sizeFromFlow` is a closed form and it mutates the vessel.** It runs last, after every
+  /// getter has read the stated diameter, and the answer is printed beside that diameter.
+  static void separatorSizingRows() {
+    separatorSizingRow("pr_two_phase_vertical", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "vertical", 0.8, 0.11, 1.0);
+    separatorSizingRow("pr_two_phase_horizontal", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    separatorSizingRow("pr_two_phase_horizontal_level_02", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.2, "horizontal", 0.2, 0.11, 1.0);
+    // A near-critical light gas: the interphase tension is the row's measurement, and the
+    // derating branch is reachable only where it falls under 10 mN/m.
+    separatorSizingRow("pr_near_critical_derating", false, false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 200.0, 40.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    separatorSizingRow("srk_near_critical_derating", true, false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 200.0, 40.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    // Three phases: the indexed overloads read the oil and the aqueous density separately.
+    separatorSizingRow("pr_three_phase_horizontal", false, true,
+        new String[] {"methane", "n-butane", "water"}, new double[] {0.5, 0.4, 0.1}, 300.0, 20.0,
+        1.0, 5.0, 0.5, "horizontal", 0.8, 0.11, 1.0);
+    // A dry gas: the sizing rule's 1000 kg/m3 liquid fallback and the derating's own.
+    separatorSizingRow("pr_dry_gas_vertical", false, false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 5.0, 0.5, "vertical", 0.8, 0.11, 1.0);
+    // No gas at all: `sizeFromFlow` returns without sizing, which is the class's own branch.
+    separatorSizingRow("pr_liquid_only_no_sizing", false, false, new String[] {"n-butane"},
+        new double[] {1.0}, 300.0, 20.0, 1.0, 5.0, 0.5, "vertical", 0.8, 0.11, 1.0);
+    // The safety factor is the one input `sizeFromFlow` takes; the same state at 1.5.
+    separatorSizingRow("pr_sizing_safety_15", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.5);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void separatorSizingRow(String label, boolean srk, boolean multiPhase, String[] names,
+      double[] amounts, double temperature, double pressureBar, double diameter, double length,
+      double liquidLevelFraction, String orientation, double designLiquidLevelFraction,
+      double kFactor, double safetyFactor) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar, 1.0,
+        null);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    separator.setOrientation(orientation);
+    separator.setInternalDiameter(diameter);
+    separator.setSeparatorLength(length);
+    separator.setLiquidLevel(liquidLevelFraction);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.run();
+    printSizing(label, srk, inlet, separator, diameter, length, liquidLevelFraction, orientation,
+        designLiquidLevelFraction, kFactor, safetyFactor);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void printSizing(String label, boolean srk, Stream inlet,
+      neqsim.process.equipment.separator.Separator separator, double diameter, double length,
+      double liquidLevelFraction, String orientation, double designLiquidLevelFraction,
+      double kFactor, double safetyFactor) {
+    SystemInterface system = separator.getThermoSystem();
+    system.initPhysicalProperties();
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < system.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",").append(system.getPhase(0).getComponent(i).getName())
+          .append(":").append(system.getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("orientation=" + orientation);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("separator_length_m=" + length);
+    System.out.println("liquid_level_fraction=" + liquidLevelFraction);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("safety_factor=" + safetyFactor);
+    System.out.println("has_geometry=" + separator.hasGeometry());
+    System.out.println("phase_count=" + system.getNumberOfPhases());
+    StringBuilder types = new StringBuilder();
+    StringBuilder densities = new StringBuilder();
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      types.append(i == 0 ? "" : ",").append(system.getPhase(i).getType().name());
+      densities.append(i == 0 ? "" : ",")
+          .append(system.getPhase(i).getPhysicalProperties().getDensity());
+    }
+    System.out.println("phase_types=" + types);
+    System.out.println("phase_densities_kg_m3=" + densities);
+    System.out.println("has_gas=" + system.hasPhaseType("gas"));
+    System.out.println("has_oil=" + system.hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + system.hasPhaseType("aqueous"));
+    // The tension each derating overload reads: the no-argument one reads the (0, 1) pair.
+    double classSigma = 0.0;
+    for (int i = 0; i + 1 < system.getNumberOfPhases(); i++) {
+      double sigma = system.getInterphaseProperties().getSurfaceTension(i, i + 1);
+      if (i == 0) {
+        classSigma = sigma;
+      }
+      System.out.println("surface_tension_" + i + "_" + (i + 1) + "_n_per_m=" + sigma);
+    }
+    // **The class's interphase model is a clone of the pre-flash system.** It carries zero
+    // densities, so the Parachor it computes is 0.0 whatever the live state - and the
+    // derating is therefore `1 - 0.5` on every row. A fresh model over the live system
+    // measures what the formula would answer if it read this state, which is the difference
+    // the spec records.
+    double liveSigma = Double.NaN;
+    if (system.getNumberOfPhases() >= 2) {
+      try {
+        liveSigma =
+            new neqsim.physicalproperties.interfaceproperties.surfacetension.ParachorSurfaceTension(
+                system).calcSurfaceTension(0, 1);
+      } catch (Exception ex) {
+        liveSigma = Double.NaN;
+      }
+    }
+    System.out.println("live_parachor_surface_tension_n_per_m=" + liveSigma);
+    System.out.println("class_derating_factor="
+        + (classSigma < 10.0e-3 ? 1.0 - 0.5 * (10.0e-3 - classSigma) / 10.0e-3 : 1.0));
+    System.out.println("intended_derating_factor="
+        + (!Double.isNaN(liveSigma) && liveSigma < 10.0e-3
+            ? 1.0 - 0.5 * (10.0e-3 - liveSigma) / 10.0e-3
+            : 1.0));
+    double area = Math.PI * diameter * diameter / 4.0;
+    double vesselVolume = area * length;
+    double liquidVolume = separator.calcLiquidVolume();
+    System.out.println("separator_volume_m3=" + vesselVolume);
+    System.out.println("liquid_volume_m3=" + liquidVolume);
+    System.out.println("gas_area_fraction="
+        + (orientation.equals("horizontal") ? 1.0 - liquidVolume / vesselVolume : 1.0));
+    System.out.println("gas_superficial_velocity_m_per_s="
+        + separator.getGasSuperficialVelocity());
+    System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
+    for (int i = 1; i < system.getNumberOfPhases(); i++) {
+      System.out.println("gas_load_factor_phase_" + i + "_m_per_s="
+          + separator.getGasLoadFactor(i));
+    }
+    System.out.println("derated_gas_load_factor_m_per_s="
+        + separator.getDeRatedGasLoadFactor());
+    for (int i = 1; i < system.getNumberOfPhases(); i++) {
+      System.out.println("derated_gas_load_factor_phase_" + i + "_m_per_s="
+          + separator.getDeRatedGasLoadFactor(i));
+    }
+    System.out.println("reported_design_gas_load_factor_m_per_s="
+        + separator.getDesignGasLoadFactor());
+    // `sizeFromFlow` mutates the vessel, so it is the row's last read.
+    separator.sizeFromFlow(safetyFactor);
+    System.out.println("sized_diameter_m=" + separator.getInternalDiameter());
     System.out.println();
   }
 

@@ -1009,7 +1009,7 @@ def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
     would agree on every two-phase row here and disagree on a near-dry one.
     """
     from azoth.core.units import quantity
-    from azoth.process.reference.separator import _capacity_states, _route
+    from azoth.process.reference.separator import _capacity_states, _route, _sizing_getters
 
     components = [str(name) for name in inputs["components"]]
     feed_z = [float(v) for v in inputs["feed_z"]]
@@ -1063,6 +1063,33 @@ def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
             "gas_superficial_velocity_m_per_s": superficial,
             "gas_load_factor_m_per_s": load_factor,
         }
+    # **The sizing capture's own three layers**, on the same run: the operating area
+    # fraction, the phase-indexed load factors and `sizeFromFlow`'s diameter. The indexed
+    # values are dumped under the capture's per-phase key, because the record carries one
+    # number per liquid phase and the capture prints one line per phase.
+    sizing = _sizing_getters(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        feed_z,
+        states.n_vapour,
+        list(states.liquid_z),
+        float(inputs["internal_diameter"]),
+        float(inputs["design_gas_load_factor"]),
+        str(inputs.get("orientation") or "horizontal"),
+        0.8 if level is None else float(level),
+        5.0 if inputs.get("separator_length") is None else float(inputs["separator_length"]),
+        0.5
+        if inputs.get("liquid_level_fraction") is None
+        else float(inputs["liquid_level_fraction"]),
+        None if inputs.get("safety_factor") is None else float(inputs["safety_factor"]),
+    )
+    if sizing is not None:
+        dump["gas_area_fraction"] = sizing.gas_area_fraction
+        if sizing.required_diameter is not None:
+            dump["sized_diameter_m"] = sizing.required_diameter
+        for index, value in enumerate(sizing.rated_by_phase, start=1):
+            dump[f"gas_load_factor_phase_{index}_m_per_s"] = value
     return dump
 
 
@@ -1556,6 +1583,39 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_separator_capacity.tsv",
         block=9,
         identified_by=("#label", "pr_pressure_drop_outlet_state_vertical_d1000"),
+    ),
+    # The sizing capture's four cased blocks. **The other five are declared uncased**: the
+    # level-`0.2` row repeats the horizontal case under a stated design level, the two
+    # near-critical rows are the derating measurement (a getter the port refuses), the
+    # three-phase row is the capacity family's under another feed, and the liquid-only row
+    # is the class's no-sizing branch, which publishes nothing to compare.
+    LayerCase(
+        model="process.separator",
+        case="a_vertical_vessel_ignores_the_operating_level",
+        capture="process_separator_sizing.tsv",
+        block=0,
+        identified_by=("#label", "pr_two_phase_vertical"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_phase_indexed_load_factor_reads_the_operating_level",
+        capture="process_separator_sizing.tsv",
+        block=1,
+        identified_by=("#label", "pr_two_phase_horizontal"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_dry_gas_has_no_liquid_phase_to_index",
+        capture="process_separator_sizing.tsv",
+        block=6,
+        identified_by=("#label", "pr_dry_gas_vertical"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_safety_factor_scales_the_required_diameter",
+        capture="process_separator_sizing.tsv",
+        block=8,
+        identified_by=("#label", "pr_sizing_safety_15"),
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -2144,6 +2204,11 @@ UNCASED_ROWS: dict[str, int] = {
     # **The last is `GasScrubber` at minimum setup**, which prints the class defaults this
     # id does not adopt - `vertical`, `0.1`, and the `0.11` m/s `K` it inherits.
     "process_separator_capacity.tsv": 8,
+    # The sizing capture's five: the level-`0.2` row repeats the horizontal case under a
+    # stated design level, the two near-critical rows are the derating measurement (the
+    # getter the port refuses), the three-phase row is the capacity family's under another
+    # feed, and the liquid-only row is the class's no-sizing branch.
+    "process_separator_sizing.tsv": 5,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as

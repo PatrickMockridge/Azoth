@@ -1174,6 +1174,34 @@ methane/ethane/n-heptane at 90 bara and 25 C prints one `GAS` phase on both cubi
 that the floor is not reachable from that state; the port pins the floor on constructed
 densities instead.
 
+## The separator sizing and derating
+
+`process_separator_sizing.tsv` is `Separator.getGasLoadFactor(int)`,
+`getDeRatedGasLoadFactor` and `sizeFromFlow` on the capacity capture's fluid, swept over
+orientation, the operating level and the safety factor.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
+  > captures/process_separator_sizing.tsv
+```
+
+Each row prints the geometry, both fractions (the design level and the operating one), every
+phase's density and the interphase surface tension the derating reads, then the no-argument
+and phase-indexed load factors and `sizeFromFlow`'s diameter. **The horizontal rows are the
+point**: the superficial velocity divides by the design gas area while the indexed overload
+divides its radicand by `1 - liquidVolume/separatorVolume`, so the two differ by `sqrt(2)` on
+the `0.8`/`0.5` state and agree on a vertical vessel.
+
+**`getDeRatedGasLoadFactor` reads a stale interphase model.** The separator's
+`getInterphaseProperties()` was built on a pre-flash clone whose phases carry zero density, so
+the Parachor it computes is `0.0` N/m on every row - `class_derating_factor` is exactly `0.5`
+on a two-phase state and `1.0` on a single phase. The probe also builds a `ParachorSurfaceTension`
+over the live system and prints its answer (`live_parachor_surface_tension_n_per_m`, `0.008919878`
+on the two-phase rows) and the factor the class's own formula would give
+(`intended_derating_factor`, `0.94599`). The port refuses the getter rather than baking the
+stale model's `0.5` into a state function.
+
 ## The separator capacity assessment
 
 `process_separator_capacity_assessment.tsv` is `Separator.getCapacityAssessment` on the

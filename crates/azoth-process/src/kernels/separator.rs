@@ -401,6 +401,216 @@ pub fn capacity_states(
     })
 }
 
+/// `Separator.getGasLoadFactor(int)` and `Separator.sizeFromFlow(safety)`, on the state
+/// [`separator`] leaves behind.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SizingGetters {
+    /// `1 - liquidVolume / separatorVolume` horizontal, `1.0` vertical.
+    pub gas_area_fraction: f64,
+    /// The operating liquid volume, m3; the class's circular segment times the length.
+    pub liquid_volume: f64,
+    /// The vessel's total volume, m3; the cross-section times the length.
+    pub separator_volume: f64,
+    /// `getGasLoadFactor(int)` for each liquid phase, in the class's phase order.
+    pub rated_by_phase: Vec<f64>,
+    /// `sizeFromFlow(safety)`'s diameter, m; absent when the system carries no gas.
+    pub required_diameter: Option<f64>,
+}
+
+/// The phase-indexed load factors and the Souders-Brown sizing.
+///
+/// **Two gas area fractions, and they are different fields.** The superficial velocity - and
+/// therefore every load factor - divides by the **design** area, `1 - design_level_fraction`
+/// horizontal. The indexed overload additionally divides its radicand by the **operating**
+/// area fraction `1 - liquidVolume / separatorVolume`, which is the class's own holdup. A
+/// vertical vessel is `1.0` on the second and the two overloads then agree.
+///
+/// `Ok(None)` is a system with no gas phase: the class's sizing returns without a diameter,
+/// and the capacity family publishes nothing.
+///
+/// # Errors
+/// The same density and radicand refusals [`sizing_states`] makes, and the liquid level's
+/// zero-area case, which the class answers with a non-finite answer.
+#[allow(clippy::too_many_arguments)] // one per declared input the fold reads
+pub fn sizing_getters(
+    feed: &Stream,
+    gas_outlet: &Stream,
+    liquid_outlet: &Stream,
+    internal_diameter: Length,
+    design_load_factor: Velocity,
+    horizontal: bool,
+    design_level_fraction: f64,
+    separator_length: Length,
+    liquid_level_fraction: f64,
+    safety_factor: Option<f64>,
+) -> Result<Option<SizingGetters>> {
+    let Some(sizing) = sizing_states(
+        feed,
+        gas_outlet,
+        liquid_outlet,
+        internal_diameter,
+        design_load_factor,
+        horizontal,
+        design_level_fraction,
+    )?
+    else {
+        return Ok(None);
+    };
+
+    let diameter = internal_diameter.value;
+    let length = separator_length.value;
+    let cross_area = std::f64::consts::PI * diameter * diameter / 4.0;
+    let separator_volume = cross_area * length;
+    let level = if horizontal {
+        liquid_level_fraction * diameter
+    } else {
+        liquid_level_fraction * length
+    };
+    let liquid_volume = if horizontal {
+        liquid_area(level, diameter, true) * length
+    } else {
+        cross_area * level
+    };
+    let gas_area_fraction = if horizontal {
+        1.0 - liquid_volume / separator_volume
+    } else {
+        1.0
+    };
+    if !gas_area_fraction.is_finite() || gas_area_fraction <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "liquid_level_fraction",
+            format!(
+                "the operating liquid level of {liquid_level_fraction} leaves a gas area \
+                 fraction of {gas_area_fraction}, and the phase-indexed load factor divides by it"
+            ),
+        ));
+    }
+
+    // **The phase densities are the system's own, after the run.** The class's
+    // `getGasLoadFactor(int)` calls `initPhysicalProperties` and reads each phase, which is
+    // the flash of each phase's composition - so the labelled phases at the outlet state are
+    // the same states, and the entrained liquid is the liquid outlet's re-flash (which
+    // `sizing_states` already measured for the no-argument form).
+    let (mixture, _ideal_gas) = feed.mixture()?;
+    let flash = pt_flash(&mixture, gas_outlet.t, gas_outlet.p, &feed.z)?;
+    let labelled =
+        labelled_phases_at_from_feed(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
+
+    let mut rated_by_phase = Vec::new();
+    let mut oil_density = None;
+    let mut aqueous_density = None;
+    for (kind, z, root) in &labelled {
+        if *kind == PhaseLabel::Gas {
+            continue;
+        }
+        let density = mass_density(
+            &mixture,
+            gas_outlet.t,
+            gas_outlet.p,
+            z,
+            *root,
+            molar_mass_of(&mixture, z)?,
+        )?;
+        match kind {
+            PhaseLabel::Oil => oil_density = Some(density),
+            PhaseLabel::Aqueous => aqueous_density = Some(density),
+            PhaseLabel::Gas => {}
+        }
+        let floored = load_factor_liquid_density(density, sizing.gas_density);
+        if !floored.is_finite() || floored <= sizing.gas_density {
+            return Err(AzothError::invalid_input(
+                "gas_load_factor",
+                format!(
+                    "the liquid phase is {floored} kg/m3 after the near-dry floor against the \
+                     gas's {}, and the indexed load factor divides by their difference",
+                    sizing.gas_density
+                ),
+            ));
+        }
+        let term = (1.0 / gas_area_fraction) * (floored - sizing.gas_density) / sizing.gas_density;
+        if !term.is_finite() || term <= 0.0 {
+            return Err(AzothError::invalid_input(
+                "gas_load_factor",
+                format!("the phase-indexed load factor's radicand is {term}"),
+            ));
+        }
+        rated_by_phase.push(sizing.superficial_velocity * (1.0 / term).sqrt());
+    }
+
+    // **`sizeFromFlow` uses the sizing family's liquid density, not the load factor's floor.**
+    // The class reads the oil phase, then the aqueous phase, then `1000.0`.
+    let required_diameter = safety_factor
+        .map(|safety| {
+            let liquid_density = oil_density
+                .or(aqueous_density)
+                .unwrap_or(DEFAULT_LIQUID_DENSITY_FOR_SIZING);
+            if !liquid_density.is_finite() || liquid_density <= sizing.gas_density {
+                return Err(AzothError::invalid_input(
+                    "safety_factor",
+                    format!(
+                        "the liquid phase is {liquid_density} kg/m3 against the gas's {}, so the \
+                         Souders-Brown velocity `sizeFromFlow` divides by is not positive",
+                        sizing.gas_density
+                    ),
+                ));
+            }
+            let max_velocity = design_load_factor.value
+                * ((liquid_density - sizing.gas_density) / sizing.gas_density).sqrt();
+            let gas_area_share = if horizontal {
+                1.0 - design_level_fraction
+            } else {
+                1.0
+            };
+            let required_gas_area = sizing.volumetric_flow * safety / max_velocity;
+            let total_area = required_gas_area / gas_area_share;
+            if !total_area.is_finite() || total_area <= 0.0 {
+                return Err(AzothError::invalid_input(
+                    "safety_factor",
+                    format!("`sizeFromFlow` answers a total area of {total_area} m2"),
+                ));
+            }
+            Ok((4.0 * total_area / std::f64::consts::PI).sqrt())
+        })
+        .transpose()?;
+
+    Ok(Some(SizingGetters {
+        gas_area_fraction,
+        liquid_volume,
+        separator_volume,
+        rated_by_phase,
+        required_diameter,
+    }))
+}
+
+/// `Separator.liquidArea`: the circular segment below the liquid level, on a horizontal
+/// vessel; the full cross-section on a vertical one.
+fn liquid_area(level: f64, diameter: f64, horizontal: bool) -> f64 {
+    let cross_area = std::f64::consts::PI * diameter * diameter / 4.0;
+    if level <= 0.0 {
+        return 0.0;
+    }
+    if level >= diameter {
+        return cross_area;
+    }
+    if !horizontal {
+        return cross_area;
+    }
+    let radius = diameter / 2.0;
+    if level < radius {
+        let d = radius - level;
+        let theta = (d / radius).acos();
+        let a = radius * theta.sin();
+        theta * radius * radius - a * d
+    } else if level > radius {
+        let d = level - radius;
+        let theta = (d / radius).acos();
+        let a = radius * theta.sin();
+        (std::f64::consts::PI - theta) * radius * radius + a * d
+    } else {
+        0.5 * std::f64::consts::PI * radius * radius
+    }
+}
+
 /// `SeparatorCapacityAssessment`'s fixed diagnostics, verbatim.
 const PROVENANCE_REQUIRED: &str = "Design-basis provenance is required";
 const BAD_ORIENTATION: &str = "Separator orientation must be horizontal or vertical";

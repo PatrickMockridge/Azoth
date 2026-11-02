@@ -246,3 +246,94 @@ max_allowable_gas_velocity = 0.5866151059811591
 gas_superficial_velocity = 0.001357698325808449
 gas_load_factor = 2.545908114472015e-4
 is_overloaded = false
+[[cases]]
+id = "the_phase_indexed_load_factor_reads_the_operating_level"
+tolerance = 2e-04
+source = "The sizing capture's horizontal block: the equilibrium fluid in a 1 m x 5 m vessel, with the design level at `0.8` and the operating level at `0.5`. **The two fractions are different fields**, and this row is the one that separates them: the superficial velocity divides by the *design* gas area (`0.392699...` m2) while the indexed load factor divides its radicand by the *operating* area fraction `1 - liquidVolume/separatorVolume = 0.5`. The no-argument load factor is `1.1693699828273657e-3` m/s and the phase-indexed one is `8.268694445732268e-4`, the ratio `sqrt(0.5)`. `sizeFromFlow(1.0)` answers `0.10310497663799505` m.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "horizontal"
+design_liquid_level_fraction = 0.8
+separator_length = 5.0
+liquid_level_fraction = 0.5
+safety_factor = 1.0
+[cases.expected]
+gas_area_fraction = 0.5
+rated_gas_load_factor_by_phase = [8.268694445732268e-4]
+required_diameter = 0.10310497663799505
+[[cases]]
+id = "a_vertical_vessel_ignores_the_operating_level"
+tolerance = 2e-04
+source = "The sizing capture's vertical block: the same fluid, vessel and levels with `orientation = vertical`. **The operating-level fraction is `1.0` on a vertical vessel**, so the indexed overload equals the no-argument one to the last digit (`2.338739965654731e-4` m/s), and the sizing answer is the full cross-section's `0.046109947316216926` m rather than the horizontal `0.10310497663799505`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+separator_length = 5.0
+liquid_level_fraction = 0.5
+safety_factor = 1.0
+[cases.expected]
+gas_area_fraction = 1.0
+rated_gas_load_factor_by_phase = [2.338739965654731e-4]
+required_diameter = 0.046109947316216926
+[[cases]]
+id = "a_dry_gas_has_no_liquid_phase_to_index"
+tolerance = 2e-04
+source = "The sizing capture's dry-gas block: methane alone at 300 K and 50 bara. There is no liquid phase, so `rated_gas_load_factor_by_phase` is absent - a dry gas has nothing to index - and the operating gas area fraction is `1.0` on the vertical vessel; **`sizeFromFlow` still sizes** (`0.03173159963692042` m) because the system carries a gas. A liquid-only feed is the class's other branch: the sizing returns without a diameter and none of the three outputs is published.\n"
+[cases.inputs]
+components = ["methane"]
+feed_n = 1.0
+feed_z = [1.0]
+feed_p = 5000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+separator_length = 5.0
+liquid_level_fraction = 0.5
+safety_factor = 1.0
+[cases.expected]
+gas_area_fraction = 1.0
+required_diameter = 0.03173159963692042
+[[cases]]
+id = "the_safety_factor_scales_the_required_diameter"
+tolerance = 2e-04
+source = "The sizing capture's 1.5 block: the horizontal case with `safetyFactor = 1.5`. **The factor multiplies the gas volumetric flow and nothing else**, so the required area is 1.5 times the 1.0 case's and the diameter is `sqrt(1.5)` times it: `0.12627729135233404` against `0.10310497663799505` m. The two gas-load numbers do not move, because neither reads the safety factor.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "horizontal"
+design_liquid_level_fraction = 0.8
+separator_length = 5.0
+liquid_level_fraction = 0.5
+safety_factor = 1.5
+[cases.expected]
+gas_area_fraction = 0.5
+rated_gas_load_factor_by_phase = [8.268694445732268e-4]
+required_diameter = 0.12627729135233404

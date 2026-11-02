@@ -2713,12 +2713,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator': {
         "calc_id": 'process.separator',
         "name": 'Separator',
-        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '8b5a53e1d72df3495f18d5c8ad4a4ff98baaf5dc36ffabd5a1ff2c9b5f819529'},
-        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': 'e690e64d8fd7b4ebbcb21012d585c85b4e5fc300d7544501a7ac898de35fa152'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': 'debe01b2e7802400cb8622ecd6bbb3acb9e667888be0ae504c5954c275f21e2e'}],
+        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '9a8a051aa5418b5c082e564154009006d52521ad38bcfa53927963ab9e79a5ac'},
+        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': 'd96890b960332c9758fa4c7c4b5eedb6d993741854019999c941c1aa0f752b1e'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': '5c7af5ddedc8afb61c4cf47feb1fd2984cfffe32240d66cce493ba1ff4af90c0'}],
         "source": 'NeqSim process/equipment/separator/Separator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 11,
+        "tests_active": 15,
         "tests_skipped": 0,
     },
     'process.separator_capacity_assessment': {

@@ -227,6 +227,9 @@ fn the_assessment_and_the_capacity_surface_share_their_numbers() {
         Some(meters_per_second(0.11)),
         Some("vertical"),
         Some(0.8),
+        None,
+        None,
+        None,
     )
     .expect("the same vessel separates");
     assert_eq!(

@@ -543,6 +543,12 @@ def return_expr(field: str, transport: str, rust: str | None, declared: str | No
         return f"None if {src} is None else from_si({src}.magnitude_si, {src}.unit)"
     if transport == "Vec<PyQty>":
         return f"tuple(from_si(q.magnitude_si, q.unit) for q in {src})"
+    if transport == "Option<Vec<PyQty>>":
+        # **An optional vector is still a vector.** `process.separator`'s phase-indexed load
+        # factors are absent with no gas phase and present as one quantity per liquid phase;
+        # the scalar-optional rule below reads `None if ... else from_si(...)` and would take
+        # the whole list as one magnitude.
+        return f"None if {src} is None else tuple(from_si(q.magnitude_si, q.unit) for q in {src})"
     if transport == "Vec<Vec<PyQty>>":
         return f"tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in {src})"
     if transport == "Vec<PyWarning>":
