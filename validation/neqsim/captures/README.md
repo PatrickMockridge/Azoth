@@ -1331,8 +1331,8 @@ regime, the inlet device's bulk efficiency, pressure drop, nozzle velocity and m
 flux, the geometry's areas, settling heights and residence times, the gravity and mist
 efficiencies, the K factor and its utilisation, and the API 12J compliance record with its
 two comments. The default device is `HALF_PIPE`, not none; the pair sets `NONE` and
-`INLET_CYCLONE` explicitly. This is the oracle the enhanced port is held to; it is not yet
-a model.
+`INLET_CYCLONE` explicitly. `process.separator_performance`'s `enhanced` input runs this
+chain; the capture's six rows are its cases.
 
 ## The anti-surge recycle calculator
 

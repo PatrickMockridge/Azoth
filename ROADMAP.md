@@ -816,8 +816,11 @@ a claim nothing holds.
   `process.separator_capacity_assessment`**, the fail-closed snapshot with its optional
   mechanical-design gas limit; **the droplet-performance calculator landed as
   `process.separator_performance`** - the standard path's six fractions and four efficiencies
-  over the class's droplet distributions, grade curves and settling solve, with the enhanced
-  chain, auto-calibration and the API 12J DTO left owed; **`getGasLoadFactor(int)`'s
+  over the class's droplet distributions, grade curves and settling solve, **and the enhanced
+  chain landed too**: the regime map, inlet-device model and geometry calculator feed the
+  gravity, mist and API 12J stages, held to `process_separator_performance_enhanced.tsv`; the
+  internals database's design K is carried for the wire mesh alone and refused by name for the
+  others; **`getGasLoadFactor(int)`'s
   phase-indexed and `sizeFromFlow` landed** - the operating holdup against the design gas
   area, and the closed-form diameter; **`SeparatorMechanicalDesign.calcDesign` landed** as a
   `mechanical_design` group on the same id - the sized vessel, its shell and skid weights, its

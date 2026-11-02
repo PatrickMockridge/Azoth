@@ -6647,7 +6647,7 @@ def separator_capacity_assessment(components: list[str], feed_n: Q, feed_z: list
     )
 
 
-def separator_performance(gas_density: Q, oil_density: Q, water_density: Q, gas_viscosity: Q, oil_viscosity: Q, water_viscosity: Q, gas_velocity: Q, vessel_diameter: Q, vessel_length: Q, orientation: str, liquid_level_fraction: float, gas_liquid_distribution: str | None=None, gas_liquid_characteristic_diameter: Q | None=None, gas_liquid_spread: float | None=None, gas_bubble_distribution: str | None=None, gas_bubble_characteristic_diameter: Q | None=None, gas_bubble_spread: float | None=None, oil_in_water_distribution: str | None=None, oil_in_water_characteristic_diameter: Q | None=None, oil_in_water_spread: float | None=None, water_in_oil_distribution: str | None=None, water_in_oil_characteristic_diameter: Q | None=None, water_in_oil_spread: float | None=None, mist_eliminator: str | None=None, mist_eliminator_cut_diameter: Q | None=None, mist_eliminator_sharpness: float | None=None, mist_eliminator_max_efficiency: float | None=None, mist_eliminator_points: list[dict[str, Q]] | None=None, oil_water_coalescer: str | None=None, oil_water_coalescer_cut_diameter: Q | None=None, oil_water_coalescer_max_efficiency: float | None=None, oil_water_coalescer_points: list[dict[str, Q]] | None=None, include_gravity_section: bool | None=None, liquid_in_gas_calibration_factor: float | None=None, gas_carry_under_calibration_factor: float | None=None, liquid_liquid_calibration_factor: float | None=None) -> SeparatorPerformanceResult:
+def separator_performance(gas_density: Q, oil_density: Q, water_density: Q, gas_viscosity: Q, oil_viscosity: Q, water_viscosity: Q, gas_velocity: Q, vessel_diameter: Q, vessel_length: Q, orientation: str, liquid_level_fraction: float, gas_liquid_distribution: str | None=None, gas_liquid_characteristic_diameter: Q | None=None, gas_liquid_spread: float | None=None, gas_bubble_distribution: str | None=None, gas_bubble_characteristic_diameter: Q | None=None, gas_bubble_spread: float | None=None, oil_in_water_distribution: str | None=None, oil_in_water_characteristic_diameter: Q | None=None, oil_in_water_spread: float | None=None, water_in_oil_distribution: str | None=None, water_in_oil_characteristic_diameter: Q | None=None, water_in_oil_spread: float | None=None, mist_eliminator: str | None=None, mist_eliminator_cut_diameter: Q | None=None, mist_eliminator_sharpness: float | None=None, mist_eliminator_max_efficiency: float | None=None, mist_eliminator_points: list[dict[str, Q]] | None=None, oil_water_coalescer: str | None=None, oil_water_coalescer_cut_diameter: Q | None=None, oil_water_coalescer_max_efficiency: float | None=None, oil_water_coalescer_points: list[dict[str, Q]] | None=None, include_gravity_section: bool | None=None, liquid_in_gas_calibration_factor: float | None=None, gas_carry_under_calibration_factor: float | None=None, liquid_liquid_calibration_factor: float | None=None, enhanced: bool | None=None, inlet_pipe_diameter: Q | None=None, surface_tension: Q | None=None, oil_volume_fraction: float | None=None, apply_turbulence_correction: bool | None=None, inlet_device: str | None=None, design_k_factor: Q | None=None, liquid_liquid_residence_time: Q | None=None) -> SeparatorPerformanceResult:
     """``process.separator_performance``, computed in Rust."""
     spec = _models_gen.model("process.separator_performance")
     result = _core.separator_performance(
@@ -6687,6 +6687,14 @@ def separator_performance(gas_density: Q, oil_density: Q, water_density: Q, gas_
         None if liquid_in_gas_calibration_factor is None else liquid_in_gas_calibration_factor,
         None if gas_carry_under_calibration_factor is None else gas_carry_under_calibration_factor,
         None if liquid_liquid_calibration_factor is None else liquid_liquid_calibration_factor,
+        enhanced,
+        None if inlet_pipe_diameter is None else input_to_si(spec, "inlet_pipe_diameter", inlet_pipe_diameter),
+        None if surface_tension is None else input_to_si(spec, "surface_tension", surface_tension),
+        None if oil_volume_fraction is None else oil_volume_fraction,
+        apply_turbulence_correction,
+        inlet_device,
+        None if design_k_factor is None else input_to_si(spec, "design_k_factor", design_k_factor),
+        None if liquid_liquid_residence_time is None else input_to_si(spec, "liquid_liquid_residence_time", liquid_liquid_residence_time),
     )
     return SeparatorPerformanceResult(
         oil_in_gas=result.oil_in_gas,
@@ -6700,6 +6708,32 @@ def separator_performance(gas_density: Q, oil_density: Q, water_density: Q, gas_
         overall_gas_liquid_efficiency=result.overall_gas_liquid_efficiency,
         liquid_liquid_gravity_efficiency=result.liquid_liquid_gravity_efficiency,
         gravity_cut_diameter=from_si(result.gravity_cut_diameter.magnitude_si, result.gravity_cut_diameter.unit),
+        inlet_flow_regime=result.inlet_flow_regime,
+        inlet_device_bulk_efficiency=result.inlet_device_bulk_efficiency,
+        inlet_device_pressure_drop=None if result.inlet_device_pressure_drop is None else from_si(result.inlet_device_pressure_drop.magnitude_si, result.inlet_device_pressure_drop.unit),
+        inlet_nozzle_velocity=None if result.inlet_nozzle_velocity is None else from_si(result.inlet_nozzle_velocity.magnitude_si, result.inlet_nozzle_velocity.unit),
+        inlet_momentum_flux=None if result.inlet_momentum_flux is None else from_si(result.inlet_momentum_flux.magnitude_si, result.inlet_momentum_flux.unit),
+        k_factor=None if result.k_factor is None else from_si(result.k_factor.magnitude_si, result.k_factor.unit),
+        k_factor_utilization=result.k_factor_utilization,
+        mist_eliminator_flooded=result.mist_eliminator_flooded,
+        gas_area=None if result.gas_area is None else from_si(result.gas_area.magnitude_si, result.gas_area.unit),
+        liquid_area=None if result.liquid_area is None else from_si(result.liquid_area.magnitude_si, result.liquid_area.unit),
+        effective_gas_settling_height=None if result.effective_gas_settling_height is None else from_si(result.effective_gas_settling_height.magnitude_si, result.effective_gas_settling_height.unit),
+        effective_liquid_settling_height=None if result.effective_liquid_settling_height is None else from_si(result.effective_liquid_settling_height.magnitude_si, result.effective_liquid_settling_height.unit),
+        gas_residence_time=None if result.gas_residence_time is None else from_si(result.gas_residence_time.magnitude_si, result.gas_residence_time.unit),
+        liquid_residence_time=None if result.liquid_residence_time is None else from_si(result.liquid_residence_time.magnitude_si, result.liquid_residence_time.unit),
+        gravity_section_length=None if result.gravity_section_length is None else from_si(result.gravity_section_length.magnitude_si, result.gravity_section_length.unit),
+        oil_pad_thickness=None if result.oil_pad_thickness is None else from_si(result.oil_pad_thickness.magnitude_si, result.oil_pad_thickness.unit),
+        water_layer_height=None if result.water_layer_height is None else from_si(result.water_layer_height.magnitude_si, result.water_layer_height.unit),
+        api_gas_liquid_compliant=result.api_gas_liquid_compliant,
+        api_liquid_compliant=result.api_liquid_compliant,
+        api_fully_compliant=result.api_fully_compliant,
+        api_gravity_cut_diameter=None if result.api_gravity_cut_diameter is None else from_si(result.api_gravity_cut_diameter.magnitude_si, result.api_gravity_cut_diameter.unit),
+        api_k_factor_utilization=result.api_k_factor_utilization,
+        api_max_k_factor=None if result.api_max_k_factor is None else from_si(result.api_max_k_factor.magnitude_si, result.api_max_k_factor.unit),
+        api_min_liquid_residence_time=None if result.api_min_liquid_residence_time is None else from_si(result.api_min_liquid_residence_time.magnitude_si, result.api_min_liquid_residence_time.unit),
+        post_inlet_device_characteristic_diameter=None if result.post_inlet_device_characteristic_diameter is None else from_si(result.post_inlet_device_characteristic_diameter.magnitude_si, result.post_inlet_device_characteristic_diameter.unit),
+        post_inlet_device_spread=result.post_inlet_device_spread,
         warnings=_warnings(result.warnings),
     )
 

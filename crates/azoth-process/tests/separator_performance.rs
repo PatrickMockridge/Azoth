@@ -36,6 +36,14 @@ fn base() -> PerformanceSettings {
         liquid_in_gas_factor: 1.0,
         gas_carry_under_factor: 1.0,
         liquid_liquid_factor: 1.0,
+        enhanced: false,
+        inlet_pipe_diameter: 0.2,
+        surface_tension: 0.025,
+        oil_volume_fraction: 0.5,
+        apply_turbulence_correction: true,
+        inlet_device: azoth_process::separator_design::inlet_device::InletDevice::HalfPipe,
+        design_k_factor: None,
+        liquid_liquid_residence_time: None,
     }
 }
 

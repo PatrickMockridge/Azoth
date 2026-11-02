@@ -8,16 +8,19 @@
 //! The six fractions are the separator ids' own entrainment inputs, so a caller composes the
 //! calculator with a vessel rather than enabling a flag on it.
 
-use azoth_core::units::{DynamicViscosity, Length, MassDensity, Velocity, meters};
+use azoth_core::units::{
+    DynamicViscosity, Length, MassDensity, Time, Velocity, meters, meters_per_second, seconds,
+};
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
-use crate::executor::json::{scalar, warnings as wire_warnings};
+use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::separator_performance::{
     CurveSettings, DistributionKind, DropletDistribution, Internals, LookupPoint, Orientation,
     PerformanceSettings, separator_performance as kernel,
 };
 use crate::model_gen;
+use crate::separator_design::inlet_device::InletDevice;
 
 /// One row of a lookup table: a droplet diameter and its capture efficiency.
 #[derive(Debug, Clone, PartialEq)]
@@ -54,6 +57,71 @@ pub struct SeparatorPerformanceResult {
     /// The gas section's critical diameter, m.
     #[serde(serialize_with = "scalar")]
     pub gravity_cut_diameter: Length,
+    /// The predicted inlet regime's enum spelling; absent on the standard path.
+    pub inlet_flow_regime: Option<String>,
+    /// The inlet device's bulk efficiency.
+    pub inlet_device_bulk_efficiency: Option<f64>,
+    /// The inlet device's pressure drop, Pa.
+    pub inlet_device_pressure_drop: Option<f64>,
+    /// The inlet nozzle's velocity.
+    #[serde(serialize_with = "optional_scalar")]
+    pub inlet_nozzle_velocity: Option<Velocity>,
+    /// The inlet nozzle's momentum flux, Pa.
+    pub inlet_momentum_flux: Option<f64>,
+    /// The actual Souders-Brown K.
+    #[serde(serialize_with = "optional_scalar")]
+    pub k_factor: Option<Velocity>,
+    /// The K over its design value.
+    pub k_factor_utilization: Option<f64>,
+    /// Whether the mist eliminator is flooded.
+    pub mist_eliminator_flooded: Option<bool>,
+    /// The gas cross-section, m2.
+    pub gas_area: Option<f64>,
+    /// The liquid cross-section, m2.
+    pub liquid_area: Option<f64>,
+    /// The gas section's settling height.
+    #[serde(serialize_with = "optional_scalar")]
+    pub effective_gas_settling_height: Option<Length>,
+    /// The liquid section's settling height.
+    #[serde(serialize_with = "optional_scalar")]
+    pub effective_liquid_settling_height: Option<Length>,
+    /// The gas's residence time.
+    #[serde(serialize_with = "optional_scalar")]
+    pub gas_residence_time: Option<Time>,
+    /// The liquid's residence time.
+    #[serde(serialize_with = "optional_scalar")]
+    pub liquid_residence_time: Option<Time>,
+    /// The gravity section's length.
+    #[serde(serialize_with = "optional_scalar")]
+    pub gravity_section_length: Option<Length>,
+    /// The three-phase oil pad.
+    #[serde(serialize_with = "optional_scalar")]
+    pub oil_pad_thickness: Option<Length>,
+    /// The three-phase water layer.
+    #[serde(serialize_with = "optional_scalar")]
+    pub water_layer_height: Option<Length>,
+    /// API 12J's gas-section verdict.
+    pub api_gas_liquid_compliant: Option<bool>,
+    /// API 12J's liquid-section verdict.
+    pub api_liquid_compliant: Option<bool>,
+    /// Both verdicts.
+    pub api_fully_compliant: Option<bool>,
+    /// The cut diameter the API check read.
+    #[serde(serialize_with = "optional_scalar")]
+    pub api_gravity_cut_diameter: Option<Length>,
+    /// The K over the API limit.
+    pub api_k_factor_utilization: Option<f64>,
+    /// The API limit on K.
+    #[serde(serialize_with = "optional_scalar")]
+    pub api_max_k_factor: Option<Velocity>,
+    /// The API minimum liquid residence time.
+    #[serde(serialize_with = "optional_scalar")]
+    pub api_min_liquid_residence_time: Option<Time>,
+    /// The downstream distribution's characteristic diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub post_inlet_device_characteristic_diameter: Option<Length>,
+    /// The downstream distribution's spread.
+    pub post_inlet_device_spread: Option<f64>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -104,6 +172,14 @@ pub fn separator_performance(
     liquid_in_gas_calibration_factor: Option<f64>,
     gas_carry_under_calibration_factor: Option<f64>,
     liquid_liquid_calibration_factor: Option<f64>,
+    enhanced: Option<bool>,
+    inlet_pipe_diameter: Option<Length>,
+    surface_tension: Option<f64>,
+    oil_volume_fraction: Option<f64>,
+    apply_turbulence_correction: Option<bool>,
+    inlet_device: Option<&str>,
+    design_k_factor: Option<Velocity>,
+    liquid_liquid_residence_time: Option<Time>,
 ) -> Result<SeparatorPerformanceResult> {
     let spec = &model_gen::SEPARATOR_PERFORMANCE_SPEC;
     let mut warnings = Vec::new();
@@ -143,6 +219,11 @@ pub fn separator_performance(
                 oil_water_coalescer_cut_diameter.map(|value| value.value)
             }
             "oil_water_coalescer_max_efficiency" => oil_water_coalescer_max_efficiency,
+            "inlet_pipe_diameter" => inlet_pipe_diameter.map(|value| value.value),
+            "surface_tension" => surface_tension,
+            "oil_volume_fraction" => oil_volume_fraction,
+            "design_k_factor" => design_k_factor.map(|value| value.value),
+            "liquid_liquid_residence_time" => liquid_liquid_residence_time.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -203,8 +284,18 @@ pub fn separator_performance(
         gas_carry_under_factor: gas_carry_under_calibration_factor
             .map_or(1.0, |value| value.max(0.0)),
         liquid_liquid_factor: liquid_liquid_calibration_factor.map_or(1.0, |value| value.max(0.0)),
+        enhanced: enhanced.unwrap_or(false),
+        inlet_pipe_diameter: inlet_pipe_diameter.map_or(0.2, |value| value.value),
+        surface_tension: surface_tension.unwrap_or(0.025),
+        oil_volume_fraction: oil_volume_fraction.unwrap_or(0.5),
+        apply_turbulence_correction: apply_turbulence_correction.unwrap_or(true),
+        inlet_device: inlet_device_of(inlet_device)?,
+        design_k_factor: design_k_factor.map(|value| value.value),
+        liquid_liquid_residence_time: liquid_liquid_residence_time.map(|value| value.value),
     };
     let outcome = kernel(&settings)?;
+    let geometry = outcome.geometry;
+    let active = geometry.is_some();
     Ok(SeparatorPerformanceResult {
         oil_in_gas: outcome.oil_in_gas,
         water_in_gas: outcome.water_in_gas,
@@ -217,6 +308,37 @@ pub fn separator_performance(
         overall_gas_liquid_efficiency: outcome.overall_gas_liquid_efficiency,
         liquid_liquid_gravity_efficiency: outcome.liquid_liquid_gravity_efficiency,
         gravity_cut_diameter: meters(outcome.gravity_cut_diameter),
+        inlet_flow_regime: active.then(|| outcome.inlet_flow_regime.to_string()),
+        inlet_device_bulk_efficiency: active.then_some(outcome.inlet_device_bulk_efficiency),
+        inlet_device_pressure_drop: active.then_some(outcome.inlet_device_pressure_drop),
+        inlet_nozzle_velocity: active.then(|| meters_per_second(outcome.inlet_nozzle_velocity)),
+        inlet_momentum_flux: active.then_some(outcome.inlet_momentum_flux),
+        k_factor: active.then(|| meters_per_second(outcome.k_factor)),
+        k_factor_utilization: active.then_some(outcome.k_factor_utilization),
+        mist_eliminator_flooded: active.then_some(outcome.mist_eliminator_flooded),
+        gas_area: geometry.map(|value| value.gas_area),
+        liquid_area: geometry.map(|value| value.liquid_area),
+        effective_gas_settling_height: geometry
+            .map(|value| meters(value.effective_gas_settling_height)),
+        effective_liquid_settling_height: geometry
+            .map(|value| meters(value.effective_liquid_settling_height)),
+        gas_residence_time: geometry.map(|value| seconds(value.gas_residence_time)),
+        liquid_residence_time: geometry.map(|value| seconds(value.liquid_residence_time)),
+        gravity_section_length: geometry.map(|value| meters(value.gravity_section_length)),
+        oil_pad_thickness: geometry.map(|value| meters(value.oil_pad_thickness)),
+        water_layer_height: geometry.map(|value| meters(value.water_layer_height)),
+        api_gas_liquid_compliant: active.then_some(outcome.api_gas_liquid_compliant),
+        api_liquid_compliant: active.then_some(outcome.api_liquid_compliant),
+        api_fully_compliant: active.then_some(outcome.api_fully_compliant),
+        api_gravity_cut_diameter: active
+            .then(|| meters(outcome.api_gravity_cut_diameter_um / 1.0e6)),
+        api_k_factor_utilization: active.then_some(outcome.api_k_factor_utilization),
+        api_max_k_factor: active.then(|| meters_per_second(outcome.api_max_k_factor)),
+        api_min_liquid_residence_time: active
+            .then(|| seconds(outcome.api_min_liquid_residence_time)),
+        post_inlet_device_characteristic_diameter: active
+            .then(|| meters(outcome.post_inlet_device_characteristic_diameter)),
+        post_inlet_device_spread: active.then_some(outcome.post_inlet_device_spread),
         warnings,
     })
 }
@@ -229,6 +351,23 @@ fn orientation_of(value: &str) -> Result<Orientation> {
         other => Err(AzothError::invalid_input(
             "orientation",
             format!("'{other}' is not one of the two declared orientations"),
+        )),
+    }
+}
+
+/// The inlet device, by its spec spelling; absent is the class's `HALF_PIPE`.
+fn inlet_device_of(value: Option<&str>) -> Result<InletDevice> {
+    match value.unwrap_or("half_pipe") {
+        "none" => Ok(InletDevice::None),
+        "deflector_plate" => Ok(InletDevice::DeflectorPlate),
+        "half_pipe" => Ok(InletDevice::HalfPipe),
+        "inlet_vane" => Ok(InletDevice::InletVane),
+        "inlet_cyclone" => Ok(InletDevice::InletCyclone),
+        "schoepentoeter" => Ok(InletDevice::Schoepentoeter),
+        "impingement_plate" => Ok(InletDevice::ImpingementPlate),
+        other => Err(AzothError::invalid_input(
+            "inlet_device",
+            format!("'{other}' is not one of the seven declared devices"),
         )),
     }
 }

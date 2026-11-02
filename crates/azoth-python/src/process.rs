@@ -9,8 +9,8 @@ use std::path::Path;
 
 use azoth_core::units::{
     cubic_meters_per_second, joules_per_mole, kelvins, kilograms_per_cubic_meter, meters,
-    meters_per_second, pascal_seconds, pascals, square_meters, square_meters_per_second, watts,
-    watts_per_kelvin, watts_per_square_meter_kelvin,
+    meters_per_second, pascal_seconds, pascals, seconds, square_meters, square_meters_per_second,
+    watts, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -1438,7 +1438,10 @@ pub fn rate_based_packed_column(
     oil_water_coalescer_cut_diameter = None, oil_water_coalescer_max_efficiency = None,
     oil_water_coalescer_points = None, include_gravity_section = None,
     liquid_in_gas_calibration_factor = None, gas_carry_under_calibration_factor = None,
-    liquid_liquid_calibration_factor = None
+    liquid_liquid_calibration_factor = None, enhanced = None,
+    inlet_pipe_diameter = None, surface_tension = None, oil_volume_fraction = None,
+    apply_turbulence_correction = None, inlet_device = None, design_k_factor = None,
+    liquid_liquid_residence_time = None
 ))]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn separator_performance(
@@ -1479,6 +1482,14 @@ pub fn separator_performance(
     liquid_in_gas_calibration_factor: Option<f64>,
     gas_carry_under_calibration_factor: Option<f64>,
     liquid_liquid_calibration_factor: Option<f64>,
+    enhanced: Option<bool>,
+    inlet_pipe_diameter: Option<f64>,
+    surface_tension: Option<f64>,
+    oil_volume_fraction: Option<f64>,
+    apply_turbulence_correction: Option<bool>,
+    inlet_device: Option<&str>,
+    design_k_factor: Option<f64>,
+    liquid_liquid_residence_time: Option<f64>,
 ) -> PyResult<crate::transport_gen::PySeparatorPerformanceResult> {
     let mist_points: Option<Vec<azoth_process::models::separator_performance::EfficiencyPoint>> =
         mist_eliminator_points.map(|rows| {
@@ -1540,6 +1551,14 @@ pub fn separator_performance(
         liquid_in_gas_calibration_factor,
         gas_carry_under_calibration_factor,
         liquid_liquid_calibration_factor,
+        enhanced,
+        inlet_pipe_diameter.map(meters),
+        surface_tension,
+        oil_volume_fraction,
+        apply_turbulence_correction,
+        inlet_device,
+        design_k_factor.map(meters_per_second),
+        liquid_liquid_residence_time.map(seconds),
     )
     .map(|r| crate::transport_gen::PySeparatorPerformanceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

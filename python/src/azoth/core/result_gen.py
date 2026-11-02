@@ -7170,6 +7170,84 @@ class SeparatorPerformanceResult(_HasWarnings):
     #: the gas section's critical droplet diameter; zero without a gas-liquid distribution.
     gravity_cut_diameter: Q
 
+    #: the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.
+    inlet_flow_regime: str | None
+
+    #: the inlet device's bulk liquid-removal efficiency.
+    inlet_device_bulk_efficiency: float | None
+
+    #: the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.
+    inlet_device_pressure_drop: Q | None
+
+    #: the inlet nozzle's velocity, the two-phase flow over the pipe area.
+    inlet_nozzle_velocity: Q | None
+
+    #: the nozzle's momentum flux, `rho_mix v^2`.
+    inlet_momentum_flux: Q | None
+
+    #: the actual Souders-Brown `K` at the superficial gas velocity.
+    k_factor: Q | None
+
+    #: the actual `K` over its design value; above one is flooding.
+    k_factor_utilization: float | None
+
+    #: whether `k_factor_utilization` exceeds one.
+    mist_eliminator_flooded: bool | None
+
+    #: the vessel's gas cross-section.
+    gas_area: Q | None
+
+    #: the vessel's liquid cross-section.
+    liquid_area: Q | None
+
+    #: the height a droplet falls through in the gas section.
+    effective_gas_settling_height: Q | None
+
+    #: the height a bubble rises through in the liquid.
+    effective_liquid_settling_height: Q | None
+
+    #: the gas's residence time in the gravity section.
+    gas_residence_time: Q | None
+
+    #: the liquid's residence time, the class's own m3/hr slip included.
+    liquid_residence_time: Q | None
+
+    #: the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.
+    gravity_section_length: Q | None
+
+    #: the three-phase oil pad, `level * oil_frac`.
+    oil_pad_thickness: Q | None
+
+    #: the three-phase water layer, `level * water_frac`.
+    water_layer_height: Q | None
+
+    #: API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.
+    api_gas_liquid_compliant: bool | None
+
+    #: API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.
+    api_liquid_compliant: bool | None
+
+    #: both verdicts.
+    api_fully_compliant: bool | None
+
+    #: the cut diameter the API check read; the capture prints it in micrometres.
+    api_gravity_cut_diameter: Q | None
+
+    #: the `K` over the API limit it read.
+    api_k_factor_utilization: float | None
+
+    #: the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.
+    api_max_k_factor: Q | None
+
+    #: the API minimum liquid residence time.
+    api_min_liquid_residence_time: Q | None
+
+    #: the downstream distribution's `d63.2` after the device's multiplier.
+    post_inlet_device_characteristic_diameter: Q | None
+
+    #: the downstream distribution's spread.
+    post_inlet_device_spread: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

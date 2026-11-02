@@ -55,6 +55,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `liquid_in_gas_calibration_factor` | dimensionless | *Optional.* the multiplier on `oil_in_gas` and `water_in_gas`; absent is 1.0, and a negative is clamped to zero. |
 | `gas_carry_under_calibration_factor` | dimensionless | *Optional.* the multiplier on `gas_in_oil` and `gas_in_water`; absent is 1.0, and a negative is clamped to zero. |
 | `liquid_liquid_calibration_factor` | dimensionless | *Optional.* the multiplier on `oil_in_water` and `water_in_oil`; absent is 1.0, and a negative is clamped to zero. |
+| `enhanced` | - | *Optional.* run `calculateEnhanced` instead of the standard path: the flow regime, inlet device, vessel geometry and API 12J chain. **Absent is false**; the group below is refused without it. |
+| `inlet_pipe_diameter` | m | *Optional.* the inlet pipe's diameter, which the nozzle velocity and the regime map divide. **Absent is `0.2` m.** |
+| `surface_tension` | N/m | *Optional.* the gas-liquid surface tension the regime and DSD correlations read. **Absent is `0.025` N/m.** |
+| `oil_volume_fraction` | dimensionless | *Optional.* the oil's share of the three-phase liquid flow, clamped to `[0.01, 0.99]` in the class. **Absent is `0.5`.** |
+| `apply_turbulence_correction` | - | *Optional.* whether the Csanady/Koenders turbulence correction moves the gravity cut diameter. **Absent is true.** |
+| `inlet_device` | none / deflector_plate / half_pipe / inlet_vane / inlet_cyclone / schoepentoeter / impingement_plate | *Optional.* the inlet device's type. **Absent is the class's `half_pipe`**; `none` passes the distribution unchanged and removes nothing. |
+| `design_k_factor` | m/s | *Optional.* the mist eliminator's design `K`, which the flooding and API checks divide by. **Absent is `0.107` for a wire mesh** and is refused for any other eliminator, because the internals database is refused here. |
+| `liquid_liquid_residence_time` | s | *Optional.* the liquid-liquid residence-time override. **Absent is the geometry's own**, and a non-positive geometry value falls back to `300` s. |
 
 
 ## Outputs
@@ -72,9 +80,40 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `overall_gas_liquid_efficiency` | dimensionless | the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present. |
 | `liquid_liquid_gravity_efficiency` | dimensionless | the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated. |
 | `gravity_cut_diameter` | m | the gas section's critical droplet diameter; zero without a gas-liquid distribution. |
+| `inlet_flow_regime` | - | *Optional.* the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path. |
+| `inlet_device_bulk_efficiency` | dimensionless | *Optional.* the inlet device's bulk liquid-removal efficiency. |
+| `inlet_device_pressure_drop` | Pa | *Optional.* the device's pressure drop, `coefficient * 0.5 rho_mix v^2`. |
+| `inlet_nozzle_velocity` | m/s | *Optional.* the inlet nozzle's velocity, the two-phase flow over the pipe area. |
+| `inlet_momentum_flux` | Pa | *Optional.* the nozzle's momentum flux, `rho_mix v^2`. |
+| `k_factor` | m/s | *Optional.* the actual Souders-Brown `K` at the superficial gas velocity. |
+| `k_factor_utilization` | dimensionless | *Optional.* the actual `K` over its design value; above one is flooding. |
+| `mist_eliminator_flooded` | - | *Optional.* whether `k_factor_utilization` exceeds one. |
+| `gas_area` | m**2 | *Optional.* the vessel's gas cross-section. |
+| `liquid_area` | m**2 | *Optional.* the vessel's liquid cross-section. |
+| `effective_gas_settling_height` | m | *Optional.* the height a droplet falls through in the gas section. |
+| `effective_liquid_settling_height` | m | *Optional.* the height a bubble rises through in the liquid. |
+| `gas_residence_time` | s | *Optional.* the gas's residence time in the gravity section. |
+| `liquid_residence_time` | s | *Optional.* the liquid's residence time, the class's own m3/hr slip included. |
+| `gravity_section_length` | m | *Optional.* the gravity section's length: inlet device to mist eliminator, or to the weir three-phase. |
+| `oil_pad_thickness` | m | *Optional.* the three-phase oil pad, `level * oil_frac`. |
+| `water_layer_height` | m | *Optional.* the three-phase water layer, `level * water_frac`. |
+| `api_gas_liquid_compliant` | - | *Optional.* API 12J's gas-section verdict: cut at most `100` um and `K` within its limit. |
+| `api_liquid_compliant` | - | *Optional.* API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase. |
+| `api_fully_compliant` | - | *Optional.* both verdicts. |
+| `api_gravity_cut_diameter` | m | *Optional.* the cut diameter the API check read; the capture prints it in micrometres. |
+| `api_k_factor_utilization` | dimensionless | *Optional.* the `K` over the API limit it read. |
+| `api_max_k_factor` | m/s | *Optional.* the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical. |
+| `api_min_liquid_residence_time` | s | *Optional.* the API minimum liquid residence time. |
+| `post_inlet_device_characteristic_diameter` | m | *Optional.* the downstream distribution's `d63.2` after the device's multiplier. |
+| `post_inlet_device_spread` | dimensionless | *Optional.* the downstream distribution's spread. |
 
 | Bound | On violation | Why |
 |---|---|---|
+| `inlet_pipe_diameter > 0` | raises | a pipe diameter; the nozzle velocity divides by its square |
+| `surface_tension > 0` | raises | the regime and DSD correlations divide by it |
+| `oil_volume_fraction >= 0 and oil_volume_fraction < 1` | raises | a share of the liquid flow; at one there is no water |
+| `design_k_factor > 0` | raises | the flooding check divides by it |
+| `liquid_liquid_residence_time > 0` | raises | a residence time; a non-positive one is the class's 300 s fallback, which is not a value a caller states |
 | `gas_density >= 0` | raises | a mass density is not negative |
 | `oil_density >= 0` | raises | a mass density is not negative |
 | `water_density >= 0` | raises | a mass density is not negative |
@@ -128,11 +167,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `calibration_tuned` | gas_density = 50.0, oil_density = 800.0, water_density = 1020.0, gas_viscosity = 1.5e-05, oil_viscosity = 0.003, water_viscosity = 0.0008, gas_velocity = 1.2, vessel_diameter = 2.0, vessel_length = 8.0, orientation = horizontal, liquid_level_fraction = 0.5, gas_liquid_distribution = rosin_rammler, gas_liquid_characteristic_diameter = 0.00012, gas_liquid_spread = 2.2, gas_bubble_distribution = rosin_rammler, gas_bubble_characteristic_diameter = 0.0004, gas_bubble_spread = 2.0, water_in_oil_distribution = rosin_rammler, water_in_oil_characteristic_diameter = 0.00012, water_in_oil_spread = 2.0, oil_in_water_distribution = rosin_rammler, oil_in_water_characteristic_diameter = 0.00012, oil_in_water_spread = 2.0, mist_eliminator = vane_pack, liquid_in_gas_calibration_factor = 1.5, gas_carry_under_calibration_factor = 1.25, liquid_liquid_calibration_factor = 0.8 | oil_in_gas = 0.019561042007213425, water_in_gas = 0.019561042007213425, gas_in_oil = 1.0, gas_in_water = 1.0, oil_in_water = 0.2540421619365999, water_in_oil = 0.5459397239724838, gravity_section_efficiency = 0.531216242003503, mist_eliminator_efficiency = 0.9842000304208024, overall_gas_liquid_efficiency = 0.9869593053285244, liquid_liquid_gravity_efficiency = 0.6824472975792502, gravity_cut_diameter = 0.00014565733448423167 |
 | `log_normal_custom_curves` | gas_density = 40.0, oil_density = 820.0, water_density = 1010.0, gas_viscosity = 1.4e-05, oil_viscosity = 0.0025, water_viscosity = 0.0009, gas_velocity = 0.8, vessel_diameter = 2.2, vessel_length = 9.0, orientation = horizontal, liquid_level_fraction = 0.55, gas_liquid_distribution = log_normal, gas_liquid_characteristic_diameter = 5e-05, gas_liquid_spread = 0.8, gas_bubble_distribution = log_normal, gas_bubble_characteristic_diameter = 0.0004, gas_bubble_spread = 0.7, water_in_oil_distribution = log_normal, water_in_oil_characteristic_diameter = 0.00015, water_in_oil_spread = 0.7, oil_in_water_distribution = log_normal, oil_in_water_characteristic_diameter = 0.0001, oil_in_water_spread = 0.9, mist_eliminator = custom, mist_eliminator_points = [{'diameter': 1e-06, 'efficiency': 0.1}, {'diameter': 1e-05, 'efficiency': 0.5}, {'diameter': 0.0001, 'efficiency': 0.99}], oil_water_coalescer = custom, oil_water_coalescer_points = [{'diameter': 5e-06, 'efficiency': 0.05}, {'diameter': 5e-05, 'efficiency': 0.4}, {'diameter': 0.0005, 'efficiency': 0.95}] | oil_in_gas = 0.19148639315261573, water_in_gas = 0.19148639315261573, gas_in_oil = 0.769060497268381, gas_in_water = 0.769060497268381, oil_in_water = 0.22689536366103713, water_in_oil = 0.21064887488385575, gravity_section_efficiency = 0.4997419408647944, mist_eliminator_efficiency = 0.7447599796719904, overall_gas_liquid_efficiency = 0.8085136068473843, liquid_liquid_gravity_efficiency = 0.5605204397471661, gravity_cut_diameter = 7.935145000664933e-05 |
 | `gravity_section_off` | gas_density = 50.0, oil_density = 800.0, water_density = 0.0, gas_viscosity = 1.5e-05, oil_viscosity = 0.002, water_viscosity = 0.0, gas_velocity = 1.0, vessel_diameter = 2.0, vessel_length = 8.0, orientation = horizontal, liquid_level_fraction = 0.5, gas_liquid_distribution = rosin_rammler, gas_liquid_characteristic_diameter = 0.0001, gas_liquid_spread = 2.6, mist_eliminator = wire_mesh, include_gravity_section = False | oil_in_gas = 0.0041253228338618, water_in_gas = 0.0, gas_in_oil = 0.0, gas_in_water = 0.0, oil_in_water = 0.0, water_in_oil = 0.0, gravity_section_efficiency = 0.0, mist_eliminator_efficiency = 0.9958746771661382, overall_gas_liquid_efficiency = 0.9958746771661382, liquid_liquid_gravity_efficiency = 0.0, gravity_cut_diameter = 0.00012162572181754543 |
+| `the_enhanced_two_phase_chain` | gas_density = 50.0, oil_density = 750.0, water_density = 0.0, gas_viscosity = 1.2e-05, oil_viscosity = 0.002, water_viscosity = 0.0, gas_velocity = 2.0, vessel_diameter = 2.4, vessel_length = 7.0, orientation = horizontal, liquid_level_fraction = 0.5, gas_bubble_distribution = rosin_rammler, gas_bubble_characteristic_diameter = 0.0005, gas_bubble_spread = 2.0, mist_eliminator = wire_mesh, enhanced = True | oil_in_gas = 0.256985226502344, water_in_gas = 0.0, gas_in_oil = 0.9898906618240089, gas_in_water = 0.9898906618240089, oil_in_water = 0.0, water_in_oil = 0.0, gravity_section_efficiency = 0.5644318193517143, mist_eliminator_efficiency = 0.0, overall_gas_liquid_efficiency = 0.743014773497656, liquid_liquid_gravity_efficiency = 0.0, gravity_cut_diameter = 0.0004351226637396398, inlet_flow_regime = SLUG, inlet_device_bulk_efficiency = 0.4100000001840002, inlet_device_pressure_drop = 3199.9999990799993, inlet_nozzle_velocity = 3.9999999995999995, inlet_momentum_flux = 6399.9999981599985, k_factor = 0.5345224838248488, k_factor_utilization = 4.9955372320079325, gas_area = 2.261946710584651, liquid_area = 2.261946710584651, effective_gas_settling_height = 1.2, effective_liquid_settling_height = 1.2, gas_residence_time = 2.975, liquid_residence_time = 3.5000000007, gravity_section_length = 5.95, oil_pad_thickness = 0.0, water_layer_height = 0.0, api_gravity_cut_diameter = 0.0004351226637396398, api_k_factor_utilization = 2.138089935299395, api_max_k_factor = 0.25, api_min_liquid_residence_time = 180.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 10 declared, every one run
+- Tests: 11 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

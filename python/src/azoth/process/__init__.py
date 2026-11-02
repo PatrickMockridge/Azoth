@@ -2089,6 +2089,14 @@ def separator_performance(
     liquid_in_gas_calibration_factor: float | None = None,
     gas_carry_under_calibration_factor: float | None = None,
     liquid_liquid_calibration_factor: float | None = None,
+    enhanced: bool | None = None,
+    inlet_pipe_diameter: Q | None = None,
+    surface_tension: Q | None = None,
+    oil_volume_fraction: float | None = None,
+    apply_turbulence_correction: bool | None = None,
+    inlet_device: str | None = None,
+    design_k_factor: Q | None = None,
+    liquid_liquid_residence_time: Q | None = None,
 ) -> SeparatorPerformanceResult:
     """Compute a separator's droplet-based entrainment and efficiencies.
 
@@ -2186,6 +2194,14 @@ def separator_performance(
         liquid_in_gas_calibration_factor=liquid_in_gas_calibration_factor,
         gas_carry_under_calibration_factor=gas_carry_under_calibration_factor,
         liquid_liquid_calibration_factor=liquid_liquid_calibration_factor,
+        enhanced=enhanced,
+        inlet_pipe_diameter=inlet_pipe_diameter,
+        surface_tension=surface_tension,
+        oil_volume_fraction=oil_volume_fraction,
+        apply_turbulence_correction=apply_turbulence_correction,
+        inlet_device=inlet_device,
+        design_k_factor=design_k_factor,
+        liquid_liquid_residence_time=liquid_liquid_residence_time,
     )
 
 

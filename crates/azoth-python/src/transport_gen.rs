@@ -18115,6 +18115,84 @@ pub struct PySeparatorPerformanceResult {
     /// the gas section's critical droplet diameter; zero without a gas-liquid distribution.
     #[pyo3(get)]
     pub gravity_cut_diameter: PyQty,
+    /// the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.
+    #[pyo3(get)]
+    pub inlet_flow_regime: Option<String>,
+    /// the inlet device's bulk liquid-removal efficiency.
+    #[pyo3(get)]
+    pub inlet_device_bulk_efficiency: Option<f64>,
+    /// the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.
+    #[pyo3(get)]
+    pub inlet_device_pressure_drop: Option<PyQty>,
+    /// the inlet nozzle's velocity, the two-phase flow over the pipe area.
+    #[pyo3(get)]
+    pub inlet_nozzle_velocity: Option<PyQty>,
+    /// the nozzle's momentum flux, `rho_mix v^2`.
+    #[pyo3(get)]
+    pub inlet_momentum_flux: Option<PyQty>,
+    /// the actual Souders-Brown `K` at the superficial gas velocity.
+    #[pyo3(get)]
+    pub k_factor: Option<PyQty>,
+    /// the actual `K` over its design value; above one is flooding.
+    #[pyo3(get)]
+    pub k_factor_utilization: Option<f64>,
+    /// whether `k_factor_utilization` exceeds one.
+    #[pyo3(get)]
+    pub mist_eliminator_flooded: Option<bool>,
+    /// the vessel's gas cross-section.
+    #[pyo3(get)]
+    pub gas_area: Option<PyQty>,
+    /// the vessel's liquid cross-section.
+    #[pyo3(get)]
+    pub liquid_area: Option<PyQty>,
+    /// the height a droplet falls through in the gas section.
+    #[pyo3(get)]
+    pub effective_gas_settling_height: Option<PyQty>,
+    /// the height a bubble rises through in the liquid.
+    #[pyo3(get)]
+    pub effective_liquid_settling_height: Option<PyQty>,
+    /// the gas's residence time in the gravity section.
+    #[pyo3(get)]
+    pub gas_residence_time: Option<PyQty>,
+    /// the liquid's residence time, the class's own m3/hr slip included.
+    #[pyo3(get)]
+    pub liquid_residence_time: Option<PyQty>,
+    /// the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.
+    #[pyo3(get)]
+    pub gravity_section_length: Option<PyQty>,
+    /// the three-phase oil pad, `level * oil_frac`.
+    #[pyo3(get)]
+    pub oil_pad_thickness: Option<PyQty>,
+    /// the three-phase water layer, `level * water_frac`.
+    #[pyo3(get)]
+    pub water_layer_height: Option<PyQty>,
+    /// API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.
+    #[pyo3(get)]
+    pub api_gas_liquid_compliant: Option<bool>,
+    /// API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.
+    #[pyo3(get)]
+    pub api_liquid_compliant: Option<bool>,
+    /// both verdicts.
+    #[pyo3(get)]
+    pub api_fully_compliant: Option<bool>,
+    /// the cut diameter the API check read; the capture prints it in micrometres.
+    #[pyo3(get)]
+    pub api_gravity_cut_diameter: Option<PyQty>,
+    /// the `K` over the API limit it read.
+    #[pyo3(get)]
+    pub api_k_factor_utilization: Option<f64>,
+    /// the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.
+    #[pyo3(get)]
+    pub api_max_k_factor: Option<PyQty>,
+    /// the API minimum liquid residence time.
+    #[pyo3(get)]
+    pub api_min_liquid_residence_time: Option<PyQty>,
+    /// the downstream distribution's `d63.2` after the device's multiplier.
+    #[pyo3(get)]
+    pub post_inlet_device_characteristic_diameter: Option<PyQty>,
+    /// the downstream distribution's spread.
+    #[pyo3(get)]
+    pub post_inlet_device_spread: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18124,7 +18202,7 @@ pub struct PySeparatorPerformanceResult {
 impl PySeparatorPerformanceResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, {} warning(s))",
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
             self.oil_in_gas,
             self.water_in_gas,
             self.gas_in_oil,
@@ -18136,6 +18214,32 @@ impl PySeparatorPerformanceResult {
             self.overall_gas_liquid_efficiency,
             self.liquid_liquid_gravity_efficiency,
             self.gravity_cut_diameter,
+            self.inlet_flow_regime,
+            self.inlet_device_bulk_efficiency,
+            self.inlet_device_pressure_drop,
+            self.inlet_nozzle_velocity,
+            self.inlet_momentum_flux,
+            self.k_factor,
+            self.k_factor_utilization,
+            self.mist_eliminator_flooded,
+            self.gas_area,
+            self.liquid_area,
+            self.effective_gas_settling_height,
+            self.effective_liquid_settling_height,
+            self.gas_residence_time,
+            self.liquid_residence_time,
+            self.gravity_section_length,
+            self.oil_pad_thickness,
+            self.water_layer_height,
+            self.api_gas_liquid_compliant,
+            self.api_liquid_compliant,
+            self.api_fully_compliant,
+            self.api_gravity_cut_diameter,
+            self.api_k_factor_utilization,
+            self.api_max_k_factor,
+            self.api_min_liquid_residence_time,
+            self.post_inlet_device_characteristic_diameter,
+            self.post_inlet_device_spread,
             self.warnings.len()
         )
     }
@@ -18160,6 +18264,85 @@ impl From<&azoth_process::models::separator_performance::SeparatorPerformanceRes
                 magnitude_si: r.gravity_cut_diameter.value,
                 unit: "m".to_string(),
             },
+            inlet_flow_regime: r.inlet_flow_regime.clone(),
+            inlet_device_bulk_efficiency: r.inlet_device_bulk_efficiency,
+            inlet_device_pressure_drop: r.inlet_device_pressure_drop.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            inlet_nozzle_velocity: r.inlet_nozzle_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            inlet_momentum_flux: r.inlet_momentum_flux.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            k_factor: r.k_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            k_factor_utilization: r.k_factor_utilization,
+            mist_eliminator_flooded: r.mist_eliminator_flooded,
+            gas_area: r.gas_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            liquid_area: r.liquid_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            effective_gas_settling_height: r.effective_gas_settling_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_liquid_settling_height: r.effective_liquid_settling_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            gas_residence_time: r.gas_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            liquid_residence_time: r.liquid_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            gravity_section_length: r.gravity_section_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_pad_thickness: r.oil_pad_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            water_layer_height: r.water_layer_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            api_gas_liquid_compliant: r.api_gas_liquid_compliant,
+            api_liquid_compliant: r.api_liquid_compliant,
+            api_fully_compliant: r.api_fully_compliant,
+            api_gravity_cut_diameter: r.api_gravity_cut_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            api_k_factor_utilization: r.api_k_factor_utilization,
+            api_max_k_factor: r.api_max_k_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            api_min_liquid_residence_time: r.api_min_liquid_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            post_inlet_device_characteristic_diameter: r
+                .post_inlet_device_characteristic_diameter
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "m".to_string(),
+                }),
+            post_inlet_device_spread: r.post_inlet_device_spread,
             warnings: transport(&r.warnings),
         }
     }

@@ -177,6 +177,39 @@ description = "the multiplier on `gas_in_oil` and `gas_in_water`; absent is 1.0,
 unit = "dimensionless"
 optional = true
 description = "the multiplier on `oil_in_water` and `water_in_oil`; absent is 1.0, and a negative is clamped to zero.\n"
+[inputs.enhanced]
+type = "boolean"
+optional = true
+description = "run `calculateEnhanced` instead of the standard path: the flow regime, inlet device, vessel geometry and API 12J chain. **Absent is false**; the group below is refused without it.\n"
+[inputs.inlet_pipe_diameter]
+unit = "m"
+optional = true
+description = "the inlet pipe's diameter, which the nozzle velocity and the regime map divide. **Absent is `0.2` m.**\n"
+[inputs.surface_tension]
+unit = "N/m"
+optional = true
+description = "the gas-liquid surface tension the regime and DSD correlations read. **Absent is `0.025` N/m.**\n"
+[inputs.oil_volume_fraction]
+unit = "dimensionless"
+optional = true
+description = "the oil's share of the three-phase liquid flow, clamped to `[0.01, 0.99]` in the class. **Absent is `0.5`.**\n"
+[inputs.apply_turbulence_correction]
+type = "boolean"
+optional = true
+description = "whether the Csanady/Koenders turbulence correction moves the gravity cut diameter. **Absent is true.**\n"
+[inputs.inlet_device]
+type = "enum"
+values = ["none", "deflector_plate", "half_pipe", "inlet_vane", "inlet_cyclone", "schoepentoeter", "impingement_plate"]
+optional = true
+description = "the inlet device's type. **Absent is the class's `half_pipe`**; `none` passes the distribution unchanged and removes nothing.\n"
+[inputs.design_k_factor]
+unit = "m/s"
+optional = true
+description = "the mist eliminator's design `K`, which the flooding and API checks divide by. **Absent is `0.107` for a wire mesh** and is refused for any other eliminator, because the internals database is refused here.\n"
+[inputs.liquid_liquid_residence_time]
+unit = "s"
+optional = true
+description = "the liquid-liquid residence-time override. **Absent is the geometry's own**, and a non-positive geometry value falls back to `300` s.\n"
 [outputs]
 [outputs.oil_in_gas]
 unit = "dimensionless"
@@ -211,6 +244,142 @@ description = "the oil-in-water gravity efficiency; zero unless the oil-in-water
 [outputs.gravity_cut_diameter]
 unit = "m"
 description = "the gas section's critical droplet diameter; zero without a gas-liquid distribution.\n"
+[outputs.inlet_flow_regime]
+type = "string"
+optional = true
+description = "the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.\n"
+[outputs.inlet_device_bulk_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the inlet device's bulk liquid-removal efficiency.\n"
+[outputs.inlet_device_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.\n"
+[outputs.inlet_nozzle_velocity]
+unit = "m/s"
+optional = true
+description = "the inlet nozzle's velocity, the two-phase flow over the pipe area.\n"
+[outputs.inlet_momentum_flux]
+unit = "Pa"
+optional = true
+description = "the nozzle's momentum flux, `rho_mix v^2`.\n"
+[outputs.k_factor]
+unit = "m/s"
+optional = true
+description = "the actual Souders-Brown `K` at the superficial gas velocity.\n"
+[outputs.k_factor_utilization]
+unit = "dimensionless"
+optional = true
+description = "the actual `K` over its design value; above one is flooding.\n"
+[outputs.mist_eliminator_flooded]
+type = "boolean"
+optional = true
+description = "whether `k_factor_utilization` exceeds one.\n"
+[outputs.gas_area]
+unit = "m**2"
+optional = true
+description = "the vessel's gas cross-section.\n"
+[outputs.liquid_area]
+unit = "m**2"
+optional = true
+description = "the vessel's liquid cross-section.\n"
+[outputs.effective_gas_settling_height]
+unit = "m"
+optional = true
+description = "the height a droplet falls through in the gas section.\n"
+[outputs.effective_liquid_settling_height]
+unit = "m"
+optional = true
+description = "the height a bubble rises through in the liquid.\n"
+[outputs.gas_residence_time]
+unit = "s"
+optional = true
+description = "the gas's residence time in the gravity section.\n"
+[outputs.liquid_residence_time]
+unit = "s"
+optional = true
+description = "the liquid's residence time, the class's own m3/hr slip included.\n"
+[outputs.gravity_section_length]
+unit = "m"
+optional = true
+description = "the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.\n"
+[outputs.oil_pad_thickness]
+unit = "m"
+optional = true
+description = "the three-phase oil pad, `level * oil_frac`.\n"
+[outputs.water_layer_height]
+unit = "m"
+optional = true
+description = "the three-phase water layer, `level * water_frac`.\n"
+[outputs.api_gas_liquid_compliant]
+type = "boolean"
+optional = true
+description = "API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.\n"
+[outputs.api_liquid_compliant]
+type = "boolean"
+optional = true
+description = "API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.\n"
+[outputs.api_fully_compliant]
+type = "boolean"
+optional = true
+description = "both verdicts.\n"
+[outputs.api_gravity_cut_diameter]
+unit = "m"
+optional = true
+description = "the cut diameter the API check read; the capture prints it in micrometres.\n"
+[outputs.api_k_factor_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `K` over the API limit it read.\n"
+[outputs.api_max_k_factor]
+unit = "m/s"
+optional = true
+description = "the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.\n"
+[outputs.api_min_liquid_residence_time]
+unit = "s"
+optional = true
+description = "the API minimum liquid residence time.\n"
+[outputs.post_inlet_device_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the downstream distribution's `d63.2` after the device's multiplier.\n"
+[outputs.post_inlet_device_spread]
+unit = "dimensionless"
+optional = true
+description = "the downstream distribution's spread.\n"
+[[valid_range]]
+quantity = "inlet_pipe_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a pipe diameter; the nozzle velocity divides by its square\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the regime and DSD correlations divide by it\n"
+[[valid_range]]
+quantity = "oil_volume_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a share of the liquid flow; at one there is no water\n"
+[[valid_range]]
+quantity = "design_k_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flooding check divides by it\n"
+[[valid_range]]
+quantity = "liquid_liquid_residence_time"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a residence time; a non-positive one is the class's 300 s fallback, which is not a value a caller states\n"
 [[valid_range]]
 quantity = "gas_density"
 min = 0

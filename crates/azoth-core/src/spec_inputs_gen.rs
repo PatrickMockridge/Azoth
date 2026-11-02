@@ -3731,6 +3731,31 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     (
+        "process.separator_performance",
+        "inlet_pipe_diameter",
+        "length",
+    ),
+    (
+        "process.separator_performance",
+        "surface_tension",
+        "surface_tension",
+    ),
+    (
+        "process.separator_performance",
+        "oil_volume_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "design_k_factor",
+        "velocity",
+    ),
+    (
+        "process.separator_performance",
+        "liquid_liquid_residence_time",
+        "time",
+    ),
+    (
         "process.shortcut_distillation_column",
         "feed_n",
         "molar_flow",

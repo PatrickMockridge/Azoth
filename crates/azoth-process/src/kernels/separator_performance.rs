@@ -1,10 +1,11 @@
 //! `process.separator_performance` - NeqSim's droplet-based separation calculator.
 //!
-//! **The standard path of `SeparatorPerformanceCalculator`**, with the three classes it reads:
-//! the Rosin-Rammler/log-normal `DropletSizeDistribution`, the `GradeEfficiencyCurve` family,
-//! and `DropletSettlingCalculator`'s Schiller-Naumann settling. The enhanced chain in the
-//! class - flow regime, inlet device, vessel geometry and the internals database - is a
-//! different solver and is not here.
+//! **Both paths of `SeparatorPerformanceCalculator`**, with the three classes the standard
+//! one reads - the Rosin-Rammler/log-normal `DropletSizeDistribution`, the
+//! `GradeEfficiencyCurve` family and `DropletSettlingCalculator`'s Schiller-Naumann settling -
+//! and the enhanced chain's three more: `MultiphaseFlowRegime`, `InletDeviceModel` and
+//! `SeparatorGeometryCalculator`. The internals database's design K is the one piece not
+//! carried; a non-wire-mesh eliminator must state `design_k_factor`.
 //!
 //! **The class's quirks are reproduced rather than corrected**: the three-phase gas
 //! entrainment writes the whole `1 - overall` to both liquid fractions, the gas carry-under
@@ -13,6 +14,12 @@
 //! without renormalising, and `erf`/`inverseErf` are the class's own approximations.
 
 use azoth_core::{AzothError, Result};
+
+use crate::separator_design::flow_regime::{RegimeInput, predict as predict_regime};
+use crate::separator_design::geometry::{
+    Geometry, GeometryInput, three_phase as geometry_three_phase, two_phase as geometry_two_phase,
+};
+use crate::separator_design::inlet_device::{InletDevice, calculate as inlet_calculate};
 
 /// `DropletSettlingCalculator.G`.
 const G: f64 = 9.81;
@@ -538,6 +545,23 @@ pub struct PerformanceSettings {
     pub gas_carry_under_factor: f64,
     /// The multiplier on `oil_in_water` and `water_in_oil`.
     pub liquid_liquid_factor: f64,
+    /// Whether `calculateEnhanced` runs instead of the standard path.
+    pub enhanced: bool,
+    /// The inlet pipe's diameter, m.
+    pub inlet_pipe_diameter: f64,
+    /// The gas-liquid surface tension, N/m.
+    pub surface_tension: f64,
+    /// The oil's share of the liquid flow, `[0.01, 0.99]` in the class.
+    pub oil_volume_fraction: f64,
+    /// Whether the turbulence correction moves the cut diameter.
+    pub apply_turbulence_correction: bool,
+    /// The inlet device; absent is the class's `HALF_PIPE`.
+    pub inlet_device: InletDevice,
+    /// The mist eliminator's design K, m/s. Absent uses `0.107` (the class's GPSA wire-mesh
+    /// default) and refuses a non-wire-mesh eliminator.
+    pub design_k_factor: Option<f64>,
+    /// The liquid-liquid residence-time override, s; absent is the geometry's.
+    pub liquid_liquid_residence_time: Option<f64>,
 }
 
 /// The six fractions and the five efficiencies the standard path reports.
@@ -565,6 +589,42 @@ pub struct PerformanceOutcome {
     pub liquid_liquid_gravity_efficiency: f64,
     /// The gas section's critical diameter, m.
     pub gravity_cut_diameter: f64,
+    /// The predicted inlet regime's enum spelling; empty on the standard path.
+    pub inlet_flow_regime: &'static str,
+    /// The inlet device's bulk removal efficiency.
+    pub inlet_device_bulk_efficiency: f64,
+    /// The inlet device's pressure drop, Pa.
+    pub inlet_device_pressure_drop: f64,
+    /// The inlet nozzle's velocity, m/s.
+    pub inlet_nozzle_velocity: f64,
+    /// The inlet nozzle's momentum flux, Pa.
+    pub inlet_momentum_flux: f64,
+    /// The actual Souders-Brown K at the gas velocity, m/s.
+    pub k_factor: f64,
+    /// The K over its design value.
+    pub k_factor_utilization: f64,
+    /// Whether the mist eliminator is flooded.
+    pub mist_eliminator_flooded: bool,
+    /// The vessel geometry's areas and heights.
+    pub geometry: Option<Geometry>,
+    /// The API 12J gas-section verdict.
+    pub api_gas_liquid_compliant: bool,
+    /// The API 12J liquid-section verdict.
+    pub api_liquid_compliant: bool,
+    /// Both verdicts.
+    pub api_fully_compliant: bool,
+    /// The cut diameter the API check read, micrometres.
+    pub api_gravity_cut_diameter_um: f64,
+    /// The K utilisation the API check read.
+    pub api_k_factor_utilization: f64,
+    /// The API check's maximum K, m/s.
+    pub api_max_k_factor: f64,
+    /// The API check's minimum liquid residence time, s.
+    pub api_min_liquid_residence_time: f64,
+    /// The downstream distribution's characteristic diameter, m.
+    pub post_inlet_device_characteristic_diameter: f64,
+    /// The downstream distribution's spread.
+    pub post_inlet_device_spread: f64,
 }
 
 impl Default for PerformanceOutcome {
@@ -581,6 +641,24 @@ impl Default for PerformanceOutcome {
             overall_gas_liquid_efficiency: 0.0,
             liquid_liquid_gravity_efficiency: 0.0,
             gravity_cut_diameter: 0.0,
+            inlet_flow_regime: "",
+            inlet_device_bulk_efficiency: 0.0,
+            inlet_device_pressure_drop: 0.0,
+            inlet_nozzle_velocity: 0.0,
+            inlet_momentum_flux: 0.0,
+            k_factor: 0.0,
+            k_factor_utilization: 0.0,
+            mist_eliminator_flooded: false,
+            geometry: None,
+            api_gas_liquid_compliant: false,
+            api_liquid_compliant: false,
+            api_fully_compliant: false,
+            api_gravity_cut_diameter_um: 0.0,
+            api_k_factor_utilization: 0.0,
+            api_max_k_factor: 0.0,
+            api_min_liquid_residence_time: 0.0,
+            post_inlet_device_characteristic_diameter: 0.0,
+            post_inlet_device_spread: 0.0,
         }
     }
 }
@@ -592,6 +670,15 @@ impl Default for PerformanceOutcome {
 /// on a type that does not read one. The declared bounds keep the class's degenerate cut
 /// (`f64::MAX`) unreachable.
 pub fn separator_performance(settings: &PerformanceSettings) -> Result<PerformanceOutcome> {
+    if settings.enhanced {
+        calculate_enhanced(settings)
+    } else {
+        calculate_standard(settings)
+    }
+}
+
+/// The class's standard path.
+fn calculate_standard(settings: &PerformanceSettings) -> Result<PerformanceOutcome> {
     let mist = settings
         .mist_eliminator
         .as_ref()
@@ -723,6 +810,343 @@ pub fn separator_performance(settings: &PerformanceSettings) -> Result<Performan
     Ok(outcome)
 }
 
+/// `calculateEnhanced`: flow regime -> inlet device -> geometry -> gravity/mist -> API 12J,
+/// then the bubble and liquid-liquid stages on the same geometry.
+fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutcome> {
+    let mist = settings
+        .mist_eliminator
+        .as_ref()
+        .map(|curve| GradeCurve::resolve("mist_eliminator", curve))
+        .transpose()?;
+    let coalescer = settings
+        .coalescer
+        .as_ref()
+        .map(|curve| GradeCurve::resolve("oil_water_coalescer", curve))
+        .transpose()?;
+    let mut outcome = PerformanceOutcome::default();
+    let horizontal = settings.orientation == Orientation::Horizontal;
+    let has_oil = settings.oil_density > 0.0;
+    let has_water = settings.water_density > 0.0;
+    let three_phase = has_oil && has_water;
+    let liquid_density = if has_oil {
+        settings.oil_density
+    } else {
+        settings.water_density
+    };
+    let liquid_viscosity = if has_oil {
+        settings.oil_viscosity
+    } else {
+        settings.water_viscosity
+    };
+
+    // STAGE 1: the regime map and its generated distribution.
+    let mut liquid_velocity = settings.gas_velocity * settings.liquid_level_fraction
+        / (1.0 - settings.liquid_level_fraction + 1.0e-10);
+    if liquid_velocity < 0.001 {
+        liquid_velocity = 0.01;
+    }
+    let regime_input = RegimeInput {
+        gas_density: settings.gas_density,
+        liquid_density,
+        liquid_viscosity,
+        surface_tension: settings.surface_tension,
+        pipe_diameter: settings.inlet_pipe_diameter,
+        gas_superficial_velocity: settings.gas_velocity,
+        liquid_superficial_velocity: liquid_velocity,
+        horizontal,
+    };
+    let (regime, generated) = predict_regime(&regime_input);
+    outcome.inlet_flow_regime = regime.name();
+    let (incoming_diameter, incoming_spread, incoming_log_normal) = match &settings.gas_liquid {
+        Some(distribution) => (
+            distribution.characteristic_diameter,
+            distribution.spread,
+            distribution.kind == DistributionKind::LogNormal,
+        ),
+        None => (generated.0, generated.1, false),
+    };
+
+    // STAGE 2: the inlet device on the inlet pipe's own flows.
+    let pipe_area =
+        std::f64::consts::PI * settings.inlet_pipe_diameter * settings.inlet_pipe_diameter / 4.0;
+    let inlet = inlet_calculate(
+        settings.inlet_device,
+        (incoming_diameter, incoming_spread, incoming_log_normal),
+        settings.gas_density,
+        liquid_density,
+        settings.gas_velocity * pipe_area,
+        liquid_velocity * pipe_area,
+        settings.inlet_pipe_diameter,
+        0.0,
+        0.0,
+    );
+    outcome.inlet_device_bulk_efficiency = inlet.bulk_efficiency;
+    outcome.inlet_device_pressure_drop = inlet.pressure_drop;
+    outcome.inlet_nozzle_velocity = inlet.nozzle_velocity;
+    outcome.inlet_momentum_flux = inlet.momentum_flux;
+    outcome.post_inlet_device_characteristic_diameter = inlet.downstream.0;
+    outcome.post_inlet_device_spread = inlet.downstream.1;
+    let gravity_dsd = DropletDistribution {
+        kind: if inlet.downstream.2 {
+            DistributionKind::LogNormal
+        } else {
+            DistributionKind::RosinRammler
+        },
+        characteristic_diameter: inlet.downstream.0,
+        spread: inlet.downstream.1,
+    };
+
+    // STAGE 3: the vessel geometry and the K factor.
+    let geometry_input = GeometryInput {
+        diameter: settings.vessel_diameter,
+        length: settings.vessel_length,
+        horizontal,
+        level_fraction: settings.liquid_level_fraction,
+        ..GeometryInput::default()
+    };
+    let vessel_area =
+        std::f64::consts::PI * settings.vessel_diameter * settings.vessel_diameter / 4.0;
+    let vessel_gas = settings.gas_velocity * vessel_area * (1.0 - settings.liquid_level_fraction);
+    let vessel_liquid = liquid_velocity * vessel_area * settings.liquid_level_fraction;
+    // numerics-ok: calculateEnhanced clamps oilVolumeFraction to [0.01, 0.99] itself.
+    let geometry = if three_phase {
+        let oil_fraction = settings.oil_volume_fraction.clamp(0.01, 0.99);
+        geometry_three_phase(
+            &geometry_input,
+            vessel_gas,
+            vessel_liquid * oil_fraction,
+            vessel_liquid * (1.0 - oil_fraction),
+            oil_fraction,
+        )
+    } else {
+        geometry_two_phase(&geometry_input, vessel_gas, vessel_liquid)
+    };
+    outcome.geometry = Some(geometry);
+    outcome.k_factor = crate::separator_design::geometry::k_factor(
+        settings.gas_velocity,
+        settings.gas_density,
+        liquid_density,
+    );
+    let design_k = match settings.design_k_factor {
+        Some(value) => value,
+        None => match settings
+            .mist_eliminator
+            .as_ref()
+            .map(|curve| curve.internals)
+        {
+            Some(Internals::WireMesh) | None => 0.107,
+            Some(_) => {
+                return Err(AzothError::invalid_input(
+                    "design_k_factor",
+                    "the internals database's design K is refused for this mist eliminator; \
+                     state `design_k_factor`",
+                ));
+            }
+        },
+    };
+    outcome.k_factor_utilization = if design_k > 0.0 {
+        outcome.k_factor / design_k
+    } else {
+        0.0
+    };
+    outcome.mist_eliminator_flooded = outcome.k_factor_utilization > 1.0;
+
+    // STAGE 4/5: gravity and the mist eliminator.
+    outcome.gravity_cut_diameter = critical_diameter(
+        geometry.effective_gas_settling_height,
+        geometry.gas_residence_time,
+        settings.gas_density,
+        liquid_density,
+        settings.gas_viscosity,
+    );
+    let mut effective_cut = outcome.gravity_cut_diameter;
+    if settings.apply_turbulence_correction {
+        effective_cut = turbulence_corrected_cut(
+            effective_cut,
+            settings.gas_velocity,
+            geometry.effective_gas_settling_height,
+            outcome.k_factor,
+            design_k,
+            settings.gas_density,
+            liquid_density,
+            settings.gas_viscosity,
+        );
+    }
+    let gravity_curve = GradeCurve::gravity(effective_cut);
+    if settings.include_gravity_section {
+        outcome.gravity_section_efficiency = gravity_curve.overall(&gravity_dsd);
+    }
+    if let Some(mist) = &mist {
+        if outcome.mist_eliminator_flooded {
+            let penalty = (1.0 - (outcome.k_factor_utilization - 1.0)).max(0.0);
+            outcome.mist_eliminator_efficiency = mist.overall(&gravity_dsd) * penalty * 0.5;
+            outcome.overall_gas_liquid_efficiency = outcome.gravity_section_efficiency
+                + (1.0 - outcome.gravity_section_efficiency) * outcome.mist_eliminator_efficiency;
+        } else {
+            outcome.mist_eliminator_efficiency = mist.overall(&gravity_dsd);
+            outcome.overall_gas_liquid_efficiency = if settings.include_gravity_section {
+                combined(&gravity_dsd, &gravity_curve, mist)
+            } else {
+                outcome.mist_eliminator_efficiency
+            };
+        }
+    } else if settings.include_gravity_section {
+        outcome.overall_gas_liquid_efficiency = outcome.gravity_section_efficiency;
+    }
+
+    // The API 12J check.
+    if outcome.gravity_cut_diameter > 0.0 {
+        let mut liquid_residence = geometry.liquid_residence_time;
+        if liquid_residence <= 0.0 {
+            liquid_residence = estimate_liquid_residence_time(
+                settings.vessel_diameter,
+                settings.vessel_length,
+                settings.orientation,
+                settings.liquid_level_fraction,
+                settings.gas_velocity,
+            );
+        }
+        let max_k = if mist.is_some() {
+            0.25
+        } else if horizontal {
+            0.120
+        } else {
+            0.107
+        };
+        let min_residence = if three_phase { 300.0 } else { 180.0 };
+        outcome.api_max_k_factor = max_k;
+        outcome.api_k_factor_utilization = outcome.k_factor / max_k;
+        outcome.api_gravity_cut_diameter_um = outcome.gravity_cut_diameter * 1.0e6;
+        outcome.api_gas_liquid_compliant =
+            outcome.gravity_cut_diameter <= 100.0e-6 && outcome.k_factor <= max_k;
+        outcome.api_min_liquid_residence_time = min_residence;
+        outcome.api_liquid_compliant = liquid_residence >= min_residence;
+        outcome.api_fully_compliant =
+            outcome.api_gas_liquid_compliant && outcome.api_liquid_compliant;
+    }
+
+    // The inlet device removes first; the downstream stages act on the rest.
+    let combined_efficiency = inlet.bulk_efficiency
+        + (1.0 - inlet.bulk_efficiency) * outcome.overall_gas_liquid_efficiency;
+    outcome.overall_gas_liquid_efficiency = combined_efficiency.min(1.0);
+    let entrainment = 1.0 - outcome.overall_gas_liquid_efficiency;
+    if three_phase {
+        outcome.oil_in_gas = entrainment;
+        outcome.water_in_gas = entrainment;
+    } else if has_oil {
+        outcome.oil_in_gas = entrainment;
+    } else {
+        outcome.water_in_gas = entrainment;
+    }
+
+    // STAGE 6: gas bubble carry-under.
+    if let Some(distribution) = &settings.gas_bubble {
+        let height = geometry.effective_liquid_settling_height;
+        let residence = if geometry.liquid_residence_time <= 0.0 {
+            120.0
+        } else {
+            geometry.liquid_residence_time
+        };
+        let cut = critical_diameter(
+            height,
+            residence,
+            liquid_density,
+            settings.gas_density,
+            liquid_viscosity,
+        );
+        let efficiency = GradeCurve::gravity(cut).overall(distribution);
+        outcome.gas_in_oil = 1.0 - efficiency;
+        outcome.gas_in_water = outcome.gas_in_oil;
+    }
+
+    // STAGE 7: liquid-liquid.
+    if three_phase {
+        let residence = settings
+            .liquid_liquid_residence_time
+            .unwrap_or(geometry.liquid_residence_time);
+        let residence = if residence <= 0.0 { 300.0 } else { residence };
+        let oil_pad = if geometry.oil_pad_thickness <= 0.0 {
+            settings.vessel_diameter * settings.liquid_level_fraction / 2.0
+        } else {
+            geometry.oil_pad_thickness
+        };
+        if let Some(distribution) = &settings.water_in_oil {
+            let cut = critical_diameter(
+                oil_pad,
+                residence,
+                settings.oil_density,
+                settings.water_density,
+                settings.oil_viscosity,
+            );
+            let efficiency = GradeCurve::gravity(cut).overall(distribution);
+            outcome.water_in_oil = match &coalescer {
+                Some(coalescer) => (1.0 - efficiency) * (1.0 - coalescer.overall(distribution)),
+                None => 1.0 - efficiency,
+            };
+        }
+        if let Some(distribution) = &settings.oil_in_water {
+            let water_layer = if geometry.water_layer_height <= 0.0 {
+                oil_pad
+            } else {
+                geometry.water_layer_height
+            };
+            let cut = critical_diameter(
+                water_layer,
+                residence,
+                settings.water_density,
+                settings.oil_density,
+                settings.water_viscosity,
+            );
+            let efficiency = GradeCurve::gravity(cut).overall(distribution);
+            outcome.liquid_liquid_gravity_efficiency = efficiency;
+            outcome.oil_in_water = match &coalescer {
+                Some(coalescer) => (1.0 - efficiency) * (1.0 - coalescer.overall(distribution)),
+                None => 1.0 - efficiency,
+            };
+        }
+    }
+
+    outcome.oil_in_gas = clamp01(outcome.oil_in_gas * settings.liquid_in_gas_factor);
+    outcome.water_in_gas = clamp01(outcome.water_in_gas * settings.liquid_in_gas_factor);
+    outcome.gas_in_oil = clamp01(outcome.gas_in_oil * settings.gas_carry_under_factor);
+    outcome.gas_in_water = clamp01(outcome.gas_in_water * settings.gas_carry_under_factor);
+    outcome.oil_in_water = clamp01(outcome.oil_in_water * settings.liquid_liquid_factor);
+    outcome.water_in_oil = clamp01(outcome.water_in_oil * settings.liquid_liquid_factor);
+    Ok(outcome)
+}
+
+/// `calcTurbulenceCorrectedCutDiameter`: the Csanady/Koenders correction, capped at `3x`.
+#[allow(clippy::too_many_arguments)] // one per class argument
+fn turbulence_corrected_cut(
+    gravity_cut: f64,
+    gas_velocity: f64,
+    settling_height: f64,
+    k_factor: f64,
+    design_k_factor: f64,
+    gas_density: f64,
+    liquid_density: f64,
+    gas_viscosity: f64,
+) -> f64 {
+    if gravity_cut <= 0.0 || gas_velocity <= 0.0 || settling_height <= 0.0 {
+        return gravity_cut;
+    }
+    let turbulence = if design_k_factor > 0.0 {
+        let load = (k_factor / design_k_factor).min(1.0);
+        0.05 + 0.15 * load * load
+    } else {
+        0.05
+    };
+    let u_rms = turbulence * gas_velocity;
+    let eddy = settling_height / 5.0;
+    let diffusivity = u_rms * eddy;
+    let terminal = terminal_velocity(gravity_cut, gas_density, liquid_density, gas_viscosity).abs();
+    if terminal <= 0.0 {
+        return gravity_cut;
+    }
+    let argument = (1.0 + diffusivity / (terminal * settling_height)).min(81.0);
+    gravity_cut * argument.powf(0.25)
+}
+
 /// The gas section's available height and residence time.
 fn gas_section(settings: &PerformanceSettings) -> (f64, f64) {
     let gas_fraction = 1.0 - settings.liquid_level_fraction;
@@ -844,6 +1268,97 @@ mod tests {
             liquid_in_gas_factor: 1.0,
             gas_carry_under_factor: 1.0,
             liquid_liquid_factor: 1.0,
+            enhanced: false,
+            inlet_pipe_diameter: 0.2,
+            surface_tension: 0.025,
+            oil_volume_fraction: 0.5,
+            apply_turbulence_correction: true,
+            inlet_device: InletDevice::HalfPipe,
+            design_k_factor: None,
+            liquid_liquid_residence_time: None,
         }
+    }
+
+    /// The enhanced capture's `two_phase_horizontal` row, stage by stage.
+    #[test]
+    fn the_enhanced_two_phase_row_is_reproduced() {
+        let mut settings = base();
+        settings.gas_density = 50.0;
+        settings.oil_density = 750.0;
+        settings.water_density = 0.0;
+        settings.gas_viscosity = 1.2e-5;
+        settings.oil_viscosity = 2.0e-3;
+        settings.water_viscosity = 0.0;
+        settings.gas_velocity = 2.0;
+        settings.vessel_diameter = 2.4;
+        settings.vessel_length = 7.0;
+        settings.liquid_level_fraction = 0.5;
+        settings.gas_liquid = None;
+        settings.gas_bubble = Some(DropletDistribution {
+            kind: DistributionKind::RosinRammler,
+            characteristic_diameter: 500.0e-6,
+            spread: 2.0,
+        });
+        settings.mist_eliminator = Some(CurveSettings {
+            internals: Internals::WireMesh,
+            cut_diameter: None,
+            sharpness: None,
+            max_efficiency: None,
+            points: None,
+        });
+        settings.enhanced = true;
+        let outcome = super::separator_performance(&settings).expect("the captured state");
+        let close = |actual: f64, expected: f64, what: &str| {
+            let error = (actual - expected).abs() / expected.abs().max(f64::MIN_POSITIVE);
+            assert!(
+                error <= 2.0e-4,
+                "{what}: {actual} against {expected} ({error:.3e})"
+            );
+        };
+        assert_eq!(outcome.inlet_flow_regime, "SLUG");
+        close(
+            outcome.overall_gas_liquid_efficiency,
+            0.743_014_773_497_656,
+            "overall",
+        );
+        close(
+            outcome.gravity_section_efficiency,
+            0.564_431_819_351_714_3,
+            "gravity",
+        );
+        close(outcome.mist_eliminator_efficiency, 0.0, "mist");
+        close(
+            outcome.gravity_cut_diameter,
+            4.351_226_637_396_398e-4,
+            "cut",
+        );
+        close(outcome.k_factor, 0.534_522_483_824_848_8, "K");
+        close(
+            outcome.k_factor_utilization,
+            4.995_537_232_007_932_5,
+            "K util",
+        );
+        assert!(outcome.mist_eliminator_flooded);
+        close(outcome.inlet_device_bulk_efficiency, 0.41, "bulk");
+        close(outcome.inlet_momentum_flux, 6400.0, "momentum");
+        close(outcome.oil_in_gas, 0.256_985_226_502_344, "oil in gas");
+        close(
+            outcome.api_gravity_cut_diameter_um,
+            435.122_663_739_639_8,
+            "api cut",
+        );
+        close(
+            outcome.api_k_factor_utilization,
+            2.138_089_935_299_395,
+            "api K util",
+        );
+        assert!(!outcome.api_gas_liquid_compliant);
+        assert!(!outcome.api_liquid_compliant);
+        assert!(!outcome.api_fully_compliant);
+        let geometry = outcome.geometry.expect("the geometry ran");
+        close(geometry.gas_area, 2.261_946_710_584_651, "gas area");
+        close(geometry.gravity_section_length, 5.95, "gravity length");
+        close(geometry.gas_residence_time, 2.975, "gas residence");
+        close(geometry.liquid_residence_time, 3.5, "liquid residence");
     }
 }

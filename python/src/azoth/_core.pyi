@@ -3189,6 +3189,32 @@ class SeparatorPerformanceResult:
     overall_gas_liquid_efficiency: float
     liquid_liquid_gravity_efficiency: float
     gravity_cut_diameter: Qty
+    inlet_flow_regime: str | None
+    inlet_device_bulk_efficiency: float | None
+    inlet_device_pressure_drop: Qty | None
+    inlet_nozzle_velocity: Qty | None
+    inlet_momentum_flux: Qty | None
+    k_factor: Qty | None
+    k_factor_utilization: float | None
+    mist_eliminator_flooded: bool | None
+    gas_area: Qty | None
+    liquid_area: Qty | None
+    effective_gas_settling_height: Qty | None
+    effective_liquid_settling_height: Qty | None
+    gas_residence_time: Qty | None
+    liquid_residence_time: Qty | None
+    gravity_section_length: Qty | None
+    oil_pad_thickness: Qty | None
+    water_layer_height: Qty | None
+    api_gas_liquid_compliant: bool | None
+    api_liquid_compliant: bool | None
+    api_fully_compliant: bool | None
+    api_gravity_cut_diameter: Qty | None
+    api_k_factor_utilization: float | None
+    api_max_k_factor: Qty | None
+    api_min_liquid_residence_time: Qty | None
+    post_inlet_device_characteristic_diameter: Qty | None
+    post_inlet_device_spread: float | None
     warnings: list[Warning]
 
 @final
@@ -5930,6 +5956,14 @@ def separator_performance(
     liquid_in_gas_calibration_factor: float | None = None,
     gas_carry_under_calibration_factor: float | None = None,
     liquid_liquid_calibration_factor: float | None = None,
+    enhanced: bool | None = None,
+    inlet_pipe_diameter: float | None = None,
+    surface_tension: float | None = None,
+    oil_volume_fraction: float | None = None,
+    apply_turbulence_correction: bool | None = None,
+    inlet_device: str | None = None,
+    design_k_factor: float | None = None,
+    liquid_liquid_residence_time: float | None = None,
 ) -> SeparatorPerformanceResult: ...
 def shortcut_distillation_column(
     components: list[str],
