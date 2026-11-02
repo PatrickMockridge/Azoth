@@ -16,7 +16,9 @@ use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::separator as kernel;
 use crate::model_gen;
-use crate::separator_design::mechanical::{DesignInputs, mechanical_design as design_vessel};
+use crate::separator_design::mechanical::{
+    DesignInputs, VesselKind, mechanical_design as design_vessel,
+};
 use crate::stream::Stream;
 
 /// Result of `process.separator`.
@@ -329,6 +331,7 @@ pub fn separator(
             &vapour,
             &liquid,
             orientation == "horizontal",
+            VesselKind::Separator,
             &inputs,
         )?)
     } else {

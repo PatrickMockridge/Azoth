@@ -54,6 +54,7 @@ from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.process.reference._phase_outlet import phase_enthalpy
 from azoth.process.reference.capacity import _labelled_phases, _mass_density, _molar_mass
+from azoth.process.reference.separator import MechanicalDesign
 
 #: ``Separator.getMaxAllowableGasVelocity``'s own substitution where the system has no liquid
 #: phase at all - a bare ``1000.0`` beside the ``50.0`` it puts on an absent gas phase, which a
@@ -72,6 +73,14 @@ def gas_scrubber(
     internal_diameter: Q | None = None,
     design_gas_load_factor: Q | None = None,
     heat_input: Q | None = None,
+    mechanical_design: bool | None = None,
+    orientation: str | None = None,
+    volume_safety_factor: float | None = None,
+    design_liquid_level_fraction: float | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -120,21 +129,50 @@ def gas_scrubber(
     p = input_to_si(spec, "feed_p", feed_p)
     drop = input_to_si(spec, "pressure_drop", pressure_drop)
 
+    diameter = (
+        None
+        if internal_diameter is None
+        else input_to_si(spec, "internal_diameter", internal_diameter)
+    )
+    load_factor = (
+        None
+        if design_gas_load_factor is None
+        else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor)
+    )
+    design = bool(mechanical_design) if mechanical_design is not None else False
+    volume_factor = None if volume_safety_factor is None else float(volume_safety_factor)
+    level_fraction = (
+        None if design_liquid_level_fraction is None else float(design_liquid_level_fraction)
+    )
+    max_pressure = (
+        None
+        if max_operation_pressure is None
+        else input_to_si(spec, "max_operation_pressure", max_operation_pressure)
+    )
+    stress = (
+        None
+        if allowable_stress is None
+        else input_to_si(spec, "allowable_stress", allowable_stress)
+    )
+    joint = None if joint_efficiency is None else float(joint_efficiency)
+    corrosion = (
+        None
+        if corrosion_allowance is None
+        else input_to_si(spec, "corrosion_allowance", corrosion_allowance) * 1000.0
+    )
     apply_checks(
         checks.on_input,
         {
             "pressure_drop": drop,
             "gas_in_liquid": gas_in_liquid,
-            "internal_diameter": (
-                None
-                if internal_diameter is None
-                else input_to_si(spec, "internal_diameter", internal_diameter)
-            ),
-            "design_gas_load_factor": (
-                None
-                if design_gas_load_factor is None
-                else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor)
-            ),
+            "internal_diameter": diameter,
+            "design_gas_load_factor": load_factor,
+            "volume_safety_factor": volume_factor,
+            "design_liquid_level_fraction": level_fraction,
+            "max_operation_pressure": max_pressure,
+            "allowable_stress": stress,
+            "joint_efficiency": joint,
+            "corrosion_allowance": corrosion,
         }.get,
         warnings,
     )
@@ -144,20 +182,44 @@ def gas_scrubber(
             "gas_in_liquid",
             f"an entrainment fraction is a fraction, and {gas_in_liquid} is not in [0, 1]",
         )
-    # **Both or neither.** `getCapacityUtilization` is a function of the vessel, and a caller
-    # who states half of the vessel has stated nothing: the metric is not computed at all, and
-    # the half that was given is refused rather than quietly ignored.
-    if (internal_diameter is None) != (design_gas_load_factor is None):
-        named, missing = (
-            ("internal_diameter", "design_gas_load_factor")
-            if internal_diameter is not None
-            else ("design_gas_load_factor", "internal_diameter")
-        )
+    # **A stated diameter needs its design basis; a design basis does not need a diameter.**
+    if diameter is not None and load_factor is None:
         raise InvalidInputError(
-            missing,
-            f"`{named}` was stated and `{missing}` was not, and the Souders-Brown capacity "
-            f"metric needs both - a vessel with a size but no design basis, or the reverse, "
-            f"has nothing to check",
+            "design_gas_load_factor",
+            "`internal_diameter` was stated and `design_gas_load_factor` was not, and the "
+            "Souders-Brown capacity metric needs both",
+        )
+    if not design and load_factor is not None and diameter is None:
+        raise InvalidInputError(
+            "internal_diameter",
+            "`design_gas_load_factor` was stated without `internal_diameter` and without "
+            "`mechanical_design`, and the design basis has no vessel to be used on",
+        )
+    if design and load_factor is None:
+        raise InvalidInputError(
+            "design_gas_load_factor",
+            "`mechanical_design` was stated without `design_gas_load_factor`, and the design's "
+            "Souders-Brown basis is that number",
+        )
+    if not design:
+        for stated, value in (
+            ("orientation", orientation),
+            ("volume_safety_factor", volume_safety_factor),
+            ("design_liquid_level_fraction", design_liquid_level_fraction),
+            ("max_operation_pressure", max_operation_pressure),
+            ("allowable_stress", allowable_stress),
+            ("joint_efficiency", joint_efficiency),
+            ("corrosion_allowance", corrosion_allowance),
+        ):
+            if value is not None:
+                raise InvalidInputError(
+                    stated, f"`{stated}` was stated without `mechanical_design`"
+                )
+    kind = "vertical" if orientation is None else orientation
+    if kind not in ("horizontal", "vertical"):
+        raise InvalidInputError(
+            "orientation",
+            f"a vessel is `horizontal` or `vertical`, and {kind!r} is neither",
         )
     if p <= 0.0:
         raise OutOfRangeError("P", p, "an absolute pressure; zero and below are not states")
@@ -221,7 +283,7 @@ def gas_scrubber(
     # temperature unless a `heat_input` moved the flash.
     capacity = (
         None
-        if internal_diameter is None or design_gas_load_factor is None
+        if diameter is None or load_factor is None
         else _capacity_utilization(
             components,
             t_out,
@@ -229,8 +291,32 @@ def gas_scrubber(
             list(feed_z),
             n_vapour - carried,
             list(liquid_z),
-            input_to_si(spec, "internal_diameter", internal_diameter),
-            input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+            diameter,
+            load_factor,
+        )
+    )
+    gas_fraction = (
+        1.0 if kind != "horizontal" else 1.0 - (0.8 if level_fraction is None else level_fraction)
+    )
+    vessel = (
+        None
+        if not design or load_factor is None
+        else _scrubber_design(
+            components,
+            t_out,
+            p_out,
+            list(y),
+            n_vapour - carried,
+            list(liquid_z),
+            liquid_n,
+            kind == "horizontal",
+            load_factor,
+            gas_fraction,
+            1.1 if volume_factor is None else volume_factor,
+            100.0e5 if max_pressure is None else max_pressure,
+            (425.0e6 if stress is None else stress) / 1.0e6,
+            1.0 if joint is None else joint,
+            0.0 if corrosion is None else corrosion,
         )
     )
 
@@ -246,7 +332,90 @@ def gas_scrubber(
         liquid_t=temperature,
         liquid_h=from_si(liquid_h, "J/mol"),
         capacity_utilization=capacity,
+        design_inner_diameter=(None if vessel is None else from_si(vessel.inner_diameter, "m")),
+        design_tantan_length=(None if vessel is None else from_si(vessel.tantan_length, "m")),
+        design_outer_diameter=(None if vessel is None else from_si(vessel.outer_diameter, "m")),
+        design_wall_thickness=(None if vessel is None else from_si(vessel.wall_thickness, "m")),
+        max_design_gas_volume_flow=(
+            None
+            if vessel is None
+            else from_si(vessel.max_design_gas_volume_flow_m3_hr / 3600.0, "m**3/h")
+        ),
+        vessel_shell_weight=(
+            None if vessel is None else from_si(vessel.vessel_shell_weight_kg, "kg")
+        ),
+        total_weight=None if vessel is None else from_si(vessel.total_weight_kg, "kg"),
+        module_width=None if vessel is None else from_si(vessel.module_width, "m"),
+        module_length=None if vessel is None else from_si(vessel.module_length, "m"),
+        module_height=None if vessel is None else from_si(vessel.module_height, "m"),
+        vessel_volume=(None if vessel is None else from_si(vessel.vessel_volume_m3, "m**3")),
+        hhll=None if vessel is None else from_si(vessel.hhll, "m"),
+        hll=None if vessel is None else from_si(vessel.hll, "m"),
+        nll=None if vessel is None else from_si(vessel.nll, "m"),
+        lll=None if vessel is None else from_si(vessel.lll, "m"),
+        llll=None if vessel is None else from_si(vessel.llll, "m"),
+        weir_height=None if vessel is None else from_si(vessel.weir_height, "m"),
+        nil=None if vessel is None else from_si(vessel.nil, "m"),
+        effective_length_liquid=(
+            None if vessel is None else from_si(vessel.effective_length_liquid, "m")
+        ),
+        effective_length_gas=(
+            None if vessel is None else from_si(vessel.effective_length_gas, "m")
+        ),
+        inlet_nozzle_id=(None if vessel is None else from_si(vessel.inlet_nozzle_id, "m")),
+        gas_outlet_nozzle_id=(
+            None if vessel is None else from_si(vessel.gas_outlet_nozzle_id, "m")
+        ),
+        oil_outlet_nozzle_id=(
+            None if vessel is None else from_si(vessel.oil_outlet_nozzle_id, "m")
+        ),
+        surge_volume=(None if vessel is None else from_si(vessel.surge_volume_m3, "m**3")),
+        surge_time=None if vessel is None else from_si(vessel.surge_time_s, "s"),
+        liquid_retention_time=(
+            None if vessel is None else from_si(vessel.liquid_retention_time_s, "s")
+        ),
         warnings=tuple(warnings),
+    )
+
+
+def _scrubber_design(
+    components: list[str],
+    t: float,
+    p: float,
+    gas_z: list[float],
+    gas_n: float,
+    liquid_z: list[float],
+    liquid_n: float,
+    horizontal: bool,
+    gas_load_factor: float,
+    fg: float,
+    volume_safety_factor: float,
+    max_operation_pressure_pa: float,
+    allowable_stress_mpa: float,
+    joint_efficiency: float,
+    corrosion_allowance_mm: float,
+) -> MechanicalDesign:
+    """The scrubber's mechanical design: the separator's arithmetic as a `Scrubber` vessel."""
+    from azoth.process.reference.separator import _mechanical_design
+
+    return _mechanical_design(
+        components,
+        t,
+        p,
+        gas_z,
+        gas_n,
+        liquid_z,
+        liquid_n,
+        horizontal,
+        gas_load_factor,
+        fg,
+        volume_safety_factor,
+        60.0,
+        max_operation_pressure_pa,
+        allowable_stress_mpa,
+        joint_efficiency,
+        corrosion_allowance_mm,
+        vessel="scrubber",
     )
 
 

@@ -1535,6 +1535,14 @@ def gas_scrubber(
     internal_diameter: Q | None = None,
     design_gas_load_factor: Q | None = None,
     heat_input: Q | None = None,
+    mechanical_design: bool | None = None,
+    orientation: str | None = None,
+    volume_safety_factor: float | None = None,
+    design_liquid_level_fraction: float | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a feed into vapour and liquid, as a scrubber does.
 
@@ -1543,6 +1551,9 @@ def gas_scrubber(
     separator's. **The Souders-Brown capacity metric is the class's own addition**, computed
     when ``internal_diameter`` and ``design_gas_load_factor`` are both given: stated one at a
     time it is refused, because a vessel with a size and no design basis has nothing to check.
+    ``mechanical_design`` runs ``GasScrubberMechanicalDesign.calcDesign`` and publishes the
+    vessel; its basis is the scrubber standard's ``1.1`` volume factor and the default
+    pressure-vessel values.
 
     Raises:
         InvalidInputError: where the shapes disagree, the pressure drop leaves a
@@ -1562,6 +1573,14 @@ def gas_scrubber(
         internal_diameter=internal_diameter,
         design_gas_load_factor=design_gas_load_factor,
         heat_input=heat_input,
+        mechanical_design=mechanical_design,
+        orientation=orientation,
+        volume_safety_factor=volume_safety_factor,
+        design_liquid_level_fraction=design_liquid_level_fraction,
+        max_operation_pressure=max_operation_pressure,
+        allowable_stress=allowable_stress,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
     )
 
 

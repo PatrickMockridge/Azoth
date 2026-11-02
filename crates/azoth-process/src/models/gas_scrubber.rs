@@ -9,12 +9,16 @@
 //! under the ports' own names rather than a list.
 
 use azoth_core::units::{
-    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, Velocity, joules_per_mole,
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, Time, Velocity,
+    joules_per_mole, meters, pascals, seconds,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::gas_scrubber as kernel;
 use crate::model_gen;
+use crate::separator_design::mechanical::{
+    DesignInputs, VesselKind, mechanical_design as design_vessel,
+};
 use crate::stream::Stream;
 
 /// Result of `process.separator`.
@@ -43,6 +47,58 @@ pub struct GasScrubberResult {
     /// `Separator.getCapacityUtilization`, present only when the vessel's size and its design gas
     /// load factor were both stated.
     pub capacity_utilization: Option<f64>,
+    /// `GasScrubberMechanicalDesign.calcDesign`'s sized diameter; absent unless it ran.
+    pub design_inner_diameter: Option<Length>,
+    /// The design's tangent-to-tangent length, `5 d`.
+    pub design_tantan_length: Option<Length>,
+    /// The design's outside diameter.
+    pub design_outer_diameter: Option<Length>,
+    /// The design's wall thickness.
+    pub design_wall_thickness: Option<Length>,
+    /// `getMaxDesignGassVolumeFlow`, m3/hr.
+    pub max_design_gas_volume_flow: Option<f64>,
+    /// The empty vessel shell's weight, kg.
+    pub vessel_shell_weight: Option<f64>,
+    /// The total skid weight, kg.
+    pub total_weight: Option<f64>,
+    /// The module's width.
+    pub module_width: Option<Length>,
+    /// The module's length.
+    pub module_length: Option<Length>,
+    /// The module's height.
+    pub module_height: Option<Length>,
+    /// The vessel's internal volume, m3.
+    pub vessel_volume: Option<f64>,
+    /// HHLL.
+    pub hhll: Option<Length>,
+    /// HLL.
+    pub hll: Option<Length>,
+    /// NLL.
+    pub nll: Option<Length>,
+    /// LLL.
+    pub lll: Option<Length>,
+    /// LLLL.
+    pub llll: Option<Length>,
+    /// The weir height.
+    pub weir_height: Option<Length>,
+    /// The normal interface level.
+    pub nil: Option<Length>,
+    /// The effective liquid separation length.
+    pub effective_length_liquid: Option<Length>,
+    /// The effective gas separation length.
+    pub effective_length_gas: Option<Length>,
+    /// The inlet nozzle's inside diameter.
+    pub inlet_nozzle_id: Option<Length>,
+    /// The gas outlet nozzle's inside diameter.
+    pub gas_outlet_nozzle_id: Option<Length>,
+    /// The oil outlet nozzle's inside diameter.
+    pub oil_outlet_nozzle_id: Option<Length>,
+    /// The surge volume between NLL and HLL, m3.
+    pub surge_volume: Option<f64>,
+    /// The surge time, seconds.
+    pub surge_time: Option<Time>,
+    /// The liquid retention time at NLL, seconds.
+    pub liquid_retention_time: Option<Time>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -53,7 +109,7 @@ pub struct GasScrubberResult {
 /// [`azoth_core::AzothError::InvalidInput`] if the pressure drop takes the outlet below
 /// zero, the entrainment fraction is outside `[0, 1]`, exactly one of the two mechanical
 /// inputs is stated, or the shapes disagree, and whatever the flash refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are ten
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eighteen
 pub fn gas_scrubber(
     components: &[String],
     feed_n: f64,
@@ -65,6 +121,14 @@ pub fn gas_scrubber(
     internal_diameter: Option<Length>,
     design_gas_load_factor: Option<Velocity>,
     heat_input: Option<Power>,
+    mechanical_design: Option<bool>,
+    orientation: Option<&str>,
+    volume_safety_factor: Option<f64>,
+    design_liquid_level_fraction: Option<f64>,
+    max_operation_pressure: Option<Pressure>,
+    allowable_stress: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
 ) -> Result<GasScrubberResult> {
     let spec = &model_gen::GAS_SCRUBBER_SPEC;
     let mut warnings = Vec::new();
@@ -79,17 +143,72 @@ pub fn gas_scrubber(
             "gas_in_liquid" => Some(gas_in_liquid),
             "internal_diameter" => internal_diameter.map(|value| value.value),
             "design_gas_load_factor" => design_gas_load_factor.map(|value| value.value),
+            "volume_safety_factor" => volume_safety_factor,
+            "design_liquid_level_fraction" => design_liquid_level_fraction,
+            "max_operation_pressure" => max_operation_pressure.map(|value| value.value),
+            "allowable_stress" => allowable_stress,
+            "joint_efficiency" => joint_efficiency,
+            "corrosion_allowance" => corrosion_allowance,
             _ => None,
         },
         &mut warnings,
     )?;
 
+    let design = mechanical_design.unwrap_or(false);
+    // **A stated diameter needs its design basis; a design basis does not need a diameter.**
+    if internal_diameter.is_some() && design_gas_load_factor.is_none() {
+        return Err(AzothError::invalid_input(
+            "design_gas_load_factor",
+            "`internal_diameter` was stated and `design_gas_load_factor` was not, and the \
+             Souders-Brown capacity metric needs both",
+        ));
+    }
+    if !design && design_gas_load_factor.is_some() && internal_diameter.is_none() {
+        return Err(AzothError::invalid_input(
+            "internal_diameter",
+            "`design_gas_load_factor` was stated without `internal_diameter` and without \
+             `mechanical_design`, and the design basis has no vessel to be used on",
+        ));
+    }
+    if design && design_gas_load_factor.is_none() {
+        return Err(AzothError::invalid_input(
+            "design_gas_load_factor",
+            "`mechanical_design` was stated without `design_gas_load_factor`, and the design's \
+             Souders-Brown basis is that number",
+        ));
+    }
+    if !design {
+        for (name, stated) in [
+            ("orientation", orientation.is_some()),
+            ("volume_safety_factor", volume_safety_factor.is_some()),
+            (
+                "design_liquid_level_fraction",
+                design_liquid_level_fraction.is_some(),
+            ),
+            ("max_operation_pressure", max_operation_pressure.is_some()),
+            ("allowable_stress", allowable_stress.is_some()),
+            ("joint_efficiency", joint_efficiency.is_some()),
+            ("corrosion_allowance", corrosion_allowance.is_some()),
+        ] {
+            if stated {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("`{name}` was stated without `mechanical_design`"),
+                ));
+            }
+        }
+    }
+    let orientation = orientation.unwrap_or("vertical");
+    if orientation != "horizontal" && orientation != "vertical" {
+        return Err(AzothError::invalid_input(
+            "orientation",
+            format!("a vessel is `horizontal` or `vertical`, and {orientation:?} is neither"),
+        ));
+    }
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let (vapour, liquid) = kernel(&feed, pressure_drop, gas_in_liquid, heat_input)?;
 
-    // **Both or neither.** The metric is a function of the vessel, and a caller who stated half
-    // of it has stated nothing: a vessel with a size but no design basis, or the reverse, has no
-    // capacity to be using.
     let capacity_utilization = match (internal_diameter, design_gas_load_factor) {
         (Some(diameter), Some(load_factor)) => Some(kernel::capacity_utilization(
             &feed,
@@ -98,23 +217,41 @@ pub fn gas_scrubber(
             diameter,
             load_factor,
         )?),
-        (None, None) => None,
-        (Some(_), None) => {
-            return Err(AzothError::invalid_input(
+        _ => None,
+    };
+
+    let vessel = if design {
+        let load_factor = design_gas_load_factor.ok_or_else(|| {
+            AzothError::invalid_input(
                 "design_gas_load_factor",
-                "`internal_diameter` was stated and `design_gas_load_factor` was not, and the \
-                 Souders-Brown capacity metric needs both - a vessel with a size but no design \
-                 basis, or the reverse, has nothing to check",
-            ));
-        }
-        (None, Some(_)) => {
-            return Err(AzothError::invalid_input(
-                "internal_diameter",
-                "`design_gas_load_factor` was stated and `internal_diameter` was not, and the \
-                 Souders-Brown capacity metric needs both - a vessel with a size but no design \
-                 basis, or the reverse, has nothing to check",
-            ));
-        }
+                "`mechanical_design` needs the design's Souders-Brown basis",
+            )
+        })?;
+        let level = design_liquid_level_fraction.unwrap_or(0.8);
+        let gas_fraction = if orientation == "horizontal" {
+            1.0 - level
+        } else {
+            1.0
+        };
+        let inputs = DesignInputs {
+            gas_load_factor: load_factor.value,
+            fg: gas_fraction,
+            volume_safety_factor: volume_safety_factor.unwrap_or(1.1),
+            retention_time_s: 60.0,
+            max_operation_pressure: max_operation_pressure.unwrap_or(pascals(100.0e5)),
+            allowable_stress: allowable_stress.unwrap_or(425.0e6) / 1.0e6,
+            joint_efficiency: joint_efficiency.unwrap_or(1.0),
+            corrosion_allowance_mm: corrosion_allowance.unwrap_or(0.0) * 1000.0,
+        };
+        Some(design_vessel(
+            &vapour,
+            &liquid,
+            orientation == "horizontal",
+            VesselKind::Scrubber,
+            &inputs,
+        )?)
+    } else {
+        None
     };
 
     Ok(GasScrubberResult {
@@ -129,6 +266,44 @@ pub fn gas_scrubber(
         liquid_t: liquid.t,
         liquid_h: joules_per_mole(liquid.h.value),
         capacity_utilization,
+        design_inner_diameter: vessel.as_ref().map(|design| meters(design.inner_diameter)),
+        design_tantan_length: vessel.as_ref().map(|design| meters(design.tantan_length)),
+        design_outer_diameter: vessel.as_ref().map(|design| meters(design.outer_diameter)),
+        design_wall_thickness: vessel.as_ref().map(|design| meters(design.wall_thickness)),
+        max_design_gas_volume_flow: vessel
+            .as_ref()
+            .map(|design| design.max_design_gas_volume_flow_m3_hr / 3600.0),
+        vessel_shell_weight: vessel.as_ref().map(|design| design.vessel_shell_weight_kg),
+        total_weight: vessel.as_ref().map(|design| design.total_weight_kg),
+        module_width: vessel.as_ref().map(|design| meters(design.module_width)),
+        module_length: vessel.as_ref().map(|design| meters(design.module_length)),
+        module_height: vessel.as_ref().map(|design| meters(design.module_height)),
+        vessel_volume: vessel.as_ref().map(|design| design.vessel_volume_m3),
+        hhll: vessel.as_ref().map(|design| meters(design.hhll)),
+        hll: vessel.as_ref().map(|design| meters(design.hll)),
+        nll: vessel.as_ref().map(|design| meters(design.nll)),
+        lll: vessel.as_ref().map(|design| meters(design.lll)),
+        llll: vessel.as_ref().map(|design| meters(design.llll)),
+        weir_height: vessel.as_ref().map(|design| meters(design.weir_height)),
+        nil: vessel.as_ref().map(|design| meters(design.nil)),
+        effective_length_liquid: vessel
+            .as_ref()
+            .map(|design| meters(design.effective_length_liquid)),
+        effective_length_gas: vessel
+            .as_ref()
+            .map(|design| meters(design.effective_length_gas)),
+        inlet_nozzle_id: vessel.as_ref().map(|design| meters(design.inlet_nozzle_id)),
+        gas_outlet_nozzle_id: vessel
+            .as_ref()
+            .map(|design| meters(design.gas_outlet_nozzle_id)),
+        oil_outlet_nozzle_id: vessel
+            .as_ref()
+            .map(|design| meters(design.oil_outlet_nozzle_id)),
+        surge_volume: vessel.as_ref().map(|design| design.surge_volume_m3),
+        surge_time: vessel.as_ref().map(|design| seconds(design.surge_time_s)),
+        liquid_retention_time: vessel
+            .as_ref()
+            .map(|design| seconds(design.liquid_retention_time_s)),
         warnings,
     })
 }

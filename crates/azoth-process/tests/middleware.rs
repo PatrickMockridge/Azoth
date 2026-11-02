@@ -500,8 +500,10 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // operating level fraction and its safety factor - the twenty-second to twenty-fourth,
     // and **its mechanical design's seven** - the liquid fraction, the volume safety factor,
     // the retention time, the operating pressure, the allowable stress, the joint efficiency
-    // and the corrosion allowance - make twenty-four to thirty-one.
-    assert_eq!(checked, 144, "the bounds this test walked");
+    // and the corrosion allowance - make twenty-four to thirty-one. **And the gas scrubber's
+    // six** - its volume safety factor, level fraction, operating pressure, allowable stress,
+    // joint efficiency and corrosion allowance - thirty-two to thirty-seven.
+    assert_eq!(checked, 150, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -656,8 +658,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `separator_length`, `liquid_level_fraction` and `safety_factor` - `575 + 3 = 578`.
     // **And the mechanical design's eight** - its flag, `fg`, the volume safety factor, the
     // retention time, the operating pressure, the allowable stress, the joint efficiency and
-    // the corrosion allowance - `578 + 8 = 586`.
-    assert_eq!(walked, 586, "the inputs this test walked");
+    // the corrosion allowance - `578 + 8 = 586`. **And the gas scrubber's eight** - its
+    // flag, orientation, volume factor, level fraction, pressure, stress, joint efficiency
+    // and corrosion allowance - `586 + 8 = 594`.
+    assert_eq!(walked, 594, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

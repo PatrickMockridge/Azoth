@@ -2829,6 +2829,32 @@ class GasScrubberResult:
     liquid_t: Qty
     liquid_h: Qty
     capacity_utilization: float | None
+    design_inner_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_outer_diameter: Qty | None
+    design_wall_thickness: Qty | None
+    max_design_gas_volume_flow: Qty | None
+    vessel_shell_weight: Qty | None
+    total_weight: Qty | None
+    module_width: Qty | None
+    module_length: Qty | None
+    module_height: Qty | None
+    vessel_volume: Qty | None
+    hhll: Qty | None
+    hll: Qty | None
+    nll: Qty | None
+    lll: Qty | None
+    llll: Qty | None
+    weir_height: Qty | None
+    nil: Qty | None
+    effective_length_liquid: Qty | None
+    effective_length_gas: Qty | None
+    inlet_nozzle_id: Qty | None
+    gas_outlet_nozzle_id: Qty | None
+    oil_outlet_nozzle_id: Qty | None
+    surge_volume: Qty | None
+    surge_time: Qty | None
+    liquid_retention_time: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5558,6 +5584,14 @@ def gas_scrubber(
     internal_diameter: float | None = None,
     design_gas_load_factor: float | None = None,
     heat_input: float | None = None,
+    mechanical_design: bool | None = None,
+    orientation: str | None = None,
+    volume_safety_factor: float | None = None,
+    design_liquid_level_fraction: float | None = None,
+    max_operation_pressure: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> GasScrubberResult: ...
 def gibbs_reactor(
     components: list[str],

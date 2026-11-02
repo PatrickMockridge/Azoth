@@ -824,7 +824,9 @@ a claim nothing holds.
   module box, the seven levels, the three nozzles and the surge and retention times, held to
   `process_separator_mechanical_design.tsv` on the port's PR fluid and on the class's own SRK
   fixture - so what remains owed there is `autoSize` (the composition of the two) and
-  `GasScrubberMechanicalDesign`'s subclass, and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
+  **`GasScrubberMechanicalDesign` landed too**, on `process.gas_scrubber` with the scrubber
+  standard's `1.1` factor, `5 d` length and `2 d` module - held to
+  `process_gas_scrubber_mechanical_design.tsv` - and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
   class's interphase model is a pre-flash clone whose zero-density phases answer a surface
   tension of `0.0`, so the getter's factor is exactly `0.5` on every two-phase state where
   the live Parachor answers `0.0089` and the formula would give `0.946` (capture

@@ -1225,6 +1225,24 @@ row that is `0.11035858` m3 against `0.110877` from the translated density, and 
 density moves the diameter by `0.23%`. And `calcLiquidRetentionTime` divides a m3/s flow as
 though it were m3/hr, which is the row's `394 159` s.
 
+## The gas scrubber mechanical design
+
+`process_gas_scrubber_mechanical_design.tsv` is `GasScrubberMechanicalDesign.calcDesign` on the
+same two-cubic fixture, through a `GasScrubber` rather than a `Separator`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber_mechanical \
+  > captures/process_gas_scrubber_mechanical_design.tsv
+```
+
+**The subclass is a second sizing machine.** It calls the separator's `calcDesign` first (on
+the separator standard's `1.0` safety), then re-sizes on the scrubber standard's `K = 0.11`
+and volume factor `1.1`: vertical `Fg = 1`, `length = 5 d`, and a module `2 d` high rather
+than the separator's `2 d + 1`. The row prints both standards' values so the override is
+visible. The mesh-pad, vane-pack and cyclone fields are untouched by `calcDesign` and print at
+their absent defaults.
+
 ## The separator capacity assessment
 
 `process_separator_capacity_assessment.tsv` is `Separator.getCapacityAssessment` on the

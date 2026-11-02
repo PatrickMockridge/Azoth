@@ -32,6 +32,21 @@ use azoth_eos::{Phase, pt_flash};
 use crate::segment::phase::{mass_density, molar_mass_of};
 use crate::stream::Stream;
 
+/// Which machine's `calcDesign` this is.
+///
+/// The two share the wall thickness, the weights, the levels, the nozzles and the surge and
+/// retention arithmetic; they differ in how the diameter and length are sized and in the
+/// module's height.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VesselKind {
+    /// `SeparatorMechanicalDesign`: the liquid retention sets the length, the bubble check
+    /// can enlarge the diameter, and the module is `2 d + 1` high.
+    Separator,
+    /// `GasScrubberMechanicalDesign`: the length is always `5 d`, there is no bubble check,
+    /// and the module is `2 d` high.
+    Scrubber,
+}
+
 /// The design basis the class takes from its default standards.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DesignInputs {
@@ -108,6 +123,7 @@ pub fn mechanical_design(
     gas_outlet: &Stream,
     liquid_outlet: &Stream,
     horizontal: bool,
+    kind: VesselKind,
     inputs: &DesignInputs,
 ) -> Result<Design> {
     let (mixture, ideal_gas) = gas_outlet.mixture()?;
@@ -193,25 +209,35 @@ pub fn mechanical_design(
     let cross_area = std::f64::consts::PI * (inner_diameter / 2.0).powi(2);
     let max_design_gas_volume_flow = max_gas_velocity * cross_area * gas_area_fraction * 3600.0;
 
-    let mut tantan_length =
-        (4.0 * inputs.retention_time_s * liquid_volume_flow * inputs.volume_safety_factor
-            / (std::f64::consts::PI * inner_diameter * inner_diameter * liquid_area_fraction))
-            .sqrt();
-    let total = tantan_length + inner_diameter;
-    if total / inner_diameter > 6.0 || total / inner_diameter < 3.0 {
-        tantan_length = inner_diameter * 5.0;
-    }
+    let (inner_diameter, tantan_length) = match kind {
+        VesselKind::Separator => {
+            let mut tantan_length = (4.0
+                * inputs.retention_time_s
+                * liquid_volume_flow
+                * inputs.volume_safety_factor
+                / (std::f64::consts::PI * inner_diameter * inner_diameter * liquid_area_fraction))
+                .sqrt();
+            let total = tantan_length + inner_diameter;
+            if total / inner_diameter > 6.0 || total / inner_diameter < 3.0 {
+                tantan_length = inner_diameter * 5.0;
+            }
 
-    // The bubble alternative: a 250 µm bubble in the liquid, settled by Stokes.
-    let bubble_velocity =
-        9.82 * (250.0e-6_f64).powi(2) * (liquid_density - gas_density) / (18.0 * liquid_viscosity);
-    let ar = liquid_volume_flow / bubble_velocity;
-    let daim = (ar / 4.0).sqrt();
-    let length2 = 4.0 * daim;
-    let (inner_diameter, tantan_length) = if daim > inner_diameter {
-        (daim, length2)
-    } else {
-        (inner_diameter, tantan_length)
+            // The bubble alternative: a 250 µm bubble in the liquid, settled by Stokes.
+            let bubble_velocity = 9.82 * (250.0e-6_f64).powi(2) * (liquid_density - gas_density)
+                / (18.0 * liquid_viscosity);
+            let ar = liquid_volume_flow / bubble_velocity;
+            let daim = (ar / 4.0).sqrt();
+            let length2 = 4.0 * daim;
+            if daim > inner_diameter {
+                (daim, length2)
+            } else {
+                (inner_diameter, tantan_length)
+            }
+        }
+        // **The scrubber's length is five diameters and nothing else sizes it.** Its class
+        // never reads the retention time in `calcDesign`, so the liquid flow and viscosity
+        // above do not reach the geometry.
+        VesselKind::Scrubber => (inner_diameter, inner_diameter * 5.0),
     };
 
     let pressure_bar = inputs.max_operation_pressure.value / 1.0e5;
@@ -230,7 +256,10 @@ pub fn mechanical_design(
 
     let module_width = inner_diameter * 2.0;
     let module_length = tantan_length * 1.5;
-    let module_height = inner_diameter * 2.0 + 1.0;
+    let module_height = match kind {
+        VesselKind::Separator => inner_diameter * 2.0 + 1.0,
+        VesselKind::Scrubber => inner_diameter * 2.0,
+    };
     let vessel_volume = std::f64::consts::PI * (inner_diameter / 2.0).powi(2) * tantan_length;
 
     let effective_length_liquid = tantan_length * 0.82;
@@ -327,7 +356,7 @@ fn round_up(value: f64, step: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{DesignInputs, mechanical_design};
+    use super::{DesignInputs, VesselKind, mechanical_design};
     use crate::segment::phase::molar_mass_of;
     use crate::stream::Stream;
     use azoth_core::units::{kelvins, pascals};
@@ -366,6 +395,7 @@ mod tests {
             &gas,
             &liquid,
             true,
+            VesselKind::Separator,
             &DesignInputs {
                 gas_load_factor: 0.11,
                 fg: 0.8,
@@ -411,5 +441,61 @@ mod tests {
         close(design.inlet_nozzle_id, 0.1, "inlet nozzle");
         close(design.gas_outlet_nozzle_id, 0.1, "gas nozzle");
         close(design.oil_outlet_nozzle_id, 0.05, "oil nozzle");
+    }
+
+    /// The scrubber capture's PR row: vertical, the scrubber standard's `1.1` safety factor,
+    /// `5 d` length and a module `2 d` high rather than `2 d + 1`.
+    #[test]
+    fn the_scrubbers_pr_row_is_reproduced() {
+        let (gas, liquid) = stream();
+        let design = mechanical_design(
+            &gas,
+            &liquid,
+            false,
+            VesselKind::Scrubber,
+            &DesignInputs {
+                gas_load_factor: 0.11,
+                fg: 1.0,
+                volume_safety_factor: 1.1,
+                retention_time_s: 60.0,
+                max_operation_pressure: pascals(100.0e5),
+                allowable_stress: 425.0,
+                joint_efficiency: 1.0,
+                corrosion_allowance_mm: 0.0,
+            },
+        )
+        .expect("the captured scrubber design");
+        let close = |actual: f64, expected: f64, what: &str| {
+            let error = (actual - expected).abs() / expected.abs().max(f64::MIN_POSITIVE);
+            assert!(
+                error <= 2.0e-4,
+                "{what}: {actual} against {expected} ({error:.3e})"
+            );
+        };
+        close(design.inner_diameter, 0.515_375_309_329_634_3, "diameter");
+        close(design.tantan_length, 2.576_876_546_648_171_6, "length");
+        close(design.wall_thickness, 0.006_150_063_357_155_54, "wall");
+        close(
+            design.vessel_shell_weight_kg,
+            261.364_614_659_532_8,
+            "shell weight",
+        );
+        close(
+            design.module_height,
+            1.030_750_618_659_268_5,
+            "module height",
+        );
+        close(design.hhll, 0.412_300_247_463_707_4, "HHLL");
+        close(
+            design.surge_volume_m3,
+            0.109_179_949_337_516_54,
+            "surge volume",
+        );
+        close(design.surge_time_s, 394_130.498_451_730_7, "surge time");
+        close(
+            design.liquid_retention_time_s,
+            795_631.047_385_863_8,
+            "retention",
+        );
     }
 }

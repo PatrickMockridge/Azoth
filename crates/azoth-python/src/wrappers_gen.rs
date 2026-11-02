@@ -5782,9 +5782,9 @@ pub fn flare(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn gas_scrubber(
@@ -5799,6 +5799,14 @@ pub fn gas_scrubber(
     internal_diameter: Option<f64>,
     design_gas_load_factor: Option<f64>,
     heat_input: Option<f64>,
+    mechanical_design: Option<bool>,
+    orientation: Option<&str>,
+    volume_safety_factor: Option<f64>,
+    design_liquid_level_fraction: Option<f64>,
+    max_operation_pressure: Option<f64>,
+    allowable_stress: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyGasScrubberResult> {
     azoth_process::models::gas_scrubber::gas_scrubber(
         &components,
@@ -5811,6 +5819,14 @@ pub fn gas_scrubber(
         internal_diameter.map(meters),
         design_gas_load_factor.map(meters_per_second),
         heat_input.map(watts),
+        mechanical_design,
+        orientation,
+        volume_safety_factor,
+        design_liquid_level_fraction,
+        max_operation_pressure.map(pascals),
+        allowable_stress,
+        joint_efficiency,
+        corrosion_allowance,
     )
     .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

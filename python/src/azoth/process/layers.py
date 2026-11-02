@@ -2298,6 +2298,10 @@ UNCASED_ROWS: dict[str, int] = {
     # The mechanical capture's SRK row is the class's own test fixture; the port's separator
     # is PR, so only the PR row can be an oracle for this tree's state.
     "process_separator_mechanical_design.tsv": 1,
+    # The gas scrubber's two mechanical rows are the same pair of cubics. The id has no dumper
+    # - its stream side is the separator's and `NO_INTERIOR` says so - so the case is the
+    # oracle and the capture stays here as its evidence.
+    "process_gas_scrubber_mechanical_design.tsv": 2,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as

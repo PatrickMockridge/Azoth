@@ -944,6 +944,7 @@ def _mechanical_design(
     allowable_stress_mpa: float,
     joint_efficiency: float,
     corrosion_allowance_mm: float,
+    vessel: str = "separator",
 ) -> MechanicalDesign:
     """`calcDesign` on the two outlets, in the order the class computes it.
 
@@ -993,25 +994,30 @@ def _mechanical_design(
     )
     cross_area = math.pi * (inner_diameter / 2.0) ** 2
     max_design_gas_volume_flow = max_gas_velocity * cross_area * gas_area_fraction * 3600.0
-    tantan_length = math.sqrt(
-        4.0
-        * retention_time_s
-        * liquid_volume_flow
-        * volume_safety_factor
-        / (math.pi * inner_diameter * inner_diameter * liquid_area_fraction)
-    )
-    total = tantan_length + inner_diameter
-    if total / inner_diameter > 6.0 or total / inner_diameter < 3.0:
+    if vessel == "scrubber":
+        # **The scrubber's length is five diameters and nothing else sizes it.** Its class
+        # never reads the retention time in `calcDesign`.
         tantan_length = inner_diameter * 5.0
+    else:
+        tantan_length = math.sqrt(
+            4.0
+            * retention_time_s
+            * liquid_volume_flow
+            * volume_safety_factor
+            / (math.pi * inner_diameter * inner_diameter * liquid_area_fraction)
+        )
+        total = tantan_length + inner_diameter
+        if total / inner_diameter > 6.0 or total / inner_diameter < 3.0:
+            tantan_length = inner_diameter * 5.0
 
-    bubble_velocity = (
-        9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
-    )
-    ar = liquid_volume_flow / bubble_velocity
-    daim = math.sqrt(ar / 4.0)
-    if daim > inner_diameter:
-        inner_diameter = daim
-        tantan_length = 4.0 * daim
+        bubble_velocity = (
+            9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
+        )
+        ar = liquid_volume_flow / bubble_velocity
+        daim = math.sqrt(ar / 4.0)
+        if daim > inner_diameter:
+            inner_diameter = daim
+            tantan_length = 4.0 * daim
 
     pressure_bar = max_operation_pressure_pa / 1.0e5
     wall_thickness_mm = (
@@ -1034,7 +1040,7 @@ def _mechanical_design(
     total_weight = vessel_shell_weight + piping_weight + structural_weight + electrical_weight
     module_width = inner_diameter * 2.0
     module_length = tantan_length * 1.5
-    module_height = inner_diameter * 2.0 + 1.0
+    module_height = inner_diameter * 2.0 if vessel == "scrubber" else inner_diameter * 2.0 + 1.0
     vessel_volume = math.pi * (inner_diameter / 2.0) ** 2 * tantan_length
 
     effective_length_liquid = tantan_length * 0.82
