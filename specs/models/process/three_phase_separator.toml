@@ -14,7 +14,7 @@ assumptions = [
     "**levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.",
     "**a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.",
     "**the three outlet valve fractions are not parameters here.** The class stores and clamps them, and its steady `run` split never reads them - only its mass and energy-balance reporting does, which this port does not publish. A parameter nothing here can honour is not declared.",
-    "**`calcInterfaceSettlingTime` is owed.** It reads the oil phase's viscosity through NeqSim's default `PhysicalProperties` model, which the port does not carry; `runTransient` is owed with it. **The droplet-performance calculator is `process.separator_performance`.**",
+    "**`calcInterfaceSettlingTime` is ported on the initialised state.** The class reads the aqueous density before `initPhysicalProperties`, so a fresh run answers `Infinity`; with the phase initialised, the capture's `0.1239` min is what the port reproduces.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.",
@@ -162,6 +162,14 @@ description = "`calcOilRetentionTime`, converted from the class's minutes: the o
 unit = "s"
 optional = true
 description = "`calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.\n"
+[outputs.interface_settling_time]
+unit = "s"
+optional = true
+description = "`calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.\n"
+[outputs.settling_time_sufficient]
+type = "boolean"
+optional = true
+description = "whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0

@@ -3309,6 +3309,8 @@ class ThreePhaseSeparatorResult:
     oil_thickness: Qty | None
     oil_retention_time: Qty | None
     water_retention_time: Qty | None
+    interface_settling_time: Qty | None
+    settling_time_sufficient: bool | None
     warnings: list[Warning]
 
 @final

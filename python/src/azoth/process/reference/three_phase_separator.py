@@ -211,6 +211,7 @@ def three_phase_separator(
 
     oil_time: float | None = None
     water_time: float | None = None
+    settling_minutes: float | None = None
     if diameter is not None and length is not None:
         t_out = states.temperature.to("K").magnitude
         oil_time = _retention(
@@ -218,6 +219,16 @@ def three_phase_separator(
         )
         water_time = _retention(
             components, t_out, states.p_out, states.aqueous, diameter, length, nll, nil, oil=False
+        )
+        settling_minutes = _settling(
+            components,
+            t_out,
+            states.p_out,
+            states.oil,
+            states.aqueous,
+            diameter,
+            nll,
+            nil,
         )
 
     return ThreePhaseSeparatorResult(
@@ -241,6 +252,10 @@ def three_phase_separator(
         oil_thickness=None if not has_levels else from_si(max(0.0, oil - water), "m"),
         oil_retention_time=None if oil_time is None else from_si(oil_time, "s"),
         water_retention_time=None if water_time is None else from_si(water_time, "s"),
+        interface_settling_time=(
+            None if settling_minutes is None else from_si(settling_minutes * 60.0, "s")
+        ),
+        settling_time_sufficient=(None if settling_minutes is None else settling_minutes >= 1.0),
         warnings=tuple(warnings),
     )
 
@@ -568,6 +583,67 @@ def _retention(
         else _segment_area(diameter, nil)
     )
     return area * 0.82 * length / flow
+
+
+def _settling(
+    components: list[str],
+    t: float,
+    p: float,
+    oil: Outlet,
+    aqueous: Outlet,
+    diameter: float,
+    nll_fraction: float,
+    nil_fraction: float,
+) -> float | None:
+    """`calcInterfaceSettlingTime` in minutes, or ``None`` where the class answers ``Infinity``.
+
+    A 150 µm water droplet settles through the oil layer by Stokes on the oil phase's own
+    viscosity. **The class's call on a freshly run separator reads the aqueous density
+    before `initPhysicalProperties`**, so it answers `Infinity` there; this is the initialised
+    state's arithmetic, which is what the capture's second block measures.
+    """
+    from azoth.core.units import quantity
+    from azoth.eos.reference.phase_transport import phase_transport
+    from azoth.process.reference.capacity import _mass_density
+
+    if oil.n <= 0.0 or aqueous.n <= 0.0:
+        return None
+    mixture, _ = _components.mixture_of(components, eos="pr")
+    reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(t)
+
+    def density(outlet: Outlet) -> float:
+        composition = list(outlet.z)
+        root = phase_state(reduced, kij, composition, liquid=True).z
+        return _mass_density(mixture, t, p, composition, root)
+
+    oil_density = density(oil)
+    aqueous_density = density(aqueous)
+    viscosity = (
+        phase_transport(components, "oil", quantity(t, "K"), quantity(p, "Pa"), list(oil.z))
+        .mu.to("Pa*s")
+        .magnitude
+    )
+    if not (
+        oil_density > 0.0
+        and math.isfinite(oil_density)
+        and aqueous_density > oil_density
+        and math.isfinite(aqueous_density)
+        and viscosity > 0.0
+        and math.isfinite(viscosity)
+    ):
+        return None
+    nll = nll_fraction * diameter
+    nil = nil_fraction * diameter
+    if nll <= 0.0:
+        nll = 0.5 * diameter
+    if nil <= 0.0:
+        nil = 0.2 * diameter
+    droplet = 150.0e-6
+    velocity = 9.81 * droplet * droplet * (aqueous_density - oil_density) / (18.0 * viscosity)
+    if not velocity > 0.0:
+        return None
+    return (nll - nil) / abs(velocity) / 60.0
 
 
 def _spec() -> dict[str, object]:

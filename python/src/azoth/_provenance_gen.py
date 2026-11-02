@@ -2801,12 +2801,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.three_phase_separator': {
         "calc_id": 'process.three_phase_separator',
         "name": 'Three-phase separator',
-        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': '39d2f223e26201c4c10d124143ac66703f5dab6fc0da85a35c6c57a10d5cbf44'},
-        "code": [{'path': 'python/src/azoth/process/reference/three_phase_separator.py', 'sha256': '3422095ac8eba7d422dd9a0e1565ab8d4f746c49100398dbb5ea48f2d6ee2058'}, {'path': 'crates/azoth-process/src/models/three_phase_separator.rs', 'sha256': '5a8e47dce237433dedf998970494cec197251cc77ad5fcade9887bb06efdb4c4'}],
+        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': '37b8d2b85f4164a156720661b6cab0720cab5e20acc3c2fb55ccc4c022feab2f'},
+        "code": [{'path': 'python/src/azoth/process/reference/three_phase_separator.py', 'sha256': '9fc70047b08f63c1554469c535acf539f3fd1eb0d93f0242794792fa45368ddf'}, {'path': 'crates/azoth-process/src/models/three_phase_separator.rs', 'sha256': '5e0c89b912a054c078a5495062992be6596fb3b589e8cc7ac9c04a559578ba4b'}],
         "source": 'NeqSim process/equipment/separator/ThreePhaseSeparator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 10,
+        "tests_active": 12,
         "tests_skipped": 0,
     },
     'process.throttling_valve': {

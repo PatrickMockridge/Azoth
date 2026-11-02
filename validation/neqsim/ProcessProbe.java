@@ -42,6 +42,8 @@
 //       > captures/process_separator_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber_mechanical \
 //       > captures/process_gas_scrubber_mechanical_design.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
+//       > captures/process_three_phase_settling.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
 //       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
@@ -144,6 +146,9 @@ public class ProcessProbe {
         break;
       case "gas_scrubber_mechanical":
         gasScrubberMechanicalRows();
+        break;
+      case "three_phase_settling":
+        threePhaseSettlingRows();
         break;
       case "separator_performance":
         separatorPerformanceRows();
@@ -5439,6 +5444,78 @@ public class ProcessProbe {
     System.out.println("mesh_pad_thickness_mm=" + design.getMeshPadThicknessMm());
     System.out.println("has_inlet_cyclones=" + design.hasInletCyclones());
     System.out.println("has_demisting_cyclones=" + design.hasDemistingCyclones());
+    System.out.println();
+  }
+
+  // === process.three_phase_separator interface settling ======================
+
+  /// `ThreePhaseSeparator.calcInterfaceSettlingTime` on the two vessel states.
+  ///
+  /// The class settles a **150 µm water droplet** through the oil layer, Stokes on the oil's
+  /// own viscosity, and answers **minutes**; `isWithinAllLimits` requires at least `1.0`.
+  /// The levels are the mechanical design's, with `0.20`/`0.50` of the diameter and
+  /// `0.82 * length` as fallbacks, which is what a vessel that never ran `calcDesign` reads.
+  /// The valve fractions are set on the second state and the mass balance printed: they are
+  /// read by that report alone, which is why they are not model inputs.
+  static void threePhaseSettlingRows() {
+    String[] names = new String[] {"methane", "n-butane", "water"};
+    double[] z = new double[] {0.5, 0.3, 0.2};
+    threePhaseSettlingRow("vessel_d1000_l3000", names, z, 1.0, 3.0, false);
+    threePhaseSettlingRow("vessel_d1200_l4000_valves", names, z, 1.2, 4.0, true);
+  }
+
+  static void threePhaseSettlingRow(String label, String[] names, double[] z, double diameterM,
+      double lengthM, boolean valves) {
+    Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
+    neqsim.process.equipment.separator.ThreePhaseSeparator separator =
+        new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
+    separator.setInternalDiameter(diameterM);
+    separator.setSeparatorLength(lengthM);
+    if (valves) {
+      separator.setGasOutletFlowFraction(0.10);
+      separator.setOilOutletFlowFraction(0.20);
+      separator.setWaterOutletFlowFraction(0.30);
+    }
+    separator.run();
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign) separator
+            .getMechanicalDesign();
+    System.out.println(label);
+    System.out.println("phase_count=" + separator.getThermoSystem().getNumberOfPhases());
+    System.out.println("has_oil=" + separator.getThermoSystem().hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + separator.getThermoSystem().hasPhaseType("aqueous"));
+    System.out.println("internal_diameter_m=" + separator.getInternalDiameter());
+    System.out.println("separator_length_m=" + separator.getSeparatorLength());
+    System.out.println("nil_m=" + design.getNIL());
+    System.out.println("nll_m=" + design.getNLL());
+    System.out.println("effective_length_liquid_m=" + design.getEffectiveLengthLiquid());
+    System.out.println("oil_density_kg_m3="
+        + separator.getThermoSystem().getPhase("oil").getDensity("kg/m3"));
+    System.out.println("water_density_kg_m3="
+        + separator.getThermoSystem().getPhase("aqueous").getDensity("kg/m3"));
+    System.out.println("oil_viscosity_pa_s="
+        + separator.getThermoSystem().getPhase("oil").getPhysicalProperties().getViscosity());
+    // **The class's own call reads the aqueous density before the phase has initialised it.**
+    // On a freshly run separator that is `0.0`, the settling velocity is negative and the
+    // answer is `Infinity`. The same call after `initPhysicalProperties()` is the state the
+    // method means; both are printed because the difference is the finding.
+    System.out.println("interface_settling_time_uninitialised_min="
+        + separator.calcInterfaceSettlingTime());
+    System.out.println("within_all_limits_uninitialised=" + separator.isWithinAllLimits());
+    separator.getThermoSystem().initPhysicalProperties();
+    System.out.println("water_density_initialised_kg_m3="
+        + separator.getThermoSystem().getPhase("aqueous").getDensity("kg/m3"));
+    System.out.println("oil_viscosity_initialised_pa_s="
+        + separator.getThermoSystem().getPhase("oil").getPhysicalProperties().getViscosity());
+    System.out.println("interface_settling_time_initialised_min="
+        + separator.calcInterfaceSettlingTime());
+    System.out.println("within_all_limits_initialised=" + separator.isWithinAllLimits());
+    if (valves) {
+      System.out.println("gas_outlet_fraction=" + separator.getGasOutletFlowFraction());
+      System.out.println("oil_outlet_fraction=" + separator.getOilOutletFlowFraction());
+      System.out.println("water_outlet_fraction=" + separator.getWaterOutletFlowFraction());
+      System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    }
     System.out.println();
   }
 

@@ -13,11 +13,14 @@ use azoth_core::units::{
     seconds,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
+use azoth_eos::phase_transport::{PhaseKind, phase_transport};
+use azoth_eos::pt_flash;
 
 use crate::kernels::three_phase_separator::{
     Entrainment, retention_times, three_phase_separator as kernel,
 };
 use crate::model_gen;
+use crate::segment::phase::{mass_density, molar_mass_of};
 use crate::stream::Stream;
 
 /// Result of `process.three_phase_separator`.
@@ -63,6 +66,10 @@ pub struct ThreePhaseSeparatorResult {
     pub oil_retention_time: Option<Time>,
     /// `calcWaterRetentionTime`, absent with no vessel or no aqueous phase.
     pub water_retention_time: Option<Time>,
+    /// `calcInterfaceSettlingTime`: a 150 µm water droplet through the oil layer, in seconds.
+    pub interface_settling_time: Option<Time>,
+    /// Whether that time reaches the class's one-minute limit.
+    pub settling_time_sufficient: Option<bool>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -192,6 +199,17 @@ pub fn three_phase_separator(
         )?),
         _ => None,
     };
+    let settling = match (internal_diameter, separator_length) {
+        (Some(diameter), Some(length)) => interface_settling_minutes(
+            &oil_out,
+            &aqueous_out,
+            diameter,
+            length,
+            nll_fraction.unwrap_or(0.5),
+            nil_fraction.unwrap_or(0.2),
+        )?,
+        _ => None,
+    };
     let has_levels = water.is_some() || oil.is_some();
     let water_value = water.unwrap_or(0.0);
     let oil_value = oil.unwrap_or(0.0);
@@ -217,8 +235,68 @@ pub fn three_phase_separator(
         oil_thickness: has_levels.then(|| meters((oil_value - water_value).max(0.0))),
         oil_retention_time: retention.and_then(|times| times.oil).map(seconds),
         water_retention_time: retention.and_then(|times| times.water).map(seconds),
+        interface_settling_time: settling.map(|minutes| seconds(minutes * 60.0)),
+        settling_time_sufficient: settling.map(|minutes| minutes >= 1.0),
         warnings,
     })
+}
+
+/// `ThreePhaseSeparator.calcInterfaceSettlingTime`, in **minutes** as the class answers it.
+///
+/// A **150 µm water droplet** settles through the oil layer by Stokes, on the oil phase's own
+/// viscosity: `9.81 d^2 (rho_w - rho_o) / (18 mu)`, the layer over that velocity over 60.
+/// The levels are the mechanical design's, with the class's `0.20`/`0.50` of the diameter
+/// fallbacks. A non-positive velocity is the class's `Infinity`; `None` here, because a
+/// non-finite time is not a value the record carries.
+fn interface_settling_minutes(
+    oil: &Stream,
+    aqueous: &Stream,
+    diameter: Length,
+    _length: Length,
+    nll_fraction: f64,
+    nil_fraction: f64,
+) -> Result<Option<f64>> {
+    let (mixture, ideal_gas) = oil.mixture()?;
+    let oil_flash = pt_flash(&mixture, oil.t, oil.p, &oil.z)?;
+    let oil_density = mass_density(
+        &mixture,
+        oil.t,
+        oil.p,
+        &oil.z,
+        oil_flash.z_liquid,
+        molar_mass_of(&mixture, &oil.z)?,
+    )?;
+    let aqueous_flash = pt_flash(&mixture, aqueous.t, aqueous.p, &aqueous.z)?;
+    let aqueous_density = mass_density(
+        &mixture,
+        aqueous.t,
+        aqueous.p,
+        &aqueous.z,
+        aqueous_flash.z_liquid,
+        molar_mass_of(&mixture, &aqueous.z)?,
+    )?;
+    let oil_viscosity =
+        phase_transport(&mixture, &ideal_gas, PhaseKind::Oil, oil.t, oil.p, &oil.z)?
+            .mu
+            .value;
+    if !(oil_density > 0.0 && aqueous_density > oil_density && oil_viscosity > 0.0) {
+        return Ok(None);
+    }
+    let mut nil = nil_fraction * diameter.value;
+    if nil <= 0.0 {
+        nil = diameter.value * 0.20;
+    }
+    let mut nll = nll_fraction * diameter.value;
+    if nll <= 0.0 {
+        nll = diameter.value * 0.50;
+    }
+    let droplet = 150.0e-6_f64;
+    let velocity =
+        9.81 * droplet * droplet * (aqueous_density - oil_density) / (18.0 * oil_viscosity);
+    if !velocity.is_finite() || velocity <= 0.0 {
+        return Ok(None);
+    }
+    Ok(Some((nll - nil) / velocity.abs() / 60.0))
 }
 
 /// The class's setter clamp: a negative level is zero, and a non-finite one is refused.
@@ -230,4 +308,45 @@ fn clamp_level(field: &str, value: f64) -> Result<f64> {
         ));
     }
     Ok(value.max(0.0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::three_phase_separator;
+    use azoth_core::units::{kelvins, meters, pascals};
+
+    /// The settling capture's first vessel: the time is below the class's one-minute limit.
+    /// **A boolean is not a case expectation** (`gen_registry` excludes flags), so this is
+    /// the test that reads the flag back.
+    #[test]
+    fn the_settling_time_is_below_the_one_minute_limit() {
+        let result = three_phase_separator(
+            &[
+                "methane".to_string(),
+                "n-butane".to_string(),
+                "water".to_string(),
+            ],
+            1.0,
+            &[0.5, 0.3, 0.2],
+            pascals(2_000_000.0),
+            kelvins(300.0),
+            pascals(0.0),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            None,
+            Some(meters(1.0)),
+            Some(meters(3.0)),
+            None,
+            None,
+            None,
+            None,
+        )
+        .expect("the captured state settles");
+        assert_eq!(result.settling_time_sufficient, Some(false));
+        assert!(result.interface_settling_time.is_some());
+    }
 }

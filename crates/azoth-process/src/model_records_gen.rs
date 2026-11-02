@@ -962,6 +962,8 @@ impl CalcResult for ThreePhaseSeparatorResult {
         "oil_thickness",
         "oil_retention_time",
         "water_retention_time",
+        "interface_settling_time",
+        "settling_time_sufficient",
         "warnings",
     ];
 

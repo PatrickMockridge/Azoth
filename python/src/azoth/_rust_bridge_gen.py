@@ -6956,6 +6956,8 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         oil_thickness=None if result.oil_thickness is None else from_si(result.oil_thickness.magnitude_si, result.oil_thickness.unit),
         oil_retention_time=None if result.oil_retention_time is None else from_si(result.oil_retention_time.magnitude_si, result.oil_retention_time.unit),
         water_retention_time=None if result.water_retention_time is None else from_si(result.water_retention_time.magnitude_si, result.water_retention_time.unit),
+        interface_settling_time=None if result.interface_settling_time is None else from_si(result.interface_settling_time.magnitude_si, result.interface_settling_time.unit),
+        settling_time_sufficient=result.settling_time_sufficient,
         warnings=_warnings(result.warnings),
     )
 

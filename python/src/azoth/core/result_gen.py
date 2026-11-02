@@ -7518,6 +7518,12 @@ class ThreePhaseSeparatorResult(_HasWarnings):
     #: `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
     water_retention_time: Q | None
 
+    #: `calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.
+    interface_settling_time: Q | None
+
+    #: whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.
+    settling_time_sufficient: bool | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

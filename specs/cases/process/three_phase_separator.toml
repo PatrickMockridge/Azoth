@@ -296,3 +296,45 @@ internal_diameter = 1.0
 separator_length = 3.0
 [cases.expected]
 oil_retention_time = 38150.414176169064
+[[cases]]
+id = "the_interface_settles_through_the_oil_layer"
+tolerance = 0.0002
+source = "The settling capture's first vessel: `calcInterfaceSettlingTime` on a 1 m x 3 m vessel, converted from the class's minutes to seconds. **The class's own call on a freshly run separator answers `Infinity`** because the aqueous density has not been initialised; the capture prints both, and this case is the initialised state's `0.1239274628956881` min. It is below the class's one-minute limit, so the sufficiency flag is false.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.0
+separator_length = 3.0
+[cases.expected]
+interface_settling_time = 7.435647773741286
+[[cases]]
+id = "a_deeper_oil_layer_settles_more_slowly"
+tolerance = 0.0002
+source = "The capture's second vessel, 1.2 m by 4 m: `NIL` and `NLL` are `0.20` and `0.50` of the larger diameter, so the oil layer is `0.36` m rather than `0.30`, and the time is `0.14871295547482571` min. **The length does not enter the settling formula**, only the layer's thickness, which is why this is the diameter's row and not the length's.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+internal_diameter = 1.2
+separator_length = 4.0
+[cases.expected]
+interface_settling_time = 8.922777328489542

@@ -64,6 +64,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `oil_thickness` | m | *Optional.* `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are. |
 | `oil_retention_time` | s | *Optional.* `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.** |
 | `water_retention_time` | s | *Optional.* `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is. |
+| `interface_settling_time` | s | *Optional.* `calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity. |
+| `settling_time_sufficient` | - | *Optional.* whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -94,7 +96,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.
 - **a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.
 - **the three outlet valve fractions are not parameters here.** The class stores and clamps them, and its steady `run` split never reads them - only its mass and energy-balance reporting does, which this port does not publish. A parameter nothing here can honour is not declared.
-- **`calcInterfaceSettlingTime` is owed.** It reads the oil phase's viscosity through NeqSim's default `PhysicalProperties` model, which the port does not carry; `runTransient` is owed with it. **The droplet-performance calculator is `process.separator_performance`.**
+- **`calcInterfaceSettlingTime` is ported on the initialised state.** The class reads the aqueous density before `initPhysicalProperties`, so a fresh run answers `Infinity`; with the phase initialised, the capture's `0.1239` min is what the port reproduces.
 
 ## Cases
 
@@ -110,11 +112,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_stated_level_is_stored_and_clamped` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0, water_level = 0.3, oil_level = 0.6 | water_level = 0.3, oil_level = 0.6, oil_thickness = 0.3, oil_retention_time = 30594.1093051814, water_retention_time = 75509.66866276872 |
 | `a_negative_level_clamps_to_zero` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0, water_level = -1.0, oil_level = -0.5 | water_level = 0.0, oil_level = 0.0, oil_thickness = 0.0 |
 | `a_dry_feed_has_no_water_retention` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0 | oil_retention_time = 38150.41417616906 |
+| `the_interface_settles_through_the_oil_layer` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.0, separator_length = 3.0 | interface_settling_time = 7.435647773741286 |
+| `a_deeper_oil_layer_settles_more_slowly` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0, internal_diameter = 1.2, separator_length = 4.0 | interface_settling_time = 8.922777328489541 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 10 declared, every one run
+- Tests: 12 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

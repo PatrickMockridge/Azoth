@@ -831,10 +831,12 @@ a claim nothing holds.
   tension of `0.0`, so the getter's factor is exactly `0.5` on every two-phase state where
   the live Parachor answers `0.0089` and the formula would give `0.946` (capture
   `process_separator_sizing.tsv`);
-  **`ThreePhaseSeparator`'s levels and its oil/water retention times landed**; still owed there
+  **`ThreePhaseSeparator`'s levels and its oil/water retention times landed, and so did
+  `calcInterfaceSettlingTime`** - the 150 µm Stokes settle, held to
+  `process_three_phase_settling.tsv` on the initialised state, because the class's own call on
+  a fresh run reads an uninitialised aqueous density and answers `Infinity`; still owed there
   are the three outlet valve fractions (stored but read only by the class's mass-balance
-  report) and `calcInterfaceSettlingTime` (NeqSim's default phase viscosity), the droplet
-  calculator being `process.separator_performance`; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
+  report), the droplet calculator being `process.separator_performance`; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
   temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The

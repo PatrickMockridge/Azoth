@@ -18955,6 +18955,12 @@ pub struct PyThreePhaseSeparatorResult {
     /// `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
     #[pyo3(get)]
     pub water_retention_time: Option<PyQty>,
+    /// `calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.
+    #[pyo3(get)]
+    pub interface_settling_time: Option<PyQty>,
+    /// whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.
+    #[pyo3(get)]
+    pub settling_time_sufficient: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18964,7 +18970,7 @@ pub struct PyThreePhaseSeparatorResult {
 impl PyThreePhaseSeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, water_level={:?}, oil_level={:?}, oil_thickness={:?}, oil_retention_time={:?}, water_retention_time={:?}, {} warning(s))",
+            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, water_level={:?}, oil_level={:?}, oil_thickness={:?}, oil_retention_time={:?}, water_retention_time={:?}, interface_settling_time={:?}, settling_time_sufficient={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -18985,6 +18991,8 @@ impl PyThreePhaseSeparatorResult {
             self.oil_thickness,
             self.oil_retention_time,
             self.water_retention_time,
+            self.interface_settling_time,
+            self.settling_time_sufficient,
             self.warnings.len()
         )
     }
@@ -19066,6 +19074,11 @@ impl From<&azoth_process::models::three_phase_separator::ThreePhaseSeparatorResu
                 magnitude_si: v.value,
                 unit: "s".to_string(),
             }),
+            interface_settling_time: r.interface_settling_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            settling_time_sufficient: r.settling_time_sufficient,
             warnings: transport(&r.warnings),
         }
     }

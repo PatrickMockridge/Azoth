@@ -1291,8 +1291,26 @@ NIL, each times that length, over the phase's own volumetric flow. The class rep
 the port stores seconds. **The level setters do not enter it**: `setWaterLevel` and
 `setOilLevel` store separate fields, clamp at zero, and only `getOilThickness` reads them, so
 the stated-level row carries the same two times as the bare-vessel row.
-`calcInterfaceSettlingTime` is printed as evidence and is not ported - it reads the oil
-phase's NeqSim-default viscosity.
+`calcInterfaceSettlingTime` is printed as evidence; its own capture is below.
+
+## The three-phase interface settling
+
+`process_three_phase_settling.tsv` is `ThreePhaseSeparator.calcInterfaceSettlingTime` on two
+vessels - 1 m x 3 m and 1.2 m x 4 m - with the same feed.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
+  > captures/process_three_phase_settling.tsv
+```
+
+A **150 µm water droplet** settles through the oil layer by Stokes on the oil phase's own
+viscosity, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer between NIL and NLL, in
+minutes. **The class's own call on a freshly run separator answers `Infinity`**: the aqueous
+phase's density has not been initialised, so it reads `0.0` and the velocity is negative. The
+row prints that answer beside the same call after `initPhysicalProperties()`, and the port
+reproduces the initialised one - `0.1239` and `0.1487` min, both below the class's one-minute
+limit.
 
 ## The anti-surge recycle calculator
 
