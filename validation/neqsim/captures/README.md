@@ -1202,6 +1202,29 @@ on the two-phase rows) and the factor the class's own formula would give
 (`intended_derating_factor`, `0.94599`). The port refuses the getter rather than baking the
 stale model's `0.5` into a state function.
 
+## The separator mechanical design
+
+`process_separator_mechanical_design.tsv` is `SeparatorMechanicalDesign.calcDesign` on the
+class's own `SeparatorMechanicalDesignTest` fixture, in two rows: the test's SRK fluid and the
+same composition on PR, which is the cubic this port's separator carries.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_mechanical \
+  > captures/process_separator_mechanical_design.tsv
+```
+
+**The class has no company standard set, and `super.calcDesign()` installs nine defaults.**
+The row prints the keys and each standard's class, then every value this fold reads from them:
+`K = 0.11` m/s, `Fg = 0.8`, volume safety `1.0`, retention `60` s, allowable stress `425`,
+joint efficiency `1.0`, maximum operation pressure `100` bara and corrosion allowance `0`.
+
+**Two surprises the port reproduces rather than tidies.** The design's phase volume is the
+cubic's *untranslated* `getVolume()`, not mass over the physical-properties density: on the PR
+row that is `0.11035858` m3 against `0.110877` from the translated density, and using the
+density moves the diameter by `0.23%`. And `calcLiquidRetentionTime` divides a m3/s flow as
+though it were m3/hr, which is the row's `394 159` s.
+
 ## The separator capacity assessment
 
 `process_separator_capacity_assessment.tsv` is `Separator.getCapacityAssessment` on the

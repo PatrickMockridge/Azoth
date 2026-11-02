@@ -29,6 +29,7 @@ pub mod pump_chart;
 pub mod reactor;
 pub mod recycle;
 pub mod segment;
+pub mod separator_design;
 pub mod stream;
 pub mod surge_curve;
 pub mod unit_op;

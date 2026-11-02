@@ -6168,9 +6168,9 @@ pub fn packed_column(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn separator(
@@ -6190,6 +6190,14 @@ pub fn separator(
     separator_length: Option<f64>,
     liquid_level_fraction: Option<f64>,
     safety_factor: Option<f64>,
+    mechanical_design: Option<bool>,
+    fg: Option<f64>,
+    volume_safety_factor: Option<f64>,
+    retention_time: Option<f64>,
+    max_operation_pressure: Option<f64>,
+    allowable_stress: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
 ) -> PyResult<crate::transport_gen::PySeparatorResult> {
     azoth_process::models::separator::separator(
         &components,
@@ -6207,6 +6215,14 @@ pub fn separator(
         separator_length.map(meters),
         liquid_level_fraction,
         safety_factor,
+        mechanical_design,
+        fg,
+        volume_safety_factor,
+        retention_time.map(seconds),
+        max_operation_pressure.map(pascals),
+        allowable_stress,
+        joint_efficiency,
+        corrosion_allowance,
     )
     .map(|r| crate::transport_gen::PySeparatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

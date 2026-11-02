@@ -819,8 +819,12 @@ a claim nothing holds.
   over the class's droplet distributions, grade curves and settling solve, with the enhanced
   chain, auto-calibration and the API 12J DTO left owed; **`getGasLoadFactor(int)`'s
   phase-indexed and `sizeFromFlow` landed** - the operating holdup against the design gas
-  area, and the closed-form diameter; what remains owed there is `autoSize` and the
-  mechanical design, and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
+  area, and the closed-form diameter; **`SeparatorMechanicalDesign.calcDesign` landed** as a
+  `mechanical_design` group on the same id - the sized vessel, its shell and skid weights, its
+  module box, the seven levels, the three nozzles and the surge and retention times, held to
+  `process_separator_mechanical_design.tsv` on the port's PR fluid and on the class's own SRK
+  fixture - so what remains owed there is `autoSize` (the composition of the two) and
+  `GasScrubberMechanicalDesign`'s subclass, and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
   class's interphase model is a pre-flash clone whose zero-density phases answer a surface
   tension of `0.0`, so the getter's factor is exactly `0.5` on every two-phase state where
   the live Parachor answers `0.0089` and the formula would give `0.946` (capture

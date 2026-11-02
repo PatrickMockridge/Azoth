@@ -3105,6 +3105,32 @@ class SeparatorResult:
     gas_area_fraction: float | None
     rated_gas_load_factor_by_phase: list[Qty] | None
     required_diameter: Qty | None
+    design_inner_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_outer_diameter: Qty | None
+    design_wall_thickness: Qty | None
+    max_design_gas_volume_flow: Qty | None
+    vessel_shell_weight: Qty | None
+    total_weight: Qty | None
+    module_width: Qty | None
+    module_length: Qty | None
+    module_height: Qty | None
+    vessel_volume: Qty | None
+    hhll: Qty | None
+    hll: Qty | None
+    nll: Qty | None
+    lll: Qty | None
+    llll: Qty | None
+    weir_height: Qty | None
+    nil: Qty | None
+    effective_length_liquid: Qty | None
+    effective_length_gas: Qty | None
+    inlet_nozzle_id: Qty | None
+    gas_outlet_nozzle_id: Qty | None
+    oil_outlet_nozzle_id: Qty | None
+    surge_volume: Qty | None
+    surge_time: Qty | None
+    liquid_retention_time: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5806,6 +5832,14 @@ def separator(
     separator_length: float | None = None,
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    fg: float | None = None,
+    volume_safety_factor: float | None = None,
+    retention_time: float | None = None,
+    max_operation_pressure: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> SeparatorResult: ...
 def separator_capacity_assessment(
     components: list[str],

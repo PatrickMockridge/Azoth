@@ -497,8 +497,11 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // fractions - the sixteenth to nineteenth. **The flare's radiation surface adds two** - its
     // ground distance and its flux threshold, which the form does not carry - the twentieth and
     // twenty-first. **The separator's sizing surface adds three bounds** - its length, its
-    // operating level fraction and its safety factor - the twenty-second to twenty-fourth.
-    assert_eq!(checked, 137, "the bounds this test walked");
+    // operating level fraction and its safety factor - the twenty-second to twenty-fourth,
+    // and **its mechanical design's seven** - the liquid fraction, the volume safety factor,
+    // the retention time, the operating pressure, the allowable stress, the joint efficiency
+    // and the corrosion allowance - make twenty-four to thirty-one.
+    assert_eq!(checked, 144, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -651,7 +654,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `ground_distance`, `radiation_flux_threshold` and the three design capacities -
     // `567 + 8 = 575`. **And then the separator's sizing surface's three** -
     // `separator_length`, `liquid_level_fraction` and `safety_factor` - `575 + 3 = 578`.
-    assert_eq!(walked, 578, "the inputs this test walked");
+    // **And the mechanical design's eight** - its flag, `fg`, the volume safety factor, the
+    // retention time, the operating pressure, the allowable stress, the joint efficiency and
+    // the corrosion allowance - `578 + 8 = 586`.
+    assert_eq!(walked, 586, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

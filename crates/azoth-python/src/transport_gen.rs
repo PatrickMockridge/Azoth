@@ -17427,6 +17427,84 @@ pub struct PySeparatorResult {
     /// `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
     #[pyo3(get)]
     pub required_diameter: Option<PyQty>,
+    /// `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the inside diameter plus twice the wall thickness.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// `getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr.
+    #[pyo3(get)]
+    pub max_design_gas_volume_flow: Option<PyQty>,
+    /// `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
+    #[pyo3(get)]
+    pub vessel_shell_weight: Option<PyQty>,
+    /// the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
+    #[pyo3(get)]
+    pub total_weight: Option<PyQty>,
+    /// `2 d`.
+    #[pyo3(get)]
+    pub module_width: Option<PyQty>,
+    /// `1.5 * tantan_length`.
+    #[pyo3(get)]
+    pub module_length: Option<PyQty>,
+    /// `2 d + 1`.
+    #[pyo3(get)]
+    pub module_height: Option<PyQty>,
+    /// the cylinder's internal volume, `pi (d/2)^2 L`.
+    #[pyo3(get)]
+    pub vessel_volume: Option<PyQty>,
+    /// the high-high liquid level, `0.80 d` by the class's default fraction.
+    #[pyo3(get)]
+    pub hhll: Option<PyQty>,
+    /// the high liquid level, `0.70 d`.
+    #[pyo3(get)]
+    pub hll: Option<PyQty>,
+    /// the normal liquid level, `0.50 d`.
+    #[pyo3(get)]
+    pub nll: Option<PyQty>,
+    /// the low liquid level, `0.30 d`.
+    #[pyo3(get)]
+    pub lll: Option<PyQty>,
+    /// the low-low liquid level, `0.15 d`.
+    #[pyo3(get)]
+    pub llll: Option<PyQty>,
+    /// the weir height, `0.25 d`.
+    #[pyo3(get)]
+    pub weir_height: Option<PyQty>,
+    /// the normal oil/water interface level, `0.20 d`.
+    #[pyo3(get)]
+    pub nil: Option<PyQty>,
+    /// the effective liquid separation length, `0.82 L` when the class leaves it unset.
+    #[pyo3(get)]
+    pub effective_length_liquid: Option<PyQty>,
+    /// the effective gas separation length, `0.64 L`.
+    #[pyo3(get)]
+    pub effective_length_gas: Option<PyQty>,
+    /// the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub inlet_nozzle_id: Option<PyQty>,
+    /// the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps.
+    #[pyo3(get)]
+    pub gas_outlet_nozzle_id: Option<PyQty>,
+    /// the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub oil_outlet_nozzle_id: Option<PyQty>,
+    /// the vessel's volume between NLL and HLL over the effective liquid length.
+    #[pyo3(get)]
+    pub surge_volume: Option<PyQty>,
+    /// the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr.
+    #[pyo3(get)]
+    pub surge_time: Option<PyQty>,
+    /// the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time.
+    #[pyo3(get)]
+    pub liquid_retention_time: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -17436,7 +17514,7 @@ pub struct PySeparatorResult {
 impl PySeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, {} warning(s))",
+            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -17455,6 +17533,32 @@ impl PySeparatorResult {
             self.gas_area_fraction,
             self.rated_gas_load_factor_by_phase,
             self.required_diameter,
+            self.design_inner_diameter,
+            self.design_tantan_length,
+            self.design_outer_diameter,
+            self.design_wall_thickness,
+            self.max_design_gas_volume_flow,
+            self.vessel_shell_weight,
+            self.total_weight,
+            self.module_width,
+            self.module_length,
+            self.module_height,
+            self.vessel_volume,
+            self.hhll,
+            self.hll,
+            self.nll,
+            self.lll,
+            self.llll,
+            self.weir_height,
+            self.nil,
+            self.effective_length_liquid,
+            self.effective_length_gas,
+            self.inlet_nozzle_id,
+            self.gas_outlet_nozzle_id,
+            self.oil_outlet_nozzle_id,
+            self.surge_volume,
+            self.surge_time,
+            self.liquid_retention_time,
             self.warnings.len()
         )
     }
@@ -17526,6 +17630,110 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
             required_diameter: r.required_diameter.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "m".to_string(),
+            }),
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            max_design_gas_volume_flow: r.max_design_gas_volume_flow.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            vessel_shell_weight: r.vessel_shell_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            total_weight: r.total_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            module_width: r.module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_length: r.module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_height: r.module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_volume: r.vessel_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            hhll: r.hhll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            hll: r.hll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nll: r.nll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            lll: r.lll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            llll: r.llll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            weir_height: r.weir_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nil: r.nil.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_liquid: r.effective_length_liquid.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_gas: r.effective_length_gas.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            inlet_nozzle_id: r.inlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            gas_outlet_nozzle_id: r.gas_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_outlet_nozzle_id: r.oil_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            surge_volume: r.surge_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            surge_time: r.surge_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            liquid_retention_time: r.liquid_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
             }),
             warnings: transport(&r.warnings),
         }

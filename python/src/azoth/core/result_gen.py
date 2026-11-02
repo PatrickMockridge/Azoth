@@ -6922,6 +6922,84 @@ class SeparatorResult(_HasWarnings):
     #: `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
     required_diameter: Q | None
 
+    #: `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    design_inner_diameter: Q | None
+
+    #: the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6.
+    design_tantan_length: Q | None
+
+    #: the inside diameter plus twice the wall thickness.
+    design_outer_diameter: Q | None
+
+    #: the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    design_wall_thickness: Q | None
+
+    #: `getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr.
+    max_design_gas_volume_flow: Q | None
+
+    #: `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
+    vessel_shell_weight: Q | None
+
+    #: the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
+    total_weight: Q | None
+
+    #: `2 d`.
+    module_width: Q | None
+
+    #: `1.5 * tantan_length`.
+    module_length: Q | None
+
+    #: `2 d + 1`.
+    module_height: Q | None
+
+    #: the cylinder's internal volume, `pi (d/2)^2 L`.
+    vessel_volume: Q | None
+
+    #: the high-high liquid level, `0.80 d` by the class's default fraction.
+    hhll: Q | None
+
+    #: the high liquid level, `0.70 d`.
+    hll: Q | None
+
+    #: the normal liquid level, `0.50 d`.
+    nll: Q | None
+
+    #: the low liquid level, `0.30 d`.
+    lll: Q | None
+
+    #: the low-low liquid level, `0.15 d`.
+    llll: Q | None
+
+    #: the weir height, `0.25 d`.
+    weir_height: Q | None
+
+    #: the normal oil/water interface level, `0.20 d`.
+    nil: Q | None
+
+    #: the effective liquid separation length, `0.82 L` when the class leaves it unset.
+    effective_length_liquid: Q | None
+
+    #: the effective gas separation length, `0.64 L`.
+    effective_length_gas: Q | None
+
+    #: the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor.
+    inlet_nozzle_id: Q | None
+
+    #: the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps.
+    gas_outlet_nozzle_id: Q | None
+
+    #: the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor.
+    oil_outlet_nozzle_id: Q | None
+
+    #: the vessel's volume between NLL and HLL over the effective liquid length.
+    surge_volume: Q | None
+
+    #: the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr.
+    surge_time: Q | None
+
+    #: the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time.
+    liquid_retention_time: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

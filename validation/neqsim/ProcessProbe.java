@@ -38,6 +38,8 @@
 //       > captures/process_separator_capacity_assessment.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
 //       > captures/process_separator_sizing.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_mechanical \
+//       > captures/process_separator_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
 //       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
@@ -134,6 +136,9 @@ public class ProcessProbe {
         break;
       case "separator_sizing":
         separatorSizingRows();
+        break;
+      case "separator_mechanical":
+        separatorMechanicalRows();
         break;
       case "separator_performance":
         separatorPerformanceRows();
@@ -5122,6 +5127,190 @@ public class ProcessProbe {
     // `sizeFromFlow` mutates the vessel, so it is the row's last read.
     separator.sizeFromFlow(safetyFactor);
     System.out.println("sized_diameter_m=" + separator.getInternalDiameter());
+    System.out.println();
+  }
+
+  // === process.separator mechanical design ====================================
+
+  /// `SeparatorMechanicalDesign.calcDesign` on the class's own test fixture.
+  ///
+  /// **The fixture is `SeparatorMechanicalDesignTest.setUp`**: an SRK
+  /// methane/ethane/propane/n-pentane fluid at 298.15 K and 20 bara, 10,000 kg/hr at
+  /// 25 C, run through a `Separator` and then `calcDesign` with no company standard set.
+  /// The row prints the design-standard keys the class finds, the response record's own
+  /// fields and the getters the response does not carry, and any exception with its stack
+  /// - because whether a default standard exists is the first question this slice has to
+  /// answer, and a probe that swallowed it would answer nothing.
+  static void separatorMechanicalRows() {
+    // **Two rows, because the class's test is SRK and the port's separator is PR.** The SRK
+    // row is the class's own fixture; the PR row is the fluid `Stream::mixture()` resolves,
+    // so it is the oracle the port can be held to. The arithmetic is cubic-agnostic; only
+    // the densities and the viscosity move.
+    separatorMechanicalRow("class_test_fixture_srk", true);
+    separatorMechanicalRow("port_fixture_pr", false);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength"})
+  static void separatorMechanicalRow(String label, boolean srk) {
+    SystemInterface fluid = srk ? new SystemSrkEos(298.15, 20.0) : new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 0.7);
+    fluid.addComponent("ethane", 0.1);
+    fluid.addComponent("propane", 0.1);
+    fluid.addComponent("n-pentane", 0.1);
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    Stream feed = new Stream("Feed", fluid);
+    feed.setFlowRate(10000.0, "kg/hr");
+    feed.setTemperature(25.0, "C");
+    feed.setPressure(20.0, "bara");
+    feed.run();
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("TestSeparator", feed);
+    feed.setTemperature(25.0, "C");
+    separator.run();
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign) separator
+            .getMechanicalDesign();
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("standard_keys=" + design.getDesignStandard().keySet());
+    for (String key : design.getDesignStandard().keySet()) {
+      Object standard = design.getDesignStandard().get(key);
+      System.out.println("standard_" + key.replace(' ', '_') + "="
+          + (standard == null ? "null" : standard.getClass().getSimpleName()));
+    }
+    try {
+      design.calcDesign();
+      System.out.println("calc_design=ok");
+    } catch (Exception ex) {
+      System.out.println("calc_design_error=" + ex);
+      ex.printStackTrace(System.out);
+    }
+    // **`super.calcDesign()` installs the default company standards when none were set**,
+    // so the keys are read again here rather than before the call.
+    // **The key names only, never the set's `toString`.** A `DesignStandard` value's string
+    // form reaches `MechanicalDesign.hashCode`, which recurses through the cost estimator's
+    // own `hashCode` and overflows the stack - the class's defect, and not this probe's.
+    System.out.println("standard_keys_after=" + design.getDesignStandard().size());
+    for (String key : design.getDesignStandard().keySet()) {
+      Object standard = design.getDesignStandard().get(key);
+      System.out.println("standard_after_" + key.replace(' ', '_') + "="
+          + (standard == null ? "null" : standard.getClass().getSimpleName()));
+    }
+    // The default standards' own numbers, which is what a port has to declare as inputs.
+    neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard separatorStandard =
+        (neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard) design
+            .getDesignStandard().get("separator process design");
+    neqsim.process.mechanicaldesign.designstandards.MaterialPlateDesignStandard materialStandard =
+        (neqsim.process.mechanicaldesign.designstandards.MaterialPlateDesignStandard) design
+            .getDesignStandard().get("material plate design codes");
+    neqsim.process.mechanicaldesign.designstandards.JointEfficiencyPlateStandard jointStandard =
+        (neqsim.process.mechanicaldesign.designstandards.JointEfficiencyPlateStandard) design
+            .getDesignStandard().get("plate Joint Efficiency design codes");
+    neqsim.process.mechanicaldesign.designstandards.PressureVesselDesignStandard vesselStandard =
+        (neqsim.process.mechanicaldesign.designstandards.PressureVesselDesignStandard) design
+            .getDesignStandard().get("pressure vessel design code");
+    System.out.println("separator_standard_name=" + separatorStandard.getClass().getSimpleName());
+    System.out.println("separator_standard_gas_load_factor=" + separatorStandard.getGasLoadFactor());
+    System.out.println("separator_standard_fg=" + separatorStandard.getFg());
+    System.out.println("separator_standard_volume_safety_factor="
+        + separatorStandard.getVolumetricDesignFactor());
+    System.out.println("separator_standard_retention_s="
+        + separatorStandard.getLiquidRetentionTime("API12J", design));
+    System.out.println("material_standard_division_class=" + materialStandard.getDivisionClass());
+    System.out.println("joint_efficiency=" + jointStandard.getJEFactor());
+    System.out.println("vessel_standard_name=" + vesselStandard.getClass().getSimpleName());
+    System.out.println("max_operation_pressure_bara=" + design.getMaxOperationPressure());
+    System.out.println("max_operation_temperature_k=" + design.getMaxOperationTemperature());
+    System.out.println("corrosion_allowance=" + design.getCorrosionAllowance());
+    System.out.println("orientation=" + separator.getOrientation());
+    // The sizing intermediates: the two densities, the two raw volumes the class divides by
+    // `1e5`, and the two volume flows it forms from them.
+    System.out.println("gas_density_kg_m3="
+        + separator.getThermoSystem().getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("liquid_density_kg_m3="
+        + separator.getThermoSystem().getPhase(1).getPhysicalProperties().getDensity());
+    System.out.println("liquid_viscosity_pa_s="
+        + separator.getThermoSystem().getPhase(1).getPhysicalProperties().getViscosity());
+    System.out.println("phase0_volume_raw="
+        + separator.getThermoSystem().getPhase(0).getVolume());
+    System.out.println("liquid_volume_raw=" + separator.getThermoSystem().getLiquidVolume());
+    System.out.println("max_design_volume_flow_m3_hr=" + design.getMaxDesignVolumeFlow());
+    System.out.println("max_design_gas_volume_flow_m3_hr=" + design.getMaxDesignGassVolumeFlow());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("vessel_shell_weight_kg=" + design.getWeigthVesselShell());
+    System.out.println("internals_weight_kg=" + design.getWeigthInternals());
+    System.out.println("piping_weight_kg=" + design.getWeightPiping());
+    System.out.println("structural_weight_kg=" + design.getWeightStructualSteel());
+    System.out.println("electrical_weight_kg=" + design.getWeightElectroInstrument());
+    System.out.println("total_weight_kg=" + design.getWeightTotal());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+    System.out.println("vessel_volume_m3=" + design.getVolumeTotal());
+    System.out.println("tantan_length_m=" + design.getTantanLength());
+    System.out.println("wall_thickness_m=" + design.getWallThickness());
+    System.out.println("gas_load_factor_m_per_s=" + design.getGasLoadFactor());
+    System.out.println("fg=" + design.getFg());
+    System.out.println("volume_safety_factor=" + design.getVolumeSafetyFactor());
+    System.out.println("retention_time_s=" + design.getRetentionTime());
+    System.out.println("hhll_m=" + design.getHHLL());
+    System.out.println("hll_m=" + design.getHLL());
+    System.out.println("nll_m=" + design.getNLL());
+    System.out.println("lll_m=" + design.getLLL());
+    System.out.println("llll_m=" + design.getLLLL());
+    System.out.println("weir_height_m=" + design.getWeirHeight());
+    System.out.println("hil_m=" + design.getHIL());
+    System.out.println("nil_m=" + design.getNIL());
+    System.out.println("lil_m=" + design.getLIL());
+    System.out.println("effective_length_liquid_m=" + design.getEffectiveLengthLiquid());
+    System.out.println("effective_length_gas_m=" + design.getEffectiveLengthGas());
+    System.out.println("calc_liquid_retention_time_s=" + design.calcLiquidRetentionTime());
+    System.out.println("calc_surge_volume_m3=" + design.calcSurgeVolume());
+    System.out.println("calc_surge_time_s=" + design.calcSurgeTime());
+    System.out.println("calc_inlet_nozzle_id_m=" + design.calcInletNozzleID());
+    System.out.println("calc_gas_outlet_nozzle_id_m=" + design.calcGasOutletNozzleID());
+    System.out.println("calc_oil_outlet_nozzle_id_m=" + design.calcOilOutletNozzleID());
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesignResponse response =
+        design.getResponse();
+    if (response != null) {
+      System.out.println("response_orientation=" + response.getOrientation());
+      System.out.println("response_separator_type=" + response.getSeparatorType());
+      System.out.println("response_gas_load_factor=" + response.getGasLoadFactor());
+      System.out.println("response_volume_safety_factor=" + response.getVolumeSafetyFactor());
+      System.out.println("response_liquid_level_fraction=" + response.getLiquidLevelFraction());
+      System.out.println("response_retention_time=" + response.getRetentionTime());
+      System.out.println("response_demister_type=" + response.getDemisterType());
+      System.out.println("response_demister_efficiency=" + response.getDemisterEfficiency());
+      System.out.println("response_inlet_nozzles=" + response.getNumberOfInletNozzles());
+      System.out.println("response_inlet_nozzle_diameter=" + response.getInletNozzleDiameter());
+      System.out.println("response_gas_outlet_nozzle_diameter="
+          + response.getGasOutletNozzleDiameter());
+      System.out.println("response_liquid_outlet_nozzle_diameter="
+          + response.getLiquidOutletNozzleDiameter());
+      System.out.println("response_water_outlet_nozzle_diameter="
+          + response.getWaterOutletNozzleDiameter());
+      System.out.println("response_head_type=" + response.getHeadType());
+      System.out.println("response_head_thickness=" + response.getHeadThickness());
+      System.out.println("response_shell_thickness=" + response.getShellThickness());
+      System.out.println("response_design_code=" + response.getDesignCode());
+      System.out.println("response_gas_design_velocity=" + response.getGasDesignVelocity());
+      System.out.println("response_actual_gas_velocity=" + response.getActualGasVelocity());
+      System.out.println("response_allowable_gas_velocity=" + response.getAllowableGasVelocity());
+      System.out.println("response_design_gas_flow=" + response.getDesignGasFlow());
+      System.out.println("response_design_liquid_flow=" + response.getDesignLiquidFlow());
+      System.out.println("response_design_water_flow=" + response.getDesignWaterFlow());
+      System.out.println("response_normal_liquid_level=" + response.getNormalLiquidLevel());
+      System.out.println("response_high_liquid_level=" + response.getHighLiquidLevel());
+      System.out.println("response_low_liquid_level=" + response.getLowLiquidLevel());
+      System.out.println("response_interface_level=" + response.getInterfaceLevel());
+      System.out.println("response_surge_volume=" + response.getSurgeVolume());
+    }
     System.out.println();
   }
 

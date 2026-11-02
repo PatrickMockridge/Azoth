@@ -3536,6 +3536,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.separator", "safety_factor", "dimensionless"),
+    ("process.separator", "fg", "dimensionless"),
+    ("process.separator", "volume_safety_factor", "dimensionless"),
+    ("process.separator", "retention_time", "time"),
+    ("process.separator", "max_operation_pressure", "pressure"),
+    ("process.separator", "allowable_stress", "pressure"),
+    ("process.separator", "joint_efficiency", "dimensionless"),
+    ("process.separator", "corrosion_allowance", "length"),
     (
         "process.separator_capacity_assessment",
         "feed_n",

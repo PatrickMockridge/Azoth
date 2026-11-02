@@ -1915,6 +1915,14 @@ def separator(
     separator_length: Q | None = None,
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    fg: float | None = None,
+    volume_safety_factor: float | None = None,
+    retention_time: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -1931,7 +1939,11 @@ def separator(
     default to the class's ``horizontal`` and ``0.8``. ``separator_length`` and
     ``liquid_level_fraction`` are the class's ``5.0`` m and ``0.5`` when absent, and add the
     operating gas area fraction and the phase-indexed load factors; ``safety_factor`` adds
-    ``sizeFromFlow``'s required diameter.
+    ``sizeFromFlow``'s required diameter. ``mechanical_design`` runs
+    ``SeparatorMechanicalDesign.calcDesign`` and publishes the vessel; ``fg``,
+    ``volume_safety_factor``, ``retention_time``, ``max_operation_pressure``,
+    ``allowable_stress``, ``joint_efficiency`` and ``corrosion_allowance`` are its design basis,
+    at the class's default standards' values when absent.
 
     Raises:
         InvalidInputError: where the pressure drop takes the outlet below zero, the
@@ -1955,6 +1967,14 @@ def separator(
         separator_length=separator_length,
         liquid_level_fraction=liquid_level_fraction,
         safety_factor=safety_factor,
+        mechanical_design=mechanical_design,
+        fg=fg,
+        volume_safety_factor=volume_safety_factor,
+        retention_time=retention_time,
+        max_operation_pressure=max_operation_pressure,
+        allowable_stress=allowable_stress,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
     )
 
 

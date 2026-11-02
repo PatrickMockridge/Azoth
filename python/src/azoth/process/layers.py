@@ -1023,6 +1023,12 @@ def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
         float(inputs["gas_in_liquid"]),
         None if inputs.get("heat_input") is None else float(inputs["heat_input"]),
     )
+    # **A mechanical design case states no vessel**, so the capacity fold has no diameter to
+    # divide by; its own layers are dumped from `_mechanical_layers`.
+    if inputs.get("internal_diameter") is None:
+        if not inputs.get("mechanical_design"):
+            return {}
+        return _mechanical_layers(inputs, states)
     level = inputs.get("design_liquid_level_fraction")
     capacity = _capacity_states(
         components,
@@ -1091,6 +1097,79 @@ def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
         for index, value in enumerate(sizing.rated_by_phase, start=1):
             dump[f"gas_load_factor_phase_{index}_m_per_s"] = value
     return dump
+
+
+def _mechanical_layers(inputs: Mapping[str, Any], states: Any) -> dict[str, float]:
+    """`process.separator`'s mechanical-design layers, under the capture's key names.
+
+    The design's intermediates are its own arithmetic, and the capture prints them: the two
+    volume flows, the shell and skid weights, the module box, the levels and the three nozzle
+    diameters. A design that moved one step would move the ones after it, which is why the
+    dump carries the chain rather than the final diameter alone.
+    """
+    from azoth.process.reference.separator import _mechanical_design
+
+    components = [str(name) for name in inputs["components"]]
+    design = _mechanical_design(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        list(states.y),
+        states.n_vapour,
+        list(states.liquid_z),
+        states.n_liquid,
+        str(inputs.get("orientation") or "horizontal") == "horizontal",
+        float(inputs["design_gas_load_factor"]),
+        0.8 if inputs.get("fg") is None else float(inputs["fg"]),
+        1.0
+        if inputs.get("volume_safety_factor") is None
+        else float(inputs["volume_safety_factor"]),
+        60.0 if inputs.get("retention_time") is None else float(inputs["retention_time"]),
+        1.0e7
+        if inputs.get("max_operation_pressure") is None
+        else float(inputs["max_operation_pressure"]),
+        (425.0e6 if inputs.get("allowable_stress") is None else float(inputs["allowable_stress"]))
+        / 1.0e6,
+        1.0 if inputs.get("joint_efficiency") is None else float(inputs["joint_efficiency"]),
+        0.0
+        if inputs.get("corrosion_allowance") is None
+        else float(inputs["corrosion_allowance"]) * 1000.0,
+    )
+    diameter = design.inner_diameter
+    return {
+        "inner_diameter_m": diameter,
+        "tantan_length_m": design.tantan_length,
+        "outer_diameter_m": design.outer_diameter,
+        "wall_thickness_m": design.wall_thickness,
+        "max_design_volume_flow_m3_hr": design.max_design_volume_flow_m3_hr,
+        "max_design_gas_volume_flow_m3_hr": design.max_design_gas_volume_flow_m3_hr,
+        "vessel_shell_weight_kg": design.vessel_shell_weight_kg,
+        "piping_weight_kg": design.vessel_shell_weight_kg * 0.4,
+        "structural_weight_kg": design.vessel_shell_weight_kg * 0.1,
+        "electrical_weight_kg": design.vessel_shell_weight_kg * 0.08,
+        "total_weight_kg": design.total_weight_kg,
+        "module_width_m": design.module_width,
+        "module_length_m": design.module_length,
+        "module_height_m": design.module_height,
+        "vessel_volume_m3": design.vessel_volume_m3,
+        "hhll_m": design.hhll,
+        "hll_m": design.hll,
+        "nll_m": design.nll,
+        "lll_m": design.lll,
+        "llll_m": design.llll,
+        "weir_height_m": design.weir_height,
+        "hil_m": 0.25 * diameter,
+        "nil_m": design.nil,
+        "lil_m": 0.15 * diameter,
+        "effective_length_liquid_m": design.effective_length_liquid,
+        "effective_length_gas_m": design.effective_length_gas,
+        "calc_liquid_retention_time_s": design.liquid_retention_time_s,
+        "calc_surge_volume_m3": design.surge_volume_m3,
+        "calc_surge_time_s": design.surge_time_s,
+        "calc_inlet_nozzle_id_m": design.inlet_nozzle_id,
+        "calc_gas_outlet_nozzle_id_m": design.gas_outlet_nozzle_id,
+        "calc_oil_outlet_nozzle_id_m": design.oil_outlet_nozzle_id,
+    }
 
 
 def _anti_surge_recycle(inputs: Mapping[str, Any]) -> dict[str, float]:
@@ -1616,6 +1695,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_separator_sizing.tsv",
         block=8,
         identified_by=("#label", "pr_sizing_safety_15"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_mechanical_design_sizes_the_vessel_from_the_default_standards",
+        capture="process_separator_mechanical_design.tsv",
+        block=1,
+        identified_by=("#label", "port_fixture_pr"),
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -2209,6 +2295,9 @@ UNCASED_ROWS: dict[str, int] = {
     # getter the port refuses), the three-phase row is the capacity family's under another
     # feed, and the liquid-only row is the class's no-sizing branch.
     "process_separator_sizing.tsv": 5,
+    # The mechanical capture's SRK row is the class's own test fixture; the port's separator
+    # is PR, so only the PR row can be an oracle for this tree's state.
+    "process_separator_mechanical_design.tsv": 1,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as

@@ -34,6 +34,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `separator_length` | m | *Optional.* the vessel's tangent-to-tangent length, which the horizontal liquid volume and the vertical liquid height both divide. **Absent is the class's `5.0` m**; refused without the diameter and load factor. |
 | `liquid_level_fraction` | dimensionless | *Optional.* the operating liquid level, as the fraction of the maximum liquid height the class's `setLiquidLevel` takes - the diameter on a horizontal vessel and the length on a vertical one. **Absent is the class's `0.5`**; refused without the diameter and load factor. |
 | `safety_factor` | dimensionless | *Optional.* the factor `sizeFromFlow` multiplies the gas volumetric flow by before it solves for the diameter. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor. |
+| `mechanical_design` | - | *Optional.* run `SeparatorMechanicalDesign.calcDesign` and publish its vessel. **Absent is false**; present requires `design_gas_load_factor`, and the group below is refused without it. The design sizes its own diameter, so `internal_diameter` is not needed. |
+| `fg` | dimensionless | *Optional.* `SeparatorDesignStandard.getFg`, the horizontal liquid fraction. **Absent is the class default's `0.8`.** Refused without `mechanical_design`. |
+| `volume_safety_factor` | dimensionless | *Optional.* `getVolumetricDesignFactor`, the factor the gas and liquid flows are multiplied by. **Absent is `1.0`.** |
+| `retention_time` | s | *Optional.* `getLiquidRetentionTime("API12J", ...)`, which the tangent-to-tangent length is sized from. **Absent is `60` s.** |
+| `max_operation_pressure` | Pa | *Optional.* `getMaxOperationPressure`, the pressure the ASME wall-thickness formula divides by. **Absent is `100` bara.** |
+| `allowable_stress` | Pa | *Optional.* the material plate standard's allowable stress. **Absent is `425` MPa.** |
+| `joint_efficiency` | dimensionless | *Optional.* the plate joint-efficiency factor. **Absent is `1.0`.** |
+| `corrosion_allowance` | mm | *Optional.* the corrosion allowance the wall thickness adds. **Absent is `0`.** |
 
 
 ## Outputs
@@ -58,6 +66,32 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_area_fraction` | dimensionless | *Optional.* `1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated. |
 | `rated_gas_load_factor_by_phase` | m/s | *Optional.* `getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase. |
 | `required_diameter` | m | *Optional.* `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas. |
+| `design_inner_diameter` | m | *Optional.* `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`. |
+| `design_tantan_length` | m | *Optional.* the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6. |
+| `design_outer_diameter` | m | *Optional.* the inside diameter plus twice the wall thickness. |
+| `design_wall_thickness` | m | *Optional.* the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance. |
+| `max_design_gas_volume_flow` | m**3/h | *Optional.* `getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr. |
+| `vessel_shell_weight` | kg | *Optional.* `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate. |
+| `total_weight` | kg | *Optional.* the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`). |
+| `module_width` | m | *Optional.* `2 d`. |
+| `module_length` | m | *Optional.* `1.5 * tantan_length`. |
+| `module_height` | m | *Optional.* `2 d + 1`. |
+| `vessel_volume` | m**3 | *Optional.* the cylinder's internal volume, `pi (d/2)^2 L`. |
+| `hhll` | m | *Optional.* the high-high liquid level, `0.80 d` by the class's default fraction. |
+| `hll` | m | *Optional.* the high liquid level, `0.70 d`. |
+| `nll` | m | *Optional.* the normal liquid level, `0.50 d`. |
+| `lll` | m | *Optional.* the low liquid level, `0.30 d`. |
+| `llll` | m | *Optional.* the low-low liquid level, `0.15 d`. |
+| `weir_height` | m | *Optional.* the weir height, `0.25 d`. |
+| `nil` | m | *Optional.* the normal oil/water interface level, `0.20 d`. |
+| `effective_length_liquid` | m | *Optional.* the effective liquid separation length, `0.82 L` when the class leaves it unset. |
+| `effective_length_gas` | m | *Optional.* the effective gas separation length, `0.64 L`. |
+| `inlet_nozzle_id` | m | *Optional.* the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor. |
+| `gas_outlet_nozzle_id` | m | *Optional.* the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps. |
+| `oil_outlet_nozzle_id` | m | *Optional.* the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor. |
+| `surge_volume` | m**3 | *Optional.* the vessel's volume between NLL and HLL over the effective liquid length. |
+| `surge_time` | s | *Optional.* the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr. |
+| `liquid_retention_time` | s | *Optional.* the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -69,6 +103,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `separator_length > 0` | raises | a tangent-to-tangent length is a positive length, and the horizontal liquid volume is zero at zero |
 | `liquid_level_fraction >= 0 and liquid_level_fraction < 1` | raises | the class's setLiquidLevel takes a fraction of the maximum liquid height; at one the vessel is all liquid and has no gas area |
 | `safety_factor > 0` | raises | sizeFromFlow multiplies the gas flow by it, and zero is a vessel that sizes to nothing |
+| `fg >= 0 and fg < 1` | raises | a horizontal liquid fraction; at one there is no gas area |
+| `volume_safety_factor > 0` | raises | a flow multiplier; zero sizes nothing |
+| `retention_time > 0` | raises | the length divides by it through the volume, and a zero retains nothing |
+| `max_operation_pressure > 0` | raises | a pressure the wall thickness divides by |
+| `allowable_stress > 0` | raises | the ASME denominator subtracts the pressure from twice it |
+| `joint_efficiency > 0 and joint_efficiency <= 1` | raises | a weld joint efficiency is at most one |
+| `corrosion_allowance >= 0` | raises | an allowance adds metal; a negative one removes it |
 
 ## Assumptions
 
@@ -89,7 +130,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the phase-number load factor reads the holdup, not the design level.** `getGasLoadFactor(int)` divides its term by `1 - liquidVolume/separatorVolume` horizontal; the no-argument form uses `1 - design_liquid_level_fraction`. On the capture's `0.8`/`0.5` state they differ by `sqrt(2)`.
 - **`sizeFromFlow` is a closed form and sizes one diameter**: the gas flow times the safety factor over the design `K` velocity, the oil-then-aqueous liquid density, and the orientation's design gas area. A system with no gas returns unsized.
 - **the derating getter reads a stale interphase clone**: it reports `0.0` N/m where the live Parachor answers `0.0089`, so every two-phase state answers `0.5`. The capture prints both factors; the port publishes no derated factor, because a stale clone's value is not a state function.
-- NeqSim's `Separator` also carries `autoSize`, the mechanical design and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.
+- **the mechanical design's basis is the class's default standards, declared as inputs**: `K = 0.11`, `Fg = 0.8`, safety `1.0`, retention `60` s, stress `425` MPa, joint efficiency `1.0`, pressure `100` bara and corrosion allowance `0`.
+- **the design's volume flows are the cubic's, not mass over the physical-properties density.** `Phase.getVolume()` is the untranslated EOS volume while the density carries the Peneloux shift; the capture's PR row is `0.11035858` m3 against `0.110877` from the translated density.
+- **the retention and surge times divide a m3/s flow as though it were m3/hr.** The capture's `394 159` s is the class's arithmetic; the port reproduces it rather than correcting it.
+- **the class's own test is SRK and this port's separator is PR**, so the capture carries both rows. The arithmetic is cubic-agnostic; the densities and the viscosity are what move.
+- NeqSim's `Separator` also carries `autoSize` and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.
 
 ## Cases
 
@@ -110,11 +155,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_vertical_vessel_ignores_the_operating_level` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8, separator_length = 5.0, liquid_level_fraction = 0.5, safety_factor = 1.0 | gas_area_fraction = 1.0, rated_gas_load_factor_by_phase = [0.0002338739965654731], required_diameter = 0.046109947316216926 |
 | `a_dry_gas_has_no_liquid_phase_to_index` | components = ['methane'], feed_n = 1.0, feed_z = [1.0], feed_p = 5000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = vertical, design_liquid_level_fraction = 0.8, separator_length = 5.0, liquid_level_fraction = 0.5, safety_factor = 1.0 | gas_area_fraction = 1.0, required_diameter = 0.03173159963692042 |
 | `the_safety_factor_scales_the_required_diameter` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.11, orientation = horizontal, design_liquid_level_fraction = 0.8, separator_length = 5.0, liquid_level_fraction = 0.5, safety_factor = 1.5 | gas_area_fraction = 0.5, rated_gas_load_factor_by_phase = [0.0008268694445732268], required_diameter = 0.12627729135233404 |
+| `the_mechanical_design_sizes_the_vessel_from_the_default_standards` | components = ['methane', 'ethane', 'propane', 'n-pentane'], feed_n = 107.40852445606174, feed_z = [0.7, 0.1, 0.1, 0.1], feed_p = 2000000.0, feed_t = 298.15, pressure_drop = 0.0, gas_in_liquid = 0.0, design_gas_load_factor = 0.11, orientation = horizontal, mechanical_design = True | design_inner_diameter = 0.5493919257053616, design_tantan_length = 1.1234043148147357, design_outer_diameter = 0.562503904839141, design_wall_thickness = 0.006555989566889756, max_design_gas_volume_flow = 397.2908843695721, vessel_shell_weight = 129.48116315040767, total_weight = 204.58023777764413, module_width = 1.098783851410723, module_length = 1.6851064722221034, module_height = 2.0987838514107233, vessel_volume = 0.26631186332121454, hhll = 0.43951354056428926, hll = 0.38457434799375306, nll = 0.2746959628526808, lll = 0.16481757771160846, llll = 0.08240878885580423, weir_height = 0.1373479814263404, nil = 0.10987838514107232, effective_length_liquid = 0.9211915381480832, effective_length_gas = 0.7189787614814308, inlet_nozzle_id = 0.1, gas_outlet_nozzle_id = 0.1, oil_outlet_nozzle_id = 0.05, surge_volume = 0.05408822021045, surge_time = 195253.95753766282, liquid_retention_time = 394159.0700343924 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 15 declared, every one run
+- Tests: 16 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

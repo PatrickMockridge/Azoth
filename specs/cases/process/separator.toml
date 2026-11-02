@@ -337,3 +337,45 @@ safety_factor = 1.5
 gas_area_fraction = 0.5
 rated_gas_load_factor_by_phase = [8.268694445732268e-4]
 required_diameter = 0.12627729135233404
+[[cases]]
+id = "the_mechanical_design_sizes_the_vessel_from_the_default_standards"
+tolerance = 2e-04
+source = "The mechanical capture's PR row: the class's own test fluid at 10,000 kg/hr, on the cubic this port carries, through `calcDesign()` with the nine default standards installed. **Everything here is the class's arithmetic on its default basis**: the `0.11` m/s K, `Fg = 0.8`, the `60` s retention, the `425` MPa allowable stress, the `1.0` joint efficiency and the `100` bara maximum operation pressure. The 394 159 s retention time is the class's unit slip - a m3/s flow divided as though m3/hr - and is reproduced rather than corrected.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+design_gas_load_factor = 0.11
+orientation = "horizontal"
+mechanical_design = true
+[cases.expected]
+design_inner_diameter = 0.5493919257053616
+design_tantan_length = 1.1234043148147357
+design_outer_diameter = 0.562503904839141
+design_wall_thickness = 0.006555989566889756
+max_design_gas_volume_flow = 397.2908843695721
+vessel_shell_weight = 129.48116315040767
+total_weight = 204.58023777764413
+module_width = 1.098783851410723
+module_length = 1.6851064722221034
+module_height = 2.0987838514107233
+vessel_volume = 0.26631186332121454
+hhll = 0.43951354056428926
+hll = 0.38457434799375306
+nll = 0.2746959628526808
+lll = 0.16481757771160846
+llll = 0.08240878885580423
+weir_height = 0.1373479814263404
+nil = 0.10987838514107232
+effective_length_liquid = 0.9211915381480832
+effective_length_gas = 0.7189787614814308
+inlet_nozzle_id = 0.1
+gas_outlet_nozzle_id = 0.1
+oil_outlet_nozzle_id = 0.05
+surge_volume = 0.05408822021045
+surge_time = 195253.95753766282
+liquid_retention_time = 394159.0700343924

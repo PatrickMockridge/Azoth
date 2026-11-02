@@ -6499,7 +6499,7 @@ def rate_based_packed_column(gas_components: list[str], gas_n: Q, gas_z: list[fl
     )
 
 
-def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None) -> SeparatorResult:
+def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None, mechanical_design: bool | None=None, fg: float | None=None, volume_safety_factor: float | None=None, retention_time: Q | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SeparatorResult:
     """``process.separator``, computed in Rust."""
     spec = _models_gen.model("process.separator")
     result = _core.separator(
@@ -6518,6 +6518,14 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
         None if liquid_level_fraction is None else liquid_level_fraction,
         None if safety_factor is None else safety_factor,
+        mechanical_design,
+        None if fg is None else fg,
+        None if volume_safety_factor is None else volume_safety_factor,
+        None if retention_time is None else input_to_si(spec, "retention_time", retention_time),
+        None if max_operation_pressure is None else input_to_si(spec, "max_operation_pressure", max_operation_pressure),
+        None if allowable_stress is None else input_to_si(spec, "allowable_stress", allowable_stress),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return SeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -6538,6 +6546,32 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         gas_area_fraction=result.gas_area_fraction,
         rated_gas_load_factor_by_phase=None if result.rated_gas_load_factor_by_phase is None else tuple(from_si(q.magnitude_si, q.unit) for q in result.rated_gas_load_factor_by_phase),
         required_diameter=None if result.required_diameter is None else from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
+        design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
+        design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
+        design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        max_design_gas_volume_flow=None if result.max_design_gas_volume_flow is None else from_si(result.max_design_gas_volume_flow.magnitude_si, result.max_design_gas_volume_flow.unit),
+        vessel_shell_weight=None if result.vessel_shell_weight is None else from_si(result.vessel_shell_weight.magnitude_si, result.vessel_shell_weight.unit),
+        total_weight=None if result.total_weight is None else from_si(result.total_weight.magnitude_si, result.total_weight.unit),
+        module_width=None if result.module_width is None else from_si(result.module_width.magnitude_si, result.module_width.unit),
+        module_length=None if result.module_length is None else from_si(result.module_length.magnitude_si, result.module_length.unit),
+        module_height=None if result.module_height is None else from_si(result.module_height.magnitude_si, result.module_height.unit),
+        vessel_volume=None if result.vessel_volume is None else from_si(result.vessel_volume.magnitude_si, result.vessel_volume.unit),
+        hhll=None if result.hhll is None else from_si(result.hhll.magnitude_si, result.hhll.unit),
+        hll=None if result.hll is None else from_si(result.hll.magnitude_si, result.hll.unit),
+        nll=None if result.nll is None else from_si(result.nll.magnitude_si, result.nll.unit),
+        lll=None if result.lll is None else from_si(result.lll.magnitude_si, result.lll.unit),
+        llll=None if result.llll is None else from_si(result.llll.magnitude_si, result.llll.unit),
+        weir_height=None if result.weir_height is None else from_si(result.weir_height.magnitude_si, result.weir_height.unit),
+        nil=None if result.nil is None else from_si(result.nil.magnitude_si, result.nil.unit),
+        effective_length_liquid=None if result.effective_length_liquid is None else from_si(result.effective_length_liquid.magnitude_si, result.effective_length_liquid.unit),
+        effective_length_gas=None if result.effective_length_gas is None else from_si(result.effective_length_gas.magnitude_si, result.effective_length_gas.unit),
+        inlet_nozzle_id=None if result.inlet_nozzle_id is None else from_si(result.inlet_nozzle_id.magnitude_si, result.inlet_nozzle_id.unit),
+        gas_outlet_nozzle_id=None if result.gas_outlet_nozzle_id is None else from_si(result.gas_outlet_nozzle_id.magnitude_si, result.gas_outlet_nozzle_id.unit),
+        oil_outlet_nozzle_id=None if result.oil_outlet_nozzle_id is None else from_si(result.oil_outlet_nozzle_id.magnitude_si, result.oil_outlet_nozzle_id.unit),
+        surge_volume=None if result.surge_volume is None else from_si(result.surge_volume.magnitude_si, result.surge_volume.unit),
+        surge_time=None if result.surge_time is None else from_si(result.surge_time.magnitude_si, result.surge_time.unit),
+        liquid_retention_time=None if result.liquid_retention_time is None else from_si(result.liquid_retention_time.magnitude_si, result.liquid_retention_time.unit),
         warnings=_warnings(result.warnings),
     )
 

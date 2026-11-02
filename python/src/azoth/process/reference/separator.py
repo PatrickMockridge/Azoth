@@ -71,6 +71,14 @@ def separator(
     separator_length: Q | None = None,
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    fg: float | None = None,
+    volume_safety_factor: float | None = None,
+    retention_time: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -156,6 +164,28 @@ def separator(
     )
     operating_level = None if liquid_level_fraction is None else float(liquid_level_fraction)
     safety = None if safety_factor is None else float(safety_factor)
+    design = bool(mechanical_design) if mechanical_design is not None else False
+    design_fg = None if fg is None else float(fg)
+    volume_factor = None if volume_safety_factor is None else float(volume_safety_factor)
+    retention = (
+        None if retention_time is None else input_to_si(spec, "retention_time", retention_time)
+    )
+    max_pressure = (
+        None
+        if max_operation_pressure is None
+        else input_to_si(spec, "max_operation_pressure", max_operation_pressure)
+    )
+    stress = (
+        None
+        if allowable_stress is None
+        else input_to_si(spec, "allowable_stress", allowable_stress)
+    )
+    joint = None if joint_efficiency is None else float(joint_efficiency)
+    corrosion = (
+        None
+        if corrosion_allowance is None
+        else input_to_si(spec, "corrosion_allowance", corrosion_allowance) * 1000.0
+    )
     apply_checks(
         checks.on_input,
         {
@@ -167,30 +197,55 @@ def separator(
             "separator_length": length,
             "liquid_level_fraction": operating_level,
             "safety_factor": safety,
+            "fg": design_fg,
+            "volume_safety_factor": volume_factor,
+            "retention_time": retention,
+            "max_operation_pressure": max_pressure,
+            "allowable_stress": stress,
+            "joint_efficiency": joint,
+            "corrosion_allowance": corrosion,
         }.get,
         warnings,
     )
 
-    # **Both or neither.** The capacity is a function of the vessel, and a caller who stated
-    # half of it has stated nothing: a vessel with a size but no design basis, or the reverse,
-    # has no capacity to be using.
-    if (diameter is None) != (load_factor is None):
-        named, missing = (
-            ("internal_diameter", "design_gas_load_factor")
-            if diameter is not None
-            else ("design_gas_load_factor", "internal_diameter")
-        )
+    # **A stated diameter needs its design basis; a design basis does not need a diameter.**
+    # The mechanical design sizes its own diameter from the flow and the design `K`.
+    if diameter is not None and load_factor is None:
         raise InvalidInputError(
-            missing,
-            f"`{named}` was stated and `{missing}` was not, and the Souders-Brown capacity "
-            f"metric needs both - a vessel with a size but no design basis, or the reverse, "
-            f"has nothing to check",
+            "design_gas_load_factor",
+            "`internal_diameter` was stated and `design_gas_load_factor` was not, and the "
+            "Souders-Brown capacity metric needs both - a vessel with a size but no design "
+            "basis has nothing to check",
+        )
+    if not design and load_factor is not None and diameter is None:
+        raise InvalidInputError(
+            "internal_diameter",
+            "`design_gas_load_factor` was stated without `internal_diameter` and without "
+            "`mechanical_design`, and the design basis has no vessel to be used on",
+        )
+    if design and load_factor is None:
+        raise InvalidInputError(
+            "design_gas_load_factor",
+            "`mechanical_design` was stated without `design_gas_load_factor`, and the design's "
+            "Souders-Brown basis is that number",
         )
     # The two that shape the gas area have no meaning without the vessel they shape.
     if diameter is None:
+        if orientation is not None and not design:
+            raise InvalidInputError(
+                "orientation",
+                "`orientation` was stated without `internal_diameter`, "
+                "`design_gas_load_factor` and `mechanical_design`, and the gas area it shapes "
+                "is not computed until the vessel is",
+            )
+        if design_liquid_level_fraction is not None:
+            raise InvalidInputError(
+                "design_liquid_level_fraction",
+                "`design_liquid_level_fraction` was stated without `internal_diameter` and "
+                "`design_gas_load_factor`, and the gas area it shapes is not computed until "
+                "the vessel is",
+            )
         for stated, value in (
-            ("orientation", orientation),
-            ("design_liquid_level_fraction", design_liquid_level_fraction),
             ("separator_length", separator_length),
             ("liquid_level_fraction", liquid_level_fraction),
             ("safety_factor", safety_factor),
@@ -199,8 +254,22 @@ def separator(
                 raise InvalidInputError(
                     stated,
                     f"`{stated}` was stated without `internal_diameter` and "
-                    f"`design_gas_load_factor`, and the gas area it shapes is not computed "
-                    f"until the vessel is",
+                    f"`design_gas_load_factor`, and the vessel it sizes is not computed until "
+                    f"both are stated",
+                )
+    if not design:
+        for stated, value in (
+            ("fg", fg),
+            ("volume_safety_factor", volume_safety_factor),
+            ("retention_time", retention_time),
+            ("max_operation_pressure", max_operation_pressure),
+            ("allowable_stress", allowable_stress),
+            ("joint_efficiency", joint_efficiency),
+            ("corrosion_allowance", corrosion_allowance),
+        ):
+            if value is not None:
+                raise InvalidInputError(
+                    stated, f"`{stated}` was stated without `mechanical_design`"
                 )
     kind = DEFAULT_ORIENTATION if orientation is None else orientation
     if kind not in ("horizontal", "vertical"):
@@ -231,6 +300,28 @@ def separator(
             load_factor,
             kind,
             level,
+        )
+    )
+    vessel = (
+        None
+        if not design or load_factor is None
+        else _mechanical_design(
+            components,
+            states.temperature.to("K").magnitude,
+            states.p_out,
+            list(states.y),
+            states.n_vapour,
+            list(states.liquid_z),
+            states.n_liquid,
+            kind == "horizontal",
+            load_factor,
+            0.8 if design_fg is None else design_fg,
+            1.0 if volume_factor is None else volume_factor,
+            60.0 if retention is None else retention,
+            100.0e5 if max_pressure is None else max_pressure,
+            (425.0e6 if stress is None else stress) / 1.0e6,
+            1.0 if joint is None else joint,
+            0.0 if corrosion is None else corrosion,
         )
     )
     sizing = (
@@ -291,6 +382,48 @@ def separator(
             None
             if sizing is None or sizing.required_diameter is None
             else from_si(sizing.required_diameter, "m")
+        ),
+        design_inner_diameter=(None if vessel is None else from_si(vessel.inner_diameter, "m")),
+        design_tantan_length=(None if vessel is None else from_si(vessel.tantan_length, "m")),
+        design_outer_diameter=(None if vessel is None else from_si(vessel.outer_diameter, "m")),
+        design_wall_thickness=(None if vessel is None else from_si(vessel.wall_thickness, "m")),
+        max_design_gas_volume_flow=(
+            None
+            if vessel is None
+            else from_si(vessel.max_design_gas_volume_flow_m3_hr / 3600.0, "m**3/h")
+        ),
+        vessel_shell_weight=(
+            None if vessel is None else from_si(vessel.vessel_shell_weight_kg, "kg")
+        ),
+        total_weight=None if vessel is None else from_si(vessel.total_weight_kg, "kg"),
+        module_width=None if vessel is None else from_si(vessel.module_width, "m"),
+        module_length=None if vessel is None else from_si(vessel.module_length, "m"),
+        module_height=None if vessel is None else from_si(vessel.module_height, "m"),
+        vessel_volume=(None if vessel is None else from_si(vessel.vessel_volume_m3, "m**3")),
+        hhll=None if vessel is None else from_si(vessel.hhll, "m"),
+        hll=None if vessel is None else from_si(vessel.hll, "m"),
+        nll=None if vessel is None else from_si(vessel.nll, "m"),
+        lll=None if vessel is None else from_si(vessel.lll, "m"),
+        llll=None if vessel is None else from_si(vessel.llll, "m"),
+        weir_height=None if vessel is None else from_si(vessel.weir_height, "m"),
+        nil=None if vessel is None else from_si(vessel.nil, "m"),
+        effective_length_liquid=(
+            None if vessel is None else from_si(vessel.effective_length_liquid, "m")
+        ),
+        effective_length_gas=(
+            None if vessel is None else from_si(vessel.effective_length_gas, "m")
+        ),
+        inlet_nozzle_id=(None if vessel is None else from_si(vessel.inlet_nozzle_id, "m")),
+        gas_outlet_nozzle_id=(
+            None if vessel is None else from_si(vessel.gas_outlet_nozzle_id, "m")
+        ),
+        oil_outlet_nozzle_id=(
+            None if vessel is None else from_si(vessel.oil_outlet_nozzle_id, "m")
+        ),
+        surge_volume=(None if vessel is None else from_si(vessel.surge_volume_m3, "m**3")),
+        surge_time=None if vessel is None else from_si(vessel.surge_time_s, "s"),
+        liquid_retention_time=(
+            None if vessel is None else from_si(vessel.liquid_retention_time_s, "s")
         ),
         warnings=tuple(warnings),
     )
@@ -755,6 +888,225 @@ def _liquid_area(level: float, diameter: float) -> float:
         a = radius * math.sin(theta)
         return (math.pi - theta) * radius * radius + a * d
     return 0.5 * math.pi * radius * radius
+
+
+@dataclass(frozen=True, slots=True)
+class MechanicalDesign:
+    """`SeparatorMechanicalDesign.calcDesign`'s vessel, in SI."""
+
+    inner_diameter: float
+    tantan_length: float
+    outer_diameter: float
+    wall_thickness: float
+    max_design_volume_flow_m3_hr: float
+    max_design_gas_volume_flow_m3_hr: float
+    vessel_shell_weight_kg: float
+    total_weight_kg: float
+    module_width: float
+    module_length: float
+    module_height: float
+    vessel_volume_m3: float
+    hhll: float
+    hll: float
+    nll: float
+    lll: float
+    llll: float
+    weir_height: float
+    nil: float
+    effective_length_liquid: float
+    effective_length_gas: float
+    inlet_nozzle_id: float
+    gas_outlet_nozzle_id: float
+    oil_outlet_nozzle_id: float
+    surge_volume_m3: float
+    surge_time_s: float
+    liquid_retention_time_s: float
+
+
+#: NeqSim's gas constant, which its phase volume uses.
+_NEQSIM_R = 8.3144621
+
+
+def _mechanical_design(
+    components: list[str],
+    t: float,
+    p: float,
+    gas_z: list[float],
+    gas_n: float,
+    liquid_z: list[float],
+    liquid_n: float,
+    horizontal: bool,
+    gas_load_factor: float,
+    fg: float,
+    volume_safety_factor: float,
+    retention_time_s: float,
+    max_operation_pressure_pa: float,
+    allowable_stress_mpa: float,
+    joint_efficiency: float,
+    corrosion_allowance_mm: float,
+) -> MechanicalDesign:
+    """`calcDesign` on the two outlets, in the order the class computes it.
+
+    **The volume flows are the cubic's own, not mass over the physical-properties density.**
+    `Phase.getVolume()` is untranslated while the density carries the Peneloux shift, which the
+    capture's PR row measures as `0.11035858` m3 against `0.110877`.
+    """
+    from azoth.core.units import quantity
+    from azoth.eos.reference.phase_transport import phase_transport
+    from azoth.process.reference.capacity import _mass_density
+
+    mixture, _ideal_gas = _components.mixture_of(components, eos="pr")
+    gas_flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(gas_z))
+    gas_root = gas_flash.z_vapour if gas_flash.phase == "two_phase" else gas_flash.z_liquid
+    liquid_flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(liquid_z))
+    gas_density = _mass_density(mixture, t, p, list(gas_z), gas_root)
+    liquid_density = _mass_density(mixture, t, p, list(liquid_z), liquid_flash.z_liquid)
+    liquid_viscosity = (
+        phase_transport(components, "oil", quantity(t, "K"), quantity(p, "Pa"), list(liquid_z))
+        .mu.to("Pa*s")
+        .magnitude
+    )
+    if not (
+        math.isfinite(gas_density)
+        and gas_density > 0.0
+        and math.isfinite(liquid_density)
+        and liquid_density > gas_density
+        and math.isfinite(liquid_viscosity)
+        and liquid_viscosity > 0.0
+    ):
+        raise InvalidInputError(
+            "mechanical_design",
+            f"the design needs a gas denser than zero, a liquid denser than the gas and a "
+            f"positive liquid viscosity; it has {gas_density}, {liquid_density} and "
+            f"{liquid_viscosity}",
+        )
+
+    gas_volume_flow = gas_n * gas_root * _NEQSIM_R * t / p
+    liquid_volume_flow = liquid_n * liquid_flash.z_liquid * _NEQSIM_R * t / p
+
+    max_design_volume_flow = volume_safety_factor * gas_volume_flow * 3600.0
+    max_gas_velocity = gas_load_factor * math.sqrt((liquid_density - gas_density) / gas_density)
+    gas_area_fraction = fg if horizontal else 1.0
+    liquid_area_fraction = 1.0 - fg if horizontal else 1.0
+    inner_diameter = math.sqrt(
+        4.0 * (max_design_volume_flow / 3600.0) / (math.pi * max_gas_velocity * gas_area_fraction)
+    )
+    cross_area = math.pi * (inner_diameter / 2.0) ** 2
+    max_design_gas_volume_flow = max_gas_velocity * cross_area * gas_area_fraction * 3600.0
+    tantan_length = math.sqrt(
+        4.0
+        * retention_time_s
+        * liquid_volume_flow
+        * volume_safety_factor
+        / (math.pi * inner_diameter * inner_diameter * liquid_area_fraction)
+    )
+    total = tantan_length + inner_diameter
+    if total / inner_diameter > 6.0 or total / inner_diameter < 3.0:
+        tantan_length = inner_diameter * 5.0
+
+    bubble_velocity = (
+        9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
+    )
+    ar = liquid_volume_flow / bubble_velocity
+    daim = math.sqrt(ar / 4.0)
+    if daim > inner_diameter:
+        inner_diameter = daim
+        tantan_length = 4.0 * daim
+
+    pressure_bar = max_operation_pressure_pa / 1.0e5
+    wall_thickness_mm = (
+        pressure_bar
+        / 10.0
+        * inner_diameter
+        * 1.0e3
+        / (2.0 * allowable_stress_mpa * joint_efficiency - 1.2 * pressure_bar / 10.0)
+        + corrosion_allowance_mm
+    )
+    wall_thickness = wall_thickness_mm / 1000.0
+    outer_diameter = inner_diameter + 2.0 * wall_thickness
+
+    vessel_shell_weight = (
+        0.032 * (wall_thickness * 1.0e3) * (inner_diameter * 1.0e3) * tantan_length
+    )
+    piping_weight = vessel_shell_weight * 0.4
+    structural_weight = vessel_shell_weight * 0.1
+    electrical_weight = vessel_shell_weight * 0.08
+    total_weight = vessel_shell_weight + piping_weight + structural_weight + electrical_weight
+    module_width = inner_diameter * 2.0
+    module_length = tantan_length * 1.5
+    module_height = inner_diameter * 2.0 + 1.0
+    vessel_volume = math.pi * (inner_diameter / 2.0) ** 2 * tantan_length
+
+    effective_length_liquid = tantan_length * 0.82
+    effective_length_gas = tantan_length * 0.64
+
+    total_volume_flow_m3_hr = (gas_volume_flow + liquid_volume_flow) * 3600.0
+    total_mass_flow = (gas_volume_flow * gas_density + liquid_volume_flow * liquid_density) * 3600.0
+    mix_density = total_mass_flow / total_volume_flow_m3_hr
+    nozzle_velocity = math.sqrt(8000.0 / mix_density)
+    inlet_nozzle_id = max(
+        0.05,
+        math.ceil(
+            math.sqrt(4.0 * ((total_volume_flow_m3_hr / 3600.0) / nozzle_velocity) / math.pi) / 0.05
+        )
+        * 0.05,
+    )
+    gas_outlet_nozzle_id = (
+        math.ceil(math.sqrt(4.0 * (gas_volume_flow / 20.0) / math.pi) / 0.05) * 0.05
+    )
+    oil_outlet_nozzle_id = max(
+        0.05,
+        math.ceil(math.sqrt(4.0 * (liquid_volume_flow / 1.5) / math.pi) / 0.025) * 0.025,
+    )
+
+    hhll = 0.80 * inner_diameter
+    hll = 0.70 * inner_diameter
+    nll = 0.50 * inner_diameter
+    lll = 0.30 * inner_diameter
+    llll = 0.15 * inner_diameter
+    weir_height = 0.25 * inner_diameter
+    nil = 0.20 * inner_diameter
+
+    def segment(level: float) -> float:
+        radius = inner_diameter / 2.0
+        height = min(level, inner_diameter)
+        theta = 2.0 * math.acos((radius - height) / radius)
+        return (radius * radius / 2.0) * (theta - math.sin(theta)) * effective_length_liquid
+
+    surge_volume = segment(hll) - segment(nll)
+    liquid_hourly = liquid_volume_flow / 3600.0
+    liquid_retention_time = segment(nll) / liquid_hourly
+    surge_time = surge_volume / liquid_hourly
+
+    return MechanicalDesign(
+        inner_diameter=inner_diameter,
+        tantan_length=tantan_length,
+        outer_diameter=outer_diameter,
+        wall_thickness=wall_thickness,
+        max_design_volume_flow_m3_hr=max_design_volume_flow,
+        max_design_gas_volume_flow_m3_hr=max_design_gas_volume_flow,
+        vessel_shell_weight_kg=vessel_shell_weight,
+        total_weight_kg=total_weight,
+        module_width=module_width,
+        module_length=module_length,
+        module_height=module_height,
+        vessel_volume_m3=vessel_volume,
+        hhll=hhll,
+        hll=hll,
+        nll=nll,
+        lll=lll,
+        llll=llll,
+        weir_height=weir_height,
+        nil=nil,
+        effective_length_liquid=effective_length_liquid,
+        effective_length_gas=effective_length_gas,
+        inlet_nozzle_id=inlet_nozzle_id,
+        gas_outlet_nozzle_id=gas_outlet_nozzle_id,
+        oil_outlet_nozzle_id=oil_outlet_nozzle_id,
+        surge_volume_m3=surge_volume,
+        surge_time_s=surge_time,
+        liquid_retention_time_s=liquid_retention_time,
+    )
 
 
 def _phase_compositions(
