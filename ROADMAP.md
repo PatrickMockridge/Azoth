@@ -804,10 +804,10 @@ a claim nothing holds.
   the performance DTO's per-component emission map; `Heater`'s
   electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
-  recycle block and steady recycle calculator have landed), deposit model and
+  recycle block and steady recycle calculator have landed), and
   `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
-  lookups, the `CompressorChartKhader2015` map, the speed-solve mode and the no-chart
-  polytropic default branch have landed**;
+  lookups, the `CompressorChartKhader2015` map, the speed-solve mode, the no-chart
+  polytropic default branch and the deposit model have landed**;
   `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
   **its `useDeltaT` closure landed as `use_delta_t`**, held to

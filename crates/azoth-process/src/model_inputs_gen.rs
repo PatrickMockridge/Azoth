@@ -554,6 +554,27 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("power"),
             },
             ModelInput {
+                name: "deposit",
+                kind: "record_list",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "wetted_area",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("area"),
+            },
+            ModelInput {
+                name: "passage_half_height",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
                 name: "curve",
                 kind: "record_list",
                 values: &[],

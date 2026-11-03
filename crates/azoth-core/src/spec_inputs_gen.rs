@@ -2706,6 +2706,8 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.compressor", "compression_ratio", "dimensionless"),
     ("process.compressor", "max_outlet_pressure", "pressure"),
     ("process.compressor", "power", "power"),
+    ("process.compressor", "wetted_area", "area"),
+    ("process.compressor", "passage_half_height", "length"),
     ("process.compressor", "speed", "dimensionless"),
     ("process.compressor", "min_speed", "dimensionless"),
     ("process.compressor", "max_speed", "dimensionless"),

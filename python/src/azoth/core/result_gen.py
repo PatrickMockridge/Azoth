@@ -5692,6 +5692,30 @@ class CompressorResult(_HasWarnings):
     #: `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
     polytropic_exponent: float | None
 
+    #: the deposit inventory's summed mass. Present when `deposit` is stated.
+    total_deposit_mass: Q | None
+
+    #: `sum(mass / density)` over the mechanisms.
+    deposit_volume: Q | None
+
+    #: `volume / wetted_area`, or zero where the area is absent.
+    film_thickness: Q | None
+
+    #: `min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.
+    area_blockage_fraction: float | None
+
+    #: `max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.
+    efficiency_multiplier: float | None
+
+    #: `max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.
+    head_multiplier: float | None
+
+    #: `getDegradationFactor`: the efficiency multiplier the run recorded.
+    degradation_factor: float | None
+
+    #: `getFoulingFactor`: `1 - head_multiplier`.
+    fouling_factor: float | None
+
     #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     power: Q
 

@@ -32,6 +32,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `compression_ratio` | dimensionless | *Optional.* `setCompressionRatio`: the outlet pressure is `P_in * ratio`, and it overrides a stated `outlet_pressure`. **Absent leaves the stated pressure in charge.** |
 | `max_outlet_pressure` | Pa | *Optional.* `setMaxOutletPressure`: caps the ratio's outlet pressure. Unread without `compression_ratio`. |
 | `power` | W | *Optional.* `setPower`: fixes the shaft work, so `h_out = h_in + power / n`. The polytropic branch keeps its stated efficiency; the isentropic one back-solves `(h_is - h_in) / dH`. Absent leaves the efficiency in charge. |
+| `deposit` | - | *Optional.* `CompressorDeposit`'s accumulated mass, one row per mechanism. **Absent is no deposit.** The multipliers degrade the polytropic efficiency in the no-chart branch; with a chart the class only records the factors. |
+| `wetted_area` | m**2 | *Optional.* the foulable impeller/inlet area. Absent leaves the film thickness zero, so the multipliers are one. |
+| `passage_half_height` | m | *Optional.* the characteristic flow-passage half-height the blockage divides by. Absent leaves the multipliers one. |
 | `curve` | - | *Optional.* the manufacturer's map, one row per point, in the order the chart states them. **An absent curve is the isentropic branch.** The head is in metres; a kJ/kg curve is multiplied by `1000/9.81`. |
 | `speed` | dimensionless | *Optional.* the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch. In the speed-solve mode it is the Newton's starting point. |
 | `solve_speed` | - | *Optional.* `setSolveSpeed`: solve the speed that reaches `outlet_pressure` through the chart, rather than read the chart at `speed`. Absent is `false`. Needs `curve` and `outlet_pressure`. |
@@ -59,6 +62,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `polytropic_head` | m | the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch. |
 | `polytropic_efficiency` | dimensionless | the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one. |
 | `polytropic_exponent` | dimensionless | *Optional.* `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it. |
+| `total_deposit_mass` | kg | *Optional.* the deposit inventory's summed mass. Present when `deposit` is stated. |
+| `deposit_volume` | m**3 | *Optional.* `sum(mass / density)` over the mechanisms. |
+| `film_thickness` | m | *Optional.* `volume / wetted_area`, or zero where the area is absent. |
+| `area_blockage_fraction` | dimensionless | *Optional.* `min(film / passage_half_height, 0.95)`, or zero where the half-height is absent. |
+| `efficiency_multiplier` | dimensionless | *Optional.* `max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier. |
+| `head_multiplier` | dimensionless | *Optional.* `max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier. |
+| `degradation_factor` | dimensionless | *Optional.* `getDegradationFactor`: the efficiency multiplier the run recorded. |
+| `fouling_factor` | dimensionless | *Optional.* `getFoulingFactor`: `1 - head_multiplier`. |
 | `power` | W | the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches. |
 | `shaft_speed` | dimensionless | the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read. |
 | `surge_flow_rate` | m**3/h | `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve. |
@@ -97,6 +108,7 @@ holds the declaration and the two languages to each other.
 - **the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.
 - **the polytropic branch is the class's default method.** The isentropic state at the outlet pressure gives the densities and the isenthalpic volume exponent; `CF` and the polytropic exponent land `h_out`. `detailed` and `schultz` are refused by name.
 - **the polytropic outlet is held to `6e-3`**: the port reproduces the class's formula on its printed densities and enthalpies; the class's reported PR outlet sits `0.2-0.44%` above that, its in-place state differing from a fresh `PSflash`. `polytropicExponent` is cross-checked, not pinned.
+- **the deposit multipliers are the class's screening model**: mass/density, film/wetted area, blockage/passage half-height, efficiency `1 - 1.6 b`, head `(1-b)^2`, clamped. The no-chart branch scales its efficiency; with a chart only the factors are recorded.
 - **the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.
 - **the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
@@ -107,7 +119,7 @@ holds the declaration and the two languages to each other.
 - **the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.
 - **the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.
 - **the speed-solve mode is a Newton on the speed.** It reads the chart at the trial speed, forms the pressure ratio and updates through a `100` rpm numerical derivative with relaxation `min(0.8, i/(i+3))`, 200 iterations to `1e-3` bar. `limit_speed` pegs an out-of-range answer at the bound.
-- **the catalogue, the deposit model and the property overrides are absent.** `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.
+- **the catalogue and the property overrides are absent; the deposit model has landed.** The catalogue only attaches a thermal network, and GERG2008/Leachman/Vega are Tier-4 EOS. `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.
 
 ## Cases
 
@@ -133,11 +145,14 @@ holds the declaration and the two languages to each other.
 | `the_maximum_outlet_pressure_caps_the_ratio` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, isentropic_efficiency = 1.0, compression_ratio = 3.0, max_outlet_pressure = 4000000.0 | outlet_p = 4000000.0, outlet_t = 358.5790429899031, outlet_h = 2687.1631745412087, power = 2928286.676019533 |
 | `a_fixed_power_sets_the_enthalpy_step` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, outlet_pressure = 4200000.0, isentropic_efficiency = 0.8, power = 3000000.0 | outlet_t = 360.35295918637667, outlet_h = 2735.3508968838955, power = 3000000.000283562 |
 | `a_fixed_power_keeps_the_polytropic_efficiency` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, outlet_pressure = 4200000.0, isentropic_efficiency = 0.8, use_polytropic_calc = True, polytropic_efficiency = 0.75, power = 3000000.0 | outlet_t = 360.352959178275, outlet_h = 2735.350896521039, power = 2999999.999743556, polytropic_efficiency = 0.75 |
+| `the_deposit_multipliers_on_the_class_geometry` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, outlet_pressure = 4200000.0, isentropic_efficiency = 1.0, deposit = [{'mechanism': 'sulfur_s8', 'mass': 5.0}, {'mechanism': 'salt_nacl', 'mass': 2.0}], wetted_area = 0.6, passage_half_height = 0.02 | total_deposit_mass = 7.0, deposit_volume = 0.0033413848631239935, film_thickness = 0.005568974771873323, area_blockage_fraction = 0.27844873859366615, efficiency_multiplier = 0.5544820182501342, head_multiplier = 0.5206362228370716, degradation_factor = 0.5544820182501342, fouling_factor = 0.4793637771629284 |
+| `the_deposit_blockage_saturates` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, outlet_pressure = 4200000.0, isentropic_efficiency = 1.0, deposit = [{'mechanism': 'sulfur_s8', 'mass': 200.0}], wetted_area = 0.6, passage_half_height = 0.02 | total_deposit_mass = 200.0, area_blockage_fraction = 0.95, efficiency_multiplier = 0.02, head_multiplier = 0.05 |
+| `the_deposit_degrades_the_polytropic_machine` | components = ['methane', 'ethane', 'propane', 'CO2', 'nitrogen'], inlet_n = 1488.2073851517619, inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02], inlet_p = 1880000.0, inlet_t = 303.15, outlet_pressure = 4200000.0, isentropic_efficiency = 0.6, use_polytropic_calc = True, polytropic_efficiency = 0.6, deposit = [{'mechanism': 'sulfur_s8', 'mass': 3.0}], wetted_area = 0.254227581123372, passage_half_height = 0.019355728457755725 | polytropic_efficiency = 0.317258240540486, degradation_factor = 0.5287637342341434, fouling_factor = 0.5023017313585125 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 16 declared, every one run
+- Tests: 23 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

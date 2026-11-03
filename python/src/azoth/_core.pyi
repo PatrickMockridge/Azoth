@@ -355,6 +355,12 @@ class CompressorSurgePoint(TypedDict):
     flow: float
     head: float
 
+class DepositMass(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    mechanism: str
+    mass: float
+
 class FilterDropPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -5482,6 +5488,9 @@ def compressor(
     compression_ratio: float | None = None,
     max_outlet_pressure: float | None = None,
     power: float | None = None,
+    deposit: list[DepositMass] | None = None,
+    wetted_area: float | None = None,
+    passage_half_height: float | None = None,
     curve: list[CompressorCurvePoint] | None = None,
     speed: float | None = None,
     solve_speed: bool | None = None,

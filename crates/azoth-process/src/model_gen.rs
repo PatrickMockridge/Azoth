@@ -18662,6 +18662,163 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         records: &[],
         expected_records: &[],
     },
+    TestCase {
+        id: "the_deposit_multipliers_on_the_class_geometry",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("inlet_n", 1488.2073851517619),
+            ("inlet_p", 1880000.0),
+            ("inlet_t", 303.15),
+            ("outlet_pressure", 4200000.0),
+            ("isentropic_efficiency", 1.0),
+            ("wetted_area", 0.6),
+            ("passage_half_height", 0.02),
+        ],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "ethane", "propane", "CO2", "nitrogen"],
+        )],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.86, 0.07, 0.03, 0.02, 0.02])],
+        matrices: &[],
+        expected: &[
+            ("total_deposit_mass", 7.0),
+            ("deposit_volume", 0.0033413848631239935),
+            ("film_thickness", 0.005568974771873323),
+            ("area_blockage_fraction", 0.27844873859366615),
+            ("efficiency_multiplier", 0.5544820182501342),
+            ("head_multiplier", 0.5206362228370716),
+            ("degradation_factor", 0.5544820182501342),
+            ("fouling_factor", 0.4793637771629284),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "deposit",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanism",
+                        value: FieldValue::Name("sulfur_s8"),
+                    },
+                    RecordField {
+                        name: "mass",
+                        value: FieldValue::Number(5.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanism",
+                        value: FieldValue::Name("salt_nacl"),
+                    },
+                    RecordField {
+                        name: "mass",
+                        value: FieldValue::Number(2.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_deposit_blockage_saturates",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("inlet_n", 1488.2073851517619),
+            ("inlet_p", 1880000.0),
+            ("inlet_t", 303.15),
+            ("outlet_pressure", 4200000.0),
+            ("isentropic_efficiency", 1.0),
+            ("wetted_area", 0.6),
+            ("passage_half_height", 0.02),
+        ],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "ethane", "propane", "CO2", "nitrogen"],
+        )],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.86, 0.07, 0.03, 0.02, 0.02])],
+        matrices: &[],
+        expected: &[
+            ("total_deposit_mass", 200.0),
+            ("area_blockage_fraction", 0.95),
+            ("efficiency_multiplier", 0.02),
+            ("head_multiplier", 0.05),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "deposit",
+            &[&[
+                RecordField {
+                    name: "mechanism",
+                    value: FieldValue::Name("sulfur_s8"),
+                },
+                RecordField {
+                    name: "mass",
+                    value: FieldValue::Number(200.0),
+                },
+            ]],
+        )],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_deposit_degrades_the_polytropic_machine",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.006,
+        numbers: &[
+            ("inlet_n", 1488.2073851517619),
+            ("inlet_p", 1880000.0),
+            ("inlet_t", 303.15),
+            ("outlet_pressure", 4200000.0),
+            ("isentropic_efficiency", 0.6),
+            ("polytropic_efficiency", 0.6),
+            ("wetted_area", 0.254227581123372),
+            ("passage_half_height", 0.019355728457755725),
+        ],
+        flags: &[("use_polytropic_calc", true)],
+        lists: &[(
+            "components",
+            &["methane", "ethane", "propane", "CO2", "nitrogen"],
+        )],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.86, 0.07, 0.03, 0.02, 0.02])],
+        matrices: &[],
+        expected: &[
+            ("polytropic_efficiency", 0.317258240540486),
+            ("degradation_factor", 0.5287637342341434),
+            ("fouling_factor", 0.5023017313585125),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "deposit",
+            &[&[
+                RecordField {
+                    name: "mechanism",
+                    value: FieldValue::Name("sulfur_s8"),
+                },
+                RecordField {
+                    name: "mass",
+                    value: FieldValue::Number(3.0),
+                },
+            ]],
+        )],
+        expected_records: &[],
+    },
 ];
 
 /// Registry entry for `process.compressor`.

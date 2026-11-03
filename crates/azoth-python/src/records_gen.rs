@@ -86,6 +86,15 @@ pub struct CompressorSurgePoint {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct DepositMass {
+    #[pyo3(item)]
+    pub mechanism: String,
+    #[pyo3(item)]
+    pub mass: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct EfficiencyPoint {
     #[pyo3(item)]
     pub diameter: f64,

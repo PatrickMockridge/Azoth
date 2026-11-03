@@ -85,6 +85,9 @@ def compressor(
     compression_ratio: float | None = None,
     max_outlet_pressure: Q | None = None,
     power: Q | None = None,
+    deposit: list[dict[str, Q]] | None = None,
+    wetted_area: Q | None = None,
+    passage_half_height: Q | None = None,
     outlet_pressure: Q | None = None,
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
@@ -170,6 +173,14 @@ def compressor(
         if max_outlet_pressure is not None:
             p_out = min(p_out, input_to_si(spec, "max_outlet_pressure", max_outlet_pressure))
     power_si = None if power is None else input_to_si(spec, "power", power)
+    deposit_state = _deposit_state(
+        spec,
+        deposit,
+        None if wetted_area is None else input_to_si(spec, "wetted_area", wetted_area),
+        None
+        if passage_half_height is None
+        else input_to_si(spec, "passage_half_height", passage_half_height),
+    )
 
     apply_checks(
         checks.on_input,
@@ -235,6 +246,7 @@ def compressor(
         if power_si is not None:
             stated = (
                 (1.0 if polytropic_efficiency is None else float(polytropic_efficiency))
+                * (1.0 if deposit_state is None else deposit_state.efficiency_multiplier)
                 if use_polytropic_calc
                 else None
             )
@@ -254,6 +266,8 @@ def compressor(
                     f"`{method}` is not one of default, detailed or schultz",
                 )
             eta = 1.0 if polytropic_efficiency is None else float(polytropic_efficiency)
+            if deposit_state is not None:
+                eta *= deposit_state.efficiency_multiplier
             if not 0.0 < eta <= 1.0:
                 raise InvalidInputError(
                     "polytropic_efficiency",
@@ -363,6 +377,20 @@ def compressor(
         polytropic_head=from_si(head, "m"),
         polytropic_efficiency=efficiency,
         polytropic_exponent=polytropic_exponent,
+        total_deposit_mass=(
+            None if deposit_state is None else from_si(deposit_state.total_mass, "kg")
+        ),
+        deposit_volume=(None if deposit_state is None else from_si(deposit_state.volume, "m**3")),
+        film_thickness=(
+            None if deposit_state is None else from_si(deposit_state.film_thickness, "m")
+        ),
+        area_blockage_fraction=None if deposit_state is None else deposit_state.blockage,
+        efficiency_multiplier=(
+            None if deposit_state is None else deposit_state.efficiency_multiplier
+        ),
+        head_multiplier=None if deposit_state is None else deposit_state.head_multiplier,
+        degradation_factor=(None if deposit_state is None else deposit_state.efficiency_multiplier),
+        fouling_factor=(None if deposit_state is None else 1.0 - deposit_state.head_multiplier),
         power=from_si(power, "W"),
         shaft_speed=state.speed,
         surge_flow_rate=_flow_or_none(state.read, "surge_flow_rate"),
@@ -864,6 +892,72 @@ def _polytropic_states(
         else exponent
     )
     return h_in, h_out, outlet_t, exponent_polytropic
+
+
+_DEPOSIT_DENSITIES = {
+    "sulfur_s8": 2070.0,
+    "salt_nacl": 2160.0,
+    "scale_caco3": 2710.0,
+    "scale_baso4": 4500.0,
+    "scale_caso4": 2960.0,
+    "iron_sulfide": 4840.0,
+    "iron_oxide": 5240.0,
+    "hydrocarbon_wax": 900.0,
+    "particulate": 2500.0,
+    "generic": 2000.0,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class _DepositState:
+    """`CompressorDeposit`'s screening multipliers, in SI."""
+
+    total_mass: float
+    volume: float
+    film_thickness: float
+    blockage: float
+    efficiency_multiplier: float
+    head_multiplier: float
+
+
+def _deposit_state(
+    spec: object,
+    deposit: list[dict[str, Q]] | None,
+    wetted_area: float | None,
+    passage_half_height: float | None,
+) -> _DepositState | None:
+    if not deposit:
+        return None
+    rows = input_records_to_si(spec, "deposit", deposit)
+    masses: dict[str, float] = {}
+    for row in rows:
+        mechanism = str(row["mechanism"])
+        mass = float(row["mass"])
+        if mass != mass or mass <= 0.0:
+            continue
+        masses[mechanism] = masses.get(mechanism, 0.0) + mass
+    volume = 0.0
+    for mechanism, mass in masses.items():
+        density = _DEPOSIT_DENSITIES.get(mechanism)
+        if density is None:
+            raise InvalidInputError(
+                "deposit", f"`{mechanism}` is not one of the ten deposit mechanisms"
+            )
+        volume += mass / density
+    film = volume / wetted_area if wetted_area and wetted_area > 0.0 else 0.0
+    blockage = (
+        min(film / passage_half_height, 0.95)
+        if passage_half_height and passage_half_height > 0.0
+        else 0.0
+    )
+    return _DepositState(
+        total_mass=sum(masses.values()),
+        volume=volume,
+        film_thickness=film,
+        blockage=blockage,
+        efficiency_multiplier=max(1.0 - 1.6 * blockage, 0.02),
+        head_multiplier=max((1.0 - blockage) ** 2, 0.05),
+    )
 
 
 def _power_states(

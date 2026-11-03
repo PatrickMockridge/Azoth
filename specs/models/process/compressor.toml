@@ -7,6 +7,7 @@ assumptions = [
     "**the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.",
     "**the polytropic branch is the class's default method.** The isentropic state at the outlet pressure gives the densities and the isenthalpic volume exponent; `CF` and the polytropic exponent land `h_out`. `detailed` and `schultz` are refused by name.",
     "**the polytropic outlet is held to `6e-3`**: the port reproduces the class's formula on its printed densities and enthalpies; the class's reported PR outlet sits `0.2-0.44%` above that, its in-place state differing from a fresh `PSflash`. `polytropicExponent` is cross-checked, not pinned.",
+    "**the deposit multipliers are the class's screening model**: mass/density, film/wetted area, blockage/passage half-height, efficiency `1 - 1.6 b`, head `(1-b)^2`, clamped. The no-chart branch scales its efficiency; with a chart only the factors are recorded.",
     "**the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.",
     "**the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
@@ -17,7 +18,7 @@ assumptions = [
     "**the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.",
     "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
     "**the speed-solve mode is a Newton on the speed.** It reads the chart at the trial speed, forms the pressure ratio and updates through a `100` rpm numerical derivative with relaxation `min(0.8, i/(i+3))`, 200 iterations to `1e-3` bar. `limit_speed` pegs an out-of-range answer at the bound.",
-    "**the catalogue, the deposit model and the property overrides are absent.** `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
+    "**the catalogue and the property overrides are absent; the deposit model has landed.** The catalogue only attaches a thermal network, and GERG2008/Leachman/Vega are Tier-4 EOS. `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
@@ -82,6 +83,26 @@ description = "`setMaxOutletPressure`: caps the ratio's outlet pressure. Unread 
 unit = "W"
 optional = true
 description = "`setPower`: fixes the shaft work, so `h_out = h_in + power / n`. The polytropic branch keeps its stated efficiency; the isentropic one back-solves `(h_is - h_in) / dH`. Absent leaves the efficiency in charge.\n"
+[inputs.deposit]
+type = "record_list"
+row_type = "DepositMass"
+optional = true
+description = "`CompressorDeposit`'s accumulated mass, one row per mechanism. **Absent is no deposit.** The multipliers degrade the polytropic efficiency in the no-chart branch; with a chart the class only records the factors.\n"
+[inputs.deposit.fields.mechanism]
+type = "enum"
+values = ["sulfur_s8", "salt_nacl", "scale_caco3", "scale_baso4", "scale_caso4", "iron_sulfide", "iron_oxide", "hydrocarbon_wax", "particulate", "generic"]
+description = "the deposit mechanism, whose representative density converts the mass to volume.\n"
+[inputs.deposit.fields.mass]
+unit = "kg"
+description = "the accumulated mass for that mechanism.\n"
+[inputs.wetted_area]
+unit = "m**2"
+optional = true
+description = "the foulable impeller/inlet area. Absent leaves the film thickness zero, so the multipliers are one.\n"
+[inputs.passage_half_height]
+unit = "m"
+optional = true
+description = "the characteristic flow-passage half-height the blockage divides by. Absent leaves the multipliers one.\n"
 [inputs.curve]
 type = "record_list"
 row_type = "CompressorCurvePoint"
@@ -185,6 +206,38 @@ description = "the chart polytropic efficiency the branch used, after the `[1e-6
 unit = "dimensionless"
 optional = true
 description = "`getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.\n"
+[outputs.total_deposit_mass]
+unit = "kg"
+optional = true
+description = "the deposit inventory's summed mass. Present when `deposit` is stated.\n"
+[outputs.deposit_volume]
+unit = "m**3"
+optional = true
+description = "`sum(mass / density)` over the mechanisms.\n"
+[outputs.film_thickness]
+unit = "m"
+optional = true
+description = "`volume / wetted_area`, or zero where the area is absent.\n"
+[outputs.area_blockage_fraction]
+unit = "dimensionless"
+optional = true
+description = "`min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.\n"
+[outputs.efficiency_multiplier]
+unit = "dimensionless"
+optional = true
+description = "`max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.\n"
+[outputs.head_multiplier]
+unit = "dimensionless"
+optional = true
+description = "`max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.\n"
+[outputs.degradation_factor]
+unit = "dimensionless"
+optional = true
+description = "`getDegradationFactor`: the efficiency multiplier the run recorded.\n"
+[outputs.fouling_factor]
+unit = "dimensionless"
+optional = true
+description = "`getFoulingFactor`: `1 - head_multiplier`.\n"
 [outputs.power]
 unit = "W"
 description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"

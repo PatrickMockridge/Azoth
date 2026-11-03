@@ -209,6 +209,28 @@ a `NaN` enthalpy; the PR rows here therefore use the class's own `HeatExchangerT
 fluid on PR, where the same arithmetic stays in a state the cubic is for. **The SRK row is
 that test's own `15780.77130`**, and it is a labelled control rather than a PR case.
 
+## The compressor's no-chart modes
+
+Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the
+compression-ratio and fixed-power modes, and the deposit model with its run-time effect.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_polytropic \
+  > captures/process_compressor_polytropic.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_modes \
+  > captures/process_compressor_modes.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_deposit \
+  > captures/process_compressor_deposit.tsv
+```
+
+`compressor_polytropic` prints the class's own densities and enthalpies beside its reported
+outlet, and **those do not reproduce that outlet on PR**: the formula on the printed numbers
+gives `0.2-0.44%` less enthalpy than the class reports, because its in-place isentropic state
+differs from a fresh `PSflash`. `compressor_modes` is `setCompressionRatio`,
+`setMaxOutletPressure` and `setPower`; `compressor_deposit` is the mass-to-multiplier mapping,
+the class's `0.77` inverse row, and the clean-versus-fouled machine.
+
 **`ProcessProbe absorber_efficiency` is the absorber's Murphree override, and NeqSim's own solve
 does not converge with it.** It runs the lean-oil absorber at `0.6` column-wide and at `1.0` with
 methane overridden to `0.6`: **both take the 80-iteration cap**, reporting `FAILED` and

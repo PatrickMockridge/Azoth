@@ -1260,3 +1260,74 @@ outlet_t = 360.352959178275
 outlet_h = 2735.350896521039
 power = 2999999.9997435563
 polytropic_efficiency = 0.75
+
+[[cases]]
+id = "the_deposit_multipliers_on_the_class_geometry"
+tolerance = 0.0001
+source = "The `compressor_deposit` capture's `sulfur5_salt2` row: 5 kg of elemental sulfur and 2 kg of NaCl on ComposerDeposit's `0.6` m2 / `0.02` m geometry. **The volume is mass over each mechanism's representative density** (2070 and 2160 kg/m3), and the multipliers are the class's clamps of `1 - 1.6 b` and `(1-b)^2`.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 1.0
+deposit = [
+    { mechanism = "sulfur_s8", mass = 5.0 },
+    { mechanism = "salt_nacl", mass = 2.0 },
+]
+wetted_area = 0.6
+passage_half_height = 0.02
+[cases.expected]
+total_deposit_mass = 7.0
+deposit_volume = 0.0033413848631239935
+film_thickness = 0.005568974771873323
+area_blockage_fraction = 0.27844873859366615
+efficiency_multiplier = 0.5544820182501342
+head_multiplier = 0.5206362228370716
+degradation_factor = 0.5544820182501342
+fouling_factor = 0.4793637771629284
+
+[[cases]]
+id = "the_deposit_blockage_saturates"
+tolerance = 0.0001
+source = "The capture's `saturated` row: 200 kg of sulfur on the same geometry. **The blockage clamps at `0.95`** and both multipliers at their floors (`0.02` and `0.05`) rather than going negative.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 1.0
+deposit = [{ mechanism = "sulfur_s8", mass = 200.0 }]
+wetted_area = 0.6
+passage_half_height = 0.02
+[cases.expected]
+total_deposit_mass = 200.0
+area_blockage_fraction = 0.95
+efficiency_multiplier = 0.02
+head_multiplier = 0.05
+
+[[cases]]
+id = "the_deposit_degrades_the_polytropic_machine"
+tolerance = 0.006
+source = "The capture's `machine_fouled_3kg` row: the class's own `CompressorDepositTest` machine (`0.60` polytropic) with 3 kg of sulfur and the geometry `fromCompressor` derives. **The efficiency is the clean `0.60` times 0.5288, and the work more than doubles**; the multipliers are pinned, the work is not, because the polytropic branch carries its own measured divergence.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 0.6
+use_polytropic_calc = true
+polytropic_efficiency = 0.6
+deposit = [{ mechanism = "sulfur_s8", mass = 3.0 }]
+wetted_area = 0.254227581123372
+passage_half_height = 0.019355728457755725
+[cases.expected]
+polytropic_efficiency = 0.317258240540486
+degradation_factor = 0.5287637342341434
+fouling_factor = 0.5023017313585125

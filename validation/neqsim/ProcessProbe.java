@@ -191,6 +191,9 @@ public class ProcessProbe {
       case "compressor_modes":
         compressorModeRows();
         break;
+      case "compressor_deposit":
+        compressorDepositRows();
+        break;
       case "compressor_curve":
         compressorCurveRows();
         break;
@@ -2012,6 +2015,76 @@ public class ProcessProbe {
   ///
   /// `getEntropyProduction` is the second-law statement of the same step, and the only other
   /// number either class exposes about its interior.
+  /// `CompressorDeposit`'s mass-to-multiplier mapping and its run-time effect.
+  static void compressorDepositRows() {
+    depositRow("clean", 0.0, 0.0);
+    depositRow("sulfur5_salt2", 5.0, 2.0);
+    depositRow("saturated", 200.0, 0.0);
+    // The class's own inverse: the S8 mass that yields a 0.77 efficiency multiplier.
+    neqsim.process.equipment.compressor.CompressorDeposit inverse =
+        new neqsim.process.equipment.compressor.CompressorDeposit(0.6, 0.02);
+    double inverseMass = inverse.depositMassForEfficiencyMultiplier(
+        neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, 0.77);
+    depositRow("inverse_0_77", inverseMass, 0.0);
+
+    // The machine: clean against 3 kg of S8, both on the deposit test's polytropic machine.
+    System.out.println("machine_clean");
+    printMachineDeposit(null);
+    System.out.println("machine_fouled_3kg");
+    printMachineDeposit(3.0);
+  }
+
+  static void depositRow(String label, double sulfurKg, double saltKg) {
+    neqsim.process.equipment.compressor.CompressorDeposit deposit =
+        new neqsim.process.equipment.compressor.CompressorDeposit(0.6, 0.02);
+    deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, sulfurKg);
+    deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SALT_NACL, saltKg);
+    System.out.println(label);
+    System.out.println("total_mass_kg=" + deposit.getTotalDepositMass());
+    System.out.println("volume_m3=" + deposit.getDepositVolume());
+    System.out.println("film_thickness_m=" + deposit.getFilmThickness());
+    System.out.println("blockage=" + deposit.getAreaBlockageFraction());
+    System.out.println("efficiency_multiplier=" + deposit.getEfficiencyMultiplier());
+    System.out.println("head_multiplier=" + deposit.getHeadMultiplier());
+    System.out.println();
+  }
+
+  static void printMachineDeposit(Double sulfurKg) {
+    neqsim.thermo.system.SystemInterface gas =
+        new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("KA03B", feed);
+    compressor.setOutletPressure(42.0);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(0.60);
+    if (sulfurKg != null) {
+      neqsim.process.equipment.compressor.CompressorDeposit deposit =
+          neqsim.process.equipment.compressor.CompressorDeposit.fromCompressor(compressor);
+      deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, sulfurKg);
+      compressor.setDepositModel(deposit);
+      System.out.println("inlet_volume_flow_m3_s=" + feed.getFlowRate("m3/sec"));
+      System.out.println("wetted_area_m2=" + deposit.getWettedArea());
+      System.out.println("passage_half_height_m=" + deposit.getPassageHalfHeight());
+    }
+    compressor.run();
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println("degradation_factor=" + compressor.getDegradationFactor());
+    System.out.println("fouling_factor=" + compressor.getFoulingFactor());
+    System.out.println();
+  }
+
   /// `setCompressionRatio` and `setPower` on the deposit test's machine.
   static void compressorModeRows() {
     compressorModeRow("pr_ratio_2_2", null, 2.2, null, null, null, false, null);

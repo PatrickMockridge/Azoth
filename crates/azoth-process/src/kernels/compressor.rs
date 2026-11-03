@@ -287,6 +287,88 @@ pub fn compressor_with_power(
     Ok((out, efficiency))
 }
 
+/// `CompressorDeposit`'s screening multipliers, and the ten mechanism densities.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DepositState {
+    /// The summed deposit mass, kg.
+    pub total_mass: f64,
+    /// `sum(mass / density)`, m3.
+    pub volume: f64,
+    /// `volume / wetted_area`, m.
+    pub film_thickness: f64,
+    /// `min(film / passage_half_height, 0.95)`.
+    pub blockage: f64,
+    /// `max(1 - 1.6 b, 0.02)`.
+    pub efficiency_multiplier: f64,
+    /// `max((1 - b)^2, 0.05)`.
+    pub head_multiplier: f64,
+}
+
+/// The class's representative solid densities, `DepositMechanism`.
+#[must_use]
+pub fn mechanism_density(mechanism: &str) -> Option<f64> {
+    Some(match mechanism {
+        "sulfur_s8" => 2070.0,
+        "salt_nacl" => 2160.0,
+        "scale_caco3" => 2710.0,
+        "scale_baso4" => 4500.0,
+        "scale_caso4" => 2960.0,
+        "iron_sulfide" => 4840.0,
+        "iron_oxide" => 5240.0,
+        "hydrocarbon_wax" => 900.0,
+        "particulate" => 2500.0,
+        "generic" => 2000.0,
+        _ => return None,
+    })
+}
+
+/// The class's mass-to-multiplier mapping, in SI.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] for an unknown mechanism.
+pub fn deposit_state(
+    rows: &[(String, f64)],
+    wetted_area: Option<f64>,
+    passage_half_height: Option<f64>,
+) -> Result<DepositState> {
+    use std::collections::BTreeMap;
+
+    let mut masses: BTreeMap<&str, f64> = BTreeMap::new();
+    for (mechanism, mass) in rows {
+        if mass.is_nan() || *mass <= 0.0 {
+            continue;
+        }
+        *masses.entry(mechanism.as_str()).or_insert(0.0) += mass;
+    }
+    let total_mass: f64 = masses.values().sum();
+    let mut volume = 0.0;
+    for (mechanism, mass) in &masses {
+        let density = mechanism_density(mechanism).ok_or_else(|| {
+            AzothError::invalid_input(
+                "deposit",
+                format!("`{mechanism}` is not one of the ten deposit mechanisms"),
+            )
+        })?;
+        volume += mass / density;
+    }
+    let film_thickness = match wetted_area {
+        Some(area) if area > 0.0 => volume / area,
+        _ => 0.0,
+    };
+    let blockage = match passage_half_height {
+        Some(height) if height > 0.0 => (film_thickness / height).min(0.95),
+        _ => 0.0,
+    };
+    Ok(DepositState {
+        total_mass,
+        volume,
+        film_thickness,
+        blockage,
+        efficiency_multiplier: (1.0 - 1.6 * blockage).max(0.02),
+        head_multiplier: ((1.0 - blockage).powi(2)).max(0.05),
+    })
+}
+
 /// Raise a stream along the compressor's chart, solving the pressure from the head.
 ///
 /// **This is `Compressor.run`'s fixed-speed chart branch**, `Compressor.java:1466-1545`. The

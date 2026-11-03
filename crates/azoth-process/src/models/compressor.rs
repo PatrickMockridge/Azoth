@@ -7,7 +7,7 @@
 //! **A delegation, because the route is `Pump.run`'s.** `Pump` takes it on `calculateAsCompressor` defaulting to true, and `Compressor.run`'s no-chart branch is the same three lines - so the kernel is `kernels::pump`'s and this adds nothing to it. **A stated curve selects the chart branch**, which is the compressor's own.
 
 use azoth_core::units::{
-    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, VolumeRate,
+    Length, Mass, MolarEnergy, Power, Pressure, ThermodynamicTemperature, VolumeRate,
     cubic_meter_per_hour, joules_per_mole, kelvins, meter, meters, pascals,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
@@ -35,6 +35,15 @@ pub struct CompressorCurvePoint {
     pub head: Length,
     /// The measured polytropic efficiency, as a fraction.
     pub efficiency: f64,
+}
+
+/// One row of `deposit`: an accumulated mass for a mechanism, in the spec's units.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DepositMass {
+    /// The mechanism's name, as the spec's enum spells it.
+    pub mechanism: String,
+    /// The accumulated mass.
+    pub mass: Mass,
 }
 
 /// One row of `surge_curve`: a measured boundary point, in the units the spec declares.
@@ -65,6 +74,22 @@ pub struct CompressorResult {
     pub polytropic_efficiency: f64,
     /// `getPolytropicExponent`, present in the no-chart polytropic branch.
     pub polytropic_exponent: Option<f64>,
+    /// The deposit inventory's summed mass, kg.
+    pub total_deposit_mass: Option<f64>,
+    /// `sum(mass / density)`, m3.
+    pub deposit_volume: Option<f64>,
+    /// `volume / wetted_area`, m.
+    pub film_thickness: Option<Length>,
+    /// `min(film / passage_half_height, 0.95)`.
+    pub area_blockage_fraction: Option<f64>,
+    /// The polytropic-efficiency multiplier.
+    pub efficiency_multiplier: Option<f64>,
+    /// The polytropic-head multiplier.
+    pub head_multiplier: Option<f64>,
+    /// `getDegradationFactor`: the efficiency multiplier the run recorded.
+    pub degradation_factor: Option<f64>,
+    /// `getFoulingFactor`: `1 - head_multiplier`.
+    pub fouling_factor: Option<f64>,
     /// The shaft power, W - the recycled flow's where the anti-surge block ran.
     pub power: Power,
     /// The speed the chart was read at, rpm: the stated one or the solved one.
@@ -112,6 +137,9 @@ pub fn compressor(
     compression_ratio: Option<f64>,
     max_outlet_pressure: Option<Pressure>,
     power: Option<Power>,
+    deposit: Option<&[DepositMass]>,
+    wetted_area: Option<Length>,
+    passage_half_height: Option<Length>,
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
     solve_speed: Option<bool>,
@@ -149,6 +177,21 @@ pub fn compressor(
         inlet_p,
         inlet_t,
     )?;
+
+    let deposit_state = match deposit {
+        Some(rows) if !rows.is_empty() => {
+            let pairs: Vec<(String, f64)> = rows
+                .iter()
+                .map(|row| (row.mechanism.clone(), row.mass.value))
+                .collect();
+            Some(kernel::deposit_state(
+                &pairs,
+                wetted_area.map(|value| value.value),
+                passage_half_height.map(|value| value.value),
+            )?)
+        }
+        _ => None,
+    };
 
     let points: Vec<CurvePoint> = curve
         .unwrap_or(&[])
@@ -212,7 +255,12 @@ pub fn compressor(
             // `setPower` fixes the shaft work; the polytropic branch keeps its stated
             // efficiency and the isentropic one back-solves it from the isentropic step.
             let stated = if use_polytropic_calc.unwrap_or(false) {
-                Some(polytropic_efficiency.unwrap_or(1.0))
+                // `applyDepositDegradation` scales the clean polytropic efficiency before
+                // the branch consumes it.
+                Some(
+                    polytropic_efficiency.unwrap_or(1.0)
+                        * deposit_state.map_or(1.0, |state| state.efficiency_multiplier),
+                )
             } else {
                 None
             };
@@ -231,9 +279,10 @@ pub fn compressor(
                     ));
                 }
             }
-            let (out, exponent) =
-                compressor_polytropic(&feed, pressure, polytropic_efficiency.unwrap_or(1.0))?;
-            (out, polytropic_efficiency.unwrap_or(1.0), Some(exponent))
+            let clean = polytropic_efficiency.unwrap_or(1.0);
+            let degraded = clean * deposit_state.map_or(1.0, |state| state.efficiency_multiplier);
+            let (out, exponent) = compressor_polytropic(&feed, pressure, degraded)?;
+            (out, degraded, Some(exponent))
         } else {
             (kernel(&feed, pressure, isentropic_efficiency)?, 0.0, None)
         };
@@ -307,6 +356,14 @@ pub fn compressor(
         polytropic_head: meters(head),
         polytropic_efficiency: efficiency,
         polytropic_exponent,
+        total_deposit_mass: deposit_state.map(|state| state.total_mass),
+        deposit_volume: deposit_state.map(|state| state.volume),
+        film_thickness: deposit_state.map(|state| meters(state.film_thickness)),
+        area_blockage_fraction: deposit_state.map(|state| state.blockage),
+        efficiency_multiplier: deposit_state.map(|state| state.efficiency_multiplier),
+        head_multiplier: deposit_state.map(|state| state.head_multiplier),
+        degradation_factor: deposit_state.map(|state| state.efficiency_multiplier),
+        fouling_factor: deposit_state.map(|state| 1.0 - state.head_multiplier),
         power,
         shaft_speed,
         surge_flow_rate: read_outs[0],

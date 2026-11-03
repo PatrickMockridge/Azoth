@@ -14224,6 +14224,30 @@ pub struct PyCompressorResult {
     /// `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
     #[pyo3(get)]
     pub polytropic_exponent: Option<f64>,
+    /// the deposit inventory's summed mass. Present when `deposit` is stated.
+    #[pyo3(get)]
+    pub total_deposit_mass: Option<PyQty>,
+    /// `sum(mass / density)` over the mechanisms.
+    #[pyo3(get)]
+    pub deposit_volume: Option<PyQty>,
+    /// `volume / wetted_area`, or zero where the area is absent.
+    #[pyo3(get)]
+    pub film_thickness: Option<PyQty>,
+    /// `min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.
+    #[pyo3(get)]
+    pub area_blockage_fraction: Option<f64>,
+    /// `max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.
+    #[pyo3(get)]
+    pub efficiency_multiplier: Option<f64>,
+    /// `max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.
+    #[pyo3(get)]
+    pub head_multiplier: Option<f64>,
+    /// `getDegradationFactor`: the efficiency multiplier the run recorded.
+    #[pyo3(get)]
+    pub degradation_factor: Option<f64>,
+    /// `getFoulingFactor`: `1 - head_multiplier`.
+    #[pyo3(get)]
+    pub fouling_factor: Option<f64>,
     /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     #[pyo3(get)]
     pub power: PyQty,
@@ -14266,7 +14290,7 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, total_deposit_mass={:?}, deposit_volume={:?}, film_thickness={:?}, area_blockage_fraction={:?}, efficiency_multiplier={:?}, head_multiplier={:?}, degradation_factor={:?}, fouling_factor={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14275,6 +14299,14 @@ impl PyCompressorResult {
             self.polytropic_head,
             self.polytropic_efficiency,
             self.polytropic_exponent,
+            self.total_deposit_mass,
+            self.deposit_volume,
+            self.film_thickness,
+            self.area_blockage_fraction,
+            self.efficiency_multiplier,
+            self.head_multiplier,
+            self.degradation_factor,
+            self.fouling_factor,
             self.power,
             self.shaft_speed,
             self.surge_flow_rate,
@@ -14317,6 +14349,23 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
             },
             polytropic_efficiency: r.polytropic_efficiency,
             polytropic_exponent: r.polytropic_exponent,
+            total_deposit_mass: r.total_deposit_mass.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            deposit_volume: r.deposit_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            film_thickness: r.film_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            area_blockage_fraction: r.area_blockage_fraction,
+            efficiency_multiplier: r.efficiency_multiplier,
+            head_multiplier: r.head_multiplier,
+            degradation_factor: r.degradation_factor,
+            fouling_factor: r.fouling_factor,
             power: PyQty {
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),
