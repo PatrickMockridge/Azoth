@@ -2064,6 +2064,8 @@ def separator_performance(
     vessel_length: Q,
     orientation: str,
     liquid_level_fraction: float,
+    mist_position: float | None = None,
+    weir_position: float | None = None,
     gas_liquid_distribution: str | None = None,
     gas_liquid_characteristic_diameter: Q | None = None,
     gas_liquid_spread: float | None = None,
@@ -2122,6 +2124,9 @@ def separator_performance(
         vessel_length: the vessel's tangent-to-tangent length.
         orientation: ``horizontal`` or ``vertical``.
         liquid_level_fraction: the liquid's share of the cross-section or height.
+        mist_position: the mist eliminator's position as a fraction of the length; absent is
+            ``0.90``.
+        weir_position: the weir's position as a fraction of the length; absent is ``0.60``.
         gas_liquid_distribution: the entrained liquid's distribution, ``rosin_rammler`` or
             ``log_normal``; absent leaves the gas-liquid branch unrun.
         gas_liquid_characteristic_diameter: its ``d_63.2`` or ``d_50``.
@@ -2169,6 +2174,8 @@ def separator_performance(
         vessel_length=vessel_length,
         orientation=orientation,
         liquid_level_fraction=liquid_level_fraction,
+        mist_position=mist_position,
+        weir_position=weir_position,
         gas_liquid_distribution=gas_liquid_distribution,
         gas_liquid_characteristic_diameter=gas_liquid_characteristic_diameter,
         gas_liquid_spread=gas_liquid_spread,

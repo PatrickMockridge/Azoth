@@ -430,6 +430,9 @@ k_factor = 0.5345224838248488
 k_factor_utilization = 4.9955372320079325
 gas_area = 2.261946710584651
 liquid_area = 2.261946710584651
+gas_volume = 15.833626974092558
+liquid_volume = 15.833626974092558
+total_volume = 31.667253948185117
 effective_gas_settling_height = 1.2
 effective_liquid_settling_height = 1.2
 gas_residence_time = 2.975
@@ -443,3 +446,61 @@ api_gravity_cut_diameter = 4.351226637396398e-4
 api_k_factor_utilization = 2.138089935299395
 api_max_k_factor = 0.25
 api_min_liquid_residence_time = 180.0
+[[cases]]
+id = "the_mist_position_shortens_the_gravity_section"
+tolerance = 0.0002
+source = "The enhanced capture's `mist_position_0_80` row: the two-phase horizontal state with the geometry calculator's mist-eliminator position set to `0.80`. **The gravity section is `7 (0.80 - 0.05) = 5.25` m**, and the shorter run cuts the gravity efficiency from the default row's 0.5644 to 0.4955 while the vessel's volumes are unchanged.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+mist_eliminator = "wire_mesh"
+enhanced = true
+mist_position = 0.8
+[cases.expected]
+gravity_section_efficiency = 0.4955309260221628
+gravity_cut_diameter = 5.06509366728639e-4
+overall_gas_liquid_efficiency = 0.7023632464458984
+oil_in_gas = 0.2976367535541016
+gas_volume = 15.833626974092558
+liquid_volume = 15.833626974092558
+total_volume = 31.667253948185117
+gravity_section_length = 5.25
+gas_residence_time = 2.625
+[[cases]]
+id = "the_weir_position_shortens_the_gravity_section"
+tolerance = 0.0002
+source = "The enhanced capture's `weir_position_0_50` row: the three-phase horizontal state with the geometry calculator's weir position set to `0.50`. **The gravity section is `7 (0.50 - 0.05) = 3.15` m**, the oil pad and water layer remain `0.6` m each, and the shorter run cuts the gravity efficiency to 0.1084.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 1025.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 8.0e-4
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+mist_eliminator = "wire_mesh"
+enhanced = true
+weir_position = 0.5
+[cases.expected]
+gravity_section_efficiency = 0.10836994352171457
+gravity_cut_diameter = 0.0013920046818095017
+overall_gas_liquid_efficiency = 0.4739382668418717
+oil_in_gas = 0.5260617331581283
+water_in_gas = 0.5260617331581283
+gravity_section_length = 3.15
+gas_residence_time = 1.575
+oil_pad_thickness = 0.6
+water_layer_height = 0.6

@@ -18209,6 +18209,15 @@ pub struct PySeparatorPerformanceResult {
     /// the vessel's liquid cross-section.
     #[pyo3(get)]
     pub liquid_area: Option<PyQty>,
+    /// the gas section's volume, `gas_area * length`.
+    #[pyo3(get)]
+    pub gas_volume: Option<PyQty>,
+    /// the liquid section's volume, `liquid_area * length`.
+    #[pyo3(get)]
+    pub liquid_volume: Option<PyQty>,
+    /// the vessel's internal volume, the two sections together.
+    #[pyo3(get)]
+    pub total_volume: Option<PyQty>,
     /// the height a droplet falls through in the gas section.
     #[pyo3(get)]
     pub effective_gas_settling_height: Option<PyQty>,
@@ -18272,7 +18281,7 @@ pub struct PySeparatorPerformanceResult {
 impl PySeparatorPerformanceResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, gas_volume={:?}, liquid_volume={:?}, total_volume={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
             self.oil_in_gas,
             self.water_in_gas,
             self.gas_in_oil,
@@ -18294,6 +18303,9 @@ impl PySeparatorPerformanceResult {
             self.mist_eliminator_flooded,
             self.gas_area,
             self.liquid_area,
+            self.gas_volume,
+            self.liquid_volume,
+            self.total_volume,
             self.effective_gas_settling_height,
             self.effective_liquid_settling_height,
             self.gas_residence_time,
@@ -18363,6 +18375,18 @@ impl From<&azoth_process::models::separator_performance::SeparatorPerformanceRes
             liquid_area: r.liquid_area.map(|v| PyQty {
                 magnitude_si: v,
                 unit: "m**2".to_string(),
+            }),
+            gas_volume: r.gas_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            liquid_volume: r.liquid_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            total_volume: r.total_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
             }),
             effective_gas_settling_height: r.effective_gas_settling_height.map(|v| PyQty {
                 magnitude_si: v.value,

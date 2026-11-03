@@ -525,6 +525,10 @@ pub struct PerformanceSettings {
     pub orientation: Orientation,
     /// Liquid level fraction.
     pub liquid_level_fraction: f64,
+    /// The mist eliminator's position, as a fraction of the length.
+    pub mist_position: f64,
+    /// The weir's position, as a fraction of the length.
+    pub weir_position: f64,
     /// The entrained liquid's distribution; absent leaves the gas-liquid branch unrun.
     pub gas_liquid: Option<DropletDistribution>,
     /// The entrained gas's distribution.
@@ -908,6 +912,9 @@ fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutco
         length: settings.vessel_length,
         horizontal,
         level_fraction: settings.liquid_level_fraction,
+        mist_position: settings.mist_position,
+        weir_position: settings.weir_position,
+        // No setter exists for the inlet device's position; the class's field stays at 0.05.
         ..GeometryInput::default()
     };
     let vessel_area =

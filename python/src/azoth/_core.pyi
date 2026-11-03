@@ -5941,6 +5941,8 @@ def separator_performance(
     vessel_length: float,
     orientation: str,
     liquid_level_fraction: float,
+    mist_position: float | None = None,
+    weir_position: float | None = None,
     gas_liquid_distribution: str | None = None,
     gas_liquid_characteristic_diameter: float | None = None,
     gas_liquid_spread: float | None = None,

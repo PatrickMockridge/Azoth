@@ -3652,6 +3652,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     (
         "process.separator_performance",
+        "mist_position",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "weir_position",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
         "gas_liquid_characteristic_diameter",
         "length",
     ),

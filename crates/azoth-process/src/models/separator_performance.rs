@@ -79,6 +79,12 @@ pub struct SeparatorPerformanceResult {
     pub gas_area: Option<f64>,
     /// The liquid cross-section, m2.
     pub liquid_area: Option<f64>,
+    /// The gas section's volume, m3.
+    pub gas_volume: Option<f64>,
+    /// The liquid section's volume, m3.
+    pub liquid_volume: Option<f64>,
+    /// The vessel's internal volume, m3.
+    pub total_volume: Option<f64>,
     /// The gas section's settling height.
     #[serde(serialize_with = "optional_scalar")]
     pub effective_gas_settling_height: Option<Length>,
@@ -151,6 +157,8 @@ pub fn separator_performance(
     vessel_length: Length,
     orientation: &str,
     liquid_level_fraction: f64,
+    mist_position: Option<f64>,
+    weir_position: Option<f64>,
     gas_liquid_distribution: Option<&str>,
     gas_liquid_characteristic_diameter: Option<Length>,
     gas_liquid_spread: Option<f64>,
@@ -245,6 +253,9 @@ pub fn separator_performance(
         vessel_length: vessel_length.value,
         orientation: orientation_of(orientation)?,
         liquid_level_fraction,
+        // The class's `SeparatorGeometryCalculator` defaults.
+        mist_position: mist_position.unwrap_or(0.90),
+        weir_position: weir_position.unwrap_or(0.60),
         gas_liquid: optional_distribution(
             "gas_liquid",
             gas_liquid_distribution,
@@ -322,6 +333,9 @@ pub fn separator_performance(
         mist_eliminator_flooded: active.then_some(outcome.mist_eliminator_flooded),
         gas_area: geometry.map(|value| value.gas_area),
         liquid_area: geometry.map(|value| value.liquid_area),
+        gas_volume: geometry.map(|value| value.gas_volume),
+        liquid_volume: geometry.map(|value| value.liquid_volume),
+        total_volume: geometry.map(|value| value.total_volume),
         effective_gas_settling_height: geometry
             .map(|value| meters(value.effective_gas_settling_height)),
         effective_liquid_settling_height: geometry

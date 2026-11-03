@@ -39,6 +39,9 @@ _NUMBER_OF_CLASSES = 50
 _LIQUID_LIQUID_RESIDENCE_TIME = 300.0
 _MIN_LIQUID_VELOCITY = 0.0001
 _MIN_PHASE_FRACTION = 0.01
+#: `SeparatorGeometryCalculator`'s inlet-device position. It has no setter, so it is a
+#: constant of the class rather than an input.
+_INLET_POSITION = 0.05
 
 _WIRE_MESH = "wire_mesh"
 _VANE_PACK = "vane_pack"
@@ -429,13 +432,14 @@ def _geometry_two_phase(
     level: float,
     gas_flow: float,
     liquid_flow: float,
+    mist_position: float = 0.90,
 ) -> _Geometry:
     total_area = math.pi * diameter * diameter / 4.0
     if horizontal:
         liquid_height = level * diameter
         liquid_area = _segment_area(diameter, liquid_height)
         gas_area = total_area - liquid_area
-        gravity_length = length * (0.90 - 0.05)
+        gravity_length = length * (mist_position - _INLET_POSITION)
         gas_volume = gas_area * length
         liquid_volume = liquid_area * length
         gas_residence = (
@@ -459,7 +463,7 @@ def _geometry_two_phase(
         )
     liquid_height = level * length
     gas_height = length - liquid_height
-    gravity_length = max(0.0, length * 0.90 - liquid_height)
+    gravity_length = max(0.0, length * mist_position - liquid_height)
     gas_volume = total_area * gas_height
     liquid_volume = total_area * liquid_height
     gas_residence = (
@@ -491,9 +495,19 @@ def _geometry_three_phase(
     gas_flow: float,
     oil_flow: float,
     water_flow: float,
+    weir_position: float = 0.60,
+    mist_position: float = 0.90,
 ) -> _Geometry:
     if not horizontal:
-        return _geometry_two_phase(diameter, length, False, level, gas_flow, oil_flow + water_flow)
+        return _geometry_two_phase(
+            diameter,
+            length,
+            False,
+            level,
+            gas_flow,
+            oil_flow + water_flow,
+            mist_position,
+        )
     total_area = math.pi * diameter * diameter / 4.0
     liquid_height = level * diameter
     total_liquid = oil_flow + water_flow
@@ -502,7 +516,7 @@ def _geometry_three_phase(
     oil_pad = liquid_height * (1.0 - water_frac)
     liquid_area = _segment_area(diameter, liquid_height)
     gas_area = total_area - liquid_area
-    gravity_length = length * (0.60 - 0.05)
+    gravity_length = length * (weir_position - _INLET_POSITION)
     oil_area = liquid_area - _segment_area(diameter, water_layer)
     gas_volume = gas_area * length
     liquid_volume = liquid_area * length
@@ -690,6 +704,8 @@ def _enhanced_result(
     length: float,
     orientation: str,
     level: float,
+    mist_position: float | None,
+    weir_position: float | None,
     gas_liquid: _Distribution | None,
     gas_bubble: _Distribution | None,
     oil_in_water: _Distribution | None,
@@ -722,6 +738,8 @@ def _enhanced_result(
     inlet_pipe = 0.2 if inlet_pipe is None else inlet_pipe
     sigma = 0.025 if sigma is None else sigma
     oil_fraction = 0.5 if oil_fraction is None else oil_fraction
+    mist_position = 0.90 if mist_position is None else mist_position
+    weir_position = 0.60 if weir_position is None else weir_position
     turbulence = True if turbulence is None else turbulence
     device = "half_pipe" if inlet_device is None else inlet_device
     if device not in _INLET_PARAMETERS:
@@ -771,10 +789,18 @@ def _enhanced_result(
             vessel_gas,
             vessel_liquid * fraction,
             vessel_liquid * (1.0 - fraction),
+            weir_position,
+            mist_position,
         )
     else:
         geometry = _geometry_two_phase(
-            diameter, length, horizontal, level, vessel_gas, vessel_liquid
+            diameter,
+            length,
+            horizontal,
+            level,
+            vessel_gas,
+            vessel_liquid,
+            mist_position,
         )
     delta = liquid_density - gas_rho
     k_factor = velocity * math.sqrt(gas_rho / delta) if delta > 0.0 and gas_rho > 0.0 else 0.0
@@ -946,6 +972,9 @@ def _enhanced_result(
         mist_eliminator_flooded=flooded,
         gas_area=from_si(geometry.gas_area, "m**2"),
         liquid_area=from_si(geometry.liquid_area, "m**2"),
+        gas_volume=from_si(geometry.gas_volume, "m**3"),
+        liquid_volume=from_si(geometry.liquid_volume, "m**3"),
+        total_volume=from_si(geometry.gas_volume + geometry.liquid_volume, "m**3"),
         effective_gas_settling_height=from_si(geometry.effective_gas_settling_height, "m"),
         effective_liquid_settling_height=from_si(geometry.effective_liquid_settling_height, "m"),
         gas_residence_time=from_si(geometry.gas_residence_time, "s"),
@@ -980,6 +1009,8 @@ def separator_performance(
     vessel_length: Q,
     orientation: str,
     liquid_level_fraction: float,
+    mist_position: float | None = None,
+    weir_position: float | None = None,
     gas_liquid_distribution: str | None = None,
     gas_liquid_characteristic_diameter: Q | None = None,
     gas_liquid_spread: float | None = None,
@@ -1202,6 +1233,8 @@ def separator_performance(
             length,
             orientation,
             liquid_level_fraction,
+            mist_position,
+            weir_position,
             gas_liquid,
             gas_bubble,
             oil_in_water,
@@ -1350,6 +1383,9 @@ def separator_performance(
         mist_eliminator_flooded=None,
         gas_area=None,
         liquid_area=None,
+        gas_volume=None,
+        liquid_volume=None,
+        total_volume=None,
         effective_gas_settling_height=None,
         effective_liquid_settling_height=None,
         gas_residence_time=None,

@@ -14,6 +14,7 @@ assumptions = [
     "**the API 12J compliance DTO is not here**: on the standard path the class's `kFactor` is never set, so its K test always passes; the cut-diameter check reads `gravity_cut_diameter`, which is an output. The DTO is owed with the enhanced path.",
     "**a degenerate section** (`residence <= 0` or no density difference) makes the class's cut `Double.MAX_VALUE`; the declared bounds - positive geometry, positive gas velocity and a level below one - keep that branch unreachable.",
     "**`useDetailedEntrainmentCalculation` is not a flag here**: these fractions are the separator ids' own inputs, so the composition is a flowsheet rather than a switch on the steady model.",
+    "**the inlet device's position is fixed at `0.05`**: `SeparatorGeometryCalculator` has setters for the mist eliminator and the weir but none for the inlet device, so only `mist_position` and `weir_position` cross.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java` is the port source, through its standard path, with `DropletSizeDistribution.java`, `GradeEfficiencyCurve.java` and `DropletSettlingCalculator.java`.",
@@ -57,6 +58,14 @@ description = "the vessel's orientation, which picks the available settling heig
 [inputs.liquid_level_fraction]
 unit = "dimensionless"
 description = "the fraction of the cross-section the liquid occupies horizontal, or of the height vertical.\n"
+[inputs.mist_position]
+unit = "dimensionless"
+optional = true
+description = "the mist eliminator's position as a fraction of the length. Absent is the class's `0.90`.\n"
+[inputs.weir_position]
+unit = "dimensionless"
+optional = true
+description = "the weir's position as a fraction of the length. Absent is the class's `0.60`.\n"
 [inputs.gas_liquid_distribution]
 type = "enum"
 values = ["rosin_rammler", "log_normal"]
@@ -284,6 +293,18 @@ description = "the vessel's gas cross-section.\n"
 unit = "m**2"
 optional = true
 description = "the vessel's liquid cross-section.\n"
+[outputs.gas_volume]
+unit = "m**3"
+optional = true
+description = "the gas section's volume, `gas_area * length`.\n"
+[outputs.liquid_volume]
+unit = "m**3"
+optional = true
+description = "the liquid section's volume, `liquid_area * length`.\n"
+[outputs.total_volume]
+unit = "m**3"
+optional = true
+description = "the vessel's internal volume, the two sections together.\n"
 [outputs.effective_gas_settling_height]
 unit = "m"
 optional = true

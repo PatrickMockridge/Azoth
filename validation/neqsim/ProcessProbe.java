@@ -5572,6 +5572,27 @@ public class ProcessProbe {
         gasViscosity, oilViscosity, waterViscosity, velocity, diameter, length, "horizontal",
         level);
 
+    // The two geometry positions the class exposes as setters. The inlet device's is a
+    // private constant with no setter, so the gravity-section length is the read-back.
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator mistShift =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator mistGeometry =
+        new neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator();
+    mistGeometry.setMistEliminatorPosition(0.80);
+    mistShift.setGeometryCalculator(mistGeometry);
+    runEnhanced("mist_position_0_80", mistShift, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator weirShift =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator weirGeometry =
+        new neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator();
+    weirGeometry.setWeirPosition(0.50);
+    weirShift.setGeometryCalculator(weirGeometry);
+    runEnhanced("weir_position_0_50", weirShift, gasDensity, oilDensity, waterDensity,
+        gasViscosity, oilViscosity, waterViscosity, velocity, diameter, length, "horizontal",
+        level);
+
     neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vertical =
         enhancedCalculator();
     vertical.setInletPipeDiameter(0.15);
@@ -5664,6 +5685,10 @@ public class ProcessProbe {
     if (geometry != null) {
       System.out.println("geometry_gas_area_m2=" + geometry.getGasArea());
       System.out.println("geometry_liquid_area_m2=" + geometry.getLiquidArea());
+      System.out.println("geometry_gas_volume_m3=" + geometry.getGasVolume());
+      System.out.println("geometry_liquid_volume_m3=" + geometry.getLiquidVolume());
+      System.out.println("geometry_total_volume_m3="
+          + (geometry.getGasVolume() + geometry.getLiquidVolume()));
       System.out.println("geometry_gas_settling_height_m="
           + geometry.getEffectiveGasSettlingHeight());
       System.out.println("geometry_liquid_settling_height_m="

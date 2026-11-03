@@ -7224,6 +7224,15 @@ class SeparatorPerformanceResult(_HasWarnings):
     #: the vessel's liquid cross-section.
     liquid_area: Q | None
 
+    #: the gas section's volume, `gas_area * length`.
+    gas_volume: Q | None
+
+    #: the liquid section's volume, `liquid_area * length`.
+    liquid_volume: Q | None
+
+    #: the vessel's internal volume, the two sections together.
+    total_volume: Q | None
+
     #: the height a droplet falls through in the gas section.
     effective_gas_settling_height: Q | None
 
