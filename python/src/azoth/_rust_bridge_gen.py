@@ -6281,6 +6281,8 @@ def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], fee
         product_z=tuple(result.product_z),
         product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        inlet_pressure_spread=from_si(result.inlet_pressure_spread.magnitude_si, result.inlet_pressure_spread.unit),
+        pressure_mismatch=result.pressure_mismatch,
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         warnings=_warnings(result.warnings),
     )

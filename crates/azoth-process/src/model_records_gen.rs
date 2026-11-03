@@ -565,6 +565,8 @@ impl CalcResult for MixerResult {
         "product_z",
         "product_p",
         "product_t",
+        "inlet_pressure_spread",
+        "pressure_mismatch",
         "product_h",
         "warnings",
     ];

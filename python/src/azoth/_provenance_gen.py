@@ -2647,8 +2647,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.mixer': {
         "calc_id": 'process.mixer',
         "name": 'Mixer',
-        "spec": {'path': 'specs/models/process/mixer.toml', 'sha256': 'd7c1552a588350ff46fdd5d99fca05321dc8d5f25ce6fe9fb9611058a0a2d9e6'},
-        "code": [{'path': 'python/src/azoth/process/reference/mixer.py', 'sha256': '3e54201c93546b6283ff1c8786f91cd7d5fe00e07c7cc58ffc2fbfe9ec1b9971'}, {'path': 'crates/azoth-process/src/models/mixer.rs', 'sha256': '14d8f2ee29994bdd93538f86500985afcb28edac83f621194873ca8a3a06f837'}],
+        "spec": {'path': 'specs/models/process/mixer.toml', 'sha256': 'ed6a8d7a1d18816af6331a017d4dabf73b4ec00c9674791d4b0e23cca605db82'},
+        "code": [{'path': 'python/src/azoth/process/reference/mixer.py', 'sha256': '3e3258046127e2314f45ca6de37ad5d91933182d1817f07e38768f0cc3e30d57'}, {'path': 'crates/azoth-process/src/models/mixer.rs', 'sha256': 'c23077c4d5fd15990ca65771374f3f65f11290cb6996ea879a9f3093211e914a'}],
         "source": 'NeqSim process/equipment/mixer/Mixer.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

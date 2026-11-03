@@ -215,6 +215,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         "has_mesh_pad",
         "has_inlet_cyclones",
         "has_demisting_cyclones",
+        # `mixer`'s pressure-mismatch flag, a boolean with no slot in `TestCase`.
+        # `crates/azoth-process/tests/mixer.rs` asserts it against the capture, and
+        # `test_cross_impl` compares it on both results.
+        "pressure_mismatch",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

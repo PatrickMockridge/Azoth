@@ -6622,6 +6622,12 @@ class MixerResult(_HasWarnings):
     #: the outlet temperature, solved from the joined enthalpy at the outlet pressure.
     product_t: Q
 
+    #: `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`.
+    inlet_pressure_spread: Q
+
+    #: `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.
+    pressure_mismatch: bool
+
     #: the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.
     product_h: Q
 

@@ -16599,6 +16599,12 @@ pub struct PyMixerResult {
     /// the outlet temperature, solved from the joined enthalpy at the outlet pressure.
     #[pyo3(get)]
     pub product_t: PyQty,
+    /// `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`.
+    #[pyo3(get)]
+    pub inlet_pressure_spread: PyQty,
+    /// `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.
+    #[pyo3(get)]
+    pub pressure_mismatch: bool,
     /// the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.
     #[pyo3(get)]
     pub product_h: PyQty,
@@ -16611,11 +16617,13 @@ pub struct PyMixerResult {
 impl PyMixerResult {
     fn __repr__(&self) -> String {
         format!(
-            "MixerResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, {} warning(s))",
+            "MixerResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, inlet_pressure_spread={:?}, pressure_mismatch={:?}, product_h={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
             self.product_t,
+            self.inlet_pressure_spread,
+            self.pressure_mismatch,
             self.product_h,
             self.warnings.len()
         )
@@ -16638,6 +16646,11 @@ impl From<&azoth_process::models::mixer::MixerResult> for PyMixerResult {
                 magnitude_si: r.product_t.value,
                 unit: "K".to_string(),
             },
+            inlet_pressure_spread: PyQty {
+                magnitude_si: r.inlet_pressure_spread.value,
+                unit: "Pa".to_string(),
+            },
+            pressure_mismatch: r.pressure_mismatch,
             product_h: PyQty {
                 magnitude_si: r.product_h.value,
                 unit: "J/mol".to_string(),

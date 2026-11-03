@@ -15,7 +15,25 @@ use crate::stream::Stream;
 ///
 /// The outlet pressure is `outlet_pressure` when given, else the lowest inlet
 /// pressure: a mixer cannot raise its own pressure.
+/// The class's pressure-mismatch threshold, `0.5` bar, in pascals.
+const MISMATCH_TOLERANCE_PA: f64 = 0.5e5;
+
 pub fn mixer(inlets: &[Stream], outlet_pressure: Option<Pressure>) -> azoth_core::Result<Stream> {
+    mixer_with_diagnostics(inlets, outlet_pressure).map(|outcome| outcome.0)
+}
+
+/// The steady mix plus `isPressureMismatch` and `getInletPressureSpread`.
+///
+/// **The spread is over active inlets only** - a zero-flow branch's stale pressure must not
+/// drive it - and the flag is suppressed when the caller specified the outlet pressure,
+/// because the header is then held by another machine and the collapse is intended.
+///
+/// # Errors
+/// The same refusals as [`mixer`].
+pub fn mixer_with_diagnostics(
+    inlets: &[Stream],
+    outlet_pressure: Option<Pressure>,
+) -> azoth_core::Result<(Stream, f64, bool)> {
     if inlets.is_empty() {
         return Err(AzothError::invalid_input(
             "inlets",
@@ -52,19 +70,39 @@ pub fn mixer(inlets: &[Stream], outlet_pressure: Option<Pressure>) -> azoth_core
         *zi /= n_total;
     }
 
+    // `getMinimumFlow()` is `1e-20` kg/hr, so an inlet is active when it carries any flow.
+    let active: Vec<&Stream> = inlets.iter().filter(|inlet| inlet.n > 0.0).collect();
+    let lowest = active
+        .iter()
+        .map(|inlet| inlet.p.value)
+        .fold(f64::INFINITY, f64::min);
+    let highest = active
+        .iter()
+        .map(|inlet| inlet.p.value)
+        .fold(f64::NEG_INFINITY, f64::max);
+    // The class stores the *outlet* pressure in `lowestPressure`, so a specified outlet
+    // makes the reported spread `highest - specified`, not `highest - lowest inlet`.
+    let low = outlet_pressure.map_or(lowest, |value| value.value);
+    let spread = if highest.is_finite() {
+        highest - low
+    } else {
+        0.0
+    };
     let pressure = outlet_pressure.unwrap_or_else(|| {
-        inlets
+        active
             .iter()
-            .map(|s| s.p)
+            .map(|inlet| inlet.p)
             .min_by(|a, b| a.value.total_cmp(&b.value))
-            .expect("a mixer with inlets has a lowest pressure")
+            .expect("a mixer with positive flow has a lowest pressure")
     });
+    let pressure_mismatch = outlet_pressure.is_none() && spread > MISMATCH_TOLERANCE_PA;
 
-    Stream::from_ph(
+    let outlet = Stream::from_ph(
         components,
         z,
         n_total,
         pressure,
         joules_per_mole(h_total / n_total),
-    )
+    )?;
+    Ok((outlet, spread, pressure_mismatch))
 }

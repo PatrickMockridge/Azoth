@@ -59,6 +59,12 @@ description = "the outlet pressure: `outlet_pressure` when given, else the lowes
 [outputs.product_t]
 unit = "K"
 description = "the outlet temperature, solved from the joined enthalpy at the outlet pressure.\n"
+[outputs.inlet_pressure_spread]
+unit = "Pa"
+description = "`getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate(\"kg/hr\") > 1e-20`.\n"
+[outputs.pressure_mismatch]
+type = "boolean"
+description = "`isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.\n"
 [outputs.product_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.\n"

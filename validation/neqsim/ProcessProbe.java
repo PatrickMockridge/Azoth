@@ -4901,11 +4901,14 @@ public class ProcessProbe {
     // flow-weighted enthalpy, so both rules are exercised: a composition that is not
     // either feed's, and a pressure that is neither inlet's when the outlet is stated.
     // The palette declares the outlet pressure optional, so the second row states one.
-    for (Double specified : new Double[] { null, 8.0 }) {
+    double[][] pairs = new double[][] {{10.0, 6.0}, {10.0, 6.0}, {10.0, 9.6}};
+    Double[] specifieds = new Double[] { null, 8.0, null };
+    for (int row = 0; row < pairs.length; row++) {
+      Double specified = specifieds[row];
       Stream first = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.6, 0.4 },
-          300.0, 10.0, 1.0);
+          300.0, pairs[row][0], 1.0);
       Stream second = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.3, 0.7 },
-          300.0, 6.0, 2.0);
+          300.0, pairs[row][1], 2.0);
 
       neqsim.process.equipment.mixer.Mixer mixer =
           new neqsim.process.equipment.mixer.Mixer("mx1");
@@ -4934,6 +4937,8 @@ public class ProcessProbe {
       // evidence about the class, not a layer of the mix.
       System.out.println("mix_pressure_bara=" + mixer.getMinInletPressure());
       System.out.println("mixed_enthalpy_W=" + mixer.calcMixStreamEnthalpy());
+      System.out.println("inlet_pressure_spread_bara=" + mixer.getInletPressureSpread());
+      System.out.println("pressure_mismatch=" + mixer.isPressureMismatch());
       System.out.println();
     }
   }

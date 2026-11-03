@@ -35,6 +35,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `product_z` | dimensionless | the outlet composition: the feeds' mole fractions weighted by their flows. |
 | `product_p` | Pa | the outlet pressure: `outlet_pressure` when given, else the lowest feed pressure. |
 | `product_t` | K | the outlet temperature, solved from the joined enthalpy at the outlet pressure. |
+| `inlet_pressure_spread` | Pa | `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`. |
+| `pressure_mismatch` | - | `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet. |
 | `product_h` | J/mol | the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance. |
 
 | Bound | On violation | Why |
@@ -55,8 +57,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_feeds_at_different_pressures` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 600000.0, product_t = 300.0379420950389, product_h = -21581.51317087694 |
-| `a_stated_outlet_pressure_overrides_the_lowest_feed` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0], outlet_pressure = 800000.0 | product_n = 3.0, product_z = [0.4, 0.6], product_p = 800000.0, product_t = 299.9753356067683, product_h = -21581.513144252458 |
+| `two_feeds_at_different_pressures` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 600000.0, product_t = 300.0379420950389, product_h = -21581.51317087694, inlet_pressure_spread = 400000.0, pressure_mismatch = True |
+| `a_stated_outlet_pressure_overrides_the_lowest_feed` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0], outlet_pressure = 800000.0 | product_n = 3.0, product_z = [0.4, 0.6], product_p = 800000.0, product_t = 299.9753356067683, product_h = -21581.513144252458, inlet_pressure_spread = 200000.0, pressure_mismatch = False |
+| `a_sub_tolerance_spread_raises_no_flag` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 960000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 960000.0, product_t = 300.00453958863363, product_h = -21569.23594720072, inlet_pressure_spread = 40000.0, pressure_mismatch = False |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
