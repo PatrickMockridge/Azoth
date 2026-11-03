@@ -222,8 +222,7 @@ def separator(
     if design and auto:
         raise InvalidInputError(
             "auto_size",
-            "`mechanical_design` and `auto_size` are two ways to design the same vessel; "
-            "state one",
+            "`mechanical_design` and `auto_size` are two ways to design the same vessel; state one",
         )
     if auto:
         if diameter is not None:
@@ -1087,9 +1086,7 @@ def _mechanical_design(
         piping_weight = vessel_shell_weight * 0.4
         structural_weight = vessel_shell_weight * 0.1
         electrical_weight = vessel_shell_weight * 0.08
-        total_weight = (
-            vessel_shell_weight + piping_weight + structural_weight + electrical_weight
-        )
+        total_weight = vessel_shell_weight + piping_weight + structural_weight + electrical_weight
         vessel_volume = math.pi * (inner_diameter / 2.0) ** 2 * tantan_length
     module_width = inner_diameter * 2.0
     module_length = tantan_length * 1.5
