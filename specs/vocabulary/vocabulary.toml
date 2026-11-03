@@ -387,10 +387,6 @@ dimension = "per_time"
 pint = "1/second"
 rust_ctor = "per_second"
 [[units]]
-id = "m**2/m**3"
-dimension = "inverse_length"
-pint = "1/meter"
-[[units]]
 id = "1/m"
 dimension = "inverse_length"
 pint = "1/meter"

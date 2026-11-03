@@ -182,7 +182,6 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K**2",
     "1/K**3",
     "1/s",
-    "m**2/m**3",
     "1/m",
     "Pa/m",
     "mol/kg",
@@ -267,7 +266,6 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
     ("1/s", [0, 0, -1, 0, 0, 0, 0]),
-    ("m**2/m**3", [-1, 0, 0, 0, 0, 0, 0]),
     ("1/m", [-1, 0, 0, 0, 0, 0, 0]),
     ("Pa/m", [-2, 1, -2, 0, 0, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
@@ -385,7 +383,6 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
     ("1/s", |v| crate::units::per_second(v).value),
-    ("m**2/m**3", |v| v),
     ("1/m", |v| v),
     ("Pa/m", |v| v),
     ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
@@ -715,10 +712,6 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     (
         "1/K**3",
         "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
-    ),
-    (
-        "m**2/m**3",
-        "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity.",
     ),
     (
         "1/m",

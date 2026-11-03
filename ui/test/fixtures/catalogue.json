@@ -8843,11 +8843,6 @@
       "factor": 1.0,
       "offset": 0.0
     },
-    "m**2/m**3": {
-      "dimension": "inverse_length",
-      "factor": 1.0,
-      "offset": 0.0
-    },
     "m**2/s": {
       "dimension": "diffusion_coefficient",
       "factor": 1.0,

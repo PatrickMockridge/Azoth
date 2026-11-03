@@ -113,7 +113,7 @@ not an equation, and both implementations read it from here.
 | `internal_diameter` | m | the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input. |
 | `k_ga` | 1/s | `PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient. |
 | `k_la` | 1/s | `getKLa`: the volumetric liquid-film coefficient. |
-| `wetted_area` | m**2/m**3 | `getWettedArea`: the packing's wetted area per unit volume. |
+| `wetted_area` | 1/m | `getWettedArea`: the packing's wetted area per unit volume. |
 | `htu_g` | m | `getHtuG`: the gas-side height of a transfer unit. |
 | `htu_l` | m | `getHtuL`: the liquid-side height of a transfer unit. |
 | `htu_og` | m | `getHtuOg`: the overall height of a transfer unit. |

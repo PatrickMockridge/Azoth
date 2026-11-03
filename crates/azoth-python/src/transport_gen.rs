@@ -17136,7 +17136,7 @@ impl From<&azoth_process::models::packed_column::PackedColumnResult> for PyPacke
             },
             wetted_area: PyQty {
                 magnitude_si: r.wetted_area,
-                unit: "m**2/m**3".to_string(),
+                unit: "1/m".to_string(),
             },
             htu_g: PyQty {
                 magnitude_si: r.htu_g.value,

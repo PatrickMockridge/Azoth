@@ -208,7 +208,6 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "C": "Dimension.Charge",
     "angstrom": "Dimension.Length",
     "1/s": "Dimension.Time ^ (-1 : ℚ)",
-    "m**2/m**3": "Dimension.Length ^ (-1 : ℚ)",
     "1/m": "Dimension.Length ^ (-1 : ℚ)",
     "Pa/m": "Dimension.Pressure / Dimension.Length",
     "1/K": "Dimension.Temperature ^ (-1 : ℚ)",

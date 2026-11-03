@@ -340,7 +340,7 @@ description = "`PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coe
 unit = "1/s"
 description = "`getKLa`: the volumetric liquid-film coefficient.\n"
 [outputs.wetted_area]
-unit = "m**2/m**3"
+unit = "1/m"
 description = "`getWettedArea`: the packing's wetted area per unit volume.\n"
 [outputs.htu_g]
 unit = "m"

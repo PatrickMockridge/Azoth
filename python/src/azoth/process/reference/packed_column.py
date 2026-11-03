@@ -396,7 +396,7 @@ def packed_column(
         internal_diameter=internal_diameter,
         k_ga=from_si(hydraulics.k_ga, "1/s"),
         k_la=from_si(hydraulics.k_la, "1/s"),
-        wetted_area=from_si(hydraulics.wetted_area, "m**2/m**3"),
+        wetted_area=from_si(hydraulics.wetted_area, "1/m"),
         htu_g=hydraulics.htu_g,
         htu_l=hydraulics.htu_l,
         htu_og=hydraulics.htu_og,
