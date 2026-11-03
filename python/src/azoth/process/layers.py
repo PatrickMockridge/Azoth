@@ -2037,6 +2037,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=1,
         identified_by=("specified_outlet_pressure_bara", "8.0"),
     ),
+    LayerCase(
+        model="process.mixer",
+        case="a_sub_tolerance_spread_raises_no_flag",
+        capture="process_mixer.tsv",
+        block=2,
+        identified_by=("feed1_P", "9.6"),
+    ),
     # The splitter's two rows carry the same numbers, so the pairing is the label's and
     # not a state's.
     LayerCase(
