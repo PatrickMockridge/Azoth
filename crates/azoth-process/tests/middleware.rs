@@ -664,8 +664,9 @@ fn the_generated_input_table_is_the_models_own() {
     // `auto_size`, the gas scrubber's `safety_factor` and three mesh-pad fields, and the
     // three-phase separator's three outlet fractions - `594 + 8 = 602`. **And the heat
     // exchanger's three** - `use_delta_t`, `delta_t` and `guess_out_temperature` -
-    // `602 + 3 = 605`.
-    assert_eq!(walked, 605, "the inputs this test walked");
+    // `602 + 3 = 605`. **And the compressor's polytropic three** - `use_polytropic_calc`,
+    // `polytropic_efficiency` and `polytropic_method` - `605 + 3 = 608`.
+    assert_eq!(walked, 608, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
