@@ -4445,6 +4445,11 @@ public class ProcessProbe {
     runThreePhase("dry_feed pressure_drop_bara=0 heat_input_W=0 entrainment=none", dry, dryZ,
         feed(dry, dryZ, 300.0, 20.0, 1.0), 0.0, null, null, null, 0.0);
 
+    // The three outlet valve fractions are stored and clamped; the steady split ignores
+    // them, and `getMassBalance` is the report that reads the split's outlets.
+    threePhaseValves("valve_fractions_010_020_030", names, z,
+        feed(names, z, 300.0, 20.0, 1.0));
+
     // The vessel rows. **Retention is a mechanical-design read**: NLL and NIL are fractions
     // of the internal diameter (0.5 and 0.2 by default) and the effective liquid length is
     // `0.82 * separatorLength`, so the geometry is what makes the numbers exist.
@@ -4458,6 +4463,25 @@ public class ProcessProbe {
         feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, -1.0, -0.5);
     threePhaseVessel("vessel_dry_feed", dry, dryZ, feed(dry, dryZ, 300.0, 20.0, 1.0), 1.0, 3.0,
         null, null);
+  }
+
+  static void threePhaseValves(String label, String[] names, double[] z, Stream inlet) {
+    neqsim.process.equipment.separator.ThreePhaseSeparator separator =
+        new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
+    separator.setGasOutletFlowFraction(0.1);
+    separator.setOilOutletFlowFraction(0.2);
+    separator.setWaterOutletFlowFraction(0.3);
+    separator.run();
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("vapour", separator.getGasOutStream());
+    printOrEmpty("light_liquid", separator.getOilOutStream());
+    printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    System.out.println("gas_outlet_fraction=" + separator.getGasOutletFlowFraction());
+    System.out.println("oil_outlet_fraction=" + separator.getOilOutletFlowFraction());
+    System.out.println("water_outlet_fraction=" + separator.getWaterOutletFlowFraction());
+    System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    System.out.println();
   }
 
   static void runThreePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
@@ -4509,6 +4533,7 @@ public class ProcessProbe {
     printOrEmpty("vapour", separator.getGasOutStream());
     printOrEmpty("light_liquid", separator.getOilOutStream());
     printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
     if (diameterM != null || waterLevelM != null || oilLevelM != null) {
       System.out.println("water_level_m=" + separator.getWaterLevel());
       System.out.println("oil_level_m=" + separator.getOilLevel());

@@ -1748,6 +1748,9 @@ def three_phase_separator(
     nil_fraction: float | None = None,
     water_level: Q | None = None,
     oil_level: Q | None = None,
+    gas_outlet_flow_fraction: float | None = None,
+    oil_outlet_flow_fraction: float | None = None,
+    water_outlet_flow_fraction: float | None = None,
 ) -> ThreePhaseSeparatorResult:
     """Flash a stream into vapour, oil and aqueous outlets.
 
@@ -1792,6 +1795,9 @@ def three_phase_separator(
         nil_fraction=nil_fraction,
         water_level=water_level,
         oil_level=oil_level,
+        gas_outlet_flow_fraction=gas_outlet_flow_fraction,
+        oil_outlet_flow_fraction=oil_outlet_flow_fraction,
+        water_outlet_flow_fraction=water_outlet_flow_fraction,
     )
 
 

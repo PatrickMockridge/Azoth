@@ -101,6 +101,9 @@ pub fn three_phase_separator(
     nil_fraction: Option<f64>,
     water_level: Option<Length>,
     oil_level: Option<Length>,
+    gas_outlet_flow_fraction: Option<f64>,
+    oil_outlet_flow_fraction: Option<f64>,
+    water_outlet_flow_fraction: Option<f64>,
 ) -> Result<ThreePhaseSeparatorResult> {
     let spec = &model_gen::THREE_PHASE_SEPARATOR_SPEC;
     let mut warnings = Vec::new();
@@ -187,6 +190,15 @@ pub fn three_phase_separator(
         aqueous_in_oil,
     };
     let (vapour, oil_out, aqueous_out) = kernel(&feed, pressure_drop, heat_input, entrainment)?;
+
+    // The three valve fractions are stored state: the class's steady split never reads them.
+    // They are declared because the class exposes and clamps them; `getMassBalance` is a
+    // zero-by-construction residual the capture records, not a field.
+    let _ = (
+        gas_outlet_flow_fraction.map(|value| value.clamp(0.0, 1.0)),
+        oil_outlet_flow_fraction.map(|value| value.clamp(0.0, 1.0)),
+        water_outlet_flow_fraction.map(|value| value.clamp(0.0, 1.0)),
+    );
 
     let retention = match (internal_diameter, separator_length) {
         (Some(diameter), Some(length)) => Some(retention_times(

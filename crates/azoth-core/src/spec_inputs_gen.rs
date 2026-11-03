@@ -4051,6 +4051,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "aqueous_in_oil",
         "dimensionless",
     ),
+    (
+        "process.three_phase_separator",
+        "gas_outlet_flow_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.three_phase_separator",
+        "oil_outlet_flow_fraction",
+        "dimensionless",
+    ),
+    (
+        "process.three_phase_separator",
+        "water_outlet_flow_fraction",
+        "dimensionless",
+    ),
     ("process.three_phase_separator", "heat_input", "power"),
     (
         "process.three_phase_separator",

@@ -3228,6 +3228,8 @@ class SeparatorPerformanceResult:
     api_min_liquid_residence_time: Qty | None
     post_inlet_device_characteristic_diameter: Qty | None
     post_inlet_device_spread: float | None
+    post_inlet_d50: Qty | None
+    post_inlet_d32: Qty | None
     warnings: list[Warning]
 
 @final
@@ -3343,6 +3345,7 @@ class ThreePhaseSeparatorResult:
     heavy_liquid_p: Qty
     heavy_liquid_t: Qty
     heavy_liquid_h: Qty
+    mass_balance_kg_hr: Qty
     water_level: Qty | None
     oil_level: Qty | None
     oil_thickness: Qty | None
@@ -6087,6 +6090,9 @@ def three_phase_separator(
     oil_in_gas: float,
     aqueous_in_gas: float,
     aqueous_in_oil: float,
+    gas_outlet_flow_fraction: float | None = None,
+    oil_outlet_flow_fraction: float | None = None,
+    water_outlet_flow_fraction: float | None = None,
     heat_input: float | None = None,
     internal_diameter: float | None = None,
     separator_length: float | None = None,

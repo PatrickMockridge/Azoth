@@ -81,6 +81,9 @@ def three_phase_separator(
     nil_fraction: float | None = None,
     water_level: Q | None = None,
     oil_level: Q | None = None,
+    gas_outlet_flow_fraction: float | None = None,
+    oil_outlet_flow_fraction: float | None = None,
+    water_outlet_flow_fraction: float | None = None,
 ) -> ThreePhaseSeparatorResult:
     """Flash a stream into vapour, oil and aqueous outlets.
 
@@ -230,6 +233,17 @@ def three_phase_separator(
             nll,
             nil,
         )
+
+    # The three valve fractions are stored state: the class's steady split never reads them.
+    # They are declared because the class exposes and clamps them; `getMassBalance` is a
+    # zero-by-construction residual the capture records, not a field.
+    _ = (
+        None if gas_outlet_flow_fraction is None else min(1.0, max(0.0, gas_outlet_flow_fraction)),
+        None if oil_outlet_flow_fraction is None else min(1.0, max(0.0, oil_outlet_flow_fraction)),
+        None
+        if water_outlet_flow_fraction is None
+        else min(1.0, max(0.0, water_outlet_flow_fraction)),
+    )
 
     return ThreePhaseSeparatorResult(
         vapour_n=from_si(states.vapour.n, "mol/s"),

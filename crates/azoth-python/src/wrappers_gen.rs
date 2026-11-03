@@ -6388,9 +6388,9 @@ pub fn tank(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input, internal_diameter, separator_length, nll_fraction, nil_fraction, water_level, oil_level))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, gas_outlet_flow_fraction, oil_outlet_flow_fraction, water_outlet_flow_fraction, heat_input, internal_diameter, separator_length, nll_fraction, nil_fraction, water_level, oil_level))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input, internal_diameter, separator_length, nll_fraction, nil_fraction, water_level, oil_level)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, gas_outlet_flow_fraction, oil_outlet_flow_fraction, water_outlet_flow_fraction, heat_input, internal_diameter, separator_length, nll_fraction, nil_fraction, water_level, oil_level)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn three_phase_separator(
@@ -6407,6 +6407,9 @@ pub fn three_phase_separator(
     oil_in_gas: f64,
     aqueous_in_gas: f64,
     aqueous_in_oil: f64,
+    gas_outlet_flow_fraction: Option<f64>,
+    oil_outlet_flow_fraction: Option<f64>,
+    water_outlet_flow_fraction: Option<f64>,
     heat_input: Option<f64>,
     internal_diameter: Option<f64>,
     separator_length: Option<f64>,
@@ -6435,6 +6438,9 @@ pub fn three_phase_separator(
         nil_fraction,
         water_level.map(meters),
         oil_level.map(meters),
+        gas_outlet_flow_fraction,
+        oil_outlet_flow_fraction,
+        water_outlet_flow_fraction,
     )
     .map(|r| crate::transport_gen::PyThreePhaseSeparatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

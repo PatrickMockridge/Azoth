@@ -31,6 +31,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `oil_in_gas` | dimensionless | the fraction of the oil's moles carried into the vapour. |
 | `aqueous_in_gas` | dimensionless | the fraction of the aqueous phase's moles carried into the vapour. |
 | `aqueous_in_oil` | dimensionless | the fraction of the aqueous phase's moles carried into the oil. |
+| `gas_outlet_flow_fraction` | dimensionless | *Optional.* the gas outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is the class's `1.0`.** The steady split never reads it; it is stored state, and the mass balance reports the outlets the split produced. |
+| `oil_outlet_flow_fraction` | dimensionless | *Optional.* the oil outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is `1.0`.** Stored and unread by the steady split, as above. |
+| `water_outlet_flow_fraction` | dimensionless | *Optional.* the water outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is `1.0`.** Stored and unread by the steady split, as above. |
 | `heat_input` | W | *Optional.* heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies, and the temperature that carries it is solved for. |
 | `internal_diameter` | m | *Optional.* the vessel's internal diameter, which the retention geometry divides. **Stated with `separator_length` or not at all**; absent means the two retention outputs are absent. |
 | `separator_length` | m | *Optional.* the tan-tan length, which `getEffectiveLengthLiquid` is `0.82` of. Stated with the diameter or not at all. |
@@ -95,7 +98,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.
 - **a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.
-- **the three outlet valve fractions are not parameters here.** The class stores and clamps them, and its steady `run` split never reads them - only its mass and energy-balance reporting does, which this port does not publish. A parameter nothing here can honour is not declared.
+- **the three outlet valve fractions are stored state, not a split.** The class clamps them and the steady `run` never reads them; `getMassBalance` is a zero-by-construction residual (the capture reads `-2.06e-12` kg/hr), so it is not a field.
 - **`calcInterfaceSettlingTime` is ported on the initialised state.** The class reads the aqueous density before `initPhysicalProperties`, so a fresh run answers `Infinity`; with the phase initialised, the capture's `0.1239` min is what the port reproduces.
 
 ## Cases

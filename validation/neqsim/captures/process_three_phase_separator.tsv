@@ -23,6 +23,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0605739337042905E-12
 
 pressure_drop_bara=2 heat_input_W=0 entrainment=none
 feed_n=1.0
@@ -49,6 +50,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44705.895733182806
 heavy_liquid_s=-119.73426158314454
 heavy_liquid_z=methane:1.2440359440221417E-8 n-butane:1.3133404684448346E-15 water:0.9999999875596391
+mass_balance_kg_hr=-1.8332002582610585E-12
 
 pressure_drop_bara=0 heat_input_W=1000 entrainment=none
 feed_n=1.0
@@ -75,6 +77,7 @@ heavy_liquid_T=371.2337801579336
 heavy_liquid_h=-38899.826680291575
 heavy_liquid_s=-102.38735006831321
 heavy_liquid_z=methane:6.510707274410019E-7 n-butane:3.057238296098721E-11 water:0.9999993488987003
+mass_balance_kg_hr=-1.1128520327474689E-10
 
 pressure_drop_bara=0 heat_input_W=0 entrainment=gas_to_oil_0.05
 feed_n=1.0
@@ -101,6 +104,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0747847884194925E-12
 
 pressure_drop_bara=0 heat_input_W=0 entrainment=oil_to_gas_0.05
 feed_n=1.0
@@ -127,6 +131,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0747847884194925E-12
 
 dry_feed pressure_drop_bara=0 heat_input_W=0 entrainment=none
 feed_n=1.0
@@ -153,6 +158,37 @@ heavy_liquid_T=300.0
 heavy_liquid_h=612.2853402383972
 heavy_liquid_s=-40.76146885065885
 heavy_liquid_z=methane:0.3411672805114989 n-butane:0.06794331480957302
+mass_balance_kg_hr=2.842170943040401E-14
+
+valve_fractions_010_020_030
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2977.6596658490716
+feed_s=-24.25280667468975
+feed_z=methane:0.5 n-butane:0.3 water:0.2
+vapour_n=0.5742666398533198
+vapour_P=20.0
+vapour_T=300.0
+vapour_h=530.2999342332546
+vapour_s=-18.275473006164525
+vapour_z=methane:0.8323862772745304 n-butane:0.16605660961350757 water:0.0015571131119619512
+light_liquid_n=0.22670512468681528
+light_liquid_P=20.0
+light_liquid_T=300.0
+light_liquid_h=-17267.597049152402
+light_liquid_s=-65.61865834929691
+light_liquid_z=methane:0.09699086751349376 n-butane:0.9026669734727175 water:3.421590137886759E-4
+heavy_liquid_n=0.199028235459865
+heavy_liquid_P=20.0
+heavy_liquid_T=300.0
+heavy_liquid_h=-44702.48623278945
+heavy_liquid_s=-119.73705239144415
+heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+gas_outlet_fraction=0.1
+oil_outlet_fraction=0.2
+water_outlet_fraction=0.3
+mass_balance_kg_hr=-2.0605739337042905E-12
 
 vessel_d1000_l3000_retention
 feed_n=1.0
@@ -179,6 +215,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0605739337042905E-12
 water_level_m=0.0
 oil_level_m=0.0
 oil_thickness_m=0.0
@@ -218,6 +255,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0605739337042905E-12
 water_level_m=0.3
 oil_level_m=0.6
 oil_thickness_m=0.3
@@ -257,6 +295,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=-44702.48623278945
 heavy_liquid_s=-119.73705239144415
 heavy_liquid_z=methane:1.3949914078317068E-8 n-butane:1.299159027526262E-15 water:0.9999999860500847
+mass_balance_kg_hr=-2.0605739337042905E-12
 water_level_m=0.0
 oil_level_m=0.0
 oil_thickness_m=0.0
@@ -296,6 +335,7 @@ heavy_liquid_T=300.0
 heavy_liquid_h=612.2853402383972
 heavy_liquid_s=-40.76146885065885
 heavy_liquid_z=methane:0.3411672805114989 n-butane:0.06794331480957302
+mass_balance_kg_hr=2.842170943040401E-14
 water_level_m=0.0
 oil_level_m=0.0
 oil_thickness_m=0.0

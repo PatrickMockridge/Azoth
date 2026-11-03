@@ -6965,7 +6965,7 @@ def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed
     )
 
 
-def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None, internal_diameter: Q | None=None, separator_length: Q | None=None, nll_fraction: float | None=None, nil_fraction: float | None=None, water_level: Q | None=None, oil_level: Q | None=None) -> ThreePhaseSeparatorResult:
+def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None, internal_diameter: Q | None=None, separator_length: Q | None=None, nll_fraction: float | None=None, nil_fraction: float | None=None, water_level: Q | None=None, oil_level: Q | None=None, gas_outlet_flow_fraction: float | None=None, oil_outlet_flow_fraction: float | None=None, water_outlet_flow_fraction: float | None=None) -> ThreePhaseSeparatorResult:
     """``process.three_phase_separator``, computed in Rust."""
     spec = _models_gen.model("process.three_phase_separator")
     result = _core.three_phase_separator(
@@ -6981,6 +6981,9 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         oil_in_gas,
         aqueous_in_gas,
         aqueous_in_oil,
+        None if gas_outlet_flow_fraction is None else gas_outlet_flow_fraction,
+        None if oil_outlet_flow_fraction is None else oil_outlet_flow_fraction,
+        None if water_outlet_flow_fraction is None else water_outlet_flow_fraction,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
         None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
         None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
