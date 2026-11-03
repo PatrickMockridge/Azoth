@@ -2,7 +2,7 @@ id = "process.separator_performance"
 name = "Separator performance calculator"
 kind = "direct"
 assumptions = [
-    "**the class's standard path**: `calculate` -> `calculateStandard` -> `applyCalibrationFactors`. The enhanced chain (`calculateEnhanced`: flow regime, inlet device, vessel geometry and the internals database) is a different solver and is not an input here; the ROADMAP names it as owed.",
+    "**the class's standard path**: `calculate` -> `calculateStandard` -> `applyCalibrationFactors`. The enhanced chain (`calculateEnhanced`) is a second solver, declared as the `enhanced` input with its own group.",
     "**the distributions are the class's closed forms**, its `erf` and Winitzki inverse included; the classes are 50 log-spaced bins between the 0.1% and 99.9% quantiles, and the integrated efficiency is their midpoint sum **without renormalising** (weights total 0.998).",
     "**the grade curves are the class's**: gravity as `min(1, (d/d_cut)**2)`, an internals curve as the sigmoid `eta_max (1 - exp(-0.693 (d/d50)**n))`, and custom as linear interpolation; `sharpness` and `max_efficiency` are read only by the sigmoid types.",
     "**settling is the class's Schiller-Naumann drag** with a Stokes seed, 50 under-relaxed passes at `1e-6` relative, and the cut diameter is the smallest droplet that settles the available height within the residence time.",
@@ -11,7 +11,7 @@ assumptions = [
     "**gas carry-under writes the same fraction to oil and water**, and the liquid-liquid path uses the class's fixed 300 s residence time; `setLiquidLiquidResidenceTime` is read only by the enhanced path, so it is not an input.",
     "**each distribution is stated whole or not at all**, and the class's constructor configures none: an absent gas-liquid distribution leaves the gas-liquid branch unrun and its fractions and cut diameter at zero.",
     "**the three calibration factors are the class's setters**: absent is 1.0, and a negative is clamped to zero rather than refused.",
-    "**the API 12J compliance DTO is not here**: on the standard path the class's `kFactor` is never set, so its K test always passes; the cut-diameter check reads `gravity_cut_diameter`, which is an output. The DTO is owed with the enhanced path.",
+    "**the API 12J compliance DTO is the enhanced path's own record**: on the standard path the class's `kFactor` is never set, so its K test always passes; the enhanced path publishes the three verdicts and the two sentences.",
     "**a degenerate section** (`residence <= 0` or no density difference) makes the class's cut `Double.MAX_VALUE`; the declared bounds - positive geometry, positive gas velocity and a level below one - keep that branch unreachable.",
     "**`useDetailedEntrainmentCalculation` is not a flag here**: these fractions are the separator ids' own inputs, so the composition is a flowsheet rather than a switch on the steady model.",
     "**the inlet device's position is fixed at `0.05`**: `SeparatorGeometryCalculator` has setters for the mist eliminator and the weir but none for the inlet device, so only `mist_position` and `weir_position` cross.",

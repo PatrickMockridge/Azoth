@@ -818,15 +818,18 @@ a claim nothing holds.
   `process.separator_performance`** - the standard path's six fractions and four efficiencies
   over the class's droplet distributions, grade curves and settling solve, **and the enhanced
   chain landed too**: the regime map, inlet-device model and geometry calculator feed the
-  gravity, mist and API 12J stages, held to `process_separator_performance_enhanced.tsv`; the
-  internals database's design K is carried for the wire mesh alone and refused by name for the
-  others; **`getGasLoadFactor(int)`'s
+  gravity, mist and API 12J stages, with the design K read from the shipped database's
+  wire-mesh, vane-pack and axial-cyclone records and refused by name for the others, and the
+  inlet device's two overrides and the post-inlet d50/d32 published; the capture's eleven
+  states are `process_separator_performance_enhanced.tsv`; **`getGasLoadFactor(int)`'s
   phase-indexed and `sizeFromFlow` landed** - the operating holdup against the design gas
   area, and the closed-form diameter; **`SeparatorMechanicalDesign.calcDesign` landed** as a
   `mechanical_design` group on the same id - the sized vessel, its shell and skid weights, its
   module box, the seven levels, the three nozzles and the surge and retention times, held to
   `process_separator_mechanical_design.tsv` on the port's PR fluid and on the class's own SRK
-  fixture - so what remains owed there is `autoSize` (the composition of the two) and
+  fixture - **and `Separator.autoSize` landed as `auto_size`**, with the shipped design
+  database's K and Fg and `performSizingCalculations`, held to
+  `process_separator_autosize.tsv`; and
   **`GasScrubberMechanicalDesign` landed too**, on `process.gas_scrubber` with the scrubber
   standard's `1.1` factor, `5 d` length and `2 d` module - held to
   `process_gas_scrubber_mechanical_design.tsv` - and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
@@ -837,10 +840,11 @@ a claim nothing holds.
   **`ThreePhaseSeparator`'s levels and its oil/water retention times landed, and so did
   `calcInterfaceSettlingTime`** - the 150 µm Stokes settle, held to
   `process_three_phase_settling.tsv` on the initialised state, because the class's own call on
-  a fresh run reads an uninitialised aqueous density and answers `Infinity`; still owed there
-  are the three outlet valve fractions (stored but read only by the class's mass-balance
-  report), the droplet calculator being `process.separator_performance`; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
-  temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
+  a fresh run reads an uninitialised aqueous density and answers `Infinity`; **the three
+  outlet valve fractions landed as stored state**, and `getMassBalance` is recorded as a
+  zero-by-construction residual the port does not publish; the droplet calculator is
+  `process.separator_performance`; **`GasScrubber`'s vessel sizing and mesh pad landed**;
+  still owed are `Tank`'s wall temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
   path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
   turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled

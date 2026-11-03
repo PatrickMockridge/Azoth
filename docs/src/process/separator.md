@@ -167,7 +167,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 16 declared, every one run
+- Tests: 18 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

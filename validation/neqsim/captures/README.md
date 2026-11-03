@@ -1330,12 +1330,29 @@ row prints that answer beside the same call after `initPhysicalProperties()`, an
 reproduces the initialised one - `0.1239` and `0.1487` min, both below the class's one-minute
 limit.
 
+## The separator performance standard path
+
+`process_separator_performance.tsv` is `SeparatorPerformanceCalculator`'s standard path on the
+class's own test states: the two-phase wire mesh, the vertical vane-pack scrubber, the
+three-phase state, gravity alone, the gas-bubble carry-under and the plate-pack coalescer with
+no gas-liquid distribution, then the calibration test's base and tuned machines, the
+gravity-section-off state and a log-normal distribution with custom lookup tables on both
+internals and coalescer.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance \
+  > captures/process_separator_performance.tsv
+```
+
 ## The separator performance enhanced chain
 
 `process_separator_performance_enhanced.tsv` is
 `SeparatorPerformanceCalculator.calculateEnhanced` on `EnhancedPerformanceCalculatorTest`'s
-own six states: two-phase horizontal, three-phase horizontal, vertical, the no-device and
-inlet-cyclone pair, and the high-velocity flooding row.
+own six states - two-phase horizontal, three-phase horizontal, vertical, the no-device and
+inlet-cyclone pair, and the high-velocity flooding row - plus the mist-position and
+weir-position setters, the vane-pack and axial-cyclone design-K records, and the
+inlet-device overrides.
 
 ```bash
 ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
@@ -1350,7 +1367,8 @@ flux, the geometry's areas, settling heights and residence times, the gravity an
 efficiencies, the K factor and its utilisation, and the API 12J compliance record with its
 two comments. The default device is `HALF_PIPE`, not none; the pair sets `NONE` and
 `INLET_CYCLONE` explicitly. `process.separator_performance`'s `enhanced` input runs this
-chain; the capture's six rows are its cases.
+chain; six of the capture's eleven states are this id's cases, and the remaining five are
+the class's own evidence.
 
 ## The anti-surge recycle calculator
 
