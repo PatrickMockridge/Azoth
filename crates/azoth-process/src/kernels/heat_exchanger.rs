@@ -112,6 +112,7 @@ impl HeatExchangerOutcome {
 /// given, if the rating is asked for without a `ua`, if the arrangement is not one of
 /// [`FLOW_ARRANGEMENTS`], or if the two inlets are at the same temperature so that there is
 /// no driving force. Whatever the flashes refuse propagates too.
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
 pub fn heat_exchanger(
     hot: &Stream,
     cold: &Stream,
