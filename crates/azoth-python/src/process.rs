@@ -414,10 +414,10 @@ pub fn pipe(
 /// refuses; the row is built from the generated mapping here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, use_polytropic_calc = None, polytropic_efficiency = None, polytropic_method = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, use_polytropic_calc = None, polytropic_efficiency = None, polytropic_method = None, compression_ratio = None, max_outlet_pressure = None, power = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, use_polytropic_calc=None, polytropic_efficiency=None, polytropic_method=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, use_polytropic_calc=None, polytropic_efficiency=None, polytropic_method=None, compression_ratio=None, max_outlet_pressure=None, power=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn compressor(
@@ -432,6 +432,9 @@ pub fn compressor(
     use_polytropic_calc: Option<bool>,
     polytropic_efficiency: Option<f64>,
     polytropic_method: Option<&str>,
+    compression_ratio: Option<f64>,
+    max_outlet_pressure: Option<f64>,
+    power: Option<f64>,
     curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
     speed: Option<f64>,
     solve_speed: Option<bool>,
@@ -481,6 +484,9 @@ pub fn compressor(
         use_polytropic_calc,
         polytropic_efficiency,
         polytropic_method,
+        compression_ratio,
+        max_outlet_pressure.map(pascals),
+        power.map(watts),
         points.as_deref(),
         speed,
         solve_speed,

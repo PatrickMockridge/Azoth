@@ -665,8 +665,10 @@ fn the_generated_input_table_is_the_models_own() {
     // three-phase separator's three outlet fractions - `594 + 8 = 602`. **And the heat
     // exchanger's three** - `use_delta_t`, `delta_t` and `guess_out_temperature` -
     // `602 + 3 = 605`. **And the compressor's polytropic three** - `use_polytropic_calc`,
-    // `polytropic_efficiency` and `polytropic_method` - `605 + 3 = 608`.
-    assert_eq!(walked, 608, "the inputs this test walked");
+    // `polytropic_efficiency` and `polytropic_method` - `605 + 3 = 608`. **And the
+    // compressor's ratio, cap and fixed power** - `compression_ratio`,
+    // `max_outlet_pressure` and `power` - `608 + 3 = 611`.
+    assert_eq!(walked, 611, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

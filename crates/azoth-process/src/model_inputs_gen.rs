@@ -533,6 +533,27 @@ static ALL: &[ModelInputs] = &[
                 dimension: None,
             },
             ModelInput {
+                name: "compression_ratio",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "max_outlet_pressure",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("pressure"),
+            },
+            ModelInput {
+                name: "power",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("power"),
+            },
+            ModelInput {
                 name: "curve",
                 kind: "record_list",
                 values: &[],

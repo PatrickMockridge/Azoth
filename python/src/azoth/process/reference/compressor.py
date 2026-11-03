@@ -82,6 +82,9 @@ def compressor(
     use_polytropic_calc: bool | None = None,
     polytropic_efficiency: float | None = None,
     polytropic_method: str | None = None,
+    compression_ratio: float | None = None,
+    max_outlet_pressure: Q | None = None,
+    power: Q | None = None,
     outlet_pressure: Q | None = None,
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
@@ -157,6 +160,16 @@ def compressor(
     p_out = (
         None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure)
     )
+    if compression_ratio is not None:
+        ratio_in = float(compression_ratio)
+        if not (math.isfinite(ratio_in) and ratio_in > 0.0):
+            raise InvalidInputError(
+                "compression_ratio", f"a compression ratio is positive, and {ratio_in} is not"
+            )
+        p_out = p * ratio_in
+        if max_outlet_pressure is not None:
+            p_out = min(p_out, input_to_si(spec, "max_outlet_pressure", max_outlet_pressure))
+    power_si = None if power is None else input_to_si(spec, "power", power)
 
     apply_checks(
         checks.on_input,
@@ -219,7 +232,17 @@ def compressor(
                 "one has neither",
             )
         exponent = None
-        if use_polytropic_calc:
+        if power_si is not None:
+            stated = (
+                (1.0 if polytropic_efficiency is None else float(polytropic_efficiency))
+                if use_polytropic_calc
+                else None
+            )
+            h_out, outlet_t, efficiency = _power_states(
+                components, t, p, inlet_z, p_out, power_si, n, stated
+            )
+            power = power_si
+        elif use_polytropic_calc:
             method = "default" if polytropic_method is None else polytropic_method
             if method == "detailed":
                 raise _unported.refuse("polytropic_method=detailed")
@@ -841,6 +864,45 @@ def _polytropic_states(
         else exponent
     )
     return h_in, h_out, outlet_t, exponent_polytropic
+
+
+def _power_states(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    power: float,
+    n: float,
+    polytropic_efficiency: float | None,
+) -> tuple[float, Q, float]:
+    """``setPower``'s fixed-shaft-work branch: ``h_out = h_in + power / n``."""
+    if not (math.isfinite(power) and power > 0.0):
+        raise InvalidInputError("power", f"a fixed shaft power is positive, and {power} W is not")
+    if p_out <= p:
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the power branch compresses, and it is given {p_out} Pa against the inlet's {p} Pa",
+        )
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
+    enthalpy_change = power / n
+    h_out = h_in + enthalpy_change
+    outlet_t = ph_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_out, "J/mol"), inlet_z
+    ).T
+    if polytropic_efficiency is not None:
+        efficiency = polytropic_efficiency
+    else:
+        entropy, _ = entropy_at(mixture, ideal_gas, t, p, inlet_z)
+        isentropic = ps_flash_solve(
+            mixture, ideal_gas, from_si(p_out, "Pa"), from_si(entropy, "J/(mol*K)"), inlet_z
+        )
+        h_isentropic, _ = enthalpy_at(
+            mixture, ideal_gas, isentropic.T.to("K").magnitude, p_out, inlet_z
+        )
+        efficiency = (h_isentropic - h_in) / enthalpy_change
+    return h_out, outlet_t, efficiency
 
 
 def _states(

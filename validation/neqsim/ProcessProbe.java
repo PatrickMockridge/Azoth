@@ -188,6 +188,9 @@ public class ProcessProbe {
       case "compressor_polytropic":
         compressorPolytropicRows();
         break;
+      case "compressor_modes":
+        compressorModeRows();
+        break;
       case "compressor_curve":
         compressorCurveRows();
         break;
@@ -2009,6 +2012,61 @@ public class ProcessProbe {
   ///
   /// `getEntropyProduction` is the second-law statement of the same step, and the only other
   /// number either class exposes about its interior.
+  /// `setCompressionRatio` and `setPower` on the deposit test's machine.
+  static void compressorModeRows() {
+    compressorModeRow("pr_ratio_2_2", null, 2.2, null, null, null, false, null);
+    compressorModeRow("pr_ratio_3_capped_40", null, 3.0, 40.0, null, null, false, null);
+    compressorModeRow("pr_power_3mw", 42.0, null, null, 3.0e6, 0.8, false, null);
+    compressorModeRow("pr_power_3mw_polytropic", 42.0, null, null, 3.0e6, 0.8, true, 0.75);
+  }
+
+  static void compressorModeRow(String label, Double outletBara, Double ratioBara,
+      Double maximumBara, Double powerW, Double isentropicEfficiency, boolean polytropic,
+      Double polytropicEfficiency) {
+    neqsim.thermo.system.SystemInterface gas =
+        new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor(label, feed);
+    if (outletBara != null) {
+      compressor.setOutletPressure(outletBara);
+    }
+    if (ratioBara != null) {
+      compressor.setCompressionRatio(ratioBara);
+    }
+    if (maximumBara != null) {
+      compressor.setMaxOutletPressure(maximumBara);
+    }
+    if (powerW != null) {
+      compressor.setPower(powerW);
+    }
+    if (polytropic) {
+      compressor.setUsePolytropicCalc(true);
+      compressor.setPolytropicEfficiency(polytropicEfficiency);
+    } else if (isentropicEfficiency != null) {
+      compressor.setIsentropicEfficiency(isentropicEfficiency);
+    }
+    compressor.run();
+
+    System.out.println(label);
+    print("inlet", feed);
+    print("outlet", compressor.getOutletStream());
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("isentropic_efficiency_out=" + compressor.getIsentropicEfficiency());
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println();
+  }
+
   /// `Compressor.run`'s no-chart polytropic branch on `CompressorDepositTest`'s machine.
   static void compressorPolytropicRows() {
     compressorPolytropicRow("srk_eta_0_60", true, 0.60);

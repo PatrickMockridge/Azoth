@@ -1184,3 +1184,79 @@ outlet_t = 379.9643949088389
 outlet_h = 3620.409593236407
 power = 4317150.8884881605
 polytropic_efficiency = 0.75
+
+[[cases]]
+id = "a_compression_ratio_sets_the_outlet_pressure"
+tolerance = 0.0001
+source = "The `compressor_modes` capture's `pr_ratio_2_2` row: `setCompressionRatio(2.2)` on the deposit test's machine at the class's default efficiency of one. **The ratio overrides a stated pressure** - the outlet is `18.8 * 2.2 = 41.36` bara - and the step is the isentropic one.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+isentropic_efficiency = 1.0
+compression_ratio = 2.2
+[cases.expected]
+outlet_p = 4136000.000000001
+outlet_t = 361.1724681677732
+outlet_h = 2781.8996893496005
+power = 3069274.257000921
+
+[[cases]]
+id = "the_maximum_outlet_pressure_caps_the_ratio"
+tolerance = 0.0001
+source = "The capture's `pr_ratio_3_capped_40` row: ratio `3.0` with `setMaxOutletPressure(40)`. **The cap wins**: the outlet is 40 bara rather than 56.4, and every downstream number is the state at that pressure.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+isentropic_efficiency = 1.0
+compression_ratio = 3.0
+max_outlet_pressure = 4000000.0
+[cases.expected]
+outlet_p = 4000000.0
+outlet_t = 358.5790429899031
+outlet_h = 2687.1631745412087
+power = 2928286.676019533
+
+[[cases]]
+id = "a_fixed_power_sets_the_enthalpy_step"
+tolerance = 0.0001
+source = "The capture's `pr_power_3mw` row: `setPower(3e6)` with the outlet pressure stated. **The work fixes the step**, `h_out = h_in + 3e6 / n`, and the isentropic efficiency is back-solved from it rather than read.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 0.8
+power = 3000000.0
+[cases.expected]
+outlet_t = 360.35295918637667
+outlet_h = 2735.3508968838955
+power = 3000000.0002835623
+
+[[cases]]
+id = "a_fixed_power_keeps_the_polytropic_efficiency"
+tolerance = 0.0001
+source = "The capture's `pr_power_3mw_polytropic` row: the same fixed work with `usePolytropicCalc` and `0.75`. **The state is the work's** - it is the isentropic row's - while the reported polytropic efficiency stays the stated `0.75`.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 0.8
+use_polytropic_calc = true
+polytropic_efficiency = 0.75
+power = 3000000.0
+[cases.expected]
+outlet_t = 360.352959178275
+outlet_h = 2735.350896521039
+power = 2999999.9997435563
+polytropic_efficiency = 0.75

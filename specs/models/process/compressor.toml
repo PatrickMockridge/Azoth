@@ -70,6 +70,18 @@ type = "enum"
 values = ["default", "detailed", "schultz"]
 optional = true
 description = "the class's `polytropicMethod`. **Absent is `default`**; `detailed` and `schultz` are refused by name, because neither is carried.\n"
+[inputs.compression_ratio]
+unit = "dimensionless"
+optional = true
+description = "`setCompressionRatio`: the outlet pressure is `P_in * ratio`, and it overrides a stated `outlet_pressure`. **Absent leaves the stated pressure in charge.**\n"
+[inputs.max_outlet_pressure]
+unit = "Pa"
+optional = true
+description = "`setMaxOutletPressure`: caps the ratio's outlet pressure. Unread without `compression_ratio`.\n"
+[inputs.power]
+unit = "W"
+optional = true
+description = "`setPower`: fixes the shaft work, so `h_out = h_in + power / n`. The polytropic branch keeps its stated efficiency; the isentropic one back-solves `(h_is - h_in) / dH`. Absent leaves the efficiency in charge.\n"
 [inputs.curve]
 type = "record_list"
 row_type = "CompressorCurvePoint"

@@ -17,7 +17,7 @@ use crate::compressor_chart::{ChartKind, CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
 use crate::kernels::compressor::{
     SpeedSolveSettings, SurgeSettings, compressor_polytropic, compressor_speed_solve,
-    compressor_with_chart,
+    compressor_with_chart, compressor_with_power,
 };
 use crate::model_gen;
 use crate::stream::Stream;
@@ -109,6 +109,9 @@ pub fn compressor(
     use_polytropic_calc: Option<bool>,
     polytropic_efficiency: Option<f64>,
     polytropic_method: Option<&str>,
+    compression_ratio: Option<f64>,
+    max_outlet_pressure: Option<Pressure>,
+    power: Option<Power>,
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
     solve_speed: Option<bool>,
@@ -183,14 +186,39 @@ pub fn compressor(
                 "the speed-solve mode reads a chart, and this machine states none",
             ));
         }
-        let pressure = outlet_pressure.ok_or_else(|| {
-            AzothError::invalid_input(
-                "outlet_pressure",
-                "a compressor without a curve reaches only the pressure it is given, and this \
-                 one has neither",
-            )
-        })?;
-        let (out, efficiency, exponent) = if use_polytropic_calc.unwrap_or(false) {
+        // `setCompressionRatio` flips the mode on and `setOutletPressure` overrides any stated
+        // pressure; `setMaximumOutletPressure` caps it.
+        let pressure = match compression_ratio {
+            Some(ratio) => {
+                if !(ratio.is_finite() && ratio > 0.0) {
+                    return Err(AzothError::invalid_input(
+                        "compression_ratio",
+                        format!("a compression ratio is positive, and {ratio} is not"),
+                    ));
+                }
+                let uncapped = feed.p.value * ratio;
+                let capped = max_outlet_pressure.map_or(uncapped, |cap| uncapped.min(cap.value));
+                pascals(capped)
+            }
+            None => outlet_pressure.ok_or_else(|| {
+                AzothError::invalid_input(
+                    "outlet_pressure",
+                    "a compressor without a curve reaches only the pressure it is given, and \
+                     this one has neither",
+                )
+            })?,
+        };
+        let (out, efficiency, exponent) = if let Some(power) = power {
+            // `setPower` fixes the shaft work; the polytropic branch keeps its stated
+            // efficiency and the isentropic one back-solves it from the isentropic step.
+            let stated = if use_polytropic_calc.unwrap_or(false) {
+                Some(polytropic_efficiency.unwrap_or(1.0))
+            } else {
+                None
+            };
+            let (out, efficiency) = compressor_with_power(&feed, pressure, power, stated)?;
+            (out, efficiency, None)
+        } else if use_polytropic_calc.unwrap_or(false) {
             let method = polytropic_method.unwrap_or("default");
             match method {
                 "default" => {}

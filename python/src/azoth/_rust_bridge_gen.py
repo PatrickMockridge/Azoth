@@ -5574,7 +5574,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, polytropic_method: str | None=None, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, solve_speed: bool | None=None, min_speed: float | None=None, max_speed: float | None=None, limit_speed: bool | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, polytropic_method: str | None=None, compression_ratio: float | None=None, max_outlet_pressure: Q | None=None, power: Q | None=None, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, solve_speed: bool | None=None, min_speed: float | None=None, max_speed: float | None=None, limit_speed: bool | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -5588,6 +5588,9 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         use_polytropic_calc,
         None if polytropic_efficiency is None else polytropic_efficiency,
         polytropic_method,
+        None if compression_ratio is None else compression_ratio,
+        None if max_outlet_pressure is None else input_to_si(spec, "max_outlet_pressure", max_outlet_pressure),
+        None if power is None else input_to_si(spec, "power", power),
         None if curve is None else input_records_to_si(spec, "curve", curve),
         None if speed is None else speed,
         solve_speed,

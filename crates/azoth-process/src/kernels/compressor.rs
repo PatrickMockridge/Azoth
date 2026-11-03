@@ -221,6 +221,72 @@ pub fn compressor_polytropic(
     Ok((out, exponent_polytropic))
 }
 
+/// `setPower`'s fixed-shaft-power branch: `h_out = h_in + power / n`.
+///
+/// The class sets `dH` and flashes the enthalpy, then back-solves the isentropic efficiency
+/// as `(h_is - h_in) / dH`; in the polytropic branch it keeps the stated polytropic
+/// efficiency instead. The outlet pressure still comes from the caller.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] for a non-positive power or a non-increasing
+/// pressure; whatever the flashes refuse.
+pub fn compressor_with_power(
+    feed: &Stream,
+    outlet_pressure: Pressure,
+    power: Power,
+    polytropic_efficiency: Option<f64>,
+) -> Result<(Stream, f64)> {
+    if !(power.value.is_finite() && power.value > 0.0) {
+        return Err(AzothError::invalid_input(
+            "power",
+            format!(
+                "a fixed shaft power is positive, and {} W is not",
+                power.value
+            ),
+        ));
+    }
+    if outlet_pressure.value <= feed.p.value {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the power branch compresses, and it is given {} Pa against the inlet's {} Pa",
+                outlet_pressure.value, feed.p.value
+            ),
+        ));
+    }
+    let enthalpy_change = power.value / feed.n;
+    let out = Stream::from_ph(
+        feed.components.clone(),
+        feed.z.clone(),
+        feed.n,
+        outlet_pressure,
+        joules_per_mole(feed.h.value + enthalpy_change),
+    )?;
+    let efficiency = match polytropic_efficiency {
+        Some(stated) => stated,
+        None => {
+            let (mixture, ideal_gas) = feed.mixture()?;
+            let (entropy, _) = ps_flash::entropy_at(&mixture, &ideal_gas, feed.t, feed.p, &feed.z)?;
+            let isentropic = ps_flash::ps_flash(
+                &mixture,
+                &ideal_gas,
+                outlet_pressure,
+                joules_per_mole_kelvin(entropy),
+                &feed.z,
+            )?;
+            let (enthalpy_isentropic, _) = ph_flash::enthalpy_at(
+                &mixture,
+                &ideal_gas,
+                isentropic.temperature,
+                outlet_pressure,
+                &feed.z,
+            )?;
+            (enthalpy_isentropic - feed.h.value) / enthalpy_change
+        }
+    };
+    Ok((out, efficiency))
+}
+
 /// Raise a stream along the compressor's chart, solving the pressure from the head.
 ///
 /// **This is `Compressor.run`'s fixed-speed chart branch**, `Compressor.java:1466-1545`. The
