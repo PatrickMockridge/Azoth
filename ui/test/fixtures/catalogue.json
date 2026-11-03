@@ -4499,6 +4499,16 @@
           "values": []
         },
         {
+          "description": "the `runDeltaT` step, 1.0 K by default",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "delta_t",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
           "description": "counterflow, parallelflow or shell_and_tube, which picks the effectiveness relation; NeqSim spells these \"concentric tube counterflow\", \"concentric tube paralellflow\" and \"shell and tube\" and defaults to the first",
           "dimension": null,
           "kind": "enum",
@@ -4511,6 +4521,16 @@
             "parallelflow",
             "shell_and_tube"
           ]
+        },
+        {
+          "description": "the class's `guessOutTemperature`, 403.15 K by default; carried and unread because the answering branch overwrites its seed",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "guess_out_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
         },
         {
           "description": "pin the hot outlet at this temperature and energy-balance the cold side against it; at most one of the two outlet temperatures may be given",
@@ -4542,6 +4562,16 @@
           ],
           "required": false,
           "unit": "W/K",
+          "values": []
+        },
+        {
+          "description": "run `runDeltaT` instead of the rating: perturb each side by `delta_t`, set the side with the larger swing and close the other; a pinned outlet still wins",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "use_delta_t",
+          "range": [],
+          "required": false,
+          "unit": null,
           "values": []
         }
       ],
@@ -6490,7 +6520,13 @@
       "source": "NeqSim process/equipment/separator/GasScrubber.java",
       "unmodelled_ranges": [
         "internal_diameter",
-        "design_gas_load_factor"
+        "design_gas_load_factor",
+        "volume_safety_factor",
+        "design_liquid_level_fraction",
+        "max_operation_pressure",
+        "allowable_stress",
+        "joint_efficiency",
+        "corrosion_allowance"
       ]
     },
     {
@@ -6658,7 +6694,17 @@
       "unmodelled_ranges": [
         "internal_diameter",
         "design_gas_load_factor",
-        "design_liquid_level_fraction"
+        "design_liquid_level_fraction",
+        "separator_length",
+        "liquid_level_fraction",
+        "safety_factor",
+        "fg",
+        "volume_safety_factor",
+        "retention_time",
+        "max_operation_pressure",
+        "allowable_stress",
+        "joint_efficiency",
+        "corrosion_allowance"
       ]
     },
     {
