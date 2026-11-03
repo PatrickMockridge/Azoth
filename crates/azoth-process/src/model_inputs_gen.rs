@@ -512,6 +512,27 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "use_polytropic_calc",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "polytropic_efficiency",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "polytropic_method",
+                kind: "enum",
+                values: &["default", "detailed", "schultz"],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
                 name: "curve",
                 kind: "record_list",
                 values: &[],
