@@ -5980,6 +5980,57 @@ class EjectorResult(_HasWarnings):
     #: the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.
     diffuser_velocity: Q | None
 
+    #: `getMotiveNozzleThroatArea`: the motive mass flow over its density at the mixing pressure and its exit velocity.
+    motive_nozzle_throat_area: Q
+
+    #: `getMotiveNozzleDiameter`: `sqrt(4A/pi)` of the throat area.
+    motive_nozzle_diameter: Q
+
+    #: `getSuctionInletArea`: the suction mass flow over its density at the mixing pressure and its design velocity.
+    suction_inlet_area: Q
+
+    #: `getSuctionInletDiameter`: `sqrt(4A/pi)` of the suction inlet's area.
+    suction_inlet_diameter: Q
+
+    #: `getMixingChamberArea`: the total mass flow over the mixture's density at the mixing pressure and the mixing velocity. **The area ratio the class reports beside it is this over the throat area.**
+    mixing_chamber_area: Q
+
+    #: `getMixingChamberDiameter`: `sqrt(4A/pi)` of the mixing chamber's area.
+    mixing_chamber_diameter: Q
+
+    #: `getDiffuserOutletArea`: the total mass flow over the discharge density and the diffuser's design velocity.
+    diffuser_outlet_area: Q
+
+    #: `getDiffuserOutletDiameter`: `sqrt(4A/pi)` of the diffuser outlet's area.
+    diffuser_outlet_diameter: Q
+
+    #: `getMotiveNozzleEffectiveLength`: three times the throat diameter.
+    motive_nozzle_effective_length: Q
+
+    #: `getSuctionInletLength`: two and a half times the suction inlet's diameter.
+    suction_inlet_length: Q
+
+    #: `getMixingChamberLength`: four times the mixing chamber's diameter.
+    mixing_chamber_length: Q
+
+    #: `getDiffuserOutletLength`: six times the diffuser outlet's diameter.
+    diffuser_outlet_length: Q
+
+    #: `getBodyVolume`: the four stages' cylinder volumes, area times length, summed.
+    body_volume: Q
+
+    #: `getConnectedPipingVolume`: the suction connection's and the discharge connection's cylinder volumes.
+    connected_piping_volume: Q
+
+    #: `getTotalVolume`: the body and the connected piping summed.
+    total_volume: Q
+
+    #: `getSuctionConnectionLength`: `3 + 1.5*clamp(discharge/suction - 1, 0, 3)` times the suction inlet's diameter, in bara - `setSuctionConnectionLength` is not a declared input.
+    suction_connection_length: Q
+
+    #: `getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.
+    discharge_connection_length: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

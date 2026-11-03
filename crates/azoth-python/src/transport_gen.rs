@@ -14915,6 +14915,57 @@ pub struct PyEjectorResult {
     /// the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.
     #[pyo3(get)]
     pub diffuser_velocity: Option<PyQty>,
+    /// `getMotiveNozzleThroatArea`: the motive mass flow over its density at the mixing pressure and its exit velocity.
+    #[pyo3(get)]
+    pub motive_nozzle_throat_area: PyQty,
+    /// `getMotiveNozzleDiameter`: `sqrt(4A/pi)` of the throat area.
+    #[pyo3(get)]
+    pub motive_nozzle_diameter: PyQty,
+    /// `getSuctionInletArea`: the suction mass flow over its density at the mixing pressure and its design velocity.
+    #[pyo3(get)]
+    pub suction_inlet_area: PyQty,
+    /// `getSuctionInletDiameter`: `sqrt(4A/pi)` of the suction inlet's area.
+    #[pyo3(get)]
+    pub suction_inlet_diameter: PyQty,
+    /// `getMixingChamberArea`: the total mass flow over the mixture's density at the mixing pressure and the mixing velocity. **The area ratio the class reports beside it is this over the throat area.**
+    #[pyo3(get)]
+    pub mixing_chamber_area: PyQty,
+    /// `getMixingChamberDiameter`: `sqrt(4A/pi)` of the mixing chamber's area.
+    #[pyo3(get)]
+    pub mixing_chamber_diameter: PyQty,
+    /// `getDiffuserOutletArea`: the total mass flow over the discharge density and the diffuser's design velocity.
+    #[pyo3(get)]
+    pub diffuser_outlet_area: PyQty,
+    /// `getDiffuserOutletDiameter`: `sqrt(4A/pi)` of the diffuser outlet's area.
+    #[pyo3(get)]
+    pub diffuser_outlet_diameter: PyQty,
+    /// `getMotiveNozzleEffectiveLength`: three times the throat diameter.
+    #[pyo3(get)]
+    pub motive_nozzle_effective_length: PyQty,
+    /// `getSuctionInletLength`: two and a half times the suction inlet's diameter.
+    #[pyo3(get)]
+    pub suction_inlet_length: PyQty,
+    /// `getMixingChamberLength`: four times the mixing chamber's diameter.
+    #[pyo3(get)]
+    pub mixing_chamber_length: PyQty,
+    /// `getDiffuserOutletLength`: six times the diffuser outlet's diameter.
+    #[pyo3(get)]
+    pub diffuser_outlet_length: PyQty,
+    /// `getBodyVolume`: the four stages' cylinder volumes, area times length, summed.
+    #[pyo3(get)]
+    pub body_volume: PyQty,
+    /// `getConnectedPipingVolume`: the suction connection's and the discharge connection's cylinder volumes.
+    #[pyo3(get)]
+    pub connected_piping_volume: PyQty,
+    /// `getTotalVolume`: the body and the connected piping summed.
+    #[pyo3(get)]
+    pub total_volume: PyQty,
+    /// `getSuctionConnectionLength`: `3 + 1.5*clamp(discharge/suction - 1, 0, 3)` times the suction inlet's diameter, in bara - `setSuctionConnectionLength` is not a declared input.
+    #[pyo3(get)]
+    pub suction_connection_length: PyQty,
+    /// `getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.
+    #[pyo3(get)]
+    pub discharge_connection_length: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14924,7 +14975,7 @@ pub struct PyEjectorResult {
 impl PyEjectorResult {
     fn __repr__(&self) -> String {
         format!(
-            "EjectorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, mixing_pressure={:?}, motive_nozzle_velocity={:?}, suction_nozzle_velocity={:?}, mixing_velocity={:?}, diffuser_velocity={:?}, {} warning(s))",
+            "EjectorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, mixing_pressure={:?}, motive_nozzle_velocity={:?}, suction_nozzle_velocity={:?}, mixing_velocity={:?}, diffuser_velocity={:?}, motive_nozzle_throat_area={:?}, motive_nozzle_diameter={:?}, suction_inlet_area={:?}, suction_inlet_diameter={:?}, mixing_chamber_area={:?}, mixing_chamber_diameter={:?}, diffuser_outlet_area={:?}, diffuser_outlet_diameter={:?}, motive_nozzle_effective_length={:?}, suction_inlet_length={:?}, mixing_chamber_length={:?}, diffuser_outlet_length={:?}, body_volume={:?}, connected_piping_volume={:?}, total_volume={:?}, suction_connection_length={:?}, discharge_connection_length={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14935,6 +14986,23 @@ impl PyEjectorResult {
             self.suction_nozzle_velocity,
             self.mixing_velocity,
             self.diffuser_velocity,
+            self.motive_nozzle_throat_area,
+            self.motive_nozzle_diameter,
+            self.suction_inlet_area,
+            self.suction_inlet_diameter,
+            self.mixing_chamber_area,
+            self.mixing_chamber_diameter,
+            self.diffuser_outlet_area,
+            self.diffuser_outlet_diameter,
+            self.motive_nozzle_effective_length,
+            self.suction_inlet_length,
+            self.mixing_chamber_length,
+            self.diffuser_outlet_length,
+            self.body_volume,
+            self.connected_piping_volume,
+            self.total_volume,
+            self.suction_connection_length,
+            self.discharge_connection_length,
             self.warnings.len()
         )
     }
@@ -14980,6 +15048,74 @@ impl From<&azoth_process::models::ejector::EjectorResult> for PyEjectorResult {
                 magnitude_si: v.value,
                 unit: "m/s".to_string(),
             }),
+            motive_nozzle_throat_area: PyQty {
+                magnitude_si: r.motive_nozzle_throat_area.value,
+                unit: "m**2".to_string(),
+            },
+            motive_nozzle_diameter: PyQty {
+                magnitude_si: r.motive_nozzle_diameter.value,
+                unit: "m".to_string(),
+            },
+            suction_inlet_area: PyQty {
+                magnitude_si: r.suction_inlet_area.value,
+                unit: "m**2".to_string(),
+            },
+            suction_inlet_diameter: PyQty {
+                magnitude_si: r.suction_inlet_diameter.value,
+                unit: "m".to_string(),
+            },
+            mixing_chamber_area: PyQty {
+                magnitude_si: r.mixing_chamber_area.value,
+                unit: "m**2".to_string(),
+            },
+            mixing_chamber_diameter: PyQty {
+                magnitude_si: r.mixing_chamber_diameter.value,
+                unit: "m".to_string(),
+            },
+            diffuser_outlet_area: PyQty {
+                magnitude_si: r.diffuser_outlet_area.value,
+                unit: "m**2".to_string(),
+            },
+            diffuser_outlet_diameter: PyQty {
+                magnitude_si: r.diffuser_outlet_diameter.value,
+                unit: "m".to_string(),
+            },
+            motive_nozzle_effective_length: PyQty {
+                magnitude_si: r.motive_nozzle_effective_length.value,
+                unit: "m".to_string(),
+            },
+            suction_inlet_length: PyQty {
+                magnitude_si: r.suction_inlet_length.value,
+                unit: "m".to_string(),
+            },
+            mixing_chamber_length: PyQty {
+                magnitude_si: r.mixing_chamber_length.value,
+                unit: "m".to_string(),
+            },
+            diffuser_outlet_length: PyQty {
+                magnitude_si: r.diffuser_outlet_length.value,
+                unit: "m".to_string(),
+            },
+            body_volume: PyQty {
+                magnitude_si: r.body_volume.value,
+                unit: "m**3".to_string(),
+            },
+            connected_piping_volume: PyQty {
+                magnitude_si: r.connected_piping_volume.value,
+                unit: "m**3".to_string(),
+            },
+            total_volume: PyQty {
+                magnitude_si: r.total_volume.value,
+                unit: "m**3".to_string(),
+            },
+            suction_connection_length: PyQty {
+                magnitude_si: r.suction_connection_length.value,
+                unit: "m".to_string(),
+            },
+            discharge_connection_length: PyQty {
+                magnitude_si: r.discharge_connection_length.value,
+                unit: "m".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

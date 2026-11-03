@@ -2515,8 +2515,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.ejector': {
         "calc_id": 'process.ejector',
         "name": 'Ejector',
-        "spec": {'path': 'specs/models/process/ejector.toml', 'sha256': '24cc3d4390d99685c5fc4623ef308d9868761da2ca6c2fa28045d0081bd590a3'},
-        "code": [{'path': 'python/src/azoth/process/reference/ejector.py', 'sha256': '98e9a600c973c1f81eeb0eb1cea395a806b74f6ffa547e357c58374fa5ebdbe3'}, {'path': 'crates/azoth-process/src/models/ejector.rs', 'sha256': '4c76892c217acf9d2165a0bd064924e19063db1f0ce636ebd93ac7960ceefbce'}],
+        "spec": {'path': 'specs/models/process/ejector.toml', 'sha256': '45ba90e0966997139bd00fee3d05c6dbee9e9be554492bbb38fab7d4fcefc736'},
+        "code": [{'path': 'python/src/azoth/process/reference/ejector.py', 'sha256': 'f584875e8c7c3cd5d983b421f390eaedcabb7346f4db577ed77224aa65918625'}, {'path': 'crates/azoth-process/src/models/ejector.rs', 'sha256': 'cc35125f886bdf6085fa0fe5f30e686d14030150c69a8e0306c47bd7da52c39e'}],
         "source": 'NeqSim process/equipment/ejector/Ejector.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

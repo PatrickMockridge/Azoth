@@ -710,8 +710,10 @@ a claim nothing holds.
   of its own in `src/test`. **Neither name appears anywhere in the pinned jar**, which is where
   every capture in this tree came from, so neither is in the artifact the oracle was read from.
   A port would be a class nothing calls.
-- **`MechanicalDesign`** — `process.ejector`'s own size, whose areas, diameters, lengths and
-  volumes `updateDesign` fills. They are absent rather than guessed.
+- **`MechanicalDesign`** — `process.ejector`'s `updateDesign` container is ported: the four
+  areas, their diameters, the fixed length multiples, the two connection estimates and the
+  swept volumes. The base class's weights and cost estimate are a separate tree and are still
+  absent rather than guessed.
 - **`process.filter`'s transient surfaces** — solids loading, breakthrough, backwash,
   regeneration and the element-integrity check. The four clean-drop models and
   `updateParticleCapturePerformance` are ported; what remains is the loading the transient

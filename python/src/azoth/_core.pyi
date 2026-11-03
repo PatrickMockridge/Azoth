@@ -2785,6 +2785,23 @@ class EjectorResult:
     suction_nozzle_velocity: Qty | None
     mixing_velocity: Qty | None
     diffuser_velocity: Qty | None
+    motive_nozzle_throat_area: Qty
+    motive_nozzle_diameter: Qty
+    suction_inlet_area: Qty
+    suction_inlet_diameter: Qty
+    mixing_chamber_area: Qty
+    mixing_chamber_diameter: Qty
+    diffuser_outlet_area: Qty
+    diffuser_outlet_diameter: Qty
+    motive_nozzle_effective_length: Qty
+    suction_inlet_length: Qty
+    mixing_chamber_length: Qty
+    diffuser_outlet_length: Qty
+    body_volume: Qty
+    connected_piping_volume: Qty
+    total_volume: Qty
+    suction_connection_length: Qty
+    discharge_connection_length: Qty
     warnings: list[Warning]
 
 @final

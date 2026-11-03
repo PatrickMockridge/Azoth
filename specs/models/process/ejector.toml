@@ -7,17 +7,18 @@ assumptions = [
     "**the two design velocities are empirical correlations, and they decide the answer.** Each blends `sqrt(2·target/rho)` with a logarithmic flow term, clamped - `[25, 120]` m/s at the suction, `[10, 60]` at the diffuser - and the outlet's enthalpy is what the diffuser's `v^2/2` leaves.",
     "**the motive nozzle's efficiency was undeclared and is now a parameter.** `run` reads `efficiencyIsentropic` - default `0.75`, its own setter - with only the other three efficiencies declared beside it, so the entry described a machine whose largest loss had no name.",
     "**a stream that carries nothing is returned as the motive stream**, which is `run`'s own guard rather than a division by zero: with no mass flow at all the class clones the motive inlet and stops.",
-    "**the class's own diagnostics are not outputs.** The three ratios, the area ratio, the critical back pressure and the Mach numbers are `run`'s instruments; the record carries `n`, `z`, `P`, `T` and `h`, and the three ratios are readable off it. The areas and lengths are mechanical design.",
-    "**the class's own size is not computed here**: `updateDesign`'s areas, diameters, lengths and volumes are absent rather than guessed, and `ROADMAP.md` names `MechanicalDesign` among the classes still owed.",
+    "**the class's own diagnostics are not outputs.** The three ratios, the area ratio, the critical back pressure and the Mach numbers are `run`'s instruments; the record carries `n`, `z`, `P`, `T` and `h`, and the three ratios are readable off it.",
+    "**the mechanical design is `updateDesign`'s container**: four areas from each stage's mass flow, density and velocity, their diameters, fixed length multiples and two pressure-ratio connection estimates, summed as swept cylinders. **With no flow every field is `0.0`** - `resetDesign`'s state.",
+    "**`setSuctionConnectionLength` and `setDischargeConnectionLength` are not declared**: the palette declares the four efficiencies and the discharge pressure, so the design's connection lengths are the class's estimates, not inputs.",
     "the fluids are PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/ejector/Ejector.java` is the port source, through its `run`.",
-    "`validation/neqsim/captures/process_ejector.tsv` - four rows: the class at its own defaults, a motive nozzle efficiency of `0.5`, a 14 bara discharge, and a heavier suction fluid, each with the class's reported ratios, area ratio and Mach numbers beside the record.",
+    "`validation/neqsim/captures/process_ejector.tsv` - four rows: the defaults, a motive nozzle efficiency of `0.5`, a 14 bara discharge, and a heavier suction fluid, each with the class's ratios, Mach numbers and mechanical design beside the record.",
 ]
 [source]
 standard = "NeqSim process/equipment/ejector/Ejector.java"
-edition = "Its steady-state `run`: an isentropic expansion of each stream to the estimated mixing pressure, the nozzle efficiency's enthalpy drop, `sqrt(2 dh)` velocities, a momentum mix, and a diffuser that recovers `v^2/2` up to the discharge pressure. **The sizing is mechanical design and is absent.**"
+edition = "Its steady-state `run`: each stream expands isentropically to the estimated mixing pressure, drops by its nozzle efficiency, gets `sqrt(2 dh)`, is mixed by momentum, and is diffused to the discharge pressure; `updateDesign` then stores the areas, lengths and volumes."
 [inputs]
 [inputs.motive_components]
 type = "components"
@@ -101,6 +102,57 @@ description = "the mixed stream's, from the momentum balance, scaled by the mixi
 [outputs.diffuser_velocity]
 unit = "m/s"
 description = "the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.\n"
+[outputs.motive_nozzle_throat_area]
+unit = "m**2"
+description = "`getMotiveNozzleThroatArea`: the motive mass flow over its density at the mixing pressure and its exit velocity.\n"
+[outputs.motive_nozzle_diameter]
+unit = "m"
+description = "`getMotiveNozzleDiameter`: `sqrt(4A/pi)` of the throat area.\n"
+[outputs.suction_inlet_area]
+unit = "m**2"
+description = "`getSuctionInletArea`: the suction mass flow over its density at the mixing pressure and its design velocity.\n"
+[outputs.suction_inlet_diameter]
+unit = "m"
+description = "`getSuctionInletDiameter`: `sqrt(4A/pi)` of the suction inlet's area.\n"
+[outputs.mixing_chamber_area]
+unit = "m**2"
+description = "`getMixingChamberArea`: the total mass flow over the mixture's density at the mixing pressure and the mixing velocity. **The area ratio the class reports beside it is this over the throat area.**\n"
+[outputs.mixing_chamber_diameter]
+unit = "m"
+description = "`getMixingChamberDiameter`: `sqrt(4A/pi)` of the mixing chamber's area.\n"
+[outputs.diffuser_outlet_area]
+unit = "m**2"
+description = "`getDiffuserOutletArea`: the total mass flow over the discharge density and the diffuser's design velocity.\n"
+[outputs.diffuser_outlet_diameter]
+unit = "m"
+description = "`getDiffuserOutletDiameter`: `sqrt(4A/pi)` of the diffuser outlet's area.\n"
+[outputs.motive_nozzle_effective_length]
+unit = "m"
+description = "`getMotiveNozzleEffectiveLength`: three times the throat diameter.\n"
+[outputs.suction_inlet_length]
+unit = "m"
+description = "`getSuctionInletLength`: two and a half times the suction inlet's diameter.\n"
+[outputs.mixing_chamber_length]
+unit = "m"
+description = "`getMixingChamberLength`: four times the mixing chamber's diameter.\n"
+[outputs.diffuser_outlet_length]
+unit = "m"
+description = "`getDiffuserOutletLength`: six times the diffuser outlet's diameter.\n"
+[outputs.body_volume]
+unit = "m**3"
+description = "`getBodyVolume`: the four stages' cylinder volumes, area times length, summed.\n"
+[outputs.connected_piping_volume]
+unit = "m**3"
+description = "`getConnectedPipingVolume`: the suction connection's and the discharge connection's cylinder volumes.\n"
+[outputs.total_volume]
+unit = "m**3"
+description = "`getTotalVolume`: the body and the connected piping summed.\n"
+[outputs.suction_connection_length]
+unit = "m"
+description = "`getSuctionConnectionLength`: `3 + 1.5*clamp(discharge/suction - 1, 0, 3)` times the suction inlet's diameter, in bara - `setSuctionConnectionLength` is not a declared input.\n"
+[outputs.discharge_connection_length]
+unit = "m"
+description = "`getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.\n"
 [[valid_range]]
 quantity = "discharge_pressure"
 min = 0
