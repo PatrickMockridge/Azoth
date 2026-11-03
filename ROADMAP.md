@@ -732,16 +732,17 @@ a claim nothing holds.
   duty is declared out with the port named rather than guessed at.
 - **`process.pipe`'s transient**: `AdiabaticPipe.runTransient` re-runs the steady state, so the
   line participates in a dynamic system without line-pack or wave propagation; this port has
-  the steady state and no transient, with the rest of the tree. **`process.mixer`** owes
-  the pressure-mismatch flag, which warns that the inlets arrived at different pressures — a
-  fact about upstream equipment rather than the record — and, with the rest of the tree,
-  `runTransient`.
+  the steady state and no transient, with the rest of the tree. **`process.mixer`'s
+  pressure-mismatch flag landed** — it reports the spread and warns when it exceeds the
+  class's `0.5` bar tolerance — and its `runTransient` is owed with the rest of the tree.
 - **`process.distillation_column`'s cold seed** — `runBostonSullivanRefinement`, declined on a
   measurement: without it the class's first Newton step moves the variables by `1e11` times their
-  own size. **`process.shortcut_distillation_column`** owes the tray hydraulics, the tray
-  optimization and `getResultsJson`; its own `setNumberOfTrays` override is inert, and says so.
-- **`process.throttling_valve`'s laminar branch and controller** — the laminar form is the
-  `prod choke` sizing class's and the controller a transient surface. The `ControlValveSizing`
+  own size. **`process.shortcut_distillation_column`'s `setNumberOfTrays` override is inert, and
+  says so** — the class computes the stages, it has no tray hydraulics or tray optimization, and
+  `getResultsJson` only serialises fields the result already carries.
+- **`process.throttling_valve`'s controller** — the laminar branch belongs to
+  `ControlValveSizing_IEC_60534_full`, which the spec refuses by name, and the controller is a
+  transient surface. The `ControlValveSizing`
   default, its inverse flow and `isCalcPressure` solve, the choked cap, the fouling fraction and
   the isothermal mode are ported; **the eight other sizing standards are refused by name** in
   the spec's `[[unported]]` rows, each naming its class.
@@ -848,8 +849,9 @@ a claim nothing holds.
   outlet valve fractions landed as stored state**, and `getMassBalance` is recorded as a
   zero-by-construction residual the port does not publish; the droplet calculator is
   `process.separator_performance`; **`GasScrubber`'s vessel sizing and mesh pad landed**;
-  still owed are `Tank`'s wall temperature, steel mass and auto-sizing; `ThrottlingValve`'s laminar branch and controller
-  path; `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
+  still owed are `Tank`'s residence-time `autoSize` — its wall temperature and steel mass are
+  `runTransient`'s, with the level solve —; `ThrottlingValve`'s controller path;
+  `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
   check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
   turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled
   machine, the chart's only reader. **`MapTurboExpanderCompressor` landed as its own id**,
