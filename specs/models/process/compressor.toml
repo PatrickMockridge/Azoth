@@ -18,7 +18,7 @@ assumptions = [
     "**the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.",
     "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
     "**the speed-solve mode is a Newton on the speed.** It reads the chart at the trial speed, forms the pressure ratio and updates through a `100` rpm numerical derivative with relaxation `min(0.8, i/(i+3))`, 200 iterations to `1e-3` bar. `limit_speed` pegs an out-of-range answer at the bound.",
-    "**the catalogue and the property overrides are absent; the deposit model has landed.** The catalogue only attaches a thermal network, and GERG2008/Leachman/Vega are Tier-4 EOS. `MapTurboExpanderCompressor` is not: the second shaft that reuses this Khader chart is `process.map_turbo_expander_compressor`, built by the same `build_chart`.",
+    "**the catalogue and the property overrides are absent; the deposit model has landed.** The catalogue attaches only a thermal network, and GERG2008/Leachman/Vega are Tier-4 EOS. `MapTurboExpanderCompressor` is its own id, `process.map_turbo_expander_compressor`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",

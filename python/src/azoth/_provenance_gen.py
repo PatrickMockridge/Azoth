@@ -2482,7 +2482,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.compressor': {
         "calc_id": 'process.compressor',
         "name": 'Compressor',
-        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '95d9c52c2bc5dcd89ff1960a481ad55f6eecfcd19747268903dfb6ba293d5041'},
+        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '4329b74b37157c67da78e694fa5c2b61a119805dcbe18f750a214891df46bb36'},
         "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': 'e652267e09b591faf83558ae1426206b2e7785e248300b596784341de1173726'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': '879030d805bf12832df1b9a7e8fd0810483e8a3109fef97c27a180d981e38fe4'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
