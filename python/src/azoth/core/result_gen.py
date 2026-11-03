@@ -5686,8 +5686,11 @@ class CompressorResult(_HasWarnings):
     #: the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
     polytropic_head: Q
 
-    #: the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.
+    #: the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.
     polytropic_efficiency: float
+
+    #: `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
+    polytropic_exponent: float | None
 
     #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     power: Q

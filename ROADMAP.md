@@ -806,7 +806,8 @@ a claim nothing holds.
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), deposit model and
   `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
-  lookups, the `CompressorChartKhader2015` map and the speed-solve mode have landed**;
+  lookups, the `CompressorChartKhader2015` map, the speed-solve mode and the no-chart
+  polytropic default branch have landed**;
   `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
   constraints; `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
   **its `useDeltaT` closure landed as `use_delta_t`**, held to

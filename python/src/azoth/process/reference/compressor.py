@@ -29,6 +29,7 @@ and the branch converts it with ``9.81`` - the class's own ``polytropicHeadMeter
 from __future__ import annotations
 
 import math
+import sys
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -46,7 +47,7 @@ from azoth.eos.reference.ps_flash import entropy_at
 from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.eos.reference.sound_speed import sound_speed as _sound_speed
-from azoth.process.reference import capacity, compressor_chart
+from azoth.process.reference import _unported, capacity, compressor_chart
 from azoth.process.reference.surge_curve import SurgeCurve
 
 #: ``Compressor.R``, J/(mol*K).
@@ -78,6 +79,9 @@ def compressor(
     inlet_p: Q,
     inlet_t: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    polytropic_method: str | None = None,
     outlet_pressure: Q | None = None,
     curve: list[dict[str, Q]] | None = None,
     speed: float | None = None,
@@ -206,6 +210,7 @@ def compressor(
         control_margin=0.0 if surge_control_margin is None else float(surge_control_margin),
     )
 
+    polytropic_exponent: float | None = None
     if not points:
         if p_out is None:
             raise InvalidInputError(
@@ -213,12 +218,37 @@ def compressor(
                 "a compressor without a curve reaches only the pressure it is given, and this "
                 "one has neither",
             )
-        states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+        exponent = None
+        if use_polytropic_calc:
+            method = "default" if polytropic_method is None else polytropic_method
+            if method == "detailed":
+                raise _unported.refuse("polytropic_method=detailed")
+            if method == "schultz":
+                raise _unported.refuse("polytropic_method=schultz")
+            if method != "default":
+                raise InvalidInputError(
+                    "polytropic_method",
+                    f"`{method}` is not one of default, detailed or schultz",
+                )
+            eta = 1.0 if polytropic_efficiency is None else float(polytropic_efficiency)
+            if not 0.0 < eta <= 1.0:
+                raise InvalidInputError(
+                    "polytropic_efficiency",
+                    f"the compressor's polytropic efficiency is in (0, 1], and {eta} is not",
+                )
+            h_in, h_out, outlet_t, exponent = _polytropic_states(
+                components, t, p, inlet_z, p_out, eta
+            )
+            efficiency = eta
+            polytropic_exponent = exponent
+            power = n * (h_out - h_in)
+        else:
+            states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+            efficiency = 0.0
+            power = n * states.dh_actual
+            outlet_t = states.outlet_t
+            h_out = states.h_out
         head = 0.0
-        efficiency = 0.0
-        power = n * states.dh_actual
-        outlet_t = states.outlet_t
-        h_out = states.h_out
         out_p = p_out
         state = _ChartState(
             head=0.0,
@@ -309,6 +339,7 @@ def compressor(
         outlet_h=from_si(h_out, "J/mol"),
         polytropic_head=from_si(head, "m"),
         polytropic_efficiency=efficiency,
+        polytropic_exponent=polytropic_exponent,
         power=from_si(power, "W"),
         shaft_speed=state.speed,
         surge_flow_rate=_flow_or_none(state.read, "surge_flow_rate"),
@@ -741,6 +772,75 @@ class CompressorStates:
     h_out: float
     outlet_t: Q
     s_out: float
+
+
+def _polytropic_states(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    efficiency: float,
+) -> tuple[float, float, Q, float]:
+    """``Compressor.run``'s no-chart polytropic default branch, in SI."""
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    molar_mass = capacity._molar_mass(mixture, inlet_z)
+    h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
+    entropy, _ = entropy_at(mixture, ideal_gas, t, p, inlet_z)
+    # The class reads `getDensity()`, the cubic's own ``M/(Z R T/P)`` - the capture's
+    # ``inlet_density_kg_m3`` (14.62717) is that number, not the translated one.
+    shift = mixture.volume_shift(inlet_z)
+    _, _, volume_in = _feed_state(mixture, ideal_gas, t, p, inlet_z)
+    density_in = molar_mass / (volume_in + shift)
+
+    isentropic = ps_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(entropy, "J/(mol*K)"), inlet_z
+    )
+    h_isentropic, _ = enthalpy_at(
+        mixture, ideal_gas, isentropic.T.to("K").magnitude, p_out, inlet_z
+    )
+    _, _, volume_out = _feed_state(
+        mixture, ideal_gas, isentropic.T.to("K").magnitude, p_out, inlet_z
+    )
+    density_out = molar_mass / (volume_out + shift)
+
+    ratio = p_out / p
+    exponent = math.log(ratio) / math.log(density_out / density_in)
+    if (
+        not math.isfinite(exponent)
+        or exponent <= 0.0
+        or abs(exponent - 1.0) < sys.float_info.epsilon
+    ):
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the isenthalpic volume exponent is {exponent} from densities {density_out} and "
+            f"{density_in} kg/m3, which the polytropic path cannot divide by",
+        )
+    term = exponent / (exponent - 1.0) * efficiency
+    term2 = p_out / density_out - p / density_in
+    if term2 == 0.0 or not math.isfinite(term2):
+        raise InvalidInputError(
+            "outlet_pressure", f"the polytropic path's pressure-over-density term is {term2}"
+        )
+    correction = (h_isentropic - h_in) / (term * term2)
+    dh = term * correction * (p / density_in) * (ratio ** (1.0 / term) - 1.0)
+    h_out = h_in + dh
+    outlet_t = ph_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_out, "J/mol"), inlet_z
+    ).T
+    # **The class reports a different exponent from the one it divided by**: after `run` it
+    # recomputes it from the final outlet density (Compressor.java:1784).
+    _, _, volume_actual = _feed_state(
+        mixture, ideal_gas, outlet_t.to("K").magnitude, p_out, inlet_z
+    )
+    density_actual = molar_mass / (volume_actual + shift)
+    density_ratio = density_actual / density_in
+    exponent_polytropic = (
+        math.log(ratio) / math.log(density_ratio)
+        if ratio > 1.0 and density_ratio > 1.0
+        else exponent
+    )
+    return h_in, h_out, outlet_t, exponent_polytropic
 
 
 def _states(

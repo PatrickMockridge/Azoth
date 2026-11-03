@@ -14218,9 +14218,12 @@ pub struct PyCompressorResult {
     /// the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
     #[pyo3(get)]
     pub polytropic_head: PyQty,
-    /// the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.
+    /// the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.
     #[pyo3(get)]
     pub polytropic_efficiency: f64,
+    /// `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
+    #[pyo3(get)]
+    pub polytropic_exponent: Option<f64>,
     /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
     #[pyo3(get)]
     pub power: PyQty,
@@ -14263,7 +14266,7 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14271,6 +14274,7 @@ impl PyCompressorResult {
             self.outlet_h,
             self.polytropic_head,
             self.polytropic_efficiency,
+            self.polytropic_exponent,
             self.power,
             self.shaft_speed,
             self.surge_flow_rate,
@@ -14312,6 +14316,7 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
                 unit: "m".to_string(),
             },
             polytropic_efficiency: r.polytropic_efficiency,
+            polytropic_exponent: r.polytropic_exponent,
             power: PyQty {
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),

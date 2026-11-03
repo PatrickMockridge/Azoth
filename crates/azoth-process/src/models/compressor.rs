@@ -16,11 +16,13 @@ use azoth_eos::Cubic;
 use crate::compressor_chart::{ChartKind, CompressorChart, CurvePoint};
 use crate::kernels::compressor as kernel;
 use crate::kernels::compressor::{
-    SpeedSolveSettings, SurgeSettings, compressor_speed_solve, compressor_with_chart,
+    SpeedSolveSettings, SurgeSettings, compressor_polytropic, compressor_speed_solve,
+    compressor_with_chart,
 };
 use crate::model_gen;
 use crate::stream::Stream;
 use crate::surge_curve::SurgeCurve;
+use crate::unported;
 
 /// One row of `curve`: a measured point, in the units the spec declares.
 #[derive(Debug, Clone, PartialEq)]
@@ -61,6 +63,8 @@ pub struct CompressorResult {
     pub polytropic_head: Length,
     /// The chart polytropic efficiency the branch used; zero in the isentropic branch.
     pub polytropic_efficiency: f64,
+    /// `getPolytropicExponent`, present in the no-chart polytropic branch.
+    pub polytropic_exponent: Option<f64>,
     /// The shaft power, W - the recycled flow's where the anti-surge block ran.
     pub power: Power,
     /// The speed the chart was read at, rpm: the stated one or the solved one.
@@ -102,6 +106,9 @@ pub fn compressor(
     inlet_t: ThermodynamicTemperature,
     outlet_pressure: Option<Pressure>,
     isentropic_efficiency: f64,
+    use_polytropic_calc: Option<bool>,
+    polytropic_efficiency: Option<f64>,
+    polytropic_method: Option<&str>,
     curve: Option<&[CompressorCurvePoint]>,
     speed: Option<f64>,
     solve_speed: Option<bool>,
@@ -169,7 +176,7 @@ pub fn compressor(
 
     let mut read_outs: [Option<f64>; 9] = [None; 9];
     let field_speed = speed.unwrap_or(3000.0);
-    let (out, head, efficiency, power, shaft_speed) = if points.is_empty() {
+    let (out, head, efficiency, power, shaft_speed, polytropic_exponent) = if points.is_empty() {
         if solve_speed.unwrap_or(false) {
             return Err(AzothError::invalid_input(
                 "curve",
@@ -183,9 +190,27 @@ pub fn compressor(
                  one has neither",
             )
         })?;
-        let out = kernel(&feed, pressure, isentropic_efficiency)?;
+        let (out, efficiency, exponent) = if use_polytropic_calc.unwrap_or(false) {
+            let method = polytropic_method.unwrap_or("default");
+            match method {
+                "default" => {}
+                "detailed" => return Err(unported::refuse("polytropic_method=detailed")),
+                "schultz" => return Err(unported::refuse("polytropic_method=schultz")),
+                other => {
+                    return Err(AzothError::invalid_input(
+                        "polytropic_method",
+                        format!("`{other}` is not one of default, detailed or schultz"),
+                    ));
+                }
+            }
+            let (out, exponent) =
+                compressor_polytropic(&feed, pressure, polytropic_efficiency.unwrap_or(1.0))?;
+            (out, polytropic_efficiency.unwrap_or(1.0), Some(exponent))
+        } else {
+            (kernel(&feed, pressure, isentropic_efficiency)?, 0.0, None)
+        };
         let power = azoth_core::units::watts(feed.n * (out.h.value - feed.h.value));
-        (out, 0.0, 0.0, power, field_speed)
+        (out, 0.0, efficiency, power, field_speed, exponent)
     } else {
         let mut chart = build_chart(
             components,
@@ -241,6 +266,7 @@ pub fn compressor(
             outcome.polytropic_efficiency,
             outcome.power,
             outcome.speed,
+            None,
         )
     };
 
@@ -252,6 +278,7 @@ pub fn compressor(
         outlet_h: joules_per_mole(out.h.value),
         polytropic_head: meters(head),
         polytropic_efficiency: efficiency,
+        polytropic_exponent,
         power,
         shaft_speed,
         surge_flow_rate: read_outs[0],

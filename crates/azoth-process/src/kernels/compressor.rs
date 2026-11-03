@@ -1,9 +1,9 @@
 //! `unit_ops.compressor` - the isentropic route, through the kernel the pump landed.
 
-use azoth_core::units::{Power, Pressure, joules_per_mole, pascals, watts};
+use azoth_core::units::{Power, Pressure, joules_per_mole, joules_per_mole_kelvin, pascals, watts};
 use azoth_core::{AzothError, Result};
 
-use azoth_eos::{Phase, RootSide, molar_enthalpy_entropy, pt_flash};
+use azoth_eos::{Phase, RootSide, molar_enthalpy_entropy, ph_flash, ps_flash, pt_flash};
 
 use crate::compressor_chart::CompressorChart;
 use crate::kernels::pump::pump;
@@ -111,6 +111,114 @@ pub struct ChartOutcome {
 /// `useGERG2008`/`useLeachman`/`useVega` property overrides.
 pub fn compressor(feed: &Stream, outlet_pressure: Pressure, efficiency: f64) -> Result<Stream> {
     pump(feed, outlet_pressure, efficiency)
+}
+
+/// `Compressor.run`'s no-chart **polytropic** branch, `Compressor.java:1662-1699`.
+///
+/// The isentropic state at the outlet pressure gives the density and enthalpy the polytropic
+/// exponent is formed from; `CF` rescales the isentropic enthalpy difference by the polytropic
+/// path, and the final `PHflash` lands the outlet. The class's default `polytropicMethod`.
+///
+/// **The exponent's own degenerate states are refused rather than answered**: equal inlet and
+/// isentropic densities make the log a division by zero, and `k = 1` makes the class's `term`
+/// infinite. The class does not guard either.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] for an efficiency outside `(0, 1]`, a
+/// non-increasing pressure, or a degenerate exponent; whatever the flashes refuse otherwise.
+pub fn compressor_polytropic(
+    feed: &Stream,
+    outlet_pressure: Pressure,
+    polytropic_efficiency: f64,
+) -> Result<(Stream, f64)> {
+    if !(polytropic_efficiency > 0.0 && polytropic_efficiency <= 1.0) {
+        return Err(AzothError::invalid_input(
+            "polytropic_efficiency",
+            format!(
+                "the compressor's polytropic efficiency is in (0, 1], and \
+                 {polytropic_efficiency} is not"
+            ),
+        ));
+    }
+    if outlet_pressure.value <= feed.p.value {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the polytropic branch compresses, and it is given {} Pa against the inlet's \
+                 {} Pa",
+                outlet_pressure.value, feed.p.value
+            ),
+        ));
+    }
+    let (mixture, ideal_gas) = feed.mixture()?;
+    // The class reads `getDensity()`, the cubic's own `M/(Z R T/P)`; the capture's
+    // `inlet_density_kg_m3` (14.62717) is that number, not the translated one.
+    let inlet_density = feed.density()?;
+    let (entropy, _) = ps_flash::entropy_at(&mixture, &ideal_gas, feed.t, feed.p, &feed.z)?;
+    let isentropic = ps_flash::ps_flash(
+        &mixture,
+        &ideal_gas,
+        outlet_pressure,
+        joules_per_mole_kelvin(entropy),
+        &feed.z,
+    )?;
+    let (enthalpy_isentropic, _) = ph_flash::enthalpy_at(
+        &mixture,
+        &ideal_gas,
+        isentropic.temperature,
+        outlet_pressure,
+        &feed.z,
+    )?;
+    let isentropic_stream = Stream::from_pt(
+        feed.components.clone(),
+        feed.z.clone(),
+        feed.n,
+        outlet_pressure,
+        isentropic.temperature,
+    )?;
+    let outlet_density = isentropic_stream.density()?;
+
+    let ratio = outlet_pressure.value / feed.p.value;
+    let exponent = ratio.ln() / (outlet_density / inlet_density).ln();
+    if !exponent.is_finite() || exponent <= 0.0 || (exponent - 1.0).abs() < f64::EPSILON {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the isenthalpic volume exponent is {exponent} from densities {outlet_density} \
+                 and {inlet_density} kg/m3, which the polytropic path cannot divide by"
+            ),
+        ));
+    }
+    let exponent_ratio = exponent / (exponent - 1.0);
+    let term = exponent_ratio * polytropic_efficiency;
+    let term2 = outlet_pressure.value / outlet_density - feed.p.value / inlet_density;
+    if !term2.is_finite() || term2 == 0.0 {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!("the polytropic path's pressure-over-density term is {term2}"),
+        ));
+    }
+    let correction = (enthalpy_isentropic - feed.h.value) / (term * term2);
+    let enthalpy_change =
+        term * correction * (feed.p.value / inlet_density) * (ratio.powf(1.0 / term) - 1.0);
+    let out = Stream::from_ph(
+        feed.components.clone(),
+        feed.z.clone(),
+        feed.n,
+        outlet_pressure,
+        joules_per_mole(feed.h.value + enthalpy_change),
+    )?;
+    // **The class reports a different exponent from the one it divided by.** After `run` it
+    // recomputes `polytropicExponent` from the *final* outlet density (Compressor.java:1784),
+    // so the getter is the actual compression path's `ln(P ratio)/ln(rho ratio)`.
+    let outlet_density_actual = out.density()?;
+    let density_ratio = outlet_density_actual / inlet_density;
+    let exponent_polytropic = if ratio > 1.0 && density_ratio > 1.0 {
+        ratio.ln() / density_ratio.ln()
+    } else {
+        exponent
+    };
+    Ok((out, exponent_polytropic))
 }
 
 /// Raise a stream along the compressor's chart, solving the pressure from the head.

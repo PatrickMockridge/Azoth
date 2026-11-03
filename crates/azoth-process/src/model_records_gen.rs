@@ -145,6 +145,7 @@ impl CalcResult for CompressorResult {
         "outlet_h",
         "polytropic_head",
         "polytropic_efficiency",
+        "polytropic_exponent",
         "power",
         "shaft_speed",
         "surge_flow_rate",

@@ -185,6 +185,9 @@ public class ProcessProbe {
       case "compressor":
         isentropicRows("Compressor");
         break;
+      case "compressor_polytropic":
+        compressorPolytropicRows();
+        break;
       case "compressor_curve":
         compressorCurveRows();
         break;
@@ -2006,6 +2009,64 @@ public class ProcessProbe {
   ///
   /// `getEntropyProduction` is the second-law statement of the same step, and the only other
   /// number either class exposes about its interior.
+  /// `Compressor.run`'s no-chart polytropic branch on `CompressorDepositTest`'s machine.
+  static void compressorPolytropicRows() {
+    compressorPolytropicRow("srk_eta_0_60", true, 0.60);
+    compressorPolytropicRow("pr_eta_0_60", false, 0.60);
+    compressorPolytropicRow("pr_eta_0_75", false, 0.75);
+  }
+
+  static void compressorPolytropicRow(String label, boolean srk, double efficiency) {
+    neqsim.thermo.system.SystemInterface gas = srk
+        ? new neqsim.thermo.system.SystemSrkEos(273.15 + 30.0, 18.8)
+        : new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor(label, feed);
+    compressor.setOutletPressure(42.0);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(efficiency);
+    compressor.run();
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("polytropic_efficiency_in=" + efficiency);
+    print("inlet", feed);
+    print("outlet", compressor.getOutletStream());
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println("polytropic_exponent=" + compressor.getPolytropicExponent());
+    // The branch's own intermediates, reproduced so the capture shows what it divides by.
+    neqsim.thermo.system.SystemInterface inletSystem = feed.getThermoSystem();
+    double densIn = inletSystem.getDensity();
+    double pInBara = inletSystem.getPressure();
+    double entropyIn = inletSystem.getEntropy();
+    neqsim.thermo.system.SystemInterface isentropic = inletSystem.clone();
+    isentropic.setPressure(42.0, "bara");
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(isentropic).PSflash(entropyIn);
+    isentropic.initProperties();
+    double densOut = isentropic.getDensity();
+    double hOutIsentropic = isentropic.getEnthalpy();
+    double hIn = inletSystem.getEnthalpy();
+    double k = Math.log(42.0 / pInBara) / Math.log(densOut / densIn);
+    System.out.println("inlet_density_kg_m3=" + densIn);
+    System.out.println("isentropic_density_kg_m3=" + densOut);
+    System.out.println("inlet_enthalpy_total=" + hIn);
+    System.out.println("isentropic_enthalpy_total=" + hOutIsentropic);
+    System.out.println("isenthalpic_exponent=" + k);
+    System.out.println();
+  }
+
   static void isentropicRows(String which) {
     String[] names = new String[] { "methane", "n-butane" };
     double[] z = new double[] { 0.9, 0.1 };

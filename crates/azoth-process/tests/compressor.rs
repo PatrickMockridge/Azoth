@@ -30,6 +30,9 @@ fn the_isentropic_power_is_the_enthalpy_step() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state compresses");
 
@@ -77,6 +80,9 @@ fn the_khader_chart_needs_its_conditions() {
         kelvins(320.0),
         None,
         0.75,
+        None,
+        None,
+        None,
         Some(&curve),
         Some(10_000.0),
         None,
@@ -104,6 +110,9 @@ fn the_khader_chart_needs_its_conditions() {
                 kelvins(320.0),
                 Some(pascals(6_000_000.0)),
                 0.75,
+                None,
+                None,
+                None,
                 None,
                 None,
                 None,
@@ -187,6 +196,9 @@ mod anti_surge {
             kelvins(297.15),
             None,
             1.0,
+            None,
+            None,
+            None,
             Some(&curve()),
             Some(11918.0),
             None,
@@ -701,6 +713,9 @@ mod anti_surge {
             kelvins(297.15),
             None,
             1.0,
+            None,
+            None,
+            None,
             Some(&curve()),
             Some(11918.0),
             None,
@@ -718,4 +733,26 @@ mod anti_surge {
         .expect_err("the spec refuses a negative margin");
         assert_eq!(error.field(), Some("surge_control_margin"));
     }
+}
+
+/// A single-phase feed classified from a converged negative flash still carries the trial
+/// `x`/`y`; the stream's density is the root at **its own composition**, not at those.
+#[test]
+fn a_negative_flash_vapour_stream_reports_its_own_density() {
+    use azoth_process::Stream;
+
+    let feed = Stream::from_pt(
+        ["methane", "ethane", "propane", "CO2", "nitrogen"]
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
+        vec![0.86, 0.07, 0.03, 0.02, 0.02],
+        1488.2073851517619,
+        pascals(18.8e5),
+        kelvins(303.15),
+    )
+    .expect("the feed flashes");
+    let density = feed.density().expect("one phase");
+    let error = (density - 14.627168353749346).abs() / 14.627168353749346;
+    assert!(error <= 1.0e-6, "density: {density} ({error:.3e})");
 }

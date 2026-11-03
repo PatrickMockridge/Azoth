@@ -414,10 +414,10 @@ pub fn pipe(
 /// refuses; the row is built from the generated mapping here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, use_polytropic_calc = None, polytropic_efficiency = None, polytropic_method = None, outlet_pressure = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, use_polytropic_calc=None, polytropic_efficiency=None, polytropic_method=None, outlet_pressure=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn compressor(
@@ -428,6 +428,9 @@ pub fn compressor(
     inlet_p: f64,
     inlet_t: f64,
     isentropic_efficiency: f64,
+    use_polytropic_calc: Option<bool>,
+    polytropic_efficiency: Option<f64>,
+    polytropic_method: Option<&str>,
     outlet_pressure: Option<f64>,
     curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
     speed: Option<f64>,
@@ -475,6 +478,9 @@ pub fn compressor(
         kelvins(inlet_t),
         outlet_pressure.map(pascals),
         isentropic_efficiency,
+        use_polytropic_calc,
+        polytropic_efficiency,
+        polytropic_method,
         points.as_deref(),
         speed,
         solve_speed,

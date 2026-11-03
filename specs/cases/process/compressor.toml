@@ -1144,3 +1144,43 @@ outlet_h = 141.8958732034089
 power = 5726086.620308567
 polytropic_head = 2050.462530582578
 polytropic_efficiency = 0.5458634046611106
+
+[[cases]]
+id = "the_polytropic_branch_at_sixty_per_cent"
+tolerance = 6e-03
+source = "The `compressor_polytropic` capture's `pr_eta_0_60` row: `CompressorDepositTest.buildCompressor(0.60)`'s machine on PR, `setUsePolytropicCalc(true)` and a stated `0.60`. **The polytropic path is not the isentropic one divided by eta**: the isentropic state gives the isenthalpic volume exponent, `CF` rescales the enthalpy difference, and the exponent is `1.5743` rather than the isentropic split's.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 0.6
+use_polytropic_calc = true
+polytropic_efficiency = 0.6
+[cases.expected]
+outlet_t = 398.4084879321825
+outlet_h = 4466.599432901996
+power = 5576456.857118875
+polytropic_efficiency = 0.6
+
+[[cases]]
+id = "the_polytropic_branch_at_seventy_five_per_cent"
+tolerance = 6e-03
+source = "The capture's `pr_eta_0_75` row: the same machine at `0.75`. **The exponent moves with the efficiency** - `1.4200` - and the outlet is cooler at the same pressure, which is what makes the branch a different path rather than a rescaled one.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "CO2", "nitrogen"]
+inlet_n = 1488.2073851517619
+inlet_z = [0.86, 0.07, 0.03, 0.02, 0.02]
+inlet_p = 1880000.0
+inlet_t = 303.15
+outlet_pressure = 4200000.0
+isentropic_efficiency = 0.75
+use_polytropic_calc = true
+polytropic_efficiency = 0.75
+[cases.expected]
+outlet_t = 379.9643949088389
+outlet_h = 3620.409593236407
+power = 4317150.8884881605
+polytropic_efficiency = 0.75

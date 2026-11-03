@@ -99,6 +99,18 @@ pub static UNPORTED: &[Unported] = &[
         capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
     },
     Unported {
+        key: "polytropic_method=detailed",
+        model: "process.compressor",
+        class: "Compressor",
+        capture: "validation/neqsim/captures/process_compressor_polytropic.tsv",
+    },
+    Unported {
+        key: "polytropic_method=schultz",
+        model: "process.compressor",
+        class: "Compressor",
+        capture: "validation/neqsim/captures/process_compressor_polytropic.tsv",
+    },
+    Unported {
         key: "contactor_internals_type=packed",
         model: "process.distillation_column",
         class: "PackedColumnMechanicalDesign",

@@ -256,17 +256,25 @@ impl Stream {
     /// two-phase stream has two roots and nothing here may choose between them.
     fn single_phase_root(&self, mixture: &Mixture) -> Result<f64> {
         let flash = pt_flash(mixture, self.t, self.p, &self.z)?;
-        match flash.phase {
-            Phase::AllVapour => Ok(flash.z_vapour),
-            Phase::AllLiquid | Phase::Trivial => Ok(flash.z_liquid),
-            Phase::TwoPhase => Err(AzothError::invalid_input(
-                "stream",
-                format!(
-                    "this stream is two phases at {} K and {} Pa, so it has no one density                      or viscosity; a caller has to say which phase's they mean",
-                    self.t.value, self.p.value
-                ),
-            )),
-        }
+        let side = match flash.phase {
+            Phase::AllVapour => RootSide::Vapour,
+            Phase::AllLiquid | Phase::Trivial => RootSide::Liquid,
+            Phase::TwoPhase => {
+                return Err(AzothError::invalid_input(
+                    "stream",
+                    format!(
+                        "this stream is two phases at {} K and {} Pa, so it has no one density                      or viscosity; a caller has to say which phase's they mean",
+                        self.t.value, self.p.value
+                    ),
+                ));
+            }
+        };
+        // **The root is the stream's own composition, not the flash's trial phases.** A
+        // single-phase feed classified from a converged negative flash still carries the
+        // trial `x`/`y`, and their roots are not the feed's: measured on the compressor's
+        // rich gas, `z_vapour = 0.8002` at the trial composition against the feed's `0.9518`.
+        let reduced = mixture.reduced_parameters(self.t, self.p)?;
+        Ok(mixture.phase_state(&reduced, &self.z, side)?.z)
     }
 
     /// A stream at a known molar enthalpy, with its temperature solved for.

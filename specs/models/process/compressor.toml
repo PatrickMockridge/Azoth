@@ -5,6 +5,8 @@ assumptions = [
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist, while an outlet reports the `h` it reached because a machine changes it.",
     "**the step is isentropic, and the inlet's entropy is derived rather than carried.** `s = f(T, P, z)` from the same flash that gives the inlet's enthalpy. The captured efficiency-of-one row is the demonstration: the outlet's entropy equals the inlet's and the step's production is zero.",
     "**the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.",
+    "**the polytropic branch is the class's default method.** The isentropic state at the outlet pressure gives the densities and the isenthalpic volume exponent; `CF` and the polytropic exponent land `h_out`. `detailed` and `schultz` are refused by name.",
+    "**the polytropic outlet is held to `6e-3`**: the port reproduces the class's formula on its printed densities and enthalpies; the class's reported PR outlet sits `0.2-0.44%` above that, its in-place state differing from a fresh `PSflash`. `polytropicExponent` is cross-checked, not pinned.",
     "**the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.",
     "**the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
@@ -55,6 +57,19 @@ description = "the pressure the machine takes the stream to in the isentropic br
 [inputs.isentropic_efficiency]
 unit = "dimensionless"
 description = "the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that.\n"
+[inputs.use_polytropic_calc]
+type = "boolean"
+optional = true
+description = "run the no-chart polytropic branch instead of the isentropic one. **Absent is false.** Refused with a curve: the chart's own branch states its efficiency.\n"
+[inputs.polytropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the polytropic efficiency the counter says it runs at, `(0, 1]`. **Absent is the class's `1.0`.** Unread unless `use_polytropic_calc`.\n"
+[inputs.polytropic_method]
+type = "enum"
+values = ["default", "detailed", "schultz"]
+optional = true
+description = "the class's `polytropicMethod`. **Absent is `default`**; `detailed` and `schultz` are refused by name, because neither is carried.\n"
 [inputs.curve]
 type = "record_list"
 row_type = "CompressorCurvePoint"
@@ -153,7 +168,11 @@ unit = "m"
 description = "the chart head the branch used, in metres (`getPolytropicHead(\"meter\")`); zero in the isentropic branch.\n"
 [outputs.polytropic_efficiency]
 unit = "dimensionless"
-description = "the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; zero in the isentropic branch.\n"
+description = "the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.\n"
+[outputs.polytropic_exponent]
+unit = "dimensionless"
+optional = true
+description = "`getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.\n"
 [outputs.power]
 unit = "W"
 description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"
@@ -213,6 +232,18 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature"
+[[unported]]
+parameter = "polytropic_method"
+value = "detailed"
+class = "Compressor"
+capture = "validation/neqsim/captures/process_compressor_polytropic.tsv"
+
+[[unported]]
+parameter = "polytropic_method"
+value = "schultz"
+class = "Compressor"
+capture = "validation/neqsim/captures/process_compressor_polytropic.tsv"
+
 [implementations]
 python = "azoth.process.compressor"
 rust = "azoth_process::compressor"
