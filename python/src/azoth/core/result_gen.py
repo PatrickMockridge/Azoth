@@ -6743,6 +6743,36 @@ class PackedColumnResult(_HasWarnings):
     #: the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.
     internal_diameter: Q
 
+    #: `PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient.
+    k_ga: Q
+
+    #: `getKLa`: the volumetric liquid-film coefficient.
+    k_la: Q
+
+    #: `getWettedArea`: the packing's wetted area per unit volume.
+    wetted_area: Q
+
+    #: `getHtuG`: the gas-side height of a transfer unit.
+    htu_g: Q
+
+    #: `getHtuL`: the liquid-side height of a transfer unit.
+    htu_l: Q
+
+    #: `getHtuOg`: the overall height of a transfer unit.
+    htu_og: Q
+
+    #: `isWettingOk`: whether the liquid load reaches the packing's minimum wetting rate.
+    wetting_ok: bool
+
+    #: `getPressureDropPerMeter`: the bed's pressure gradient.
+    pressure_drop_per_meter: Q
+
+    #: the packing's resolved name, from the calculator.
+    resolved_packing: str
+
+    #: the packing's resolved factor, from the calculator.
+    resolved_packing_factor: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -236,6 +236,26 @@ pub struct PackedReport {
     pub hydraulics_ok: bool,
     /// The column's internal diameter, m - the stated one, or the sized one where none was stated.
     pub internal_diameter: Length,
+    /// The volumetric gas-film coefficient, 1/s.
+    pub k_ga: f64,
+    /// The volumetric liquid-film coefficient, 1/s.
+    pub k_la: f64,
+    /// The packing's wetted area per unit volume.
+    pub wetted_area: f64,
+    /// The gas-side height of a transfer unit, m.
+    pub htu_g: f64,
+    /// The liquid-side height of a transfer unit, m.
+    pub htu_l: f64,
+    /// The overall height of a transfer unit, m.
+    pub htu_og: f64,
+    /// Whether the liquid load reaches the minimum wetting rate.
+    pub wetting_ok: bool,
+    /// The bed's pressure gradient, Pa/m.
+    pub pressure_drop_per_meter: Pressure,
+    /// The packing's resolved name.
+    pub resolved_packing: String,
+    /// The packing's resolved factor, 1/m.
+    pub resolved_packing_factor: f64,
 }
 
 /// `ColumnInternalsDesigner.calculatePacked`: the bed's hydraulics at the middle tray's state.
@@ -326,5 +346,15 @@ pub fn packing_report(
         packing_pressure_drop: pascals(out.total_pressure_drop.value),
         hydraulics_ok: out.design_ok,
         internal_diameter,
+        k_ga: out.k_ga,
+        k_la: out.k_la,
+        wetted_area: out.wetted_area,
+        htu_g: out.htu_g,
+        htu_l: out.htu_l,
+        htu_og: out.htu_og,
+        wetting_ok: out.wetting_ok,
+        pressure_drop_per_meter: pascals(out.pressure_drop_per_meter.value),
+        resolved_packing: out.packing_name.clone(),
+        resolved_packing_factor: out.packing_factor,
     })
 }

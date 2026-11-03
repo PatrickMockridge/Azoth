@@ -394,6 +394,16 @@ def packed_column(
         packing_pressure_drop=hydraulics.total_pressure_drop,
         hydraulics_ok=hydraulics.design_ok,
         internal_diameter=internal_diameter,
+        k_ga=from_si(hydraulics.k_ga, "1/s"),
+        k_la=from_si(hydraulics.k_la, "1/s"),
+        wetted_area=from_si(hydraulics.wetted_area, "m**2/m**3"),
+        htu_g=hydraulics.htu_g,
+        htu_l=hydraulics.htu_l,
+        htu_og=hydraulics.htu_og,
+        wetting_ok=hydraulics.wetting_ok,
+        pressure_drop_per_meter=hydraulics.pressure_drop_per_meter,
+        resolved_packing=hydraulics.packing_name,
+        resolved_packing_factor=from_si(hydraulics.packing_factor, "1/m"),
         warnings=tuple(warnings),
     )
 

@@ -8,7 +8,8 @@
 //! the seven quantities `ColumnInternalsDesigner` reports on the far side of the solve.
 
 use azoth_core::units::{
-    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    pascals,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
@@ -105,6 +106,26 @@ pub struct PackedColumnResult {
     pub hydraulics_ok: bool,
     /// The column's internal diameter, m - the stated one, or the sized one where none was stated.
     pub internal_diameter: Length,
+    /// The volumetric gas-film coefficient, 1/s.
+    pub k_ga: f64,
+    /// The volumetric liquid-film coefficient, 1/s.
+    pub k_la: f64,
+    /// The packing's wetted area per unit volume.
+    pub wetted_area: f64,
+    /// The gas-side height of a transfer unit, m.
+    pub htu_g: Length,
+    /// The liquid-side height of a transfer unit, m.
+    pub htu_l: Length,
+    /// The overall height of a transfer unit, m.
+    pub htu_og: Length,
+    /// Whether the liquid load reaches the minimum wetting rate.
+    pub wetting_ok: bool,
+    /// The bed's pressure gradient, Pa/m.
+    pub pressure_drop_per_meter: Pressure,
+    /// The packing's resolved name.
+    pub resolved_packing: String,
+    /// The packing's resolved factor, 1/m.
+    pub resolved_packing_factor: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -177,6 +198,16 @@ impl PackedColumnResult {
             packing_pressure_drop: report.packing_pressure_drop,
             hydraulics_ok: report.hydraulics_ok,
             internal_diameter: report.internal_diameter,
+            k_ga: report.k_ga,
+            k_la: report.k_la,
+            wetted_area: report.wetted_area,
+            htu_g: meters(report.htu_g),
+            htu_l: meters(report.htu_l),
+            htu_og: meters(report.htu_og),
+            wetting_ok: report.wetting_ok,
+            pressure_drop_per_meter: pascals(report.pressure_drop_per_meter.value),
+            resolved_packing: report.resolved_packing,
+            resolved_packing_factor: report.resolved_packing_factor,
             warnings,
         }
     }
@@ -464,6 +495,10 @@ mod report {
         assert!(
             !out.hydraulics_ok,
             "the class's own row is outside the 40-to-80-per-cent window"
+        );
+        assert!(
+            !out.wetting_ok,
+            "the class's own row is below the wetting rate"
         );
         assert!(
             close(out.internal_diameter.value, 0.3),

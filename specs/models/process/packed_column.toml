@@ -333,6 +333,36 @@ description = "**`PackedColumn.isHydraulicsOk()`**, which the pinned jar shows i
 [outputs.internal_diameter]
 unit = "m"
 description = "the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.\n"
+[outputs.k_ga]
+unit = "1/s"
+description = "`PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient.\n"
+[outputs.k_la]
+unit = "1/s"
+description = "`getKLa`: the volumetric liquid-film coefficient.\n"
+[outputs.wetted_area]
+unit = "m**2/m**3"
+description = "`getWettedArea`: the packing's wetted area per unit volume.\n"
+[outputs.htu_g]
+unit = "m"
+description = "`getHtuG`: the gas-side height of a transfer unit.\n"
+[outputs.htu_l]
+unit = "m"
+description = "`getHtuL`: the liquid-side height of a transfer unit.\n"
+[outputs.htu_og]
+unit = "m"
+description = "`getHtuOg`: the overall height of a transfer unit.\n"
+[outputs.wetting_ok]
+type = "boolean"
+description = "`isWettingOk`: whether the liquid load reaches the packing's minimum wetting rate.\n"
+[outputs.pressure_drop_per_meter]
+unit = "Pa/m"
+description = "`getPressureDropPerMeter`: the bed's pressure gradient.\n"
+[outputs.resolved_packing]
+type = "string"
+description = "the packing's resolved name, from the calculator.\n"
+[outputs.resolved_packing_factor]
+unit = "1/m"
+description = "the packing's resolved factor, from the calculator.\n"
 [outputs.fs_factor]
 unit = "dimensionless"
 description = "`getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5`, declared dimensionless. **At the diameter the sizing resolved**, which is the one `calcPackingHydraulics` writes back.\n"

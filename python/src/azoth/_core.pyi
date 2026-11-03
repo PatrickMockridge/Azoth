@@ -3007,6 +3007,8 @@ class MixerResult:
     product_z: list[float]
     product_p: Qty
     product_t: Qty
+    inlet_pressure_spread: Qty
+    pressure_mismatch: bool
     product_h: Qty
     warnings: list[Warning]
 
@@ -3046,6 +3048,16 @@ class PackedColumnResult:
     packing_pressure_drop: Qty
     hydraulics_ok: bool
     internal_diameter: Qty
+    k_ga: Qty
+    k_la: Qty
+    wetted_area: Qty
+    htu_g: Qty
+    htu_l: Qty
+    htu_og: Qty
+    wetting_ok: bool
+    pressure_drop_per_meter: Qty
+    resolved_packing: str
+    resolved_packing_factor: Qty
     warnings: list[Warning]
 
 @final

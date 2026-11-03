@@ -346,6 +346,17 @@ uom_absent = "uom carries a temperature and not its reciprocal. The unit is alre
 id = "per_temperature_cubed"
 exponents = [0, 0, 0, 0, -3, 0, 0]
 uom_absent = "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity."
+[[dimensions]]
+id = "per_time"
+exponents = [0, 0, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "inverse_length"
+exponents = [-1, 0, 0, 0, 0, 0, 0]
+uom_absent = "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity."
+[[dimensions]]
+id = "pressure_gradient"
+exponents = [-2, 1, -2, 0, 0, 0, 0]
+uom_absent = "uom has no pressure-gradient quantity. The unit is its own SI base, so its conversion is the identity."
 [[units]]
 id = "C"
 dimension = "charge"
@@ -370,6 +381,23 @@ pint = "1/kelvin**2"
 id = "1/K**3"
 dimension = "per_temperature_cubed"
 pint = "1/kelvin**3"
+[[units]]
+id = "1/s"
+dimension = "per_time"
+pint = "1/second"
+rust_ctor = "per_second"
+[[units]]
+id = "m**2/m**3"
+dimension = "inverse_length"
+pint = "1/meter"
+[[units]]
+id = "1/m"
+dimension = "inverse_length"
+pint = "1/meter"
+[[units]]
+id = "Pa/m"
+dimension = "pressure_gradient"
+pint = "pascal/meter"
 
 [[dimensions]]
 id = "molality"

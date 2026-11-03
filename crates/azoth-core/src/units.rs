@@ -18,26 +18,27 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy, Force,
-    HeatFluxDensity, HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate, Molality,
-    MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure,
-    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductance,
+    Frequency, HeatFluxDensity, HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate,
+    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power,
+    Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductance,
     ThermalConductivity, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
     area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::btu_it, energy::joule,
-    energy::kilojoule, energy::megajoule, force::newton, heat_flux_density::watt_per_square_meter,
-    heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::centimeter,
-    length::foot, length::inch, length::meter, length::millimeter, mass::kilogram, mass::ton,
-    mass_density::kilogram_per_cubic_meter, mass_flux::kilogram_per_square_meter_second,
-    mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
-    molality::mole_per_kilogram, molar_concentration::kilomole_per_cubic_meter,
-    molar_concentration::mole_per_cubic_meter, molar_energy::joule_per_mole,
-    molar_energy::kilojoule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
-    molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::kilowatt,
-    power::megawatt, power::watt, pressure::atmosphere, pressure::bar, pressure::kilopascal,
-    pressure::megapascal, pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
+    energy::kilojoule, energy::megajoule, force::newton, frequency::hertz,
+    heat_flux_density::watt_per_square_meter, heat_transfer::watt_per_square_meter_kelvin,
+    length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
+    length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
+    mass_flux::kilogram_per_square_meter_second, mass_rate::kilogram_per_hour,
+    mass_rate::kilogram_per_second, mass_rate::ton_per_hour, molality::mole_per_kilogram,
+    molar_concentration::kilomole_per_cubic_meter, molar_concentration::mole_per_cubic_meter,
+    molar_energy::joule_per_mole, molar_energy::kilojoule_per_mole,
+    molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
+    molar_volume::cubic_meter_per_mole, power::kilowatt, power::megawatt, power::watt,
+    pressure::atmosphere, pressure::bar, pressure::kilopascal, pressure::megapascal,
+    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
     specific_heat_capacity::kilojoule_per_kilogram_kelvin, surface_tension::newton_per_meter,
     temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
     thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
@@ -88,6 +89,12 @@ pub fn coulombs(value: f64) -> ElectricCharge {
 #[must_use]
 pub fn meters_per_second(value: f64) -> Velocity {
     Velocity::new::<meter_per_second>(value)
+}
+
+/// A frequency in hertz, which is `1/s`.
+#[must_use]
+pub fn per_second(value: f64) -> Frequency {
+    Frequency::new::<hertz>(value)
 }
 
 /// A diffusion coefficient in square metres per second.

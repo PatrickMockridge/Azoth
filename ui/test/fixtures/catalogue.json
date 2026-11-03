@@ -8538,6 +8538,16 @@
       "factor": 1.0,
       "offset": 0.0
     },
+    "1/m": {
+      "dimension": "inverse_length",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "1/s": {
+      "dimension": "per_time",
+      "factor": 1.0,
+      "offset": 0.0
+    },
     "Btu": {
       "dimension": "energy",
       "factor": 1055.056,
@@ -8645,6 +8655,11 @@
     },
     "Pa*s": {
       "dimension": "dynamic_viscosity",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "Pa/m": {
+      "dimension": "pressure_gradient",
       "factor": 1.0,
       "offset": 0.0
     },
@@ -8825,6 +8840,11 @@
     },
     "m**2": {
       "dimension": "area",
+      "factor": 1.0,
+      "offset": 0.0
+    },
+    "m**2/m**3": {
+      "dimension": "inverse_length",
       "factor": 1.0,
       "offset": 0.0
     },

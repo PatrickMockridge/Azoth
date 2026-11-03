@@ -613,6 +613,16 @@ impl CalcResult for PackedColumnResult {
         "packing_pressure_drop",
         "hydraulics_ok",
         "internal_diameter",
+        "k_ga",
+        "k_la",
+        "wetted_area",
+        "htu_g",
+        "htu_l",
+        "htu_og",
+        "wetting_ok",
+        "pressure_drop_per_meter",
+        "resolved_packing",
+        "resolved_packing_factor",
         "warnings",
     ];
 

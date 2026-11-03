@@ -72,6 +72,9 @@ GENERATED_BANNER = "GENERATED FILE - DO NOT EDIT BY HAND."
 #: this map rather than restated beside it.
 UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (0, 0, 0, 0, 0, 0, 0): None,  # dimensionless: a ratio, carried as a bare f64
+    (0, 0, -1, 0, 0, 0, 0): "Frequency",
+    (-1, 0, 0, 0, 0, 0, 0): None,  # reciprocal length: no uom quantity
+    (-2, 1, -2, 0, 0, 0, 0): None,  # pressure gradient: no uom quantity
     (1, 0, 0, 0, 0, 0, 0): "Length",
     (0, 0, 0, 0, 0, 1, 0): "AmountOfSubstance",
     (2, 1, -2, 0, 0, 0, 0): "Energy",
@@ -204,6 +207,10 @@ LEAN_DIMENSIONS: dict[str, str] = {
     # slots and not a slot of its own: `lean-units` derives it the same way.
     "C": "Dimension.Charge",
     "angstrom": "Dimension.Length",
+    "1/s": "Dimension.Time ^ (-1 : ℚ)",
+    "m**2/m**3": "Dimension.Length ^ (-1 : ℚ)",
+    "1/m": "Dimension.Length ^ (-1 : ℚ)",
+    "Pa/m": "Dimension.Pressure / Dimension.Length",
     "1/K": "Dimension.Temperature ^ (-1 : ℚ)",
     "1/K**2": "Dimension.Temperature ^ (-2 : ℚ)",
     "1/K**3": "Dimension.Temperature ^ (-3 : ℚ)",

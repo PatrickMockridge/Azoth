@@ -16770,6 +16770,36 @@ pub struct PyPackedColumnResult {
     /// the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.
     #[pyo3(get)]
     pub internal_diameter: PyQty,
+    /// `PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient.
+    #[pyo3(get)]
+    pub k_ga: PyQty,
+    /// `getKLa`: the volumetric liquid-film coefficient.
+    #[pyo3(get)]
+    pub k_la: PyQty,
+    /// `getWettedArea`: the packing's wetted area per unit volume.
+    #[pyo3(get)]
+    pub wetted_area: PyQty,
+    /// `getHtuG`: the gas-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_g: PyQty,
+    /// `getHtuL`: the liquid-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_l: PyQty,
+    /// `getHtuOg`: the overall height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_og: PyQty,
+    /// `isWettingOk`: whether the liquid load reaches the packing's minimum wetting rate.
+    #[pyo3(get)]
+    pub wetting_ok: bool,
+    /// `getPressureDropPerMeter`: the bed's pressure gradient.
+    #[pyo3(get)]
+    pub pressure_drop_per_meter: PyQty,
+    /// the packing's resolved name, from the calculator.
+    #[pyo3(get)]
+    pub resolved_packing: String,
+    /// the packing's resolved factor, from the calculator.
+    #[pyo3(get)]
+    pub resolved_packing_factor: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16779,7 +16809,7 @@ pub struct PyPackedColumnResult {
 impl PyPackedColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "PackedColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, hetp={:?}, theoretical_stages={:?}, percent_flood={:?}, flooding_velocity={:?}, packing_pressure_drop={:?}, hydraulics_ok={:?}, internal_diameter={:?}, {} warning(s))",
+            "PackedColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, hetp={:?}, theoretical_stages={:?}, percent_flood={:?}, flooding_velocity={:?}, packing_pressure_drop={:?}, hydraulics_ok={:?}, internal_diameter={:?}, k_ga={:?}, k_la={:?}, wetted_area={:?}, htu_g={:?}, htu_l={:?}, htu_og={:?}, wetting_ok={:?}, pressure_drop_per_meter={:?}, resolved_packing={:?}, resolved_packing_factor={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -16814,6 +16844,16 @@ impl PyPackedColumnResult {
             self.packing_pressure_drop,
             self.hydraulics_ok,
             self.internal_diameter,
+            self.k_ga,
+            self.k_la,
+            self.wetted_area,
+            self.htu_g,
+            self.htu_l,
+            self.htu_og,
+            self.wetting_ok,
+            self.pressure_drop_per_meter,
+            self.resolved_packing,
+            self.resolved_packing_factor,
             self.warnings.len()
         )
     }
@@ -16949,6 +16989,40 @@ impl From<&azoth_process::models::packed_column::PackedColumnResult> for PyPacke
             internal_diameter: PyQty {
                 magnitude_si: r.internal_diameter.value,
                 unit: "m".to_string(),
+            },
+            k_ga: PyQty {
+                magnitude_si: r.k_ga,
+                unit: "1/s".to_string(),
+            },
+            k_la: PyQty {
+                magnitude_si: r.k_la,
+                unit: "1/s".to_string(),
+            },
+            wetted_area: PyQty {
+                magnitude_si: r.wetted_area,
+                unit: "m**2/m**3".to_string(),
+            },
+            htu_g: PyQty {
+                magnitude_si: r.htu_g.value,
+                unit: "m".to_string(),
+            },
+            htu_l: PyQty {
+                magnitude_si: r.htu_l.value,
+                unit: "m".to_string(),
+            },
+            htu_og: PyQty {
+                magnitude_si: r.htu_og.value,
+                unit: "m".to_string(),
+            },
+            wetting_ok: r.wetting_ok,
+            pressure_drop_per_meter: PyQty {
+                magnitude_si: r.pressure_drop_per_meter.value,
+                unit: "Pa/m".to_string(),
+            },
+            resolved_packing: r.resolved_packing.clone(),
+            resolved_packing_factor: PyQty {
+                magnitude_si: r.resolved_packing_factor,
+                unit: "1/m".to_string(),
             },
             warnings: transport(&r.warnings),
         }

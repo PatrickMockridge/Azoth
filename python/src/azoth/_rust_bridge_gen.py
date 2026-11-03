@@ -6375,6 +6375,16 @@ def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         packing_pressure_drop=from_si(result.packing_pressure_drop.magnitude_si, result.packing_pressure_drop.unit),
         hydraulics_ok=result.hydraulics_ok,
         internal_diameter=from_si(result.internal_diameter.magnitude_si, result.internal_diameter.unit),
+        k_ga=from_si(result.k_ga.magnitude_si, result.k_ga.unit),
+        k_la=from_si(result.k_la.magnitude_si, result.k_la.unit),
+        wetted_area=from_si(result.wetted_area.magnitude_si, result.wetted_area.unit),
+        htu_g=from_si(result.htu_g.magnitude_si, result.htu_g.unit),
+        htu_l=from_si(result.htu_l.magnitude_si, result.htu_l.unit),
+        htu_og=from_si(result.htu_og.magnitude_si, result.htu_og.unit),
+        wetting_ok=result.wetting_ok,
+        pressure_drop_per_meter=from_si(result.pressure_drop_per_meter.magnitude_si, result.pressure_drop_per_meter.unit),
+        resolved_packing=result.resolved_packing,
+        resolved_packing_factor=from_si(result.resolved_packing_factor.magnitude_si, result.resolved_packing_factor.unit),
         warnings=_warnings(result.warnings),
     )
 

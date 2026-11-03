@@ -54,6 +54,9 @@ pub const DIMENSION_IDS: &[&str] = &[
     "per_temperature",
     "per_temperature_squared",
     "per_temperature_cubed",
+    "per_time",
+    "inverse_length",
+    "pressure_gradient",
     "molality",
     "amount_concentration",
 ];
@@ -112,6 +115,9 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("per_temperature", [0, 0, 0, 0, -1, 0, 0]),
     ("per_temperature_squared", [0, 0, 0, 0, -2, 0, 0]),
     ("per_temperature_cubed", [0, 0, 0, 0, -3, 0, 0]),
+    ("per_time", [0, 0, -1, 0, 0, 0, 0]),
+    ("inverse_length", [-1, 0, 0, 0, 0, 0, 0]),
+    ("pressure_gradient", [-2, 1, -2, 0, 0, 0, 0]),
     ("molality", [0, -1, 0, 0, 0, 1, 0]),
     ("amount_concentration", [-3, 0, 0, 0, 0, 1, 0]),
 ];
@@ -175,6 +181,10 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K",
     "1/K**2",
     "1/K**3",
+    "1/s",
+    "m**2/m**3",
+    "1/m",
+    "Pa/m",
     "mol/kg",
     "mol/m**3",
     "kmol/m**3",
@@ -256,6 +266,10 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K", [0, 0, 0, 0, -1, 0, 0]),
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
+    ("1/s", [0, 0, -1, 0, 0, 0, 0]),
+    ("m**2/m**3", [-1, 0, 0, 0, 0, 0, 0]),
+    ("1/m", [-1, 0, 0, 0, 0, 0, 0]),
+    ("Pa/m", [-2, 1, -2, 0, 0, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
     ("mol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
     ("kmol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
@@ -370,6 +384,10 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K", |v| v),
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
+    ("1/s", |v| crate::units::per_second(v).value),
+    ("m**2/m**3", |v| v),
+    ("1/m", |v| v),
+    ("Pa/m", |v| v),
     ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
     ("mol/m**3", |v| crate::units::moles_per_cubic_meter(v).value),
     ("kmol/m**3", |v| {
@@ -607,6 +625,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
     let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
     let _: uom::si::f64::Length = crate::units::angstroms(1.0);
+    let _: uom::si::f64::Frequency = crate::units::per_second(1.0);
     let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
     let _: uom::si::f64::MolarConcentration = crate::units::moles_per_cubic_meter(1.0);
     let _: uom::si::f64::MolarConcentration = crate::units::kilomoles_per_cubic_meter(1.0);
@@ -696,6 +715,18 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     (
         "1/K**3",
         "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "m**2/m**3",
+        "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "1/m",
+        "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "Pa/m",
+        "uom has no pressure-gradient quantity. The unit is its own SI base, so its conversion is the identity.",
     ),
     (
         "kmol/h",

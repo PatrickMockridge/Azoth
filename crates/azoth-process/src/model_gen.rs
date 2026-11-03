@@ -27521,6 +27521,14 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("fs_factor", 0.22662865172417535),
             ("fs_factor_utilization", 0.09065146068967014),
             ("minimum_diameter_for_fs_limit", 0.09032514302269502),
+            ("k_ga", 137.8048620624243),
+            ("k_la", 0.011480960797817843),
+            ("wetted_area", 102.15106123458773),
+            ("htu_g", 0.0005549526825096769),
+            ("htu_l", 52.4540219796784),
+            ("htu_og", 52.45457693236091),
+            ("pressure_drop_per_meter", 0.08877828795341587),
+            ("resolved_packing_factor", 66.0),
         ],
         expected_vectors: &[
             (
@@ -27570,7 +27578,7 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("distillate_z", &[0.9659099052324753, 0.03409009476752466]),
             ("bottoms_z", &[0.02246562977682579, 0.9775343702231742]),
         ],
-        expected_strings: &[],
+        expected_strings: &[("resolved_packing", "Pall-Ring-50")],
         records: &[],
         expected_records: &[],
     },
