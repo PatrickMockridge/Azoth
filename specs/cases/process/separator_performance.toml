@@ -412,6 +412,8 @@ enhanced = true
 [cases.expected]
 oil_in_gas = 0.256985226502344
 water_in_gas = 0.0
+post_inlet_d50 = 3.3940611451290263e-4
+post_inlet_d32 = 7.159084011231289e-4
 gas_in_oil = 0.9898906618240089
 gas_in_water = 0.9898906618240089
 oil_in_water = 0.0
@@ -556,3 +558,30 @@ k_factor_utilization = 1.781741612749496
 mist_eliminator_efficiency = 0.1086925973342776
 overall_gas_liquid_efficiency = 0.7709471652427334
 oil_in_gas = 0.22905283475726657
+[[cases]]
+id = "the_inlet_device_overrides_replace_the_type_defaults"
+tolerance = 0.0002
+source = "The enhanced capture's `inlet_device_overrides` row: the half-pipe device with the class's two setters. **The bulk efficiency is the stated `0.5` instead of the type's 0.41**, and the DSD multiplier `1.5` doubles the downstream d50 from the default row's 3.394e-4 to 6.788e-4; the post-inlet d32 follows to 1.4318e-3.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+enhanced = true
+inlet_device = "half_pipe"
+override_bulk_efficiency = 0.5
+override_dsd_multiplier = 1.5
+[cases.expected]
+inlet_device_bulk_efficiency = 0.5
+post_inlet_d50 = 6.788122290258053e-4
+post_inlet_d32 = 0.0014318168022462595
+gravity_section_efficiency = 0.8080138202702482
+overall_gas_liquid_efficiency = 0.904006910135124
+oil_in_gas = 0.09599308986487598

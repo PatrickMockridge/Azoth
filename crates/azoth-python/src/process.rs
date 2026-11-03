@@ -1442,7 +1442,9 @@ pub fn rate_based_packed_column(
     liquid_liquid_calibration_factor = None, enhanced = None,
     inlet_pipe_diameter = None, surface_tension = None,
     oil_water_interfacial_tension = None, oil_volume_fraction = None,
-    apply_turbulence_correction = None, inlet_device = None, design_k_factor = None,
+    apply_turbulence_correction = None, inlet_device = None,
+    override_bulk_efficiency = None, override_dsd_multiplier = None,
+    design_k_factor = None,
     liquid_liquid_residence_time = None
 ))]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
@@ -1493,6 +1495,8 @@ pub fn separator_performance(
     oil_volume_fraction: Option<f64>,
     apply_turbulence_correction: Option<bool>,
     inlet_device: Option<&str>,
+    override_bulk_efficiency: Option<f64>,
+    override_dsd_multiplier: Option<f64>,
     design_k_factor: Option<f64>,
     liquid_liquid_residence_time: Option<f64>,
 ) -> PyResult<crate::transport_gen::PySeparatorPerformanceResult> {
@@ -1565,6 +1569,8 @@ pub fn separator_performance(
         oil_volume_fraction,
         apply_turbulence_correction,
         inlet_device,
+        override_bulk_efficiency,
+        override_dsd_multiplier,
         design_k_factor.map(meters_per_second),
         liquid_liquid_residence_time.map(seconds),
     )

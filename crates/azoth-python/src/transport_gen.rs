@@ -18272,6 +18272,12 @@ pub struct PySeparatorPerformanceResult {
     /// the downstream distribution's spread.
     #[pyo3(get)]
     pub post_inlet_device_spread: Option<f64>,
+    /// the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.
+    #[pyo3(get)]
+    pub post_inlet_d50: Option<PyQty>,
+    /// the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.
+    #[pyo3(get)]
+    pub post_inlet_d32: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18281,7 +18287,7 @@ pub struct PySeparatorPerformanceResult {
 impl PySeparatorPerformanceResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, gas_volume={:?}, liquid_volume={:?}, total_volume={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, gas_volume={:?}, liquid_volume={:?}, total_volume={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, post_inlet_d50={:?}, post_inlet_d32={:?}, {} warning(s))",
             self.oil_in_gas,
             self.water_in_gas,
             self.gas_in_oil,
@@ -18324,6 +18330,8 @@ impl PySeparatorPerformanceResult {
             self.api_min_liquid_residence_time,
             self.post_inlet_device_characteristic_diameter,
             self.post_inlet_device_spread,
+            self.post_inlet_d50,
+            self.post_inlet_d32,
             self.warnings.len()
         )
     }
@@ -18441,6 +18449,14 @@ impl From<&azoth_process::models::separator_performance::SeparatorPerformanceRes
                     unit: "m".to_string(),
                 }),
             post_inlet_device_spread: r.post_inlet_device_spread,
+            post_inlet_d50: r.post_inlet_d50.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            post_inlet_d32: r.post_inlet_d32.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

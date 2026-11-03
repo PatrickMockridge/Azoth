@@ -140,6 +140,26 @@ impl DropletDistribution {
         }
         classes
     }
+
+    /// `getD50`: the volume-median diameter.
+    fn d50(&self) -> f64 {
+        self.inverse(0.5)
+    }
+
+    /// `getSauterMeanDiameter`: the 50-class volume-weighted `sum(d^3) / sum(d^2)`.
+    fn sauter_mean_diameter(&self) -> f64 {
+        let mut sum_d3 = 0.0;
+        let mut sum_d2 = 0.0;
+        for (_, middle, fraction) in self.classes() {
+            sum_d3 += fraction * middle * middle * middle;
+            sum_d2 += fraction * middle * middle;
+        }
+        if sum_d2 > 0.0 {
+            sum_d3 / sum_d2
+        } else {
+            self.characteristic_diameter
+        }
+    }
 }
 
 /// The class's `InternalsType`.
@@ -564,6 +584,10 @@ pub struct PerformanceSettings {
     pub apply_turbulence_correction: bool,
     /// The inlet device; absent is the class's `HALF_PIPE`.
     pub inlet_device: InletDevice,
+    /// The device's bulk efficiency override; zero uses the device type's own.
+    pub override_bulk_efficiency: f64,
+    /// The device's DSD multiplier override; zero uses the device type's own.
+    pub override_dsd_multiplier: f64,
     /// The mist eliminator's design K, m/s. Absent takes the internals database's first
     /// record (wire mesh `0.107`, vane pack `0.15`, axial cyclone `0.30`) and refuses any
     /// other.
@@ -637,6 +661,10 @@ pub struct PerformanceOutcome {
     pub post_inlet_device_characteristic_diameter: f64,
     /// The downstream distribution's spread.
     pub post_inlet_device_spread: f64,
+    /// The downstream distribution's volume-median diameter, m.
+    pub post_inlet_d50: f64,
+    /// The downstream distribution's Sauter mean diameter, m.
+    pub post_inlet_d32: f64,
 }
 
 impl Default for PerformanceOutcome {
@@ -673,6 +701,8 @@ impl Default for PerformanceOutcome {
             api_liquid_comment: String::new(),
             post_inlet_device_characteristic_diameter: 0.0,
             post_inlet_device_spread: 0.0,
+            post_inlet_d50: 0.0,
+            post_inlet_d32: 0.0,
         }
     }
 }
@@ -891,8 +921,8 @@ fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutco
         settings.gas_velocity * pipe_area,
         liquid_velocity * pipe_area,
         settings.inlet_pipe_diameter,
-        0.0,
-        0.0,
+        settings.override_bulk_efficiency,
+        settings.override_dsd_multiplier,
     );
     outcome.inlet_device_bulk_efficiency = inlet.bulk_efficiency;
     outcome.inlet_device_pressure_drop = inlet.pressure_drop;
@@ -909,6 +939,8 @@ fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutco
         characteristic_diameter: inlet.downstream.0,
         spread: inlet.downstream.1,
     };
+    outcome.post_inlet_d50 = gravity_dsd.d50();
+    outcome.post_inlet_d32 = gravity_dsd.sauter_mean_diameter();
 
     // STAGE 3: the vessel geometry and the K factor.
     let geometry_input = GeometryInput {

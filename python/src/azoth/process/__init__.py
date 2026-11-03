@@ -2098,6 +2098,8 @@ def separator_performance(
     oil_volume_fraction: float | None = None,
     apply_turbulence_correction: bool | None = None,
     inlet_device: str | None = None,
+    override_bulk_efficiency: float | None = None,
+    override_dsd_multiplier: float | None = None,
     design_k_factor: Q | None = None,
     liquid_liquid_residence_time: Q | None = None,
 ) -> SeparatorPerformanceResult:
@@ -2209,6 +2211,8 @@ def separator_performance(
         oil_volume_fraction=oil_volume_fraction,
         apply_turbulence_correction=apply_turbulence_correction,
         inlet_device=inlet_device,
+        override_bulk_efficiency=override_bulk_efficiency,
+        override_dsd_multiplier=override_dsd_multiplier,
         design_k_factor=design_k_factor,
         liquid_liquid_residence_time=liquid_liquid_residence_time,
     )

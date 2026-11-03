@@ -108,6 +108,19 @@ class _Distribution:
             out.append((lower, middle, self.cumulative(upper) - self.cumulative(lower)))
         return out
 
+    def d50(self) -> float:
+        """``getD50``: the volume-median diameter."""
+        return self.inverse(0.5)
+
+    def sauter_mean_diameter(self) -> float:
+        """``getSauterMeanDiameter``: the 50-class ``sum(d^3) / sum(d^2)``."""
+        sum_d3 = 0.0
+        sum_d2 = 0.0
+        for _, middle, fraction in self.classes():
+            sum_d3 += fraction * middle * middle * middle
+            sum_d2 += fraction * middle * middle
+        return sum_d3 / sum_d2 if sum_d2 > 0.0 else self.characteristic_diameter
+
 
 @dataclass(frozen=True, slots=True)
 class _LookupPoint:
@@ -633,16 +646,22 @@ def _inlet_device(
     gas_flow: float,
     liquid_flow: float,
     nozzle_diameter: float,
+    override_bulk_efficiency: float = 0.0,
+    override_dsd_multiplier: float = 0.0,
 ) -> tuple[float, float, float, float, tuple[float, float, bool]]:
     """`InletDeviceModel.calculate`: bulk, dp, velocity, momentum, downstream DSD."""
     base, multiplier, coefficient, max_momentum = _INLET_PARAMETERS[device]
+    if override_dsd_multiplier > 0.0:
+        multiplier = override_dsd_multiplier
     area = math.pi * nozzle_diameter * nozzle_diameter / 4.0
     total = gas_flow + liquid_flow
     velocity = total / area if area > 0.0 else 0.0
     gas_fraction = gas_flow / total if total > 0.0 else 1.0
     mix_density = gas_fraction * rho_g + (1.0 - gas_fraction) * rho_l
     momentum = mix_density * velocity * velocity
-    if max_momentum is None:
+    if override_bulk_efficiency > 0.0:
+        bulk = override_bulk_efficiency
+    elif max_momentum is None:
         bulk = 0.0
     elif momentum > max_momentum:
         degradation = min(1.0, (momentum - max_momentum) / max_momentum)
@@ -721,6 +740,8 @@ def _enhanced_result(
     oil_fraction: float | None,
     turbulence: bool | None,
     inlet_device: str | None,
+    override_bulk_efficiency: float | None,
+    override_dsd_multiplier: float | None,
     design_k: float | None,
     ll_residence: float | None,
 ) -> SeparatorPerformanceResult:
@@ -740,6 +761,9 @@ def _enhanced_result(
     oil_fraction = 0.5 if oil_fraction is None else oil_fraction
     mist_position = 0.90 if mist_position is None else mist_position
     weir_position = 0.60 if weir_position is None else weir_position
+    # The class's setters treat zero as "no override".
+    override_bulk_efficiency = 0.0 if override_bulk_efficiency is None else override_bulk_efficiency
+    override_dsd_multiplier = 0.0 if override_dsd_multiplier is None else override_dsd_multiplier
     turbulence = True if turbulence is None else turbulence
     device = "half_pipe" if inlet_device is None else inlet_device
     if device not in _INLET_PARAMETERS:
@@ -770,6 +794,8 @@ def _enhanced_result(
         velocity * pipe_area,
         vsl * pipe_area,
         inlet_pipe,
+        override_bulk_efficiency,
+        override_dsd_multiplier,
     )
     gravity_dsd = _Distribution(
         kind="log_normal" if downstream[2] else "rosin_rammler",
@@ -1001,6 +1027,8 @@ def _enhanced_result(
         api_min_liquid_residence_time=from_si(api_min_residence, "s"),
         post_inlet_device_characteristic_diameter=from_si(downstream[0], "m"),
         post_inlet_device_spread=downstream[1],
+        post_inlet_d50=from_si(gravity_dsd.d50(), "m"),
+        post_inlet_d32=from_si(gravity_dsd.sauter_mean_diameter(), "m"),
         warnings=tuple(warnings),
     )
 
@@ -1051,6 +1079,8 @@ def separator_performance(
     oil_volume_fraction: float | None = None,
     apply_turbulence_correction: bool | None = None,
     inlet_device: str | None = None,
+    override_bulk_efficiency: float | None = None,
+    override_dsd_multiplier: float | None = None,
     design_k_factor: Q | None = None,
     liquid_liquid_residence_time: Q | None = None,
 ) -> SeparatorPerformanceResult:
@@ -1261,6 +1291,8 @@ def separator_performance(
             oil_fraction,
             apply_turbulence_correction,
             inlet_device,
+            None if override_bulk_efficiency is None else float(override_bulk_efficiency),
+            None if override_dsd_multiplier is None else float(override_dsd_multiplier),
             design_k,
             ll_residence,
         )
@@ -1415,6 +1447,8 @@ def separator_performance(
         api_min_liquid_residence_time=None,
         post_inlet_device_characteristic_diameter=None,
         post_inlet_device_spread=None,
+        post_inlet_d50=None,
+        post_inlet_d32=None,
         warnings=tuple(warnings),
     )
 

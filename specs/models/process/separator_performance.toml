@@ -216,6 +216,14 @@ type = "enum"
 values = ["none", "deflector_plate", "half_pipe", "inlet_vane", "inlet_cyclone", "schoepentoeter", "impingement_plate"]
 optional = true
 description = "the inlet device's type. **Absent is the class's `half_pipe`**; `none` passes the distribution unchanged and removes nothing.\n"
+[inputs.override_bulk_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the class's `setOverrideBulkEfficiency`: a positive value replaces the device type's bulk efficiency. **Absent or zero uses the type's own.**\n"
+[inputs.override_dsd_multiplier]
+unit = "dimensionless"
+optional = true
+description = "the class's `setOverrideDsdMultiplier`: a positive value replaces the device type's DSD multiplier. **Absent or zero uses the type's own.**\n"
 [inputs.design_k_factor]
 unit = "m/s"
 optional = true
@@ -382,6 +390,14 @@ description = "the downstream distribution's `d63.2` after the device's multipli
 unit = "dimensionless"
 optional = true
 description = "the downstream distribution's spread.\n"
+[outputs.post_inlet_d50]
+unit = "m"
+optional = true
+description = "the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.\n"
+[outputs.post_inlet_d32]
+unit = "m"
+optional = true
+description = "the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.\n"
 [[valid_range]]
 quantity = "inlet_pipe_diameter"
 min = 0

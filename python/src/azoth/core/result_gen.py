@@ -7287,6 +7287,12 @@ class SeparatorPerformanceResult(_HasWarnings):
     #: the downstream distribution's spread.
     post_inlet_device_spread: float | None
 
+    #: the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.
+    post_inlet_d50: Q | None
+
+    #: the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.
+    post_inlet_d32: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

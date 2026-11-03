@@ -2305,11 +2305,11 @@ UNCASED_ROWS: dict[str, int] = {
     # The settling capture's two vessels: the same feed at two geometries. The id is a
     # `NO_INTERIOR` model, so the cases are the oracle and these are their evidence.
     "process_three_phase_settling.tsv": 2,
-    # The enhanced chain's ten states: the class's own six, the mist-position and weir-position
-    # setters, and the vane-pack and axial-cyclone design-K records. The id is a `NO_INTERIOR`
-    # model - the enhanced path is the kernel's own arithmetic, and the cases hold its six
-    # fractions and efficiencies.
-    "process_separator_performance_enhanced.tsv": 10,
+    # The enhanced chain's eleven states: the class's own six, the mist-position and
+    # weir-position setters, the vane-pack and axial-cyclone design-K records, and the
+    # inlet-device overrides. The id is a `NO_INTERIOR` model - the enhanced path is the
+    # kernel's own arithmetic, and the cases hold its six fractions and efficiencies.
+    "process_separator_performance_enhanced.tsv": 11,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as

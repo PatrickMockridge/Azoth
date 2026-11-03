@@ -132,6 +132,12 @@ pub struct SeparatorPerformanceResult {
     pub post_inlet_device_characteristic_diameter: Option<Length>,
     /// The downstream distribution's spread.
     pub post_inlet_device_spread: Option<f64>,
+    /// The downstream distribution's volume-median diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub post_inlet_d50: Option<Length>,
+    /// The downstream distribution's Sauter mean diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub post_inlet_d32: Option<Length>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -191,6 +197,8 @@ pub fn separator_performance(
     oil_volume_fraction: Option<f64>,
     apply_turbulence_correction: Option<bool>,
     inlet_device: Option<&str>,
+    override_bulk_efficiency: Option<f64>,
+    override_dsd_multiplier: Option<f64>,
     design_k_factor: Option<Velocity>,
     liquid_liquid_residence_time: Option<Time>,
 ) -> Result<SeparatorPerformanceResult> {
@@ -307,6 +315,9 @@ pub fn separator_performance(
         oil_volume_fraction: oil_volume_fraction.unwrap_or(0.5),
         apply_turbulence_correction: apply_turbulence_correction.unwrap_or(true),
         inlet_device: inlet_device_of(inlet_device)?,
+        // The class's setters treat zero as "no override".
+        override_bulk_efficiency: override_bulk_efficiency.unwrap_or(0.0),
+        override_dsd_multiplier: override_dsd_multiplier.unwrap_or(0.0),
         design_k_factor: design_k_factor.map(|value| value.value),
         liquid_liquid_residence_time: liquid_liquid_residence_time.map(|value| value.value),
     };
@@ -361,6 +372,8 @@ pub fn separator_performance(
         post_inlet_device_characteristic_diameter: active
             .then(|| meters(outcome.post_inlet_device_characteristic_diameter)),
         post_inlet_device_spread: active.then_some(outcome.post_inlet_device_spread),
+        post_inlet_d50: active.then(|| meters(outcome.post_inlet_d50)),
+        post_inlet_d32: active.then(|| meters(outcome.post_inlet_d32)),
         warnings,
     })
 }

@@ -5635,6 +5635,20 @@ public class ProcessProbe {
     runEnhanced("vane_pack_design_k", vane, gasDensity, oilDensity, 0.0, gasViscosity, oilViscosity,
         0.0, velocity, diameter, length, "horizontal", level);
 
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator overrides =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.InletDeviceModel overrideDevice =
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType
+                .HALF_PIPE);
+    overrideDevice.setOverrideBulkEfficiency(0.5);
+    overrideDevice.setOverrideDsdMultiplier(1.5);
+    overrides.setInletDeviceModel(overrideDevice);
+    overrides.setInletPipeDiameter(0.2);
+    overrides.setSurfaceTension(0.025);
+    runEnhanced("inlet_device_overrides", overrides, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
     neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator axial =
         enhancedCalculator();
     axial.setMistEliminatorCurve(
@@ -5706,6 +5720,12 @@ public class ProcessProbe {
       System.out.println("inlet_device_pressure_drop_pa=" + device.getPressureDrop());
       System.out.println("inlet_nozzle_velocity_m_per_s=" + device.getNozzleVelocity());
       System.out.println("inlet_momentum_flux_pa=" + device.getMomentumFlux());
+      neqsim.process.equipment.separator.entrainment.DropletSizeDistribution downstreamDsd =
+          device.getDownstreamDSD();
+      if (downstreamDsd != null) {
+        System.out.println("post_inlet_d50_m=" + downstreamDsd.getD50());
+        System.out.println("post_inlet_d32_m=" + downstreamDsd.getSauterMeanDiameter());
+      }
     }
     neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator geometry =
         calc.getGeometryCalculator();

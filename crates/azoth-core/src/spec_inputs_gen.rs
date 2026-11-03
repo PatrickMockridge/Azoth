@@ -3762,6 +3762,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     (
         "process.separator_performance",
+        "override_bulk_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
+        "override_dsd_multiplier",
+        "dimensionless",
+    ),
+    (
+        "process.separator_performance",
         "design_k_factor",
         "velocity",
     ),

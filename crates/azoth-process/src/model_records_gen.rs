@@ -848,6 +848,8 @@ impl CalcResult for SeparatorPerformanceResult {
         "api_min_liquid_residence_time",
         "post_inlet_device_characteristic_diameter",
         "post_inlet_device_spread",
+        "post_inlet_d50",
+        "post_inlet_d32",
         "warnings",
     ];
 
