@@ -2687,6 +2687,14 @@ class CompressorResult:
     polytropic_head: Qty
     polytropic_efficiency: float
     polytropic_exponent: float | None
+    total_deposit_mass: Qty | None
+    deposit_volume: Qty | None
+    film_thickness: Qty | None
+    area_blockage_fraction: float | None
+    efficiency_multiplier: float | None
+    head_multiplier: float | None
+    degradation_factor: float | None
+    fouling_factor: float | None
     power: Qty
     shaft_speed: float
     surge_flow_rate: Qty | None
