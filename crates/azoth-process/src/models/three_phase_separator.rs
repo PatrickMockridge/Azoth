@@ -194,6 +194,7 @@ pub fn three_phase_separator(
     // The three valve fractions are stored state: the class's steady split never reads them.
     // They are declared because the class exposes and clamps them; `getMassBalance` is a
     // zero-by-construction residual the capture records, not a field.
+    // numerics-ok: the class's three setters clamp with Math.max/Math.min rather than refuse.
     let _ = (
         gas_outlet_flow_fraction.map(|value| value.clamp(0.0, 1.0)),
         oil_outlet_flow_fraction.map(|value| value.clamp(0.0, 1.0)),
