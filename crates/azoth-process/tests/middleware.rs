@@ -660,8 +660,12 @@ fn the_generated_input_table_is_the_models_own() {
     // retention time, the operating pressure, the allowable stress, the joint efficiency and
     // the corrosion allowance - `578 + 8 = 586`. **And the gas scrubber's eight** - its
     // flag, orientation, volume factor, level fraction, pressure, stress, joint efficiency
-    // and corrosion allowance - `586 + 8 = 594`.
-    assert_eq!(walked, 594, "the inputs this test walked");
+    // and corrosion allowance - `586 + 8 = 594`. **And then the separator family's eight** -
+    // `auto_size`, the gas scrubber's `safety_factor` and three mesh-pad fields, and the
+    // three-phase separator's three outlet fractions - `594 + 8 = 602`. **And the heat
+    // exchanger's three** - `use_delta_t`, `delta_t` and `guess_out_temperature` -
+    // `602 + 3 = 605`.
+    assert_eq!(walked, 605, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
