@@ -180,6 +180,8 @@ pub fn heat_exchanger_stream(
         flow_arrangement,
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
+        false,
+        kelvins(1.0),
     )
     // **Two streams, which is this shape's contract**: the id's result carries the duty and the
     // rating beside them, and the stream-level call is what a connection carries.
@@ -941,9 +943,9 @@ pub fn stripping_column(
 // **The two component lists lead, and the rest follow in the spec's order**, which is
 // what `tools/gen_stub.py` emits: it writes every fluid the model names before the
 // declared inputs, so a signature that interleaved them would be a stub that lies.
-#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None))]
+#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None, use_delta_t = None, delta_t = None, guess_out_temperature = None))]
 #[pyo3(
-    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None)"
+    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None, use_delta_t=None, delta_t=None, guess_out_temperature=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
@@ -963,6 +965,9 @@ pub fn heat_exchanger(
     ua: Option<f64>,
     hot_outlet_temperature: Option<f64>,
     cold_outlet_temperature: Option<f64>,
+    use_delta_t: Option<bool>,
+    delta_t: Option<f64>,
+    guess_out_temperature: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyHeatExchangerResult> {
     azoth_process::heat_exchanger(
         &hot_components,
@@ -979,6 +984,9 @@ pub fn heat_exchanger(
         flow_arrangement,
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
+        use_delta_t,
+        delta_t.map(kelvins),
+        guess_out_temperature.map(kelvins),
     )
     .map(|r| crate::transport_gen::PyHeatExchangerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

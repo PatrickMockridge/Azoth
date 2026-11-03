@@ -139,3 +139,111 @@ cold_out_z = [0.5, 0.5]
 cold_out_p = 500000.0
 cold_out_t = 320.0
 cold_out_h = -18022.51221053017
+
+[[cases]]
+id = "the_delta_t_closure_on_the_class_test_fluid"
+tolerance = 3e-04
+source = "The `heat_exchanger_delta_t` capture's `pr_test_run2_delta_t_1` row: the class's own `HeatExchangerTest.testRun2` fluid on PR, through `setDeltaT(1.0)`. **The class sets the cold side** - the perturbed 334.15 K outlet is the second's - and closes the hot side at the duty. The `ua_value` is `dH / (T_out,set - T_in,set)`: 331126.16 W over 21 K.\n"
+[cases.inputs]
+hot_components = ["methane", "ethane", "n-heptane"]
+hot_in_n = 243.0
+hot_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678]
+hot_in_p = 2000000.0
+hot_in_t = 333.15
+cold_components = ["methane", "ethane"]
+cold_in_n = 340.0
+cold_in_z = [0.6470588235294118, 0.35294117647058826]
+cold_in_p = 2000000.0
+cold_in_t = 313.15
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 309.51430343320936
+hot_out_h = 746.0692431959535
+cold_out_t = 334.15
+cold_out_h = 2063.781003522744
+duty = 331126.16235200467
+ua_value = 15767.912492952604
+delta_t_side = "cold"
+
+[[cases]]
+id = "the_delta_t_closure_on_the_streams_swapped"
+tolerance = 3e-04
+source = "The capture's `pr_test_run2_swapped_delta_t_1` row: the same two fluids with the cold one as the first stream. **The class's swap is index-based, not hot/cold-based** - the first stream is now the one it sets, and the conductance and duty are the same to the last digit.\n"
+[cases.inputs]
+hot_components = ["methane", "ethane"]
+hot_in_n = 340.0
+hot_in_z = [0.6470588235294118, 0.35294117647058826]
+hot_in_p = 2000000.0
+hot_in_t = 313.15
+cold_components = ["methane", "ethane", "n-heptane"]
+cold_in_n = 243.0
+cold_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678]
+cold_in_p = 2000000.0
+cold_in_t = 333.15
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 334.15
+hot_out_h = 2063.781003522744
+cold_out_t = 309.51430343320936
+cold_out_h = 746.0692431959535
+# The port's duty is positive when the **hot argument** cools. Here the first
+# stream is the physically cold one, so it is heated and the release is negative.
+duty = -331126.16235200467
+ua_value = 15767.912492952604
+delta_t_side = "hot"
+
+[[cases]]
+id = "the_delta_t_closure_at_near_equal_capacities"
+tolerance = 3e-04
+source = "The capture's `pr_near_equal_cr_delta_t_1` row: the same fluid and flow on both sides, 100 K apart. **The hot side is the one set**, at `T_cold_in - delta_t = 299` K, and the cold side is closed at 401.735 K - a `Cr` near one changes which side the class chooses.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.5, 0.5]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["methane", "n-butane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 2000000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 299.0
+hot_out_h = -7689.143833245269
+cold_out_t = 401.7354963625766
+cold_out_h = 8364.101279895709
+duty = 15901.284453854947
+ua_value = 157.4384599391579
+delta_t_side = "hot"
+
+[[cases]]
+id = "a_pinned_outlet_wins_over_use_delta_t"
+tolerance = 3e-04
+source = "The `a_pinned_hot_outlet` state with `use_delta_t` also stated. **`runDeltaT` delegates to `runSpecifiedStream` when an outlet is specified**, so the pin runs and the delta-T branch is unreachable; the result is the pin's own and carries a `FALLBACK_TO_INPUT` warning naming the ignored flag.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+hot_outlet_temperature = 350.0
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 350.0
+hot_out_h = 3219.4541058847717
+cold_out_t = 318.43800346001626
+cold_out_h = -18273.273337934537

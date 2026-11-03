@@ -3092,6 +3092,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "cold_outlet_temperature",
         "thermodynamic_temperature",
     ),
+    (
+        "process.heat_exchanger",
+        "delta_t",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.heat_exchanger",
+        "guess_out_temperature",
+        "thermodynamic_temperature",
+    ),
     ("process.heater", "inlet_n", "molar_flow"),
     ("process.heater", "inlet_z", "dimensionless"),
     ("process.heater", "inlet_p", "pressure"),

@@ -808,8 +808,9 @@ a claim nothing holds.
   `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
   lookups, the `CompressorChartKhader2015` map and the speed-solve mode have landed**;
   `Expander`'s `powerSet`/`useOutTemperature` modes, dynamic nozzle and capacity
-  constraints; `HeatExchanger`'s
-  thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA; **`Separator`'s
+  constraints; `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
+  **its `useDeltaT` closure landed as `use_delta_t`**, held to
+  `process_heat_exchanger_delta_t.tsv`; **`Separator`'s
   capacity surface landed** - utilisation, the maximum allowable and superficial velocities,
   the no-argument gas load factor and the overload flag, with the sizing rule's and the load
   factor's density rules kept apart - **and `SeparatorCapacityAssessment` landed as

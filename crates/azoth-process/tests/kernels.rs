@@ -152,6 +152,8 @@ fn a_heat_exchanger_conserves_energy() {
         "counterflow",
         None,
         None,
+        false,
+        kelvins(1.0),
     )
     .expect("heat_exchanger");
     let (hot_out, cold_out) = (outcome.hot_out, outcome.cold_out);
@@ -171,8 +173,17 @@ fn a_heat_exchanger_conserves_energy() {
 fn a_pinned_outlet_temperature_is_honoured() {
     let hot = binary(1.0, 50.0, 1e5, 350.0);
     let cold = binary(0.0, 50.0, 1e5, 300.0);
-    let pinned = heat_exchanger(&hot, &cold, None, "counterflow", Some(kelvins(330.0)), None)
-        .expect("heat_exchanger");
+    let pinned = heat_exchanger(
+        &hot,
+        &cold,
+        None,
+        "counterflow",
+        Some(kelvins(330.0)),
+        None,
+        false,
+        kelvins(1.0),
+    )
+    .expect("heat_exchanger");
     let (hot_out, cold_out) = (pinned.hot_out, pinned.cold_out);
 
     close(hot_out.t.value, 330.0);
@@ -195,11 +206,25 @@ fn an_exchanger_refuses_the_shapes_it_cannot_answer() {
             "counterflow",
             Some(kelvins(330.0)),
             Some(kelvins(340.0)),
+            false,
+            kelvins(1.0),
         )
         .is_err()
     );
     // The rating without a conductance is NeqSim's 500 W/K, which this will not guess.
-    assert!(heat_exchanger(&hot, &cold, None, "counterflow", None, None).is_err());
+    assert!(
+        heat_exchanger(
+            &hot,
+            &cold,
+            None,
+            "counterflow",
+            None,
+            None,
+            false,
+            kelvins(1.0)
+        )
+        .is_err()
+    );
     // An arrangement NeqSim does not know falls through to counterflow; this refuses.
     assert!(
         heat_exchanger(
@@ -209,6 +234,8 @@ fn an_exchanger_refuses_the_shapes_it_cannot_answer() {
             "concentric tube counterflow",
             None,
             None,
+            false,
+            kelvins(1.0),
         )
         .is_err()
     );

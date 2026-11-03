@@ -33,6 +33,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `flow_arrangement` | counterflow / parallelflow / shell_and_tube | which effectiveness relation the rating uses, for the reason `calcThermalEffectivenes` takes one. NeqSim spells these "concentric tube counterflow", "concentric tube paralellflow" and "shell and tube". |
 | `hot_outlet_temperature` | K | *Optional.* pin the hot outlet at this temperature, at its inlet pressure, and energy-balance the cold side against it. |
 | `cold_outlet_temperature` | K | *Optional.* pin the cold outlet at this temperature and energy-balance the hot side against it. |
+| `use_delta_t` | - | *Optional.* run `runDeltaT`: perturb each side by `delta_t`, take the capacities from the enthalpy changes, set the side with the larger swing and close the other. **Absent is false.** A pinned outlet wins, as it does in `run`. |
+| `delta_t` | K | *Optional.* the `runDeltaT` step. **Absent is the class's `1.0` K.** |
+| `guess_out_temperature` | K | *Optional.* the class's `guessOutTemperature`. **Absent is `403.15` K.** Carried and unread: the first pass it seeds is overwritten by the branch that answers. |
 
 
 ## Outputs
@@ -55,6 +58,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `c_min` | W/K | the smaller of the two capacities the rating estimated - each side flashed at the *other's* inlet temperature - or null where one outlet was pinned. |
 | `c_max` | W/K | the larger of them, or null where one outlet was pinned. |
 | `capacity_ratio` | dimensionless | `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned. |
+| `ua_value` | W/K | *Optional.* `runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here. |
+| `delta_t_side` | - | *Optional.* which side `runDeltaT` set, `hot` or `cold`; present only in that mode. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -70,7 +75,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.
 - **an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.
 - **the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.
-- NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a `useDeltaT` variant, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.
+- NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.
+- **`runDeltaT`'s first pass is not modelled.** It seeds `outStream[0]` at `guessOutTemperature` and recurses; the branch that answers then re-clones both inlets, so the seed cannot reach `UAvalue` - the class's own test agrees to `1e-3` with and without a prior rating.
+- **the two dead tests are carried as the class has them**: `thermalEffectiveness` is compared with `1.0` and is the class's field, and `hotColdDutyBalance` is hard-set to `1.0`. On a fresh exchanger the field is `0.0`, so the second `PHflash` runs and is a no-op at the enthalpy it was given.
+- **a pinned outlet wins over `use_delta_t`**: `runDeltaT` delegates to `runSpecifiedStream`, so the pin runs and the delta-T branch is unreachable. The result carries a `FALLBACK_TO_INPUT` warning naming it.
 
 ## Cases
 
@@ -81,11 +89,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_arrangement_moves_less_heat` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, ua = 100.0, flow_arrangement = parallelflow | hot_out_n = 1.0, hot_out_z = [0.8, 0.2], hot_out_p = 2000000.0, hot_out_t = 319.31818152334284, hot_out_h = 1536.227621346918, cold_out_n = 1.0, cold_out_z = [0.5, 0.5], cold_out_p = 500000.0, cold_out_t = 328.78787406756123, cold_out_h = -16590.04684615857 |
 | `a_pinned_hot_outlet` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, flow_arrangement = counterflow, hot_outlet_temperature = 350.0 | hot_out_n = 1.0, hot_out_z = [0.8, 0.2], hot_out_p = 2000000.0, hot_out_t = 350.0, hot_out_h = 3219.4541058847717, cold_out_n = 1.0, cold_out_z = [0.5, 0.5], cold_out_p = 500000.0, cold_out_t = 318.43800346001626, cold_out_h = -18273.273337934537 |
 | `a_pinned_cold_outlet` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, flow_arrangement = counterflow, cold_outlet_temperature = 320.0 | hot_out_n = 1.0, hot_out_z = [0.8, 0.2], hot_out_p = 2000000.0, hot_out_t = 345.4935748670965, hot_out_h = 2968.692983939156, cold_out_n = 1.0, cold_out_z = [0.5, 0.5], cold_out_p = 500000.0, cold_out_t = 320.0, cold_out_h = -18022.51221053017 |
+| `the_delta_t_closure_on_the_class_test_fluid` | hot_components = ['methane', 'ethane', 'n-heptane'], hot_in_n = 243.0, hot_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678], hot_in_p = 2000000.0, hot_in_t = 333.15, cold_components = ['methane', 'ethane'], cold_in_n = 340.0, cold_in_z = [0.6470588235294118, 0.35294117647058826], cold_in_p = 2000000.0, cold_in_t = 313.15, flow_arrangement = counterflow, use_delta_t = True, delta_t = 1.0 | hot_out_t = 309.51430343320936, hot_out_h = 746.0692431959535, cold_out_t = 334.15, cold_out_h = 2063.781003522744, duty = 331126.16235200467, ua_value = 15767.912492952604, delta_t_side = cold |
+| `the_delta_t_closure_on_the_streams_swapped` | hot_components = ['methane', 'ethane'], hot_in_n = 340.0, hot_in_z = [0.6470588235294118, 0.35294117647058826], hot_in_p = 2000000.0, hot_in_t = 313.15, cold_components = ['methane', 'ethane', 'n-heptane'], cold_in_n = 243.0, cold_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678], cold_in_p = 2000000.0, cold_in_t = 333.15, flow_arrangement = counterflow, use_delta_t = True, delta_t = 1.0 | hot_out_t = 334.15, hot_out_h = 2063.781003522744, cold_out_t = 309.51430343320936, cold_out_h = 746.0692431959535, duty = -331126.16235200467, ua_value = 15767.912492952604, delta_t_side = hot |
+| `the_delta_t_closure_at_near_equal_capacities` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.5, 0.5], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['methane', 'n-butane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 2000000.0, cold_in_t = 300.0, flow_arrangement = counterflow, use_delta_t = True, delta_t = 1.0 | hot_out_t = 299.0, hot_out_h = -7689.143833245269, cold_out_t = 401.7354963625766, cold_out_h = 8364.101279895709, duty = 15901.284453854947, ua_value = 157.4384599391579, delta_t_side = hot |
+| `a_pinned_outlet_wins_over_use_delta_t` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, flow_arrangement = counterflow, hot_outlet_temperature = 350.0, use_delta_t = True, delta_t = 1.0 | hot_out_t = 350.0, hot_out_h = 3219.4541058847717, cold_out_t = 318.43800346001626, cold_out_h = -18273.273337934537 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 5 declared, every one run
+- Tests: 8 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

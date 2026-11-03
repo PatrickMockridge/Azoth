@@ -5905,7 +5905,7 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
     )
 
 
-def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, safety_factor: float | None=None, mesh_pad_area: float | None=None, mesh_pad_thickness: float | None=None, mesh_pad_elevation: Q | None=None) -> GasScrubberResult:
+def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, safety_factor: float | None=None, mesh_pad_area: float | None=None, mesh_pad_thickness: Q | None=None, mesh_pad_elevation: Q | None=None) -> GasScrubberResult:
     """``process.gas_scrubber``, computed in Rust."""
     spec = _models_gen.model("process.gas_scrubber")
     result = _core.gas_scrubber(
@@ -5920,7 +5920,7 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
         None if safety_factor is None else safety_factor,
         None if mesh_pad_area is None else _si(spec, "mesh_pad_area", mesh_pad_area),
-        None if mesh_pad_thickness is None else _si(spec, "mesh_pad_thickness", mesh_pad_thickness),
+        None if mesh_pad_thickness is None else input_to_si(spec, "mesh_pad_thickness", mesh_pad_thickness),
         None if mesh_pad_elevation is None else input_to_si(spec, "mesh_pad_elevation", mesh_pad_elevation),
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
         mechanical_design,
@@ -6049,7 +6049,7 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
     )
 
 
-def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None) -> HeatExchangerResult:
+def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None) -> HeatExchangerResult:
     """``process.heat_exchanger``, computed in Rust."""
     spec = _models_gen.model("process.heat_exchanger")
     result = _core.heat_exchanger(
@@ -6067,6 +6067,9 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         None if ua is None else input_to_si(spec, "ua", ua),
         None if hot_outlet_temperature is None else input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
         None if cold_outlet_temperature is None else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+        use_delta_t,
+        None if delta_t is None else input_to_si(spec, "delta_t", delta_t),
+        None if guess_out_temperature is None else input_to_si(spec, "guess_out_temperature", guess_out_temperature),
     )
     return HeatExchangerResult(
         hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
@@ -6085,6 +6088,8 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         c_min=None if result.c_min is None else from_si(result.c_min.magnitude_si, result.c_min.unit),
         c_max=None if result.c_max is None else from_si(result.c_max.magnitude_si, result.c_max.unit),
         capacity_ratio=result.capacity_ratio,
+        ua_value=None if result.ua_value is None else from_si(result.ua_value.magnitude_si, result.ua_value.unit),
+        delta_t_side=result.delta_t_side,
         warnings=_warnings(result.warnings),
     )
 

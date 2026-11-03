@@ -2915,6 +2915,8 @@ class HeatExchangerResult:
     c_min: Qty | None
     c_max: Qty | None
     capacity_ratio: float | None
+    ua_value: Qty | None
+    delta_t_side: str | None
     warnings: list[Warning]
 
 @final
@@ -5693,6 +5695,9 @@ def heat_exchanger(
     ua: float | None = None,
     hot_outlet_temperature: float | None = None,
     cold_outlet_temperature: float | None = None,
+    use_delta_t: bool | None = None,
+    delta_t: float | None = None,
+    guess_out_temperature: float | None = None,
 ) -> HeatExchangerResult: ...
 def heater(
     components: list[str],

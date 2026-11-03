@@ -15928,6 +15928,12 @@ pub struct PyHeatExchangerResult {
     /// `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.
     #[pyo3(get)]
     pub capacity_ratio: Option<f64>,
+    /// `runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here.
+    #[pyo3(get)]
+    pub ua_value: Option<PyQty>,
+    /// which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
+    #[pyo3(get)]
+    pub delta_t_side: Option<String>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15937,7 +15943,7 @@ pub struct PyHeatExchangerResult {
 impl PyHeatExchangerResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, {} warning(s))",
+            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, {} warning(s))",
             self.hot_out_n,
             self.hot_out_z,
             self.hot_out_p,
@@ -15954,6 +15960,8 @@ impl PyHeatExchangerResult {
             self.c_min,
             self.c_max,
             self.capacity_ratio,
+            self.ua_value,
+            self.delta_t_side,
             self.warnings.len()
         )
     }
@@ -16011,6 +16019,11 @@ impl From<&azoth_process::models::heat_exchanger::HeatExchangerResult> for PyHea
                 unit: "W/K".to_string(),
             }),
             capacity_ratio: r.capacity_ratio,
+            ua_value: r.ua_value.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "W/K".to_string(),
+            }),
+            delta_t_side: r.delta_t_side.clone(),
             warnings: transport(&r.warnings),
         }
     }

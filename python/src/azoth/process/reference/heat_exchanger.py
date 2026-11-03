@@ -45,7 +45,7 @@ from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HeatExchangerResult
 from azoth.core.units import Q, from_si, input_to_si
-from azoth.core.warnings import Warning
+from azoth.core.warnings import Warning, WarningCode
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
@@ -69,6 +69,9 @@ def heat_exchanger(
     flow_arrangement: str = "counterflow",
     hot_outlet_temperature: Q | None = None,
     cold_outlet_temperature: Q | None = None,
+    use_delta_t: bool | None = None,
+    delta_t: Q | None = None,
+    guess_out_temperature: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -131,6 +134,13 @@ def heat_exchanger(
         if cold_outlet_temperature is None
         else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature)
     )
+    delta_t_si = 1.0 if delta_t is None else input_to_si(spec, "delta_t", delta_t)
+    # The class's `guessOutTemperature` seeds a pass the answering branch overwrites.
+    _ = (
+        None
+        if guess_out_temperature is None
+        else input_to_si(spec, "guess_out_temperature", guess_out_temperature)
+    )
     # Every declared bound's quantity is fed here: a closure that supplies some and not
     # the rest emits a `RANGE_CHECK_SKIPPED` warning for a check that could have run.
     apply_checks(
@@ -138,6 +148,15 @@ def heat_exchanger(
         {"ua": ua_si, "hot_in_t": hot_t_si, "cold_in_t": cold_t_si}.get,
         warnings,
     )
+    if use_delta_t and (hot_out_t_si is not None or cold_out_t_si is not None):
+        warnings.append(
+            Warning(
+                WarningCode.FALLBACK_TO_INPUT,
+                "a pinned outlet wins in `HeatExchanger.run`: `runDeltaT` delegates to "
+                "`runSpecifiedStream`, so `use_delta_t` is ignored on this state",
+                field="use_delta_t",
+            )
+        )
 
     hot_n = input_to_si(spec, "hot_in_n", hot_in_n)
     cold_n = input_to_si(spec, "cold_in_n", cold_in_n)
@@ -161,6 +180,8 @@ def heat_exchanger(
         flow_arrangement,
         hot_out_t_si,
         cold_out_t_si,
+        bool(use_delta_t),
+        delta_t_si,
     )
 
     return HeatExchangerResult(
@@ -185,6 +206,8 @@ def heat_exchanger(
         c_min=None if states.rating is None else from_si(states.rating.c_min, "W/K"),
         c_max=None if states.rating is None else from_si(states.rating.c_max, "W/K"),
         capacity_ratio=None if states.rating is None else states.rating.capacity_ratio,
+        ua_value=None if states.ua_value is None else from_si(states.ua_value, "W/K"),
+        delta_t_side=states.delta_t_side,
         warnings=tuple(warnings),
     )
 
@@ -226,6 +249,10 @@ class ExchangerStates:
     duty: float
     #: ``None`` when an outlet was pinned instead: that branch does not rate anything.
     rating: Rating | None
+    #: ``runDeltaT``'s computed conductance, W/K; ``None`` outside that mode.
+    ua_value: float | None
+    #: Which side ``runDeltaT`` set; ``None`` outside that mode.
+    delta_t_side: str | None
 
 
 def _states(
@@ -243,6 +270,8 @@ def _states(
     flow_arrangement: str,
     hot_outlet_temperature: float | None,
     cold_outlet_temperature: float | None,
+    use_delta_t: bool,
+    delta_t: float,
 ) -> ExchangerStates:
     """The exchanger's intermediates, in the order it computes them, in SI.
 
@@ -259,7 +288,7 @@ def _states(
             "nothing left to solve for",
         )
     pinned = hot_outlet_temperature is not None or cold_outlet_temperature is not None
-    if not pinned and ua is None:
+    if not pinned and not use_delta_t and ua is None:
         raise InvalidInputError(
             "ua",
             "the rating needs an overall conductance. NeqSim's `UAvalue` defaults to "
@@ -287,6 +316,8 @@ def _states(
     cold_h, _ = enthalpy_at(cold_mixture, cold_gas, cold_in_t, cold_in_p, cold_in_z)
 
     rating: Rating | None = None
+    ua_value: float | None = None
+    delta_t_side: str | None = None
     if pinned:
         hot_pinned = hot_outlet_temperature is not None
         pinned_t = hot_outlet_temperature if hot_pinned else cold_outlet_temperature
@@ -302,6 +333,36 @@ def _states(
             specified, _ = enthalpy_at(cold_mixture, cold_gas, pinned_t, cold_in_p, cold_in_z)
             duty = cold_in_n * (specified - cold_h)
             cold_out_h, hot_out_h = specified, hot_h - divide(duty, hot_in_n)
+    elif use_delta_t:
+        if delta_t <= 0.0:
+            raise InvalidInputError(
+                "delta_t",
+                f"`delta_t` is a positive temperature step, and {delta_t} K is not",
+            )
+        sign = 1.0 if hot_in_t > cold_in_t else -1.0
+        hot_seeded, _ = enthalpy_at(
+            hot_mixture, hot_gas, cold_in_t - sign * delta_t, hot_in_p, hot_in_z
+        )
+        cold_seeded, _ = enthalpy_at(
+            cold_mixture, cold_gas, hot_in_t + sign * delta_t, cold_in_p, cold_in_z
+        )
+        hot_swing = hot_in_n * (hot_seeded - hot_h)
+        cold_swing = cold_in_n * (cold_seeded - cold_h)
+        hot_capacity = divide(abs(hot_swing), abs(cold_in_t - sign * delta_t - hot_in_t))
+        cold_capacity = divide(abs(cold_swing), abs(hot_in_t + sign * delta_t - cold_in_t))
+        _ = (hot_capacity, cold_capacity)
+        if abs(cold_swing) < abs(hot_swing):
+            d_h = hot_swing
+            hot_out_h, cold_out_h = hot_seeded, cold_h - divide(d_h, cold_in_n)
+            set_t, set_in_t = cold_in_t - sign * delta_t, hot_in_t
+            delta_t_side = "hot"
+        else:
+            d_h = cold_swing
+            cold_out_h, hot_out_h = cold_seeded, hot_h - divide(d_h, hot_in_n)
+            set_t, set_in_t = hot_in_t + sign * delta_t, cold_in_t
+            delta_t_side = "cold"
+        ua_value = divide(d_h, set_t - set_in_t)
+        duty = d_h
     else:
         if ua is None:
             raise InvalidInputError("ua", "the rating mode needs an overall conductance")
@@ -351,6 +412,8 @@ def _states(
         cold_out_t=_temperature(cold_mixture, cold_gas, cold_in_p, cold_out_h, cold_in_z),
         duty=duty,
         rating=rating,
+        ua_value=ua_value,
+        delta_t_side=delta_t_side,
     )
 
 

@@ -2351,6 +2351,9 @@ def heat_exchanger(
     flow_arrangement: str = "counterflow",
     hot_outlet_temperature: Q | None = None,
     cold_outlet_temperature: Q | None = None,
+    use_delta_t: bool | None = None,
+    delta_t: Q | None = None,
+    guess_out_temperature: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -2386,6 +2389,9 @@ def heat_exchanger(
         flow_arrangement=flow_arrangement,
         hot_outlet_temperature=hot_outlet_temperature,
         cold_outlet_temperature=cold_outlet_temperature,
+        use_delta_t=use_delta_t,
+        delta_t=delta_t,
+        guess_out_temperature=guess_out_temperature,
     )
 
 

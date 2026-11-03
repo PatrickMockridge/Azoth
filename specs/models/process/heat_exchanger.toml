@@ -8,7 +8,10 @@ assumptions = [
     "**`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.",
     "**an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.",
     "**the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.",
-    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a `useDeltaT` variant, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
+    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
+    "**`runDeltaT`'s first pass is not modelled.** It seeds `outStream[0]` at `guessOutTemperature` and recurses; the branch that answers then re-clones both inlets, so the seed cannot reach `UAvalue` - the class's own test agrees to `1e-3` with and without a prior rating.",
+    "**the two dead tests are carried as the class has them**: `thermalEffectiveness` is compared with `1.0` and is the class's field, and `hotColdDutyBalance` is hard-set to `1.0`. On a fresh exchanger the field is `0.0`, so the second `PHflash` runs and is a no-op at the enthalpy it was given.",
+    "**a pinned outlet wins over `use_delta_t`**: `runDeltaT` delegates to `runSpecifiedStream`, so the pin runs and the delta-T branch is unreachable. The result carries a `FALLBACK_TO_INPUT` warning naming it.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.",
@@ -67,6 +70,18 @@ description = "pin the hot outlet at this temperature, at its inlet pressure, an
 unit = "K"
 optional = true
 description = "pin the cold outlet at this temperature and energy-balance the hot side against it.\n"
+[inputs.use_delta_t]
+type = "boolean"
+optional = true
+description = "run `runDeltaT`: perturb each side by `delta_t`, take the capacities from the enthalpy changes, set the side with the larger swing and close the other. **Absent is false.** A pinned outlet wins, as it does in `run`.\n"
+[inputs.delta_t]
+unit = "K"
+optional = true
+description = "the `runDeltaT` step. **Absent is the class's `1.0` K.**\n"
+[inputs.guess_out_temperature]
+unit = "K"
+optional = true
+description = "the class's `guessOutTemperature`. **Absent is `403.15` K.** Carried and unread: the first pass it seeds is overwritten by the branch that answers.\n"
 [outputs]
 [outputs.hot_out_n]
 unit = "mol/s"
@@ -120,6 +135,14 @@ description = "the larger of them, or null where one outlet was pinned.\n"
 [outputs.capacity_ratio]
 unit = "dimensionless"
 description = "`C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.\n"
+[outputs.ua_value]
+unit = "W/K"
+optional = true
+description = "`runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here.\n"
+[outputs.delta_t_side]
+type = "string"
+optional = true
+description = "which side `runDeltaT` set, `hot` or `cold`; present only in that mode.\n"
 
 [[valid_range]]
 quantity = "ua"

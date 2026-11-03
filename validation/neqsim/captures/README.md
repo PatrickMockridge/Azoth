@@ -191,6 +191,24 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
   > captures/process_column_divergence.tsv
 ```
 
+## The heat exchanger's delta-T mode
+
+`process_heat_exchanger_delta_t.tsv` is `HeatExchanger.runDeltaT`, which `setDeltaT` enables:
+the class perturbs each side by `delta_t`, estimates its capacity from the enthalpy change,
+sets the side with the larger swing and closes the other by `PHflash`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_delta_t \
+  > captures/process_heat_exchanger_delta_t.tsv
+```
+
+**The rating capture's 100 K PR fixture is degenerate here.** The closure asks the hot side
+for more enthalpy than its inventory carries, and the class answers an outlet at `~0` K with
+a `NaN` enthalpy; the PR rows here therefore use the class's own `HeatExchangerTest.testRun2`
+fluid on PR, where the same arithmetic stays in a state the cubic is for. **The SRK row is
+that test's own `15780.77130`**, and it is a labelled control rather than a PR case.
+
 **`ProcessProbe absorber_efficiency` is the absorber's Murphree override, and NeqSim's own solve
 does not converge with it.** It runs the lean-oil absorber at `0.6` column-wide and at `1.0` with
 methane overridden to `0.6`: **both take the 80-iteration cap**, reporting `FAILED` and

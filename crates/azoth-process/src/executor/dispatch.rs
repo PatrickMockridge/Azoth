@@ -609,6 +609,10 @@ pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ke
         &p.text("flow_arrangement")?,
         p.optional_si("hot_outlet_temperature")?.map(kelvins),
         p.optional_si("cold_outlet_temperature")?.map(kelvins),
+        p.flag("use_delta_t")?,
+        p.optional_si("delta_t")?
+            .map(kelvins)
+            .unwrap_or_else(|| kelvins(1.0)),
     )?;
     // **The duty and the rating cross here.** Neither is on an outlet stream, and the four the
     // rating names are what tell a reader whether the exchanger was area-limited or

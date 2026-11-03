@@ -1,8 +1,8 @@
 //! `unit_ops.heat_exchanger` - two streams, coupled by an overall conductance.
 
 use azoth_core::units::{
-    MolarEnergy, Power, ThermalConductance, ThermodynamicTemperature, joules_per_mole, watts,
-    watts_per_kelvin,
+    MolarEnergy, Power, ThermalConductance, ThermodynamicTemperature, joules_per_mole, kelvins,
+    watts, watts_per_kelvin,
 };
 use azoth_core::{AzothError, Result};
 
@@ -64,6 +64,10 @@ pub struct HeatExchangerOutcome {
     pub duty: Power,
     /// The rating's own numbers, or `None` where one outlet was pinned instead.
     pub rating: Option<Rating>,
+    /// `runDeltaT`'s computed conductance, W/K; present only in that mode.
+    pub ua_value: Option<f64>,
+    /// Which side `runDeltaT` set, `"hot"` or `"cold"`; present only in that mode.
+    pub delta_t_side: Option<&'static str>,
 }
 
 impl HeatExchangerOutcome {
@@ -81,6 +85,8 @@ impl HeatExchangerOutcome {
             cold_out,
             duty,
             rating,
+            ua_value: None,
+            delta_t_side: None,
         }
     }
 }
@@ -113,6 +119,8 @@ pub fn heat_exchanger(
     flow_arrangement: &str,
     hot_outlet_temperature: Option<ThermodynamicTemperature>,
     cold_outlet_temperature: Option<ThermodynamicTemperature>,
+    use_delta_t: bool,
+    delta_t: ThermodynamicTemperature,
 ) -> Result<HeatExchangerOutcome> {
     if hot_outlet_temperature.is_some() && cold_outlet_temperature.is_some() {
         return Err(AzothError::invalid_input(
@@ -128,6 +136,12 @@ pub fn heat_exchanger(
     if let Some(pinned) = cold_outlet_temperature {
         let (hot_out, cold_out) = specified_outlet(hot, cold, Side::Cold, pinned)?;
         return Ok(HeatExchangerOutcome::of(hot, hot_out, cold_out, None));
+    }
+    // **A pin wins over `useDeltaT`**: the class's `runDeltaT` delegates to
+    // `runSpecifiedStream` when an outlet is specified, so the delta-T branch is unreachable
+    // with a pin stated.
+    if use_delta_t {
+        return delta_t_solve(hot, cold, delta_t);
     }
 
     let Some(ua) = ua else {
@@ -255,6 +269,93 @@ pub fn heat_exchanger(
 }
 
 /// The `outTemperature` specification: pin one outlet, energy-balance the other.
+/// `runDeltaT`: perturb each side by `delta_t` K, estimate its capacity from the enthalpy
+/// change, set the side with the larger swing, and close the other by `PHflash`.
+///
+/// **The class's first pass is not modelled.** It seeds `outStream[0]` at
+/// `guessOutTemperature` and recurses, and the `else` branch then re-clones both inlets, so
+/// the seed cannot reach the answer - the two rows of `HeatExchangerTest.testRun2`, one
+/// after an ordinary rating and one on a fresh exchanger, agree to `1e-3` on `UAvalue`.
+fn delta_t_solve(
+    hot: &Stream,
+    cold: &Stream,
+    delta_t: ThermodynamicTemperature,
+) -> Result<HeatExchangerOutcome> {
+    let t0 = hot.t.value;
+    let t1 = cold.t.value;
+    if (t0 - t1).abs() <= f64::EPSILON * t0.abs().max(t1.abs()) {
+        return Err(AzothError::invalid_input(
+            "hot_in",
+            format!(
+                "both inlets are at {t0} K, so `runDeltaT`'s sign is zero and nothing is perturbed"
+            ),
+        ));
+    }
+    if delta_t.value <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "delta_t",
+            format!(
+                "`delta_t` is a positive temperature step, and {} K is not",
+                delta_t.value
+            ),
+        ));
+    }
+    let sign = (t0 - t1).signum();
+    let delta = delta_t.value;
+
+    // The class perturbs `outStream[1]` to the hot inlet plus the step and `outStream[0]` to
+    // the cold inlet less it.
+    let cold_pert = Stream::from_pt(
+        cold.components.clone(),
+        cold.z.clone(),
+        cold.n,
+        cold.p,
+        kelvins(t0 + sign * delta),
+    )?;
+    let hot_pert = Stream::from_pt(
+        hot.components.clone(),
+        hot.z.clone(),
+        hot.n,
+        hot.p,
+        kelvins(t1 - sign * delta),
+    )?;
+    let cold_swing = cold.n * (cold_pert.h.value - cold.h.value);
+    let hot_swing = hot.n * (hot_pert.h.value - hot.h.value);
+    let cold_capacity = cold_swing.abs() / (t0 + sign * delta - t1).abs();
+    let hot_capacity = hot_swing.abs() / (t1 - sign * delta - t0).abs();
+    let _ = (cold_capacity, hot_capacity);
+
+    // `if (|dH1| < |dH2|) swap`, where 1 is the cold side and 2 the hot one.
+    let (set_is_hot, d_h) = if cold_swing.abs() < hot_swing.abs() {
+        (true, hot_swing)
+    } else {
+        (false, cold_swing)
+    };
+    let (set_in, set_out, other_in) = if set_is_hot {
+        (hot, hot_pert, cold)
+    } else {
+        (cold, cold_pert, hot)
+    };
+    let other_out = Stream::from_ph(
+        other_in.components.clone(),
+        other_in.z.clone(),
+        other_in.n,
+        other_in.p,
+        joules_per_mole(other_in.h.value - d_h / other_in.n),
+    )?;
+    let ua_value = d_h / (set_out.t.value - set_in.t.value);
+
+    let (hot_out, cold_out) = if set_is_hot {
+        (set_out, other_out)
+    } else {
+        (other_out, set_out)
+    };
+    let mut outcome = HeatExchangerOutcome::of(hot, hot_out, cold_out, None);
+    outcome.ua_value = Some(ua_value);
+    outcome.delta_t_side = Some(if set_is_hot { "hot" } else { "cold" });
+    Ok(outcome)
+}
+
 fn specified_outlet(
     hot: &Stream,
     cold: &Stream,

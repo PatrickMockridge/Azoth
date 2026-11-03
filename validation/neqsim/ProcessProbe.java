@@ -167,6 +167,9 @@ public class ProcessProbe {
       case "heat_exchanger":
         heatExchanger();
         break;
+      case "heat_exchanger_delta_t":
+        heatExchangerDeltaT();
+        break;
       case "heater":
         heatRows("Heater");
         break;
@@ -6285,6 +6288,86 @@ public class ProcessProbe {
     // balance moves - and the case is pinned to these rather than to the rows above.
     pinReferenceRow("reference_pin_hot_350", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 350.0, 0);
     pinReferenceRow("reference_pin_cold_320", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 320.0, 1);
+  }
+
+  /// `HeatExchanger.runDeltaT`, which `setDeltaT` enables.
+  static void heatExchangerDeltaT() {
+    String[] hotNames = new String[] { "methane", "n-butane" };
+    double[] hotZ = new double[] { 0.8, 0.2 };
+    String[] coldNames = new String[] { "n-butane", "n-pentane" };
+    double[] coldZ = new double[] { 0.5, 0.5 };
+
+    // **The class's own test fluid on PR.** The rating capture's 100 K approach is
+    // degenerate here: the closure asks the hot side for more enthalpy than it has and the
+    // class answers a 0 K outlet with a NaN enthalpy, which no port should reproduce.
+    Stream prHot = prTestFluid(333.15, 20.0, new String[] {"methane", "ethane", "n-heptane"},
+        new double[] {120.0, 120.0, 3.0}, "Stream1");
+    Stream prCold = prTestFluid(313.15, 20.0, new String[] {"methane", "ethane"},
+        new double[] {220.0, 120.0}, "Stream2");
+    deltaTRow("pr_test_run2_delta_t_1", prHot, prCold, 1.0);
+    // The streams swapped: the class's `sign` and its swap are index-based, not hot/cold.
+    deltaTRow("pr_test_run2_swapped_delta_t_1",
+        prTestFluid(313.15, 20.0, new String[] {"methane", "ethane"}, new double[] {220.0, 120.0},
+            "Stream2"),
+        prTestFluid(333.15, 20.0, new String[] {"methane", "ethane", "n-heptane"},
+            new double[] {120.0, 120.0, 3.0}, "Stream1"),
+        1.0);
+    // A near-equal-capacity pair: both sides are the same fluid at the same flow.
+    deltaTRow("pr_near_equal_cr_delta_t_1",
+        feed(hotNames, new double[] {0.5, 0.5}, 400.0, 20.0, 1.0),
+        feed(hotNames, new double[] {0.5, 0.5}, 300.0, 20.0, 1.0), 1.0);
+
+    // The class's own `HeatExchangerTest.testRun2` fluid, SRK. Its expected UA is
+    // `15780.77130` to `1e-3`; this row is that number's control and is not a PR case.
+    neqsim.thermo.system.SystemInterface hotFluid = new neqsim.thermo.system.SystemSrkEos(
+        273.15 + 60.0, 20.00);
+    hotFluid.addComponent("methane", 120.00);
+    hotFluid.addComponent("ethane", 120.0);
+    hotFluid.addComponent("n-heptane", 3.0);
+    hotFluid.createDatabase(true);
+    hotFluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(hotFluid).TPflash();
+    Stream srkHot = new Stream("Stream1", hotFluid);
+
+    neqsim.thermo.system.SystemInterface coldFluid = new neqsim.thermo.system.SystemSrkEos(
+        273.15 + 40.0, 20.00);
+    coldFluid.addComponent("methane", 220.0);
+    coldFluid.addComponent("ethane", 120.0);
+    coldFluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(coldFluid).TPflash();
+    Stream srkCold = new Stream("Stream2", coldFluid);
+
+    deltaTRow("srk_test_run2_delta_t_1", srkHot, srkCold, 1.0);
+  }
+
+  static Stream prTestFluid(double temperature, double pressureBar, String[] names,
+      double[] amounts, String streamName) {
+    neqsim.thermo.system.SystemInterface fluid = new neqsim.thermo.system.SystemPrEos(temperature,
+        pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    fluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    return new Stream(streamName, fluid);
+  }
+
+  static void deltaTRow(String label, Stream firstIn, Stream secondIn, double deltaT) {
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("hx", firstIn, secondIn);
+    exchanger.setDeltaT(deltaT);
+    exchanger.run();
+
+    System.out.println(label);
+    print("first_in", firstIn);
+    print("second_in", secondIn);
+    print("first_out", exchanger.getOutStream(0));
+    print("second_out", exchanger.getOutStream(1));
+    System.out.println("delta_t_k=" + deltaT);
+    // `getDuty` carries the class's sign: the enthalpy change of the side it set.
+    System.out.println("duty_w_java=" + exchanger.getDuty());
+    System.out.println("ua_value_w_per_k=" + exchanger.getUAvalue());
+    System.out.println();
   }
 
   static void pinReferenceRow(String label, String[] hotNames, double[] hotZ, double hotFlow,

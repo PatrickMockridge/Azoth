@@ -47,7 +47,10 @@ fn a_configured_mesh_pad_turns_its_flag_on() {
     assert_eq!(result.mesh_pad_thickness, Some(0.150));
     assert_eq!(result.has_inlet_cyclones, Some(false));
     assert_eq!(result.has_demisting_cyclones, Some(false));
-    let diameter = result.required_diameter.expect("a stated safety factor").value;
+    let diameter = result
+        .required_diameter
+        .expect("a stated safety factor")
+        .value;
     let error = (diameter - 0.603_241_350_383_609_7).abs() / 0.603_241_350_383_609_7;
     assert!(error <= 2.0e-4, "sizeFromFlow: {diameter} ({error:.3e})");
 }

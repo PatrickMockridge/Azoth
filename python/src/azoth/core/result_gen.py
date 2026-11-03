@@ -6376,6 +6376,12 @@ class HeatExchangerResult(_HasWarnings):
     #: `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.
     capacity_ratio: float | None
 
+    #: `runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here.
+    ua_value: Q | None
+
+    #: which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
+    delta_t_side: str | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

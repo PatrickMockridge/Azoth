@@ -73,6 +73,10 @@ pub struct HeatExchangerResult {
     pub c_max: Option<ThermalConductance>,
     /// `C_min / C_max`, dimensionless, or `null` where one outlet was pinned.
     pub capacity_ratio: Option<f64>,
+    /// `runDeltaT`'s computed overall conductance, W/K; present only in that mode.
+    pub ua_value: Option<f64>,
+    /// Which side `runDeltaT` set, `"hot"` or `"cold"`; present only in that mode.
+    pub delta_t_side: Option<String>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -99,6 +103,9 @@ pub fn heat_exchanger(
     flow_arrangement: &str,
     hot_outlet_temperature: Option<ThermodynamicTemperature>,
     cold_outlet_temperature: Option<ThermodynamicTemperature>,
+    use_delta_t: Option<bool>,
+    delta_t: Option<ThermodynamicTemperature>,
+    guess_out_temperature: Option<ThermodynamicTemperature>,
 ) -> Result<HeatExchangerResult> {
     let spec = &model_gen::HEAT_EXCHANGER_SPEC;
     let mut warnings = Vec::new();
@@ -141,6 +148,19 @@ pub fn heat_exchanger(
         cold_in_p,
         cold_in_t,
     )?;
+    // `runDeltaT`'s `guessOutTemperature` only seeds the pass the `else` branch then
+    // overwrites, so it is carried and unused. The declaration keeps the surface whole.
+    let _ = guess_out_temperature;
+    if use_delta_t.unwrap_or(false)
+        && (hot_outlet_temperature.is_some() || cold_outlet_temperature.is_some())
+    {
+        warnings.push(Warning::for_field(
+            azoth_core::WarningCode::FallbackToInput,
+            "use_delta_t",
+            "a pinned outlet wins in `HeatExchanger.run`: `runDeltaT` delegates to \
+             `runSpecifiedStream`, so `use_delta_t` is ignored on this state",
+        ));
+    }
     let outcome = kernel(
         &hot,
         &cold,
@@ -148,6 +168,8 @@ pub fn heat_exchanger(
         flow_arrangement,
         hot_outlet_temperature,
         cold_outlet_temperature,
+        use_delta_t.unwrap_or(false),
+        delta_t.unwrap_or_else(|| azoth_core::units::kelvins(1.0)),
     )?;
     Ok(HeatExchangerResult::of(&outcome, warnings))
 }
@@ -179,6 +201,8 @@ impl HeatExchangerResult {
             c_min: outcome.rating.as_ref().map(|rating| rating.c_min),
             c_max: outcome.rating.as_ref().map(|rating| rating.c_max),
             capacity_ratio: outcome.rating.as_ref().map(|rating| rating.capacity_ratio),
+            ua_value: outcome.ua_value,
+            delta_t_side: outcome.delta_t_side.map(str::to_string),
             warnings,
         }
     }

@@ -437,6 +437,8 @@ impl CalcResult for HeatExchangerResult {
         "c_min",
         "c_max",
         "capacity_ratio",
+        "ua_value",
+        "delta_t_side",
         "warnings",
     ];
 

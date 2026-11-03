@@ -257,6 +257,8 @@ def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
         str(inputs.get("flow_arrangement", "counterflow")),
         optional("hot_outlet_temperature"),
         optional("cold_outlet_temperature"),
+        bool(inputs.get("use_delta_t", False)),
+        1.0 if inputs.get("delta_t") is None else float(inputs["delta_t"]),
     )
     # In the order the kernel computes them - the inlets, then the rating, then the
     # outlets - because the harness reports the *first* layer that moved, and the first one
