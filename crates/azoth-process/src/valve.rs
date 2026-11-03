@@ -22,7 +22,7 @@ use azoth_core::{AzothError, Result};
 use azoth_eos::{Phase, pt_flash};
 
 use crate::segment::phase::{
-    liquid_view, system_mass_density, system_volumetric_flow, vapour_view,
+    liquid_view, system_mass_density_from_feed, system_volumetric_flow_from_feed, vapour_view,
 };
 use crate::stream::Stream;
 
@@ -191,8 +191,11 @@ struct Reads {
 }
 
 fn reads(inlet: &Stream) -> Result<Reads> {
-    let density = system_mass_density(inlet)?;
-    let vapor_flow_m3s = system_volumetric_flow(inlet)?;
+    // **The phase's own root, not a negative flash's trial phases.** NeqSim reads the gas
+    // phase's density and flow off the feed's composition; the flash's trial roots are the
+    // wrong side of the cubic, `0.873` against the feed's `0.920` at the 30 bara row.
+    let density = system_mass_density_from_feed(inlet)?;
+    let vapor_flow_m3s = system_volumetric_flow_from_feed(inlet)?;
     let molar_mass = inlet.molar_mass()?.value;
     // The cubic's own Z, not the translated volume's: the class's `getZ()` is the EOS root.
     let z = {

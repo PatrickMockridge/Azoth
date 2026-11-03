@@ -16,10 +16,15 @@ outlet_z = [0.9, 0.1]
 outlet_p = 1000000.0
 outlet_t = 308.9295610763757
 outlet_h = 1235.7579664789316
+kv = 0.15606753869842724
+cv = 0.18041407473538187
+cg = 245.36314164011935
+choked = true
+gas_valve = true
 [[cases]]
 id = "the_same_drop_stated_as_a_delta"
 tolerance = 2e-04
-source = "The capture's second row, which reaches a 20 bara outlet through `setDeltaPressure(10, \"bara\")` rather than through a stated pressure. **The case exists so that the two ways of stating one drop are one answer**: `run` resolves the ΔP into a pressure before it flashes, and a port that only understood `outlet_pressure` would have no way to check that. The temperature is 314.62 K, between the first row's and the inlet's, as a smaller drop implies.\n"
+source = "The capture's second row, which reaches a 20 bara outlet through `setDeltaPressure(10, \"bara\")` rather than through a stated pressure. **The case exists so that the two ways of stating one drop are one answer**: `run` resolves the ΔP into a pressure before it flashes, and a port that only understood `outlet_pressure` would have no way to check that. The temperature is 314.62 K, between the first row's and the inlet's, as a smaller drop implies. **The capture's `kv` on this row is `Infinity`**: `run` sizes before it resolves the delta into an outlet pressure, so `calcKv` sees a zero drop. The port sizes the resolved drop and reports the finite value; the outlet state this case pins is unaffected.\n"
 [cases.inputs]
 components = ["methane", "n-butane"]
 inlet_n = 1.0

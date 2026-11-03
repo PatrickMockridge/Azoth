@@ -3828,7 +3828,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.throttling_valve",
         name: "Throttling valve",
         spec_path: "specs/models/process/throttling_valve.toml",
-        spec_sha256: "c932619cbb48cfa47be21ad19b169c828eff5111922e8ff2c8f4569b09c130cc",
+        spec_sha256: "4ce118c1f75538fa71b08a8ec15adace2ab54d6c3cda9fbede8520e8767fc87b",
         python_path: "python/src/azoth/process/reference/throttling_valve.py",
         python_sha256: "b79326bedae7ace0689f0994b4dd5b639cf190c41cb53cc11edad1ce16e55b3a",
         rust_path: "crates/azoth-process/src/models/throttling_valve.rs",

@@ -6438,6 +6438,15 @@ public class ProcessProbe {
     System.out.println(label);
     print("inlet", inlet);
     print("outlet", valve.getOutletStream());
+    System.out.println("kv=" + valve.getKv());
+    System.out.println("cv=" + valve.getCv());
+    System.out.println("cg=" + valve.getCg());
+    System.out.println("gas_valve=" + valve.isGasValve());
+    neqsim.thermo.system.SystemInterface inFluid = inlet.getThermoSystem();
+    System.out.println("inlet_gamma2=" + inFluid.getGamma2());
+    System.out.println("inlet_density_kg_m3=" + inFluid.getDensity("kg/m3"));
+    System.out.println("inlet_molar_mass_kg_mol=" + inFluid.getMolarMass());
+    System.out.println("inlet_z_factor=" + inFluid.getPhase(0).getZ());
     System.out.println();
   }
 

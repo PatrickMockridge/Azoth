@@ -85,12 +85,14 @@ holds the declaration and the two languages to each other.
 - **the gas branch's `gamma` is the libraries' heat capacity, and the two differ.** The choked `Kv` scales as `1/sqrt(Fgamma)`, so the plug-flow reactor's measured capacity divergence reaches this coefficient at about `3e-5` relative; the liquid branch reads only the density and agrees to rounding.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **the choked branch, fouling and the isothermal mode are in; the laminar branch and the controller are not.** The laminar branch belongs to `ControlValveSizing_IEC_60534_full`, refused by name; the controller is a transient surface. **A two-phase inlet is refused.**
+- **the sizing reads the phase's own root, not a negative flash's trial phases.** NeqSim reads the gas phase's density and flow off the feed's composition; at 30 bara the trial root is `0.873` against the feed's `0.920`, which moved `Kv` by 5 %.
+- **a delta-stated outlet reports a finite `Kv` where the class reports `Infinity`.** `run` sizes before it resolves `setDeltaPressure` into a pressure, so `calcKv` sees a zero drop; the port sizes the resolved drop, and the outlet state is unaffected.
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_gas_isenthalpic_drop` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 1000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 1000000.0, outlet_t = 308.9295610763757, outlet_h = 1235.7579664789316 |
+| `a_gas_isenthalpic_drop` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 1000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 1000000.0, outlet_t = 308.9295610763757, outlet_h = 1235.7579664789316, kv = 0.15606753869842724, cv = 0.18041407473538187, cg = 245.36314164011935, choked = True, gas_valve = True |
 | `the_same_drop_stated_as_a_delta` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 2000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2000000.0, outlet_t = 314.62348149495364, outlet_h = 1235.7579669275347 |
 | `a_pressure_above_the_inlet_is_honoured` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 4000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 4000000.0, outlet_t = 325.0535827975854, outlet_h = 1235.7579658880618 |
 | `the_default_sizing_of_a_choked_gas` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 97.21961972278174, inlet_z = [0.1, 0.2, 0.4, 0.3], inlet_p = 182925.0, inlet_t = 296.25, outlet_pressure = 141325.0 | outlet_n = 97.21961972278174, outlet_z = [0.1, 0.2, 0.4, 0.3], outlet_p = 141325.0, outlet_t = 295.63504651075675, kv = 607.9540338130714, cv = 702.7948630879105, cg = 955801.0137995583, choked = True, gas_valve = True, calculated_molar_flow = 97.21961972278176 |

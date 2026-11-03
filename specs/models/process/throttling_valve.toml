@@ -9,6 +9,8 @@ assumptions = [
     "**the gas branch's `gamma` is the libraries' heat capacity, and the two differ.** The choked `Kv` scales as `1/sqrt(Fgamma)`, so the plug-flow reactor's measured capacity divergence reaches this coefficient at about `3e-5` relative; the liquid branch reads only the density and agrees to rounding.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**the choked branch, fouling and the isothermal mode are in; the laminar branch and the controller are not.** The laminar branch belongs to `ControlValveSizing_IEC_60534_full`, refused by name; the controller is a transient surface. **A two-phase inlet is refused.**",
+    "**the sizing reads the phase's own root, not a negative flash's trial phases.** NeqSim reads the gas phase's density and flow off the feed's composition; at 30 bara the trial root is `0.873` against the feed's `0.920`, which moved `Kv` by 5 %.",
+    "**a delta-stated outlet reports a finite `Kv` where the class reports `Infinity`.** `run` sizes before it resolves `setDeltaPressure` into a pressure, so `calcKv` sees a zero drop; the port sizes the resolved drop, and the outlet state is unaffected.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/valve/ThrottlingValve.java` is the port source, through its `run`.",

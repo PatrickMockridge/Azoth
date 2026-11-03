@@ -129,17 +129,28 @@ def gas_valve(components: list[str], t: float, p: float, z: list[float]) -> bool
 
 
 def _reads(components: list[str], t: float, p: float, z: list[float], n: float) -> _Reads:
-    density = capacity.system_mass_density(components, t, p, z)
-    flow_m3s = capacity.system_volumetric_flow(components, t, p, z, n)
+    # **The phase's own root, not a negative flash's trial phases.** NeqSim reads the gas
+    # phase's density and flow off the feed's composition; a negative flash reports a pair of
+    # hypothetical compositions whose roots are the wrong side of the cubic, and at 30 bara
+    # that is `0.873` against the feed's `0.920`. `Stream::single_phase_root` is the Rust
+    # half's statement of the same rule.
+    density = capacity.system_mass_density(components, t, p, z, from_feed=True)
+    flow_m3s = capacity.system_volumetric_flow(components, t, p, z, n, from_feed=True)
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     molar_mass = capacity._molar_mass(mixture, list(z))
     flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(z))
-    if flash.phase == "all_vapour":
-        root = flash.z_vapour
-    elif flash.phase in ("all_liquid", "trivial"):
-        root = flash.z_liquid
-    else:
-        root = flash.z_liquid if not gas_valve(components, t, p, z) else flash.z_vapour
+    if flash.phase == "two_phase":
+        from azoth.core.errors import InvalidInputError
+
+        raise InvalidInputError(
+            "stream",
+            f"a two-phase state at {t} K and {p} Pa has no one root for the sizing",
+        )
+    from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
+
+    reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(reduced.t_kelvin)
+    root = phase_state(reduced, kij, list(z), liquid=flash.phase != "all_vapour").z
     volume = pr_molar_volume(root, quantity(t, "K"), quantity(p, "Pa")).v.to("m**3/mol").magnitude
     state = molar_enthalpy_entropy(
         mixture, ideal_gas, quantity(t, "K"), quantity(p, "Pa"), list(z), root

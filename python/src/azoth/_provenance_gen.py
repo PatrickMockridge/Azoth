@@ -2812,7 +2812,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.throttling_valve': {
         "calc_id": 'process.throttling_valve',
         "name": 'Throttling valve',
-        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': 'c932619cbb48cfa47be21ad19b169c828eff5111922e8ff2c8f4569b09c130cc'},
+        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': '4ce118c1f75538fa71b08a8ec15adace2ab54d6c3cda9fbede8520e8767fc87b'},
         "code": [{'path': 'python/src/azoth/process/reference/throttling_valve.py', 'sha256': 'b79326bedae7ace0689f0994b4dd5b639cf190c41cb53cc11edad1ce16e55b3a'}, {'path': 'crates/azoth-process/src/models/throttling_valve.rs', 'sha256': '16cf20f93f7832cbe0cbae3f1f5f0d54b0bd13466818122422d087c76d0866bb'}],
         "source": 'NeqSim process/equipment/valve/ThrottlingValve.java',
         "verification": 'partially_verified',

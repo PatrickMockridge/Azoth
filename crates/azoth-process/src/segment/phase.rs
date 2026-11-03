@@ -401,8 +401,9 @@ pub fn system_mass_density(stream: &Stream) -> Result<f64> {
 ///
 /// The columns' capacity family reads the outlet as `getPhase(0)`/`getDensity` do, and for a
 /// negative-flash single phase the flash's trial root is the wrong side of the cubic. The
-/// public function keeps the flash's root because pump, filter, valve and the reactor
-/// mechanical design were measured against it; see `column/capacity.rs`.
+/// public function keeps the flash's root because pump, filter and the reactor mechanical
+/// design were measured against it; **the valve is not among them**, and reads this variant -
+/// see `column/capacity.rs` and `valve.rs`.
 pub fn system_mass_density_from_feed(stream: &Stream) -> Result<f64> {
     let (mass, volume) = system_per_mole_of(stream, true)?;
     Ok(mass / volume)
