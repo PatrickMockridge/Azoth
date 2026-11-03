@@ -235,6 +235,7 @@ def compressor(
     )
 
     polytropic_exponent: float | None = None
+    shaft_power: float = 0.0
     if not points:
         if p_out is None:
             raise InvalidInputError(
@@ -253,7 +254,7 @@ def compressor(
             h_out, outlet_t, efficiency = _power_states(
                 components, t, p, inlet_z, p_out, power_si, n, stated
             )
-            power = power_si
+            shaft_power = power_si
         elif use_polytropic_calc:
             method = "default" if polytropic_method is None else polytropic_method
             if method == "detailed":
@@ -278,11 +279,11 @@ def compressor(
             )
             efficiency = eta
             polytropic_exponent = exponent
-            power = n * (h_out - h_in)
+            shaft_power = n * (h_out - h_in)
         else:
             states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
             efficiency = 0.0
-            power = n * states.dh_actual
+            shaft_power = n * states.dh_actual
             outlet_t = states.outlet_t
             h_out = states.h_out
         head = 0.0
@@ -290,7 +291,7 @@ def compressor(
         state = _ChartState(
             head=0.0,
             efficiency=0.0,
-            power=power,
+            power=shaft_power,
             out_p=p_out,
             h_out=h_out,
             outlet_t=outlet_t,
@@ -365,7 +366,7 @@ def compressor(
                 DEFAULT_SPEED if speed is None else float(speed),
                 settings,
             )
-        head, efficiency, power = state.head, state.efficiency, state.power
+        head, efficiency, shaft_power = state.head, state.efficiency, state.power
         out_p, h_out, outlet_t = state.out_p, state.h_out, state.outlet_t
 
     return CompressorResult(
@@ -391,7 +392,7 @@ def compressor(
         head_multiplier=None if deposit_state is None else deposit_state.head_multiplier,
         degradation_factor=(None if deposit_state is None else deposit_state.efficiency_multiplier),
         fouling_factor=(None if deposit_state is None else 1.0 - deposit_state.head_multiplier),
-        power=from_si(power, "W"),
+        power=from_si(shaft_power, "W"),
         shaft_speed=state.speed,
         surge_flow_rate=_flow_or_none(state.read, "surge_flow_rate"),
         surge_flow_rate_margin=_flow_or_none(state.read, "surge_flow_rate_margin"),
@@ -921,14 +922,14 @@ class _DepositState:
 
 
 def _deposit_state(
-    spec: object,
+    spec: dict[str, Any],
     deposit: list[dict[str, Q]] | None,
     wetted_area: float | None,
     passage_half_height: float | None,
 ) -> _DepositState | None:
     if not deposit:
         return None
-    rows = input_records_to_si(spec, "deposit", deposit)
+    rows: list[dict[str, Any]] = input_records_to_si(spec, "deposit", deposit)
     masses: dict[str, float] = {}
     for row in rows:
         mechanism = str(row["mechanism"])
