@@ -344,6 +344,10 @@ def gas_scrubber(
         vessel_shell_weight=(
             None if vessel is None else from_si(vessel.vessel_shell_weight_kg, "kg")
         ),
+        piping_weight=None if vessel is None else from_si(vessel.piping_weight_kg, "kg"),
+        structural_weight=(None if vessel is None else from_si(vessel.structural_weight_kg, "kg")),
+        electrical_weight=(None if vessel is None else from_si(vessel.electrical_weight_kg, "kg")),
+        internals_weight=(None if vessel is None else from_si(vessel.internals_weight_kg, "kg")),
         total_weight=None if vessel is None else from_si(vessel.total_weight_kg, "kg"),
         module_width=None if vessel is None else from_si(vessel.module_width, "m"),
         module_length=None if vessel is None else from_si(vessel.module_length, "m"),

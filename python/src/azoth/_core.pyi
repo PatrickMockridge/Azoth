@@ -2835,6 +2835,10 @@ class GasScrubberResult:
     design_wall_thickness: Qty | None
     max_design_gas_volume_flow: Qty | None
     vessel_shell_weight: Qty | None
+    piping_weight: Qty | None
+    structural_weight: Qty | None
+    electrical_weight: Qty | None
+    internals_weight: Qty | None
     total_weight: Qty | None
     module_width: Qty | None
     module_length: Qty | None
@@ -3137,6 +3141,10 @@ class SeparatorResult:
     design_wall_thickness: Qty | None
     max_design_gas_volume_flow: Qty | None
     vessel_shell_weight: Qty | None
+    piping_weight: Qty | None
+    structural_weight: Qty | None
+    electrical_weight: Qty | None
+    internals_weight: Qty | None
     total_weight: Qty | None
     module_width: Qty | None
     module_length: Qty | None
@@ -3209,6 +3217,8 @@ class SeparatorPerformanceResult:
     api_gas_liquid_compliant: bool | None
     api_liquid_compliant: bool | None
     api_fully_compliant: bool | None
+    api_gas_liquid_comment: str | None
+    api_liquid_comment: str | None
     api_gravity_cut_diameter: Qty | None
     api_k_factor_utilization: float | None
     api_max_k_factor: Qty | None

@@ -836,6 +836,8 @@ def _enhanced_result(
     api_k_utilization = 0.0
     api_max_k = 0.0
     api_min_residence = 0.0
+    api_gas_liquid_comment = None
+    api_liquid_comment = None
     if cut > 0.0:
         liquid_residence = geometry.liquid_residence_time
         if liquid_residence <= 0.0:
@@ -846,6 +848,16 @@ def _enhanced_result(
         api_gas = cut <= 100.0e-6 and k_factor <= api_max_k
         api_min_residence = 300.0 if three_phase else 180.0
         api_liquid = liquid_residence >= api_min_residence
+        gas_prefix = "COMPLIANT" if api_gas else "NON-COMPLIANT"
+        liquid_prefix = "COMPLIANT" if api_liquid else "NON-COMPLIANT"
+        api_gas_liquid_comment = (
+            f"{gas_prefix}: cut={api_cut_um:.0f} um (max 100 um), "
+            f"K={k_factor:.3f} m/s (max {api_max_k:.3f} m/s)"
+        )
+        api_liquid_comment = (
+            f"{liquid_prefix}: liquid residence time = {liquid_residence:.0f} s "
+            f"(min {api_min_residence:.0f} s)"
+        )
 
     combined_efficiency = bulk + (1.0 - bulk) * overall
     overall = min(1.0, combined_efficiency)
@@ -944,6 +956,8 @@ def _enhanced_result(
         api_gas_liquid_compliant=api_gas,
         api_liquid_compliant=api_liquid,
         api_fully_compliant=api_gas and api_liquid,
+        api_gas_liquid_comment=api_gas_liquid_comment,
+        api_liquid_comment=api_liquid_comment,
         api_gravity_cut_diameter=from_si(api_cut_um / 1.0e6, "m"),
         api_k_factor_utilization=api_k_utilization,
         api_max_k_factor=from_si(api_max_k, "m/s"),
@@ -1346,6 +1360,8 @@ def separator_performance(
         api_gas_liquid_compliant=None,
         api_liquid_compliant=None,
         api_fully_compliant=None,
+        api_gas_liquid_comment=None,
+        api_liquid_comment=None,
         api_gravity_cut_diameter=None,
         api_k_factor_utilization=None,
         api_max_k_factor=None,

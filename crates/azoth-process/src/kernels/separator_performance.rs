@@ -565,7 +565,7 @@ pub struct PerformanceSettings {
 }
 
 /// The six fractions and the five efficiencies the standard path reports.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PerformanceOutcome {
     /// Oil carried out with the gas.
     pub oil_in_gas: f64,
@@ -621,6 +621,10 @@ pub struct PerformanceOutcome {
     pub api_max_k_factor: f64,
     /// The API check's minimum liquid residence time, s.
     pub api_min_liquid_residence_time: f64,
+    /// The API 12J gas-section sentence, as the class formats it.
+    pub api_gas_liquid_comment: String,
+    /// The API 12J liquid-section sentence, as the class formats it.
+    pub api_liquid_comment: String,
     /// The downstream distribution's characteristic diameter, m.
     pub post_inlet_device_characteristic_diameter: f64,
     /// The downstream distribution's spread.
@@ -657,6 +661,8 @@ impl Default for PerformanceOutcome {
             api_k_factor_utilization: 0.0,
             api_max_k_factor: 0.0,
             api_min_liquid_residence_time: 0.0,
+            api_gas_liquid_comment: String::new(),
+            api_liquid_comment: String::new(),
             post_inlet_device_characteristic_diameter: 0.0,
             post_inlet_device_spread: 0.0,
         }
@@ -1023,6 +1029,29 @@ fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutco
         outcome.api_liquid_compliant = liquid_residence >= min_residence;
         outcome.api_fully_compliant =
             outcome.api_gas_liquid_compliant && outcome.api_liquid_compliant;
+        // The class's own two sentences, `String.format` and all. The verdict prefix is the
+        // only thing that differs between the compliant and non-compliant templates.
+        outcome.api_gas_liquid_comment = format!(
+            "{}: cut={:.0} um (max 100 um), K={:.3} m/s (max {:.3} m/s)",
+            if outcome.api_gas_liquid_compliant {
+                "COMPLIANT"
+            } else {
+                "NON-COMPLIANT"
+            },
+            outcome.api_gravity_cut_diameter_um,
+            outcome.k_factor,
+            max_k
+        );
+        outcome.api_liquid_comment = format!(
+            "{}: liquid residence time = {:.0} s (min {:.0} s)",
+            if outcome.api_liquid_compliant {
+                "COMPLIANT"
+            } else {
+                "NON-COMPLIANT"
+            },
+            liquid_residence,
+            min_residence
+        );
     }
 
     // The inlet device removes first; the downstream stages act on the rest.

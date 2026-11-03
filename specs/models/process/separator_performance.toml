@@ -324,6 +324,14 @@ description = "API 12J's liquid-section verdict: residence at least `180` s two-
 type = "boolean"
 optional = true
 description = "both verdicts.\n"
+[outputs.api_gas_liquid_comment]
+type = "string"
+optional = true
+description = "the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.\n"
+[outputs.api_liquid_comment]
+type = "string"
+optional = true
+description = "the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.\n"
 [outputs.api_gravity_cut_diameter]
 unit = "m"
 optional = true

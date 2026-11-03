@@ -15312,6 +15312,18 @@ pub struct PyGasScrubberResult {
     /// the class's empty-shell estimate, `0.032 wall_mm d_mm L`.
     #[pyo3(get)]
     pub vessel_shell_weight: Option<PyQty>,
+    /// the class's piping allowance, `0.4` of the shell weight.
+    #[pyo3(get)]
+    pub piping_weight: Option<PyQty>,
+    /// the class's structural allowance, `0.1` of the shell weight.
+    #[pyo3(get)]
+    pub structural_weight: Option<PyQty>,
+    /// the class's electrical allowance, `0.08` of the shell weight.
+    #[pyo3(get)]
+    pub electrical_weight: Option<PyQty>,
+    /// the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    #[pyo3(get)]
+    pub internals_weight: Option<PyQty>,
     /// the shell plus the class's piping, structural and electrical allowances.
     #[pyo3(get)]
     pub total_weight: Option<PyQty>,
@@ -15381,7 +15393,7 @@ pub struct PyGasScrubberResult {
 impl PyGasScrubberResult {
     fn __repr__(&self) -> String {
         format!(
-            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
+            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -15399,6 +15411,10 @@ impl PyGasScrubberResult {
             self.design_wall_thickness,
             self.max_design_gas_volume_flow,
             self.vessel_shell_weight,
+            self.piping_weight,
+            self.structural_weight,
+            self.electrical_weight,
+            self.internals_weight,
             self.total_weight,
             self.module_width,
             self.module_length,
@@ -15483,6 +15499,22 @@ impl From<&azoth_process::models::gas_scrubber::GasScrubberResult> for PyGasScru
                 unit: "m**3/h".to_string(),
             }),
             vessel_shell_weight: r.vessel_shell_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            piping_weight: r.piping_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            structural_weight: r.structural_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            electrical_weight: r.electrical_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            internals_weight: r.internals_weight.map(|v| PyQty {
                 magnitude_si: v,
                 unit: "kg".to_string(),
             }),
@@ -17653,6 +17685,18 @@ pub struct PySeparatorResult {
     /// `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
     #[pyo3(get)]
     pub vessel_shell_weight: Option<PyQty>,
+    /// the class's piping allowance, `0.4` of the shell weight.
+    #[pyo3(get)]
+    pub piping_weight: Option<PyQty>,
+    /// the class's structural allowance, `0.1` of the shell weight.
+    #[pyo3(get)]
+    pub structural_weight: Option<PyQty>,
+    /// the class's electrical allowance, `0.08` of the shell weight.
+    #[pyo3(get)]
+    pub electrical_weight: Option<PyQty>,
+    /// the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    #[pyo3(get)]
+    pub internals_weight: Option<PyQty>,
     /// the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
     #[pyo3(get)]
     pub total_weight: Option<PyQty>,
@@ -17722,7 +17766,7 @@ pub struct PySeparatorResult {
 impl PySeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
+            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -17747,6 +17791,10 @@ impl PySeparatorResult {
             self.design_wall_thickness,
             self.max_design_gas_volume_flow,
             self.vessel_shell_weight,
+            self.piping_weight,
+            self.structural_weight,
+            self.electrical_weight,
+            self.internals_weight,
             self.total_weight,
             self.module_width,
             self.module_length,
@@ -17860,6 +17908,22 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
                 unit: "m**3/h".to_string(),
             }),
             vessel_shell_weight: r.vessel_shell_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            piping_weight: r.piping_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            structural_weight: r.structural_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            electrical_weight: r.electrical_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            internals_weight: r.internals_weight.map(|v| PyQty {
                 magnitude_si: v,
                 unit: "kg".to_string(),
             }),
@@ -18175,6 +18239,12 @@ pub struct PySeparatorPerformanceResult {
     /// both verdicts.
     #[pyo3(get)]
     pub api_fully_compliant: Option<bool>,
+    /// the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.
+    #[pyo3(get)]
+    pub api_gas_liquid_comment: Option<String>,
+    /// the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.
+    #[pyo3(get)]
+    pub api_liquid_comment: Option<String>,
     /// the cut diameter the API check read; the capture prints it in micrometres.
     #[pyo3(get)]
     pub api_gravity_cut_diameter: Option<PyQty>,
@@ -18202,7 +18272,7 @@ pub struct PySeparatorPerformanceResult {
 impl PySeparatorPerformanceResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, {} warning(s))",
             self.oil_in_gas,
             self.water_in_gas,
             self.gas_in_oil,
@@ -18234,6 +18304,8 @@ impl PySeparatorPerformanceResult {
             self.api_gas_liquid_compliant,
             self.api_liquid_compliant,
             self.api_fully_compliant,
+            self.api_gas_liquid_comment,
+            self.api_liquid_comment,
             self.api_gravity_cut_diameter,
             self.api_k_factor_utilization,
             self.api_max_k_factor,
@@ -18323,6 +18395,8 @@ impl From<&azoth_process::models::separator_performance::SeparatorPerformanceRes
             api_gas_liquid_compliant: r.api_gas_liquid_compliant,
             api_liquid_compliant: r.api_liquid_compliant,
             api_fully_compliant: r.api_fully_compliant,
+            api_gas_liquid_comment: r.api_gas_liquid_comment.clone(),
+            api_liquid_comment: r.api_liquid_comment.clone(),
             api_gravity_cut_diameter: r.api_gravity_cut_diameter.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "m".to_string(),

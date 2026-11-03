@@ -395,6 +395,10 @@ def separator(
         vessel_shell_weight=(
             None if vessel is None else from_si(vessel.vessel_shell_weight_kg, "kg")
         ),
+        piping_weight=None if vessel is None else from_si(vessel.piping_weight_kg, "kg"),
+        structural_weight=(None if vessel is None else from_si(vessel.structural_weight_kg, "kg")),
+        electrical_weight=(None if vessel is None else from_si(vessel.electrical_weight_kg, "kg")),
+        internals_weight=(None if vessel is None else from_si(vessel.internals_weight_kg, "kg")),
         total_weight=None if vessel is None else from_si(vessel.total_weight_kg, "kg"),
         module_width=None if vessel is None else from_si(vessel.module_width, "m"),
         module_length=None if vessel is None else from_si(vessel.module_length, "m"),
@@ -901,6 +905,10 @@ class MechanicalDesign:
     max_design_volume_flow_m3_hr: float
     max_design_gas_volume_flow_m3_hr: float
     vessel_shell_weight_kg: float
+    piping_weight_kg: float
+    structural_weight_kg: float
+    electrical_weight_kg: float
+    internals_weight_kg: float
     total_weight_kg: float
     module_width: float
     module_length: float
@@ -1092,6 +1100,10 @@ def _mechanical_design(
         max_design_volume_flow_m3_hr=max_design_volume_flow,
         max_design_gas_volume_flow_m3_hr=max_design_gas_volume_flow,
         vessel_shell_weight_kg=vessel_shell_weight,
+        piping_weight_kg=piping_weight,
+        structural_weight_kg=structural_weight,
+        electrical_weight_kg=electrical_weight,
+        internals_weight_kg=0.0,
         total_weight_kg=total_weight,
         module_width=module_width,
         module_length=module_length,

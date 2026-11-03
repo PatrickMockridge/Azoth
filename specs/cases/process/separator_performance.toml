@@ -437,6 +437,8 @@ liquid_residence_time = 3.5000000007
 gravity_section_length = 5.95
 oil_pad_thickness = 0.0
 water_layer_height = 0.0
+api_gas_liquid_comment = "NON-COMPLIANT: cut=435 um (max 100 um), K=0.535 m/s (max 0.250 m/s)"
+api_liquid_comment = "NON-COMPLIANT: liquid residence time = 4 s (min 180 s)"
 api_gravity_cut_diameter = 4.351226637396398e-4
 api_k_factor_utilization = 2.138089935299395
 api_max_k_factor = 0.25

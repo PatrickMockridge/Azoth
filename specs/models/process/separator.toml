@@ -214,6 +214,22 @@ description = "`getMaxDesignGassVolumeFlow`: the design velocity over the sized 
 unit = "kg"
 optional = true
 description = "`0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.\n"
+[outputs.piping_weight]
+unit = "kg"
+optional = true
+description = "the class's piping allowance, `0.4` of the shell weight.\n"
+[outputs.structural_weight]
+unit = "kg"
+optional = true
+description = "the class's structural allowance, `0.1` of the shell weight.\n"
+[outputs.electrical_weight]
+unit = "kg"
+optional = true
+description = "the class's electrical allowance, `0.08` of the shell weight.\n"
+[outputs.internals_weight]
+unit = "kg"
+optional = true
+description = "the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.\n"
 [outputs.total_weight]
 unit = "kg"
 optional = true

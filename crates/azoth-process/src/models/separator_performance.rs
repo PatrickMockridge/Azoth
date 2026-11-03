@@ -106,6 +106,10 @@ pub struct SeparatorPerformanceResult {
     pub api_liquid_compliant: Option<bool>,
     /// Both verdicts.
     pub api_fully_compliant: Option<bool>,
+    /// The class's gas-section sentence.
+    pub api_gas_liquid_comment: Option<String>,
+    /// The class's liquid-section sentence.
+    pub api_liquid_comment: Option<String>,
     /// The cut diameter the API check read.
     #[serde(serialize_with = "optional_scalar")]
     pub api_gravity_cut_diameter: Option<Length>,
@@ -330,6 +334,8 @@ pub fn separator_performance(
         api_gas_liquid_compliant: active.then_some(outcome.api_gas_liquid_compliant),
         api_liquid_compliant: active.then_some(outcome.api_liquid_compliant),
         api_fully_compliant: active.then_some(outcome.api_fully_compliant),
+        api_gas_liquid_comment: active.then(|| outcome.api_gas_liquid_comment.clone()),
+        api_liquid_comment: active.then(|| outcome.api_liquid_comment.clone()),
         api_gravity_cut_diameter: active
             .then(|| meters(outcome.api_gravity_cut_diameter_um / 1.0e6)),
         api_k_factor_utilization: active.then_some(outcome.api_k_factor_utilization),

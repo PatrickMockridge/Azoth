@@ -2559,8 +2559,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gas_scrubber': {
         "calc_id": 'process.gas_scrubber',
         "name": 'Gas scrubber',
-        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': 'c8858d9e949a44410cc6c8e5672c4b9c82a945ca47c6638feea7daa43e2773f9'},
-        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '8027ba1a8798577a38afee81ce82a454c4b6171ae867bf1b407bda6b9a3b08c0'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '2c5aeb1b4332cedd57c33494cdf044601a4a88d94cff4bd9cde3c1688db57e24'}],
+        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '5be7b2a4df8ec18c517c88a161eec398156018241a53daa8dab99e5f1044c82d'},
+        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '3b3e4354592d01e655a1ef97d4579620870dc052256c02fd4339a36debd2f405'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '76e7987396e698b8745edcb25fbbddb1bd1fd60ae065a18d9f44f28aeb984a9f'}],
         "source": 'NeqSim process/equipment/separator/GasScrubber.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2713,8 +2713,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator': {
         "calc_id": 'process.separator',
         "name": 'Separator',
-        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '729290922dc805432a6ee99c6f17a2767fb1755ee2e2bd8639eafbc6bb2f2112'},
-        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': '12d5d6ae6c4cff2d33b0853d3c9d50e92dd04a6d2a4793ae8b893d12d5d0b4ea'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': 'e67f94ee8c63bb32c0ba7b672014cfd3d8ae80c5bff913de1a83a4a28ec4d2ec'}],
+        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '0e761b3ed18e7f1e3bfd583ee4a6bae2348b37f72c3309e67df2e1fad12cb349'},
+        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': 'c40d453b87bb7a1f8ffd11afb557d21c24bbae8e89f6461fdc871df45b9aa177'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': '7ffdcb5b088a5241a661b68f5b2f1860fc6de7c48167841a4e2fb66159b28a75'}],
         "source": 'NeqSim process/equipment/separator/Separator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2735,8 +2735,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator_performance': {
         "calc_id": 'process.separator_performance',
         "name": 'Separator performance calculator',
-        "spec": {'path': 'specs/models/process/separator_performance.toml', 'sha256': 'a321184e694f69c32bb884271c2f78fac29952e07cd16266b75b99917d133a59'},
-        "code": [{'path': 'python/src/azoth/process/reference/separator_performance.py', 'sha256': 'fa00740f368a7b6b8f28bf4a2ba093e5bb8ac8c90c2bde676dd8b87c61b3fb7e'}, {'path': 'crates/azoth-process/src/models/separator_performance.rs', 'sha256': 'a36dce809b817790f6afa40364fbb7a68ee2e4702f15b590f2e97a6a9c7ef7b5'}],
+        "spec": {'path': 'specs/models/process/separator_performance.toml', 'sha256': 'bae2f7a130d2caf60360d1ff5cd2eed57f3b540ec631e89ec27d5252ebd7ab83'},
+        "code": [{'path': 'python/src/azoth/process/reference/separator_performance.py', 'sha256': 'ab4c5b86e367805e8f926e39b3c3e6f65f704999f891e1d09f4b983d76012b8f'}, {'path': 'crates/azoth-process/src/models/separator_performance.rs', 'sha256': 'f21bba6ef9d5b0d90b3a0260ba1395c6272f1a91415f7ee9c178212ea3afce57'}],
         "source": 'NeqSim process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

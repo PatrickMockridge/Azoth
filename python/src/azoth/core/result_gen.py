@@ -6140,6 +6140,18 @@ class GasScrubberResult(_HasWarnings):
     #: the class's empty-shell estimate, `0.032 wall_mm d_mm L`.
     vessel_shell_weight: Q | None
 
+    #: the class's piping allowance, `0.4` of the shell weight.
+    piping_weight: Q | None
+
+    #: the class's structural allowance, `0.1` of the shell weight.
+    structural_weight: Q | None
+
+    #: the class's electrical allowance, `0.08` of the shell weight.
+    electrical_weight: Q | None
+
+    #: the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    internals_weight: Q | None
+
     #: the shell plus the class's piping, structural and electrical allowances.
     total_weight: Q | None
 
@@ -7018,6 +7030,18 @@ class SeparatorResult(_HasWarnings):
     #: `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
     vessel_shell_weight: Q | None
 
+    #: the class's piping allowance, `0.4` of the shell weight.
+    piping_weight: Q | None
+
+    #: the class's structural allowance, `0.1` of the shell weight.
+    structural_weight: Q | None
+
+    #: the class's electrical allowance, `0.08` of the shell weight.
+    electrical_weight: Q | None
+
+    #: the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    internals_weight: Q | None
+
     #: the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
     total_weight: Q | None
 
@@ -7229,6 +7253,12 @@ class SeparatorPerformanceResult(_HasWarnings):
 
     #: both verdicts.
     api_fully_compliant: bool | None
+
+    #: the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.
+    api_gas_liquid_comment: str | None
+
+    #: the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.
+    api_liquid_comment: str | None
 
     #: the cut diameter the API check read; the capture prints it in micrometres.
     api_gravity_cut_diameter: Q | None

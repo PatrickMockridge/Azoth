@@ -59,6 +59,14 @@ pub struct GasScrubberResult {
     pub max_design_gas_volume_flow: Option<f64>,
     /// The empty vessel shell's weight, kg.
     pub vessel_shell_weight: Option<f64>,
+    /// The piping allowance, kg.
+    pub piping_weight: Option<f64>,
+    /// The structural allowance, kg.
+    pub structural_weight: Option<f64>,
+    /// The electrical allowance, kg.
+    pub electrical_weight: Option<f64>,
+    /// The internals' weight, kg; zero until the internals sections are ported.
+    pub internals_weight: Option<f64>,
     /// The total skid weight, kg.
     pub total_weight: Option<f64>,
     /// The module's width.
@@ -274,6 +282,12 @@ pub fn gas_scrubber(
             .as_ref()
             .map(|design| design.max_design_gas_volume_flow_m3_hr / 3600.0),
         vessel_shell_weight: vessel.as_ref().map(|design| design.vessel_shell_weight_kg),
+        piping_weight: vessel.as_ref().map(|design| design.piping_weight_kg),
+        structural_weight: vessel.as_ref().map(|design| design.structural_weight_kg),
+        electrical_weight: vessel.as_ref().map(|design| design.electrical_weight_kg),
+        // No internals field exists in the port, and the class reports zero without the
+        // `sectiontype` sections that would fill it.
+        internals_weight: vessel.as_ref().map(|_| 0.0),
         total_weight: vessel.as_ref().map(|design| design.total_weight_kg),
         module_width: vessel.as_ref().map(|design| meters(design.module_width)),
         module_length: vessel.as_ref().map(|design| meters(design.module_length)),
