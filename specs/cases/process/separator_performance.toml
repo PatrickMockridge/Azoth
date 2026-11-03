@@ -504,3 +504,55 @@ gravity_section_length = 3.15
 gas_residence_time = 1.575
 oil_pad_thickness = 0.6
 water_layer_height = 0.6
+[[cases]]
+id = "the_vane_pack_design_k_is_the_database_record"
+tolerance = 0.0002
+source = "The enhanced capture's `vane_pack_design_k` row. **The shipped `SeparatorInternals.csv`'s first vane-pack record is `0.15`**, so the utilisation is `0.534522 / 0.15 = 3.5635`; the class's `0.12` fallback is read only when the resource is missing. The vane pack's default curve takes nothing at this cut diameter, so the overall is the gravity section's own.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 500e-6
+gas_bubble_spread = 2.0
+mist_eliminator = "vane_pack"
+enhanced = true
+[cases.expected]
+k_factor_utilization = 3.563483225498992
+mist_eliminator_efficiency = 0.0
+overall_gas_liquid_efficiency = 0.743014773497656
+gravity_cut_diameter = 4.351226637396398e-4
+[[cases]]
+id = "the_axial_cyclone_design_k_is_the_database_record"
+tolerance = 0.0002
+source = "The enhanced capture's `axial_cyclone_design_k` row: the same state with the axial cyclone's default curve. **Its database record is `0.30`**, so the utilisation is `0.534522 / 0.30 = 1.7817`, and the cyclone's default curve removes 0.1087 of the gravity section's carry-over.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 500e-6
+gas_bubble_spread = 2.0
+mist_eliminator = "axial_cyclone"
+enhanced = true
+[cases.expected]
+k_factor_utilization = 1.781741612749496
+mist_eliminator_efficiency = 0.1086925973342776
+overall_gas_liquid_efficiency = 0.7709471652427334
+oil_in_gas = 0.22905283475726657

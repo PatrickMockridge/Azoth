@@ -5620,6 +5620,33 @@ public class ProcessProbe {
         enhancedCalculator();
     runEnhanced("high_velocity_flooding", flooding, gasDensity, oilDensity, 0.0, gasViscosity,
         oilViscosity, 0.0, 15.0, diameter, length, "horizontal", level);
+
+    // The internals database's other two default records, whose design K the calculator reads
+    // when none is stated.
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vane =
+        enhancedCalculator();
+    vane.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    vane.setInletPipeDiameter(0.2);
+    vane.setSurfaceTension(0.025);
+    vane.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("vane_pack_design_k", vane, gasDensity, oilDensity, 0.0, gasViscosity, oilViscosity,
+        0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator axial =
+        enhancedCalculator();
+    axial.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve
+            .axialCycloneDefault());
+    axial.setInletPipeDiameter(0.2);
+    axial.setSurfaceTension(0.025);
+    axial.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("axial_cyclone_design_k", axial, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
   }
 
   static neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator

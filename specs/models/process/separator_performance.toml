@@ -15,6 +15,7 @@ assumptions = [
     "**a degenerate section** (`residence <= 0` or no density difference) makes the class's cut `Double.MAX_VALUE`; the declared bounds - positive geometry, positive gas velocity and a level below one - keep that branch unreachable.",
     "**`useDetailedEntrainmentCalculation` is not a flag here**: these fractions are the separator ids' own inputs, so the composition is a flowsheet rather than a switch on the steady model.",
     "**the inlet device's position is fixed at `0.05`**: `SeparatorGeometryCalculator` has setters for the mist eliminator and the weir but none for the inlet device, so only `mist_position` and `weir_position` cross.",
+    "**the design `K` is the shipped database's first record**: `0.107` wire mesh, `0.15` vane pack, `0.30` axial cyclone. The class's `0.12` vane-pack fallback is read only when `SeparatorInternals.csv` is missing.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java` is the port source, through its standard path, with `DropletSizeDistribution.java`, `GradeEfficiencyCurve.java` and `DropletSettlingCalculator.java`.",
@@ -198,6 +199,10 @@ description = "the inlet pipe's diameter, which the nozzle velocity and the regi
 unit = "N/m"
 optional = true
 description = "the gas-liquid surface tension the regime and DSD correlations read. **Absent is `0.025` N/m.**\n"
+[inputs.oil_water_interfacial_tension]
+unit = "N/m"
+optional = true
+description = "the oil-water interfacial tension. **Absent is the class's `0.030` N/m**, and `calculateEnhanced` stores it without reading it; this input carries the value the class carries and says so.\n"
 [inputs.oil_volume_fraction]
 unit = "dimensionless"
 optional = true
@@ -214,7 +219,7 @@ description = "the inlet device's type. **Absent is the class's `half_pipe`**; `
 [inputs.design_k_factor]
 unit = "m/s"
 optional = true
-description = "the mist eliminator's design `K`, which the flooding and API checks divide by. **Absent is `0.107` for a wire mesh** and is refused for any other eliminator, because the internals database is refused here.\n"
+description = "the mist eliminator's design `K`, which the flooding and API checks divide by. **Absent takes the internals database's first record**: `0.107` wire mesh, `0.15` vane pack, `0.30` axial cyclone. Any other eliminator is refused by name.\n"
 [inputs.liquid_liquid_residence_time]
 unit = "s"
 optional = true

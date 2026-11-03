@@ -1440,7 +1440,8 @@ pub fn rate_based_packed_column(
     oil_water_coalescer_points = None, include_gravity_section = None,
     liquid_in_gas_calibration_factor = None, gas_carry_under_calibration_factor = None,
     liquid_liquid_calibration_factor = None, enhanced = None,
-    inlet_pipe_diameter = None, surface_tension = None, oil_volume_fraction = None,
+    inlet_pipe_diameter = None, surface_tension = None,
+    oil_water_interfacial_tension = None, oil_volume_fraction = None,
     apply_turbulence_correction = None, inlet_device = None, design_k_factor = None,
     liquid_liquid_residence_time = None
 ))]
@@ -1488,6 +1489,7 @@ pub fn separator_performance(
     enhanced: Option<bool>,
     inlet_pipe_diameter: Option<f64>,
     surface_tension: Option<f64>,
+    oil_water_interfacial_tension: Option<f64>,
     oil_volume_fraction: Option<f64>,
     apply_turbulence_correction: Option<bool>,
     inlet_device: Option<&str>,
@@ -1559,6 +1561,7 @@ pub fn separator_performance(
         enhanced,
         inlet_pipe_diameter.map(meters),
         surface_tension,
+        oil_water_interfacial_tension,
         oil_volume_fraction,
         apply_turbulence_correction,
         inlet_device,

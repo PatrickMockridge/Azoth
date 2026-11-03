@@ -3207,6 +3207,9 @@ class SeparatorPerformanceResult:
     mist_eliminator_flooded: bool | None
     gas_area: Qty | None
     liquid_area: Qty | None
+    gas_volume: Qty | None
+    liquid_volume: Qty | None
+    total_volume: Qty | None
     effective_gas_settling_height: Qty | None
     effective_liquid_settling_height: Qty | None
     gas_residence_time: Qty | None
@@ -5971,6 +5974,7 @@ def separator_performance(
     enhanced: bool | None = None,
     inlet_pipe_diameter: float | None = None,
     surface_tension: float | None = None,
+    oil_water_interfacial_tension: float | None = None,
     oil_volume_fraction: float | None = None,
     apply_turbulence_correction: bool | None = None,
     inlet_device: str | None = None,

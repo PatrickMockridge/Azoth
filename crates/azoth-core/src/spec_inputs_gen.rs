@@ -3752,6 +3752,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     (
         "process.separator_performance",
+        "oil_water_interfacial_tension",
+        "surface_tension",
+    ),
+    (
+        "process.separator_performance",
         "oil_volume_fraction",
         "dimensionless",
     ),

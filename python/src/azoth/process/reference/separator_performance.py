@@ -805,13 +805,21 @@ def _enhanced_result(
     delta = liquid_density - gas_rho
     k_factor = velocity * math.sqrt(gas_rho / delta) if delta > 0.0 and gas_rho > 0.0 else 0.0
     if design_k is None:
-        if mist is not None and mist.internals != _WIRE_MESH:
+        # `SeparatorInternalsDatabase.createDefaultInternalsRecords`'s own records.
+        if mist is None or mist.internals == _WIRE_MESH:
+            design_k_value = 0.107
+        elif mist.internals == _VANE_PACK:
+            # The shipped CSV's first vane-pack record; the 0.12 fallback only applies when
+            # the resource is missing.
+            design_k_value = 0.15
+        elif mist.internals == _AXIAL_CYCLONE:
+            design_k_value = 0.30
+        else:
             raise InvalidInputError(
                 "design_k_factor",
                 "the internals database's design K is refused for this mist eliminator; "
                 "state `design_k_factor`",
             )
-        design_k_value = 0.107
     else:
         design_k_value = design_k
     k_utilization = k_factor / design_k_value if design_k_value > 0.0 else 0.0
@@ -1039,6 +1047,7 @@ def separator_performance(
     enhanced: bool | None = None,
     inlet_pipe_diameter: Q | None = None,
     surface_tension: Q | None = None,
+    oil_water_interfacial_tension: Q | None = None,
     oil_volume_fraction: float | None = None,
     apply_turbulence_correction: bool | None = None,
     inlet_device: str | None = None,
@@ -1131,6 +1140,8 @@ def separator_performance(
     coalescer_cut = optional("oil_water_coalescer_cut_diameter", oil_water_coalescer_cut_diameter)
     inlet_pipe = optional("inlet_pipe_diameter", inlet_pipe_diameter)
     sigma = optional("surface_tension", surface_tension)
+    # The class stores this and reads it nowhere; carrying it keeps the surface whole.
+    _oil_water_sigma = optional("oil_water_interfacial_tension", oil_water_interfacial_tension)
     design_k = optional("design_k_factor", design_k_factor)
     ll_residence = optional("liquid_liquid_residence_time", liquid_liquid_residence_time)
     oil_fraction = None if oil_volume_fraction is None else float(oil_volume_fraction)

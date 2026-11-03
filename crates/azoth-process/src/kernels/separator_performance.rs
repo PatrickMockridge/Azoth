@@ -555,14 +555,18 @@ pub struct PerformanceSettings {
     pub inlet_pipe_diameter: f64,
     /// The gas-liquid surface tension, N/m.
     pub surface_tension: f64,
+    /// The oil-water interfacial tension, N/m. Carried, not read: `calculateEnhanced` stores it
+    /// and no stage divides by it.
+    pub oil_water_interfacial_tension: f64,
     /// The oil's share of the liquid flow, `[0.01, 0.99]` in the class.
     pub oil_volume_fraction: f64,
     /// Whether the turbulence correction moves the cut diameter.
     pub apply_turbulence_correction: bool,
     /// The inlet device; absent is the class's `HALF_PIPE`.
     pub inlet_device: InletDevice,
-    /// The mist eliminator's design K, m/s. Absent uses `0.107` (the class's GPSA wire-mesh
-    /// default) and refuses a non-wire-mesh eliminator.
+    /// The mist eliminator's design K, m/s. Absent takes the internals database's first
+    /// record (wire mesh `0.107`, vane pack `0.15`, axial cyclone `0.30`) and refuses any
+    /// other.
     pub design_k_factor: Option<f64>,
     /// The liquid-liquid residence-time override, s; absent is the geometry's.
     pub liquid_liquid_residence_time: Option<f64>,
@@ -948,6 +952,11 @@ fn calculate_enhanced(settings: &PerformanceSettings) -> Result<PerformanceOutco
             .map(|curve| curve.internals)
         {
             Some(Internals::WireMesh) | None => 0.107,
+            // `SeparatorInternalsDatabase.findByType(..).get(0)` on the shipped
+            // `designdata/SeparatorInternals.csv`: the first vane-pack record is 0.15, not the
+            // 0.12 fallback the class uses only when that resource is missing.
+            Some(Internals::VanePack) => 0.15,
+            Some(Internals::AxialCyclone) => 0.30,
             Some(_) => {
                 return Err(AzothError::invalid_input(
                     "design_k_factor",
