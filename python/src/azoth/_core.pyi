@@ -2680,6 +2680,7 @@ class CompressorResult:
     outlet_h: Qty
     polytropic_head: Qty
     polytropic_efficiency: float
+    polytropic_exponent: float | None
     power: Qty
     shaft_speed: float
     surge_flow_rate: Qty | None
