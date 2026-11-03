@@ -383,3 +383,53 @@ oil_outlet_nozzle_id = 0.05
 surge_volume = 0.05408822021045
 surge_time = 195253.95753766282
 liquid_retention_time = 394159.0700343924
+
+[[cases]]
+id = "auto_size_at_the_default_safety_factor"
+tolerance = 2e-04
+source = "The `separator_autosize` capture's `pr_fixture_safety_1_2` row: `Separator.autoSize(1.2)` on the port's PR fixture. **The design standard is the shipped database's**, `K = 0.107` and `Fg = 0.5`, with the retention hard-set to `120` s and the volume factor taken from the argument. With no pressure-vessel code installed the wall, the weights and the outer diameter stay zero and `volumeTotal` stays at the class's `2.0`.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+auto_size = true
+safety_factor = 1.2
+[cases.expected]
+design_inner_diameter = 0.7718578768019375
+design_tantan_length = 3.08743150720775
+design_wall_thickness = 0.0
+design_outer_diameter = 0.7718578768019375
+vessel_volume = 2.0
+max_design_gas_volume_flow = 476.74906124348655
+module_width = 1.543715753603875
+module_length = 4.631147260811625
+module_height = 2.543715753603875
+
+[[cases]]
+id = "auto_size_scales_with_the_safety_factor"
+tolerance = 2e-04
+source = "The `separator_autosize` capture's `pr_fixture_safety_1_5` row: the same fixture at `1.5`. **Every sized number scales with the factor** - the diameter by its square root, the length by the same - so the row is the arithmetic's own check rather than a second state.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+auto_size = true
+safety_factor = 1.5
+[cases.expected]
+design_inner_diameter = 0.8629633407488952
+design_tantan_length = 3.451853362995581
+design_wall_thickness = 0.0
+design_outer_diameter = 0.8629633407488952
+vessel_volume = 2.0
+max_design_gas_volume_flow = 595.9363265543583
+module_width = 1.7259266814977903
+module_length = 5.177780044493371
+module_height = 2.7259266814977904

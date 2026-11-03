@@ -15,6 +15,7 @@ use azoth_core::units::{
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::gas_scrubber as kernel;
+use crate::kernels::separator::sizing_getters as separator_sizing;
 use crate::model_gen;
 use crate::separator_design::mechanical::{
     DesignInputs, VesselKind, mechanical_design as design_vessel,
@@ -47,6 +48,20 @@ pub struct GasScrubberResult {
     /// `Separator.getCapacityUtilization`, present only when the vessel's size and its design gas
     /// load factor were both stated.
     pub capacity_utilization: Option<f64>,
+    /// `sizeFromFlow(safety_factor)`'s diameter; absent when no safety factor was stated.
+    pub required_diameter: Option<Length>,
+    /// The mesh pad's presence.
+    pub has_mesh_pad: Option<bool>,
+    /// The mesh pad's face area, m2.
+    pub mesh_pad_area: Option<f64>,
+    /// The mesh pad's thickness, m (the spec states millimetres).
+    pub mesh_pad_thickness: Option<f64>,
+    /// The mesh pad's elevation, m.
+    pub mesh_pad_elevation: Option<Length>,
+    /// The inlet cyclones' presence; the class's default is none.
+    pub has_inlet_cyclones: Option<bool>,
+    /// The demisting cyclones' presence; the class's default is none.
+    pub has_demisting_cyclones: Option<bool>,
     /// `GasScrubberMechanicalDesign.calcDesign`'s sized diameter; absent unless it ran.
     pub design_inner_diameter: Option<Length>,
     /// The design's tangent-to-tangent length, `5 d`.
@@ -137,6 +152,10 @@ pub fn gas_scrubber(
     allowable_stress: Option<f64>,
     joint_efficiency: Option<f64>,
     corrosion_allowance: Option<f64>,
+    safety_factor: Option<f64>,
+    mesh_pad_area: Option<f64>,
+    mesh_pad_thickness: Option<f64>,
+    mesh_pad_elevation: Option<Length>,
 ) -> Result<GasScrubberResult> {
     let spec = &model_gen::GAS_SCRUBBER_SPEC;
     let mut warnings = Vec::new();
@@ -197,6 +216,9 @@ pub fn gas_scrubber(
             ("allowable_stress", allowable_stress.is_some()),
             ("joint_efficiency", joint_efficiency.is_some()),
             ("corrosion_allowance", corrosion_allowance.is_some()),
+            ("mesh_pad_area", mesh_pad_area.is_some()),
+            ("mesh_pad_thickness", mesh_pad_thickness.is_some()),
+            ("mesh_pad_elevation", mesh_pad_elevation.is_some()),
         ] {
             if stated {
                 return Err(AzothError::invalid_input(
@@ -225,6 +247,26 @@ pub fn gas_scrubber(
             diameter,
             load_factor,
         )?),
+        _ => None,
+    };
+
+    // `sizeFromFlow`, inherited from `Separator`. The scrubber's length is five diameters,
+    // and the sizing path uses it only for the getters this id does not publish.
+    let required_diameter = match (internal_diameter, design_gas_load_factor, safety_factor) {
+        (Some(diameter), Some(load_factor), Some(safety)) => separator_sizing(
+            &feed,
+            &vapour,
+            &liquid,
+            diameter,
+            load_factor,
+            orientation == "horizontal",
+            design_liquid_level_fraction.unwrap_or(0.8),
+            meters(diameter.value * 5.0),
+            0.5,
+            Some(safety),
+        )?
+        .and_then(|sizing| sizing.required_diameter)
+        .map(meters),
         _ => None,
     };
 
@@ -257,6 +299,7 @@ pub fn gas_scrubber(
             orientation == "horizontal",
             VesselKind::Scrubber,
             &inputs,
+            false,
         )?)
     } else {
         None
@@ -274,6 +317,14 @@ pub fn gas_scrubber(
         liquid_t: liquid.t,
         liquid_h: joules_per_mole(liquid.h.value),
         capacity_utilization,
+        required_diameter,
+        has_mesh_pad: design.then(|| mesh_pad_area.is_some_and(|area| area > 0.0)),
+        mesh_pad_area: design.then(|| mesh_pad_area.unwrap_or(0.0)),
+        // The boundary already converted the spec's millimetres to metres.
+        mesh_pad_thickness: design.then(|| mesh_pad_thickness.unwrap_or(0.1)),
+        mesh_pad_elevation: design.then(|| mesh_pad_elevation.unwrap_or_else(|| meters(0.0))),
+        has_inlet_cyclones: design.then_some(false),
+        has_demisting_cyclones: design.then_some(false),
         design_inner_diameter: vessel.as_ref().map(|design| meters(design.inner_diameter)),
         design_tantan_length: vessel.as_ref().map(|design| meters(design.tantan_length)),
         design_outer_diameter: vessel.as_ref().map(|design| meters(design.outer_diameter)),

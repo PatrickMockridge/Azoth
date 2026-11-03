@@ -209,6 +209,12 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
         # `test_cross_impl` compares it on both results.
         "cavitating",
+        # `gas_scrubber`'s mesh-pad configuration flags, booleans with no slot in `TestCase`.
+        # `crates/azoth-process/tests/gas_scrubber.rs` asserts them against the capture, and
+        # `test_cross_impl` compares them on both results.
+        "has_mesh_pad",
+        "has_inlet_cyclones",
+        "has_demisting_cyclones",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

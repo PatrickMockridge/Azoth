@@ -2559,8 +2559,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gas_scrubber': {
         "calc_id": 'process.gas_scrubber',
         "name": 'Gas scrubber',
-        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '5be7b2a4df8ec18c517c88a161eec398156018241a53daa8dab99e5f1044c82d'},
-        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '3b3e4354592d01e655a1ef97d4579620870dc052256c02fd4339a36debd2f405'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '76e7987396e698b8745edcb25fbbddb1bd1fd60ae065a18d9f44f28aeb984a9f'}],
+        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': 'c2c6a4a82687c4a7602095e105382823adae083a2ebd54e1064a47de83a6ccea'},
+        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '5624519e7dc93b6b007a3935bd737db2ab331daa9574cecfcb20aceac9d5016c'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '7d3af7866f308269152a5f3599d1ad9cae36e2bcf8cfe5ab749ba8d5491a46e9'}],
         "source": 'NeqSim process/equipment/separator/GasScrubber.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2713,8 +2713,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator': {
         "calc_id": 'process.separator',
         "name": 'Separator',
-        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '0e761b3ed18e7f1e3bfd583ee4a6bae2348b37f72c3309e67df2e1fad12cb349'},
-        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': 'c40d453b87bb7a1f8ffd11afb557d21c24bbae8e89f6461fdc871df45b9aa177'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': '7ffdcb5b088a5241a661b68f5b2f1860fc6de7c48167841a4e2fb66159b28a75'}],
+        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '44fed652aa756a317bec655cbdec694f7cb38d1e6a4ff5c459740eed22952089'},
+        "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': '735113d7c5926fba7c1a64d6eb438d9eab7300e4de7cd2e892972ac89520b3c1'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': 'd754eddf257c5f148b57f227a3f65891e34b138c2c95c365a407faab39be7ee7'}],
         "source": 'NeqSim process/equipment/separator/Separator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

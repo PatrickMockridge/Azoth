@@ -15294,6 +15294,27 @@ pub struct PyGasScrubberResult {
     /// `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
     #[pyo3(get)]
     pub capacity_utilization: Option<f64>,
+    /// `sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.
+    #[pyo3(get)]
+    pub required_diameter: Option<PyQty>,
+    /// whether a positive mesh-pad area was configured. Present with the design.
+    #[pyo3(get)]
+    pub has_mesh_pad: Option<bool>,
+    /// the configured mesh-pad face area, `0` when none.
+    #[pyo3(get)]
+    pub mesh_pad_area: Option<PyQty>,
+    /// the mesh pad's thickness, `100` by default.
+    #[pyo3(get)]
+    pub mesh_pad_thickness: Option<PyQty>,
+    /// the mesh pad's elevation, `0` by default.
+    #[pyo3(get)]
+    pub mesh_pad_elevation: Option<PyQty>,
+    /// whether inlet cyclones are configured; the class's default is none.
+    #[pyo3(get)]
+    pub has_inlet_cyclones: Option<bool>,
+    /// whether demisting cyclones are configured; the class's default is none.
+    #[pyo3(get)]
+    pub has_demisting_cyclones: Option<bool>,
     /// `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
     #[pyo3(get)]
     pub design_inner_diameter: Option<PyQty>,
@@ -15393,7 +15414,7 @@ pub struct PyGasScrubberResult {
 impl PyGasScrubberResult {
     fn __repr__(&self) -> String {
         format!(
-            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
+            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, required_diameter={:?}, has_mesh_pad={:?}, mesh_pad_area={:?}, mesh_pad_thickness={:?}, mesh_pad_elevation={:?}, has_inlet_cyclones={:?}, has_demisting_cyclones={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -15405,6 +15426,13 @@ impl PyGasScrubberResult {
             self.liquid_t,
             self.liquid_h,
             self.capacity_utilization,
+            self.required_diameter,
+            self.has_mesh_pad,
+            self.mesh_pad_area,
+            self.mesh_pad_thickness,
+            self.mesh_pad_elevation,
+            self.has_inlet_cyclones,
+            self.has_demisting_cyclones,
             self.design_inner_diameter,
             self.design_tantan_length,
             self.design_outer_diameter,
@@ -15478,6 +15506,25 @@ impl From<&azoth_process::models::gas_scrubber::GasScrubberResult> for PyGasScru
                 unit: "J/mol".to_string(),
             },
             capacity_utilization: r.capacity_utilization,
+            required_diameter: r.required_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            has_mesh_pad: r.has_mesh_pad,
+            mesh_pad_area: r.mesh_pad_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            mesh_pad_thickness: r.mesh_pad_thickness.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "mm".to_string(),
+            }),
+            mesh_pad_elevation: r.mesh_pad_elevation.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            has_inlet_cyclones: r.has_inlet_cyclones,
+            has_demisting_cyclones: r.has_demisting_cyclones,
             design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "m".to_string(),

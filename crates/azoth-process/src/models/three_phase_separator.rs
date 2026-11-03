@@ -356,6 +356,9 @@ mod tests {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .expect("the captured state settles");
         assert_eq!(result.settling_time_sufficient, Some(false));

@@ -72,6 +72,7 @@ def separator(
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
     mechanical_design: bool | None = None,
+    auto_size: bool | None = None,
     fg: float | None = None,
     volume_safety_factor: float | None = None,
     retention_time: Q | None = None,
@@ -165,6 +166,7 @@ def separator(
     operating_level = None if liquid_level_fraction is None else float(liquid_level_fraction)
     safety = None if safety_factor is None else float(safety_factor)
     design = bool(mechanical_design) if mechanical_design is not None else False
+    auto = bool(auto_size) if auto_size is not None else False
     design_fg = None if fg is None else float(fg)
     volume_factor = None if volume_safety_factor is None else float(volume_safety_factor)
     retention = (
@@ -217,7 +219,24 @@ def separator(
             "Souders-Brown capacity metric needs both - a vessel with a size but no design "
             "basis has nothing to check",
         )
-    if not design and load_factor is not None and diameter is None:
+    if design and auto:
+        raise InvalidInputError(
+            "auto_size",
+            "`mechanical_design` and `auto_size` are two ways to design the same vessel; "
+            "state one",
+        )
+    if auto:
+        if diameter is not None:
+            raise InvalidInputError(
+                "internal_diameter",
+                "`auto_size` sizes the vessel itself, so a stated diameter would be overwritten",
+            )
+        if volume_safety_factor is not None:
+            raise InvalidInputError(
+                "volume_safety_factor",
+                "`auto_size` sets the volume factor from `safety_factor`; state it there",
+            )
+    if not design and not auto and load_factor is not None and diameter is None:
         raise InvalidInputError(
             "internal_diameter",
             "`design_gas_load_factor` was stated without `internal_diameter` and without "
@@ -231,7 +250,7 @@ def separator(
         )
     # The two that shape the gas area have no meaning without the vessel they shape.
     if diameter is None:
-        if orientation is not None and not design:
+        if orientation is not None and not design and not auto:
             raise InvalidInputError(
                 "orientation",
                 "`orientation` was stated without `internal_diameter`, "
@@ -248,7 +267,7 @@ def separator(
         for stated, value in (
             ("separator_length", separator_length),
             ("liquid_level_fraction", liquid_level_fraction),
-            ("safety_factor", safety_factor),
+            ("safety_factor", None if auto else safety_factor),
         ):
             if value is not None:
                 raise InvalidInputError(
@@ -257,7 +276,7 @@ def separator(
                     f"`design_gas_load_factor`, and the vessel it sizes is not computed until "
                     f"both are stated",
                 )
-    if not design:
+    if not design and not auto:
         for stated, value in (
             ("fg", fg),
             ("volume_safety_factor", volume_safety_factor),
@@ -304,7 +323,7 @@ def separator(
     )
     vessel = (
         None
-        if not design or load_factor is None
+        if not (design or auto) or (not auto and load_factor is None)
         else _mechanical_design(
             components,
             states.temperature.to("K").magnitude,
@@ -314,14 +333,19 @@ def separator(
             list(states.liquid_z),
             states.n_liquid,
             kind == "horizontal",
-            load_factor,
-            0.8 if design_fg is None else design_fg,
-            1.0 if volume_factor is None else volume_factor,
-            60.0 if retention is None else retention,
+            load_factor if load_factor is not None else 0.107,
+            (0.5 if auto else 0.8) if design_fg is None else design_fg,
+            (
+                (1.2 if safety_factor is None else float(safety_factor))
+                if auto
+                else (1.0 if volume_factor is None else volume_factor)
+            ),
+            (120.0 if auto else 60.0) if retention is None else retention,
             100.0e5 if max_pressure is None else max_pressure,
             (425.0e6 if stress is None else stress) / 1.0e6,
             1.0 if joint is None else joint,
             0.0 if corrosion is None else corrosion,
+            perform_sizing=auto,
         )
     )
     sizing = (
@@ -953,6 +977,7 @@ def _mechanical_design(
     joint_efficiency: float,
     corrosion_allowance_mm: float,
     vessel: str = "separator",
+    perform_sizing: bool = False,
 ) -> MechanicalDesign:
     """`calcDesign` on the two outlets, in the order the class computes it.
 
@@ -1006,6 +1031,9 @@ def _mechanical_design(
         # **The scrubber's length is five diameters and nothing else sizes it.** Its class
         # never reads the retention time in `calcDesign`.
         tantan_length = inner_diameter * 5.0
+    elif perform_sizing and liquid_volume_flow <= 1.0e-10:
+        # `performSizingCalculations`' no-liquid branch.
+        tantan_length = inner_diameter * 4.0
     else:
         tantan_length = math.sqrt(
             4.0
@@ -1016,40 +1044,56 @@ def _mechanical_design(
         )
         total = tantan_length + inner_diameter
         if total / inner_diameter > 6.0 or total / inner_diameter < 3.0:
-            tantan_length = inner_diameter * 5.0
+            # `calcDesign` resets to five diameters; `performSizingCalculations` to four.
+            tantan_length = inner_diameter * (4.0 if perform_sizing else 5.0)
 
-        bubble_velocity = (
-            9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
+        if not perform_sizing:
+            bubble_velocity = (
+                9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
+            )
+            ar = liquid_volume_flow / bubble_velocity
+            daim = math.sqrt(ar / 4.0)
+            if daim > inner_diameter:
+                inner_diameter = daim
+                tantan_length = 4.0 * daim
+
+    if perform_sizing:
+        # `performSizingCalculations` on the design-standard state `autoSize` read, which on
+        # the capture has no pressure-vessel code: wall, weights and outer diameter stay at
+        # their zero defaults and `volumeTotal` stays at the class's 2.0.
+        wall_thickness = 0.0
+        outer_diameter = inner_diameter
+        vessel_shell_weight = 0.0
+        piping_weight = 0.0
+        structural_weight = 0.0
+        electrical_weight = 0.0
+        total_weight = 0.0
+        vessel_volume = 2.0
+    else:
+        pressure_bar = max_operation_pressure_pa / 1.0e5
+        wall_thickness_mm = (
+            pressure_bar
+            / 10.0
+            * inner_diameter
+            * 1.0e3
+            / (2.0 * allowable_stress_mpa * joint_efficiency - 1.2 * pressure_bar / 10.0)
+            + corrosion_allowance_mm
         )
-        ar = liquid_volume_flow / bubble_velocity
-        daim = math.sqrt(ar / 4.0)
-        if daim > inner_diameter:
-            inner_diameter = daim
-            tantan_length = 4.0 * daim
-
-    pressure_bar = max_operation_pressure_pa / 1.0e5
-    wall_thickness_mm = (
-        pressure_bar
-        / 10.0
-        * inner_diameter
-        * 1.0e3
-        / (2.0 * allowable_stress_mpa * joint_efficiency - 1.2 * pressure_bar / 10.0)
-        + corrosion_allowance_mm
-    )
-    wall_thickness = wall_thickness_mm / 1000.0
-    outer_diameter = inner_diameter + 2.0 * wall_thickness
-
-    vessel_shell_weight = (
-        0.032 * (wall_thickness * 1.0e3) * (inner_diameter * 1.0e3) * tantan_length
-    )
-    piping_weight = vessel_shell_weight * 0.4
-    structural_weight = vessel_shell_weight * 0.1
-    electrical_weight = vessel_shell_weight * 0.08
-    total_weight = vessel_shell_weight + piping_weight + structural_weight + electrical_weight
+        wall_thickness = wall_thickness_mm / 1000.0
+        outer_diameter = inner_diameter + 2.0 * wall_thickness
+        vessel_shell_weight = (
+            0.032 * (wall_thickness * 1.0e3) * (inner_diameter * 1.0e3) * tantan_length
+        )
+        piping_weight = vessel_shell_weight * 0.4
+        structural_weight = vessel_shell_weight * 0.1
+        electrical_weight = vessel_shell_weight * 0.08
+        total_weight = (
+            vessel_shell_weight + piping_weight + structural_weight + electrical_weight
+        )
+        vessel_volume = math.pi * (inner_diameter / 2.0) ** 2 * tantan_length
     module_width = inner_diameter * 2.0
     module_length = tantan_length * 1.5
     module_height = inner_diameter * 2.0 if vessel == "scrubber" else inner_diameter * 2.0 + 1.0
-    vessel_volume = math.pi * (inner_diameter / 2.0) ** 2 * tantan_length
 
     effective_length_liquid = tantan_length * 0.82
     effective_length_gas = tantan_length * 0.64

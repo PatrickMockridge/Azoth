@@ -1225,6 +1225,23 @@ row that is `0.11035858` m3 against `0.110877` from the translated density, and 
 density moves the diameter by `0.23%`. And `calcLiquidRetentionTime` divides a m3/s flow as
 though it were m3/hr, which is the row's `394 159` s.
 
+## The separator's `autoSize`
+
+`process_separator_autosize.tsv` is `Separator.autoSize(safetyFactor)` on the PR fixture, at
+the class's no-argument `1.2` and at an overridden `1.5`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_autosize \
+  > captures/process_separator_autosize.tsv
+```
+
+**`autoSize` reads the design database, not the code's initialisers**: the shipped
+`technicalrequirements_process` table's midpoints give `K = 0.107` and `Fg = 0.5`, and
+`readDesignSpecifications` hard-sets the retention to `120` s. With no pressure-vessel code
+installed, `performSizingCalculations` leaves the wall, the weights and the outer diameter at
+zero and `volumeTotal` at the class's `2.0`.
+
 ## The gas scrubber mechanical design
 
 `process_gas_scrubber_mechanical_design.tsv` is `GasScrubberMechanicalDesign.calcDesign` on the
@@ -1240,8 +1257,9 @@ same two-cubic fixture, through a `GasScrubber` rather than a `Separator`.
 the separator standard's `1.0` safety), then re-sizes on the scrubber standard's `K = 0.11`
 and volume factor `1.1`: vertical `Fg = 1`, `length = 5 d`, and a module `2 d` high rather
 than the separator's `2 d + 1`. The row prints both standards' values so the override is
-visible. The mesh-pad, vane-pack and cyclone fields are untouched by `calcDesign` and print at
-their absent defaults.
+visible. The first two rows leave the mesh-pad, vane-pack and cyclone fields at their absent
+defaults; the third configures a pad on the sized vessel (`setMeshPad` and
+`setMeshPadElevationM`) and then reads the inherited `sizeFromFlow(1.5)`.
 
 ## The separator capacity assessment
 

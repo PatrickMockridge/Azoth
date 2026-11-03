@@ -52,6 +52,22 @@ description = "the vessel's internal diameter, which `getSepCrossArea` is `pi d*
 unit = "m/s"
 optional = true
 description = "the Souders-Brown `K` the vessel is designed to: the settling velocity per root of the density ratio, `0.04` to `0.10` m/s for a vertical scrubber and `0.11` by `Separator`'s own initialiser. **Absent means the metric is not computed**, as with the diameter.\n"
+[inputs.safety_factor]
+unit = "dimensionless"
+optional = true
+description = "the factor `sizeFromFlow` multiplies the gas volumetric flow by. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor.\n"
+[inputs.mesh_pad_area]
+unit = "m**2"
+optional = true
+description = "`configureMeshPad`'s face area; a positive area turns `has_mesh_pad` on. Requires `mechanical_design`.\n"
+[inputs.mesh_pad_thickness]
+unit = "mm"
+optional = true
+description = "the mesh pad's thickness. **Absent is the class's `100` mm.** Requires `mechanical_design`.\n"
+[inputs.mesh_pad_elevation]
+unit = "m"
+optional = true
+description = "`setMeshPadElevation`'s elevation. **Absent is `0`.** Requires `mechanical_design`.\n"
 [inputs.heat_input]
 unit = "W"
 optional = true
@@ -128,6 +144,34 @@ description = "the liquid outlet's molar enthalpy at its own state.\n"
 unit = "dimensionless"
 optional = true
 description = "`getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.\n"
+[outputs.required_diameter]
+unit = "m"
+optional = true
+description = "`sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.\n"
+[outputs.has_mesh_pad]
+type = "boolean"
+optional = true
+description = "whether a positive mesh-pad area was configured. Present with the design.\n"
+[outputs.mesh_pad_area]
+unit = "m**2"
+optional = true
+description = "the configured mesh-pad face area, `0` when none.\n"
+[outputs.mesh_pad_thickness]
+unit = "mm"
+optional = true
+description = "the mesh pad's thickness, `100` by default.\n"
+[outputs.mesh_pad_elevation]
+unit = "m"
+optional = true
+description = "the mesh pad's elevation, `0` by default.\n"
+[outputs.has_inlet_cyclones]
+type = "boolean"
+optional = true
+description = "whether inlet cyclones are configured; the class's default is none.\n"
+[outputs.has_demisting_cyclones]
+type = "boolean"
+optional = true
+description = "whether demisting cyclones are configured; the class's default is none.\n"
 [outputs.design_inner_diameter]
 unit = "m"
 optional = true

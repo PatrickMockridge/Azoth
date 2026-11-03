@@ -53,6 +53,7 @@ fn run(
         None,
         None,
         None,
+        None,
     )
     .expect("the captured state separates")
 }
@@ -290,6 +291,7 @@ fn half_a_vessel_is_refused_both_ways() {
             None,
             None,
             None,
+            None,
         )
     };
     assert!(refused(Some(1.0), None).is_err());
@@ -313,6 +315,7 @@ fn the_gas_area_inputs_need_the_vessel() {
             None,
             orientation,
             level,
+            None,
             None,
             None,
             None,
@@ -356,6 +359,7 @@ fn an_orientation_that_is_neither_is_refused() {
         None,
         None,
         None,
+        None,
     );
     assert!(result.is_err());
 }
@@ -379,6 +383,7 @@ fn the_phase_indexed_load_factor_reads_the_operating_level() {
         Some(meters(5.0)),
         Some(0.5),
         Some(1.0),
+        None,
         None,
         None,
         None,
@@ -443,6 +448,7 @@ fn the_vertical_and_dry_gas_edges() {
         None,
         None,
         None,
+        None,
     )
     .expect("the captured state sizes");
     close(
@@ -476,6 +482,7 @@ fn the_vertical_and_dry_gas_edges() {
         Some(meters(5.0)),
         Some(0.5),
         Some(1.0),
+        None,
         None,
         None,
         None,

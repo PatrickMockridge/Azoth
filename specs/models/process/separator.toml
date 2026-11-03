@@ -93,6 +93,10 @@ description = "the factor `sizeFromFlow` multiplies the gas volumetric flow by b
 type = "boolean"
 optional = true
 description = "run `SeparatorMechanicalDesign.calcDesign` and publish its vessel. **Absent is false**; present requires `design_gas_load_factor`, and the group below is refused without it. The design sizes its own diameter, so `internal_diameter` is not needed.\n"
+[inputs.auto_size]
+type = "boolean"
+optional = true
+description = "run `Separator.autoSize(safety_factor)` and publish its vessel. **Absent is false.** Defaults are the shipped database's `K = 0.107`, `Fg = 0.5` and the hard-set `120` s; `safety_factor` is the volume factor (absent `1.2`). Refuses a stated diameter and `mechanical_design`.\n"
 [inputs.fg]
 unit = "dimensionless"
 optional = true

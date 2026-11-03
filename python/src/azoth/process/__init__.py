@@ -1543,6 +1543,10 @@ def gas_scrubber(
     allowable_stress: Q | None = None,
     joint_efficiency: float | None = None,
     corrosion_allowance: Q | None = None,
+    safety_factor: float | None = None,
+    mesh_pad_area: float | None = None,
+    mesh_pad_thickness: Q | None = None,
+    mesh_pad_elevation: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a feed into vapour and liquid, as a scrubber does.
 
@@ -1581,6 +1585,10 @@ def gas_scrubber(
         allowable_stress=allowable_stress,
         joint_efficiency=joint_efficiency,
         corrosion_allowance=corrosion_allowance,
+        safety_factor=safety_factor,
+        mesh_pad_area=mesh_pad_area,
+        mesh_pad_thickness=mesh_pad_thickness,
+        mesh_pad_elevation=mesh_pad_elevation,
     )
 
 
@@ -1941,6 +1949,7 @@ def separator(
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
     mechanical_design: bool | None = None,
+    auto_size: bool | None = None,
     fg: float | None = None,
     volume_safety_factor: float | None = None,
     retention_time: Q | None = None,
@@ -1993,6 +2002,7 @@ def separator(
         liquid_level_fraction=liquid_level_fraction,
         safety_factor=safety_factor,
         mechanical_design=mechanical_design,
+        auto_size=auto_size,
         fg=fg,
         volume_safety_factor=volume_safety_factor,
         retention_time=retention_time,

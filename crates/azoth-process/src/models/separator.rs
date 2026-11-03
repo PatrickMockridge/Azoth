@@ -149,6 +149,7 @@ pub fn separator(
     liquid_level_fraction: Option<f64>,
     safety_factor: Option<f64>,
     mechanical_design: Option<bool>,
+    auto_size: Option<bool>,
     fg: Option<f64>,
     volume_safety_factor: Option<f64>,
     retention_time: Option<Time>,
@@ -187,6 +188,7 @@ pub fn separator(
     )?;
 
     let design = mechanical_design.unwrap_or(false);
+    let auto = auto_size.unwrap_or(false);
     // **A stated diameter needs its design basis; a design basis does not need a diameter.**
     // The capacity metric is the pair, but the mechanical design sizes its own diameter from
     // the flow and the design `K`, so `design_gas_load_factor` alone is a complete statement
@@ -199,7 +201,27 @@ pub fn separator(
              has nothing to check",
         ));
     }
-    if !design && design_gas_load_factor.is_some() && internal_diameter.is_none() {
+    if design && auto {
+        return Err(AzothError::invalid_input(
+            "auto_size",
+            "`mechanical_design` and `auto_size` are two ways to design the same vessel; state one",
+        ));
+    }
+    if auto {
+        if internal_diameter.is_some() {
+            return Err(AzothError::invalid_input(
+                "internal_diameter",
+                "`auto_size` sizes the vessel itself, so a stated diameter would be overwritten",
+            ));
+        }
+        if volume_safety_factor.is_some() {
+            return Err(AzothError::invalid_input(
+                "volume_safety_factor",
+                "`auto_size` sets the volume factor from `safety_factor`; state it there",
+            ));
+        }
+    }
+    if !design && !auto && design_gas_load_factor.is_some() && internal_diameter.is_none() {
         return Err(AzothError::invalid_input(
             "internal_diameter",
             "`design_gas_load_factor` was stated without `internal_diameter` and without \
@@ -215,7 +237,7 @@ pub fn separator(
     }
     // The two that shape the gas area have no meaning without the vessel they shape.
     if internal_diameter.is_none() {
-        if orientation.is_some() && !design {
+        if orientation.is_some() && !design && !auto {
             return Err(AzothError::invalid_input(
                 "orientation",
                 "`orientation` was stated without `internal_diameter`, `design_gas_load_factor` \
@@ -234,7 +256,8 @@ pub fn separator(
         for (name, stated) in [
             ("separator_length", separator_length.is_some()),
             ("liquid_level_fraction", liquid_level_fraction.is_some()),
-            ("safety_factor", safety_factor.is_some()),
+            // `safety_factor` is `autoSize`'s volume factor when `auto_size` is set.
+            ("safety_factor", safety_factor.is_some() && !auto),
         ] {
             if stated {
                 return Err(AzothError::invalid_input(
@@ -248,7 +271,7 @@ pub fn separator(
             }
         }
     }
-    if !design {
+    if !design && !auto {
         for (name, stated) in [
             ("fg", fg.is_some()),
             ("volume_safety_factor", volume_safety_factor.is_some()),
@@ -315,18 +338,32 @@ pub fn separator(
         )?,
         _ => None,
     };
-    let vessel = if design {
-        let load_factor = design_gas_load_factor.ok_or_else(|| {
-            AzothError::invalid_input(
-                "design_gas_load_factor",
-                "`mechanical_design` needs the design's Souders-Brown basis",
-            )
-        })?;
+    let vessel = if design || auto {
+        // `autoSize` reads the design standards' K when the separator has no stated one.
+        let load_factor = match design_gas_load_factor {
+            Some(value) => value.value,
+            // The shipped design database's `GasLoadFactor` midpoint, which `autoSize` reads.
+            None if auto => 0.107,
+            None => {
+                return Err(AzothError::invalid_input(
+                    "design_gas_load_factor",
+                    "`mechanical_design` needs the design's Souders-Brown basis",
+                ));
+            }
+        };
         let inputs = DesignInputs {
-            gas_load_factor: load_factor.value,
-            fg: fg.unwrap_or(0.8),
-            volume_safety_factor: volume_safety_factor.unwrap_or(1.0),
-            retention_time_s: retention_time.map_or(60.0, |value| value.value),
+            gas_load_factor: load_factor,
+            // The database's `Fg` midpoint for the same standard.
+            fg: fg.unwrap_or(if auto { 0.5 } else { 0.8 }),
+            // `autoSize(safetyFactor)` sets the volume factor; its no-argument form is 1.2.
+            volume_safety_factor: if auto {
+                safety_factor.unwrap_or(1.2)
+            } else {
+                volume_safety_factor.unwrap_or(1.0)
+            },
+            // `readDesignSpecifications` hard-sets `120` s in the `autoSize` path.
+            retention_time_s: retention_time
+                .map_or(if auto { 120.0 } else { 60.0 }, |value| value.value),
             max_operation_pressure: max_operation_pressure.unwrap_or(pascals(100.0e5)),
             // The spec declares pascals; the ASME formula is written in MPa.
             allowable_stress: allowable_stress.unwrap_or(425.0e6) / 1.0e6,
@@ -341,6 +378,7 @@ pub fn separator(
             orientation == "horizontal",
             VesselKind::Separator,
             &inputs,
+            auto,
         )?)
     } else {
         None

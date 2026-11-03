@@ -125,6 +125,7 @@ pub fn mechanical_design(
     horizontal: bool,
     kind: VesselKind,
     inputs: &DesignInputs,
+    perform_sizing: bool,
 ) -> Result<Design> {
     let (mixture, ideal_gas) = gas_outlet.mixture()?;
 
@@ -211,27 +212,38 @@ pub fn mechanical_design(
 
     let (inner_diameter, tantan_length) = match kind {
         VesselKind::Separator => {
-            let mut tantan_length = (4.0
-                * inputs.retention_time_s
-                * liquid_volume_flow
-                * inputs.volume_safety_factor
-                / (std::f64::consts::PI * inner_diameter * inner_diameter * liquid_area_fraction))
-                .sqrt();
+            let mut tantan_length = if perform_sizing && liquid_volume_flow <= 1.0e-10 {
+                // `performSizingCalculations`' no-liquid branch.
+                inner_diameter * 4.0
+            } else {
+                (4.0 * inputs.retention_time_s * liquid_volume_flow * inputs.volume_safety_factor
+                    / (std::f64::consts::PI
+                        * inner_diameter
+                        * inner_diameter
+                        * liquid_area_fraction))
+                    .sqrt()
+            };
             let total = tantan_length + inner_diameter;
             if total / inner_diameter > 6.0 || total / inner_diameter < 3.0 {
-                tantan_length = inner_diameter * 5.0;
+                // `calcDesign` resets to five diameters; `performSizingCalculations` to four.
+                tantan_length = inner_diameter * if perform_sizing { 4.0 } else { 5.0 };
             }
 
-            // The bubble alternative: a 250 µm bubble in the liquid, settled by Stokes.
-            let bubble_velocity = 9.82 * (250.0e-6_f64).powi(2) * (liquid_density - gas_density)
-                / (18.0 * liquid_viscosity);
-            let ar = liquid_volume_flow / bubble_velocity;
-            let daim = (ar / 4.0).sqrt();
-            let length2 = 4.0 * daim;
-            if daim > inner_diameter {
-                (daim, length2)
-            } else {
+            if perform_sizing {
                 (inner_diameter, tantan_length)
+            } else {
+                // The bubble alternative: a 250 µm bubble in the liquid, settled by Stokes.
+                let bubble_velocity =
+                    9.82 * (250.0e-6_f64).powi(2) * (liquid_density - gas_density)
+                        / (18.0 * liquid_viscosity);
+                let ar = liquid_volume_flow / bubble_velocity;
+                let daim = (ar / 4.0).sqrt();
+                let length2 = 4.0 * daim;
+                if daim > inner_diameter {
+                    (daim, length2)
+                } else {
+                    (inner_diameter, tantan_length)
+                }
             }
         }
         // **The scrubber's length is five diameters and nothing else sizes it.** Its class
@@ -240,19 +252,38 @@ pub fn mechanical_design(
         VesselKind::Scrubber => (inner_diameter, inner_diameter * 5.0),
     };
 
-    let pressure_bar = inputs.max_operation_pressure.value / 1.0e5;
-    let wall_thickness_mm = pressure_bar / 10.0 * inner_diameter * 1.0e3
-        / (2.0 * inputs.allowable_stress * inputs.joint_efficiency - 1.2 * pressure_bar / 10.0)
-        + inputs.corrosion_allowance_mm;
-    let wall_thickness = wall_thickness_mm / 1000.0;
-    let outer_diameter = inner_diameter + 2.0 * wall_thickness;
-
-    let vessel_shell_weight =
-        0.032 * (wall_thickness * 1.0e3) * (inner_diameter * 1.0e3) * tantan_length;
-    let piping_weight = vessel_shell_weight * 0.4;
-    let structural_weight = vessel_shell_weight * 0.1;
-    let electrical_weight = vessel_shell_weight * 0.08;
-    let total_weight = vessel_shell_weight + piping_weight + structural_weight + electrical_weight;
+    // `performSizingCalculations` runs on the design-standard state `autoSize` read, which on
+    // the capture has no pressure-vessel code: the wall, the weights and the outer diameter
+    // stay at their zero defaults and `volumeTotal` stays at the class's `2.0`.
+    let (
+        wall_thickness,
+        outer_diameter,
+        vessel_shell_weight,
+        piping_weight,
+        structural_weight,
+        electrical_weight,
+        total_weight,
+        vessel_volume,
+    ) = if perform_sizing {
+        (0.0, inner_diameter, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0)
+    } else {
+        let pressure_bar = inputs.max_operation_pressure.value / 1.0e5;
+        let wall_thickness_mm = pressure_bar / 10.0 * inner_diameter * 1.0e3
+            / (2.0 * inputs.allowable_stress * inputs.joint_efficiency - 1.2 * pressure_bar / 10.0)
+            + inputs.corrosion_allowance_mm;
+        let wall_thickness = wall_thickness_mm / 1000.0;
+        let shell = 0.032 * (wall_thickness * 1.0e3) * (inner_diameter * 1.0e3) * tantan_length;
+        (
+            wall_thickness,
+            inner_diameter + 2.0 * wall_thickness,
+            shell,
+            shell * 0.4,
+            shell * 0.1,
+            shell * 0.08,
+            shell + shell * 0.4 + shell * 0.1 + shell * 0.08,
+            std::f64::consts::PI * (inner_diameter / 2.0).powi(2) * tantan_length,
+        )
+    };
 
     let module_width = inner_diameter * 2.0;
     let module_length = tantan_length * 1.5;
@@ -260,7 +291,6 @@ pub fn mechanical_design(
         VesselKind::Separator => inner_diameter * 2.0 + 1.0,
         VesselKind::Scrubber => inner_diameter * 2.0,
     };
-    let vessel_volume = std::f64::consts::PI * (inner_diameter / 2.0).powi(2) * tantan_length;
 
     let effective_length_liquid = tantan_length * 0.82;
     let effective_length_gas = tantan_length * 0.64;
@@ -406,6 +436,7 @@ mod tests {
                 joint_efficiency: 1.0,
                 corrosion_allowance_mm: 0.0,
             },
+            false,
         )
         .expect("the captured design");
         let close = |actual: f64, expected: f64, what: &str| {
@@ -463,6 +494,7 @@ mod tests {
                 joint_efficiency: 1.0,
                 corrosion_allowance_mm: 0.0,
             },
+            false,
         )
         .expect("the captured scrubber design");
         let close = |actual: f64, expected: f64, what: &str| {

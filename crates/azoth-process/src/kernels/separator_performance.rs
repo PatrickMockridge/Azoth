@@ -1353,6 +1353,11 @@ mod tests {
             inlet_device: InletDevice::HalfPipe,
             design_k_factor: None,
             liquid_liquid_residence_time: None,
+            mist_position: 0.90,
+            weir_position: 0.60,
+            override_bulk_efficiency: 0.0,
+            override_dsd_multiplier: 0.0,
+            oil_water_interfacial_tension: 0.030,
         }
     }
 

@@ -6122,6 +6122,27 @@ class GasScrubberResult(_HasWarnings):
     #: `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
     capacity_utilization: float | None
 
+    #: `sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.
+    required_diameter: Q | None
+
+    #: whether a positive mesh-pad area was configured. Present with the design.
+    has_mesh_pad: bool | None
+
+    #: the configured mesh-pad face area, `0` when none.
+    mesh_pad_area: Q | None
+
+    #: the mesh pad's thickness, `100` by default.
+    mesh_pad_thickness: Q | None
+
+    #: the mesh pad's elevation, `0` by default.
+    mesh_pad_elevation: Q | None
+
+    #: whether inlet cyclones are configured; the class's default is none.
+    has_inlet_cyclones: bool | None
+
+    #: whether demisting cyclones are configured; the class's default is none.
+    has_demisting_cyclones: bool | None
+
     #: `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
     design_inner_diameter: Q | None
 

@@ -5905,7 +5905,7 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
     )
 
 
-def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> GasScrubberResult:
+def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, safety_factor: float | None=None, mesh_pad_area: float | None=None, mesh_pad_thickness: float | None=None, mesh_pad_elevation: Q | None=None) -> GasScrubberResult:
     """``process.gas_scrubber``, computed in Rust."""
     spec = _models_gen.model("process.gas_scrubber")
     result = _core.gas_scrubber(
@@ -5918,6 +5918,10 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         gas_in_liquid,
         None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
         None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        None if safety_factor is None else safety_factor,
+        None if mesh_pad_area is None else _si(spec, "mesh_pad_area", mesh_pad_area),
+        None if mesh_pad_thickness is None else _si(spec, "mesh_pad_thickness", mesh_pad_thickness),
+        None if mesh_pad_elevation is None else input_to_si(spec, "mesh_pad_elevation", mesh_pad_elevation),
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
         mechanical_design,
         orientation,
@@ -5940,6 +5944,13 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
         capacity_utilization=result.capacity_utilization,
+        required_diameter=None if result.required_diameter is None else from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
+        has_mesh_pad=result.has_mesh_pad,
+        mesh_pad_area=None if result.mesh_pad_area is None else from_si(result.mesh_pad_area.magnitude_si, result.mesh_pad_area.unit),
+        mesh_pad_thickness=None if result.mesh_pad_thickness is None else from_si(result.mesh_pad_thickness.magnitude_si, result.mesh_pad_thickness.unit),
+        mesh_pad_elevation=None if result.mesh_pad_elevation is None else from_si(result.mesh_pad_elevation.magnitude_si, result.mesh_pad_elevation.unit),
+        has_inlet_cyclones=result.has_inlet_cyclones,
+        has_demisting_cyclones=result.has_demisting_cyclones,
         design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
         design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
         design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
@@ -6537,7 +6548,7 @@ def rate_based_packed_column(gas_components: list[str], gas_n: Q, gas_z: list[fl
     )
 
 
-def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None, mechanical_design: bool | None=None, fg: float | None=None, volume_safety_factor: float | None=None, retention_time: Q | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SeparatorResult:
+def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None, mechanical_design: bool | None=None, auto_size: bool | None=None, fg: float | None=None, volume_safety_factor: float | None=None, retention_time: Q | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SeparatorResult:
     """``process.separator``, computed in Rust."""
     spec = _models_gen.model("process.separator")
     result = _core.separator(
@@ -6557,6 +6568,7 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         None if liquid_level_fraction is None else liquid_level_fraction,
         None if safety_factor is None else safety_factor,
         mechanical_design,
+        auto_size,
         None if fg is None else fg,
         None if volume_safety_factor is None else volume_safety_factor,
         None if retention_time is None else input_to_si(spec, "retention_time", retention_time),

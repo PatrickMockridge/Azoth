@@ -5782,9 +5782,9 @@ pub fn flare(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, safety_factor, mesh_pad_area, mesh_pad_thickness, mesh_pad_elevation, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, safety_factor, mesh_pad_area, mesh_pad_thickness, mesh_pad_elevation, heat_input, mechanical_design, orientation, volume_safety_factor, design_liquid_level_fraction, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn gas_scrubber(
@@ -5798,6 +5798,10 @@ pub fn gas_scrubber(
     gas_in_liquid: f64,
     internal_diameter: Option<f64>,
     design_gas_load_factor: Option<f64>,
+    safety_factor: Option<f64>,
+    mesh_pad_area: Option<f64>,
+    mesh_pad_thickness: Option<f64>,
+    mesh_pad_elevation: Option<f64>,
     heat_input: Option<f64>,
     mechanical_design: Option<bool>,
     orientation: Option<&str>,
@@ -5827,6 +5831,10 @@ pub fn gas_scrubber(
         allowable_stress,
         joint_efficiency,
         corrosion_allowance,
+        safety_factor,
+        mesh_pad_area,
+        mesh_pad_thickness,
+        mesh_pad_elevation.map(meters),
     )
     .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
@@ -6184,9 +6192,9 @@ pub fn packed_column(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, auto_size, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input, internal_diameter, design_gas_load_factor, orientation, design_liquid_level_fraction, separator_length, liquid_level_fraction, safety_factor, mechanical_design, auto_size, fg, volume_safety_factor, retention_time, max_operation_pressure, allowable_stress, joint_efficiency, corrosion_allowance)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn separator(
@@ -6207,6 +6215,7 @@ pub fn separator(
     liquid_level_fraction: Option<f64>,
     safety_factor: Option<f64>,
     mechanical_design: Option<bool>,
+    auto_size: Option<bool>,
     fg: Option<f64>,
     volume_safety_factor: Option<f64>,
     retention_time: Option<f64>,
@@ -6232,6 +6241,7 @@ pub fn separator(
         liquid_level_fraction,
         safety_factor,
         mechanical_design,
+        auto_size,
         fg,
         volume_safety_factor,
         retention_time.map(seconds),

@@ -146,6 +146,9 @@ public class ProcessProbe {
       case "separator_mechanical":
         separatorMechanicalRows();
         break;
+      case "separator_autosize":
+        separatorAutosizeRows();
+        break;
       case "gas_scrubber_mechanical":
         gasScrubberMechanicalRows();
         break;
@@ -5190,6 +5193,54 @@ public class ProcessProbe {
     separatorMechanicalRow("port_fixture_pr", false);
   }
 
+  /// `Separator.autoSize(safetyFactor)` on the PR fixture, at the class's no-argument
+  /// `1.2` and at an overridden `1.5`.
+  static void separatorAutosizeRows() {
+    separatorAutosizeRow("pr_fixture_safety_1_2", 1.2);
+    separatorAutosizeRow("pr_fixture_safety_1_5", 1.5);
+  }
+
+  static void separatorAutosizeRow(String label, double safetyFactor) {
+    SystemInterface fluid = new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 0.7);
+    fluid.addComponent("ethane", 0.1);
+    fluid.addComponent("propane", 0.1);
+    fluid.addComponent("n-pentane", 0.1);
+    fluid.setMixingRule(2);
+    Stream feed = new Stream("Feed", fluid);
+    feed.setFlowRate(10000.0, "kg/hr");
+    feed.setTemperature(25.0, "C");
+    feed.setPressure(20.0, "bara");
+    feed.run();
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("TestSeparator", feed);
+    separator.run();
+    separator.autoSize(safetyFactor);
+    System.out.println(label);
+    System.out.println("safety_factor=" + safetyFactor);
+    System.out.println("auto_sized=" + separator.isAutoSized());
+    System.out.println("design_inner_diameter_m=" + separator.getInternalDiameter());
+    System.out.println("design_separator_length_m=" + separator.getSeparatorLength());
+    System.out.println("design_wall_thickness_m="
+        + separator.getMechanicalDesign().getWallThickness());
+    System.out.println("design_outer_diameter_m="
+        + separator.getMechanicalDesign().getOuterDiameter());
+    System.out.println("design_vessel_volume_m3="
+        + separator.getMechanicalDesign().getVolumeTotal());
+    System.out.println("liquid_retention_time_s="
+        + separator.getMechanicalDesign().calcLiquidRetentionTime());
+    System.out.println("design_gas_load_factor_m_per_s="
+        + separator.getMechanicalDesign().getGasLoadFactor());
+    System.out.println("fg=" + separator.getMechanicalDesign().getFg());
+    System.out.println("volume_safety_factor="
+        + separator.getMechanicalDesign().getVolumeSafetyFactor());
+    System.out.println("max_design_volume_flow_m3_hr="
+        + separator.getMechanicalDesign().getMaxDesignVolumeFlow());
+    System.out.println("max_design_gas_volume_flow_m3_hr="
+        + separator.getMechanicalDesign().getMaxDesignGassVolumeFlow());
+    System.out.println();
+  }
+
   @SuppressWarnings({"checkstyle:MethodLength"})
   static void separatorMechanicalRow(String label, boolean srk) {
     SystemInterface fluid = srk ? new SystemSrkEos(298.15, 20.0) : new SystemPrEos(298.15, 20.0);
@@ -5365,12 +5416,14 @@ public class ProcessProbe {
   /// the base pass's diameter. The row prints both bases' K and safety factor and the levels
   /// beside the final diameter, so that staleness is visible rather than inferred.
   static void gasScrubberMechanicalRows() {
-    gasScrubberMechanicalRow("class_fixture_srk", true);
-    gasScrubberMechanicalRow("port_fixture_pr", false);
+    gasScrubberMechanicalRow("class_fixture_srk", true, false);
+    gasScrubberMechanicalRow("port_fixture_pr", false, false);
+    // The mesh pad's configuration is design state, set after `calcDesign` sizes the vessel.
+    gasScrubberMechanicalRow("port_fixture_pr_mesh_pad", false, true);
   }
 
   @SuppressWarnings({"checkstyle:MethodLength"})
-  static void gasScrubberMechanicalRow(String label, boolean srk) {
+  static void gasScrubberMechanicalRow(String label, boolean srk, boolean meshPad) {
     SystemInterface fluid = srk ? new SystemSrkEos(298.15, 20.0) : new SystemPrEos(298.15, 20.0);
     fluid.addComponent("methane", 0.7);
     fluid.addComponent("ethane", 0.1);
@@ -5402,6 +5455,11 @@ public class ProcessProbe {
     } catch (Exception ex) {
       System.out.println("calc_design_error=" + ex);
       ex.printStackTrace(System.out);
+    }
+    if (meshPad) {
+      double area = Math.PI * Math.pow(design.getInnerDiameter() / 2.0, 2);
+      design.setMeshPad(area, 150.0);
+      design.setMeshPadElevationM(0.75);
     }
     System.out.println("standard_keys_after=" + design.getDesignStandard().size());
     for (String key : design.getDesignStandard().keySet()) {
@@ -5472,8 +5530,14 @@ public class ProcessProbe {
     System.out.println("has_mesh_pad=" + design.hasMeshPad());
     System.out.println("mesh_pad_area_m2=" + design.getMeshPadAreaM2());
     System.out.println("mesh_pad_thickness_mm=" + design.getMeshPadThicknessMm());
+    System.out.println("mesh_pad_elevation_m=" + design.getMeshPadElevationM());
     System.out.println("has_inlet_cyclones=" + design.hasInletCyclones());
     System.out.println("has_demisting_cyclones=" + design.hasDemistingCyclones());
+    if (meshPad) {
+      // `sizeFromFlow` is inherited from `Separator`; it mutates the vessel, so it is last.
+      scrubber.sizeFromFlow(1.5);
+      System.out.println("sized_diameter_m=" + scrubber.getInternalDiameter());
+    }
     System.out.println();
   }
 

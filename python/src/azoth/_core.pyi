@@ -2829,6 +2829,13 @@ class GasScrubberResult:
     liquid_t: Qty
     liquid_h: Qty
     capacity_utilization: float | None
+    required_diameter: Qty | None
+    has_mesh_pad: bool | None
+    mesh_pad_area: Qty | None
+    mesh_pad_thickness: Qty | None
+    mesh_pad_elevation: Qty | None
+    has_inlet_cyclones: bool | None
+    has_demisting_cyclones: bool | None
     design_inner_diameter: Qty | None
     design_tantan_length: Qty | None
     design_outer_diameter: Qty | None
@@ -3345,7 +3352,6 @@ class ThreePhaseSeparatorResult:
     heavy_liquid_p: Qty
     heavy_liquid_t: Qty
     heavy_liquid_h: Qty
-    mass_balance_kg_hr: Qty
     water_level: Qty | None
     oil_level: Qty | None
     oil_thickness: Qty | None
@@ -5627,6 +5633,10 @@ def gas_scrubber(
     gas_in_liquid: float,
     internal_diameter: float | None = None,
     design_gas_load_factor: float | None = None,
+    safety_factor: float | None = None,
+    mesh_pad_area: float | None = None,
+    mesh_pad_thickness: float | None = None,
+    mesh_pad_elevation: float | None = None,
     heat_input: float | None = None,
     mechanical_design: bool | None = None,
     orientation: str | None = None,
@@ -5911,6 +5921,7 @@ def separator(
     liquid_level_fraction: float | None = None,
     safety_factor: float | None = None,
     mechanical_design: bool | None = None,
+    auto_size: bool | None = None,
     fg: float | None = None,
     volume_safety_factor: float | None = None,
     retention_time: float | None = None,

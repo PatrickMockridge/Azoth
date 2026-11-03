@@ -81,6 +81,10 @@ def gas_scrubber(
     allowable_stress: Q | None = None,
     joint_efficiency: float | None = None,
     corrosion_allowance: Q | None = None,
+    safety_factor: float | None = None,
+    mesh_pad_area: float | None = None,
+    mesh_pad_thickness: Q | None = None,
+    mesh_pad_elevation: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -210,6 +214,9 @@ def gas_scrubber(
             ("allowable_stress", allowable_stress),
             ("joint_efficiency", joint_efficiency),
             ("corrosion_allowance", corrosion_allowance),
+            ("mesh_pad_area", mesh_pad_area),
+            ("mesh_pad_thickness", mesh_pad_thickness),
+            ("mesh_pad_elevation", mesh_pad_elevation),
         ):
             if value is not None:
                 raise InvalidInputError(
@@ -295,6 +302,27 @@ def gas_scrubber(
             load_factor,
         )
     )
+    required_diameter = None
+    if diameter is not None and load_factor is not None and safety_factor is not None:
+        from azoth.process.reference.separator import _sizing_getters
+
+        sizing = _sizing_getters(
+            components,
+            t_out,
+            p_out,
+            list(feed_z),
+            n_vapour - carried,
+            list(liquid_z),
+            diameter,
+            load_factor,
+            kind,
+            0.8 if level_fraction is None else level_fraction,
+            diameter * 5.0,
+            0.5,
+            float(safety_factor),
+        )
+        if sizing is not None and sizing.required_diameter is not None:
+            required_diameter = from_si(sizing.required_diameter, "m")
     gas_fraction = (
         1.0 if kind != "horizontal" else 1.0 - (0.8 if level_fraction is None else level_fraction)
     )
@@ -332,6 +360,45 @@ def gas_scrubber(
         liquid_t=temperature,
         liquid_h=from_si(liquid_h, "J/mol"),
         capacity_utilization=capacity,
+        required_diameter=required_diameter,
+        has_mesh_pad=(
+            None
+            if not design
+            else (
+                mesh_pad_area is not None
+                and input_to_si(spec, "mesh_pad_area", mesh_pad_area) > 0.0
+            )
+        ),
+        mesh_pad_area=(
+            None
+            if not design
+            else from_si(
+                0.0 if mesh_pad_area is None else input_to_si(spec, "mesh_pad_area", mesh_pad_area),
+                "m**2",
+            )
+        ),
+        mesh_pad_thickness=(
+            None
+            if not design
+            else from_si(
+                0.1
+                if mesh_pad_thickness is None
+                else input_to_si(spec, "mesh_pad_thickness", mesh_pad_thickness),
+                "mm",
+            )
+        ),
+        mesh_pad_elevation=(
+            None
+            if not design
+            else from_si(
+                0.0
+                if mesh_pad_elevation is None
+                else input_to_si(spec, "mesh_pad_elevation", mesh_pad_elevation),
+                "m",
+            )
+        ),
+        has_inlet_cyclones=None if not design else False,
+        has_demisting_cyclones=None if not design else False,
         design_inner_diameter=(None if vessel is None else from_si(vessel.inner_diameter, "m")),
         design_tantan_length=(None if vessel is None else from_si(vessel.tantan_length, "m")),
         design_outer_diameter=(None if vessel is None else from_si(vessel.outer_diameter, "m")),

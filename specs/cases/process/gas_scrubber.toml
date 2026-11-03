@@ -141,3 +141,32 @@ oil_outlet_nozzle_id = 0.05
 surge_volume = 0.10917994933751654
 surge_time = 394130.4984517307
 liquid_retention_time = 795631.0473858638
+
+[[cases]]
+id = "a_configured_mesh_pad_and_size_from_flow"
+tolerance = 2e-04
+source = "The scrubber mechanical capture's `port_fixture_pr_mesh_pad` row: the same PR fixture with `setMeshPad(area, 150)` and an elevation of `0.75` m on the sized vessel, then the inherited `sizeFromFlow(1.5)`. **The mesh pad is design state set after `calcDesign`**, so the row pins the configuration and the sized diameter rather than re-running the design.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+design_gas_load_factor = 0.11
+mechanical_design = true
+orientation = "vertical"
+internal_diameter = 0.5153753093296343
+safety_factor = 1.5
+mesh_pad_area = 0.208610948791937
+mesh_pad_thickness = 150.0
+mesh_pad_elevation = 0.75
+[cases.expected]
+has_mesh_pad = true
+mesh_pad_area = 0.208610948791937
+mesh_pad_thickness = 150.0
+mesh_pad_elevation = 0.75
+has_inlet_cyclones = false
+has_demisting_cyclones = false
+required_diameter = 0.6032413503836097
