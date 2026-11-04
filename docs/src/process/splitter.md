@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/splitter/Splitter.java**
 
-Its steady-state `run`: the factors divided by their sum, and each outlet the feed's own state scaled to its share. **The capture's outlet enthalpies are not used**, for the reason the assumptions give; its feed row is, because a split is a statement about the feed's state and not a new one.
+Its steady-state `run` and its `splitterCapacityConstraints`: the normalized split, and the two constraints with their lazy initialization. **The capture's outlet enthalpies are not used**; its feed row is. `runTransient` and `calcDesign` are out.
 
 
 ## What this model is
@@ -25,6 +25,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `feed_p` | Pa | the inlet pressure, which every outlet carries unchanged. |
 | `feed_t` | K | the inlet temperature, which every outlet carries unchanged and which fixes the inlet state with `feed_p` and `feed_z`. |
 | `split_factors` | dimensionless | the fraction of the feed to each outlet. Normalised, so only the ratios matter; the outlet count is this vector's length, which is why there is no separate one. |
+| `design_pressure_drop` | Pa | *Optional.* `setDesignPressureDrop`'s stored limit. **Absent is the class's 0.05 bar = 5000 Pa**, used only when a setter initializes the map; supplying it is the setter and initializes the map. |
+| `max_design_velocity` | m/s | *Optional.* `setMaxDesignVelocity`'s stored limit, which is also `setMaxDesignVelocity`, not the mechanical design's own `maxAllowableVelocity`. **Absent is the class's 30 m/s**, used when a setter initializes the map. |
+| `header_diameter` | m | *Optional.* `SplitterMechanicalDesign.getHeaderDiameter`, set directly. **Absent is 0.0, the unsized design**, which makes the velocity value zero; `calcDesign` is owed, so nothing here sizes or rounds it. |
+| `capacity_analysis_enabled` | - | *Optional.* `splitterCapacityAnalysisEnabled`: absent is the class's `false`. **It gates initialization only** - the getters below ignore it, as the class's do. |
 
 
 ## Outputs
@@ -36,6 +40,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `products_p` | Pa | each outlet's pressure, which is `feed_p`. |
 | `products_t` | K | each outlet's temperature, which is `feed_t`. |
 | `products_h` | J/mol | each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions. |
+| `pressure_drop_value` | Pa | *Optional.* the `pressureDrop` constraint's current value: `0.0` by construction, the class's "ideal splitter". Present only when the constraint is in the map. |
+| `pressure_drop_design` | Pa | *Optional.* the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint. |
+| `pressure_drop_utilization` | dimensionless | *Optional.* the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint. |
+| `velocity_value` | m/s | *Optional.* the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint. |
+| `velocity_design` | m/s | *Optional.* the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint. |
+| `velocity_utilization` | dimensionless | *Optional.* the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint. |
+| `max_utilization` | dimensionless | `getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map. |
+| `capacity_exceeded` | - | `isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class. |
+| `bottleneck_constraint` | - | *Optional.* `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -44,12 +57,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## Assumptions
 
 - **the factors are normalised, so only their ratios mean anything.** `[0.3, 0.7]` and `[3.0, 7.0]` are the same split, which the capture's two rows show as one set of numbers. A caller who wants absolute outlet flows is asking for `process.component_splitter`'s question, not this one.
-- **nothing about the state changes but the flow.** The outlets carry the feed's composition, pressure, temperature and molar enthalpy, so the fractions are the only thing a splitter computes. The kernel is deliberately flash-free.
+- **nothing changes but the flow.** The outlets carry the feed's composition, pressure, temperature and molar enthalpy, so the fractions are the whole arithmetic. The split is flash-free; the capacity read below is the one place this id flashes the feed.
 - **an outlet's enthalpy is the feed's because `h` is a state function**, and the state did not move. That is the whole of the enthalpy balance here and it is why it holds at any fraction.
 - **NeqSim's `Splitter.run` does not conserve enthalpy, and this diverges deliberately.** Its branch enthalpies do not match the states they report, so reproducing them would mean reproducing a broken balance. The capture carries the numbers and the case's `source` states the case they make.
 - **a factor may not be negative and the total may not be zero or less.** NeqSim clamps a negative factor to zero and falls back to putting everything down the first branch when the total is not positive; this refuses both, because a splitter asked for a split it cannot make has no answer to report.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Splitter` also carries a mechanical design, a capacity map and a `runTransient` with a pressure-driven mode. **None is here**: this is the steady-state arithmetic, which is what the palette's `split_factors` reaches.
+- **the capacity map is lazy, and presence is the setter.** The constructor makes the design but no constraints; each limit setter initializes it, and enabling analysis initializes it only when empty. Absent is an uncalled setter; a non-positive one initializes but suppresses only its constraint.
+- **the pressure-drop constraint's value is always zero.** Its supplier is the class's `return 0.0`, so its utilization is 0 and the bottleneck can only be `velocity` or absent. The velocity is the feed's system volume flow over the header area, and 0 when the diameter is unsized.
+- **the equipment flag gates initialization only.** `isCapacityExceeded`, `getMaxUtilization` and `getBottleneckConstraint` filter each constraint's `enabled` (always true here) and ignore `splitterCapacityAnalysisEnabled`; utilization is `min(value/design, 9.99)`, 0 when non-positive.
+- **the header diameter is the design's field, set directly.** `calcDesign` (NPS sizing, wall thickness, weights, cost), `runTransient` and the generic add/remove/clear constraint API are owed. Both constraints are SOFT, so `isHardLimitExceeded` is false by construction.
+- **the capacity read flashes the feed; the split stays flash-free.** `getFlowRate` is `n M / rho` with the system density, read at the feed's own cubic root - the side the valve sizing established. The velocity is read only when the constraint exists and the diameter is positive.
 
 ## Cases
 
@@ -57,11 +74,20 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `a_two_way_split_of_a_liquid` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7] | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001] |
 | `the_factors_are_normalised` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [3.0, 7.0] | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001] |
+| `the_capacity_map_is_absent_until_a_setter_creates_it` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7] | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], max_utilization = 0.0, capacity_exceeded = False |
+| `the_header_diameter_alone_does_not_initialize_the_map` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], header_diameter = 0.02 | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], max_utilization = 0.0, capacity_exceeded = False |
+| `enabling_analysis_initializes_the_class_defaults` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], capacity_analysis_enabled = True | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], pressure_drop_value = 0.0, pressure_drop_design = 5000.0, pressure_drop_utilization = 0.0, velocity_value = 0.0, velocity_design = 30.0, velocity_utilization = 0.0, max_utilization = 0.0, capacity_exceeded = False |
+| `a_sized_header_and_a_stated_drop_report_both_constraints` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], design_pressure_drop = 2000.0, header_diameter = 0.02, capacity_analysis_enabled = True | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], pressure_drop_value = 0.0, pressure_drop_design = 2000.0, pressure_drop_utilization = 0.0, velocity_value = 0.34597671828697885, velocity_design = 30.0, velocity_utilization = 0.011532557276232628, max_utilization = 0.011532557276232628, capacity_exceeded = False, bottleneck_constraint = velocity |
+| `a_tight_velocity_is_exceeded_with_analysis_disabled` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], max_design_velocity = 0.1, header_diameter = 0.02 | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], pressure_drop_value = 0.0, pressure_drop_design = 5000.0, pressure_drop_utilization = 0.0, velocity_value = 0.34597671828697885, velocity_design = 0.1, velocity_utilization = 3.4597671828697885, max_utilization = 3.4597671828697885, capacity_exceeded = True, bottleneck_constraint = velocity |
+| `a_non_positive_drop_suppresses_only_its_own_constraint` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], design_pressure_drop = 0.0, header_diameter = 0.02 | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], velocity_value = 0.34597671828697885, velocity_design = 30.0, velocity_utilization = 0.011532557276232628, max_utilization = 0.011532557276232628, capacity_exceeded = False, bottleneck_constraint = velocity |
+| `a_non_positive_velocity_suppresses_only_its_own_constraint` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], max_design_velocity = 0.0, header_diameter = 0.02 | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], pressure_drop_value = 0.0, pressure_drop_design = 5000.0, pressure_drop_utilization = 0.0, max_utilization = 0.0, capacity_exceeded = False |
+| `the_utilization_is_capped_at_9_99` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7], max_design_velocity = 0.01, header_diameter = 0.02 | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001], pressure_drop_value = 0.0, pressure_drop_design = 5000.0, pressure_drop_utilization = 0.0, velocity_value = 0.34597671828697885, velocity_design = 0.01, velocity_utilization = 9.99, max_utilization = 9.99, capacity_exceeded = True, bottleneck_constraint = velocity |
+| `the_velocity_reads_the_two_phase_feeds_own_volume_flow` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 150000.0, feed_t = 300.0, split_factors = [1.0], header_diameter = 0.05, capacity_analysis_enabled = True | products_n = [1.0], products_z = [[0.6, 0.4]], products_p = [150000.0], products_t = [300.0], products_h = [-6836.4427889444905], pressure_drop_value = 0.0, pressure_drop_design = 5000.0, pressure_drop_utilization = 0.0, velocity_value = 4.968249064462569, velocity_design = 30.0, velocity_utilization = 0.1656083021487523, max_utilization = 0.1656083021487523, capacity_exceeded = False, bottleneck_constraint = velocity |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 11 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -70,4 +96,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run`.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run` and its capacity map.
+- `process/mechanicaldesign/splitter/SplitterMechanicalDesign.java` supplies `getHeaderDiameter`; the port reads it and does not run `calcDesign`.

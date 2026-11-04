@@ -222,6 +222,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `packed_column`'s wetting verdict, asserted in the model's own test beside
         # `hydraulics_ok` and compared by `test_cross_impl`.
         "wetting_ok",
+        # `splitter`'s capacity flag, a boolean with no slot in `TestCase`.
+        # `python/tests/test_splitter_capacity.py` reads the raw spec and asserts it, and
+        # `test_cross_impl` compares it on both results.
+        "capacity_exceeded",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

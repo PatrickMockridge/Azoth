@@ -800,7 +800,7 @@ a claim nothing holds.
 - **The steady-state entries, and the transient and design surface beside each.** Every
   `process.*` class NeqSim carries also carries a `runTransient`, and most carry a mechanical
   design and a performance or control surface the steady `run` never reads. Owed entry by
-  entry: `Splitter`'s capacity map; **`Flare`'s radiation model, dispersion surrogate and
+  entry: **`Splitter`'s capacity map landed** - the two lazy SOFT constraints, the header-diameter read and the empty-map answers - and what remains owed there is `runTransient` and `SplitterMechanicalDesign.calcDesign`'s NPS sizing, wall thickness, weights and cost; **`Flare`'s radiation model, dispersion surrogate and
   capacity check landed** - the point-source flux and its inverse, the tip's exit velocity and
   momentum flux over the system density, and the three design-axis utilisations with their
   overload flag - what remains owed there is `runTransient`, the cumulative accumulators and

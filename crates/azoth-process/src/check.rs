@@ -2498,14 +2498,34 @@ mod tests {
                 },
             );
             let mut splitter_spec = splitter("unit_ops.splitter");
-            splitter_spec.parameters.insert(
-                "split_factors".to_string(),
-                crate::unit_op::Param {
-                    required: false,
-                    unit: Some("dimensionless".to_string()),
-                    description: "the fraction to each outlet".to_string(),
-                },
-            );
+            for (name, unit, description) in [
+                (
+                    "split_factors",
+                    Some("dimensionless"),
+                    "the fraction to each outlet",
+                ),
+                (
+                    "design_pressure_drop",
+                    Some("Pa"),
+                    "the pressure-drop design",
+                ),
+                ("max_design_velocity", Some("m/s"), "the velocity design"),
+                ("header_diameter", Some("m"), "the header diameter"),
+                (
+                    "capacity_analysis_enabled",
+                    None,
+                    "the capacity-analysis flag",
+                ),
+            ] {
+                splitter_spec.parameters.insert(
+                    name.to_string(),
+                    crate::unit_op::Param {
+                        required: false,
+                        unit: unit.map(str::to_string),
+                        description: description.to_string(),
+                    },
+                );
+            }
             vec![mixer_spec, splitter_spec]
         };
         let looped = looped_flowsheet();

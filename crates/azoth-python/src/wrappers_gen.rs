@@ -6346,8 +6346,11 @@ pub fn shortcut_distillation_column(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn splitter(
     py: Python<'_>,
     components: Vec<String>,
@@ -6356,6 +6359,10 @@ pub fn splitter(
     feed_p: f64,
     feed_t: f64,
     split_factors: Vec<f64>,
+    design_pressure_drop: Option<f64>,
+    max_design_velocity: Option<f64>,
+    header_diameter: Option<f64>,
+    capacity_analysis_enabled: Option<bool>,
 ) -> PyResult<crate::transport_gen::PySplitterResult> {
     azoth_process::models::splitter::splitter(
         &components,
@@ -6364,6 +6371,10 @@ pub fn splitter(
         pascals(feed_p),
         kelvins(feed_t),
         &split_factors,
+        design_pressure_drop.map(pascals),
+        max_design_velocity.map(meters_per_second),
+        header_diameter.map(meters),
+        capacity_analysis_enabled,
     )
     .map(|r| crate::transport_gen::PySplitterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

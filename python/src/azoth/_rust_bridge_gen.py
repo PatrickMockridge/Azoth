@@ -6862,7 +6862,7 @@ def shortcut_distillation_column(components: list[str], feed_n: Q, feed_z: list[
     )
 
 
-def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float]) -> SplitterResult:
+def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float], design_pressure_drop: Q | None=None, max_design_velocity: Q | None=None, header_diameter: Q | None=None, capacity_analysis_enabled: bool | None=None) -> SplitterResult:
     """``process.splitter``, computed in Rust."""
     spec = _models_gen.model("process.splitter")
     result = _core.splitter(
@@ -6872,6 +6872,10 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         list(split_factors),
+        None if design_pressure_drop is None else input_to_si(spec, "design_pressure_drop", design_pressure_drop),
+        None if max_design_velocity is None else input_to_si(spec, "max_design_velocity", max_design_velocity),
+        None if header_diameter is None else input_to_si(spec, "header_diameter", header_diameter),
+        capacity_analysis_enabled,
     )
     return SplitterResult(
         products_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_n),
@@ -6879,6 +6883,15 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         products_p=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_p),
         products_t=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_t),
         products_h=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_h),
+        pressure_drop_value=None if result.pressure_drop_value is None else from_si(result.pressure_drop_value.magnitude_si, result.pressure_drop_value.unit),
+        pressure_drop_design=None if result.pressure_drop_design is None else from_si(result.pressure_drop_design.magnitude_si, result.pressure_drop_design.unit),
+        pressure_drop_utilization=result.pressure_drop_utilization,
+        velocity_value=None if result.velocity_value is None else from_si(result.velocity_value.magnitude_si, result.velocity_value.unit),
+        velocity_design=None if result.velocity_design is None else from_si(result.velocity_design.magnitude_si, result.velocity_design.unit),
+        velocity_utilization=result.velocity_utilization,
+        max_utilization=result.max_utilization,
+        capacity_exceeded=result.capacity_exceeded,
+        bottleneck_constraint=result.bottleneck_constraint,
         warnings=_warnings(result.warnings),
     )
 

@@ -18977,6 +18977,33 @@ pub struct PySplitterResult {
     /// each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.
     #[pyo3(get)]
     pub products_h: Vec<PyQty>,
+    /// the `pressureDrop` constraint's current value: `0.0` by construction, the class's "ideal splitter". Present only when the constraint is in the map.
+    #[pyo3(get)]
+    pub pressure_drop_value: Option<PyQty>,
+    /// the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint.
+    #[pyo3(get)]
+    pub pressure_drop_design: Option<PyQty>,
+    /// the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint.
+    #[pyo3(get)]
+    pub pressure_drop_utilization: Option<f64>,
+    /// the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_value: Option<PyQty>,
+    /// the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_design: Option<PyQty>,
+    /// the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_utilization: Option<f64>,
+    /// `getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18986,12 +19013,21 @@ pub struct PySplitterResult {
 impl PySplitterResult {
     fn __repr__(&self) -> String {
         format!(
-            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, {} warning(s))",
+            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, pressure_drop_value={:?}, pressure_drop_design={:?}, pressure_drop_utilization={:?}, velocity_value={:?}, velocity_design={:?}, velocity_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
             self.products_n,
             self.products_z,
             self.products_p,
             self.products_t,
             self.products_h,
+            self.pressure_drop_value,
+            self.pressure_drop_design,
+            self.pressure_drop_utilization,
+            self.velocity_value,
+            self.velocity_design,
+            self.velocity_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.bottleneck_constraint,
             self.warnings.len()
         )
     }
@@ -19033,6 +19069,27 @@ impl From<&azoth_process::models::splitter::SplitterResult> for PySplitterResult
                     unit: "J/mol".to_string(),
                 })
                 .collect(),
+            pressure_drop_value: r.pressure_drop_value.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            pressure_drop_design: r.pressure_drop_design.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            pressure_drop_utilization: r.pressure_drop_utilization,
+            velocity_value: r.velocity_value.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_design: r.velocity_design.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_utilization: r.velocity_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
             warnings: transport(&r.warnings),
         }
     }

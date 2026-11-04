@@ -295,22 +295,32 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     they are dumped so that the parting is measured rather than described. Two of the three
     are declared divergences; see `LAYER_CASES`.
 
+    The capacity map's numeric fields are dumped under the probe's own keys. The boolean
+    and the bottleneck's name are not: the layer harness compares floats, so those two are
+    pinned by the case and by `test_splitter_capacity.py`.
+
     Nothing here reads a state the kernel did not compute. A branch's pressure, temperature
     and composition are the feed's *by construction* - the kernel copies them - so dumping
     them would be dumping the input, and the entropy is a function of `(T, P, z)` the
     splitter never forms, which would make this a second implementation of
     `Stream::entropy` rather than a layer of the split.
     """
-    from azoth.process.reference.splitter import _route
+    from azoth.process.reference import capacity
+    from azoth.process.reference.splitter import _capacity, _route
+
+    components = [str(name) for name in inputs["components"]]
+    t = float(inputs["feed_t"])
+    p = float(inputs["feed_p"])
+    z = [float(v) for v in inputs["feed_z"]]
+    n = float(inputs["feed_n"])
 
     states = _route(
-        [str(name) for name in inputs["components"]],
-        float(inputs["feed_t"]),
-        float(inputs["feed_p"]),
-        [float(v) for v in inputs["feed_z"]],
+        components,
+        t,
+        p,
+        z,
         [float(f) for f in inputs["split_factors"]],
     )
-    n = float(inputs["feed_n"])
     dump = {"feed_h": states.h_in}
     for index, fraction in enumerate(states.fractions):
         dump[f"products{index}_n"] = n * fraction
@@ -321,6 +331,32 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     dump["molar_enthalpy_out_weighted"] = sum(
         fraction * states.h_in for fraction in states.fractions
     )
+
+    dump["feed_volume_flow_m3_s"] = capacity.system_volumetric_flow(
+        components, t, p, z, n, from_feed=True
+    )
+    capacity_map = _capacity(
+        components,
+        t,
+        p,
+        z,
+        n,
+        None if "design_pressure_drop" not in inputs else float(inputs["design_pressure_drop"]),
+        None if "max_design_velocity" not in inputs else float(inputs["max_design_velocity"]),
+        None if "header_diameter" not in inputs else float(inputs["header_diameter"]),
+        bool(inputs.get("capacity_analysis_enabled", False)),
+    )
+    for key, value in (
+        ("pressure_drop_value_pa", capacity_map.pressure_drop_value),
+        ("pressure_drop_design_pa", capacity_map.pressure_drop_design),
+        ("pressure_drop_utilization", capacity_map.pressure_drop_utilization),
+        ("velocity_value_m_s", capacity_map.velocity_value),
+        ("velocity_design_m_s", capacity_map.velocity_design),
+        ("velocity_utilization", capacity_map.velocity_utilization),
+    ):
+        if value is not None:
+            dump[key] = value
+    dump["max_utilization"] = capacity_map.max_utilization
     return dump
 
 
@@ -2060,6 +2096,80 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter.tsv",
         block=1,
         identified_by=("split_factors", "3.0 7.0"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The capacity map's nine branches, in the probe's own order. The pairing is the
+    # block's `case=` key, which is what the probe prints first.
+    LayerCase(
+        model="process.splitter",
+        case="the_capacity_map_is_absent_until_a_setter_creates_it",
+        capture="process_splitter_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_setters"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_header_diameter_alone_does_not_initialize_the_map",
+        capture="process_splitter_capacity.tsv",
+        block=1,
+        identified_by=("case", "header_alone"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="enabling_analysis_initializes_the_class_defaults",
+        capture="process_splitter_capacity.tsv",
+        block=2,
+        identified_by=("case", "enabled_defaults"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_sized_header_and_a_stated_drop_report_both_constraints",
+        capture="process_splitter_capacity.tsv",
+        block=3,
+        identified_by=("case", "sized_header_design_drop"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_tight_velocity_is_exceeded_with_analysis_disabled",
+        capture="process_splitter_capacity.tsv",
+        block=4,
+        identified_by=("case", "tight_velocity_disabled"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_non_positive_drop_suppresses_only_its_own_constraint",
+        capture="process_splitter_capacity.tsv",
+        block=5,
+        identified_by=("case", "zero_design_drop"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_non_positive_velocity_suppresses_only_its_own_constraint",
+        capture="process_splitter_capacity.tsv",
+        block=6,
+        identified_by=("case", "zero_max_velocity"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_utilization_is_capped_at_9_99",
+        capture="process_splitter_capacity.tsv",
+        block=7,
+        identified_by=("case", "cap_9_99"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_velocity_reads_the_two_phase_feeds_own_volume_flow",
+        capture="process_splitter_capacity.tsv",
+        block=8,
+        identified_by=("case", "two_phase_one_outlet"),
         divergence=_SPLITTER_DIVERGENCE,
     ),
     # **The reactive section's block**, on the binary state the model's own case is held to:

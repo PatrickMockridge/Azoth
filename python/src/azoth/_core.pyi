@@ -3314,6 +3314,15 @@ class SplitterResult:
     products_p: list[Qty]
     products_t: list[Qty]
     products_h: list[Qty]
+    pressure_drop_value: Qty | None
+    pressure_drop_design: Qty | None
+    pressure_drop_utilization: float | None
+    velocity_value: Qty | None
+    velocity_design: Qty | None
+    velocity_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    bottleneck_constraint: str | None
     warnings: list[Warning]
 
 @final
@@ -6077,6 +6086,10 @@ def splitter(
     feed_p: float,
     feed_t: float,
     split_factors: list[float],
+    design_pressure_drop: float | None = None,
+    max_design_velocity: float | None = None,
+    header_diameter: float | None = None,
+    capacity_analysis_enabled: bool | None = None,
 ) -> SplitterResult: ...
 def stirred_tank_reactor(
     components: list[str],

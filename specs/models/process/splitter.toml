@@ -3,19 +3,24 @@ name = "Splitter"
 kind = "direct"
 assumptions = [
     "**the factors are normalised, so only their ratios mean anything.** `[0.3, 0.7]` and `[3.0, 7.0]` are the same split, which the capture's two rows show as one set of numbers. A caller who wants absolute outlet flows is asking for `process.component_splitter`'s question, not this one.",
-    "**nothing about the state changes but the flow.** The outlets carry the feed's composition, pressure, temperature and molar enthalpy, so the fractions are the only thing a splitter computes. The kernel is deliberately flash-free.",
+    "**nothing changes but the flow.** The outlets carry the feed's composition, pressure, temperature and molar enthalpy, so the fractions are the whole arithmetic. The split is flash-free; the capacity read below is the one place this id flashes the feed.",
     "**an outlet's enthalpy is the feed's because `h` is a state function**, and the state did not move. That is the whole of the enthalpy balance here and it is why it holds at any fraction.",
     "**NeqSim's `Splitter.run` does not conserve enthalpy, and this diverges deliberately.** Its branch enthalpies do not match the states they report, so reproducing them would mean reproducing a broken balance. The capture carries the numbers and the case's `source` states the case they make.",
     "**a factor may not be negative and the total may not be zero or less.** NeqSim clamps a negative factor to zero and falls back to putting everything down the first branch when the total is not positive; this refuses both, because a splitter asked for a split it cannot make has no answer to report.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Splitter` also carries a mechanical design, a capacity map and a `runTransient` with a pressure-driven mode. **None is here**: this is the steady-state arithmetic, which is what the palette's `split_factors` reaches.",
+    "**the capacity map is lazy, and presence is the setter.** The constructor makes the design but no constraints; each limit setter initializes it, and enabling analysis initializes it only when empty. Absent is an uncalled setter; a non-positive one initializes but suppresses only its constraint.",
+    "**the pressure-drop constraint's value is always zero.** Its supplier is the class's `return 0.0`, so its utilization is 0 and the bottleneck can only be `velocity` or absent. The velocity is the feed's system volume flow over the header area, and 0 when the diameter is unsized.",
+    "**the equipment flag gates initialization only.** `isCapacityExceeded`, `getMaxUtilization` and `getBottleneckConstraint` filter each constraint's `enabled` (always true here) and ignore `splitterCapacityAnalysisEnabled`; utilization is `min(value/design, 9.99)`, 0 when non-positive.",
+    "**the header diameter is the design's field, set directly.** `calcDesign` (NPS sizing, wall thickness, weights, cost), `runTransient` and the generic add/remove/clear constraint API are owed. Both constraints are SOFT, so `isHardLimitExceeded` is false by construction.",
+    "**the capacity read flashes the feed; the split stays flash-free.** `getFlowRate` is `n M / rho` with the system density, read at the feed's own cubic root - the side the valve sizing established. The velocity is read only when the constraint exists and the diameter is positive.",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run` and its capacity map.",
+    "`process/mechanicaldesign/splitter/SplitterMechanicalDesign.java` supplies `getHeaderDiameter`; the port reads it and does not run `calcDesign`.",
 ]
 [source]
 standard = "NeqSim process/equipment/splitter/Splitter.java"
-edition = "Its steady-state `run`: the factors divided by their sum, and each outlet the feed's own state scaled to its share. **The capture's outlet enthalpies are not used**, for the reason the assumptions give; its feed row is, because a split is a statement about the feed's state and not a new one."
+edition = "Its steady-state `run` and its `splitterCapacityConstraints`: the normalized split, and the two constraints with their lazy initialization. **The capture's outlet enthalpies are not used**; its feed row is. `runTransient` and `calcDesign` are out."
 [inputs]
 [inputs.components]
 type = "components"
@@ -39,6 +44,22 @@ type = "vector"
 unit = "dimensionless"
 length = "one per outlet"
 description = "the fraction of the feed to each outlet. Normalised, so only the ratios matter; the outlet count is this vector's length, which is why there is no separate one.\n"
+[inputs.design_pressure_drop]
+unit = "Pa"
+optional = true
+description = "`setDesignPressureDrop`'s stored limit. **Absent is the class's 0.05 bar = 5000 Pa**, used only when a setter initializes the map; supplying it is the setter and initializes the map.\n"
+[inputs.max_design_velocity]
+unit = "m/s"
+optional = true
+description = "`setMaxDesignVelocity`'s stored limit, which is also `setMaxDesignVelocity`, not the mechanical design's own `maxAllowableVelocity`. **Absent is the class's 30 m/s**, used when a setter initializes the map.\n"
+[inputs.header_diameter]
+unit = "m"
+optional = true
+description = "`SplitterMechanicalDesign.getHeaderDiameter`, set directly. **Absent is 0.0, the unsized design**, which makes the velocity value zero; `calcDesign` is owed, so nothing here sizes or rounds it.\n"
+[inputs.capacity_analysis_enabled]
+type = "boolean"
+optional = true
+description = "`splitterCapacityAnalysisEnabled`: absent is the class's `false`. **It gates initialization only** - the getters below ignore it, as the class's do.\n"
 [outputs]
 [outputs.products_n]
 type = "vector"
@@ -65,6 +86,40 @@ type = "vector"
 unit = "J/mol"
 length = "one per outlet"
 description = "each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.\n"
+[outputs.pressure_drop_value]
+unit = "Pa"
+optional = true
+description = "the `pressureDrop` constraint's current value: `0.0` by construction, the class's \"ideal splitter\". Present only when the constraint is in the map.\n"
+[outputs.pressure_drop_design]
+unit = "Pa"
+optional = true
+description = "the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint.\n"
+[outputs.pressure_drop_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint.\n"
+[outputs.velocity_value]
+unit = "m/s"
+optional = true
+description = "the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint.\n"
+[outputs.velocity_design]
+unit = "m/s"
+optional = true
+description = "the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint.\n"
+[outputs.velocity_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint.\n"
+[outputs.max_utilization]
+unit = "dimensionless"
+description = "`getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map.\n"
+[outputs.capacity_exceeded]
+type = "boolean"
+description = "`isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class.\n"
+[outputs.bottleneck_constraint]
+type = "string"
+optional = true
+description = "`getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.\n"
 [[valid_range]]
 quantity = "feed_t"
 min = 0

@@ -942,6 +942,15 @@ impl CalcResult for SplitterResult {
         "products_p",
         "products_t",
         "products_h",
+        "pressure_drop_value",
+        "pressure_drop_design",
+        "pressure_drop_utilization",
+        "velocity_value",
+        "velocity_design",
+        "velocity_utilization",
+        "max_utilization",
+        "capacity_exceeded",
+        "bottleneck_constraint",
         "warnings",
     ];
 

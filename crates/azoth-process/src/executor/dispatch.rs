@@ -25,7 +25,9 @@
 use std::collections::BTreeMap;
 
 use azoth_core::unit_vocab_gen;
-use azoth_core::units::{cubic_meters, kelvins, meters, pascals, watts, watts_per_cubic_meter};
+use azoth_core::units::{
+    cubic_meters, kelvins, meters, meters_per_second, pascals, watts, watts_per_cubic_meter,
+};
 use azoth_core::{AzothError, Result};
 
 use crate::kernels;
@@ -84,10 +86,10 @@ pub struct KernelOutcome {
 impl KernelOutcome {
     /// Outlets, and nothing else.
     ///
-    /// The five entries that take this are the same five
-    /// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names - `mixer`, `splitter`,
-    /// `manifold`, `component_splitter` and `throttling_valve` - and it says of each that the
-    /// kernel forms nothing its records do not carry.
+    /// An entry takes this when its whole answer is its outlets. `python/src/azoth/process/
+    /// layers.py`'s `NO_INTERIOR` table is the separate statement that a model's kernel forms
+    /// nothing its records do not carry; this is not that table's count and it names no
+    /// members, because the two sets are not the same set.
     #[must_use]
     pub fn streams_only(streams: Vec<Stream>) -> Self {
         Self {
@@ -482,10 +484,17 @@ pub(crate) fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<Kern
 }
 
 pub(crate) fn splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    Ok(KernelOutcome::streams_only(kernels::splitter::splitter(
+    let capacity = kernels::splitter::capacity(
         &inlets[0],
-        &p.vector("split_factors")?,
-    )?))
+        p.optional_si("design_pressure_drop")?.map(pascals),
+        p.optional_si("max_design_velocity")?.map(meters_per_second),
+        p.optional_si("header_diameter")?.map(meters),
+        p.optional_flag("capacity_analysis_enabled")?
+            .unwrap_or(false),
+    )?;
+    let out = kernels::splitter::splitter(&inlets[0], &p.vector("split_factors")?)?;
+    let result = crate::models::SplitterResult::of(&out, capacity, Vec::new());
+    KernelOutcome::publishing(out, &result)
 }
 
 pub(crate) fn tank(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {

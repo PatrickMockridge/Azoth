@@ -49,6 +49,26 @@ def test_a_splitter_conserves_moles_and_state() -> None:
         assert out.h == feed.h
 
 
+def test_the_splitter_model_publishes_its_capacity_map() -> None:
+    """The model id reaches the capacity arithmetic the kernel test does not."""
+    q = azoth.ureg.Quantity
+    result = process.splitter(
+        ["n-butane", "n-pentane"],
+        q(1.0, "mol/s"),
+        [0.6, 0.4],
+        q(10.0, "bar"),
+        q(300.0, "K"),
+        [0.3, 0.7],
+        header_diameter=q(0.02, "m"),
+        capacity_analysis_enabled=True,
+    )
+    assert result.velocity_value is not None
+    assert result.velocity_utilization == pytest.approx(0.011532557994935995)
+    assert result.max_utilization == pytest.approx(0.011532557994935995)
+    assert result.bottleneck_constraint == "velocity"
+    assert result.capacity_exceeded is False
+
+
 def test_a_mixer_conserves_moles_and_enthalpy() -> None:
     a = _binary(1.0, 50.0, 1e5, 300.0)
     b = _binary(0.0, 50.0, 1e5, 300.0)

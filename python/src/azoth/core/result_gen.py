@@ -7523,6 +7523,33 @@ class SplitterResult(_HasWarnings):
     #: each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.
     products_h: tuple[Q, ...]
 
+    #: the `pressureDrop` constraint's current value: `0.0` by construction, the class's "ideal splitter". Present only when the constraint is in the map.
+    pressure_drop_value: Q | None
+
+    #: the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint.
+    pressure_drop_design: Q | None
+
+    #: the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint.
+    pressure_drop_utilization: float | None
+
+    #: the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint.
+    velocity_value: Q | None
+
+    #: the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint.
+    velocity_design: Q | None
+
+    #: the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint.
+    velocity_utilization: float | None
+
+    #: `getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class.
+    capacity_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
+    bottleneck_constraint: str | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

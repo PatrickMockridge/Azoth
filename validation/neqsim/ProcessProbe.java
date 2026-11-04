@@ -30,6 +30,8 @@
 //     javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
+//       > captures/process_splitter_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
@@ -127,6 +129,9 @@ public class ProcessProbe {
         break;
       case "splitter":
         splitter();
+        break;
+      case "splitter_capacity":
+        splitterCapacity();
         break;
       case "mixer":
         mixer();
@@ -4893,6 +4898,103 @@ public class ProcessProbe {
       System.out.println("molar_enthalpy_out_weighted=" + weighted);
       System.out.println();
     }
+  }
+
+  // **Nine rows, one per branch of the class's lazy capacity map.** The splitter's map is
+  // created by `setDesignPressureDrop`, `setMaxDesignVelocity`, or `setCapacityAnalysisEnabled
+  // (true)` on an empty map - not by the constructor and not by `setHeaderDiameter` - so the
+  // rows walk each trigger, both non-positive suppressions, the 9.99 cap, and a two-phase feed.
+  // The last uses a one-outlet split (`[1.0]`): the class's branch path subtracts zero moles,
+  // which keeps the measurement away from its known-broken `clone/init(0)/addComponent` route.
+  static void splitterCapacity() {
+    splitterCapacityRow("no_setters", new double[] { 0.3, 0.7 }, null, null, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("header_alone", new double[] { 0.3, 0.7 }, 0.02, null, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("enabled_defaults", new double[] { 0.3, 0.7 }, null, null, null, true,
+        10.0, 300.0);
+    splitterCapacityRow("sized_header_design_drop", new double[] { 0.3, 0.7 }, 0.02, 0.02, null,
+        true, 10.0, 300.0);
+    splitterCapacityRow("tight_velocity_disabled", new double[] { 0.3, 0.7 }, 0.02, null, 0.1,
+        false, 10.0, 300.0);
+    splitterCapacityRow("zero_design_drop", new double[] { 0.3, 0.7 }, 0.02, 0.0, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("zero_max_velocity", new double[] { 0.3, 0.7 }, 0.02, null, 0.0, false,
+        10.0, 300.0);
+    splitterCapacityRow("cap_9_99", new double[] { 0.3, 0.7 }, 0.02, null, 0.01, false, 10.0,
+        300.0);
+    splitterCapacityRow("two_phase_one_outlet", new double[] { 1.0 }, 0.05, null, null, true,
+        1.5, 300.0);
+  }
+
+  static void splitterCapacityRow(String name, double[] factors, Double headerDiameter,
+      Double designPressureDropBar, Double maxDesignVelocity, boolean analysisEnabled,
+      double pressureBara, double temperatureK) {
+    Stream inlet = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.6, 0.4 },
+        temperatureK, pressureBara, 1.0);
+    neqsim.process.equipment.splitter.Splitter splitter =
+        new neqsim.process.equipment.splitter.Splitter("sp1", inlet);
+    splitter.setSplitFactors(factors);
+
+    neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign) splitter
+            .getMechanicalDesign();
+    if (headerDiameter != null) {
+      design.setHeaderDiameter(headerDiameter);
+    }
+    if (designPressureDropBar != null) {
+      splitter.setDesignPressureDrop(designPressureDropBar);
+    }
+    if (maxDesignVelocity != null) {
+      splitter.setMaxDesignVelocity(maxDesignVelocity);
+    }
+    if (analysisEnabled) {
+      splitter.setCapacityAnalysisEnabled(true);
+    }
+    splitter.run();
+
+    System.out.println("case=" + name);
+    print("feed", inlet);
+    System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    for (int i = 0; i < inlet.getThermoSystem().getNumberOfPhases(); i++) {
+      System.out.println("feed_phase" + i + "_type=" + inlet.getThermoSystem().getPhase(i).getType()
+          + " feed_phase" + i + "_beta=" + inlet.getThermoSystem().getPhase(i).getBeta());
+    }
+    System.out.println("feed_volume_flow_m3_s=" + inlet.getFlowRate("m3/sec"));
+    System.out.println("header_diameter_m=" + design.getHeaderDiameter());
+    System.out.println("design_pressure_drop_pa=" + splitter.getDesignPressureDrop() * 1.0e5);
+    System.out.println("max_design_velocity_m_s=" + splitter.getMaxDesignVelocity());
+    System.out.println("capacity_analysis_enabled=" + splitter.isCapacityAnalysisEnabled());
+
+    // The map is unmodifiable: iterate it, never write to it. The pressure-drop constraint's
+    // values are bar, so they are printed in pascals under the spec's own unit.
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        splitter.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      String constraintName = entry.getKey();
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      if ("pressureDrop".equals(constraintName)) {
+        System.out.println("pressure_drop_value_pa=" + constraint.getCurrentValue() * 1.0e5);
+        System.out.println("pressure_drop_design_pa=" + constraint.getDesignValue() * 1.0e5);
+        System.out.println("pressure_drop_utilization=" + constraint.getUtilization());
+      } else if ("velocity".equals(constraintName)) {
+        System.out.println("velocity_value_m_s=" + constraint.getCurrentValue());
+        System.out.println("velocity_design_m_s=" + constraint.getDesignValue());
+        System.out.println("velocity_utilization=" + constraint.getUtilization());
+      }
+      System.out.println("constraint_" + constraintName + "_type=" + constraint.getType());
+      System.out.println("constraint_" + constraintName + "_enabled=" + constraint.isEnabled());
+    }
+
+    System.out.println("max_utilization=" + splitter.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + splitter.isCapacityExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = splitter
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
   }
 
   static void mixer() {

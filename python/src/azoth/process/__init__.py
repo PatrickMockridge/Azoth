@@ -1485,6 +1485,10 @@ def splitter(
     feed_p: Q,
     feed_t: Q,
     split_factors: list[float],
+    design_pressure_drop: Q | None = None,
+    max_design_velocity: Q | None = None,
+    header_diameter: Q | None = None,
+    capacity_analysis_enabled: bool | None = None,
 ) -> SplitterResult:
     """Split a stream into several with the same state, in proportion to ``split_factors``.
 
@@ -1493,6 +1497,13 @@ def splitter(
     outlets there are. A splitter changes no state: every outlet carries the inlet's
     composition, pressure, temperature and molar enthalpy, and the factors divide the
     flow between them. They are normalised, so only their ratios mean anything.
+
+    ``design_pressure_drop``, ``max_design_velocity``, ``header_diameter`` and
+    ``capacity_analysis_enabled`` are the capacity map's inputs. The first two are the
+    class's setters, so supplying either initializes the map; the third is the mechanical
+    design's header diameter, which the velocity constraint reads; the fourth initializes
+    an otherwise empty map at the class defaults. The map is absent until one of them is
+    used, exactly as ``Splitter``'s is.
 
     NeqSim's ``Splitter.run`` returns outlet enthalpies that do not conserve energy, so
     this diverges deliberately rather than reproducing them.
@@ -1510,6 +1521,10 @@ def splitter(
         feed_p=feed_p,
         feed_t=feed_t,
         split_factors=split_factors,
+        design_pressure_drop=design_pressure_drop,
+        max_design_velocity=max_design_velocity,
+        header_diameter=header_diameter,
+        capacity_analysis_enabled=capacity_analysis_enabled,
     )
 
 

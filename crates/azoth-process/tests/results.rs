@@ -28,6 +28,19 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn run_flowsheet(text: &str) -> SessionReport {
+    let flowsheet: Flowsheet = toml::from_str(text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let session = Session::run(
+        flowsheet,
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    session_report(&session).expect("it writes")
+}
+
 /// **What each dispatched entry publishes**, as the model's own `FIELDS`.
 ///
 /// `None` is a real answer and not a gap: a mixer's result *is* its mixed stream and a separator's
@@ -96,7 +109,9 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
             "unit_ops.shortcut_distillation_column",
             Some(models::ShortcutDistillationColumnResult::FIELDS),
         ),
-        ("unit_ops.splitter", None),
+        // **The capacity map's six optional fields cross here**, none of them on an outlet
+        // stream; the two summaries and the products are the model's own record as well.
+        ("unit_ops.splitter", Some(models::SplitterResult::FIELDS)),
         (
             "unit_ops.stirred_tank_reactor",
             Some(models::StirredTankReactorResult::FIELDS),
@@ -200,6 +215,113 @@ fn the_shipped_demo_publishes_the_duty_no_stream_carries() {
         "the mass flow crosses in the vocabulary's own unit"
     );
     assert!(vapour.molar_mass.is_some());
+}
+
+/// **The splitter's capacity map crosses the wire, and its absence is a `null`.**
+///
+/// The map's six per-constraint fields are `Option`s because the class's constraints are lazy:
+/// a fresh `Splitter` has none. One flowsheet sizes the header and enables analysis, so the
+/// velocity crosses; the other leaves the four inputs out, so the six are `null` and the two
+/// summaries are the class's empty-map answers. The keys are `FIELDS` exactly, as for the
+/// heater.
+#[test]
+fn the_splitter_publishes_its_capacity_map() {
+    const SIZED: &str = r#"
+id = "flowsheets.splitter_capacity"
+name = "One splitter with a sized header"
+
+products = ["light", "heavy"]
+
+[[inputs]]
+name = "feed_1"
+components = ["n-butane", "n-pentane"]
+n = 1.0
+z = [0.6, 0.4]
+P = 1.0e6
+T = 300.0
+
+[[instances]]
+id = "split1"
+unit = "unit_ops.splitter"
+[instances.parameters]
+split_factors = [0.3, 0.7]
+header_diameter = 0.02
+capacity_analysis_enabled = true
+
+[[connections]]
+from = "feed_1"
+to = "split1.feed"
+
+[[connections]]
+from = "split1.products[0]"
+to = "light"
+
+[[connections]]
+from = "split1.products[1]"
+to = "heavy"
+"#;
+    let report = run_flowsheet(SIZED);
+    let split = &report.results["split1"];
+
+    let mut found: Vec<&str> = split
+        .as_object()
+        .expect("an object")
+        .keys()
+        .map(String::as_str)
+        .collect();
+    let mut declared: Vec<&str> = models::SplitterResult::FIELDS.to_vec();
+    found.sort_unstable();
+    declared.sort_unstable();
+    assert_eq!(found, declared);
+
+    assert_eq!(split["pressure_drop_value"]["unit"], "Pa");
+    assert_eq!(
+        split["pressure_drop_value"]["magnitude_si"].as_f64(),
+        Some(0.0)
+    );
+    assert_eq!(split["velocity_value"]["unit"], "m/s");
+    assert_eq!(
+        split["velocity_design"]["magnitude_si"].as_f64(),
+        Some(30.0)
+    );
+    let velocity = split["velocity_value"]["magnitude_si"]
+        .as_f64()
+        .expect("a magnitude");
+    assert!(
+        (velocity - 0.34597673984807986).abs() < 1e-12,
+        "the velocity is {velocity}"
+    );
+    assert_eq!(split["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(split["bottleneck_constraint"], "velocity");
+    let products: Vec<f64> = split["products_n"]
+        .as_array()
+        .expect("a vector")
+        .iter()
+        .map(|n| n.as_f64().expect("a flow"))
+        .collect();
+    assert_eq!(products.len(), 2);
+    assert!((products[0] - 0.3).abs() < 1e-12 && (products[1] - 0.7).abs() < 1e-12);
+
+    // The same flowsheet with the four capacity inputs left out: the class's fresh Splitter.
+    let empty = SIZED.replace(
+        "header_diameter = 0.02\ncapacity_analysis_enabled = true\n",
+        "",
+    );
+    let report = run_flowsheet(&empty);
+    let split = &report.results["split1"];
+    for field in [
+        "pressure_drop_value",
+        "pressure_drop_design",
+        "pressure_drop_utilization",
+        "velocity_value",
+        "velocity_design",
+        "velocity_utilization",
+        "bottleneck_constraint",
+    ] {
+        assert!(split[field].is_null(), "`{field}` is {:?}", split[field]);
+    }
+    assert_eq!(split["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(split["capacity_exceeded"].as_bool(), Some(false));
 }
 
 /// **A result is the last pass's, and it agrees with the stream the same pass published.**

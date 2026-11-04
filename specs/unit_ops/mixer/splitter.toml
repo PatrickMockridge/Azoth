@@ -6,6 +6,17 @@ standard = "NeqSim process/equipment/splitter/Splitter.java"
 required = true
 unit = "dimensionless"
 description = "the fraction of the feed to each outlet, one entry per outlet, summing to 1"
+[parameters.design_pressure_drop]
+unit = "Pa"
+description = "`setDesignPressureDrop`'s limit; supplying it initializes the capacity map, and the class's default is 0.05 bar = 5000 Pa"
+[parameters.max_design_velocity]
+unit = "m/s"
+description = "`setMaxDesignVelocity`'s limit; supplying it initializes the capacity map, and the class's default is 30 m/s"
+[parameters.header_diameter]
+unit = "m"
+description = "the mechanical design's header diameter read by the velocity constraint; absent is 0.0, the unsized design"
+[parameters.capacity_analysis_enabled]
+description = "`splitterCapacityAnalysisEnabled`; initializes an otherwise empty map at the class defaults, and the capacity getters ignore it"
 [[ports]]
 name = "feed"
 direction = "in"

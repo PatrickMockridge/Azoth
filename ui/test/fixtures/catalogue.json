@@ -5530,6 +5530,46 @@
       "name": "Splitter",
       "parameters": [
         {
+          "description": "`splitterCapacityAnalysisEnabled`; initializes an otherwise empty map at the class defaults, and the capacity getters ignore it",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "capacity_analysis_enabled",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`setDesignPressureDrop`'s limit; supplying it initializes the capacity map, and the class's default is 0.05 bar = 5000 Pa",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_pressure_drop",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the mechanical design's header diameter read by the velocity constraint; absent is 0.0, the unsized design",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "header_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`setMaxDesignVelocity`'s limit; supplying it initializes the capacity map, and the class's default is 30 m/s",
+          "dimension": "velocity",
+          "kind": "quantity",
+          "name": "max_design_velocity",
+          "range": [],
+          "required": false,
+          "unit": "m/s",
+          "values": []
+        },
+        {
           "description": "the fraction of the feed to each outlet, one entry per outlet, summing to 1",
           "dimension": "dimensionless",
           "kind": "vector",
