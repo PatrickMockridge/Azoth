@@ -808,8 +808,10 @@ a claim nothing holds.
   capacity check landed** - the point-source flux and its inverse, the tip's exit velocity and
   momentum flux over the system density, and the three design-axis utilisations with their
   overload flag - what remains owed there is `runTransient`, the cumulative accumulators and
-  the performance DTO's per-component emission map; `Heater`'s
-  electrical and instrument design and its bounded outlet temperatures; `Compressor`'s
+  the performance DTO's per-component emission map; **`Heater`'s bounded outlet temperatures
+  landed** - the two HARD limits, their inverse/minimum utilization and the hard-flag quirk -
+  and what remains owed there is its electrical and instrument design and `runTransient`;
+  `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and
   `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
