@@ -6059,6 +6059,21 @@ class ExpanderResult(_HasWarnings):
     #: the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
     power: Q
 
+    #: the `recoveredPower` constraint's `min(|power| / rating, 9.99)`. Present only when the rating is positive.
+    recovered_power_utilization: float | None
+
+    #: the enabled constraints' largest utilization; 0.0 without a rating, because the parent's chart constraints are disabled.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating.
+    capacity_exceeded: bool
+
+    #: `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0.
+    hard_limit_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
+    bottleneck_constraint: str | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

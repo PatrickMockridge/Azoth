@@ -20,6 +20,7 @@ fn expander_with(steps: usize) -> azoth_process::models::ExpanderResult {
         Some(true),
         Some(0.80),
         Some(steps),
+        None,
     )
     .expect("the captured state expands")
 }

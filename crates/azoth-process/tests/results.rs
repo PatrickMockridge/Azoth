@@ -65,7 +65,7 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         // **The mixing pressure and the four velocities cross here**, none of them an input and
         // none on the discharge state: `Option`s for the one case where no fluid flowed.
         ("unit_ops.ejector", Some(models::EjectorResult::FIELDS)),
-        ("unit_ops.expander", None),
+        ("unit_ops.expander", Some(models::ExpanderResult::FIELDS)),
         ("unit_ops.filter", Some(models::FilterResult::FIELDS)),
         ("unit_ops.flare", Some(models::FlareResult::FIELDS)),
         ("unit_ops.gas_scrubber", None),
@@ -290,6 +290,65 @@ to = "out"
     assert_eq!(heater["capacity_exceeded"].as_bool(), Some(true));
     assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(true));
     assert_eq!(heater["bottleneck_constraint"], "minOutletTemperature");
+}
+
+/// **The expander's recovered-power constraint crosses the wire**, with the two thresholds
+/// the class keeps apart: the rating for the utilization and 1.1 x it for the hard flag.
+#[test]
+fn the_expander_publishes_its_recovered_power_constraint() {
+    const BOUNDED: &str = r#"
+id = "flowsheets.expander_capacity"
+name = "One expander with a recovered-power rating"
+
+products = ["out"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 6.0e6
+T = 320.0
+
+[[instances]]
+id = "e1"
+unit = "unit_ops.expander"
+[instances.parameters]
+outlet_pressure = 3.0e6
+isentropic_efficiency = 0.75
+rated_recovered_power = 2000.0
+
+[[connections]]
+from = "feed_1"
+to = "e1.inlet"
+
+[[connections]]
+from = "e1.outlet"
+to = "out"
+"#;
+    let report = run_flowsheet(BOUNDED);
+    let expander = &report.results["e1"];
+    let utilization = expander["recovered_power_utilization"]
+        .as_f64()
+        .expect("a utilization");
+    assert!(
+        (utilization - 0.5527686742449389).abs() < 1e-5,
+        "the utilization is {utilization}"
+    );
+    assert_eq!(expander["max_utilization"].as_f64(), Some(utilization));
+    assert_eq!(expander["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["hard_limit_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["bottleneck_constraint"], "recoveredPower");
+
+    // Without the rating the map is empty, and the two per-constraint fields are `null`.
+    let empty = BOUNDED.replace("rated_recovered_power = 2000.0\n", "");
+    let report = run_flowsheet(&empty);
+    let expander = &report.results["e1"];
+    assert!(expander["recovered_power_utilization"].is_null());
+    assert!(expander["bottleneck_constraint"].is_null());
+    assert_eq!(expander["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(expander["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["hard_limit_exceeded"].as_bool(), Some(false));
 }
 
 /// **The splitter's capacity map crosses the wire, and its absence is a `null`.**

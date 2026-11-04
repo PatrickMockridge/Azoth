@@ -15147,6 +15147,21 @@ pub struct PyExpanderResult {
     /// the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
     #[pyo3(get)]
     pub power: PyQty,
+    /// the `recoveredPower` constraint's `min(|power| / rating, 9.99)`. Present only when the rating is positive.
+    #[pyo3(get)]
+    pub recovered_power_utilization: Option<f64>,
+    /// the enabled constraints' largest utilization; 0.0 without a rating, because the parent's chart constraints are disabled.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0.
+    #[pyo3(get)]
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15156,13 +15171,18 @@ pub struct PyExpanderResult {
 impl PyExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, {} warning(s))",
+            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
             self.power,
+            self.recovered_power_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.hard_limit_exceeded,
+            self.bottleneck_constraint,
             self.warnings.len()
         )
     }
@@ -15192,6 +15212,11 @@ impl From<&azoth_process::models::expander::ExpanderResult> for PyExpanderResult
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),
             },
+            recovered_power_utilization: r.recovered_power_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            hard_limit_exceeded: r.hard_limit_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
             warnings: transport(&r.warnings),
         }
     }

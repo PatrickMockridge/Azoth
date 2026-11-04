@@ -530,6 +530,8 @@ public surface of forty-odd getters.
   > captures/process_compressor_speed_solve.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_capacity \
+  > captures/process_expander_capacity.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
   > captures/process_expander_chart.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \

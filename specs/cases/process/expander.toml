@@ -101,3 +101,123 @@ outlet_p = 3000000.0
 outlet_t = 246.5081238299595
 outlet_h = -3072.6673912100423
 power = -985780.7294849169
+[[cases]]
+id = "the_recovered_power_is_absent_without_a_rating"
+tolerance = 0.0005
+source = "NeqSim capture `process_expander_capacity.tsv`, block `no_rating`: with no rating the only constraints in the map are the parent's `speed`, `surgeMargin` and `stonewallMargin`, and all three are disabled without a chart, so the summaries are the empty-map answers.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178
+power = -1105.5373484898778
+max_utilization = 0.0
+capacity_exceeded = false
+hard_limit_exceeded = false
+[[cases]]
+id = "a_rating_above_the_recovered_power_is_its_utilization"
+tolerance = 0.0005
+source = "NeqSim capture block `rating_2_kw`: the `recoveredPower` constraint's value is `|power|`, so 1105.54 W against a 2000 W rating is 0.55277, below both thresholds and the only enabled entry.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+rated_recovered_power = 2000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178
+power = -1105.5373484898778
+recovered_power_utilization = 0.5527686742449389
+max_utilization = 0.5527686742449389
+capacity_exceeded = false
+hard_limit_exceeded = false
+bottleneck_constraint = "recoveredPower"
+[[cases]]
+id = "a_rating_inside_the_hard_band_is_not_exceeded"
+tolerance = 0.0005
+source = "NeqSim capture block `rating_1_2_kw`: 1105.54 W against 1200 W is utilization 0.92128 and still under the 1320 W hard maximum, so neither flag trips.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+rated_recovered_power = 1200.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178
+power = -1105.5373484898778
+recovered_power_utilization = 0.9212811237415649
+max_utilization = 0.9212811237415649
+capacity_exceeded = false
+hard_limit_exceeded = false
+bottleneck_constraint = "recoveredPower"
+[[cases]]
+id = "a_rating_below_the_recovered_power_trips_both_flags"
+tolerance = 0.0005
+source = "NeqSim capture block `rating_1_kw`: 1105.54 W against a 1000 W rating is utilization 1.10554, so `isCapacityExceeded` is true, and the power is also above the constraint's 1100 W `maxValue`, so `isHardLimitExceeded` is true.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+rated_recovered_power = 1000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178
+power = -1105.5373484898778
+recovered_power_utilization = 1.1055373484898778
+max_utilization = 1.1055373484898778
+capacity_exceeded = true
+hard_limit_exceeded = true
+bottleneck_constraint = "recoveredPower"
+[[cases]]
+id = "a_non_positive_rating_is_no_constraint"
+tolerance = 0.0005
+source = "NeqSim capture block `rating_zero`: `initializeCapacityConstraints` adds `recoveredPower` only when `ratedRecoveredPower > 0.0`, so a zero rating leaves only the disabled parent constraints and the empty-map summaries.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+rated_recovered_power = 0.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178
+power = -1105.5373484898778
+max_utilization = 0.0
+capacity_exceeded = false
+hard_limit_exceeded = false

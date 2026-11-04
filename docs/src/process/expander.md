@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/compressor/Compressor.java**
 
-Its `run`: the isentropic branch - a `PSflash` at the inlet's own entropy and the enthalpy moved by `(h_isentropic - h_in) * eta` - and the stepped polytropic branch, `numbersteps` increments each flashed and multiplied.
+Its `run`: the isentropic branch - a `PSflash` at the inlet's own entropy and the enthalpy moved by `(h_isentropic - h_in) * eta` - the stepped polytropic branch, `numbersteps` increments each flashed and multiplied, and the `recoveredPower` capacity constraint.
 
 
 ## What this model is
@@ -28,6 +28,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `isentropic_efficiency` | dimensionless | the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that. |
 | `use_polytropic_calc` | - | *Optional.* whether the stepped polytropic branch runs instead of the isentropic one. Absent is the class's `false`. |
 | `polytropic_efficiency` | dimensionless | *Optional.* the stepped branch's polytropic efficiency, in `(0, 1]`. Absent takes the class's `1.0`, the reversible limit. Ignored in the isentropic branch. |
+| `rated_recovered_power` | W | *Optional.* `setRatedRecoveredPower`, the recovered-power rating. **Absent is 0, which creates no constraint**, and so does any non-positive value; a positive rating initializes the map. |
 | `number_of_steps` | dimensionless | *Optional.* the stepped branch's pressure increments. Absent takes `Expander.DEFAULT_EXPANDER_CALC_STEPS`' `5`; a value below one is one, as the class's `Math.max(1, ...)` makes it. |
 
 
@@ -41,6 +42,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_t` | K | the outlet temperature, solved from the shifted enthalpy at the outlet pressure. |
 | `outlet_h` | J/mol | the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow. |
 | `power` | W | the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is. |
+| `recovered_power_utilization` | dimensionless | *Optional.* the `recoveredPower` constraint's `min(|power| / rating, 9.99)`. Present only when the rating is positive. |
+| `max_utilization` | dimensionless | the enabled constraints' largest utilization; 0.0 without a rating, because the parent's chart constraints are disabled. |
+| `capacity_exceeded` | - | `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating. |
+| `hard_limit_exceeded` | - | `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0. |
+| `bottleneck_constraint` | - | *Optional.* `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -57,7 +63,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the shaft power is an output, and it is negative.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which is below zero for an expansion; `power` reports it times the molar flow, so the recovered-work magnitude is its absolute value.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **`use_polytropic_calc` selects the stepped branch.** `Expander.run` divides the pressure range into `number_of_steps` equal increments - five by default - flashes each isentropically, multiplies the step by `polytropic_efficiency` and flashes the enthalpy; a count below one is one.
-- **the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; its `powerSet` and `useOutTemperature` modes, the dynamic nozzle and the capacity constraints are outside this surface.
+- **the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; its `powerSet` and `useOutTemperature` modes and the dynamic nozzle are outside this surface.
+- **the recovered-power constraint is the only enabled one.** The parent's `speed`, `surgeMargin` and `stonewallMargin` constraints are disabled without a chart, and the summaries skip them. A positive rating adds HARD `recoveredPower`: design = the rating, max = 1.1 x it, value = `|power|`.
+- **two thresholds, not one.** `capacity_exceeded` is `|power|` above the rating (utilization above 1), while `hard_limit_exceeded` is `|power|` above `1.1 x` the rating - the constraint's `maxValue`. A non-positive rating creates no constraint at all.
 
 ## Cases
 
@@ -68,11 +76,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_stepped_polytropic_expander` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 1.0, use_polytropic_calc = True, polytropic_efficiency = 0.8, number_of_steps = 5 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.26461237189093, outlet_h = -3093.134500487529, power = -999915.6921234869 |
 | `forty_steps_agree_with_the_class_s_own_bound` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 1.0, use_polytropic_calc = True, polytropic_efficiency = 0.8, number_of_steps = 40 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.20334169697597, outlet_h = -3098.284476589658, power = -1003472.3604739706 |
 | `the_isentropic_expander_reports_its_recovered_power` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.5081238299595, outlet_h = -3072.6673912100423, power = -985780.7294849169 |
+| `the_recovered_power_is_absent_without_a_rating` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, max_utilization = 0.0, capacity_exceeded = False, hard_limit_exceeded = False |
+| `a_rating_above_the_recovered_power_is_its_utilization` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 2000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, recovered_power_utilization = 0.5527686742449389, max_utilization = 0.5527686742449389, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = recoveredPower |
+| `a_rating_inside_the_hard_band_is_not_exceeded` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 1200.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, recovered_power_utilization = 0.9212811237415649, max_utilization = 0.9212811237415649, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = recoveredPower |
+| `a_rating_below_the_recovered_power_trips_both_flags` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 1000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, recovered_power_utilization = 1.1055373484898778, max_utilization = 1.1055373484898778, capacity_exceeded = True, hard_limit_exceeded = True, bottleneck_constraint = recoveredPower |
+| `a_non_positive_rating_is_no_constraint` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 0.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, max_utilization = 0.0, capacity_exceeded = False, hard_limit_exceeded = False |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 5 declared, every one run
+- Tests: 10 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

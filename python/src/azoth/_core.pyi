@@ -2812,6 +2812,11 @@ class ExpanderResult:
     outlet_t: Qty
     outlet_h: Qty
     power: Qty
+    recovered_power_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
     warnings: list[Warning]
 
 @final
@@ -5665,6 +5670,7 @@ def expander(
     isentropic_efficiency: float,
     use_polytropic_calc: bool | None = None,
     polytropic_efficiency: float | None = None,
+    rated_recovered_power: float | None = None,
     number_of_steps: float | None = None,
 ) -> ExpanderResult: ...
 def filter(

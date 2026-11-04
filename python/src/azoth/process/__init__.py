@@ -1176,6 +1176,7 @@ def expander(
     use_polytropic_calc: bool | None = None,
     polytropic_efficiency: float | None = None,
     number_of_steps: int | None = None,
+    rated_recovered_power: Q | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1184,6 +1185,10 @@ def expander(
     negative and dividing would make the machine beat the reversible one at any efficiency
     below one. The captured pair of rows is what holds that: `0.75` of the step is
     ``-618.933`` J/mol and the step divided would be ``-1478.8``.
+
+    ``rated_recovered_power`` is ``setRatedRecoveredPower``: a positive rating adds the HARD
+    ``recoveredPower`` constraint, whose utilization is ``|power| / rating`` and whose hard
+    band is ``1.1 x`` the rating. Absent or non-positive creates no constraint.
 
     Raises:
         InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
@@ -1201,6 +1206,7 @@ def expander(
         use_polytropic_calc=use_polytropic_calc,
         polytropic_efficiency=polytropic_efficiency,
         number_of_steps=number_of_steps,
+        rated_recovered_power=rated_recovered_power,
     )
 
 

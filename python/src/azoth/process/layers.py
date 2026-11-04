@@ -116,7 +116,7 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
     `Expander.run`'s second-law statement is the only other number it exposes, and the
     efficiency-of-one row is where the reversible state is the answer.
     """
-    from azoth.process.reference.expander import _states
+    from azoth.process.reference.expander import _recovered_power_capacity, _states
 
     states = _states(
         [str(name) for name in inputs["components"]],
@@ -127,7 +127,7 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
         float(inputs["isentropic_efficiency"]),
     )
     n = float(inputs["inlet_n"])
-    return {
+    dump = {
         "inlet_h": states.h_in,
         "inlet_s": states.s_in,
         "isentropic_h": states.h_isentropic,
@@ -138,6 +138,14 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
         "power_kW": n * states.dh_actual / 1000.0,
         "entropy_production_kJ_per_molK": (states.s_out - states.s_in) / 1000.0,
     }
+    capacity = _recovered_power_capacity(
+        n * states.dh_actual,
+        None if "rated_recovered_power" not in inputs else float(inputs["rated_recovered_power"]),
+    )
+    if capacity.recovered_power_utilization is not None:
+        dump["constraint_recoveredPower_utilization"] = capacity.recovered_power_utilization
+    dump["max_utilization"] = capacity.max_utilization
+    return dump
 
 
 def _pipe(inputs: Mapping[str, Any]) -> dict[str, float]:
@@ -2056,6 +2064,42 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_expander.tsv",
         block=0,
         identified_by=("isentropic_efficiency", "0.75"),
+    ),
+    # The recovered-power constraint's five states.
+    LayerCase(
+        model="process.expander",
+        case="the_recovered_power_is_absent_without_a_rating",
+        capture="process_expander_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_rating"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_above_the_recovered_power_is_its_utilization",
+        capture="process_expander_capacity.tsv",
+        block=1,
+        identified_by=("case", "rating_2_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_inside_the_hard_band_is_not_exceeded",
+        capture="process_expander_capacity.tsv",
+        block=2,
+        identified_by=("case", "rating_1_2_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_below_the_recovered_power_trips_both_flags",
+        capture="process_expander_capacity.tsv",
+        block=3,
+        identified_by=("case", "rating_1_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_non_positive_rating_is_no_constraint",
+        capture="process_expander_capacity.tsv",
+        block=4,
+        identified_by=("case", "rating_zero"),
     ),
     # The pipe's three rows, one per branch and one that diverges. The water row is a case
     # *because the case records the divergence*, not because the model reproduces it: the

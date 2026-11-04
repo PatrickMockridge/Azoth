@@ -367,13 +367,19 @@ pub(crate) fn cooler(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
 }
 
 pub(crate) fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    Ok(KernelOutcome::streams_only(vec![
-        kernels::expander::expander(
-            &inlets[0],
-            pascals(p.si("outlet_pressure")?),
-            p.number("isentropic_efficiency")?,
-        )?,
-    ]))
+    let out = kernels::expander::expander(
+        &inlets[0],
+        pascals(p.si("outlet_pressure")?),
+        p.number("isentropic_efficiency")?,
+    )?;
+    let power = watts(inlets[0].n * (out.h.value - inlets[0].h.value));
+    let result = crate::models::ExpanderResult::of(
+        &out,
+        power,
+        p.optional_si("rated_recovered_power")?.map(watts),
+        Vec::new(),
+    );
+    KernelOutcome::publishing(vec![out], &result)
 }
 
 pub(crate) fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {

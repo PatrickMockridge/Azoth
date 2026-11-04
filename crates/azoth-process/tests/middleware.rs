@@ -677,8 +677,9 @@ fn the_generated_input_table_is_the_models_own() {
     // design's six** - `mechanical_design`, `design_velocity`, `max_operation_pressure`,
     // `tensile_strength`, `joint_efficiency` and `corrosion_allowance` - `621 + 6 = 627`.
     // **And the heater's two outlet-temperature limits** - `max_outlet_temperature` and
-    // `min_outlet_temperature` - `627 + 2 = 629`.
-    assert_eq!(walked, 629, "the inputs this test walked");
+    // `min_outlet_temperature` - `627 + 2 = 629`. **And the expander's recovered-power
+    // rating** - `rated_recovered_power` - `629 + 1 = 630`.
+    assert_eq!(walked, 630, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

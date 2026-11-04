@@ -252,6 +252,9 @@ public class ProcessProbe {
       case "expander":
         isentropicRows("Expander");
         break;
+      case "expander_capacity":
+        expanderCapacityRows();
+        break;
       case "pipe":
         pipeRows();
         break;
@@ -2309,6 +2312,69 @@ public class ProcessProbe {
       System.out.println("entropy_production_kJ_per_molK=" + unit.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// **`Expander`'s recovered-power constraint**, the one capacity limit the expander adds.
+  ///
+  /// The parent's consumed-power constraints are removed and, when a rating is set, one HARD
+  /// `recoveredPower` constraint is added: design = the rating, max = 1.1 x the rating, value =
+  /// `|getPower("kW")|`. `isCapacityExceeded` is utilization above 1, so the recovered power is
+  /// over its rating; `isHardLimitExceeded` is the same value above the 1.1 x rating, a
+  /// narrower band than the utilization's own 1.0.
+  static void expanderCapacityRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    expanderCapacityRow("no_rating", names, z, null);
+    expanderCapacityRow("rating_2_kw", names, z, 2.0);
+    expanderCapacityRow("rating_1_2_kw", names, z, 1.2);
+    expanderCapacityRow("rating_1_kw", names, z, 1.0);
+    expanderCapacityRow("rating_zero", names, z, 0.0);
+  }
+
+  static void expanderCapacityRow(String label, String[] names, double[] z, Double ratingKW) {
+    Stream inlet = feed(names, z, 320.0, 60.0, 1.0);
+    neqsim.process.equipment.expander.Expander expander =
+        new neqsim.process.equipment.expander.Expander("e1", inlet);
+    expander.setOutletPressure(30.0);
+    expander.setIsentropicEfficiency(0.75);
+    if (ratingKW != null) {
+      expander.setRatedRecoveredPower(ratingKW);
+    }
+    expander.run();
+
+    System.out.println("case=" + label);
+    print("inlet", inlet);
+    print("outlet", expander.getOutletStream());
+    System.out.println("power_kW=" + expander.getPower("kW"));
+    System.out.println("recovered_power_kW=" + Math.abs(expander.getPower("kW")));
+    System.out.println("rated_recovered_power_kW=" + expander.getRatedRecoveredPower());
+
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        expander.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      String name = entry.getKey();
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      System.out.println("constraint_" + name + "_type=" + constraint.getType());
+      System.out.println("constraint_" + name + "_enabled=" + constraint.isEnabled());
+      System.out.println("constraint_" + name + "_current=" + constraint.getCurrentValue());
+      System.out.println("constraint_" + name + "_design=" + constraint.getDesignValue());
+      System.out.println("constraint_" + name + "_min=" + constraint.getMinValue());
+      System.out.println("constraint_" + name + "_max=" + constraint.getMaxValue());
+      System.out.println("constraint_" + name + "_utilization=" + constraint.getUtilization());
+      System.out.println("constraint_" + name + "_violated=" + constraint.isViolated());
+      System.out.println(
+          "constraint_" + name + "_hard_exceeded=" + constraint.isHardLimitExceeded());
+    }
+    System.out.println("max_utilization=" + expander.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + expander.isCapacityExceeded());
+    System.out.println("hard_limit_exceeded=" + expander.isHardLimitExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = expander
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
   }
 
   /// `AdiabaticPipe`, which is a different shape of unit operation: **its outlet pressure is
@@ -4934,6 +5000,7 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// **`Tank.autoSize`'s residence-time sizing and the three constraints it initializes.**
   static void splitter() {
     // **A single-phase liquid, so the branch flash is a formality.** `Splitter.run` clones
     // the inlet fluid, subtracts `(1 - f) n` from every component and runs a `TPflash` on

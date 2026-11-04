@@ -7654,6 +7654,16 @@
           "required": true,
           "unit": "Pa",
           "values": []
+        },
+        {
+          "description": "`setRatedRecoveredPower`, the recovered-power rating; a positive value initializes the `recoveredPower` constraint, and a non-positive one creates none",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "rated_recovered_power",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
         }
       ],
       "ports": [

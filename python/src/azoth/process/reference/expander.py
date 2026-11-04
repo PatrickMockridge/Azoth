@@ -22,6 +22,7 @@ negative, so dividing would make the machine beat the reversible one.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
@@ -47,6 +48,7 @@ def expander(
     use_polytropic_calc: bool | None = None,
     polytropic_efficiency: float | None = None,
     number_of_steps: int | None = None,
+    rated_recovered_power: Q | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, or in polytropic steps.
 
@@ -61,9 +63,11 @@ def expander(
         use_polytropic_calc: whether the stepped branch runs instead.
         polytropic_efficiency: the stepped branch's efficiency, in ``(0, 1]``.
         number_of_steps: the stepped branch's pressure increments.
+        rated_recovered_power: ``setRatedRecoveredPower``; absent is 0, which creates no
+            constraint, and so does a non-positive value.
 
     Returns:
-        The outlet's record and the recovered power (negative).
+        The outlet's record, the recovered power (negative) and the recovered-power map.
 
     Example:
         >>> import azoth
@@ -88,6 +92,11 @@ def expander(
     t = input_to_si(spec, "inlet_t", inlet_t)
     p = input_to_si(spec, "inlet_p", inlet_p)
     p_out = input_to_si(spec, "outlet_pressure", outlet_pressure)
+    rated = (
+        None
+        if rated_recovered_power is None
+        else input_to_si(spec, "rated_recovered_power", rated_recovered_power)
+    )
 
     apply_checks(
         checks.on_input,
@@ -121,13 +130,20 @@ def expander(
         states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
         h_in, h_out, outlet_t = states.h_in, states.h_out, states.outlet_t
 
+    power = n * (h_out - h_in)
+    capacity = _recovered_power_capacity(power, rated)
     return ExpanderResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
         outlet_p=outlet_pressure,
         outlet_t=outlet_t,
         outlet_h=from_si(h_out, "J/mol"),
-        power=from_si(n * (h_out - h_in), "W"),
+        power=from_si(power, "W"),
+        recovered_power_utilization=capacity.recovered_power_utilization,
+        max_utilization=capacity.max_utilization,
+        capacity_exceeded=capacity.capacity_exceeded,
+        hard_limit_exceeded=capacity.hard_limit_exceeded,
+        bottleneck_constraint=capacity.bottleneck_constraint,
         warnings=tuple(warnings),
     )
 
@@ -193,6 +209,37 @@ def _states(
         h_out=h_out,
         outlet_t=outlet_t.T,
         s_out=s_out,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class ExpanderCapacity:
+    """The `recoveredPower` constraint and its summaries, in SI."""
+
+    recovered_power_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
+
+
+def _recovered_power_capacity(power: float, rated: float | None) -> ExpanderCapacity:
+    """`Expander`'s recovered-power constraint, evaluated on the shaft power.
+
+    The parent's speed, surge and stonewall constraints are disabled without a chart, so this
+    is the only enabled entry. The value is `abs(power)`, and a non-finite power answers 0.0,
+    as the class's supplier does. A non-positive rating creates no constraint at all.
+    """
+    if rated is None or not rated > 0.0:
+        return ExpanderCapacity(None, 0.0, False, False, None)
+    recovered = abs(power) if math.isfinite(power) else 0.0
+    utilization = min(recovered / rated, 9.99)
+    return ExpanderCapacity(
+        recovered_power_utilization=utilization,
+        max_utilization=utilization if utilization > 0.0 else 0.0,
+        capacity_exceeded=utilization > 1.0,
+        hard_limit_exceeded=recovered > 1.1 * rated,
+        bottleneck_constraint="recoveredPower" if utilization > 0.0 else None,
     )
 
 

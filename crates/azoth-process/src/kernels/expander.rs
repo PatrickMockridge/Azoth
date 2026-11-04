@@ -1,6 +1,6 @@
 //! `unit_ops.expander` - the isentropic route with the efficiency on the other side.
 
-use azoth_core::units::{Pressure, joules_per_mole, joules_per_mole_kelvin, pascals};
+use azoth_core::units::{Power, Pressure, joules_per_mole, joules_per_mole_kelvin, pascals};
 use azoth_core::{AzothError, Result};
 use azoth_eos::{ph_flash, ps_flash};
 
@@ -141,4 +141,122 @@ pub fn expander_polytropic(
         )?;
     }
     Ok(state)
+}
+
+/// `CapacityConstraint.MAX_UTILIZATION`, the ceiling on any utilization.
+pub const MAX_UTILIZATION: f64 = 9.99;
+/// `Expander.initializeCapacityConstraints`' hard band: the maximum is 1.1 x the rating.
+pub const RECOVERED_POWER_HARD_MARGIN: f64 = 1.1;
+
+/// `Expander`'s recovered-power constraint and its summaries.
+///
+/// The parent's speed, surge and stonewall constraints are **disabled** when the machine has
+/// no chart, and the class's summaries skip a disabled constraint, so the only enabled entry
+/// this surface can produce is `recoveredPower` - and only when a positive rating is set.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ExpanderCapacity {
+    /// The `recoveredPower` constraint's utilization, when a positive rating is set.
+    pub recovered_power_utilization: Option<f64>,
+    /// `getMaxUtilization`, 0.0 with no enabled constraint.
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: utilization above 1.0.
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: the recovered magnitude above 1.1 x the rating.
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s name.
+    pub bottleneck_constraint: Option<&'static str>,
+}
+
+/// The `recoveredPower` constraint, evaluated on the recovered shaft power.
+///
+/// The value is `abs(power)`, and a non-finite power answers 0.0, as the class's supplier
+/// does. The rating is set to a non-positive value by the class with no constraint created
+/// (`ratedRecoveredPower > 0.0`), so a non-positive input is the absent case.
+#[must_use]
+pub fn recovered_power_capacity(power: Power, rated: Option<Power>) -> ExpanderCapacity {
+    let rated = rated.filter(|rated| rated.value > 0.0);
+    let Some(rated) = rated else {
+        return ExpanderCapacity::default();
+    };
+    let recovered = if power.value.is_finite() {
+        power.value.abs()
+    } else {
+        0.0
+    };
+    let utilization = (recovered / rated.value).min(MAX_UTILIZATION);
+    ExpanderCapacity {
+        recovered_power_utilization: Some(utilization),
+        max_utilization: if utilization > 0.0 { utilization } else { 0.0 },
+        capacity_exceeded: utilization > 1.0,
+        hard_limit_exceeded: recovered > RECOVERED_POWER_HARD_MARGIN * rated.value,
+        bottleneck_constraint: (utilization > 0.0).then_some("recoveredPower"),
+    }
+}
+
+#[cfg(test)]
+mod capacity_tests {
+    use super::*;
+    use azoth_core::units::watts;
+
+    const POWER_KW: f64 = -1.1055373484898778;
+
+    fn power_kw() -> Power {
+        watts(POWER_KW * 1000.0)
+    }
+
+    #[test]
+    fn no_rating_is_the_empty_map() {
+        let map = recovered_power_capacity(power_kw(), None);
+        assert!(map.recovered_power_utilization.is_none());
+        assert_eq!(map.max_utilization, 0.0);
+        assert!(!map.capacity_exceeded);
+        assert!(!map.hard_limit_exceeded);
+        assert!(map.bottleneck_constraint.is_none());
+    }
+
+    #[test]
+    fn a_rating_above_the_power_is_its_utilization() {
+        let map = recovered_power_capacity(power_kw(), Some(watts(2000.0)));
+        assert!(
+            (map.recovered_power_utilization.expect("present") - 0.5527686742449389).abs() < 1e-12
+        );
+        assert!(!map.capacity_exceeded);
+        assert!(!map.hard_limit_exceeded);
+        assert_eq!(map.bottleneck_constraint, Some("recoveredPower"));
+    }
+
+    #[test]
+    fn a_rating_between_the_power_and_its_hard_band_is_exceeded_but_not_hard() {
+        let map = recovered_power_capacity(power_kw(), Some(watts(1200.0)));
+        assert!(
+            (map.recovered_power_utilization.expect("present") - 0.9212811237415649).abs() < 1e-12
+        );
+        assert!(!map.capacity_exceeded);
+        assert!(!map.hard_limit_exceeded);
+    }
+
+    #[test]
+    fn a_rating_below_the_power_trips_both_flags() {
+        let map = recovered_power_capacity(power_kw(), Some(watts(1000.0)));
+        assert!(
+            (map.recovered_power_utilization.expect("present") - 1.1055373484898778).abs() < 1e-12
+        );
+        assert!(map.capacity_exceeded);
+        assert!(map.hard_limit_exceeded);
+    }
+
+    #[test]
+    fn a_non_positive_rating_is_unset() {
+        assert_eq!(
+            recovered_power_capacity(power_kw(), Some(watts(0.0))),
+            ExpanderCapacity::default()
+        );
+    }
+
+    #[test]
+    fn a_non_finite_power_answers_zero() {
+        let map = recovered_power_capacity(watts(f64::NAN), Some(watts(1000.0)));
+        assert_eq!(map.recovered_power_utilization, Some(0.0));
+        assert!(map.bottleneck_constraint.is_none());
+    }
 }

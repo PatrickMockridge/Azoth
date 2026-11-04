@@ -1355,6 +1355,13 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "rated_recovered_power",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("power"),
+            },
+            ModelInput {
                 name: "number_of_steps",
                 kind: "quantity",
                 values: &[],
