@@ -482,6 +482,12 @@ impl CalcResult for HeaterResult {
         "outlet_t",
         "outlet_h",
         "outlet_duty",
+        "max_outlet_temperature_utilization",
+        "min_outlet_temperature_utilization",
+        "max_utilization",
+        "capacity_exceeded",
+        "hard_limit_exceeded",
+        "bottleneck_constraint",
         "warnings",
     ];
 

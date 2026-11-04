@@ -5920,9 +5920,9 @@ pub fn gibbs_reactor(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop))]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature))]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn heater(
@@ -5935,6 +5935,8 @@ pub fn heater(
     outlet_temperature: Option<f64>,
     duty: Option<f64>,
     pressure_drop: Option<f64>,
+    max_outlet_temperature: Option<f64>,
+    min_outlet_temperature: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyHeaterResult> {
     azoth_process::models::heater::heater(
         &components,
@@ -5945,6 +5947,8 @@ pub fn heater(
         outlet_temperature.map(kelvins),
         duty.map(watts),
         pressure_drop.map(pascals),
+        max_outlet_temperature.map(kelvins),
+        min_outlet_temperature.map(kelvins),
     )
     .map(|r| crate::transport_gen::PyHeaterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

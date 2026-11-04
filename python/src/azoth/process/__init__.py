@@ -1397,6 +1397,8 @@ def heater(
     outlet_temperature: Q | None = None,
     duty: Q | None = None,
     pressure_drop: Q | None = None,
+    max_outlet_temperature: Q | None = None,
+    min_outlet_temperature: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1409,6 +1411,11 @@ def heater(
     and ``setDuty`` clear each other's flags: which one the class runs is the order they were
     set in, which these arguments cannot express. With neither, the drop is isothermal,
     because ``run``'s else branch is ``T_in + dT`` with ``dT`` zero.
+
+    ``max_outlet_temperature`` and ``min_outlet_temperature`` are the class's two HARD
+    capacity limits. Supplying either initializes the map; the maximum's utilization is
+    ``outlet_t / limit`` and the minimum's is the inverse, both capped at 9.99. Only the
+    minimum can trip ``hard_limit_exceeded``.
 
     Raises:
         InvalidInputError: for both specifications at once, a pressure drop that leaves a
@@ -1425,6 +1432,8 @@ def heater(
         outlet_temperature=outlet_temperature,
         duty=duty,
         pressure_drop=pressure_drop,
+        max_outlet_temperature=max_outlet_temperature,
+        min_outlet_temperature=min_outlet_temperature,
     )
 
 

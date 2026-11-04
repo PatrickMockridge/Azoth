@@ -7852,6 +7852,26 @@
           "values": []
         },
         {
+          "description": "`setMaxOutletTemperature`, the upper HARD limit; supplying it initializes the capacity map",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "max_outlet_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "`setMinOutletTemperature`, the lower HARD limit; only a positive value is a constraint",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "min_outlet_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
           "description": "the temperature the stream is heated to",
           "dimension": "thermodynamic_temperature",
           "kind": "quantity",

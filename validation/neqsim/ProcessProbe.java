@@ -183,6 +183,9 @@ public class ProcessProbe {
       case "heater":
         heatRows("Heater");
         break;
+      case "heater_capacity":
+        heaterCapacity();
+        break;
       case "cooler":
         heatRows("Cooler");
         break;
@@ -490,6 +493,82 @@ public class ProcessProbe {
     // the field was initialised to. On the duty rows it is the enthalpy the flash reached,
     // which is the input only if the flash lands exactly on it.
     System.out.println("duty_W=" + unit.getDuty());
+    System.out.println();
+  }
+
+  /// **`Heater`'s bounded outlet temperatures**, the two HARD constraints its limits create.
+  ///
+  /// The maximum is a plain `value / design`; the minimum is the inverse, `min / value`, and
+  /// the class's `isHardLimitExceeded` reads `maxValue` for the maximum constraint - which
+  /// `setMaxOutletTemperature` never sets - so only the minimum can trip it. The mechanical
+  /// design's duty and pressure-drop constraints are absent while `maxDesignDuty` and
+  /// `maxDesignPressureDrop` are zero.
+  static void heaterCapacity() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    heaterCapacityRow("no_limits", names, z, 380.0, null, null);
+    heaterCapacityRow("max_above", names, z, 380.0, 400.0, null);
+    heaterCapacityRow("max_below", names, z, 380.0, 350.0, null);
+    heaterCapacityRow("min_below", names, z, 380.0, null, 300.0);
+    heaterCapacityRow("min_above", names, z, 380.0, null, 400.0);
+    heaterCapacityRow("both", names, z, 380.0, 400.0, 300.0);
+    heaterCapacityRow("min_zero", names, z, 380.0, null, 0.0);
+    heaterCapacityRow("min_capped", names, z, 380.0, null, 1.0e6);
+    heaterCapacityRow("duty_specified", names, z, null, 400.0, 300.0);
+  }
+
+  static void heaterCapacityRow(String label, String[] names, double[] z, Double outletK,
+      Double maxLimitK, Double minLimitK) {
+    Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+    neqsim.process.equipment.heatexchanger.Heater unit =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+    if (outletK != null) {
+      unit.setOutletTemperature(outletK);
+    } else {
+      unit.setDuty(5000.0);
+    }
+    if (maxLimitK != null) {
+      unit.setMaxOutletTemperature(maxLimitK);
+    }
+    if (minLimitK != null) {
+      unit.setMinOutletTemperature(minLimitK);
+    }
+    unit.run();
+
+    System.out.println("case=" + label);
+    print("inlet", inlet);
+    print("outlet", unit.getOutletStream());
+    System.out.println("duty_W=" + unit.getDuty());
+    System.out.println("outlet_temperature_k=" + unit.getOutletStream().getTemperature());
+    System.out.println("max_outlet_temperature_limit_k=" + unit.getMaxOutletTemperature());
+    System.out.println("min_outlet_temperature_limit_k=" + unit.getMinOutletTemperature());
+    System.out.println("has_max=" + unit.hasMaxOutletTemperatureLimit());
+    System.out.println("has_min=" + unit.hasMinOutletTemperatureLimit());
+
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        unit.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      String name = entry.getKey();
+      System.out.println("constraint_" + name + "_type=" + constraint.getType());
+      System.out.println("constraint_" + name + "_current=" + constraint.getCurrentValue());
+      System.out.println("constraint_" + name + "_design=" + constraint.getDesignValue());
+      System.out.println("constraint_" + name + "_min=" + constraint.getMinValue());
+      System.out.println("constraint_" + name + "_max=" + constraint.getMaxValue());
+      System.out.println("constraint_" + name + "_utilization=" + constraint.getUtilization());
+      System.out.println("constraint_" + name + "_violated=" + constraint.isViolated());
+      System.out.println(
+          "constraint_" + name + "_hard_exceeded=" + constraint.isHardLimitExceeded());
+    }
+    System.out.println("max_utilization=" + unit.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + unit.isCapacityExceeded());
+    System.out.println("hard_limit_exceeded=" + unit.isHardLimitExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = unit
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
     System.out.println();
   }
 

@@ -390,6 +390,54 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dump
 
 
+def _heater(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.heater`'s outlet record and its two outlet-temperature constraints.
+
+    The outlet state is the flash's own answer, and the duty is `run`'s `newH - oldH`; the
+    capacity map's utilisations are the one interior the record does not carry, so they are
+    dumped under the probe's keys. The booleans and the bottleneck's name stay case pins.
+    """
+    from azoth.process.reference.heater import _capacity, _states
+
+    components = [str(name) for name in inputs["components"]]
+    n = float(inputs["inlet_n"])
+    z = [float(v) for v in inputs["inlet_z"]]
+    p = float(inputs["inlet_p"])
+    t = float(inputs["inlet_t"])
+    t_out = None if "outlet_temperature" not in inputs else float(inputs["outlet_temperature"])
+    duty = None if "duty" not in inputs else float(inputs["duty"])
+    drop = None if "pressure_drop" not in inputs else float(inputs["pressure_drop"])
+    max_t = (
+        None if "max_outlet_temperature" not in inputs else float(inputs["max_outlet_temperature"])
+    )
+    min_t = (
+        None if "min_outlet_temperature" not in inputs else float(inputs["min_outlet_temperature"])
+    )
+
+    states = _states(components, n, z, p, t, t_out, duty, drop)
+    outlet_k = states.outlet_t.to("K").magnitude
+    dump = {
+        "outlet_temperature_k": outlet_k,
+        "outlet_h": states.h_out,
+        "duty_W": states.duty,
+    }
+    capacity = _capacity(outlet_k, max_t, min_t)
+    for key, value in (
+        (
+            "constraint_maxOutletTemperature_utilization",
+            capacity.max_outlet_temperature_utilization,
+        ),
+        (
+            "constraint_minOutletTemperature_utilization",
+            capacity.min_outlet_temperature_utilization,
+        ),
+    ):
+        if value is not None:
+            dump[key] = value
+    dump["max_utilization"] = capacity.max_utilization
+    return dump
+
+
 def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.mixer`'s layers, from the reference's own factored arithmetic.
 
@@ -1362,6 +1410,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.pipe": _pipe,
     "process.pump": _pump,
     "process.splitter": _splitter,
+    "process.heater": _heater,
     "process.mixer": _mixer,
     "process.gibbs_reactor": _gibbs_reactor,
     "process.plug_flow_reactor": _plug_flow_reactor,
@@ -1403,16 +1452,6 @@ NO_INTERIOR: dict[str, str] = {
         "here would be a second dump of the separator's arithmetic under another name, which "
         "is the thing this dict exists to refuse - and the class's own arithmetic, the "
         "Souders-Brown capacity metric, is mechanical design that no port field reaches"
-    ),
-    "process.heater": (
-        "the kernel is one ``Stream::from_pt`` at the stated temperature or one "
-        "``Stream::from_ph`` at the enthalpy a stated duty implies, at the pressure the drop "
-        "leaves - and the outlet record is that flash's answer in full. The capture's extra "
-        "line is ``duty_W``, which is ``Heater.run``'s own ``newH - oldH`` and therefore a "
-        "difference of the two records' enthalpies over the inlet's flow; the model reports "
-        "it as ``outlet_duty`` for exactly that reason. `getEnergyInput` is no way out of "
-        "that: `run` overwrites the field with the same difference, so it reads back the "
-        "number the record already implies rather than a layer behind it"
     ),
     "process.filter": (
         "the kernel is one ``enthalpy_at`` at the pressure the drop leaves, and the temperature "
@@ -2274,6 +2313,71 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=8,
         identified_by=("case", "design_with_capacity"),
         divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The heater's outlet-temperature constraints, in the probe's own order. The heater's
+    # outlet record is the flash's answer; the capacity utilisations are the interior.
+    LayerCase(
+        model="process.heater",
+        case="the_outlet_temperature_limits_are_absent_without_setters",
+        capture="process_heater_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_limits"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_maximum_above_the_outlet_is_its_utilization",
+        capture="process_heater_capacity.tsv",
+        block=1,
+        identified_by=("case", "max_above"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_maximum_below_the_outlet_is_exceeded_but_not_hard",
+        capture="process_heater_capacity.tsv",
+        block=2,
+        identified_by=("case", "max_below"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_below_the_outlet_is_its_inverse_utilization",
+        capture="process_heater_capacity.tsv",
+        block=3,
+        identified_by=("case", "min_below"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_above_the_outlet_is_hard_exceeded",
+        capture="process_heater_capacity.tsv",
+        block=4,
+        identified_by=("case", "min_above"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="both_limits_report_both_constraints_and_the_larger_bottleneck",
+        capture="process_heater_capacity.tsv",
+        block=5,
+        identified_by=("case", "both"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_of_zero_is_not_a_constraint",
+        capture="process_heater_capacity.tsv",
+        block=6,
+        identified_by=("case", "min_zero"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="the_utilization_is_capped_at_9_99",
+        capture="process_heater_capacity.tsv",
+        block=7,
+        identified_by=("case", "min_capped"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_duty_specified_outlet_reads_its_flashed_temperature",
+        capture="process_heater_capacity.tsv",
+        block=8,
+        identified_by=("case", "duty_specified"),
     ),
     # **The reactive section's block**, on the binary state the model's own case is held to:
     # NeqSim's reactive column there is bit-identical to its standard twin, which is the class's

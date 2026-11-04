@@ -676,7 +676,9 @@ fn the_generated_input_table_is_the_models_own() {
     // `capacity_analysis_enabled` - `617 + 4 = 621`. **And the splitter's mechanical
     // design's six** - `mechanical_design`, `design_velocity`, `max_operation_pressure`,
     // `tensile_strength`, `joint_efficiency` and `corrosion_allowance` - `621 + 6 = 627`.
-    assert_eq!(walked, 627, "the inputs this test walked");
+    // **And the heater's two outlet-temperature limits** - `max_outlet_temperature` and
+    // `min_outlet_temperature` - `627 + 2 = 629`.
+    assert_eq!(walked, 629, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

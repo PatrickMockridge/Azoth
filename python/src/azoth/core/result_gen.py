@@ -6488,6 +6488,24 @@ class HeaterResult(_HasWarnings):
     #: the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.
     outlet_duty: Q
 
+    #: the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.
+    max_outlet_temperature_utilization: float | None
+
+    #: the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.
+    min_outlet_temperature_utilization: float | None
+
+    #: `getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: any constraint's utilization above 1.0.
+    capacity_exceeded: bool
+
+    #: `isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.
+    hard_limit_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
+    bottleneck_constraint: str | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

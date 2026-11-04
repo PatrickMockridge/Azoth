@@ -48,6 +48,8 @@ def heater(
     outlet_temperature: Q | None = None,
     duty: Q | None = None,
     pressure_drop: Q | None = None,
+    max_outlet_temperature: Q | None = None,
+    min_outlet_temperature: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -61,9 +63,13 @@ def heater(
         duty: the heat to add, or ``None`` to state a temperature instead. Negative removes
             heat.
         pressure_drop: the pressure loss across the heater, or ``None`` for none.
+        max_outlet_temperature: ``setMaxOutletTemperature``; absent is the class's unset
+            sentinel, and supplying it initializes the capacity map.
+        min_outlet_temperature: ``setMinOutletTemperature``; absent is 0, and only a positive
+            limit is a constraint.
 
     Returns:
-        The outlet's record and the duty it moved.
+        The outlet's record, the duty it moved and the outlet-temperature capacity map.
 
     Raises:
         InvalidInputError: if a temperature and a duty are both given, if the pressure drop
@@ -99,6 +105,16 @@ def heater(
     )
     q = None if duty is None else input_to_si(spec, "duty", duty)
     drop = None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop)
+    max_t = (
+        None
+        if max_outlet_temperature is None
+        else input_to_si(spec, "max_outlet_temperature", max_outlet_temperature)
+    )
+    min_t = (
+        None
+        if min_outlet_temperature is None
+        else input_to_si(spec, "min_outlet_temperature", min_outlet_temperature)
+    )
 
     apply_checks(
         checks.on_input,
@@ -116,6 +132,7 @@ def heater(
         )
 
     states = _states(components, n, inlet_z, p, t, t_out, q, drop)
+    capacity = _capacity(states.outlet_t.to("K").magnitude, max_t, min_t)
 
     return HeaterResult(
         outlet_n=from_si(n, "mol/s"),
@@ -124,6 +141,12 @@ def heater(
         outlet_t=states.outlet_t,
         outlet_h=from_si(states.h_out, "J/mol"),
         outlet_duty=from_si(states.duty, "W"),
+        max_outlet_temperature_utilization=capacity.max_outlet_temperature_utilization,
+        min_outlet_temperature_utilization=capacity.min_outlet_temperature_utilization,
+        max_utilization=capacity.max_utilization,
+        capacity_exceeded=capacity.capacity_exceeded,
+        hard_limit_exceeded=capacity.hard_limit_exceeded,
+        bottleneck_constraint=capacity.bottleneck_constraint,
         warnings=tuple(warnings),
     )
 
@@ -202,6 +225,71 @@ def _states(
         h_out=h_out,
         outlet_t=outlet_t,
         duty=inlet_n * (h_out - h_in),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class HeaterCapacity:
+    """The outlet-temperature constraints and their summaries, in SI."""
+
+    max_outlet_temperature_utilization: float | None
+    min_outlet_temperature_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
+
+
+def _capacity(
+    outlet_temperature: float,
+    max_outlet_temperature: float | None,
+    min_outlet_temperature: float | None,
+) -> HeaterCapacity:
+    """`Heater`'s outlet-temperature capacity map, evaluated on the outlet temperature.
+
+    **The maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads
+    `maxValue`, while `setMaxOutletTemperature` sets `designValue`; only the minimum can trip
+    it. A maximum of `f64::MAX` is the unset sentinel, and a minimum of zero or less is not a
+    constraint at all.
+    """
+    max_limit = (
+        None
+        if max_outlet_temperature is None or max_outlet_temperature == 1.7976931348623157e308
+        else max_outlet_temperature
+    )
+    min_limit = (
+        None
+        if min_outlet_temperature is None or not min_outlet_temperature > 0.0
+        else min_outlet_temperature
+    )
+
+    max_utilization = None
+    if max_limit is not None:
+        max_utilization = 0.0 if max_limit <= 0.0 else min(outlet_temperature / max_limit, 9.99)
+    min_utilization = None
+    if min_limit is not None:
+        min_utilization = (
+            9.99 if outlet_temperature <= 0.0 else min(min_limit / outlet_temperature, 9.99)
+        )
+
+    # The map is insertion-ordered: the maximum first, the minimum second.
+    max_utilization_value = 0.0
+    bottleneck_constraint = None
+    if max_utilization is not None and max_utilization > max_utilization_value:
+        max_utilization_value = max_utilization
+        bottleneck_constraint = "maxOutletTemperature"
+    if min_utilization is not None and min_utilization > max_utilization_value:
+        max_utilization_value = min_utilization
+        bottleneck_constraint = "minOutletTemperature"
+
+    return HeaterCapacity(
+        max_outlet_temperature_utilization=max_utilization,
+        min_outlet_temperature_utilization=min_utilization,
+        max_utilization=max_utilization_value,
+        capacity_exceeded=(max_utilization is not None and max_utilization > 1.0)
+        or (min_utilization is not None and min_utilization > 1.0),
+        hard_limit_exceeded=(min_limit is not None and outlet_temperature < min_limit),
+        bottleneck_constraint=bottleneck_constraint,
     )
 
 

@@ -10,14 +10,16 @@ assumptions = [
     "**the duty is W and the enthalpy is per mole, and they meet because a process fluid's moles are one second of flow.** `run` adds `getDuty()` (W) to `getEnthalpy()` (J) directly; here the shift is `duty / inlet_n` in J/mol, stated rather than inherited.",
     "`pressure_drop` is applied to the inlet and the flash runs at the pressure it leaves, before the temperature or the enthalpy is set - `run` sets the pressure first, and an explicit outlet pressure (which this palette entry does not declare) would override the drop rather than add to it.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is here**: this is the steady-state arithmetic the palette's three parameters reach.",
+    "**the outlet-temperature limits are two HARD constraints.** Either setter initializes the map; the maximum's utilization is `temperature / limit`, the minimum's is `limit / temperature`, both capped at 9.99. A non-positive minimum is not a constraint.",
+    "**the maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads `maxValue`, which `setMaxOutletTemperature` never sets, so only the minimum can trip it. The map holds no duty or pressure-drop constraint while the design's limits are zero.",
+    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, an electrical and an instrument design, and a utility specification. **Those are owed**: the bounded outlet temperatures above are the steady capacity surface.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, and the duty reported as the enthalpy the outlet reached."
+edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, and the two outlet-temperature capacity constraints."
 [inputs]
 [inputs.components]
 type = "components"
@@ -48,6 +50,14 @@ description = "the heat added, which sets the outlet enthalpy as `inlet_h + duty
 unit = "Pa"
 optional = true
 description = "the pressure loss across the heater, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure.\n"
+[inputs.max_outlet_temperature]
+unit = "K"
+optional = true
+description = "`setMaxOutletTemperature`, the maximum outlet-temperature limit. **Absent is unset** (`f64::MAX`); supplying it initializes the capacity map, and a non-positive limit's utilization is 0.\n"
+[inputs.min_outlet_temperature]
+unit = "K"
+optional = true
+description = "`setMinOutletTemperature`, the minimum outlet-temperature limit. **Absent is 0, and only a positive limit is a constraint** (`hasMinOutletTemperatureLimit`). Supplying any value initializes the map.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -69,6 +79,27 @@ description = "the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or 
 [outputs.outlet_duty]
 unit = "W"
 description = "the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.\n"
+[outputs.max_outlet_temperature_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.\n"
+[outputs.min_outlet_temperature_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.\n"
+[outputs.max_utilization]
+unit = "dimensionless"
+description = "`getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.\n"
+[outputs.capacity_exceeded]
+type = "boolean"
+description = "`isCapacityExceeded`: any constraint's utilization above 1.0.\n"
+[outputs.hard_limit_exceeded]
+type = "boolean"
+description = "`isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.\n"
+[outputs.bottleneck_constraint]
+type = "string"
+optional = true
+description = "`getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.\n"
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

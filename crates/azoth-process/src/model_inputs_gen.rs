@@ -2153,6 +2153,20 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("pressure"),
             },
+            ModelInput {
+                name: "max_outlet_temperature",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("thermodynamic_temperature"),
+            },
+            ModelInput {
+                name: "min_outlet_temperature",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("thermodynamic_temperature"),
+            },
         ],
     },
     ModelInputs {

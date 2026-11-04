@@ -196,6 +196,15 @@ fn the_shipped_demo_publishes_the_duty_no_stream_carries() {
     found.sort_unstable();
     assert_eq!(found, declared);
 
+    // The demo states no outlet-temperature limits, so the map is empty and its two
+    // per-constraint fields are `null`.
+    assert!(heater["max_outlet_temperature_utilization"].is_null());
+    assert!(heater["min_outlet_temperature_utilization"].is_null());
+    assert!(heater["bottleneck_constraint"].is_null());
+    assert_eq!(heater["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(false));
+
     // A mixer's whole answer is its stream, so it publishes nothing rather than a restatement.
     assert!(
         !report.results.contains_key("mix1"),
@@ -215,6 +224,72 @@ fn the_shipped_demo_publishes_the_duty_no_stream_carries() {
         "the mass flow crosses in the vocabulary's own unit"
     );
     assert!(vapour.molar_mass.is_some());
+}
+
+/// **The heater's bounded outlet temperatures cross the wire**, and the hard flag is the
+/// minimum's: the class reads `maxValue` for the maximum, which its setter never sets.
+#[test]
+fn the_heater_publishes_its_outlet_temperature_constraints() {
+    const BOUNDED: &str = r#"
+id = "flowsheets.heater_capacity"
+name = "One heater with outlet-temperature limits"
+
+products = ["out"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 3.0e6
+T = 320.0
+
+[[instances]]
+id = "h1"
+unit = "unit_ops.heater"
+[instances.parameters]
+outlet_temperature = 380.0
+max_outlet_temperature = 400.0
+min_outlet_temperature = 300.0
+
+[[connections]]
+from = "feed_1"
+to = "h1.inlet"
+
+[[connections]]
+from = "h1.outlet"
+to = "out"
+"#;
+    let report = run_flowsheet(BOUNDED);
+    let heater = &report.results["h1"];
+    assert_eq!(
+        heater["max_outlet_temperature_utilization"].as_f64(),
+        Some(0.95)
+    );
+    assert!(
+        (heater["min_outlet_temperature_utilization"]
+            .as_f64()
+            .expect("a utilization")
+            - 300.0 / 380.0)
+            .abs()
+            < 1e-12
+    );
+    assert_eq!(heater["max_utilization"].as_f64(), Some(0.95));
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["bottleneck_constraint"], "maxOutletTemperature");
+
+    // The minimum above the outlet: exceeded, and this is the constraint that trips the
+    // class's hard flag.
+    let hard = BOUNDED.replace(
+        "min_outlet_temperature = 300.0",
+        "min_outlet_temperature = 400.0",
+    );
+    let report = run_flowsheet(&hard);
+    let heater = &report.results["h1"];
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(true));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(true));
+    assert_eq!(heater["bottleneck_constraint"], "minOutletTemperature");
 }
 
 /// **The splitter's capacity map crosses the wire, and its absence is a `null`.**

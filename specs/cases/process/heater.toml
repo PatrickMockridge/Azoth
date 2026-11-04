@@ -107,3 +107,218 @@ outlet_p = 2800000.0
 outlet_t = 320.0
 outlet_h = 1285.3807981097964
 outlet_duty = 49.6228317156872
+[[cases]]
+id = "the_outlet_temperature_limits_are_absent_without_setters"
+tolerance = 0.0002
+source = "NeqSim capture `process_heater_capacity.tsv`, block `no_limits`: with neither limit set, `getCapacityConstraints` initializes an empty map - the mechanical design's duty and pressure-drop constraints are absent while its limits are zero - so the summary is the empty-map answer.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+max_utilization = 0.0
+capacity_exceeded = false
+hard_limit_exceeded = false
+[[cases]]
+id = "a_maximum_above_the_outlet_is_its_utilization"
+tolerance = 0.0002
+source = "NeqSim capture block `max_above`: the maximum constraint's utilization is `outlet_t / limit`, so 380/400 = 0.95, and it is the only constraint in the map.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+max_outlet_temperature = 400.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+max_outlet_temperature_utilization = 0.95
+max_utilization = 0.95
+capacity_exceeded = false
+hard_limit_exceeded = false
+bottleneck_constraint = "maxOutletTemperature"
+[[cases]]
+id = "a_maximum_below_the_outlet_is_exceeded_but_not_hard"
+tolerance = 0.0002
+source = "NeqSim capture block `max_below`: 380 K against a 350 K maximum is utilization 1.0857 and `isCapacityExceeded` true, but `isHardLimitExceeded` is false because the class reads `maxValue`, which `setMaxOutletTemperature` never sets. The quirk is the case.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+max_outlet_temperature = 350.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+max_outlet_temperature_utilization = 1.0857142857142856
+max_utilization = 1.0857142857142856
+capacity_exceeded = true
+hard_limit_exceeded = false
+bottleneck_constraint = "maxOutletTemperature"
+[[cases]]
+id = "a_minimum_below_the_outlet_is_its_inverse_utilization"
+tolerance = 0.0002
+source = "NeqSim capture block `min_below`: the minimum constraint's utilization is the inverse, `limit / outlet_t`, so 300/380 = 0.78947, and it is the only constraint in the map.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+min_outlet_temperature = 300.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+min_outlet_temperature_utilization = 0.7894736842105263
+max_utilization = 0.7894736842105263
+capacity_exceeded = false
+hard_limit_exceeded = false
+bottleneck_constraint = "minOutletTemperature"
+[[cases]]
+id = "a_minimum_above_the_outlet_is_hard_exceeded"
+tolerance = 0.0002
+source = "NeqSim capture block `min_above`: 400 K against a 380 K outlet is utilization 1.0526, and this is the constraint whose `minValue` is set, so `isHardLimitExceeded` is true.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+min_outlet_temperature = 400.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+min_outlet_temperature_utilization = 1.0526315789473684
+max_utilization = 1.0526315789473684
+capacity_exceeded = true
+hard_limit_exceeded = true
+bottleneck_constraint = "minOutletTemperature"
+[[cases]]
+id = "both_limits_report_both_constraints_and_the_larger_bottleneck"
+tolerance = 0.0002
+source = "NeqSim capture block `both`: both setters create their constraints, the map is insertion-ordered maximum then minimum, and the bottleneck is the larger utilization (0.95 against 0.78947).\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+max_outlet_temperature = 400.0
+min_outlet_temperature = 300.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+max_outlet_temperature_utilization = 0.95
+min_outlet_temperature_utilization = 0.7894736842105263
+max_utilization = 0.95
+capacity_exceeded = false
+hard_limit_exceeded = false
+bottleneck_constraint = "maxOutletTemperature"
+[[cases]]
+id = "a_minimum_of_zero_is_not_a_constraint"
+tolerance = 0.0002
+source = "NeqSim capture block `min_zero`: `hasMinOutletTemperatureLimit` is `min > 0.0`, so a zero setter clears the map and adds nothing; the summary is the empty-map answer even though the setter was called.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+min_outlet_temperature = 0.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+max_utilization = 0.0
+capacity_exceeded = false
+hard_limit_exceeded = false
+[[cases]]
+id = "the_utilization_is_capped_at_9_99"
+tolerance = 0.0002
+source = "NeqSim capture block `min_capped`: a 1e6 K minimum against 380 K would be 2631.6, and `getUtilization` caps it at 9.99.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+min_outlet_temperature = 1000000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+min_outlet_temperature_utilization = 9.99
+max_utilization = 9.99
+capacity_exceeded = true
+hard_limit_exceeded = true
+bottleneck_constraint = "minOutletTemperature"
+[[cases]]
+id = "a_duty_specified_outlet_reads_its_flashed_temperature"
+tolerance = 0.0002
+source = "NeqSim capture block `duty_specified`: the 5000 W duty solves the outlet at 420.4576 K, and both constraints read that flashed temperature rather than a stated one. The port's temperature is 2.35e-5 relative away, the file's established flash tolerance.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 5000.0
+max_outlet_temperature = 400.0
+min_outlet_temperature = 300.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 420.4576373893361
+outlet_h = 6235.757965002769
+outlet_duty = 4999.9999986086605
+max_outlet_temperature_utilization = 1.0511440934733403
+min_outlet_temperature_utilization = 0.7135082665229493
+max_utilization = 1.0511440934733403
+capacity_exceeded = true
+hard_limit_exceeded = false
+bottleneck_constraint = "maxOutletTemperature"

@@ -16245,6 +16245,24 @@ pub struct PyHeaterResult {
     /// the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.
     #[pyo3(get)]
     pub outlet_duty: PyQty,
+    /// the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.
+    #[pyo3(get)]
+    pub max_outlet_temperature_utilization: Option<f64>,
+    /// the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.
+    #[pyo3(get)]
+    pub min_outlet_temperature_utilization: Option<f64>,
+    /// `getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: any constraint's utilization above 1.0.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.
+    #[pyo3(get)]
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16254,13 +16272,19 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
             self.outlet_duty,
+            self.max_outlet_temperature_utilization,
+            self.min_outlet_temperature_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.hard_limit_exceeded,
+            self.bottleneck_constraint,
             self.warnings.len()
         )
     }
@@ -16290,6 +16314,12 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            max_outlet_temperature_utilization: r.max_outlet_temperature_utilization,
+            min_outlet_temperature_utilization: r.min_outlet_temperature_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            hard_limit_exceeded: r.hard_limit_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
             warnings: transport(&r.warnings),
         }
     }

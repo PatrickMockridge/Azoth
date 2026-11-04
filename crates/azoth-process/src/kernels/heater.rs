@@ -104,3 +104,174 @@ pub fn heater(
         outlet,
     })
 }
+
+/// `CapacityConstraint.MAX_UTILIZATION`, the ceiling on any utilization.
+pub const MAX_UTILIZATION: f64 = 9.99;
+
+/// The two outlet-temperature constraints the class's limits create, and their summaries.
+///
+/// Both are HARD. The maximum's utilization is `temperature / limit`; the minimum's is the
+/// inverse, `limit / temperature`. The per-constraint fields are `None` when the limit was not
+/// set, because `getCapacityConstraints` adds a constraint only for a set limit.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct HeaterCapacity {
+    /// `maxOutletTemperature`'s utilization, when the maximum limit is set.
+    pub max_outlet_temperature_utilization: Option<f64>,
+    /// `minOutletTemperature`'s utilization, when the minimum limit is positive.
+    pub min_outlet_temperature_utilization: Option<f64>,
+    /// `getMaxUtilization`, 0.0 on an empty map.
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: any constraint's utilization above 1.0.
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: only the minimum can trip it - see [`capacity`].
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s class-side name.
+    pub bottleneck_constraint: Option<&'static str>,
+}
+
+/// `Heater`'s outlet-temperature capacity map, evaluated on the outlet temperature.
+///
+/// **The maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads
+/// `maxValue`, while `setMaxOutletTemperature` sets `designValue`; `maxValue` stays
+/// `Double.MAX_VALUE`, so only the minimum constraint (whose `minValue` is set) can trip it.
+///
+/// **The limits are the class's sentinels.** A maximum of `f64::MAX` means "not set", and a
+/// minimum of zero or less is not a constraint at all: `hasMinOutletTemperatureLimit` is
+/// `min > 0.0`. Supplying either setter clears the map; the getters then initialize it with
+/// whichever constraints are present, maximum first.
+#[must_use]
+pub fn capacity(
+    outlet_temperature: ThermodynamicTemperature,
+    max_outlet_temperature: Option<ThermodynamicTemperature>,
+    min_outlet_temperature: Option<ThermodynamicTemperature>,
+) -> HeaterCapacity {
+    let max_limit = max_outlet_temperature.filter(|limit| limit.value != f64::MAX);
+    let min_limit = min_outlet_temperature.filter(|limit| limit.value > 0.0);
+
+    let max_utilization = max_limit.map(|limit| {
+        // `CapacityConstraint.getUtilization` answers zero for a non-positive design value.
+        if limit.value <= 0.0 {
+            0.0
+        } else {
+            (outlet_temperature.value / limit.value).min(MAX_UTILIZATION)
+        }
+    });
+    let min_utilization = min_limit.map(|limit| {
+        if outlet_temperature.value <= 0.0 {
+            MAX_UTILIZATION
+        } else {
+            (limit.value / outlet_temperature.value).min(MAX_UTILIZATION)
+        }
+    });
+
+    // The map is insertion-ordered: the maximum first, the minimum second, and the bottleneck
+    // is the last one strictly above the running maximum, which starts at zero.
+    let mut max_utilization_value = 0.0;
+    let mut bottleneck_constraint = None;
+    if let Some(value) = max_utilization {
+        if value > max_utilization_value {
+            max_utilization_value = value;
+            bottleneck_constraint = Some("maxOutletTemperature");
+        }
+    }
+    if let Some(value) = min_utilization {
+        if value > max_utilization_value {
+            max_utilization_value = value;
+            bottleneck_constraint = Some("minOutletTemperature");
+        }
+    }
+
+    HeaterCapacity {
+        max_outlet_temperature_utilization: max_utilization,
+        min_outlet_temperature_utilization: min_utilization,
+        max_utilization: max_utilization_value,
+        capacity_exceeded: max_utilization.is_some_and(|value| value > 1.0)
+            || min_utilization.is_some_and(|value| value > 1.0),
+        hard_limit_exceeded: min_limit.is_some_and(|limit| outlet_temperature.value < limit.value),
+        bottleneck_constraint,
+    }
+}
+
+#[cfg(test)]
+mod capacity_tests {
+    use super::*;
+    use azoth_core::units::kelvins;
+
+    const OUTLET_K: f64 = 380.0;
+
+    fn report(max: Option<f64>, min: Option<f64>) -> HeaterCapacity {
+        capacity(kelvins(OUTLET_K), max.map(kelvins), min.map(kelvins))
+    }
+
+    #[test]
+    fn no_limits_is_the_empty_map() {
+        let map = report(None, None);
+        assert!(map.max_outlet_temperature_utilization.is_none());
+        assert!(map.min_outlet_temperature_utilization.is_none());
+        assert_eq!(map.max_utilization, 0.0);
+        assert!(!map.capacity_exceeded);
+        assert!(!map.hard_limit_exceeded);
+        assert!(map.bottleneck_constraint.is_none());
+    }
+
+    #[test]
+    fn the_maximum_is_temperature_over_its_limit() {
+        let map = report(Some(400.0), None);
+        assert_eq!(map.max_outlet_temperature_utilization, Some(0.95));
+        assert_eq!(map.max_utilization, 0.95);
+        assert_eq!(map.bottleneck_constraint, Some("maxOutletTemperature"));
+        assert!(!map.capacity_exceeded);
+
+        let exceeded = report(Some(350.0), None);
+        assert!(exceeded.capacity_exceeded);
+        // The class's `isHardLimitExceeded` reads `maxValue`, which this setter never sets.
+        assert!(!exceeded.hard_limit_exceeded);
+    }
+
+    #[test]
+    fn the_minimum_is_its_limit_over_temperature() {
+        let map = report(None, Some(300.0));
+        assert!(
+            (map.min_outlet_temperature_utilization.expect("present") - 300.0 / OUTLET_K).abs()
+                < 1e-12
+        );
+        assert_eq!(map.bottleneck_constraint, Some("minOutletTemperature"));
+        assert!(!map.capacity_exceeded);
+
+        let exceeded = report(None, Some(400.0));
+        assert!(exceeded.capacity_exceeded);
+        assert!(exceeded.hard_limit_exceeded);
+    }
+
+    #[test]
+    fn a_minimum_of_zero_is_not_a_constraint() {
+        let map = report(None, Some(0.0));
+        assert!(map.min_outlet_temperature_utilization.is_none());
+        assert_eq!(map.max_utilization, 0.0);
+        assert!(map.bottleneck_constraint.is_none());
+    }
+
+    #[test]
+    fn a_maximum_of_the_sentinel_is_unset() {
+        let map = report(Some(f64::MAX), None);
+        assert!(map.max_outlet_temperature_utilization.is_none());
+    }
+
+    #[test]
+    fn the_utilization_is_capped_at_9_99() {
+        let map = report(None, Some(1.0e6));
+        assert_eq!(
+            map.min_outlet_temperature_utilization,
+            Some(MAX_UTILIZATION)
+        );
+        assert_eq!(map.max_utilization, MAX_UTILIZATION);
+    }
+
+    #[test]
+    fn both_constraints_leave_the_larger_utilization_as_the_bottleneck() {
+        let map = report(Some(400.0), Some(300.0));
+        assert_eq!(map.max_utilization, 0.95);
+        assert_eq!(map.bottleneck_constraint, Some("maxOutletTemperature"));
+        assert!(!map.capacity_exceeded);
+    }
+}

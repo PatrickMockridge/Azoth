@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/Heater.java**
 
-Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, and the duty reported as the enthalpy the outlet reached.
+Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, and the two outlet-temperature capacity constraints.
 
 
 ## What this model is
@@ -27,6 +27,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_temperature` | K | *Optional.* the temperature the stream is heated to, which is `unit_ops.heater`'s own parameter. Giving it beside a `duty` is refused rather than resolved. |
 | `duty` | W | *Optional.* the heat added, which sets the outlet enthalpy as `inlet_h + duty / inlet_n`. Negative removes heat, which is `unit_ops.cooler`. |
 | `pressure_drop` | Pa | *Optional.* the pressure loss across the heater, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure. |
+| `max_outlet_temperature` | K | *Optional.* `setMaxOutletTemperature`, the maximum outlet-temperature limit. **Absent is unset** (`f64::MAX`); supplying it initializes the capacity map, and a non-positive limit's utilization is 0. |
+| `min_outlet_temperature` | K | *Optional.* `setMinOutletTemperature`, the minimum outlet-temperature limit. **Absent is 0, and only a positive limit is a constraint** (`hasMinOutletTemperatureLimit`). Supplying any value initializes the map. |
 
 
 ## Outputs
@@ -39,6 +41,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_t` | K | the outlet temperature: `outlet_temperature` when it is given, and otherwise the one the mixture reaches at the outlet pressure carrying `outlet_h`. |
 | `outlet_h` | J/mol | the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or the enthalpy of the state at `outlet_temperature`. Reported because the duty a heater moves is derived from it rather than the other way round. |
 | `outlet_duty` | W | the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified. |
+| `max_outlet_temperature_utilization` | dimensionless | *Optional.* the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit. |
+| `min_outlet_temperature_utilization` | dimensionless | *Optional.* the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive. |
+| `max_utilization` | dimensionless | `getMaxUtilization`: the larger present utilization, and 0.0 on an empty map. |
+| `capacity_exceeded` | - | `isCapacityExceeded`: any constraint's utilization above 1.0. |
+| `hard_limit_exceeded` | - | `isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets. |
+| `bottleneck_constraint` | - | *Optional.* `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -55,7 +63,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the duty is W and the enthalpy is per mole, and they meet because a process fluid's moles are one second of flow.** `run` adds `getDuty()` (W) to `getEnthalpy()` (J) directly; here the shift is `duty / inlet_n` in J/mol, stated rather than inherited.
 - `pressure_drop` is applied to the inlet and the flash runs at the pressure it leaves, before the temperature or the enthalpy is set - `run` sets the pressure first, and an explicit outlet pressure (which this palette entry does not declare) would override the drop rather than add to it.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is here**: this is the steady-state arithmetic the palette's three parameters reach.
+- **the outlet-temperature limits are two HARD constraints.** Either setter initializes the map; the maximum's utilization is `temperature / limit`, the minimum's is `limit / temperature`, both capped at 9.99. A non-positive minimum is not a constraint.
+- **the maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads `maxValue`, which `setMaxOutletTemperature` never sets, so only the minimum can trip it. The map holds no duty or pressure-drop constraint while the design's limits are zero.
+- NeqSim's `Heater` also carries a `runTransient`, the mechanical design, an electrical and an instrument design, and a utility specification. **Those are owed**: the bounded outlet temperatures above are the steady capacity surface.
 
 ## Cases
 
@@ -67,11 +77,20 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `duty_minus_5000_watts` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = -5000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 248.0677292845227, outlet_h = -3764.242030067413, outlet_duty = -4999.999996461522 |
 | `no_specification_is_isothermal` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 320.0, outlet_h = 1235.7579663941092, outlet_duty = 0.0 |
 | `no_specification_with_a_drop_is_isothermal_and_not_isenthalpic` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, pressure_drop = 200000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2800000.0, outlet_t = 320.0, outlet_h = 1285.3807981097964, outlet_duty = 49.6228317156872 |
+| `the_outlet_temperature_limits_are_absent_without_setters` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, max_utilization = 0.0, capacity_exceeded = False, hard_limit_exceeded = False |
+| `a_maximum_above_the_outlet_is_its_utilization` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, max_outlet_temperature = 400.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, max_outlet_temperature_utilization = 0.95, max_utilization = 0.95, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = maxOutletTemperature |
+| `a_maximum_below_the_outlet_is_exceeded_but_not_hard` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, max_outlet_temperature = 350.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, max_outlet_temperature_utilization = 1.0857142857142856, max_utilization = 1.0857142857142856, capacity_exceeded = True, hard_limit_exceeded = False, bottleneck_constraint = maxOutletTemperature |
+| `a_minimum_below_the_outlet_is_its_inverse_utilization` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, min_outlet_temperature = 300.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, min_outlet_temperature_utilization = 0.7894736842105263, max_utilization = 0.7894736842105263, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = minOutletTemperature |
+| `a_minimum_above_the_outlet_is_hard_exceeded` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, min_outlet_temperature = 400.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, min_outlet_temperature_utilization = 1.0526315789473684, max_utilization = 1.0526315789473684, capacity_exceeded = True, hard_limit_exceeded = True, bottleneck_constraint = minOutletTemperature |
+| `both_limits_report_both_constraints_and_the_larger_bottleneck` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, max_outlet_temperature = 400.0, min_outlet_temperature = 300.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, max_outlet_temperature_utilization = 0.95, min_outlet_temperature_utilization = 0.7894736842105263, max_utilization = 0.95, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = maxOutletTemperature |
+| `a_minimum_of_zero_is_not_a_constraint` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, min_outlet_temperature = 0.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, max_utilization = 0.0, capacity_exceeded = False, hard_limit_exceeded = False |
+| `the_utilization_is_capped_at_9_99` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_temperature = 380.0, min_outlet_temperature = 1000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 380.0, outlet_h = 4160.029214658429, outlet_duty = 2924.2712482643196, min_outlet_temperature_utilization = 9.99, max_utilization = 9.99, capacity_exceeded = True, hard_limit_exceeded = True, bottleneck_constraint = minOutletTemperature |
+| `a_duty_specified_outlet_reads_its_flashed_temperature` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = 5000.0, max_outlet_temperature = 400.0, min_outlet_temperature = 300.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 420.4576373893361, outlet_h = 6235.757965002769, outlet_duty = 4999.9999986086605, max_outlet_temperature_utilization = 1.0511440934733403, min_outlet_temperature_utilization = 0.7135082665229493, max_utilization = 1.0511440934733403, capacity_exceeded = True, hard_limit_exceeded = False, bottleneck_constraint = maxOutletTemperature |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 6 declared, every one run
+- Tests: 15 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

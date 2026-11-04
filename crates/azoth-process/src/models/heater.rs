@@ -12,6 +12,7 @@ use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::heater as kernel;
+use crate::kernels::heater::HeaterCapacity;
 use crate::model_gen;
 use crate::stream::Stream;
 
@@ -39,6 +40,18 @@ pub struct HeaterResult {
     /// The duty moved, W: `inlet_n * (outlet_h - inlet_h)`, in every branch.
     #[serde(serialize_with = "scalar")]
     pub outlet_duty: Power,
+    /// `maxOutletTemperature`'s utilization, when the maximum limit is set.
+    pub max_outlet_temperature_utilization: Option<f64>,
+    /// `minOutletTemperature`'s utilization, when the minimum limit is positive.
+    pub min_outlet_temperature_utilization: Option<f64>,
+    /// `getMaxUtilization`, 0.0 on an empty map.
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`.
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`.
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s class-side name.
+    pub bottleneck_constraint: Option<String>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -52,7 +65,11 @@ impl HeaterResult {
     /// *checker's*, which reports through the envelope's diagnostics rather than through a result.
     /// So an empty list here means "this kernel raised none" and not "nothing checked this call".
     #[must_use]
-    pub fn of(outcome: &kernel::HeaterOutcome, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &kernel::HeaterOutcome,
+        capacity: HeaterCapacity,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             outlet_n: outcome.outlet.n,
             outlet_z: outcome.outlet.z.clone(),
@@ -60,6 +77,12 @@ impl HeaterResult {
             outlet_t: outcome.outlet.t,
             outlet_h: joules_per_mole(outcome.outlet.h.value),
             outlet_duty: watts(outcome.duty.value),
+            max_outlet_temperature_utilization: capacity.max_outlet_temperature_utilization,
+            min_outlet_temperature_utilization: capacity.min_outlet_temperature_utilization,
+            max_utilization: capacity.max_utilization,
+            capacity_exceeded: capacity.capacity_exceeded,
+            hard_limit_exceeded: capacity.hard_limit_exceeded,
+            bottleneck_constraint: capacity.bottleneck_constraint.map(str::to_owned),
             warnings,
         }
     }
@@ -71,7 +94,7 @@ impl HeaterResult {
 /// [`azoth_core::AzothError::InvalidInput`] if the shapes disagree, if the pressure drop
 /// leaves a non-positive pressure, or if a duty is asked of a stream carrying no flow, and
 /// whatever the databank or the flash refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are ten
 pub fn heater(
     components: &[String],
     inlet_n: f64,
@@ -81,6 +104,8 @@ pub fn heater(
     outlet_temperature: Option<ThermodynamicTemperature>,
     duty: Option<Power>,
     pressure_drop: Option<Pressure>,
+    max_outlet_temperature: Option<ThermodynamicTemperature>,
+    min_outlet_temperature: Option<ThermodynamicTemperature>,
 ) -> Result<HeaterResult> {
     let spec = &model_gen::HEATER_SPEC;
     let mut warnings = Vec::new();
@@ -105,6 +130,11 @@ pub fn heater(
         inlet_t,
     )?;
     let outcome = kernel(&feed, outlet_temperature, duty, pressure_drop)?;
+    let capacity = kernel::capacity(
+        outcome.outlet.t,
+        max_outlet_temperature,
+        min_outlet_temperature,
+    );
 
-    Ok(HeaterResult::of(&outcome, warnings))
+    Ok(HeaterResult::of(&outcome, capacity, warnings))
 }

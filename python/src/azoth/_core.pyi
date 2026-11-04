@@ -2959,6 +2959,12 @@ class HeaterResult:
     outlet_t: Qty
     outlet_h: Qty
     outlet_duty: Qty
+    max_outlet_temperature_utilization: float | None
+    min_outlet_temperature_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
     warnings: list[Warning]
 
 @final
@@ -5780,6 +5786,8 @@ def heater(
     outlet_temperature: float | None = None,
     duty: float | None = None,
     pressure_drop: float | None = None,
+    max_outlet_temperature: float | None = None,
+    min_outlet_temperature: float | None = None,
 ) -> HeaterResult: ...
 def hem_release(
     components: list[str],

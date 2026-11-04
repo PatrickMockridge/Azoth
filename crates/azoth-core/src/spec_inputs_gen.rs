@@ -3123,6 +3123,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.heater", "duty", "power"),
     ("process.heater", "pressure_drop", "pressure"),
+    (
+        "process.heater",
+        "max_outlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.heater",
+        "min_outlet_temperature",
+        "thermodynamic_temperature",
+    ),
     ("process.hem_release", "upstream_z", "dimensionless"),
     (
         "process.hem_release",

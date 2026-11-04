@@ -6129,7 +6129,7 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
     )
 
 
-def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None) -> HeaterResult:
+def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None) -> HeaterResult:
     """``process.heater``, computed in Rust."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
@@ -6141,6 +6141,8 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
         None if duty is None else input_to_si(spec, "duty", duty),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if max_outlet_temperature is None else input_to_si(spec, "max_outlet_temperature", max_outlet_temperature),
+        None if min_outlet_temperature is None else input_to_si(spec, "min_outlet_temperature", min_outlet_temperature),
     )
     return HeaterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6149,6 +6151,12 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        max_outlet_temperature_utilization=result.max_outlet_temperature_utilization,
+        min_outlet_temperature_utilization=result.min_outlet_temperature_utilization,
+        max_utilization=result.max_utilization,
+        capacity_exceeded=result.capacity_exceeded,
+        hard_limit_exceeded=result.hard_limit_exceeded,
+        bottleneck_constraint=result.bottleneck_constraint,
         warnings=_warnings(result.warnings),
     )
 
