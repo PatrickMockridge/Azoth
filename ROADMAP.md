@@ -852,7 +852,9 @@ a claim nothing holds.
   still owed are `Tank`'s residence-time `autoSize` — its wall temperature and steel mass are
   `runTransient`'s, with the level solve —; `ThrottlingValve`'s controller path;
   `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
-  check; and `StirredTankReactor`'s vessel volume, residence time and agitator power. **The
+  check; **`StirredTankReactor`'s vessel volume, residence time and agitator power landed as
+  carried state** - declared, echoed, and their product published - with only its
+  `runTransient` still owed. **The
   turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled
   machine, the chart's only reader. **`MapTurboExpanderCompressor` landed as its own id**,
   `process.map_turbo_expander_compressor`: the second shaft, its speed bisected over the same
