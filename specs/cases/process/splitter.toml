@@ -266,3 +266,258 @@ velocity_utilization = 0.1656083021487523
 max_utilization = 0.1656083021487523
 capacity_exceeded = false
 bottleneck_constraint = "velocity"
+[[cases]]
+id = "the_default_design_sizes_at_fifteen_metres_per_second"
+tolerance = 1e-05
+source = "NeqSim capture `process_splitter_mechanical_design.tsv`, block `default_design`: `calcDesign` sizes the header and the largest branch at the design's 15 m/s, rounds both up to 0.0127 m, and floors the wall at the class's 3 mm.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+[cases.expected]
+products_n = [0.3, 0.7]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462001, -20689.86284462001]
+design_header_diameter = 0.0127
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.003
+manifold_volume = 0.00019001530466156163
+design_total_pressure_drop = 107.92248156311979
+header_weight = 1.7423351396625337
+branch_weight = 1.1615567597750225
+total_weight = 2.903891899437556
+[[cases]]
+id = "a_larger_flow_rounds_the_header_to_one_inch"
+tolerance = 1e-05
+source = "NeqSim capture block `twenty_mol`: 20 mol/s puts the header's unrounded diameter above 1/2\", so the NPS list rounds it to 0.0254 m while the 0.7 branch stays at 0.0127 m; the wall is then the formula's 5.8895 mm, above the floor.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 20.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+[cases.expected]
+products_n = [6.0, 14.0]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462002, -20689.86284462002]
+design_header_diameter = 0.0254
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.005889544688026981
+manifold_volume = 0.0007600612186462465
+design_total_pressure_drop = 2698.0620390779955
+header_weight = 6.81697581837152
+branch_weight = 2.70003879094067
+total_weight = 9.51701460931219
+[[cases]]
+id = "a_lower_design_velocity_rounds_the_header_up"
+tolerance = 1e-05
+source = "NeqSim capture block `design_velocity_ten`: 69 mol/s at the default 15 m/s would size a 1\" header; at the stated 10 m/s the diameter is larger and the NPS list rounds it to 1.5\" (0.0381 m), which moves the wall and the weights with it.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 69.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+design_velocity = 10.0
+[cases.expected]
+products_n = [20.7, 48.3]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.862844620013, -20689.862844620013]
+design_header_diameter = 0.0381
+design_branch_diameter = 0.0381
+design_header_length = 1.5
+design_wall_thickness = 0.008834317032040474
+manifold_volume = 0.0017101377419540549
+design_total_pressure_drop = 6343.443638543374
+header_weight = 15.338195591335921
+branch_weight = 10.22546372755728
+total_weight = 25.5636593188932
+[[cases]]
+id = "the_operating_pressure_thickens_the_wall"
+tolerance = 1e-05
+source = "NeqSim capture block `high_pressure`: the base design's `maxOperationPressure` is 100 bara and the formula multiplies it by 1.1; at 300 bara the 1\" header's wall is 12.8875 mm instead of 5.8895 mm. The pressure is stated in pascals and read in bar, the class's mixed units.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 20.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+max_operation_pressure = 30000000.0
+[cases.expected]
+products_n = [6.0, 14.0]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462002, -20689.86284462002]
+design_header_diameter = 0.0254
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.012887453874538744
+manifold_volume = 0.0007600612186462465
+design_total_pressure_drop = 2698.0620390779955
+header_weight = 18.253006103537007
+branch_weight = 8.132306268895313
+total_weight = 26.38531237243232
+[[cases]]
+id = "the_tensile_strength_thickens_the_wall"
+tolerance = 1e-05
+source = "NeqSim capture block `low_tensile`: the formula's allowable stress is 40 % of `tensileStrength`; at 300 MPa it is 120 MPa instead of 193.2, and the wall grows to 8.5183 mm.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 20.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+tensile_strength = 300000000.0
+[cases.expected]
+products_n = [6.0, 14.0]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462002, -20689.86284462002]
+design_header_diameter = 0.0254
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.008518292682926828
+manifold_volume = 0.0007600612186462465
+design_total_pressure_drop = 2698.0620390779955
+header_weight = 10.688021776020701
+branch_weight = 4.457409386042119
+total_weight = 15.14543116206282
+[[cases]]
+id = "the_corrosion_allowance_is_added_to_the_wall"
+tolerance = 1e-05
+source = "NeqSim capture block `corrosion`: 1.5 mm is added to the 5.8895 mm formula answer, so the wall is 7.3895 mm and every weight follows it.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 20.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+corrosion_allowance = 1.5
+[cases.expected]
+products_n = [6.0, 14.0]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462002, -20689.86284462002]
+design_header_diameter = 0.0254
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.007389544688026981
+manifold_volume = 0.0007600612186462465
+design_total_pressure_drop = 2698.0620390779955
+header_weight = 8.96321583716281
+branch_weight = 3.6610638507354136
+total_weight = 12.624279687898223
+[[cases]]
+id = "the_joint_efficiency_is_read_and_discarded"
+tolerance = 1e-05
+source = "NeqSim capture block `joint_efficiency`: the class reads `getJointEfficiency` into `E` and never uses it, so 0.7 answers exactly the default's 5.8895 mm wall and weights. This case exists so the no-op is oracled rather than described.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 20.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+joint_efficiency = 0.7
+[cases.expected]
+products_n = [6.0, 14.0]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462002, -20689.86284462002]
+design_header_diameter = 0.0254
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.005889544688026981
+manifold_volume = 0.0007600612186462465
+design_total_pressure_drop = 2698.0620390779955
+header_weight = 6.81697581837152
+branch_weight = 2.70003879094067
+total_weight = 9.51701460931219
+[[cases]]
+id = "the_two_phase_design_reads_the_system_density"
+tolerance = 1e-05
+source = "NeqSim capture block `two_phase`: the 1.5 bara butane/pentane feed is two phases, and `getFlowRate(\"m3/hr\")` is its 0.00975513422632498 m3/s system flow. A one-outlet split keeps the class's broken branch path out of the measurement; the header rounds to 1.5\" and the K = 0.5 drop uses the system density.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.6, 0.4]
+feed_p = 150000.0
+feed_t = 300.0
+split_factors = [1.0]
+mechanical_design = true
+[cases.expected]
+products_n = [1.0]
+products_z = [[0.6, 0.4]]
+products_p = [150000.0]
+products_t = [300.0]
+products_h = [-6836.4427889444905]
+design_header_diameter = 0.0381
+design_branch_diameter = 0.0381
+design_header_length = 1.0
+design_wall_thickness = 0.008834317032040474
+manifold_volume = 0.00114009182796937
+design_total_pressure_drop = 119.58133729773762
+header_weight = 10.22546372755728
+branch_weight = 5.11273186377864
+total_weight = 15.33819559133592
+[[cases]]
+id = "the_velocity_reads_the_designed_header"
+tolerance = 1e-05
+source = "NeqSim capture block `design_with_capacity`: `calcDesign` sets the header diameter and the capacity map reads it live, so the velocity constraint answers 0.8580 m/s over the 0.0127 m header while the design's own sizing velocity stays 15 m/s and the constraint's limit stays 30.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+mechanical_design = true
+capacity_analysis_enabled = true
+[cases.expected]
+products_n = [0.3, 0.7]
+products_z = [[0.6, 0.4], [0.6, 0.4]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462001, -20689.86284462001]
+design_header_diameter = 0.0127
+design_branch_diameter = 0.0127
+design_header_length = 1.5
+design_wall_thickness = 0.003
+manifold_volume = 0.00019001530466156163
+design_total_pressure_drop = 107.92248156311979
+header_weight = 1.7423351396625337
+branch_weight = 1.1615567597750225
+total_weight = 2.903891899437556
+velocity_value = 0.8580239773996624
+velocity_design = 30.0
+velocity_utilization = 0.028600799246655415
+max_utilization = 0.028600799246655415
+capacity_exceeded = false
+bottleneck_constraint = "velocity"

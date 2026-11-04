@@ -1489,6 +1489,12 @@ def splitter(
     max_design_velocity: Q | None = None,
     header_diameter: Q | None = None,
     capacity_analysis_enabled: bool | None = None,
+    mechanical_design: bool | None = None,
+    design_velocity: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    tensile_strength: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SplitterResult:
     """Split a stream into several with the same state, in proportion to ``split_factors``.
 
@@ -1505,12 +1511,19 @@ def splitter(
     an otherwise empty map at the class defaults. The map is absent until one of them is
     used, exactly as ``Splitter``'s is.
 
+    ``mechanical_design`` runs ``SplitterMechanicalDesign.calcDesign`` and publishes the
+    sized header, branch, wall, manifold volume, pressure drop and weights; the five
+    parameters after it are the design's own and are refused without the flag. The design
+    sizes the header, so ``header_diameter`` is refused with it. With both the design and
+    the capacity map asked for, the map's velocity reads the sized diameter.
+
     NeqSim's ``Splitter.run`` returns outlet enthalpies that do not conserve energy, so
     this diverges deliberately rather than reproducing them.
 
     Raises:
-        InvalidInputError: where there is no outlet, or the factors do not sum to a
-            positive value.
+        InvalidInputError: where there is no outlet, the factors do not sum to a positive
+            value, a design input is stated without ``mechanical_design``, a stated
+            ``header_diameter`` meets the flag, or a design division has no answer.
 
     See :func:`azoth.process.reference.splitter`.
     """
@@ -1525,6 +1538,12 @@ def splitter(
         max_design_velocity=max_design_velocity,
         header_diameter=header_diameter,
         capacity_analysis_enabled=capacity_analysis_enabled,
+        mechanical_design=mechanical_design,
+        design_velocity=design_velocity,
+        max_operation_pressure=max_operation_pressure,
+        tensile_strength=tensile_strength,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
     )
 
 

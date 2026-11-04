@@ -6346,9 +6346,9 @@ pub fn shortcut_distillation_column(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled, mechanical_design, design_velocity, max_operation_pressure, tensile_strength, joint_efficiency, corrosion_allowance))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors, design_pressure_drop, max_design_velocity, header_diameter, capacity_analysis_enabled, mechanical_design, design_velocity, max_operation_pressure, tensile_strength, joint_efficiency, corrosion_allowance)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn splitter(
@@ -6363,6 +6363,12 @@ pub fn splitter(
     max_design_velocity: Option<f64>,
     header_diameter: Option<f64>,
     capacity_analysis_enabled: Option<bool>,
+    mechanical_design: Option<bool>,
+    design_velocity: Option<f64>,
+    max_operation_pressure: Option<f64>,
+    tensile_strength: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
 ) -> PyResult<crate::transport_gen::PySplitterResult> {
     azoth_process::models::splitter::splitter(
         &components,
@@ -6375,6 +6381,12 @@ pub fn splitter(
         max_design_velocity.map(meters_per_second),
         header_diameter.map(meters),
         capacity_analysis_enabled,
+        mechanical_design,
+        design_velocity.map(meters_per_second),
+        max_operation_pressure.map(pascals),
+        tensile_strength.map(pascals),
+        joint_efficiency,
+        corrosion_allowance.map(meters),
     )
     .map(|r| crate::transport_gen::PySplitterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

@@ -502,8 +502,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // the retention time, the operating pressure, the allowable stress, the joint efficiency
     // and the corrosion allowance - make twenty-four to thirty-one. **And the gas scrubber's
     // six** - its volume safety factor, level fraction, operating pressure, allowable stress,
-    // joint efficiency and corrosion allowance - thirty-two to thirty-seven.
-    assert_eq!(checked, 150, "the bounds this test walked");
+    // joint efficiency and corrosion allowance - thirty-two to thirty-seven. **And the
+    // splitter's design velocity's positive bound** takes the walk to a hundred and fifty-one.
+    assert_eq!(checked, 151, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -672,8 +673,10 @@ fn the_generated_input_table_is_the_models_own() {
     // stirred-tank reactor's three stored fields** - `vessel_volume`, `residence_time` and
     // `agitator_power_per_volume` - `614 + 3 = 617`. **And the splitter's capacity four** -
     // `design_pressure_drop`, `max_design_velocity`, `header_diameter` and
-    // `capacity_analysis_enabled` - `617 + 4 = 621`.
-    assert_eq!(walked, 621, "the inputs this test walked");
+    // `capacity_analysis_enabled` - `617 + 4 = 621`. **And the splitter's mechanical
+    // design's six** - `mechanical_design`, `design_velocity`, `max_operation_pressure`,
+    // `tensile_strength`, `joint_efficiency` and `corrosion_allowance` - `621 + 6 = 627`.
+    assert_eq!(walked, 627, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

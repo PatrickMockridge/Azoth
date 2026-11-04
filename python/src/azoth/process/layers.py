@@ -297,7 +297,8 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
 
     The capacity map's numeric fields are dumped under the probe's own keys. The boolean
     and the bottleneck's name are not: the layer harness compares floats, so those two are
-    pinned by the case and by `test_splitter_capacity.py`.
+    pinned by the case and by `test_splitter_capacity.py`. The mechanical design's nine
+    numeric answers are dumped the same way when `mechanical_design` is on.
 
     Nothing here reads a state the kernel did not compute. A branch's pressure, temperature
     and composition are the feed's *by construction* - the kernel copies them - so dumping
@@ -306,21 +307,16 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     `Stream::entropy` rather than a layer of the split.
     """
     from azoth.process.reference import capacity
-    from azoth.process.reference.splitter import _capacity, _route
+    from azoth.process.reference.splitter import _capacity, _design, _route
 
     components = [str(name) for name in inputs["components"]]
     t = float(inputs["feed_t"])
     p = float(inputs["feed_p"])
     z = [float(v) for v in inputs["feed_z"]]
     n = float(inputs["feed_n"])
+    factors = [float(f) for f in inputs["split_factors"]]
 
-    states = _route(
-        components,
-        t,
-        p,
-        z,
-        [float(f) for f in inputs["split_factors"]],
-    )
+    states = _route(components, t, p, z, factors)
     dump = {"feed_h": states.h_in}
     for index, fraction in enumerate(states.fractions):
         dump[f"products{index}_n"] = n * fraction
@@ -335,6 +331,27 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     dump["feed_volume_flow_m3_s"] = capacity.system_volumetric_flow(
         components, t, p, z, n, from_feed=True
     )
+    stated_header = None if "header_diameter" not in inputs else float(inputs["header_diameter"])
+    # The case states `corrosion_allowance` in the spec's millimetres while every other design
+    # input is already SI, so it is divided by 1000 for `_design`'s metres.
+    design = _design(
+        components,
+        t,
+        p,
+        z,
+        n,
+        factors,
+        stated_header,
+        bool(inputs.get("mechanical_design", False)),
+        None if "design_velocity" not in inputs else float(inputs["design_velocity"]),
+        None if "max_operation_pressure" not in inputs else float(inputs["max_operation_pressure"]),
+        None if "tensile_strength" not in inputs else float(inputs["tensile_strength"]),
+        None if "joint_efficiency" not in inputs else float(inputs["joint_efficiency"]),
+        None
+        if "corrosion_allowance" not in inputs
+        else float(inputs["corrosion_allowance"]) / 1000.0,
+    )
+    effective_header = stated_header if design is None else design.header_diameter
     capacity_map = _capacity(
         components,
         t,
@@ -343,7 +360,7 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
         n,
         None if "design_pressure_drop" not in inputs else float(inputs["design_pressure_drop"]),
         None if "max_design_velocity" not in inputs else float(inputs["max_design_velocity"]),
-        None if "header_diameter" not in inputs else float(inputs["header_diameter"]),
+        effective_header,
         bool(inputs.get("capacity_analysis_enabled", False)),
     )
     for key, value in (
@@ -357,6 +374,19 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
         if value is not None:
             dump[key] = value
     dump["max_utilization"] = capacity_map.max_utilization
+    if design is not None:
+        for key, value in (
+            ("design_header_diameter_m", design.header_diameter),
+            ("design_branch_diameter_m", design.branch_diameter),
+            ("design_header_length_m", design.header_length),
+            ("design_wall_thickness_m", design.wall_thickness),
+            ("manifold_volume_m3", design.manifold_volume),
+            ("design_total_pressure_drop_pa", design.total_pressure_drop),
+            ("header_weight_kg", design.header_weight),
+            ("branch_weight_kg", design.branch_weight),
+            ("total_weight_kg", design.total_weight),
+        ):
+            dump[key] = value
     return dump
 
 
@@ -2170,6 +2200,79 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=8,
         identified_by=("case", "two_phase_one_outlet"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The mechanical design's nine branches, in the probe's own order.
+    LayerCase(
+        model="process.splitter",
+        case="the_default_design_sizes_at_fifteen_metres_per_second",
+        capture="process_splitter_mechanical_design.tsv",
+        block=0,
+        identified_by=("case", "default_design"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_larger_flow_rounds_the_header_to_one_inch",
+        capture="process_splitter_mechanical_design.tsv",
+        block=1,
+        identified_by=("case", "twenty_mol"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_lower_design_velocity_rounds_the_header_up",
+        capture="process_splitter_mechanical_design.tsv",
+        block=2,
+        identified_by=("case", "design_velocity_ten"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_operating_pressure_thickens_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=3,
+        identified_by=("case", "high_pressure"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_tensile_strength_thickens_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=4,
+        identified_by=("case", "low_tensile"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_corrosion_allowance_is_added_to_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=5,
+        identified_by=("case", "corrosion"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_joint_efficiency_is_read_and_discarded",
+        capture="process_splitter_mechanical_design.tsv",
+        block=6,
+        identified_by=("case", "joint_efficiency"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_two_phase_design_reads_the_system_density",
+        capture="process_splitter_mechanical_design.tsv",
+        block=7,
+        identified_by=("case", "two_phase"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_velocity_reads_the_designed_header",
+        capture="process_splitter_mechanical_design.tsv",
+        block=8,
+        identified_by=("case", "design_with_capacity"),
         divergence=_SPLITTER_DIVERGENCE,
     ),
     # **The reactive section's block**, on the binary state the model's own case is held to:

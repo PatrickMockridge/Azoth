@@ -317,11 +317,90 @@ to = "heavy"
         "velocity_design",
         "velocity_utilization",
         "bottleneck_constraint",
+        "design_header_diameter",
+        "design_branch_diameter",
+        "design_header_length",
+        "design_wall_thickness",
+        "manifold_volume",
+        "design_total_pressure_drop",
+        "header_weight",
+        "branch_weight",
+        "total_weight",
     ] {
         assert!(split[field].is_null(), "`{field}` is {:?}", split[field]);
     }
     assert_eq!(split["max_utilization"].as_f64(), Some(0.0));
     assert_eq!(split["capacity_exceeded"].as_bool(), Some(false));
+}
+
+/// **The mechanical design crosses the wire, and the capacity map reads the header it sized.**
+///
+/// `calcDesign` is the caller's explicit call, so `mechanical_design` is the flowsheet's flag.
+/// The design's nine fields are the record's, not the stream's, and the velocity beside them is
+/// read against the NPS-rounded header rather than a stated one.
+#[test]
+fn the_splitter_publishes_its_mechanical_design() {
+    const DESIGNED: &str = r#"
+id = "flowsheets.splitter_design"
+name = "One splitter with a sized header"
+
+products = ["light", "heavy"]
+
+[[inputs]]
+name = "feed_1"
+components = ["n-butane", "n-pentane"]
+n = 1.0
+z = [0.6, 0.4]
+P = 1.0e6
+T = 300.0
+
+[[instances]]
+id = "split1"
+unit = "unit_ops.splitter"
+[instances.parameters]
+split_factors = [0.3, 0.7]
+mechanical_design = true
+capacity_analysis_enabled = true
+
+[[connections]]
+from = "feed_1"
+to = "split1.feed"
+
+[[connections]]
+from = "split1.products[0]"
+to = "light"
+
+[[connections]]
+from = "split1.products[1]"
+to = "heavy"
+"#;
+    let report = run_flowsheet(DESIGNED);
+    let split = &report.results["split1"];
+
+    assert_eq!(split["design_header_diameter"]["unit"], "m");
+    assert_eq!(
+        split["design_header_diameter"]["magnitude_si"].as_f64(),
+        Some(0.0127)
+    );
+    assert_eq!(
+        split["design_wall_thickness"]["magnitude_si"].as_f64(),
+        Some(0.003)
+    );
+    assert_eq!(
+        split["design_header_length"]["magnitude_si"].as_f64(),
+        Some(1.5)
+    );
+    assert_eq!(split["header_weight"]["unit"], "kg");
+    assert_eq!(split["design_total_pressure_drop"]["unit"], "Pa");
+    assert_eq!(split["manifold_volume"]["unit"], "m**3");
+    let velocity = split["velocity_value"]["magnitude_si"]
+        .as_f64()
+        .expect("a magnitude");
+    assert!(
+        (velocity - 0.8580239773996624).abs() < 1e-6,
+        "the velocity is {velocity}"
+    );
+    assert_eq!(split["bottleneck_constraint"], "velocity");
 }
 
 /// **A result is the last pass's, and it agrees with the stream the same pass published.**

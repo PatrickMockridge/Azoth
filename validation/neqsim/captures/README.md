@@ -180,6 +180,8 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
   > captures/process_splitter_capacity.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_mechanical_design \
+  > captures/process_splitter_mechanical_design.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv

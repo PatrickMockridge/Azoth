@@ -43,6 +43,50 @@ DEFAULT_DESIGN_PRESSURE_DROP_PA = 5000.0
 DEFAULT_MAX_DESIGN_VELOCITY_M_S = 30.0
 #: `CapacityConstraint.MAX_UTILIZATION`.
 MAX_UTILIZATION = 9.99
+#: `SplitterMechanicalDesign.designVelocity`, m/s.
+DEFAULT_DESIGN_VELOCITY_M_S = 15.0
+#: `MechanicalDesign.maxOperationPressure`, the class's `100` bara, in pascals.
+DEFAULT_MAX_OPERATION_PRESSURE_PA = 100.0e5
+#: `MechanicalDesign.tensileStrength`, the class's `483` MPa, in pascals.
+DEFAULT_TENSILE_STRENGTH_PA = 483.0e6
+#: `MechanicalDesign.jointEfficiency`: read by the wall formula and then discarded.
+DEFAULT_JOINT_EFFICIENCY = 1.0
+#: `SplitterMechanicalDesign.calculateWeights`' steel density, kg/m3.
+STEEL_DENSITY_KG_M3 = 7850.0
+#: The class's wall-thickness floor, mm.
+MIN_WALL_THICKNESS_MM = 3.0
+#: The class's branch-spacing floor, m.
+MIN_BRANCH_SPACING_M = 0.5
+#: The class's assumed branch length, m.
+BRANCH_LENGTH_M = 0.5
+#: `SplitterMechanicalDesign.calcDesign`'s splitting loss coefficient.
+SPLITTING_LOSS_COEFFICIENT = 0.5
+#: The B31.3 temperature coefficient the class hard-sets.
+WALL_Y_COEFFICIENT = 0.4
+#: The class's standard pipe sizes, in metres, from 1/2" to 48".
+STANDARD_PIPE_SIZES_M = (
+    0.0127,
+    0.0254,
+    0.0381,
+    0.0508,
+    0.0635,
+    0.0762,
+    0.1016,
+    0.1270,
+    0.1524,
+    0.2032,
+    0.2540,
+    0.3048,
+    0.3556,
+    0.4064,
+    0.4572,
+    0.5080,
+    0.6096,
+    0.7620,
+    0.9144,
+    1.0668,
+    1.2192,
+)
 
 
 def splitter(
@@ -56,6 +100,12 @@ def splitter(
     max_design_velocity: Q | None = None,
     header_diameter: Q | None = None,
     capacity_analysis_enabled: bool | None = None,
+    mechanical_design: bool | None = None,
+    design_velocity: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    tensile_strength: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SplitterResult:
     """Split a stream into several with the same state, in proportion to ``split_factors``.
 
@@ -73,14 +123,24 @@ def splitter(
         header_diameter: the mechanical design's header diameter; absent is 0.0, unsized.
         capacity_analysis_enabled: ``splitterCapacityAnalysisEnabled``; absent is false.
             It gates initialization only - the capacity getters ignore it.
+        mechanical_design: run ``SplitterMechanicalDesign.calcDesign``; absent is false. The
+            five design parameters below are refused without it, and a stated
+            ``header_diameter`` is refused with it.
+        design_velocity: the design's sizing velocity; absent is the class's 15 m/s.
+        max_operation_pressure: the wall formula's pressure; absent is 100 bara.
+        tensile_strength: the wall formula's tensile strength; absent is 483 MPa.
+        joint_efficiency: read by the wall formula and discarded; absent is 1.0.
+        corrosion_allowance: the wall thickness's corrosion allowance; absent is 0 mm.
 
     Returns:
-        Every outlet's record and the capacity map, with the per-constraint fields absent
-        when that constraint is not in the map.
+        Every outlet's record, the capacity map and, with ``mechanical_design``, the sized
+        header, branch, wall, manifold volume, pressure drop and weights. The per-constraint
+        and design fields are absent when they were not asked for.
 
     Raises:
-        InvalidInputError: where there is no outlet, or the factors do not sum to a
-            positive value.
+        InvalidInputError: where there is no outlet, the factors do not sum to a positive
+            value, a design input is stated without ``mechanical_design``, a stated
+            ``header_diameter`` meets the flag, or a design division has no answer.
 
     Example:
         >>> import azoth
@@ -116,8 +176,30 @@ def splitter(
     header_diameter_si = (
         None if header_diameter is None else input_to_si(spec, "header_diameter", header_diameter)
     )
+    design_velocity_si = (
+        None if design_velocity is None else input_to_si(spec, "design_velocity", design_velocity)
+    )
+    max_operation_pressure_si = (
+        None
+        if max_operation_pressure is None
+        else input_to_si(spec, "max_operation_pressure", max_operation_pressure)
+    )
+    tensile_strength_si = (
+        None
+        if tensile_strength is None
+        else input_to_si(spec, "tensile_strength", tensile_strength)
+    )
+    corrosion_allowance_si = (
+        None
+        if corrosion_allowance is None
+        else input_to_si(spec, "corrosion_allowance", corrosion_allowance)
+    )
 
-    apply_checks(checks.on_input, {"feed_t": t}.get, warnings)
+    apply_checks(
+        checks.on_input,
+        {"feed_t": t, "design_velocity": design_velocity_si}.get,
+        warnings,
+    )
 
     if not split_factors:
         raise InvalidInputError("split_factors", "a splitter needs at least one outlet")
@@ -127,6 +209,24 @@ def splitter(
         raise InvalidInputError("split_factors", "the split fractions must sum to a positive value")
 
     states = _route(components, t, p, feed_z, split_factors)
+    design = _design(
+        components,
+        t,
+        p,
+        feed_z,
+        n,
+        split_factors,
+        header_diameter_si,
+        mechanical_design is True,
+        design_velocity_si,
+        max_operation_pressure_si,
+        tensile_strength_si,
+        joint_efficiency,
+        corrosion_allowance_si,
+    )
+    # With the design on, the capacity map reads the sized diameter live; with it off, the
+    # stated input stands.
+    effective_header_diameter = header_diameter_si if design is None else design.header_diameter
     capacity_map = _capacity(
         components,
         t,
@@ -135,7 +235,7 @@ def splitter(
         n,
         design_pressure_drop_si,
         max_design_velocity_si,
-        header_diameter_si,
+        effective_header_diameter,
         capacity_analysis_enabled is True,
     )
     z = tuple(feed_z)
@@ -154,6 +254,17 @@ def splitter(
         max_utilization=capacity_map.max_utilization,
         capacity_exceeded=capacity_map.capacity_exceeded,
         bottleneck_constraint=capacity_map.bottleneck_constraint,
+        design_header_diameter=(None if design is None else _quantity(design.header_diameter, "m")),
+        design_branch_diameter=(None if design is None else _quantity(design.branch_diameter, "m")),
+        design_header_length=(None if design is None else _quantity(design.header_length, "m")),
+        design_wall_thickness=(None if design is None else _quantity(design.wall_thickness, "m")),
+        manifold_volume=(None if design is None else _quantity(design.manifold_volume, "m**3")),
+        design_total_pressure_drop=(
+            None if design is None else _quantity(design.total_pressure_drop, "Pa")
+        ),
+        header_weight=(None if design is None else _quantity(design.header_weight, "kg")),
+        branch_weight=(None if design is None else _quantity(design.branch_weight, "kg")),
+        total_weight=(None if design is None else _quantity(design.total_weight, "kg")),
         warnings=tuple(warnings),
     )
 
@@ -252,6 +363,169 @@ def _utilization(value: float, design: float) -> float:
     if design <= 0.0:
         return 0.0
     return min(value / design, MAX_UTILIZATION)
+
+
+@dataclass(frozen=True, slots=True)
+class SplitterDesign:
+    """`SplitterMechanicalDesign.calcDesign`'s answer, in SI (m, m3, kg, Pa)."""
+
+    header_diameter: float
+    branch_diameter: float
+    header_length: float
+    wall_thickness: float
+    manifold_volume: float
+    total_pressure_drop: float
+    header_weight: float
+    branch_weight: float
+    total_weight: float
+
+
+def _design(
+    components: list[str],
+    t: float,
+    p: float,
+    feed_z: list[float],
+    n: float,
+    split_factors: list[float],
+    header_diameter: float | None,
+    mechanical_design: bool,
+    design_velocity: float | None,
+    max_operation_pressure: float | None,
+    tensile_strength: float | None,
+    joint_efficiency: float | None,
+    corrosion_allowance: float | None,
+) -> SplitterDesign | None:
+    """`SplitterMechanicalDesign.calcDesign`, with the class's lazy call and its guards.
+
+    **The class does not call this from `run`.** The flag is the caller's explicit request;
+    with it off, any stated design input is refused by name. The formula keeps the class's
+    units: `P` in bar, `S` = 40 % of the tensile strength in MPa, and `joint_efficiency`
+    read and discarded.
+    """
+    if not mechanical_design:
+        for name, stated in (
+            ("design_velocity", design_velocity is not None),
+            ("max_operation_pressure", max_operation_pressure is not None),
+            ("tensile_strength", tensile_strength is not None),
+            ("joint_efficiency", joint_efficiency is not None),
+            ("corrosion_allowance", corrosion_allowance is not None),
+        ):
+            if stated:
+                raise InvalidInputError(name, f"`{name}` was stated without `mechanical_design`")
+        return None
+    if header_diameter is not None:
+        raise InvalidInputError(
+            "header_diameter",
+            "`mechanical_design` sizes the header; state one or the other, not both",
+        )
+
+    total = sum(split_factors)
+    if not split_factors or total <= 0.0:
+        raise InvalidInputError(
+            "split_factors", "a splitter needs at least one outlet whose factors sum above zero"
+        )
+
+    design_velocity_value = (
+        DEFAULT_DESIGN_VELOCITY_M_S if design_velocity is None else design_velocity
+    )
+    max_operation_pressure_value = (
+        DEFAULT_MAX_OPERATION_PRESSURE_PA
+        if max_operation_pressure is None
+        else max_operation_pressure
+    )
+    tensile_strength_mpa = (
+        DEFAULT_TENSILE_STRENGTH_PA if tensile_strength is None else tensile_strength
+    ) / 1.0e6
+    joint_efficiency_value = (
+        DEFAULT_JOINT_EFFICIENCY if joint_efficiency is None else joint_efficiency
+    )
+    corrosion_allowance_mm = (0.0 if corrosion_allowance is None else corrosion_allowance) * 1000.0
+
+    from azoth.process.reference import capacity as capacity_module
+
+    volume_flow = capacity_module.system_volumetric_flow(
+        components, t, p, feed_z, n, from_feed=True
+    )
+    if not math.isfinite(volume_flow) or volume_flow <= 0.0:
+        # `calcDesign` returns before it divides or sizes anything; the class's fields stay at
+        # their initial zeros, and they are answers, not absent ones.
+        return SplitterDesign(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    if not design_velocity_value > 0.0 or not math.isfinite(design_velocity_value):
+        raise InvalidInputError(
+            "design_velocity",
+            "the header area divides by the design velocity, so it must be positive",
+        )
+
+    design_pressure_bar = max_operation_pressure_value / 1.0e5 * 1.1
+    allowable_stress_mpa = tensile_strength_mpa * 0.4
+    denominator = 2.0 * allowable_stress_mpa + 2.0 * WALL_Y_COEFFICIENT * design_pressure_bar
+    if not denominator > 0.0 or not math.isfinite(denominator):
+        raise InvalidInputError(
+            "tensile_strength",
+            "the wall-thickness denominator is zero when the tensile strength and the design "
+            "pressure are both zero",
+        )
+    # Read and discarded, as the class does.
+    _ = joint_efficiency_value
+
+    branches = float(len(split_factors))
+    max_ratio = max(factor / total for factor in split_factors)
+    header_area = volume_flow / design_velocity_value
+    header_diameter_value = _round_to_standard_pipe_size(math.sqrt(4.0 * header_area / math.pi))
+    branch_area = volume_flow * max_ratio / design_velocity_value
+    branch_diameter = _round_to_standard_pipe_size(math.sqrt(4.0 * branch_area / math.pi))
+
+    branch_spacing = max(2.0 * branch_diameter, MIN_BRANCH_SPACING_M)
+    header_length = (branches + 1.0) * branch_spacing
+    wall_thickness_mm = max(
+        design_pressure_bar * header_diameter_value * 1000.0 / denominator + corrosion_allowance_mm,
+        MIN_WALL_THICKNESS_MM,
+    )
+
+    header_section = math.pi * (header_diameter_value / 2.0) ** 2
+    manifold_volume = header_section * header_length
+    velocity = volume_flow / header_section
+    density = capacity_module.system_mass_density(components, t, p, feed_z, from_feed=True)
+    total_pressure_drop = SPLITTING_LOSS_COEFFICIENT * 0.5 * density * velocity * velocity
+
+    header_outer = header_diameter_value + 2.0 * wall_thickness_mm / 1000.0
+    header_weight = (
+        math.pi
+        / 4.0
+        * (header_outer**2 - header_diameter_value**2)
+        * header_length
+        * STEEL_DENSITY_KG_M3
+    )
+    branch_outer = branch_diameter + 2.0 * wall_thickness_mm / 1000.0
+    branch_weight = (
+        math.pi
+        / 4.0
+        * (branch_outer**2 - branch_diameter**2)
+        * BRANCH_LENGTH_M
+        * STEEL_DENSITY_KG_M3
+        * branches
+    )
+
+    return SplitterDesign(
+        header_diameter=header_diameter_value,
+        branch_diameter=branch_diameter,
+        header_length=header_length,
+        wall_thickness=wall_thickness_mm / 1000.0,
+        manifold_volume=manifold_volume,
+        total_pressure_drop=total_pressure_drop,
+        header_weight=header_weight,
+        branch_weight=branch_weight,
+        total_weight=header_weight + branch_weight,
+    )
+
+
+def _round_to_standard_pipe_size(diameter: float) -> float:
+    """`SplitterMechanicalDesign.roundToStandardPipeSize`: the first size at or above."""
+    for size in STANDARD_PIPE_SIZES_M:
+        if size >= diameter:
+            return size
+    return STANDARD_PIPE_SIZES_M[-1]
 
 
 def _quantity(value: float | None, unit: str) -> Q | None:

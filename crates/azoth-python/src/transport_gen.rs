@@ -19004,6 +19004,33 @@ pub struct PySplitterResult {
     /// `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
     #[pyo3(get)]
     pub bottleneck_constraint: Option<String>,
+    /// `calcDesign`'s NPS-rounded header diameter. Absent unless `mechanical_design`; zero when the feed flow is not positive.
+    #[pyo3(get)]
+    pub design_header_diameter: Option<PyQty>,
+    /// `calcDesign`'s NPS-rounded branch diameter, from the largest split factor's share of the flow. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_branch_diameter: Option<PyQty>,
+    /// `(number of outlets + 1)` times `max(2 * branch diameter, 0.5 m)`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_header_length: Option<PyQty>,
+    /// the B31.3-style wall thickness the class holds in mm, crossed in metres; never below the class's 3 mm floor. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// the header's internal volume, `pi (d/2)^2 * header length`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub manifold_volume: Option<PyQty>,
+    /// `0.25 rho_system v^2` on the rounded header - the class's `0.5 * 0.5` with the system density. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_total_pressure_drop: Option<PyQty>,
+    /// the header's steel: `pi/4 (OD^2 - D^2) * length * 7850`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub header_weight: Option<PyQty>,
+    /// the branch steel: the same wall and outside diameter over 0.5 m per outlet at 7850 kg/m3. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub branch_weight: Option<PyQty>,
+    /// the header and branch weights summed. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub total_weight: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -19013,7 +19040,7 @@ pub struct PySplitterResult {
 impl PySplitterResult {
     fn __repr__(&self) -> String {
         format!(
-            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, pressure_drop_value={:?}, pressure_drop_design={:?}, pressure_drop_utilization={:?}, velocity_value={:?}, velocity_design={:?}, velocity_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
+            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, pressure_drop_value={:?}, pressure_drop_design={:?}, pressure_drop_utilization={:?}, velocity_value={:?}, velocity_design={:?}, velocity_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, bottleneck_constraint={:?}, design_header_diameter={:?}, design_branch_diameter={:?}, design_header_length={:?}, design_wall_thickness={:?}, manifold_volume={:?}, design_total_pressure_drop={:?}, header_weight={:?}, branch_weight={:?}, total_weight={:?}, {} warning(s))",
             self.products_n,
             self.products_z,
             self.products_p,
@@ -19028,6 +19055,15 @@ impl PySplitterResult {
             self.max_utilization,
             self.capacity_exceeded,
             self.bottleneck_constraint,
+            self.design_header_diameter,
+            self.design_branch_diameter,
+            self.design_header_length,
+            self.design_wall_thickness,
+            self.manifold_volume,
+            self.design_total_pressure_drop,
+            self.header_weight,
+            self.branch_weight,
+            self.total_weight,
             self.warnings.len()
         )
     }
@@ -19090,6 +19126,42 @@ impl From<&azoth_process::models::splitter::SplitterResult> for PySplitterResult
             max_utilization: r.max_utilization,
             capacity_exceeded: r.capacity_exceeded,
             bottleneck_constraint: r.bottleneck_constraint.clone(),
+            design_header_diameter: r.design_header_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_branch_diameter: r.design_branch_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_header_length: r.design_header_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            manifold_volume: r.manifold_volume.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3".to_string(),
+            }),
+            design_total_pressure_drop: r.design_total_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            header_weight: r.header_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            branch_weight: r.branch_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            total_weight: r.total_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

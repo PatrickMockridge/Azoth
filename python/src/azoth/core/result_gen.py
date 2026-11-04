@@ -7550,6 +7550,33 @@ class SplitterResult(_HasWarnings):
     #: `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
     bottleneck_constraint: str | None
 
+    #: `calcDesign`'s NPS-rounded header diameter. Absent unless `mechanical_design`; zero when the feed flow is not positive.
+    design_header_diameter: Q | None
+
+    #: `calcDesign`'s NPS-rounded branch diameter, from the largest split factor's share of the flow. Absent unless `mechanical_design`.
+    design_branch_diameter: Q | None
+
+    #: `(number of outlets + 1)` times `max(2 * branch diameter, 0.5 m)`. Absent unless `mechanical_design`.
+    design_header_length: Q | None
+
+    #: the B31.3-style wall thickness the class holds in mm, crossed in metres; never below the class's 3 mm floor. Absent unless `mechanical_design`.
+    design_wall_thickness: Q | None
+
+    #: the header's internal volume, `pi (d/2)^2 * header length`. Absent unless `mechanical_design`.
+    manifold_volume: Q | None
+
+    #: `0.25 rho_system v^2` on the rounded header - the class's `0.5 * 0.5` with the system density. Absent unless `mechanical_design`.
+    design_total_pressure_drop: Q | None
+
+    #: the header's steel: `pi/4 (OD^2 - D^2) * length * 7850`. Absent unless `mechanical_design`.
+    header_weight: Q | None
+
+    #: the branch steel: the same wall and outside diameter over 0.5 m per outlet at 7850 kg/m3. Absent unless `mechanical_design`.
+    branch_weight: Q | None
+
+    #: the header and branch weights summed. Absent unless `mechanical_design`.
+    total_weight: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

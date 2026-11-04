@@ -2757,12 +2757,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.splitter': {
         "calc_id": 'process.splitter',
         "name": 'Splitter',
-        "spec": {'path': 'specs/models/process/splitter.toml', 'sha256': '98544ba6c099d6e04beca79fafed535dc16295c1b2994096229f64d71c18e61d'},
-        "code": [{'path': 'python/src/azoth/process/reference/splitter.py', 'sha256': '4d951d7eba930b0f9df5ce7222e3e1440055ea95b1e32ace2b7e784f515e422f'}, {'path': 'crates/azoth-process/src/models/splitter.rs', 'sha256': '859e9237f61e33be2482c898fd54d07e4b48bc546cb85414af513c1718f9e0f9'}],
+        "spec": {'path': 'specs/models/process/splitter.toml', 'sha256': 'd1264ad9636d923fa90f13cfd1d9465ce0be7bb25988166819de8c8226bee163'},
+        "code": [{'path': 'python/src/azoth/process/reference/splitter.py', 'sha256': '5efe3b4f73582e3a974e0499b4a1a44393a6f4032c082e97c7a210309873e0b1'}, {'path': 'crates/azoth-process/src/models/splitter.rs', 'sha256': '64cc6d492084d42309c3802ed5722a423421cda012319d3d2dca94218296884f'}],
         "source": 'NeqSim process/equipment/splitter/Splitter.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 11,
+        "tests_active": 20,
         "tests_skipped": 0,
     },
     'process.stirred_tank_reactor': {

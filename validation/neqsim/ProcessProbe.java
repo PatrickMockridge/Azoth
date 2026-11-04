@@ -32,6 +32,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
 //       > captures/process_splitter_capacity.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_mechanical_design \
+//       > captures/process_splitter_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
@@ -132,6 +134,9 @@ public class ProcessProbe {
         break;
       case "splitter_capacity":
         splitterCapacity();
+        break;
+      case "splitter_mechanical_design":
+        splitterMechanicalDesign();
         break;
       case "mixer":
         mixer();
@@ -4994,6 +4999,109 @@ public class ProcessProbe {
         .getBottleneckConstraint();
     System.out.println(
         "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
+  }
+
+  // `SplitterMechanicalDesign.calcDesign` is the caller's explicit call: `run` never reaches
+  // it, and it creates no capacity constraint. Each block moves one of its inputs so the
+  // capture holds the sizing, the wall formula's units, the discarded joint efficiency and
+  // the capacity map's read of the sized diameter.
+  static void splitterMechanicalDesign() {
+    splitterDesignRow("default_design", 1.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        null, null, false);
+    splitterDesignRow("twenty_mol", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        null, null, false);
+    splitterDesignRow("design_velocity_ten", 69.0, 10.0, 300.0, new double[] {0.3, 0.7}, 10.0, null,
+        null, null, null, false);
+    splitterDesignRow("high_pressure", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, 300.0, null,
+        null, null, false);
+    splitterDesignRow("low_tensile", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, 300.0,
+        null, null, false);
+    splitterDesignRow("corrosion", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null, null,
+        1.5, false);
+    splitterDesignRow("joint_efficiency", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        0.7, null, false);
+    splitterDesignRow("two_phase", 1.0, 1.5, 300.0, new double[] {1.0}, null, null, null, null, null,
+        false);
+    splitterDesignRow("design_with_capacity", 1.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null,
+        null, null, null, true);
+  }
+
+  static void splitterDesignRow(String name, double flow, double pressureBara, double temperatureK,
+      double[] factors, Double designVelocity, Double maxOperationPressureBara,
+      Double tensileStrengthMpa, Double jointEfficiency, Double corrosionAllowanceMm,
+      boolean capacityEnabled) {
+    Stream inlet = feed(new String[] {"n-butane", "n-pentane"}, new double[] {0.6, 0.4}, temperatureK,
+        pressureBara, flow);
+    neqsim.process.equipment.splitter.Splitter splitter =
+        new neqsim.process.equipment.splitter.Splitter("sp1", inlet);
+    splitter.setSplitFactors(factors);
+    neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign) splitter
+            .getMechanicalDesign();
+    if (designVelocity != null) {
+      design.setDesignVelocity(designVelocity);
+    }
+    if (maxOperationPressureBara != null) {
+      design.setMaxOperationPressure(maxOperationPressureBara, "bara");
+    }
+    if (tensileStrengthMpa != null) {
+      design.setTensileStrength(tensileStrengthMpa);
+    }
+    if (jointEfficiency != null) {
+      design.setJointEfficiency(jointEfficiency);
+    }
+    if (corrosionAllowanceMm != null) {
+      design.setCorrosionAllowance(corrosionAllowanceMm);
+    }
+    if (capacityEnabled) {
+      splitter.setCapacityAnalysisEnabled(true);
+    }
+    splitter.run();
+    design.calcDesign();
+
+    System.out.println("case=" + name);
+    print("feed", inlet);
+    System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    System.out.println("feed_volume_flow_m3_s=" + inlet.getFlowRate("m3/sec"));
+    System.out.println("mechanical_design=true");
+    System.out.println("design_velocity_m_s=" + design.getDesignVelocity());
+    System.out.println("max_operation_pressure_pa=" + design.getMaxOperationPressure() * 1.0e5);
+    System.out.println("tensile_strength_pa=" + design.getTensileStrength() * 1.0e6);
+    System.out.println("joint_efficiency=" + design.getJointEfficiency());
+    System.out.println("corrosion_allowance_mm=" + design.getCorrosionAllowance());
+    System.out.println("design_header_diameter_m=" + design.getHeaderDiameter());
+    System.out.println("design_branch_diameter_m=" + design.getBranchDiameter());
+    System.out.println("design_header_length_m=" + design.getHeaderLength());
+    System.out.println("design_wall_thickness_m=" + design.getHeaderWallThickness() / 1000.0);
+    System.out.println("manifold_volume_m3=" + design.getManifoldVolume());
+    System.out.println("design_total_pressure_drop_pa=" + design.getTotalPressureDrop() * 1.0e5);
+    System.out.println("header_weight_kg=" + design.weigthVesselShell);
+    System.out.println("branch_weight_kg=" + design.weightPiping);
+    System.out.println("total_weight_kg=" + design.getWeightTotal());
+
+    if (capacityEnabled) {
+      // The map reads the sized diameter live, so these are the post-design answers.
+      Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+          splitter.getCapacityConstraints();
+      System.out.println("constraint_count=" + constraints.size());
+      for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+          constraints.entrySet()) {
+        String constraintName = entry.getKey();
+        neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+        if ("velocity".equals(constraintName)) {
+          System.out.println("velocity_value_m_s=" + constraint.getCurrentValue());
+          System.out.println("velocity_design_m_s=" + constraint.getDesignValue());
+          System.out.println("velocity_utilization=" + constraint.getUtilization());
+        }
+      }
+      System.out.println("max_utilization=" + splitter.getMaxUtilization());
+      System.out.println("capacity_exceeded=" + splitter.isCapacityExceeded());
+      neqsim.process.equipment.capacity.CapacityConstraint bottleneck = splitter
+          .getBottleneckConstraint();
+      System.out.println(
+          "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    }
     System.out.println();
   }
 

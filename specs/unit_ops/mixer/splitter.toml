@@ -17,6 +17,23 @@ unit = "m"
 description = "the mechanical design's header diameter read by the velocity constraint; absent is 0.0, the unsized design"
 [parameters.capacity_analysis_enabled]
 description = "`splitterCapacityAnalysisEnabled`; initializes an otherwise empty map at the class defaults, and the capacity getters ignore it"
+[parameters.mechanical_design]
+description = "`SplitterMechanicalDesign.calcDesign`; sizes the header, branch, wall, manifold volume, drop and weights, and its five parameters are refused without it"
+[parameters.design_velocity]
+unit = "m/s"
+description = "the design's sizing velocity; absent is the class's 15 m/s, not the capacity map's 30"
+[parameters.max_operation_pressure]
+unit = "Pa"
+description = "the wall formula's operating pressure; absent is 100 bara, and it is read in bar"
+[parameters.tensile_strength]
+unit = "Pa"
+description = "the wall formula's tensile strength, of which it takes 40 %; absent is 483 MPa"
+[parameters.joint_efficiency]
+unit = "dimensionless"
+description = "the wall formula's joint efficiency; absent is 1.0, and the class reads it and discards it"
+[parameters.corrosion_allowance]
+unit = "mm"
+description = "the wall thickness's corrosion allowance; absent is 0 mm"
 [[ports]]
 name = "feed"
 direction = "in"

@@ -484,16 +484,35 @@ pub(crate) fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<Kern
 }
 
 pub(crate) fn splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+    use kernels::splitter::SplitterDesignRequest;
+
+    let header_diameter = p.optional_si("header_diameter")?.map(meters);
+    let request = SplitterDesignRequest {
+        mechanical_design: p.optional_flag("mechanical_design")?.unwrap_or(false),
+        design_velocity: p.optional_si("design_velocity")?.map(meters_per_second),
+        max_operation_pressure: p.optional_si("max_operation_pressure")?.map(pascals),
+        tensile_strength: p.optional_si("tensile_strength")?.map(pascals),
+        joint_efficiency: p.optional_number("joint_efficiency")?,
+        corrosion_allowance: p.optional_si("corrosion_allowance")?.map(meters),
+    };
+    let out = kernels::splitter::splitter(&inlets[0], &p.vector("split_factors")?)?;
+    let design = kernels::splitter::design(
+        &inlets[0],
+        &p.vector("split_factors")?,
+        header_diameter,
+        &request,
+    )?;
+    let effective_header_diameter =
+        design.map_or(header_diameter, |d| Some(meters(d.header_diameter)));
     let capacity = kernels::splitter::capacity(
         &inlets[0],
         p.optional_si("design_pressure_drop")?.map(pascals),
         p.optional_si("max_design_velocity")?.map(meters_per_second),
-        p.optional_si("header_diameter")?.map(meters),
+        effective_header_diameter,
         p.optional_flag("capacity_analysis_enabled")?
             .unwrap_or(false),
     )?;
-    let out = kernels::splitter::splitter(&inlets[0], &p.vector("split_factors")?)?;
-    let result = crate::models::SplitterResult::of(&out, capacity, Vec::new());
+    let result = crate::models::SplitterResult::of(&out, capacity, design, Vec::new());
     KernelOutcome::publishing(out, &result)
 }
 

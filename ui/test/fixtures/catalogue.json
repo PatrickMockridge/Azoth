@@ -5540,6 +5540,16 @@
           "values": []
         },
         {
+          "description": "the wall thickness's corrosion allowance; absent is 0 mm",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "corrosion_allowance",
+          "range": [],
+          "required": false,
+          "unit": "mm",
+          "values": []
+        },
+        {
           "description": "`setDesignPressureDrop`'s limit; supplying it initializes the capacity map, and the class's default is 0.05 bar = 5000 Pa",
           "dimension": "pressure",
           "kind": "quantity",
@@ -5547,6 +5557,28 @@
           "range": [],
           "required": false,
           "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the design's sizing velocity; absent is the class's 15 m/s, not the capacity map's 30",
+          "dimension": "velocity",
+          "kind": "quantity",
+          "name": "design_velocity",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the header area divides by the design velocity",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "m/s",
           "values": []
         },
         {
@@ -5560,6 +5592,16 @@
           "values": []
         },
         {
+          "description": "the wall formula's joint efficiency; absent is 1.0, and the class reads it and discards it",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "joint_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
           "description": "`setMaxDesignVelocity`'s limit; supplying it initializes the capacity map, and the class's default is 30 m/s",
           "dimension": "velocity",
           "kind": "quantity",
@@ -5570,6 +5612,26 @@
           "values": []
         },
         {
+          "description": "the wall formula's operating pressure; absent is 100 bara, and it is read in bar",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "max_operation_pressure",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`SplitterMechanicalDesign.calcDesign`; sizes the header, branch, wall, manifold volume, drop and weights, and its five parameters are refused without it",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "mechanical_design",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "the fraction of the feed to each outlet, one entry per outlet, summing to 1",
           "dimension": "dimensionless",
           "kind": "vector",
@@ -5577,6 +5639,16 @@
           "range": [],
           "required": true,
           "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the wall formula's tensile strength, of which it takes 40 %; absent is 483 MPa",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "tensile_strength",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
           "values": []
         }
       ],

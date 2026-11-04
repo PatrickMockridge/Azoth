@@ -2428,6 +2428,31 @@ mod tests {
                 description: "the fraction to each outlet".to_string(),
             },
         );
+        for (name, unit, description) in [
+            ("mechanical_design", None, "the design flag"),
+            ("design_velocity", Some("m/s"), "the sizing velocity"),
+            ("max_operation_pressure", Some("Pa"), "the wall pressure"),
+            ("tensile_strength", Some("Pa"), "the wall tensile strength"),
+            (
+                "joint_efficiency",
+                Some("dimensionless"),
+                "the wall joint efficiency",
+            ),
+            (
+                "corrosion_allowance",
+                Some("mm"),
+                "the wall corrosion allowance",
+            ),
+        ] {
+            splitter_spec.parameters.insert(
+                name.to_string(),
+                crate::unit_op::Param {
+                    required: false,
+                    unit: unit.map(str::to_string),
+                    description: description.to_string(),
+                },
+            );
+        }
         let mut mixer_spec = mixer("unit_ops.mixer");
         mixer_spec.parameters.insert(
             "outlet_pressure".to_string(),
@@ -2515,6 +2540,20 @@ mod tests {
                     "capacity_analysis_enabled",
                     None,
                     "the capacity-analysis flag",
+                ),
+                ("mechanical_design", None, "the design flag"),
+                ("design_velocity", Some("m/s"), "the sizing velocity"),
+                ("max_operation_pressure", Some("Pa"), "the wall pressure"),
+                ("tensile_strength", Some("Pa"), "the wall tensile strength"),
+                (
+                    "joint_efficiency",
+                    Some("dimensionless"),
+                    "the wall joint efficiency",
+                ),
+                (
+                    "corrosion_allowance",
+                    Some("mm"),
+                    "the wall corrosion allowance",
                 ),
             ] {
                 splitter_spec.parameters.insert(

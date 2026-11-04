@@ -3323,6 +3323,15 @@ class SplitterResult:
     max_utilization: float
     capacity_exceeded: bool
     bottleneck_constraint: str | None
+    design_header_diameter: Qty | None
+    design_branch_diameter: Qty | None
+    design_header_length: Qty | None
+    design_wall_thickness: Qty | None
+    manifold_volume: Qty | None
+    design_total_pressure_drop: Qty | None
+    header_weight: Qty | None
+    branch_weight: Qty | None
+    total_weight: Qty | None
     warnings: list[Warning]
 
 @final
@@ -6090,6 +6099,12 @@ def splitter(
     max_design_velocity: float | None = None,
     header_diameter: float | None = None,
     capacity_analysis_enabled: bool | None = None,
+    mechanical_design: bool | None = None,
+    design_velocity: float | None = None,
+    max_operation_pressure: float | None = None,
+    tensile_strength: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> SplitterResult: ...
 def stirred_tank_reactor(
     components: list[str],

@@ -1,8 +1,9 @@
-//! The splitter's capacity map: the class's lazy initialization and its two constraints.
+//! The splitter's capacity map and its mechanical design.
 
-use azoth_core::units::{meters, meters_per_second, pascals};
+use azoth_core::units::{kelvins, meters, meters_per_second, pascals};
 use azoth_process::Stream;
 use azoth_process::kernels::splitter::{MAX_UTILIZATION, capacity};
+use azoth_process::models::splitter as run_splitter;
 
 fn feed(pressure_pa: f64) -> Stream {
     Stream::from_pt(
@@ -18,6 +19,13 @@ fn feed(pressure_pa: f64) -> Stream {
 fn close(a: f64, b: f64) {
     let scale = 1.0 + a.abs() + b.abs();
     assert!((a - b).abs() < 1e-9 * scale, "{a} vs {b}");
+}
+
+/// A flash-derived value: the feed's density is 6.2e-8 relative from NeqSim's, the measured
+/// difference the capacity capture records, so the oracle values are held at 1e-6.
+fn near(a: f64, b: f64) {
+    let scale = 1.0 + a.abs() + b.abs();
+    assert!((a - b).abs() < 1e-6 * scale, "{a} vs {b}");
 }
 
 #[test]
@@ -159,4 +167,108 @@ fn the_velocity_reads_the_two_phase_feeds_system_flow() {
         report.velocity_utilization.expect("present"),
         0.16560831246950652,
     );
+}
+
+fn model(
+    mechanical_design: Option<bool>,
+    capacity_analysis_enabled: Option<bool>,
+    design_velocity: Option<azoth_core::units::Velocity>,
+    header_diameter: Option<azoth_core::units::Length>,
+) -> azoth_core::Result<azoth_process::models::SplitterResult> {
+    run_splitter(
+        &["n-butane".into(), "n-pentane".into()],
+        1.0,
+        &[0.6, 0.4],
+        pascals(1.0e6),
+        kelvins(300.0),
+        &[0.3, 0.7],
+        None,
+        None,
+        header_diameter,
+        capacity_analysis_enabled,
+        mechanical_design,
+        design_velocity,
+        None,
+        None,
+        None,
+        None,
+    )
+}
+
+#[test]
+fn the_design_outputs_are_absent_without_their_flag() {
+    let result = model(None, None, None, None).expect("the model runs");
+    assert!(result.design_header_diameter.is_none());
+    assert!(result.design_branch_diameter.is_none());
+    assert!(result.design_header_length.is_none());
+    assert!(result.design_wall_thickness.is_none());
+    assert!(result.manifold_volume.is_none());
+    assert!(result.design_total_pressure_drop.is_none());
+    assert!(result.header_weight.is_none());
+    assert!(result.branch_weight.is_none());
+    assert!(result.total_weight.is_none());
+}
+
+#[test]
+fn the_design_is_the_kernels_answer_on_the_record() {
+    let result = model(Some(true), None, None, None).expect("the design runs");
+    assert_eq!(
+        result.design_header_diameter.expect("present").value,
+        0.0127
+    );
+    assert_eq!(
+        result.design_branch_diameter.expect("present").value,
+        0.0127
+    );
+    assert_eq!(result.design_header_length.expect("present").value, 1.5);
+    assert_eq!(result.design_wall_thickness.expect("present").value, 0.003);
+    close(
+        result.manifold_volume.expect("present").value,
+        1.9001530466156163e-4,
+    );
+    near(
+        result.design_total_pressure_drop.expect("present").value,
+        107.92248156311979,
+    );
+    close(
+        result.header_weight.expect("present").value,
+        1.7423351396625337,
+    );
+    close(
+        result.branch_weight.expect("present").value,
+        1.1615567597750225,
+    );
+    close(
+        result.total_weight.expect("present").value,
+        2.903891899437556,
+    );
+}
+
+#[test]
+fn the_designed_header_is_what_the_capacity_reads() {
+    let result = model(Some(true), Some(true), None, None).expect("the design and map run");
+    near(
+        result.velocity_value.expect("present").value,
+        0.8580239773996624,
+    );
+    assert_eq!(result.velocity_design.expect("present").value, 30.0);
+    near(
+        result.velocity_utilization.expect("present"),
+        0.028600799246655415,
+    );
+    assert_eq!(result.bottleneck_constraint.as_deref(), Some("velocity"));
+}
+
+#[test]
+fn a_design_input_without_the_flag_is_refused() {
+    let error = model(None, None, Some(meters_per_second(10.0)), None)
+        .expect_err("design_velocity without mechanical_design");
+    assert!(error.to_string().contains("design_velocity"));
+}
+
+#[test]
+fn a_stated_header_with_the_flag_is_refused() {
+    let error =
+        model(Some(true), None, None, Some(meters(0.02))).expect_err("the design sizes the header");
+    assert!(error.to_string().contains("header_diameter"));
 }

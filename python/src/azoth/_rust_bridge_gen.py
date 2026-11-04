@@ -6862,7 +6862,7 @@ def shortcut_distillation_column(components: list[str], feed_n: Q, feed_z: list[
     )
 
 
-def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float], design_pressure_drop: Q | None=None, max_design_velocity: Q | None=None, header_diameter: Q | None=None, capacity_analysis_enabled: bool | None=None) -> SplitterResult:
+def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float], design_pressure_drop: Q | None=None, max_design_velocity: Q | None=None, header_diameter: Q | None=None, capacity_analysis_enabled: bool | None=None, mechanical_design: bool | None=None, design_velocity: Q | None=None, max_operation_pressure: Q | None=None, tensile_strength: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SplitterResult:
     """``process.splitter``, computed in Rust."""
     spec = _models_gen.model("process.splitter")
     result = _core.splitter(
@@ -6876,6 +6876,12 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         None if max_design_velocity is None else input_to_si(spec, "max_design_velocity", max_design_velocity),
         None if header_diameter is None else input_to_si(spec, "header_diameter", header_diameter),
         capacity_analysis_enabled,
+        mechanical_design,
+        None if design_velocity is None else input_to_si(spec, "design_velocity", design_velocity),
+        None if max_operation_pressure is None else input_to_si(spec, "max_operation_pressure", max_operation_pressure),
+        None if tensile_strength is None else input_to_si(spec, "tensile_strength", tensile_strength),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return SplitterResult(
         products_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_n),
@@ -6892,6 +6898,15 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         max_utilization=result.max_utilization,
         capacity_exceeded=result.capacity_exceeded,
         bottleneck_constraint=result.bottleneck_constraint,
+        design_header_diameter=None if result.design_header_diameter is None else from_si(result.design_header_diameter.magnitude_si, result.design_header_diameter.unit),
+        design_branch_diameter=None if result.design_branch_diameter is None else from_si(result.design_branch_diameter.magnitude_si, result.design_branch_diameter.unit),
+        design_header_length=None if result.design_header_length is None else from_si(result.design_header_length.magnitude_si, result.design_header_length.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        manifold_volume=None if result.manifold_volume is None else from_si(result.manifold_volume.magnitude_si, result.manifold_volume.unit),
+        design_total_pressure_drop=None if result.design_total_pressure_drop is None else from_si(result.design_total_pressure_drop.magnitude_si, result.design_total_pressure_drop.unit),
+        header_weight=None if result.header_weight is None else from_si(result.header_weight.magnitude_si, result.header_weight.unit),
+        branch_weight=None if result.branch_weight is None else from_si(result.branch_weight.magnitude_si, result.branch_weight.unit),
+        total_weight=None if result.total_weight is None else from_si(result.total_weight.magnitude_si, result.total_weight.unit),
         warnings=_warnings(result.warnings),
     )
 

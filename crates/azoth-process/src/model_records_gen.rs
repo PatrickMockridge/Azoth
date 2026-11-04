@@ -951,6 +951,15 @@ impl CalcResult for SplitterResult {
         "max_utilization",
         "capacity_exceeded",
         "bottleneck_constraint",
+        "design_header_diameter",
+        "design_branch_diameter",
+        "design_header_length",
+        "design_wall_thickness",
+        "manifold_volume",
+        "design_total_pressure_drop",
+        "header_weight",
+        "branch_weight",
+        "total_weight",
         "warnings",
     ];
 

@@ -11,16 +11,21 @@ assumptions = [
     "**the capacity map is lazy, and presence is the setter.** The constructor makes the design but no constraints; each limit setter initializes it, and enabling analysis initializes it only when empty. Absent is an uncalled setter; a non-positive one initializes but suppresses only its constraint.",
     "**the pressure-drop constraint's value is always zero.** Its supplier is the class's `return 0.0`, so its utilization is 0 and the bottleneck can only be `velocity` or absent. The velocity is the feed's system volume flow over the header area, and 0 when the diameter is unsized.",
     "**the equipment flag gates initialization only.** `isCapacityExceeded`, `getMaxUtilization` and `getBottleneckConstraint` filter each constraint's `enabled` (always true here) and ignore `splitterCapacityAnalysisEnabled`; utilization is `min(value/design, 9.99)`, 0 when non-positive.",
-    "**the header diameter is the design's field, set directly.** `calcDesign` (NPS sizing, wall thickness, weights, cost), `runTransient` and the generic add/remove/clear constraint API are owed. Both constraints are SOFT, so `isHardLimitExceeded` is false by construction.",
+    "**`mechanical_design` is an explicit `calcDesign` call, not part of `run`.** It sizes the header and the largest branch at 15 m/s and rounds each up to the first of 21 NPS sizes to 48\"; the header length is `(n + 1) max(2 d_branch, 0.5)`.",
+    "**The wall formula is the class's, units and all.** `S` is 40 % of the tensile strength in MPa while `P` stays in bar; `joint_efficiency` is read and discarded; the floor is 3 mm. The manifold volume, the `K = 0.5` drop on the system density and the 7850 kg/m3 weights follow.",
+    "**A zero-mole feed's `getFlowRate` is NaN (0/0), which the class's `<= 0` guard misses**, so its design proceeds to a 48\" header and a NaN drop; this port answers any non-positive volume flow with zeros, the guard's intent.",
+    "`max_allowable_velocity`, `splitter_type`, `material_grade`, `design_standard_code` and the split ratios are stored and read by no arithmetic; the design's 15 m/s is not the map's 30.",
+    "**When both are asked for, the capacity map reads the sized diameter.** `calcDesign` creates no constraint. Cost (`calculateSplitterCost`), `runTransient` and the generic add/remove/clear constraint API remain owed; cost needs a currency the unit system does not carry.",
+    "Both capacity constraints are SOFT, so `isHardLimitExceeded` is false by construction.",
     "**the capacity read flashes the feed; the split stays flash-free.** `getFlowRate` is `n M / rho` with the system density, read at the feed's own cubic root - the side the valve sizing established. The velocity is read only when the constraint exists and the diameter is positive.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run` and its capacity map.",
-    "`process/mechanicaldesign/splitter/SplitterMechanicalDesign.java` supplies `getHeaderDiameter`; the port reads it and does not run `calcDesign`.",
+    "`process/mechanicaldesign/splitter/SplitterMechanicalDesign.java` supplies both the header diameter the capacity map reads and `calcDesign`, which this id runs behind `mechanical_design`; cost estimation is out.",
 ]
 [source]
 standard = "NeqSim process/equipment/splitter/Splitter.java"
-edition = "Its steady-state `run` and its `splitterCapacityConstraints`: the normalized split, and the two constraints with their lazy initialization. **The capture's outlet enthalpies are not used**; its feed row is. `runTransient` and `calcDesign` are out."
+edition = "Its steady-state `run`, its `splitterCapacityConstraints` and `SplitterMechanicalDesign.calcDesign`'s sizing, wall, volume, drop and weights. **The capture's outlet enthalpies are not used**; its feed row is. `calculateSplitterCost` and `runTransient` are out."
 [inputs]
 [inputs.components]
 type = "components"
@@ -55,11 +60,35 @@ description = "`setMaxDesignVelocity`'s stored limit, which is also `setMaxDesig
 [inputs.header_diameter]
 unit = "m"
 optional = true
-description = "`SplitterMechanicalDesign.getHeaderDiameter`, set directly. **Absent is 0.0, the unsized design**, which makes the velocity value zero; `calcDesign` is owed, so nothing here sizes or rounds it.\n"
+description = "`SplitterMechanicalDesign.getHeaderDiameter`, set directly. **Absent is 0.0, the unsized design**, which makes the velocity value zero; refused alongside `mechanical_design`, which sizes and rounds it.\n"
 [inputs.capacity_analysis_enabled]
 type = "boolean"
 optional = true
 description = "`splitterCapacityAnalysisEnabled`: absent is the class's `false`. **It gates initialization only** - the getters below ignore it, as the class's do.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "run `SplitterMechanicalDesign.calcDesign` and publish the header, branch, wall, manifold volume, pressure drop and weights. **Absent is false**; the five design parameters below are refused without it, and a stated `header_diameter` is refused with it.\n"
+[inputs.design_velocity]
+unit = "m/s"
+optional = true
+description = "the design's `designVelocity`, which sizes both the header and the branch. **Absent is the class's 15 m/s**, not the capacity map's `max_design_velocity` (30); refused at or below zero, where the class divides by zero.\n"
+[inputs.max_operation_pressure]
+unit = "Pa"
+optional = true
+description = "`getMaxOperationPressure`, which the wall-thickness formula multiplies by 1.1. **Absent is the base design's 100 bara.** Refused without `mechanical_design`.\n"
+[inputs.tensile_strength]
+unit = "Pa"
+optional = true
+description = "the base design's `tensileStrength`, of which the wall formula takes 40 %. **Absent is 483 MPa.** Refused without `mechanical_design`.\n"
+[inputs.joint_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the base design's `jointEfficiency`. **Absent is 1.0**, and the wall formula reads it and then discards it - a captured no-op. Refused without `mechanical_design`.\n"
+[inputs.corrosion_allowance]
+unit = "mm"
+optional = true
+description = "the wall thickness's corrosion allowance. **Absent is 0 mm.** Refused without `mechanical_design`.\n"
 [outputs]
 [outputs.products_n]
 type = "vector"
@@ -120,6 +149,48 @@ description = "`isCapacityExceeded`: any enabled constraint above 1.0. **It does
 type = "string"
 optional = true
 description = "`getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.\n"
+[outputs.design_header_diameter]
+unit = "m"
+optional = true
+description = "`calcDesign`'s NPS-rounded header diameter. Absent unless `mechanical_design`; zero when the feed flow is not positive.\n"
+[outputs.design_branch_diameter]
+unit = "m"
+optional = true
+description = "`calcDesign`'s NPS-rounded branch diameter, from the largest split factor's share of the flow. Absent unless `mechanical_design`.\n"
+[outputs.design_header_length]
+unit = "m"
+optional = true
+description = "`(number of outlets + 1)` times `max(2 * branch diameter, 0.5 m)`. Absent unless `mechanical_design`.\n"
+[outputs.design_wall_thickness]
+unit = "m"
+optional = true
+description = "the B31.3-style wall thickness the class holds in mm, crossed in metres; never below the class's 3 mm floor. Absent unless `mechanical_design`.\n"
+[outputs.manifold_volume]
+unit = "m**3"
+optional = true
+description = "the header's internal volume, `pi (d/2)^2 * header length`. Absent unless `mechanical_design`.\n"
+[outputs.design_total_pressure_drop]
+unit = "Pa"
+optional = true
+description = "`0.25 rho_system v^2` on the rounded header - the class's `0.5 * 0.5` with the system density. Absent unless `mechanical_design`.\n"
+[outputs.header_weight]
+unit = "kg"
+optional = true
+description = "the header's steel: `pi/4 (OD^2 - D^2) * length * 7850`. Absent unless `mechanical_design`.\n"
+[outputs.branch_weight]
+unit = "kg"
+optional = true
+description = "the branch steel: the same wall and outside diameter over 0.5 m per outlet at 7850 kg/m3. Absent unless `mechanical_design`.\n"
+[outputs.total_weight]
+unit = "kg"
+optional = true
+description = "the header and branch weights summed. Absent unless `mechanical_design`.\n"
+[[valid_range]]
+quantity = "design_velocity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the header area divides by the design velocity\n"
 [[valid_range]]
 quantity = "feed_t"
 min = 0
