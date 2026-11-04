@@ -19064,6 +19064,9 @@ pub struct PyStirredTankReactorResult {
     /// the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.
     #[pyo3(get)]
     pub heat_duty: PyQty,
+    /// `getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out.
+    #[pyo3(get)]
+    pub agitator_power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -19073,13 +19076,14 @@ pub struct PyStirredTankReactorResult {
 impl PyStirredTankReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "StirredTankReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, {} warning(s))",
+            "StirredTankReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, agitator_power={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
             self.product_t,
             self.product_h,
             self.heat_duty,
+            self.agitator_power,
             self.warnings.len()
         )
     }
@@ -19110,6 +19114,10 @@ impl From<&azoth_process::models::stirred_tank_reactor::StirredTankReactorResult
             heat_duty: PyQty {
                 magnitude_si: r.heat_duty.value,
                 unit: "W".to_string(),
+            },
+            agitator_power: PyQty {
+                magnitude_si: r.agitator_power.value,
+                unit: "kW".to_string(),
             },
             warnings: transport(&r.warnings),
         }

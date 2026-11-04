@@ -66,7 +66,10 @@ pub use separator_performance::{
 };
 pub use shortcut_distillation_column::{ShortcutColumn, shortcut_distillation_column};
 pub use splitter::splitter;
-pub use stirred_tank_reactor::{ReactorSetup, stirred_tank_reactor};
+pub use stirred_tank_reactor::{
+    DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3, DEFAULT_RESIDENCE_TIME_H, DEFAULT_VESSEL_VOLUME_M3,
+    ReactorSetup, agitator_power, stirred_tank_reactor,
+};
 pub use tank::tank;
 pub use three_phase_separator::{Entrainment, three_phase_separator};
 pub use throttling_valve::throttling_valve;

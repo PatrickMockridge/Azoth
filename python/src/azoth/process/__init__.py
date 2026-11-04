@@ -799,6 +799,9 @@ def stirred_tank_reactor(
     reactor_temperature: Q | None = None,
     reactor_pressure: Q | None = None,
     pressure_drop: Q | None = None,
+    vessel_volume: Q | None = None,
+    residence_time: Q | None = None,
+    agitator_power_per_volume: Q | None = None,
 ) -> StirredTankReactorResult:
     """React a feed to a conversion of one reactant, then flash the result.
 
@@ -831,6 +834,9 @@ def stirred_tank_reactor(
         reactor_temperature=reactor_temperature,
         reactor_pressure=reactor_pressure,
         pressure_drop=pressure_drop,
+        vessel_volume=vessel_volume,
+        residence_time=residence_time,
+        agitator_power_per_volume=agitator_power_per_volume,
     )
 
 

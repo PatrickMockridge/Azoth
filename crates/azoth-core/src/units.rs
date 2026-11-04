@@ -22,6 +22,7 @@ pub use uom::si::f64::{
     Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power,
     Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductance,
     ThermalConductivity, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
+    VolumetricPowerDensity,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
@@ -45,7 +46,7 @@ pub use uom::si::{
     thermodynamic_temperature::kelvin, time::hour, time::minute, time::second,
     velocity::foot_per_second, velocity::meter_per_second, volume::cubic_meter, volume::liter,
     volume_rate::cubic_meter_per_hour, volume_rate::cubic_meter_per_second,
-    volume_rate::liter_per_minute,
+    volume_rate::liter_per_minute, volumetric_power_density::watt_per_cubic_meter,
 };
 
 /// A length in metres.
@@ -504,6 +505,18 @@ pub fn kilowatts(value: f64) -> Power {
 #[must_use]
 pub fn megawatts(value: f64) -> Power {
     Power::new::<megawatt>(value)
+}
+
+/// A volumetric power density in watts per cubic metre.
+#[must_use]
+pub fn watts_per_cubic_meter(value: f64) -> VolumetricPowerDensity {
+    VolumetricPowerDensity::new::<watt_per_cubic_meter>(value)
+}
+
+/// A time in hours.
+#[must_use]
+pub fn hours(value: f64) -> Time {
+    Time::new::<hour>(value)
 }
 
 /// A length in feet.

@@ -6191,6 +6191,16 @@
       "name": "Stirred-tank reactor",
       "parameters": [
         {
+          "description": "the stored specific agitator power, the other factor of `agitator_power`; the class's 1 kW/m3 is 1000 W/m3",
+          "dimension": "volumetric_power_density",
+          "kind": "quantity",
+          "name": "agitator_power_per_volume",
+          "range": [],
+          "required": false,
+          "unit": "W/m**3",
+          "values": []
+        },
+        {
           "description": "the fractional conversion of the limiting reactant, in [0, 1]",
           "dimension": "dimensionless",
           "kind": "quantity",
@@ -6282,6 +6292,26 @@
           "range": [],
           "required": false,
           "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the stored residence time, echoed by `toMap` and read by nothing in `run`",
+          "dimension": "time",
+          "kind": "quantity",
+          "name": "residence_time",
+          "range": [],
+          "required": false,
+          "unit": "h",
+          "values": []
+        },
+        {
+          "description": "the stored vessel volume, echoed by `toMap` and multiplied into `agitator_power`; `run` reads neither",
+          "dimension": "volume",
+          "kind": "quantity",
+          "name": "vessel_volume",
+          "range": [],
+          "required": false,
+          "unit": "m**3",
           "values": []
         }
       ],
@@ -8688,6 +8718,11 @@
       "factor": 1.0,
       "offset": 0.0
     },
+    "W/m**3": {
+      "dimension": "volumetric_power_density",
+      "factor": 1.0,
+      "offset": 0.0
+    },
     "angstrom": {
       "dimension": "length",
       "factor": 1e-10,
@@ -8736,6 +8771,11 @@
     "gpm": {
       "dimension": "volume_rate",
       "factor": 0.00006309019639999999,
+      "offset": 0.0
+    },
+    "h": {
+      "dimension": "time",
+      "factor": 3600.0,
       "offset": 0.0
     },
     "hp": {

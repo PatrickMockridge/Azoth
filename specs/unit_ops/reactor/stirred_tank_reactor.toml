@@ -24,6 +24,15 @@ description = "the pressure the vessel holds, which replaces the feed's rather t
 [parameters.pressure_drop]
 unit = "Pa"
 description = "the drop the outlet takes where no reactor pressure is stated"
+[parameters.vessel_volume]
+unit = "m**3"
+description = "the stored vessel volume, echoed by `toMap` and multiplied into `agitator_power`; `run` reads neither"
+[parameters.residence_time]
+unit = "h"
+description = "the stored residence time, echoed by `toMap` and read by nothing in `run`"
+[parameters.agitator_power_per_volume]
+unit = "W/m**3"
+description = "the stored specific agitator power, the other factor of `agitator_power`; the class's 1 kW/m3 is 1000 W/m3"
 [[ports]]
 name = "feed"
 direction = "in"

@@ -34,6 +34,7 @@ import Azoth.Vocabulary
 #print axioms Azoth.Vocabulary.u_Pa_dimension
 #print axioms Azoth.Vocabulary.u_N_dimension
 #print axioms Azoth.Vocabulary.u_s_dimension
+#print axioms Azoth.Vocabulary.u_h_dimension
 #print axioms Azoth.Vocabulary.u_Pa_times_s_dimension
 #print axioms Azoth.Vocabulary.u_K_dimension
 #print axioms Azoth.Vocabulary.u_W_dimension
@@ -79,6 +80,7 @@ import Azoth.Vocabulary
 #print axioms Azoth.Vocabulary.u_Btu_dimension
 #print axioms Azoth.Vocabulary.u_kW_dimension
 #print axioms Azoth.Vocabulary.u_MW_dimension
+#print axioms Azoth.Vocabulary.u_W_per_m_pow_3_dimension
 #print axioms Azoth.Vocabulary.u_hp_dimension
 #print axioms Azoth.Vocabulary.u_ft_dimension
 #print axioms Azoth.Vocabulary.u_in_dimension

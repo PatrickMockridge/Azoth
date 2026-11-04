@@ -34,6 +34,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "diffusion_coefficient",
     "thermodynamic_temperature",
     "power",
+    "volumetric_power_density",
     "specific_heat_capacity",
     "thermal_conductivity",
     "heat_transfer",
@@ -83,6 +84,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("diffusion_coefficient", [2, 0, -1, 0, 0, 0, 0]),
     ("thermodynamic_temperature", [0, 0, 0, 0, 1, 0, 0]),
     ("power", [2, 1, -3, 0, 0, 0, 0]),
+    ("volumetric_power_density", [-1, 1, -3, 0, 0, 0, 0]),
     ("specific_heat_capacity", [2, 0, -2, 0, -1, 0, 0]),
     ("thermal_conductivity", [1, 1, -3, 0, -1, 0, 0]),
     ("heat_transfer", [0, 1, -3, 0, -1, 0, 0]),
@@ -157,6 +159,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "Pa",
     "N",
     "s",
+    "h",
     "Pa*s",
     "K",
     "W",
@@ -202,6 +205,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "Btu",
     "kW",
     "MW",
+    "W/m**3",
     "hp",
     "ft",
     "in",
@@ -241,6 +245,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("N", [1, 1, -2, 0, 0, 0, 0]),
     ("s", [0, 0, 1, 0, 0, 0, 0]),
+    ("h", [0, 0, 1, 0, 0, 0, 0]),
     ("Pa*s", [-1, 1, -1, 0, 0, 0, 0]),
     ("K", [0, 0, 0, 0, 1, 0, 0]),
     ("W", [2, 1, -3, 0, 0, 0, 0]),
@@ -286,6 +291,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("Btu", [2, 1, -2, 0, 0, 0, 0]),
     ("kW", [2, 1, -3, 0, 0, 0, 0]),
     ("MW", [2, 1, -3, 0, 0, 0, 0]),
+    ("W/m**3", [-1, 1, -3, 0, 0, 0, 0]),
     ("hp", [2, 1, -3, 0, 0, 0, 0]),
     ("ft", [1, 0, 0, 0, 0, 0, 0]),
     ("in", [1, 0, 0, 0, 0, 0, 0]),
@@ -352,6 +358,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("Pa", |v| crate::units::pascals(v).value),
     ("N", |v| crate::units::newtons(v).value),
     ("s", |v| crate::units::seconds(v).value),
+    ("h", |v| crate::units::hours(v).value),
     ("Pa*s", |v| crate::units::pascal_seconds(v).value),
     ("K", |v| crate::units::kelvins(v).value),
     ("W", |v| crate::units::watts(v).value),
@@ -405,6 +412,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("Btu", |v| crate::units::british_thermal_units(v).value),
     ("kW", |v| crate::units::kilowatts(v).value),
     ("MW", |v| crate::units::megawatts(v).value),
+    ("W/m**3", |v| crate::units::watts_per_cubic_meter(v).value),
     ("hp", |v| crate::units::mechanical_horsepower(v).value),
     ("ft", |v| crate::units::feet(v).value),
     ("in", |v| crate::units::inches(v).value),
@@ -606,6 +614,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
     let _: uom::si::f64::Force = crate::units::newtons(1.0);
     let _: uom::si::f64::Time = crate::units::seconds(1.0);
+    let _: uom::si::f64::Time = crate::units::hours(1.0);
     let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
     let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);
     let _: uom::si::f64::Power = crate::units::watts(1.0);
@@ -641,6 +650,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Energy = crate::units::british_thermal_units(1.0);
     let _: uom::si::f64::Power = crate::units::kilowatts(1.0);
     let _: uom::si::f64::Power = crate::units::megawatts(1.0);
+    let _: uom::si::f64::VolumetricPowerDensity = crate::units::watts_per_cubic_meter(1.0);
     let _: uom::si::f64::Power = crate::units::mechanical_horsepower(1.0);
     let _: uom::si::f64::Length = crate::units::feet(1.0);
     let _: uom::si::f64::Length = crate::units::inches(1.0);

@@ -25,7 +25,7 @@
 use std::collections::BTreeMap;
 
 use azoth_core::unit_vocab_gen;
-use azoth_core::units::{kelvins, meters, pascals, watts};
+use azoth_core::units::{cubic_meters, kelvins, meters, pascals, watts, watts_per_cubic_meter};
 use azoth_core::{AzothError, Result};
 
 use crate::kernels;
@@ -674,7 +674,24 @@ pub(crate) fn stirred_tank_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Res
             pressure_drop: pascals(p.optional_si("pressure_drop")?.unwrap_or(0.0)),
         },
     )?;
-    let result = crate::models::StirredTankReactorResult::of(&product, duty, Vec::new());
+    // The class's three stored fields, at its own initialisers when absent. `run` reads none
+    // of them; the volume and the specific power are the agitator's product, and the
+    // residence time is carried for a transient this port does not have.
+    let vessel = cubic_meters(
+        p.optional_si("vessel_volume")?
+            .unwrap_or(kernels::DEFAULT_VESSEL_VOLUME_M3),
+    );
+    let _ = p.optional_si("residence_time")?;
+    let per_volume = watts_per_cubic_meter(
+        p.optional_si("agitator_power_per_volume")?
+            .unwrap_or(kernels::DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3),
+    );
+    let result = crate::models::StirredTankReactorResult::of(
+        &product,
+        duty,
+        kernels::agitator_power(per_volume, vessel),
+        Vec::new(),
+    );
     KernelOutcome::publishing(vec![product], &result)
 }
 

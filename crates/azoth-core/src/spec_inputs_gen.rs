@@ -3874,6 +3874,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pressure",
     ),
     ("process.stirred_tank_reactor", "pressure_drop", "pressure"),
+    ("process.stirred_tank_reactor", "vessel_volume", "volume"),
+    ("process.stirred_tank_reactor", "residence_time", "time"),
+    (
+        "process.stirred_tank_reactor",
+        "agitator_power_per_volume",
+        "volumetric_power_density",
+    ),
     ("process.stripping_column", "stripping_gas_n", "molar_flow"),
     (
         "process.stripping_column",

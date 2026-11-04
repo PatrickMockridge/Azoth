@@ -3765,6 +3765,27 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("pressure"),
             },
+            ModelInput {
+                name: "vessel_volume",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("volume"),
+            },
+            ModelInput {
+                name: "residence_time",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("time"),
+            },
+            ModelInput {
+                name: "agitator_power_per_volume",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("volumetric_power_density"),
+            },
         ],
     },
     ModelInputs {

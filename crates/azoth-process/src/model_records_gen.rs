@@ -959,6 +959,7 @@ impl CalcResult for StirredTankReactorResult {
         "product_t",
         "product_h",
         "heat_duty",
+        "agitator_power",
         "warnings",
     ];
 

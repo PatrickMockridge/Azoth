@@ -668,8 +668,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `polytropic_efficiency` and `polytropic_method` - `605 + 3 = 608`. **And the
     // compressor's ratio, cap and fixed power** - `compression_ratio`,
     // `max_outlet_pressure` and `power` - `608 + 3 = 611`. **And the deposit's three** -
-    // `deposit`, `wetted_area` and `passage_half_height` - `611 + 3 = 614`.
-    assert_eq!(walked, 614, "the inputs this test walked");
+    // `deposit`, `wetted_area` and `passage_half_height` - `611 + 3 = 614`. **And the
+    // stirred-tank reactor's three stored fields** - `vessel_volume`, `residence_time` and
+    // `agitator_power_per_volume` - `614 + 3 = 617`.
+    assert_eq!(walked, 617, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

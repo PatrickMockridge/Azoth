@@ -64,6 +64,9 @@ exponents = [0, 0, 0, 0, 1, 0, 0]
 id = "power"
 exponents = [2, 1, -3, 0, 0, 0, 0]
 [[dimensions]]
+id = "volumetric_power_density"
+exponents = [-1, 1, -3, 0, 0, 0, 0]
+[[dimensions]]
 id = "specific_heat_capacity"
 exponents = [2, 0, -2, 0, -1, 0, 0]
 [[dimensions]]
@@ -226,6 +229,12 @@ dimension = "time"
 pint = "second"
 uom = "time::second"
 rust_ctor = "seconds"
+[[units]]
+id = "h"
+dimension = "time"
+pint = "hour"
+uom = "time::hour"
+rust_ctor = "hours"
 [[units]]
 id = "Pa*s"
 dimension = "dynamic_viscosity"
@@ -508,6 +517,12 @@ dimension = "power"
 pint = "MW"
 uom = "power::megawatt"
 rust_ctor = "megawatts"
+[[units]]
+id = "W/m**3"
+dimension = "volumetric_power_density"
+pint = "watt/meter**3"
+uom = "volumetric_power_density::watt_per_cubic_meter"
+rust_ctor = "watts_per_cubic_meter"
 [[units]]
 id = "hp"
 dimension = "power"

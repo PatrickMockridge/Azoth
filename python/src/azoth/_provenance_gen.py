@@ -2768,12 +2768,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.stirred_tank_reactor': {
         "calc_id": 'process.stirred_tank_reactor',
         "name": 'Stirred-tank reactor',
-        "spec": {'path': 'specs/models/process/stirred_tank_reactor.toml', 'sha256': '7a3298cfa400950a60e93ea7d9e6b62129b81df36a6177e159567b63b69598b1'},
-        "code": [{'path': 'python/src/azoth/process/reference/stirred_tank_reactor.py', 'sha256': 'f368af73aeeaa8f76564f2c764abe4e1ccb054097c8f179505922e540bbf7326'}, {'path': 'crates/azoth-process/src/models/stirred_tank_reactor.rs', 'sha256': '9c5c30b4c0084e25ca2516af18375f49c07d8ce62d938565fe5b3b3cbd8bf6ba'}],
+        "spec": {'path': 'specs/models/process/stirred_tank_reactor.toml', 'sha256': 'a760883912ce3363983b084916e7ed09b6d28401db67cc96eb2f5c18100e89e9'},
+        "code": [{'path': 'python/src/azoth/process/reference/stirred_tank_reactor.py', 'sha256': 'cad67f5e57cfc2ee9604fb7ecf976fb2836642cfde51c244037c0c668865c8a4'}, {'path': 'crates/azoth-process/src/models/stirred_tank_reactor.rs', 'sha256': '1a54e56dfa4497b5ea7c831520bfa454fdd4b032ecc12f94d51c6fa37467b016'}],
         "source": 'NeqSim process/equipment/reactor/StirredTankReactor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 3,
+        "tests_active": 4,
         "tests_skipped": 0,
     },
     'process.stripping_column': {

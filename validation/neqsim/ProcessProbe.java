@@ -6782,9 +6782,17 @@ public class ProcessProbe {
     reactorRow("adiabatic", false, null, null);
     reactorRow("isothermal_800K", true, 800.0, null);
     reactorRow("isothermal_800K_3bara", true, 800.0, 3.0);
+    // The three stored fields are unread by `run`; this row moves all three so the capture
+    // shows `toMap`'s echo and `getAgitatorPower`'s product rather than only the defaults.
+    reactorRow("stored_fields_set", false, null, null, 20.0, 0.5, 2.0);
   }
 
   static void reactorRow(String label, boolean isothermal, Double reactorT, Double reactorP) {
+    reactorRow(label, isothermal, reactorT, reactorP, null, null, null);
+  }
+
+  static void reactorRow(String label, boolean isothermal, Double reactorT, Double reactorP,
+      Double vesselVolumeM3, Double residenceHours, Double agitatorPowerPerVolume) {
     String[] names = new String[] { "methane", "oxygen", "CO2", "water", "nitrogen" };
     double[] z = new double[] { 0.05, 0.10, 0.02, 0.03, 0.80 };
     Stream inlet = feed(names, z, 500.0, 5.0, 1.0);
@@ -6796,6 +6804,15 @@ public class ProcessProbe {
     }
     if (reactorP != null) {
       reactor.setReactorPressure(reactorP);
+    }
+    if (vesselVolumeM3 != null) {
+      reactor.setVesselVolume(vesselVolumeM3);
+    }
+    if (residenceHours != null) {
+      reactor.setResidenceTime(residenceHours, "hr");
+    }
+    if (agitatorPowerPerVolume != null) {
+      reactor.setAgitatorPowerPerVolume(agitatorPowerPerVolume);
     }
     neqsim.process.equipment.reactor.StoichiometricReaction reaction =
         new neqsim.process.equipment.reactor.StoichiometricReaction("methanecombustion");
@@ -6811,6 +6828,10 @@ public class ProcessProbe {
     print("feed", inlet);
     printOrEmpty("product", reactor.getOutletStream());
     System.out.println("heat_duty_W=" + reactor.getHeatDuty());
+    System.out.println("vessel_volume_m3=" + reactor.getVesselVolume());
+    System.out.println("residence_time_hr=" + reactor.getResidenceTime());
+    System.out.println("agitator_power_per_volume_kW_per_m3=" + reactor.getAgitatorPowerPerVolume());
+    System.out.println("agitator_power_kW=" + reactor.getAgitatorPower());
     System.out.println();
   }
 

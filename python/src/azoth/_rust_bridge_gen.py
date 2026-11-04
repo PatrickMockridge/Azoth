@@ -6883,7 +6883,7 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
     )
 
 
-def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, reaction: str, limiting_reactant: str, conversion: float, isothermal: bool, reactor_temperature: Q | None=None, reactor_pressure: Q | None=None, pressure_drop: Q | None=None) -> StirredTankReactorResult:
+def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, reaction: str, limiting_reactant: str, conversion: float, isothermal: bool, reactor_temperature: Q | None=None, reactor_pressure: Q | None=None, pressure_drop: Q | None=None, vessel_volume: Q | None=None, residence_time: Q | None=None, agitator_power_per_volume: Q | None=None) -> StirredTankReactorResult:
     """``process.stirred_tank_reactor``, computed in Rust."""
     spec = _models_gen.model("process.stirred_tank_reactor")
     result = _core.stirred_tank_reactor(
@@ -6899,6 +6899,9 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
         None if reactor_temperature is None else input_to_si(spec, "reactor_temperature", reactor_temperature),
         None if reactor_pressure is None else input_to_si(spec, "reactor_pressure", reactor_pressure),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if vessel_volume is None else input_to_si(spec, "vessel_volume", vessel_volume),
+        None if residence_time is None else input_to_si(spec, "residence_time", residence_time),
+        None if agitator_power_per_volume is None else input_to_si(spec, "agitator_power_per_volume", agitator_power_per_volume),
     )
     return StirredTankReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -6907,6 +6910,7 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        agitator_power=from_si(result.agitator_power.magnitude_si, result.agitator_power.unit),
         warnings=_warnings(result.warnings),
     )
 

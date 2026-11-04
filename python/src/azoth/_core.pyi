@@ -3324,6 +3324,7 @@ class StirredTankReactorResult:
     product_t: Qty
     product_h: Qty
     heat_duty: Qty
+    agitator_power: Qty
     warnings: list[Warning]
 
 @final
@@ -6090,6 +6091,9 @@ def stirred_tank_reactor(
     reactor_temperature: float | None = None,
     reactor_pressure: float | None = None,
     pressure_drop: float | None = None,
+    vessel_volume: float | None = None,
+    residence_time: float | None = None,
+    agitator_power_per_volume: float | None = None,
 ) -> StirredTankReactorResult: ...
 def stripping_column(
     stripping_gas_components: list[str],

@@ -8,9 +8,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    cubic_meters_per_second, joules_per_mole, kelvins, kilograms, kilograms_per_cubic_meter,
-    meters, meters_per_second, pascal_seconds, pascals, seconds, square_meters,
-    square_meters_per_second, watts, watts_per_kelvin, watts_per_square_meter_kelvin,
+    cubic_meters, cubic_meters_per_second, hours, joules_per_mole, kelvins, kilograms,
+    kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds, pascals, seconds,
+    square_meters, square_meters_per_second, watts, watts_per_cubic_meter, watts_per_kelvin,
+    watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -1026,11 +1027,11 @@ pub fn heat_exchanger(
 /// pressure drop are all `run`'s own, and a kernel that took none of them could only be a
 /// pass-through.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature = None, reactor_pressure = None, pressure_drop = None))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature = None, reactor_pressure = None, pressure_drop = None, vessel_volume = None, residence_time = None, agitator_power_per_volume = None))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature=None, reactor_pressure=None, pressure_drop=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature=None, reactor_pressure=None, pressure_drop=None, vessel_volume=None, residence_time=None, agitator_power_per_volume=None)"
 )]
-#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are twelve
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are fifteen
 pub fn stirred_tank_reactor(
     py: Python<'_>,
     components: Vec<String>,
@@ -1045,6 +1046,9 @@ pub fn stirred_tank_reactor(
     reactor_temperature: Option<f64>,
     reactor_pressure: Option<f64>,
     pressure_drop: Option<f64>,
+    vessel_volume: Option<f64>,
+    residence_time: Option<f64>,
+    agitator_power_per_volume: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyStirredTankReactorResult> {
     azoth_process::stirred_tank_reactor(
         &components,
@@ -1059,6 +1063,9 @@ pub fn stirred_tank_reactor(
         reactor_temperature.map(kelvins),
         reactor_pressure.map(pascals),
         pascals(pressure_drop.unwrap_or(0.0)),
+        vessel_volume.map(cubic_meters),
+        residence_time.map(hours),
+        agitator_power_per_volume.map(watts_per_cubic_meter),
     )
     .map(|r| crate::transport_gen::PyStirredTankReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

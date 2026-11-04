@@ -7551,6 +7551,9 @@ class StirredTankReactorResult(_HasWarnings):
     #: the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.
     heat_duty: Q
 
+    #: `getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out.
+    agitator_power: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
