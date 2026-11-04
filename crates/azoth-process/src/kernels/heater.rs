@@ -145,6 +145,7 @@ pub fn capacity(
     max_outlet_temperature: Option<ThermodynamicTemperature>,
     min_outlet_temperature: Option<ThermodynamicTemperature>,
 ) -> HeaterCapacity {
+    // numerics-ok: the class's unset sentinel, copied from `Double.MAX_VALUE`.
     let max_limit = max_outlet_temperature.filter(|limit| limit.value != f64::MAX);
     let min_limit = min_outlet_temperature.filter(|limit| limit.value > 0.0);
 
@@ -253,6 +254,7 @@ mod capacity_tests {
 
     #[test]
     fn a_maximum_of_the_sentinel_is_unset() {
+        // numerics-ok: the sentinel the class reads to mean "no bound".
         let map = report(Some(f64::MAX), None);
         assert!(map.max_outlet_temperature_utilization.is_none());
     }
