@@ -195,6 +195,9 @@ public class ProcessProbe {
       case "filter_models":
         filterModelRows();
         break;
+      case "filter_loading":
+        filterLoadingRows();
+        break;
       case "compressor":
         isentropicRows("Compressor");
         break;
@@ -691,6 +694,120 @@ public class ProcessProbe {
     System.out.println("captured_rate_kg_per_hr=" + capture.getCalculatedCapturedRate());
     print("inlet", captureInlet);
     print("outlet", capture.getOutletStream());
+    System.out.println();
+  }
+
+  /// `Filter`'s steady loaded state: `run()` reading the carried loading, with no time step.
+  ///
+  /// **The blocks are `FilterTest`'s scenarios re-cased on PR methane**, as `filterModelRows`'
+  /// are, because the port's fluid is PR. The loaded block is the test's pre-step state, the
+  /// bypass block is `testBypassLimitsPressureDropAndReducesCapture`, and the replacement blocks
+  /// reach the two branches of `isReplacementRequired`. The last block is evidence and is not
+  /// cased: the clean drop exceeds the inlet, so `run` clamps the bypass-limited drop to the
+  /// inlet ceiling and no cubic flash the port carries survives there.
+  static void filterLoadingRows() {
+    Stream loadedInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter loaded =
+        new neqsim.process.equipment.filter.Filter("loaded", loadedInlet);
+    loaded.setDeltaP(0.2);
+    loaded.setLoadingCapacity(10.0);
+    loaded.setPressureDropIncreaseAtCapacity(1.0);
+    loaded.setBreakthroughStartFraction(0.5);
+    loaded.setSolidsLoading(9.0);
+    loaded.run();
+    printFilterLoading("loaded_run", loadedInlet, loaded);
+
+    Stream bypassInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter bypass =
+        new neqsim.process.equipment.filter.Filter("bypass", bypassInlet);
+    bypass.setDeltaP(0.2);
+    bypass.setNominalRemovalEfficiency(0.99);
+    bypass.setInletParticleConcentration(100.0);
+    bypass.setLoadingCapacity(10.0);
+    bypass.setPressureDropIncreaseAtCapacity(3.6);
+    bypass.setSolidsLoading(5.0);
+    bypass.setBypassCrackingDeltaP(0.5);
+    bypass.run();
+    printFilterLoading("bypass_run", bypassInlet, bypass);
+
+    Stream disabledInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter disabled =
+        new neqsim.process.equipment.filter.Filter("disabled", disabledInlet);
+    disabled.setDeltaP(0.2);
+    disabled.setPressureDropIncreaseAtCapacity(1.0);
+    disabled.setBreakthroughStartFraction(0.5);
+    disabled.setSolidsLoading(9.0);
+    disabled.setLoadingCapacity(0.0);
+    disabled.run();
+    printFilterLoading("capacity_disabled", disabledInlet, disabled);
+
+    Stream terminalInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter terminal =
+        new neqsim.process.equipment.filter.Filter("terminal", terminalInlet);
+    terminal.setDeltaP(0.2);
+    terminal.setLoadingCapacity(10.0);
+    terminal.setPressureDropIncreaseAtCapacity(3.6);
+    terminal.setSolidsLoading(5.0);
+    terminal.setBypassCrackingDeltaP(0.5);
+    terminal.setTerminalDeltaP(0.5);
+    terminal.run();
+    printFilterLoading("terminal_drop", terminalInlet, terminal);
+
+    Stream overInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter over =
+        new neqsim.process.equipment.filter.Filter("over", overInlet);
+    over.setDeltaP(0.2);
+    over.setLoadingCapacity(10.0);
+    over.setPressureDropIncreaseAtCapacity(1.0);
+    over.setBreakthroughStartFraction(0.5);
+    over.setSolidsLoading(11.0);
+    over.run();
+    printFilterLoading("loading_beyond_capacity", overInlet, over);
+
+    Stream boundaryInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter boundary =
+        new neqsim.process.equipment.filter.Filter("boundary", boundaryInlet);
+    boundary.setDeltaP(0.2);
+    boundary.setLoadingCapacity(10.0);
+    boundary.setPressureDropIncreaseAtCapacity(1.0);
+    boundary.setBreakthroughStartFraction(0.5);
+    boundary.setSolidsLoading(5.0);
+    boundary.run();
+    printFilterLoading("breakthrough_boundary", boundaryInlet, boundary);
+
+    Stream clampInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter clamp =
+        new neqsim.process.equipment.filter.Filter("clamp", clampInlet);
+    clamp.setDeltaP(26.0);
+    clamp.setBypassCrackingDeltaP(25.0);
+    clamp.run();
+    printFilterLoading("clamp_after_bypass_uncased", clampInlet, clamp);
+  }
+
+  static void printFilterLoading(String label, StreamInterface inlet,
+      neqsim.process.equipment.filter.Filter filter) {
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("clean_deltaP_pa=" + filter.getCalculatedCleanDeltaP() * 1.0e5);
+    System.out.println("unrestricted_deltaP_pa=" + filter.getUnrestrictedDeltaP() * 1.0e5);
+    System.out.println("applied_deltaP_pa=" + filter.getDeltaP() * 1.0e5);
+    System.out.println("bypass_enabled=" + filter.isBypassEnabled());
+    System.out.println("bypass_fraction=" + filter.getBypassFraction());
+    System.out.println("loading_fraction=" + filter.getLoadingFraction());
+    System.out.println("breakthrough_fraction=" + filter.getBreakthroughFraction());
+    System.out.println("current_removal_efficiency=" + filter.getCurrentRemovalEfficiency());
+    System.out.println("nominal_removal_efficiency=" + filter.getNominalRemovalEfficiency());
+    System.out.println("solids_loading_kg=" + filter.getSolidsLoading());
+    System.out.println("differential_pressure_utilization="
+        + filter.getDifferentialPressureUtilization());
+    System.out.println("replacement_required=" + filter.isReplacementRequired());
+    System.out.println("outlet_particle_concentration_mg_per_kg="
+        + filter.getOutletParticleConcentration());
+    System.out.println("captured_rate_kg_per_hr=" + filter.getCalculatedCapturedRate());
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
     System.out.println();
   }
 
