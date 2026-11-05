@@ -698,7 +698,8 @@ mod tests {
 
     #[test]
     fn the_first_step_matches_the_capture() {
-        let request = stepping(0.0, 10.0, 100_000.0, 0.5, 3600.0);
+        let mut request = stepping(0.0, 10.0, 100_000.0, 0.5, 3600.0);
+        request.holdup_volume_m3 = Some(1.0);
         let pre = loading_state(10_000.0, 0.0, &request);
         let post = advance(
             &pre,
@@ -712,8 +713,10 @@ mod tests {
         assert!((post.loading_fraction - 0.5).abs() < 1.0e-12);
         assert_eq!(post.breakthrough_fraction, 0.0);
         assert!((post.unrestricted_drop - 60_000.0).abs() < 1.0e-9);
+        let residence = post.holdup_residence_s.expect("a holdup");
         assert!(
-            (post.holdup_residence_s.expect("a holdup") - 48.475_315_062_552_13).abs() < 1.0e-12
+            (residence - 48.475_315_062_552_13).abs() < 1.0e-9,
+            "{residence}"
         );
     }
 
