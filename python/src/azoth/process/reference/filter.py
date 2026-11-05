@@ -147,7 +147,9 @@ def filter(
         None if solids_loading is None else input_to_si(spec, "solids_loading", solids_loading)
     )
     capacity_si = (
-        None if loading_capacity is None else input_to_si(spec, "loading_capacity", loading_capacity)
+        None
+        if loading_capacity is None
+        else input_to_si(spec, "loading_capacity", loading_capacity)
     )
     increase_si = (
         None
