@@ -7852,7 +7852,17 @@
         "holdup_volume",
         "solids_loading_rate",
         "backwash_removal_rate",
-        "regeneration_removal_rate"
+        "regeneration_removal_rate",
+        "number_of_elements",
+        "max_face_velocity",
+        "element_area",
+        "max_nozzle_velocity",
+        "min_ld_ratio",
+        "max_ld_ratio",
+        "design_pressure_margin",
+        "minimum_design_pressure_margin",
+        "corrosion_allowance",
+        "element_collapse_pressure"
       ]
     },
     {

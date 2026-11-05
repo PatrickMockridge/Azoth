@@ -5,8 +5,8 @@
 //! model's wiring: the Ergun bed on a real state, and the beta-ratio capture's three answers.
 
 use azoth_core::units::{
-    cubic_meters, kelvins, kilogram, kilogram_per_hour, kilograms, kilograms_per_hour, meters,
-    pascal_seconds, pascals, seconds, square_meters,
+    cubic_meters, kelvin_intervals, kelvins, kilogram, kilogram_per_hour, kilograms,
+    kilograms_per_hour, meters, meters_per_second, pascal_seconds, pascals, seconds, square_meters,
 };
 use azoth_process::models::filter::{FilterBetaPoint, filter};
 
@@ -36,6 +36,22 @@ fn the_ergun_bed_matches_the_capture() {
         Some(meters(0.002)),
         Some(0.40),
         Some(pascal_seconds(1.1529270713459012e-5)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -126,6 +142,22 @@ fn the_beta_curve_captures_particles() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters");
 
@@ -195,6 +227,22 @@ fn loaded_filter(
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters")
 }
@@ -249,6 +297,22 @@ fn dynamic_filter(
         regeneration.map(kilograms_per_hour),
         backwash.map(|_| true),
         regeneration.map(|_| true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters")
 }
@@ -644,6 +708,23 @@ fn a_zero_flow_has_no_residence_time() {
         None,
         None,
         None,
+        // 27-42: the design.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters");
     assert!(result.holdup_residence_time.is_none());
@@ -689,6 +770,191 @@ fn both_capture_sources_are_refused() {
         None,
         None,
         None,
+        // 27-42: the design.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     );
     assert!(result.is_err());
+}
+
+#[derive(Default)]
+struct DesignOptions {
+    terminal: Option<f64>,
+    filter_type: Option<&'static str>,
+    number: Option<f64>,
+    face: Option<f64>,
+    area: Option<f64>,
+    nozzle: Option<f64>,
+    min_ld: Option<f64>,
+    max_ld: Option<f64>,
+    margin: Option<f64>,
+    min_margin: Option<f64>,
+    temp_margin: Option<f64>,
+    stress: Option<f64>,
+    joint: Option<f64>,
+    corrosion: Option<f64>,
+    collapse: Option<f64>,
+    integrity: Option<bool>,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn designed(n: f64, drop: f64, options: &DesignOptions) -> azoth_process::models::FilterResult {
+    filter(
+        &["methane".to_string()],
+        n,
+        &[1.0],
+        pascals(5_000_000.0),
+        kelvins(303.15),
+        pascals(drop),
+        // 1-11: the model selector, reference flow, exponent, curve, four media, viscosity,
+        // the performance curve and the particle size.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 12-13: the nominal efficiency and the inlet concentration.
+        None,
+        None,
+        // 14-19: loading, capacity, increase, breakthrough start, cracking, terminal.
+        None,
+        None,
+        None,
+        None,
+        None,
+        options.terminal.map(pascals),
+        // 20-26: the step, holdup, generic rate, backwash, regeneration and the two flags.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 27-42: the design flag and its inputs.
+        Some(true),
+        options.filter_type,
+        options.number,
+        options.face.map(meters_per_second),
+        options.area.map(square_meters),
+        options.nozzle.map(meters_per_second),
+        options.min_ld,
+        options.max_ld,
+        options.margin,
+        options.min_margin.map(pascals),
+        options.temp_margin.map(kelvin_intervals),
+        options.stress.map(pascals),
+        options.joint,
+        options.corrosion.map(meters),
+        options.collapse.map(pascals),
+        options.integrity,
+    )
+    .expect("the captured state filters")
+}
+
+#[test]
+fn the_coalescer_design_is_the_captures() {
+    let options = DesignOptions {
+        terminal: Some(100_000.0),
+        filter_type: Some("coalescer"),
+        collapse: Some(500_000.0),
+        integrity: Some(true),
+        ..DesignOptions::default()
+    };
+    let result = designed(173.145_781_822_463_25, 15_000.0, &options);
+    close(
+        result.vessel_inner_diameter.expect("a diameter").value,
+        0.5,
+        1.0e-12,
+        "diameter",
+    );
+    close(
+        result.vessel_length.expect("a length").value,
+        1.5,
+        1.0e-12,
+        "length",
+    );
+    close(
+        result.shell_thickness.expect("a shell").value,
+        0.014_832_889_206_146_602,
+        1.0e-9,
+        "shell",
+    );
+    close(
+        result.selected_nozzle_diameter.expect("a nozzle").value,
+        0.08,
+        1.0e-12,
+        "nozzle",
+    );
+    close(
+        result.empty_vessel_weight.expect("a weight").value,
+        323.917_079_245_233_25,
+        1.0e-9,
+        "empty weight",
+    );
+    assert_eq!(result.differential_pressure_design_acceptable, Some(true));
+}
+
+#[test]
+fn the_basket_design_reports_its_warnings() {
+    let options = DesignOptions {
+        terminal: Some(100_000.0),
+        filter_type: Some("basket_strainer"),
+        collapse: Some(150_000.0),
+        ..DesignOptions::default()
+    };
+    let result = designed(173.145_781_822_463_25, 200_000.0, &options);
+    assert_eq!(result.differential_pressure_design_acceptable, Some(false));
+    let design_warnings = result
+        .warnings
+        .iter()
+        .filter(|warning| warning.field.as_deref() == Some("mechanical_design"))
+        .count();
+    assert_eq!(design_warnings, 4);
+}
+
+#[test]
+fn the_activated_carbon_publishes_its_media_area() {
+    let options = DesignOptions {
+        filter_type: Some("activated_carbon"),
+        integrity: Some(true),
+        ..DesignOptions::default()
+    };
+    let result = designed(173.145_781_822_463_25, 1000.0, &options);
+    assert_eq!(result.required_elements, Some(1.0));
+    close(
+        result.design_media_area.expect("a media area").value,
+        3.996_488_097_749_557_6,
+        5.0e-4,
+        "media area",
+    );
+}
+
+#[test]
+fn the_design_outputs_are_absent_without_their_flag() {
+    let result = loaded_filter(20_000.0, None, None, None, None, None, None, None, None);
+    assert!(result.design_pressure.is_none());
+    assert!(result.vessel_inner_diameter.is_none());
+    assert!(result.design_media_area.is_none());
+    assert!(result.differential_pressure_design_acceptable.is_none());
 }

@@ -384,7 +384,7 @@ pub(crate) fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
 
 pub(crate) fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::filter::filter(&inlets[0], pascals(p.si("pressure_drop")?))?;
-    let result = crate::models::FilterResult::of(&out, Vec::new());
+    let result = crate::models::FilterResult::of(&out, None, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 

@@ -507,8 +507,11 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // **And the filter's loading state's five** - the solids loading, the drop increase, the
     // breakthrough start (with its ceiling), the bypass cracking pressure and the terminal
     // drop - take it to a hundred and fifty-six. **And its step's five** - the time step, the
-    // holdup volume and the three rates - take it to a hundred and sixty-one.
-    assert_eq!(checked, 161, "the bounds this test walked");
+    // holdup volume and the three rates - take it to a hundred and sixty-one. **And its design's
+    // ten** - the element count, the face velocity, the element area, the nozzle velocity, the
+    // two L/D ratios, the pressure multiplier and additive margin, the corrosion allowance and
+    // the collapse rating - take it to a hundred and seventy-one.
+    assert_eq!(checked, 171, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -688,8 +691,12 @@ fn the_generated_input_table_is_the_models_own() {
     // `bypass_cracking_pressure` and `terminal_pressure_drop` - `630 + 6 = 636`. **And the
     // filter's step's seven** - `time_step`, `holdup_volume`, `solids_loading_rate`,
     // `backwash_removal_rate`, `regeneration_removal_rate`, `backwash_active` and
-    // `regeneration_active` - `636 + 7 = 643`.
-    assert_eq!(walked, 643, "the inputs this test walked");
+    // `regeneration_active` - `636 + 7 = 643`. **And the filter's design's sixteen** - the
+    // flag, the type, the element count, the face velocity, the element area, the nozzle
+    // velocity, the two L/D ratios, the two pressure margins, the temperature margin, the
+    // allowable stress, the joint efficiency, the corrosion allowance, the collapse rating
+    // and the integrity flag - `643 + 16 = 659`.
+    assert_eq!(walked, 659, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

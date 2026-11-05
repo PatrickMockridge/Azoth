@@ -17,7 +17,17 @@ assumptions = [
     "**Bypass opens above its cracking drop and reads the unclamped drop.** The bypassed fraction is `1 - sqrt(cracking/unrestricted)`, and the class sets the applied drop to the cracking pressure; `run` clamps that drop to the inlet ceiling afterwards, so the order is bypass then clamp.",
     "**The efficiency is the nominal one retained by breakthrough and bypass.** It is `nominal (1 - breakthrough) (1 - bypass)`, clamped to `[0, 1]`, and the capture's two outputs use it - so a loaded or bypassing filter reports less than its nominal removal.",
     "**The replacement check reads the unrestricted drop.** It is `unrestricted/terminal >= 1` (terminal defaults to 5 bar) or `loading_fraction >= 1`, so a bypass that lowers the applied drop does not postpone the replacement.",
-    "**The element-integrity pair is stored, not computed.** `setElementIntegrityVerified` records a project claim and `setElementCollapsePressure` stores a rating no arithmetic reads; neither is carried. The exposed check is `replacement_required`.",
+    "**The element-integrity pair is read by the design, not by `run`.** `element_collapse_pressure` divides the unrestricted drop and `element_integrity_verified` suppresses a design warning; the steady run reads neither.",
+    "**`calcDesign` is caller-invoked and absent unless `mechanical_design`.** It reads the inlet's volumetric flow and density, the type's defaults and the run's loading state; it does not change the run's outlet.",
+    "**The type's eight constructions carry the design defaults.** Face velocity and element area are the two a caller can override; the element envelope diameter and length are the type's. Granular types size one element and the vessel cross-section.",
+    "**`setFilterServiceType` also selects the class's pressure-drop model and exponent**, while this id's `filter_type` feeds the design only: the run's model selector is explicit, so a granular type's ERGUN run is the caller's to state.",
+    "**The element count is `ceil(requiredArea/elementArea)`, at least `number_of_elements`.** The bundle is `sqrt(n) * diameter * 1.8`, the inside diameter is `bundle + 0.2`, floored at 0.5 m.",
+    "**The L/D ratios clamp the length or the diameter.** Below the minimum the vessel lengthens; above the maximum it widens. A granular design then recomputes the cross-section, published as `design_media_area`.",
+    "**The nozzle velocity is 20 m/s below 200 kg/m3 and 3 m/s above it**, unless stated; the required diameter rounds up through the class's 21 nominal sizes from 15 to 1200 mm.",
+    "**The pressure boundary is the class's ASME-shaped screening.** `P = (designPressure_bara - 1.01325) * 0.1` MPa against an allowable stress in MPa, a 6 mm shell floor, and a head floored at the shell.",
+    "**The weights are 7850 kg/m3 of shell and head, plus 30% accessories, plus the elements**: 10 kg per metre of element floored at 2 kg, or granular media at 1000 kg/m3 (500 for activated carbon).",
+    "**The design's warnings are warnings, in the class's order**: the two utilizations, a terminal setting above the collapse rating, the face and nozzle limits, missing integrity, and missing performance data.",
+    "Outside this id: the cost arithmetic (USD), the material grade (stored and reported, read by no formula), and the type's default pressure-drop selector.",
     "**A non-positive `loading_capacity` is a sentinel, not a clamp.** The setter turns it into positive infinity, so no finite capacity is checked and the fraction is zero; the other loading setters clamp negatives to zero.",
     "**The class's `runTransient` is one step here.** A positive `time_step` accretes the captured rate over the interval, subtracts the active backwash and regeneration removals, floors at zero, then runs the loaded state; the session loop is outside the id.",
     "**The accretion uses the pre-step efficiency, and the report uses the post-step one.** `runTransient` runs once to compute the captured rate, integrates it, then runs again - so a concentration model's reported capture need not equal the loading increment.",
@@ -30,11 +40,12 @@ references = [
     "`validation/neqsim/captures/process_filter.tsv` - three rows: an ordinary drop, none at all, and one larger than the inlet pressure.",
     "`validation/neqsim/captures/process_filter_loading.tsv` - seven blocks: a loaded run, the bypass run, the disabled capacity sentinel, the two replacement branches, the breakthrough boundary, and an uncased clamp-after-bypass block.",
     "`validation/neqsim/captures/process_filter_dynamic.tsv` - the one-step branch: the two sequential generic-rate steps, backwash plus regeneration, the concentration sequencing, the pre-step bypass and an uncased zero-flow residence.",
+    "`validation/neqsim/captures/process_filter_mechanical_design.tsv` - nine design blocks: a coalescer, a basket strainer's warnings, activated carbon, a high-flow cartridge, a low-flow Y-strainer, two initial elements, every override, a long granular bed and a liquid feed.",
     "`FilterTest.testBypassLimitsPressureDropAndReducesCapture` and `testDynamicLoadingBuildsPressureDropAndBreakthrough`'s pre-step state are the blocks' scenarios, re-cased on PR methane.",
 ]
 [source]
 standard = "NeqSim process/equipment/filter/Filter.java"
-edition = "Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, a `TPflash` at the feed's temperature, and one `runTransient` step."
+edition = "Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, a `TPflash` at the feed's temperature, one `runTransient` step, and `FilterMechanicalDesign.calcDesign`'s element, vessel and boundary screening."
 [inputs]
 [inputs.components]
 type = "components"
@@ -175,6 +186,71 @@ description = "whether the backwash removes loading during the step. Absent is f
 type = "boolean"
 optional = true
 description = "whether the regeneration removes loading during the step. Absent is false; inert without a positive `time_step`.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "whether to run `FilterMechanicalDesign.calcDesign`. Absent is false; every design output is absent without it.\n"
+[inputs.filter_type]
+type = "enum"
+values = ["cartridge", "bag", "y_strainer", "basket_strainer", "coalescer", "granular_media", "backwashable_media", "activated_carbon"]
+optional = true
+description = "the construction whose defaults fill the unstated design settings. Absent is the class's `CARTRIDGE`.\n"
+[inputs.number_of_elements]
+unit = "dimensionless"
+optional = true
+description = "the installed parallel elements before sizing. Absent is the class's 1; the design takes the larger of this and the flow's requirement.\n"
+[inputs.max_face_velocity]
+unit = "m/s"
+optional = true
+description = "the design face velocity. Absent is the type's default; a non-positive value is refused.\n"
+[inputs.element_area]
+unit = "m**2"
+optional = true
+description = "the effective area per element. Absent is the type's default; a non-positive value is refused.\n"
+[inputs.max_nozzle_velocity]
+unit = "m/s"
+optional = true
+description = "the nozzle velocity. Absent is the class's density switch: 20 m/s below 200 kg/m3, 3 m/s above.\n"
+[inputs.min_ld_ratio]
+unit = "dimensionless"
+optional = true
+description = "the vessel's minimum L/D. Absent is 2.0; a ratio below it lengthens the vessel.\n"
+[inputs.max_ld_ratio]
+unit = "dimensionless"
+optional = true
+description = "the vessel's maximum L/D. Absent is 5.0; a ratio above it widens the vessel. It must be at least `min_ld_ratio`.\n"
+[inputs.design_pressure_margin]
+unit = "dimensionless"
+optional = true
+description = "the design pressure's multiplier over the operating pressure. Absent is 1.10.\n"
+[inputs.minimum_design_pressure_margin]
+unit = "Pa"
+optional = true
+description = "the design pressure's additive margin. Absent is 3.5 bar.\n"
+[inputs.design_temperature_margin]
+unit = "K"
+optional = true
+description = "the design temperature's margin above the inlet. Absent is 25 K.\n"
+[inputs.allowable_stress]
+unit = "Pa"
+optional = true
+description = "the material's allowable stress at the design temperature. Absent is 138 MPa, the class's `SA-516-70` default.\n"
+[inputs.joint_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the welded-joint efficiency. Absent is 0.85.\n"
+[inputs.corrosion_allowance]
+unit = "mm"
+optional = true
+description = "the corrosion allowance. Absent is 3 mm.\n"
+[inputs.element_collapse_pressure]
+unit = "Pa"
+optional = true
+description = "the element's collapse/burst rating. Absent is 10 bar; the design's collapse utilization divides by it.\n"
+[inputs.element_integrity_verified]
+type = "boolean"
+optional = true
+description = "whether element fabrication integrity has been recorded. Absent is false, which raises the class's warning.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -236,6 +312,78 @@ description = "true when `differential_pressure_utilization >= 1` or `loading_fr
 unit = "s"
 optional = true
 description = "the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.\n"
+[outputs.design_pressure]
+unit = "Pa"
+optional = true
+description = "the design pressure: the larger of `operating * design_pressure_margin` and `operating + minimum_design_pressure_margin`.\n"
+[outputs.design_temperature]
+unit = "K"
+optional = true
+description = "the inlet temperature plus `design_temperature_margin`.\n"
+[outputs.required_elements]
+unit = "dimensionless"
+optional = true
+description = "the element count the design requires, at least `number_of_elements`. A granular type reports 1.\n"
+[outputs.vessel_inner_diameter]
+unit = "m"
+optional = true
+description = "the vessel's inside diameter, from the element bundle or the granular cross-section, floored at 0.5 m.\n"
+[outputs.vessel_outer_diameter]
+unit = "m"
+optional = true
+description = "the inside diameter plus twice the shell thickness.\n"
+[outputs.vessel_length]
+unit = "m"
+optional = true
+description = "the tangent-to-tangent length: the active length plus the diameter, then clamped to the L/D window.\n"
+[outputs.shell_thickness]
+unit = "m"
+optional = true
+description = "the shell thickness from the class's ASME-shaped screening formula, floored at 6 mm.\n"
+[outputs.head_thickness]
+unit = "m"
+optional = true
+description = "the 2:1 ellipsoidal head's thickness, floored at the shell's.\n"
+[outputs.effective_element_area]
+unit = "m**2"
+optional = true
+description = "the element area the design used: the stated override or the type's default.\n"
+[outputs.calculated_face_velocity]
+unit = "m/s"
+optional = true
+description = "the flow over the effective element area, or over the granular vessel's cross-section.\n"
+[outputs.required_nozzle_diameter]
+unit = "m"
+optional = true
+description = "the hydraulic nozzle diameter the nozzle velocity requires.\n"
+[outputs.selected_nozzle_diameter]
+unit = "m"
+optional = true
+description = "the next nominal nozzle diameter at or above the required one, from the class's 15 to 1200 mm table.\n"
+[outputs.calculated_nozzle_velocity]
+unit = "m/s"
+optional = true
+description = "the flow over the selected nozzle's area.\n"
+[outputs.empty_vessel_weight]
+unit = "kg"
+optional = true
+description = "the shell and head metal at 7850 kg/m3.\n"
+[outputs.total_equipped_weight]
+unit = "kg"
+optional = true
+description = "the empty vessel, 30% of it for accessories, and the elements or granular media.\n"
+[outputs.collapse_pressure_utilization]
+unit = "dimensionless"
+optional = true
+description = "the unrestricted drop over `element_collapse_pressure`.\n"
+[outputs.differential_pressure_design_acceptable]
+type = "boolean"
+optional = true
+description = "true when both the terminal and the collapse utilizations are below one.\n"
+[outputs.design_media_area]
+unit = "m**2"
+optional = true
+description = "the vessel cross-section a granular design writes to the filter's hydraulic area; absent for a cartridge type.\n"
 [[valid_range]]
 quantity = "inlet_t"
 min = 0
@@ -332,6 +480,66 @@ min = 0
 min_inclusive = true
 severity = "warning"
 rationale = "`setRegenerationRemovalRate` clamps a negative rate to zero."
+[[valid_range]]
+quantity = "number_of_elements"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "`Filter.setNumberOfElements` throws below one; a zero-element filter has no area."
+[[valid_range]]
+quantity = "max_face_velocity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`setMaxFaceVelocity` throws on a non-positive velocity; the required area divides by it."
+[[valid_range]]
+quantity = "element_area"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`setElementArea` throws on a non-positive area; the element count divides by it."
+[[valid_range]]
+quantity = "max_nozzle_velocity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`setMaxNozzleVelocity` throws on a non-positive velocity; the nozzle diameter divides by it."
+[[valid_range]]
+quantity = "min_ld_ratio"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the minimum L/D multiplies the diameter into the length; zero would discard the length."
+[[valid_range]]
+quantity = "max_ld_ratio"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the maximum L/D divides the length into the diameter; zero would not be a vessel."
+[[valid_range]]
+quantity = "design_pressure_margin"
+min = 0
+min_inclusive = false
+severity = "warning"
+rationale = "the setter accepts any multiplier; a non-positive one makes the additive margin the design pressure alone."
+[[valid_range]]
+quantity = "minimum_design_pressure_margin"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "the setter accepts any margin; a negative one is the multiplier's floor rather than an addition."
+[[valid_range]]
+quantity = "corrosion_allowance"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "the setter accepts a negative allowance; the thickness floor is what keeps a negative one from thinning the shell below 6 mm."
+[[valid_range]]
+quantity = "element_collapse_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Filter.setElementCollapsePressure` throws on a non-positive rating; the collapse utilization divides by it."
 [implementations]
 python = "azoth.process.filter"
 rust = "azoth_process::filter"

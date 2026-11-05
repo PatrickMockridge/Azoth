@@ -8,10 +8,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    cubic_meters, cubic_meters_per_second, hours, joules_per_mole, kelvins, kilograms,
-    kilograms_per_cubic_meter, kilograms_per_second, meters, meters_per_second, pascal_seconds,
-    pascals, seconds, square_meters, square_meters_per_second, watts, watts_per_cubic_meter,
-    watts_per_kelvin, watts_per_square_meter_kelvin,
+    cubic_meters, cubic_meters_per_second, hours, joules_per_mole, kelvin_intervals, kelvins,
+    kilograms, kilograms_per_cubic_meter, kilograms_per_second, meters, meters_per_second,
+    pascal_seconds, pascals, seconds, square_meters, square_meters_per_second, watts,
+    watts_per_cubic_meter, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -283,10 +283,10 @@ pub fn pump(
 /// optional; the rows are built from the generated mappings here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None, time_step = None, holdup_volume = None, solids_loading_rate = None, backwash_removal_rate = None, regeneration_removal_rate = None, backwash_active = None, regeneration_active = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None, time_step = None, holdup_volume = None, solids_loading_rate = None, backwash_removal_rate = None, regeneration_removal_rate = None, backwash_active = None, regeneration_active = None, mechanical_design = None, filter_type = None, number_of_elements = None, max_face_velocity = None, element_area = None, max_nozzle_velocity = None, min_ld_ratio = None, max_ld_ratio = None, design_pressure_margin = None, minimum_design_pressure_margin = None, design_temperature_margin = None, allowable_stress = None, joint_efficiency = None, corrosion_allowance = None, element_collapse_pressure = None, element_integrity_verified = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None, time_step=None, holdup_volume=None, solids_loading_rate=None, backwash_removal_rate=None, regeneration_removal_rate=None, backwash_active=None, regeneration_active=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None, time_step=None, holdup_volume=None, solids_loading_rate=None, backwash_removal_rate=None, regeneration_removal_rate=None, backwash_active=None, regeneration_active=None, mechanical_design=None, filter_type=None, number_of_elements=None, max_face_velocity=None, element_area=None, max_nozzle_velocity=None, min_ld_ratio=None, max_ld_ratio=None, design_pressure_margin=None, minimum_design_pressure_margin=None, design_temperature_margin=None, allowable_stress=None, joint_efficiency=None, corrosion_allowance=None, element_collapse_pressure=None, element_integrity_verified=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn filter(
@@ -323,6 +323,22 @@ pub fn filter(
     regeneration_removal_rate: Option<f64>,
     backwash_active: Option<bool>,
     regeneration_active: Option<bool>,
+    mechanical_design: Option<bool>,
+    filter_type: Option<&str>,
+    number_of_elements: Option<f64>,
+    max_face_velocity: Option<f64>,
+    element_area: Option<f64>,
+    max_nozzle_velocity: Option<f64>,
+    min_ld_ratio: Option<f64>,
+    max_ld_ratio: Option<f64>,
+    design_pressure_margin: Option<f64>,
+    minimum_design_pressure_margin: Option<f64>,
+    design_temperature_margin: Option<f64>,
+    allowable_stress: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
+    element_collapse_pressure: Option<f64>,
+    element_integrity_verified: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyFilterResult> {
     let drop_points: Option<Vec<azoth_process::models::filter::FilterDropPoint>> =
         pressure_drop_curve.map(|rows| {
@@ -375,6 +391,22 @@ pub fn filter(
         regeneration_removal_rate.map(kilograms_per_second),
         backwash_active,
         regeneration_active,
+        mechanical_design,
+        filter_type,
+        number_of_elements,
+        max_face_velocity.map(meters_per_second),
+        element_area.map(square_meters),
+        max_nozzle_velocity.map(meters_per_second),
+        min_ld_ratio,
+        max_ld_ratio,
+        design_pressure_margin,
+        minimum_design_pressure_margin.map(pascals),
+        design_temperature_margin.map(kelvin_intervals),
+        allowable_stress.map(pascals),
+        joint_efficiency,
+        corrosion_allowance.map(meters),
+        element_collapse_pressure.map(pascals),
+        element_integrity_verified,
     )
     .map(|r| crate::transport_gen::PyFilterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

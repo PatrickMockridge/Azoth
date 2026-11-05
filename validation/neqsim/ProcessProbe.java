@@ -201,6 +201,9 @@ public class ProcessProbe {
       case "filter_dynamic":
         filterDynamicRows();
         break;
+      case "filter_mechanical_design":
+        filterMechanicalDesignRows();
+        break;
       case "compressor":
         isentropicRows("Compressor");
         break;
@@ -898,6 +901,191 @@ public class ProcessProbe {
     zero.setCalculateSteadyState(false);
     zero.runTransient(3600.0, java.util.UUID.randomUUID());
     printFilterLoading("zero_flow_residence_uncased", zeroInlet, zero);
+  }
+
+  /// `FilterMechanicalDesign.calcDesign`: the element count, vessel, pressure boundary and weights.
+  ///
+  /// **The blocks re-case `FilterMechanicalDesignTest` on PR methane**, because the port's fluid
+  /// is PR and the design reads the inlet's volumetric flow and density. The overrides block states
+  /// every settable margin; the long-bed block exists to make the L/D maximum bind rather than the
+  /// minimum; the liquid block crosses the nozzle velocity's density switch at `200` kg/m3.
+  static void filterMechanicalDesignRows() {
+    Stream coalescerInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter coalescer =
+        new neqsim.process.equipment.filter.Filter("coalescer", coalescerInlet);
+    coalescer.setFilterServiceType(neqsim.process.equipment.filter.FilterType.COALESCER);
+    coalescer.setDeltaP(0.15);
+    coalescer.setTerminalDeltaP(1.0);
+    coalescer.setElementCollapsePressure(5.0);
+    coalescer.setElementIntegrityVerified(true);
+    neqsim.process.equipment.filter.FilterPerformanceCurve performance =
+        new neqsim.process.equipment.filter.FilterPerformanceCurve(
+            new double[] {1.0, 3.0, 10.0}, new double[] {10.0, 1000.0, 10000.0});
+    coalescer.setPerformanceCurve(performance);
+    coalescer.run();
+    coalescer.getMechanicalDesign().calcDesign();
+    printFilterDesign("coalescer_default", coalescerInlet, coalescer,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) coalescer
+            .getMechanicalDesign());
+
+    Stream basketInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter basket =
+        new neqsim.process.equipment.filter.Filter("basket", basketInlet);
+    basket.setFilterServiceType(neqsim.process.equipment.filter.FilterType.BASKET_STRAINER);
+    basket.setDeltaP(2.0);
+    basket.setTerminalDeltaP(1.0);
+    basket.setElementCollapsePressure(1.5);
+    basket.run();
+    basket.getMechanicalDesign().calcDesign();
+    printFilterDesign("basket_strainer_warnings", basketInlet, basket,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) basket
+            .getMechanicalDesign());
+
+    Stream carbonInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter carbon =
+        new neqsim.process.equipment.filter.Filter("carbon", carbonInlet);
+    carbon.setFilterServiceType(neqsim.process.equipment.filter.FilterType.ACTIVATED_CARBON);
+    carbon.setElementIntegrityVerified(true);
+    carbon.setNominalRemovalEfficiency(0.9);
+    carbon.run();
+    carbon.getMechanicalDesign().calcDesign();
+    printFilterDesign("activated_carbon_granular", carbonInlet, carbon,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) carbon
+            .getMechanicalDesign());
+
+    Stream highInlet = filterDesignFeed(50000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter high =
+        new neqsim.process.equipment.filter.Filter("high", highInlet);
+    high.setDeltaP(0.1);
+    high.setElementIntegrityVerified(true);
+    high.run();
+    high.getMechanicalDesign().calcDesign();
+    printFilterDesign("cartridge_high_flow", highInlet, high,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) high
+            .getMechanicalDesign());
+
+    Stream lowInlet = filterDesignFeed(1000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter low =
+        new neqsim.process.equipment.filter.Filter("low", lowInlet);
+    low.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+    low.setElementIntegrityVerified(true);
+    low.run();
+    low.getMechanicalDesign().calcDesign();
+    printFilterDesign("y_strainer_low_flow", lowInlet, low,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) low
+            .getMechanicalDesign());
+
+    Stream twoInlet = filterDesignFeed(1000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter two =
+        new neqsim.process.equipment.filter.Filter("two", twoInlet);
+    two.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+    two.setNumberOfElements(2);
+    two.setElementIntegrityVerified(true);
+    two.run();
+    two.getMechanicalDesign().calcDesign();
+    printFilterDesign("two_initial_elements", twoInlet, two,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) two
+            .getMechanicalDesign());
+
+    Stream overrideInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter override =
+        new neqsim.process.equipment.filter.Filter("override", overrideInlet);
+    override.setElementIntegrityVerified(true);
+    override.run();
+    neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign overrideDesign =
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) override
+            .getMechanicalDesign();
+    overrideDesign.setMaxFaceVelocity(0.05);
+    overrideDesign.setElementArea(0.5);
+    overrideDesign.setMaxNozzleVelocity(10.0);
+    overrideDesign.setMinLDRatio(1.5);
+    overrideDesign.setMaxLDRatio(3.0);
+    overrideDesign.setDesignPressureMargin(1.2);
+    overrideDesign.setMinimumDesignPressureMarginBar(5.0);
+    overrideDesign.setDesignTemperatureMarginC(15.0);
+    overrideDesign.setAllowableStress(100.0);
+    overrideDesign.setJointEfficiency(0.7);
+    overrideDesign.setCorrosionAllowanceMm(6.0);
+    overrideDesign.calcDesign();
+    printFilterDesign("overrides", overrideInlet, override, overrideDesign);
+
+    Stream bedInlet = filterDesignFeed(500.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter bed =
+        new neqsim.process.equipment.filter.Filter("bed", bedInlet);
+    bed.setFilterServiceType(neqsim.process.equipment.filter.FilterType.GRANULAR_MEDIA);
+    bed.setMediaGeometry(1.0, 4.0, 0.002, 0.40);
+    bed.setElementIntegrityVerified(true);
+    bed.run();
+    bed.getMechanicalDesign().calcDesign();
+    printFilterDesign("granular_long_bed", bedInlet, bed,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) bed
+            .getMechanicalDesign());
+
+    Stream liquidInlet = filterDesignFeed(5000.0, 300.0, 5.0, true);
+    neqsim.process.equipment.filter.Filter liquid =
+        new neqsim.process.equipment.filter.Filter("liquid", liquidInlet);
+    liquid.setFilterServiceType(neqsim.process.equipment.filter.FilterType.BAG);
+    liquid.setElementIntegrityVerified(true);
+    liquid.run();
+    liquid.getMechanicalDesign().calcDesign();
+    printFilterDesign("liquid_bag_nozzle_density", liquidInlet, liquid,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) liquid
+            .getMechanicalDesign());
+  }
+
+  static Stream filterDesignFeed(double kgPerHour, double kelvin, double bara, boolean liquid) {
+    SystemInterface fluid = new SystemPrEos(kelvin, bara);
+    fluid.addComponent(liquid ? "n-butane" : "methane", 1.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static void printFilterDesign(String label, Stream inlet,
+      neqsim.process.equipment.filter.Filter filter,
+      neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign design) {
+    neqsim.process.equipment.filter.FilterType type = filter.getFilterServiceType();
+    System.out.println(label);
+    System.out.println("filter_type=" + type.name());
+    System.out.println("type_face_velocity_mps=" + type.getDefaultMaximumFaceVelocity());
+    System.out.println("type_element_area_m2=" + type.getDefaultElementArea());
+    System.out.println("type_element_diameter_m=" + type.getDefaultElementDiameter());
+    System.out.println("type_element_length_m=" + type.getDefaultElementLength());
+    System.out.println("type_backwash_supported=" + type.isBackwashSupported());
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("design_pressure_bara=" + design.getDesignPressure());
+    System.out.println("design_temperature_c=" + design.getDesignTemperatureC());
+    System.out.println("required_elements=" + design.getRequiredElements());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("vessel_length_m=" + design.getVesselLength());
+    System.out.println("shell_thickness_m=" + design.getShellThickness());
+    System.out.println("head_thickness_m=" + design.getHeadThickness());
+    System.out.println("element_area_m2=" + design.getElementArea());
+    System.out.println("filter_media_area_m2=" + filter.getMediaArea());
+    System.out.println("calculated_face_velocity_mps=" + design.getCalculatedFaceVelocity());
+    System.out.println("required_nozzle_diameter_m=" + design.getRequiredNozzleDiameter());
+    System.out.println("selected_nozzle_diameter_mm=" + design.getSelectedNozzleDiameterMm());
+    System.out.println("calculated_nozzle_velocity_mps=" + design.getCalculatedNozzleVelocity());
+    System.out.println("empty_vessel_weight_kg=" + design.getEmptyVesselWeight());
+    System.out.println("total_equipped_weight_kg=" + design.getTotalEquippedWeight());
+    System.out.println("terminal_dp_utilization="
+        + design.getTerminalDifferentialPressureUtilization());
+    System.out.println("collapse_pressure_utilization="
+        + design.getElementCollapsePressureUtilization());
+    System.out.println("differential_pressure_design_acceptable="
+        + design.isDifferentialPressureDesignAcceptable());
+    System.out.println("design_warning_count=" + design.getDesignWarnings().size());
+    for (String warning : design.getDesignWarnings()) {
+      System.out.println("design_warning=" + warning);
+    }
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
+    System.out.println();
   }
 
   static Stream filterPrFeed(double kgPerHour) {

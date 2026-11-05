@@ -5868,7 +5868,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
     )
 
 
-def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None, solids_loading: Q | None=None, loading_capacity: Q | None=None, pressure_drop_increase_at_capacity: Q | None=None, breakthrough_start_fraction: float | None=None, bypass_cracking_pressure: Q | None=None, terminal_pressure_drop: Q | None=None, time_step: Q | None=None, holdup_volume: Q | None=None, solids_loading_rate: Q | None=None, backwash_removal_rate: Q | None=None, regeneration_removal_rate: Q | None=None, backwash_active: bool | None=None, regeneration_active: bool | None=None) -> FilterResult:
+def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None, solids_loading: Q | None=None, loading_capacity: Q | None=None, pressure_drop_increase_at_capacity: Q | None=None, breakthrough_start_fraction: float | None=None, bypass_cracking_pressure: Q | None=None, terminal_pressure_drop: Q | None=None, time_step: Q | None=None, holdup_volume: Q | None=None, solids_loading_rate: Q | None=None, backwash_removal_rate: Q | None=None, regeneration_removal_rate: Q | None=None, backwash_active: bool | None=None, regeneration_active: bool | None=None, mechanical_design: bool | None=None, filter_type: str | None=None, number_of_elements: float | None=None, max_face_velocity: Q | None=None, element_area: Q | None=None, max_nozzle_velocity: Q | None=None, min_ld_ratio: float | None=None, max_ld_ratio: float | None=None, design_pressure_margin: float | None=None, minimum_design_pressure_margin: Q | None=None, design_temperature_margin: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, element_collapse_pressure: Q | None=None, element_integrity_verified: bool | None=None) -> FilterResult:
     """``process.filter``, computed in Rust."""
     spec = _models_gen.model("process.filter")
     result = _core.filter(
@@ -5904,6 +5904,22 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if regeneration_removal_rate is None else input_to_si(spec, "regeneration_removal_rate", regeneration_removal_rate),
         backwash_active,
         regeneration_active,
+        mechanical_design,
+        filter_type,
+        None if number_of_elements is None else number_of_elements,
+        None if max_face_velocity is None else input_to_si(spec, "max_face_velocity", max_face_velocity),
+        None if element_area is None else input_to_si(spec, "element_area", element_area),
+        None if max_nozzle_velocity is None else input_to_si(spec, "max_nozzle_velocity", max_nozzle_velocity),
+        None if min_ld_ratio is None else min_ld_ratio,
+        None if max_ld_ratio is None else max_ld_ratio,
+        None if design_pressure_margin is None else design_pressure_margin,
+        None if minimum_design_pressure_margin is None else input_to_si(spec, "minimum_design_pressure_margin", minimum_design_pressure_margin),
+        None if design_temperature_margin is None else input_to_si(spec, "design_temperature_margin", design_temperature_margin),
+        None if allowable_stress is None else input_to_si(spec, "allowable_stress", allowable_stress),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
+        None if element_collapse_pressure is None else input_to_si(spec, "element_collapse_pressure", element_collapse_pressure),
+        element_integrity_verified,
     )
     return FilterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5925,6 +5941,24 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         differential_pressure_utilization=result.differential_pressure_utilization,
         replacement_required=result.replacement_required,
         holdup_residence_time=None if result.holdup_residence_time is None else from_si(result.holdup_residence_time.magnitude_si, result.holdup_residence_time.unit),
+        design_pressure=None if result.design_pressure is None else from_si(result.design_pressure.magnitude_si, result.design_pressure.unit),
+        design_temperature=None if result.design_temperature is None else from_si(result.design_temperature.magnitude_si, result.design_temperature.unit),
+        required_elements=result.required_elements,
+        vessel_inner_diameter=None if result.vessel_inner_diameter is None else from_si(result.vessel_inner_diameter.magnitude_si, result.vessel_inner_diameter.unit),
+        vessel_outer_diameter=None if result.vessel_outer_diameter is None else from_si(result.vessel_outer_diameter.magnitude_si, result.vessel_outer_diameter.unit),
+        vessel_length=None if result.vessel_length is None else from_si(result.vessel_length.magnitude_si, result.vessel_length.unit),
+        shell_thickness=None if result.shell_thickness is None else from_si(result.shell_thickness.magnitude_si, result.shell_thickness.unit),
+        head_thickness=None if result.head_thickness is None else from_si(result.head_thickness.magnitude_si, result.head_thickness.unit),
+        effective_element_area=None if result.effective_element_area is None else from_si(result.effective_element_area.magnitude_si, result.effective_element_area.unit),
+        calculated_face_velocity=None if result.calculated_face_velocity is None else from_si(result.calculated_face_velocity.magnitude_si, result.calculated_face_velocity.unit),
+        required_nozzle_diameter=None if result.required_nozzle_diameter is None else from_si(result.required_nozzle_diameter.magnitude_si, result.required_nozzle_diameter.unit),
+        selected_nozzle_diameter=None if result.selected_nozzle_diameter is None else from_si(result.selected_nozzle_diameter.magnitude_si, result.selected_nozzle_diameter.unit),
+        calculated_nozzle_velocity=None if result.calculated_nozzle_velocity is None else from_si(result.calculated_nozzle_velocity.magnitude_si, result.calculated_nozzle_velocity.unit),
+        empty_vessel_weight=None if result.empty_vessel_weight is None else from_si(result.empty_vessel_weight.magnitude_si, result.empty_vessel_weight.unit),
+        total_equipped_weight=None if result.total_equipped_weight is None else from_si(result.total_equipped_weight.magnitude_si, result.total_equipped_weight.unit),
+        collapse_pressure_utilization=result.collapse_pressure_utilization,
+        differential_pressure_design_acceptable=result.differential_pressure_design_acceptable,
+        design_media_area=None if result.design_media_area is None else from_si(result.design_media_area.magnitude_si, result.design_media_area.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -15287,6 +15287,60 @@ pub struct PyFilterResult {
     /// the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
     #[pyo3(get)]
     pub holdup_residence_time: Option<PyQty>,
+    /// the design pressure: the larger of `operating * design_pressure_margin` and `operating + minimum_design_pressure_margin`.
+    #[pyo3(get)]
+    pub design_pressure: Option<PyQty>,
+    /// the inlet temperature plus `design_temperature_margin`.
+    #[pyo3(get)]
+    pub design_temperature: Option<PyQty>,
+    /// the element count the design requires, at least `number_of_elements`. A granular type reports 1.
+    #[pyo3(get)]
+    pub required_elements: Option<f64>,
+    /// the vessel's inside diameter, from the element bundle or the granular cross-section, floored at 0.5 m.
+    #[pyo3(get)]
+    pub vessel_inner_diameter: Option<PyQty>,
+    /// the inside diameter plus twice the shell thickness.
+    #[pyo3(get)]
+    pub vessel_outer_diameter: Option<PyQty>,
+    /// the tangent-to-tangent length: the active length plus the diameter, then clamped to the L/D window.
+    #[pyo3(get)]
+    pub vessel_length: Option<PyQty>,
+    /// the shell thickness from the class's ASME-shaped screening formula, floored at 6 mm.
+    #[pyo3(get)]
+    pub shell_thickness: Option<PyQty>,
+    /// the 2:1 ellipsoidal head's thickness, floored at the shell's.
+    #[pyo3(get)]
+    pub head_thickness: Option<PyQty>,
+    /// the element area the design used: the stated override or the type's default.
+    #[pyo3(get)]
+    pub effective_element_area: Option<PyQty>,
+    /// the flow over the effective element area, or over the granular vessel's cross-section.
+    #[pyo3(get)]
+    pub calculated_face_velocity: Option<PyQty>,
+    /// the hydraulic nozzle diameter the nozzle velocity requires.
+    #[pyo3(get)]
+    pub required_nozzle_diameter: Option<PyQty>,
+    /// the next nominal nozzle diameter at or above the required one, from the class's 15 to 1200 mm table.
+    #[pyo3(get)]
+    pub selected_nozzle_diameter: Option<PyQty>,
+    /// the flow over the selected nozzle's area.
+    #[pyo3(get)]
+    pub calculated_nozzle_velocity: Option<PyQty>,
+    /// the shell and head metal at 7850 kg/m3.
+    #[pyo3(get)]
+    pub empty_vessel_weight: Option<PyQty>,
+    /// the empty vessel, 30% of it for accessories, and the elements or granular media.
+    #[pyo3(get)]
+    pub total_equipped_weight: Option<PyQty>,
+    /// the unrestricted drop over `element_collapse_pressure`.
+    #[pyo3(get)]
+    pub collapse_pressure_utilization: Option<f64>,
+    /// true when both the terminal and the collapse utilizations are below one.
+    #[pyo3(get)]
+    pub differential_pressure_design_acceptable: Option<bool>,
+    /// the vessel cross-section a granular design writes to the filter's hydraulic area; absent for a cartridge type.
+    #[pyo3(get)]
+    pub design_media_area: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15296,7 +15350,7 @@ pub struct PyFilterResult {
 impl PyFilterResult {
     fn __repr__(&self) -> String {
         format!(
-            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, holdup_residence_time={:?}, {} warning(s))",
+            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, holdup_residence_time={:?}, design_pressure={:?}, design_temperature={:?}, required_elements={:?}, vessel_inner_diameter={:?}, vessel_outer_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, effective_element_area={:?}, calculated_face_velocity={:?}, required_nozzle_diameter={:?}, selected_nozzle_diameter={:?}, calculated_nozzle_velocity={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, collapse_pressure_utilization={:?}, differential_pressure_design_acceptable={:?}, design_media_area={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -15316,6 +15370,24 @@ impl PyFilterResult {
             self.differential_pressure_utilization,
             self.replacement_required,
             self.holdup_residence_time,
+            self.design_pressure,
+            self.design_temperature,
+            self.required_elements,
+            self.vessel_inner_diameter,
+            self.vessel_outer_diameter,
+            self.vessel_length,
+            self.shell_thickness,
+            self.head_thickness,
+            self.effective_element_area,
+            self.calculated_face_velocity,
+            self.required_nozzle_diameter,
+            self.selected_nozzle_diameter,
+            self.calculated_nozzle_velocity,
+            self.empty_vessel_weight,
+            self.total_equipped_weight,
+            self.collapse_pressure_utilization,
+            self.differential_pressure_design_acceptable,
+            self.design_media_area,
             self.warnings.len()
         )
     }
@@ -15372,6 +15444,69 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
             holdup_residence_time: r.holdup_residence_time.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "s".to_string(),
+            }),
+            design_pressure: r.design_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_temperature: r.design_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            required_elements: r.required_elements,
+            vessel_inner_diameter: r.vessel_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_outer_diameter: r.vessel_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_length: r.vessel_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            shell_thickness: r.shell_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            head_thickness: r.head_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_element_area: r.effective_element_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            calculated_face_velocity: r.calculated_face_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            required_nozzle_diameter: r.required_nozzle_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            selected_nozzle_diameter: r.selected_nozzle_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            calculated_nozzle_velocity: r.calculated_nozzle_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            empty_vessel_weight: r.empty_vessel_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            total_equipped_weight: r.total_equipped_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            collapse_pressure_utilization: r.collapse_pressure_utilization,
+            differential_pressure_design_acceptable: r.differential_pressure_design_acceptable,
+            design_media_area: r.design_media_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
             }),
             warnings: transport(&r.warnings),
         }

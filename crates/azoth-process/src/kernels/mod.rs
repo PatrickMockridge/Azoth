@@ -15,6 +15,7 @@ pub mod distillation_column;
 pub mod ejector;
 pub mod expander;
 pub mod filter;
+pub mod filter_design;
 pub mod flare;
 pub mod gas_scrubber;
 pub mod gibbs_reactor;

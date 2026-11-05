@@ -5,9 +5,10 @@
 //! address.
 
 use azoth_core::units::{
-    Area, DynamicViscosity, Length, Mass, MassRate, MolarEnergy, Pressure,
-    ThermodynamicTemperature, Time, Volume, VolumeRate, cubic_meter_per_hour, joules_per_mole,
-    kilogram_per_hour, kilograms, seconds,
+    Area, DynamicViscosity, Length, Mass, MassRate, MolarEnergy, Pressure, TemperatureInterval,
+    ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate, cubic_meter_per_hour,
+    joules_per_mole, kelvins, kilogram_per_hour, kilograms, meters, meters_per_second, pascals,
+    seconds, square_meters,
 };
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -17,6 +18,7 @@ use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::filter::{
     self as kernel, BetaPoint, DropPoint, FilterSettings, Media, PressureDropModel,
 };
+use crate::kernels::filter_design::{self as design_kernel, DesignRequest, FilterType};
 use crate::model_gen;
 use crate::stream::Stream;
 
@@ -88,6 +90,57 @@ pub struct FilterResult {
     /// The holdup over the inlet flow, absent where the class returns positive infinity.
     #[serde(serialize_with = "optional_scalar")]
     pub holdup_residence_time: Option<Time>,
+    /// The design pressure, absent unless `mechanical_design`.
+    #[serde(serialize_with = "optional_scalar")]
+    pub design_pressure: Option<Pressure>,
+    /// The design temperature.
+    #[serde(serialize_with = "optional_scalar")]
+    pub design_temperature: Option<ThermodynamicTemperature>,
+    /// The required element count.
+    pub required_elements: Option<f64>,
+    /// The vessel's inside diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vessel_inner_diameter: Option<Length>,
+    /// The vessel's outside diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vessel_outer_diameter: Option<Length>,
+    /// The tangent-to-tangent length.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vessel_length: Option<Length>,
+    /// The shell thickness.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shell_thickness: Option<Length>,
+    /// The head thickness.
+    #[serde(serialize_with = "optional_scalar")]
+    pub head_thickness: Option<Length>,
+    /// The effective element area.
+    #[serde(serialize_with = "optional_scalar")]
+    pub effective_element_area: Option<Area>,
+    /// The calculated face velocity.
+    #[serde(serialize_with = "optional_scalar")]
+    pub calculated_face_velocity: Option<Velocity>,
+    /// The required nozzle diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub required_nozzle_diameter: Option<Length>,
+    /// The selected nominal nozzle diameter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub selected_nozzle_diameter: Option<Length>,
+    /// The velocity through the selected nozzle.
+    #[serde(serialize_with = "optional_scalar")]
+    pub calculated_nozzle_velocity: Option<Velocity>,
+    /// The empty vessel weight.
+    #[serde(serialize_with = "optional_scalar")]
+    pub empty_vessel_weight: Option<Mass>,
+    /// The total equipped weight.
+    #[serde(serialize_with = "optional_scalar")]
+    pub total_equipped_weight: Option<Mass>,
+    /// The collapse-rating utilization.
+    pub collapse_pressure_utilization: Option<f64>,
+    /// Whether both differential-pressure checks pass.
+    pub differential_pressure_design_acceptable: Option<bool>,
+    /// The vessel cross-section a granular design writes to the filter.
+    #[serde(serialize_with = "optional_scalar")]
+    pub design_media_area: Option<Area>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -99,7 +152,11 @@ impl FilterResult {
     /// **The warnings are the caller's**: a flowsheet's are the *checker's* rather than
     /// [`apply_checks`]'.
     #[must_use]
-    pub fn of(outcome: &kernel::FilterOutcome, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &kernel::FilterOutcome,
+        design: Option<&design_kernel::FilterDesign>,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             outlet_n: outcome.outlet.n,
             outlet_z: outcome.outlet.z.clone(),
@@ -120,6 +177,29 @@ impl FilterResult {
             differential_pressure_utilization: outcome.differential_pressure_utilization,
             replacement_required: outcome.replacement_required,
             holdup_residence_time: outcome.holdup_residence_s.map(seconds),
+            design_pressure: design.map(|value| pascals(value.design_pressure_pa)),
+            design_temperature: design.map(|value| kelvins(value.design_temperature_k)),
+            required_elements: design.map(|value| value.required_elements),
+            vessel_inner_diameter: design.map(|value| meters(value.inner_diameter_m)),
+            vessel_outer_diameter: design.map(|value| meters(value.outer_diameter_m)),
+            vessel_length: design.map(|value| meters(value.vessel_length_m)),
+            shell_thickness: design.map(|value| meters(value.shell_thickness_m)),
+            head_thickness: design.map(|value| meters(value.head_thickness_m)),
+            effective_element_area: design.map(|value| square_meters(value.element_area_m2)),
+            calculated_face_velocity: design
+                .map(|value| meters_per_second(value.calculated_face_velocity_mps)),
+            required_nozzle_diameter: design.map(|value| meters(value.required_nozzle_diameter_m)),
+            selected_nozzle_diameter: design.map(|value| meters(value.selected_nozzle_diameter_m)),
+            calculated_nozzle_velocity: design
+                .map(|value| meters_per_second(value.calculated_nozzle_velocity_mps)),
+            empty_vessel_weight: design.map(|value| kilograms(value.empty_vessel_weight_kg)),
+            total_equipped_weight: design.map(|value| kilograms(value.total_equipped_weight_kg)),
+            collapse_pressure_utilization: design.map(|value| value.collapse_pressure_utilization),
+            differential_pressure_design_acceptable: design
+                .map(|value| value.differential_pressure_design_acceptable),
+            design_media_area: design
+                .and_then(|value| value.design_media_area_m2)
+                .map(square_meters),
             warnings,
         }
     }
@@ -166,6 +246,22 @@ pub fn filter(
     regeneration_removal_rate: Option<MassRate>,
     backwash_active: Option<bool>,
     regeneration_active: Option<bool>,
+    mechanical_design: Option<bool>,
+    filter_type: Option<&str>,
+    number_of_elements: Option<f64>,
+    max_face_velocity: Option<Velocity>,
+    element_area: Option<Area>,
+    max_nozzle_velocity: Option<Velocity>,
+    min_ld_ratio: Option<f64>,
+    max_ld_ratio: Option<f64>,
+    design_pressure_margin: Option<f64>,
+    minimum_design_pressure_margin: Option<Pressure>,
+    design_temperature_margin: Option<TemperatureInterval>,
+    allowable_stress: Option<Pressure>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<Length>,
+    element_collapse_pressure: Option<Pressure>,
+    element_integrity_verified: Option<bool>,
 ) -> Result<FilterResult> {
     let spec = &model_gen::FILTER_SPEC;
     let mut warnings = Vec::new();
@@ -189,6 +285,18 @@ pub fn filter(
             "solids_loading_rate" => solids_loading_rate.map(|value| value.value),
             "backwash_removal_rate" => backwash_removal_rate.map(|value| value.value),
             "regeneration_removal_rate" => regeneration_removal_rate.map(|value| value.value),
+            "number_of_elements" => number_of_elements,
+            "max_face_velocity" => max_face_velocity.map(|value| value.value),
+            "element_area" => element_area.map(|value| value.value),
+            "max_nozzle_velocity" => max_nozzle_velocity.map(|value| value.value),
+            "min_ld_ratio" => min_ld_ratio,
+            "max_ld_ratio" => max_ld_ratio,
+            "design_pressure_margin" => design_pressure_margin,
+            "minimum_design_pressure_margin" => {
+                minimum_design_pressure_margin.map(|value| value.value)
+            }
+            "corrosion_allowance" => corrosion_allowance.map(|value| value.value),
+            "element_collapse_pressure" => element_collapse_pressure.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -338,6 +446,119 @@ pub fn filter(
              `Filter`, so the last setter decides; the port refuses both rather than choosing",
         ));
     }
+
+    let design_requested = mechanical_design.unwrap_or(false);
+    for (name, stated) in [
+        ("filter_type", filter_type.is_some()),
+        ("number_of_elements", number_of_elements.is_some()),
+        ("max_face_velocity", max_face_velocity.is_some()),
+        ("element_area", element_area.is_some()),
+        ("max_nozzle_velocity", max_nozzle_velocity.is_some()),
+        ("min_ld_ratio", min_ld_ratio.is_some()),
+        ("max_ld_ratio", max_ld_ratio.is_some()),
+        ("design_pressure_margin", design_pressure_margin.is_some()),
+        (
+            "minimum_design_pressure_margin",
+            minimum_design_pressure_margin.is_some(),
+        ),
+        (
+            "design_temperature_margin",
+            design_temperature_margin.is_some(),
+        ),
+        ("allowable_stress", allowable_stress.is_some()),
+        ("joint_efficiency", joint_efficiency.is_some()),
+        ("corrosion_allowance", corrosion_allowance.is_some()),
+        (
+            "element_collapse_pressure",
+            element_collapse_pressure.is_some(),
+        ),
+        (
+            "element_integrity_verified",
+            element_integrity_verified.is_some(),
+        ),
+    ] {
+        if stated && !design_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "a design input is stated without `mechanical_design`",
+            ));
+        }
+    }
+    for (name, value) in [
+        ("number_of_elements", number_of_elements),
+        (
+            "max_face_velocity",
+            max_face_velocity.map(|value| value.value),
+        ),
+        ("element_area", element_area.map(|value| value.value)),
+        (
+            "max_nozzle_velocity",
+            max_nozzle_velocity.map(|value| value.value),
+        ),
+        ("min_ld_ratio", min_ld_ratio),
+        ("max_ld_ratio", max_ld_ratio),
+        ("design_pressure_margin", design_pressure_margin),
+        (
+            "minimum_design_pressure_margin",
+            minimum_design_pressure_margin.map(|value| value.value),
+        ),
+        (
+            "design_temperature_margin",
+            design_temperature_margin.map(|value| value.value),
+        ),
+        (
+            "allowable_stress",
+            allowable_stress.map(|value| value.value),
+        ),
+        ("joint_efficiency", joint_efficiency),
+        (
+            "corrosion_allowance",
+            corrosion_allowance.map(|value| value.value),
+        ),
+        (
+            "element_collapse_pressure",
+            element_collapse_pressure.map(|value| value.value),
+        ),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("{value} is not a finite number"),
+                ));
+            }
+        }
+    }
+    let filter_type = match filter_type {
+        Some(spelling) => FilterType::parse(spelling).ok_or_else(|| {
+            AzothError::invalid_input(
+                "filter_type",
+                format!("{spelling} is not one of the eight filter constructions"),
+            )
+        })?,
+        None => FilterType::Cartridge,
+    };
+    let number_of_elements = number_of_elements.unwrap_or(1.0);
+    if number_of_elements < 1.0 || number_of_elements.fract() != 0.0 {
+        return Err(AzothError::invalid_input(
+            "number_of_elements",
+            format!(
+                "the element count is {number_of_elements}, and `setNumberOfElements` takes an \
+                 integer of at least one"
+            ),
+        ));
+    }
+    let min_ld_ratio = min_ld_ratio.unwrap_or(2.0);
+    let max_ld_ratio = max_ld_ratio.unwrap_or(5.0);
+    if min_ld_ratio <= 0.0 || max_ld_ratio <= 0.0 || min_ld_ratio > max_ld_ratio {
+        return Err(AzothError::invalid_input(
+            "min_ld_ratio",
+            format!(
+                "the L/D window is {min_ld_ratio} to {max_ld_ratio}, and it must be positive with \
+                 the minimum no greater than the maximum"
+            ),
+        ));
+    }
     if let Some(cracking) = bypass_cracking_pressure {
         if !cracking.value.is_finite() || cracking.value <= 0.0 {
             return Err(AzothError::invalid_input(
@@ -426,7 +647,49 @@ pub fn filter(
         ));
     }
 
-    Ok(FilterResult::of(&outcome, warnings))
+    let design = if design_requested {
+        let terminal = loading
+            .terminal_pressure_drop_pa
+            .unwrap_or(kernel::DEFAULT_TERMINAL_DROP_PA);
+        let request = DesignRequest {
+            filter_type,
+            number_of_elements: number_of_elements.round() as u32,
+            max_face_velocity_mps: max_face_velocity.map(|value| value.value),
+            element_area_m2: element_area.map(|value| value.value),
+            max_nozzle_velocity_mps: max_nozzle_velocity.map(|value| value.value),
+            min_ld_ratio,
+            max_ld_ratio,
+            design_pressure_margin: design_pressure_margin.unwrap_or(1.10),
+            minimum_design_pressure_margin_pa: minimum_design_pressure_margin
+                .map_or(350_000.0, |value| value.value),
+            design_temperature_margin_k: design_temperature_margin
+                .map_or(25.0, |value| value.value),
+            allowable_stress_pa: allowable_stress.map_or(138.0e6, |value| value.value),
+            joint_efficiency: joint_efficiency.unwrap_or(0.85),
+            corrosion_allowance_m: corrosion_allowance.map_or(0.003, |value| value.value),
+            element_collapse_pressure_pa: element_collapse_pressure
+                .map_or(1.0e6, |value| value.value),
+            element_integrity_verified: element_integrity_verified.unwrap_or(false),
+            performance_data: !beta_curve.is_empty() || efficiency > 0.0,
+            media_bed_depth_m: media.bed_depth_m,
+            terminal_pressure_drop_pa: terminal,
+            unrestricted_drop_pa: outcome.unrestricted_drop.value,
+            terminal_pressure_utilization: outcome.differential_pressure_utilization,
+        };
+        let design = design_kernel::design(&feed, &request)?;
+        for warning in &design.warnings {
+            warnings.push(Warning::for_field(
+                WarningCode::OutOfValidRange,
+                "mechanical_design",
+                warning.message(),
+            ));
+        }
+        Some(design)
+    } else {
+        None
+    };
+
+    Ok(FilterResult::of(&outcome, design.as_ref(), warnings))
 }
 
 fn validate_drop_curve(curve: &[DropPoint]) -> Result<()> {

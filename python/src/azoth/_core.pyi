@@ -2840,6 +2840,24 @@ class FilterResult:
     differential_pressure_utilization: float
     replacement_required: bool
     holdup_residence_time: Qty | None
+    design_pressure: Qty | None
+    design_temperature: Qty | None
+    required_elements: float | None
+    vessel_inner_diameter: Qty | None
+    vessel_outer_diameter: Qty | None
+    vessel_length: Qty | None
+    shell_thickness: Qty | None
+    head_thickness: Qty | None
+    effective_element_area: Qty | None
+    calculated_face_velocity: Qty | None
+    required_nozzle_diameter: Qty | None
+    selected_nozzle_diameter: Qty | None
+    calculated_nozzle_velocity: Qty | None
+    empty_vessel_weight: Qty | None
+    total_equipped_weight: Qty | None
+    collapse_pressure_utilization: float | None
+    differential_pressure_design_acceptable: bool | None
+    design_media_area: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5715,6 +5733,22 @@ def filter(
     regeneration_removal_rate: float | None = None,
     backwash_active: bool | None = None,
     regeneration_active: bool | None = None,
+    mechanical_design: bool | None = None,
+    filter_type: str | None = None,
+    number_of_elements: float | None = None,
+    max_face_velocity: float | None = None,
+    element_area: float | None = None,
+    max_nozzle_velocity: float | None = None,
+    min_ld_ratio: float | None = None,
+    max_ld_ratio: float | None = None,
+    design_pressure_margin: float | None = None,
+    minimum_design_pressure_margin: float | None = None,
+    design_temperature_margin: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
+    element_collapse_pressure: float | None = None,
+    element_integrity_verified: bool | None = None,
 ) -> FilterResult: ...
 def flare(
     components: list[str],

@@ -587,3 +587,350 @@ nominal_removal_efficiency = 0.99
 outlet_particle_concentration = 5.0719059715556284e-05
 captured_rate = 0.04928094028444373
 holdup_residence_time = 0.0
+
+[[cases]]
+id = "the_coalescer_design_is_the_captures"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `coalescer_default`: `FilterMechanicalDesignTest`'s coalescer re-cased on PR methane - the class's element sizing, pressure boundary, nozzle, weights and an empty warning list.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 15000.0
+terminal_pressure_drop = 100000.0
+element_collapse_pressure = 500000.0
+element_integrity_verified = true
+filter_type = "coalescer"
+mechanical_design = true
+performance_curve = [
+    { particle_size = 1e-06, beta_ratio = 10.0 },
+    { particle_size = 3e-06, beta_ratio = 1000.0 },
+    { particle_size = 1e-05, beta_ratio = 10000.0 },
+]
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4985000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.5
+vessel_outer_diameter = 0.5296657784122932
+vessel_length = 1.5
+shell_thickness = 0.014832889206146602
+head_thickness = 0.014832889206146602
+effective_element_area = 1.5
+calculated_face_velocity = 0.053286507969994096
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 323.91707924523325
+total_equipped_weight = 431.0922030188032
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_basket_strainer_reports_four_warnings"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `basket_strainer_warnings`: the terminal and collapse ratings exceeded, no integrity record and no performance data - four warnings in the class's order, and an unacceptable design.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 200000.0
+terminal_pressure_drop = 100000.0
+element_collapse_pressure = 150000.0
+filter_type = "basket_strainer"
+mechanical_design = true
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4800000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.74
+vessel_outer_diameter = 0.781025352050194
+vessel_length = 1.54
+shell_thickness = 0.02051267602509697
+head_thickness = 0.02051267602509697
+effective_element_area = 0.5
+calculated_face_velocity = 0.1598595239099823
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 726.6361579799395
+total_equipped_weight = 952.6270053739214
+design_temperature = 328.15
+differential_pressure_design_acceptable = false
+
+[[cases]]
+id = "the_activated_carbon_sizes_the_vessel_cross_section"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `activated_carbon_granular`: one element and the vessel cross-section, which the design writes to the filter's hydraulic media area.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "activated_carbon"
+element_integrity_verified = true
+nominal_removal_efficiency = 0.9
+mechanical_design = true
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 2.2557674273111896
+vessel_outer_diameter = 2.3685364114800205
+vessel_length = 4.511534854622379
+shell_thickness = 0.05638449208441533
+head_thickness = 0.05638449208441533
+effective_element_area = 1.0
+calculated_face_velocity = 0.019999999999999997
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 17986.364521827443
+total_equipped_weight = 25380.517927250454
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+design_media_area = 3.9964880977495576
+
+[[cases]]
+id = "the_high_flow_cartridge_needs_three_elements"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `cartridge_high_flow`: five times the flow asks for three elements, and the bundle sets the diameter.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 865.7289091123163
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 10000.0
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 865.7289091123163
+outlet_z = [1.0]
+outlet_p = 4990000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 3.0
+vessel_inner_diameter = 0.6676537180435969
+vessel_outer_diameter = 0.7052548079383237
+vessel_length = 1.6676537180435969
+shell_thickness = 0.018800544947363447
+head_thickness = 0.018800544947363447
+effective_element_area = 1.0
+calculated_face_velocity = 0.13321626992498523
+required_nozzle_diameter = 0.15950684446314745
+selected_nozzle_diameter = 0.2
+calculated_nozzle_velocity = 12.721216715295355
+empty_vessel_weight = 628.2536343725617
+total_equipped_weight = 846.7297246843302
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_low_flow_strainer_stays_one_element"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `y_strainer_low_flow`: one element at a tenth of the flow, and the type's smaller element defaults.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "y_strainer"
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.56
+vessel_outer_diameter = 0.5925056718217685
+vessel_length = 1.12
+shell_thickness = 0.016252835910884195
+head_thickness = 0.016252835910884195
+effective_element_area = 0.25
+calculated_face_velocity = 0.03197190478199645
+required_nozzle_diameter = 0.022557674273111894
+selected_nozzle_diameter = 0.025
+calculated_nozzle_velocity = 16.28315739557805
+empty_vessel_weight = 319.5216427778925
+total_equipped_weight = 420.3781356112603
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_stated_element_count_is_a_floor"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `two_initial_elements`: the flow asks for one and the stated two is the floor, so the bundle and the L/D follow it.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "y_strainer"
+number_of_elements = 2.0
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 2.0
+vessel_inner_diameter = 0.7091168824543144
+vessel_outer_diameter = 0.7486804884714743
+vessel_length = 1.4182337649086287
+shell_thickness = 0.019781803008579967
+head_thickness = 0.019781803008579967
+effective_element_area = 0.25
+calculated_face_velocity = 0.015985952390998225
+required_nozzle_diameter = 0.022557674273111894
+selected_nozzle_diameter = 0.025
+calculated_nozzle_velocity = 16.28315739557805
+empty_vessel_weight = 623.5863476984322
+total_equipped_weight = 820.6622520079618
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_design_overrides_are_the_captures"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `overrides`: every settable margin and material property stated - a `1.2` multiplier against a `5` bar addend, `100` MPa allowable, `0.7` joint and `6` mm corrosion.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+element_integrity_verified = true
+mechanical_design = true
+max_face_velocity = 0.05
+element_area = 0.5
+max_nozzle_velocity = 10.0
+min_ld_ratio = 1.5
+max_ld_ratio = 3.0
+design_pressure_margin = 1.2
+minimum_design_pressure_margin = 500000.0
+design_temperature_margin = 15.0
+allowable_stress = 100000000.0
+joint_efficiency = 0.7
+corrosion_allowance = 6.0
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 6000000.0
+required_elements = 4.0
+vessel_inner_diameter = 0.74
+vessel_outer_diameter = 0.8176781114339664
+vessel_length = 1.74
+shell_thickness = 0.03883905571698323
+head_thickness = 0.03883905571698323
+effective_element_area = 0.5
+calculated_face_velocity = 0.03996488097749557
+required_nozzle_diameter = 0.10088098617795271
+selected_nozzle_diameter = 0.15
+calculated_nozzle_velocity = 4.52309927654946
+empty_vessel_weight = 1517.5842350495514
+total_equipped_weight = 2012.8595055644168
+design_temperature = 318.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_long_bed_takes_the_maximum_ld_ratio"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `granular_long_bed`: a four-metre bed at a low flow, where the raw L/D exceeds the maximum and the diameter widens to meet it.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 8.657289091123163
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "granular_media"
+media_area = 1.0
+media_bed_depth = 4.0
+media_particle_diameter = 0.002
+media_void_fraction = 0.4
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 8.657289091123163
+outlet_z = [1.0]
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.9008809861779528
+vessel_outer_diameter = 0.949521085767424
+vessel_length = 4.504404930889764
+shell_thickness = 0.024320049794735607
+head_thickness = 0.024320049794735607
+effective_element_area = 1.0
+calculated_face_velocity = 0.006269801635127205
+required_nozzle_diameter = 0.015950684446314742
+selected_nozzle_diameter = 0.02
+calculated_nozzle_velocity = 12.721216715295354
+empty_vessel_weight = 2697.6484467188293
+total_equipped_weight = 6056.617327915622
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+design_media_area = 0.637418586795286
+
+[[cases]]
+id = "the_liquid_feed_switches_the_nozzle_velocity"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `liquid_bag_nozzle_density`: `n-butane` at `564` kg/m3 crosses the class's `200` kg/m3 nozzle-velocity switch to `3` m/s, and the 6 mm shell floor holds.\n"
+[cases.inputs]
+components = ["n-butane"]
+inlet_n = 23.895684821652168
+inlet_z = [1.0]
+inlet_p = 500000.0
+inlet_t = 300.0
+pressure_drop = 1000.0
+filter_type = "bag"
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 23.895684821652168
+outlet_z = [1.0]
+outlet_p = 499000.0
+outlet_t = 300.0
+design_pressure = 850000.0
+required_elements = 1.0
+vessel_inner_diameter = 0.524
+vessel_outer_diameter = 0.536
+vessel_length = 1.324
+shell_thickness = 0.006
+head_thickness = 0.006
+effective_element_area = 0.5
+calculated_face_velocity = 0.00492639222244873
+required_nozzle_diameter = 0.03233284550447493
+selected_nozzle_diameter = 0.04
+calculated_nozzle_velocity = 1.9601491845304588
+empty_vessel_weight = 124.67812771697994
+total_equipped_weight = 170.0815660320739
+design_temperature = 325.0
+differential_pressure_design_acceptable = true

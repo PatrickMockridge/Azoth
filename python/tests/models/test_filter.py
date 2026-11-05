@@ -124,3 +124,80 @@ def test_both_capture_sources_are_refused() -> None:
     base = h.model_kwargs(SPEC, _case("the_first_step_accumulates_five_kilograms")["inputs"])
     with pytest.raises(InvalidInputError, match="solids_loading_rate"):
         resolve(MODEL_ID)(**base, inlet_particle_concentration=1.0e-4)
+
+
+DESIGN_FIELDS = (
+    "design_pressure",
+    "design_temperature",
+    "required_elements",
+    "vessel_inner_diameter",
+    "vessel_outer_diameter",
+    "vessel_length",
+    "shell_thickness",
+    "head_thickness",
+    "effective_element_area",
+    "calculated_face_velocity",
+    "required_nozzle_diameter",
+    "selected_nozzle_diameter",
+    "calculated_nozzle_velocity",
+    "empty_vessel_weight",
+    "total_equipped_weight",
+    "collapse_pressure_utilization",
+    "differential_pressure_design_acceptable",
+    "design_media_area",
+)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_design_outputs_are_absent_without_their_flag(backend: str) -> None:
+    result = _run(_case("pressure_drop_1_bar"), backend)
+    for name in DESIGN_FIELDS:
+        assert getattr(result, name) is None, name
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_coalescer_design_is_the_captures(backend: str) -> None:
+    result = _run(_case("the_coalescer_design_is_the_captures"), backend)
+    assert result.vessel_inner_diameter.to("m").magnitude == pytest.approx(0.5)
+    assert result.vessel_length.to("m").magnitude == pytest.approx(1.5)
+    assert result.shell_thickness.to("m").magnitude == pytest.approx(0.014832889206146602)
+    assert result.selected_nozzle_diameter.to("m").magnitude == pytest.approx(0.08)
+    assert result.differential_pressure_design_acceptable is True
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_basket_design_reports_four_warnings(backend: str) -> None:
+    result = _run(_case("the_basket_strainer_reports_four_warnings"), backend)
+    assert result.differential_pressure_design_acceptable is False
+    design_warnings = [
+        warning for warning in result.warnings if warning.field == "mechanical_design"
+    ]
+    assert len(design_warnings) == 4
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_granular_design_publishes_its_media_area(backend: str) -> None:
+    result = _run(_case("the_activated_carbon_sizes_the_vessel_cross_section"), backend)
+    assert result.required_elements == pytest.approx(1.0)
+    assert result.design_media_area is not None
+    assert result.design_media_area.to("m**2").magnitude == pytest.approx(
+        3.9964880977495576, rel=5e-4
+    )
+
+
+def test_a_design_input_without_the_flag_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("pressure_drop_1_bar")["inputs"])
+    with pytest.raises(InvalidInputError, match="element_area"):
+        resolve(MODEL_ID)(**base, element_area=Q(0.5, "m**2"))
+
+
+def test_an_unknown_filter_type_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("pressure_drop_1_bar")["inputs"])
+    with pytest.raises(InvalidInputError, match="filter_type"):
+        resolve(MODEL_ID)(**base, mechanical_design=True, filter_type="nozzle")
+
+
+def test_an_inverted_ld_window_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("pressure_drop_1_bar")["inputs"])
+    with pytest.raises(InvalidInputError, match="min_ld_ratio"):
+        resolve(MODEL_ID)(**base, mechanical_design=True, min_ld_ratio=6.0, max_ld_ratio=5.0)

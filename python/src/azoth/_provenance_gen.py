@@ -2537,12 +2537,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.filter': {
         "calc_id": 'process.filter',
         "name": 'Filter',
-        "spec": {'path': 'specs/models/process/filter.toml', 'sha256': '55f6468b539f3e7ca775a6603dc5c43d050c93662300d84dd9665ff267aa201c'},
-        "code": [{'path': 'python/src/azoth/process/reference/filter.py', 'sha256': '09e11a5d6fb669c24e1452d1a58b915c6b5a71318a66caacf93874076869487c'}, {'path': 'crates/azoth-process/src/models/filter.rs', 'sha256': '056e4e98a006e501e62b4858f9e0a1542006db49ff22ddff908cae2b4f71a998'}],
+        "spec": {'path': 'specs/models/process/filter.toml', 'sha256': 'b8e1fba3f38297476b3f5826ad3b14822aafc2acd4f912efda57666ab7c470d6'},
+        "code": [{'path': 'python/src/azoth/process/reference/filter.py', 'sha256': '8124ad5083f33fdb828532ac6af5621865d92d02f307c5ddba916605091eb264'}, {'path': 'crates/azoth-process/src/models/filter.rs', 'sha256': '781c4a47194b30a495127fdc5d4859625c45582a44e1cf9a8c1753f9007fa48a'}],
         "source": 'NeqSim process/equipment/filter/Filter.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 19,
+        "tests_active": 28,
         "tests_skipped": 0,
     },
     'process.flare': {

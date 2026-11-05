@@ -233,6 +233,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # reached. `tests/filter.rs` and `python/tests/models/test_filter.py` assert both
         # branches, and `test_cross_impl` compares it on both results.
         "replacement_required",
+        # `filter`'s design-acceptability flag: both differential-pressure utilizations
+        # below one. `tests/filter.rs` and `python/tests/models/test_filter.py` assert both
+        # branches, and `test_cross_impl` compares it on both results.
+        "differential_pressure_design_acceptable",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

@@ -6141,6 +6141,60 @@ class FilterResult(_HasWarnings):
     #: the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
     holdup_residence_time: Q | None
 
+    #: the design pressure: the larger of `operating * design_pressure_margin` and `operating + minimum_design_pressure_margin`.
+    design_pressure: Q | None
+
+    #: the inlet temperature plus `design_temperature_margin`.
+    design_temperature: Q | None
+
+    #: the element count the design requires, at least `number_of_elements`. A granular type reports 1.
+    required_elements: float | None
+
+    #: the vessel's inside diameter, from the element bundle or the granular cross-section, floored at 0.5 m.
+    vessel_inner_diameter: Q | None
+
+    #: the inside diameter plus twice the shell thickness.
+    vessel_outer_diameter: Q | None
+
+    #: the tangent-to-tangent length: the active length plus the diameter, then clamped to the L/D window.
+    vessel_length: Q | None
+
+    #: the shell thickness from the class's ASME-shaped screening formula, floored at 6 mm.
+    shell_thickness: Q | None
+
+    #: the 2:1 ellipsoidal head's thickness, floored at the shell's.
+    head_thickness: Q | None
+
+    #: the element area the design used: the stated override or the type's default.
+    effective_element_area: Q | None
+
+    #: the flow over the effective element area, or over the granular vessel's cross-section.
+    calculated_face_velocity: Q | None
+
+    #: the hydraulic nozzle diameter the nozzle velocity requires.
+    required_nozzle_diameter: Q | None
+
+    #: the next nominal nozzle diameter at or above the required one, from the class's 15 to 1200 mm table.
+    selected_nozzle_diameter: Q | None
+
+    #: the flow over the selected nozzle's area.
+    calculated_nozzle_velocity: Q | None
+
+    #: the shell and head metal at 7850 kg/m3.
+    empty_vessel_weight: Q | None
+
+    #: the empty vessel, 30% of it for accessories, and the elements or granular media.
+    total_equipped_weight: Q | None
+
+    #: the unrestricted drop over `element_collapse_pressure`.
+    collapse_pressure_utilization: float | None
+
+    #: true when both the terminal and the collapse utilizations are below one.
+    differential_pressure_design_acceptable: bool | None
+
+    #: the vessel cross-section a granular design writes to the filter's hydraulic area; absent for a cartridge type.
+    design_media_area: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

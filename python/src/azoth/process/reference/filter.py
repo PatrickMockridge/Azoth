@@ -57,6 +57,42 @@ CLAMP_MARGIN_PA = 0.1
 DEFAULT_TERMINAL_DROP_PA = 500_000.0
 #: ``setBreakthroughStartFraction``'s ceiling; the divisor ``1 - start`` stays positive.
 MAX_BREAKTHROUGH_START = 0.999999
+#: ``FilterType``'s constructor arguments: face velocity, element area, element diameter,
+#: element length, and whether the construction is a granular bed.
+FILTER_TYPE_DEFAULTS: dict[str, tuple[float, float, float, float, bool]] = {
+    "cartridge": (0.15, 1.0, 0.15, 1.0, False),
+    "bag": (0.10, 0.5, 0.18, 0.8, False),
+    "y_strainer": (1.5, 0.25, 0.20, 0.5, False),
+    "basket_strainer": (1.0, 0.5, 0.30, 0.8, False),
+    "coalescer": (0.08, 1.5, 0.15, 1.0, False),
+    "granular_media": (0.02, 1.0, 0.0, 1.0, True),
+    "backwashable_media": (0.02, 1.0, 0.0, 1.0, True),
+    "activated_carbon": (0.02, 1.0, 0.0, 1.0, True),
+}
+#: ``selectNominalNozzleDiameterMm``'s table, mm.
+NOZZLE_DIAMETERS_MM = (
+    15.0,
+    20.0,
+    25.0,
+    40.0,
+    50.0,
+    65.0,
+    80.0,
+    100.0,
+    150.0,
+    200.0,
+    250.0,
+    300.0,
+    350.0,
+    400.0,
+    450.0,
+    500.0,
+    600.0,
+    750.0,
+    900.0,
+    1050.0,
+    1200.0,
+)
 
 
 def filter(
@@ -92,6 +128,22 @@ def filter(
     regeneration_removal_rate: Q | None = None,
     backwash_active: bool | None = None,
     regeneration_active: bool | None = None,
+    mechanical_design: bool | None = None,
+    filter_type: str | None = None,
+    number_of_elements: float | None = None,
+    max_face_velocity: Q | None = None,
+    element_area: Q | None = None,
+    max_nozzle_velocity: Q | None = None,
+    min_ld_ratio: float | None = None,
+    max_ld_ratio: float | None = None,
+    design_pressure_margin: float | None = None,
+    minimum_design_pressure_margin: Q | None = None,
+    design_temperature_margin: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
+    element_collapse_pressure: Q | None = None,
+    element_integrity_verified: bool | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by the selected clean-drop model at a constant temperature.
 
@@ -192,6 +244,44 @@ def filter(
         if regeneration_removal_rate is None
         else input_to_si(spec, "regeneration_removal_rate", regeneration_removal_rate)
     )
+    face_si = (
+        None
+        if max_face_velocity is None
+        else input_to_si(spec, "max_face_velocity", max_face_velocity)
+    )
+    element_area_si = (
+        None if element_area is None else input_to_si(spec, "element_area", element_area)
+    )
+    nozzle_si = (
+        None
+        if max_nozzle_velocity is None
+        else input_to_si(spec, "max_nozzle_velocity", max_nozzle_velocity)
+    )
+    minimum_margin_si = (
+        None
+        if minimum_design_pressure_margin is None
+        else input_to_si(spec, "minimum_design_pressure_margin", minimum_design_pressure_margin)
+    )
+    temperature_margin_si = (
+        None
+        if design_temperature_margin is None
+        else input_to_si(spec, "design_temperature_margin", design_temperature_margin)
+    )
+    stress_si = (
+        None
+        if allowable_stress is None
+        else input_to_si(spec, "allowable_stress", allowable_stress)
+    )
+    corrosion_si = (
+        None
+        if corrosion_allowance is None
+        else input_to_si(spec, "corrosion_allowance", corrosion_allowance)
+    )
+    collapse_si = (
+        None
+        if element_collapse_pressure is None
+        else input_to_si(spec, "element_collapse_pressure", element_collapse_pressure)
+    )
 
     apply_checks(
         checks.on_input,
@@ -211,6 +301,16 @@ def filter(
             "solids_loading_rate": rate_si,
             "backwash_removal_rate": backwash_si,
             "regeneration_removal_rate": regen_si,
+            "number_of_elements": number_of_elements,
+            "max_face_velocity": face_si,
+            "element_area": element_area_si,
+            "max_nozzle_velocity": nozzle_si,
+            "min_ld_ratio": min_ld_ratio,
+            "max_ld_ratio": max_ld_ratio,
+            "design_pressure_margin": design_pressure_margin,
+            "minimum_design_pressure_margin": minimum_margin_si,
+            "corrosion_allowance": corrosion_si,
+            "element_collapse_pressure": collapse_si,
         }.get,
         warnings,
     )
@@ -299,6 +399,64 @@ def filter(
             "in `Filter`, so the last setter decides; the port refuses both rather than "
             "choosing",
         )
+
+    design_requested = bool(mechanical_design)
+    for name, stated in (
+        ("filter_type", filter_type),
+        ("number_of_elements", number_of_elements),
+        ("max_face_velocity", max_face_velocity),
+        ("element_area", element_area),
+        ("max_nozzle_velocity", max_nozzle_velocity),
+        ("min_ld_ratio", min_ld_ratio),
+        ("max_ld_ratio", max_ld_ratio),
+        ("design_pressure_margin", design_pressure_margin),
+        ("minimum_design_pressure_margin", minimum_design_pressure_margin),
+        ("design_temperature_margin", design_temperature_margin),
+        ("allowable_stress", allowable_stress),
+        ("joint_efficiency", joint_efficiency),
+        ("corrosion_allowance", corrosion_allowance),
+        ("element_collapse_pressure", element_collapse_pressure),
+        ("element_integrity_verified", element_integrity_verified),
+    ):
+        if stated is not None and not design_requested:
+            raise InvalidInputError(name, "a design input is stated without `mechanical_design`")
+    for name, value in (
+        ("number_of_elements", number_of_elements),
+        ("max_face_velocity", face_si),
+        ("element_area", element_area_si),
+        ("max_nozzle_velocity", nozzle_si),
+        ("min_ld_ratio", min_ld_ratio),
+        ("max_ld_ratio", max_ld_ratio),
+        ("design_pressure_margin", design_pressure_margin),
+        ("minimum_design_pressure_margin", minimum_margin_si),
+        ("design_temperature_margin", temperature_margin_si),
+        ("allowable_stress", stress_si),
+        ("joint_efficiency", joint_efficiency),
+        ("corrosion_allowance", corrosion_si),
+        ("element_collapse_pressure", collapse_si),
+    ):
+        if value is not None and not math.isfinite(float(value)):
+            raise InvalidInputError(name, f"{value} is not a finite number")
+    if filter_type is not None and filter_type not in FILTER_TYPE_DEFAULTS:
+        raise InvalidInputError(
+            "filter_type",
+            f"{filter_type} is not one of the eight filter constructions",
+        )
+    count = 1.0 if number_of_elements is None else float(number_of_elements)
+    if count < 1.0 or not count.is_integer():
+        raise InvalidInputError(
+            "number_of_elements",
+            f"the element count is {count}, and `setNumberOfElements` takes an integer of "
+            f"at least one",
+        )
+    min_ld = 2.0 if min_ld_ratio is None else float(min_ld_ratio)
+    max_ld = 5.0 if max_ld_ratio is None else float(max_ld_ratio)
+    if min_ld <= 0.0 or max_ld <= 0.0 or min_ld > max_ld:
+        raise InvalidInputError(
+            "min_ld_ratio",
+            f"the L/D window is {min_ld} to {max_ld}, and it must be positive with the "
+            f"minimum no greater than the maximum",
+        )
     if bypass_si is not None and not (math.isfinite(bypass_si) and bypass_si > 0.0):
         raise InvalidInputError(
             "bypass_cracking_pressure",
@@ -334,6 +492,37 @@ def filter(
         regeneration_active=bool(regeneration_active),
     )
 
+    design_request = (
+        DesignRequest(
+            filter_type="cartridge" if filter_type is None else filter_type,
+            number_of_elements=int(count),
+            max_face_velocity_mps=face_si,
+            element_area_m2=element_area_si,
+            max_nozzle_velocity_mps=nozzle_si,
+            min_ld_ratio=min_ld,
+            max_ld_ratio=max_ld,
+            design_pressure_margin=(
+                1.10 if design_pressure_margin is None else design_pressure_margin
+            ),
+            minimum_design_pressure_margin_pa=(
+                350_000.0 if minimum_margin_si is None else minimum_margin_si
+            ),
+            design_temperature_margin_k=(
+                25.0 if temperature_margin_si is None else temperature_margin_si
+            ),
+            allowable_stress_pa=138.0e6 if stress_si is None else stress_si,
+            joint_efficiency=0.85 if joint_efficiency is None else joint_efficiency,
+            corrosion_allowance_m=0.003 if corrosion_si is None else corrosion_si,
+            element_collapse_pressure_pa=1.0e6 if collapse_si is None else collapse_si,
+            element_integrity_verified=bool(element_integrity_verified),
+            performance_data=bool(beta_curve) or efficiency > 0.0,
+            media_bed_depth_m=media[1],
+            terminal_pressure_drop_pa=500_000.0 if terminal_si is None else terminal_si,
+        )
+        if design_requested
+        else None
+    )
+
     states = _route(
         components,
         n,
@@ -352,7 +541,18 @@ def filter(
         efficiency,
         inlet_particle_concentration,
         loading,
+        design_request,
     )
+
+    if states.design is not None:
+        for message in states.design.warnings:
+            warnings.append(
+                Warning(
+                    code=WarningCode.OUT_OF_VALID_RANGE,
+                    field="mechanical_design",
+                    message=message,
+                )
+            )
 
     if states.applied_drop != states.restricted_drop:
         warnings.append(
@@ -388,6 +588,68 @@ def filter(
         replacement_required=states.replacement_required,
         holdup_residence_time=(
             None if states.holdup_residence_s is None else from_si(states.holdup_residence_s, "s")
+        ),
+        design_pressure=(
+            None if states.design is None else from_si(states.design.design_pressure_pa, "Pa")
+        ),
+        design_temperature=(
+            None if states.design is None else from_si(states.design.design_temperature_k, "K")
+        ),
+        required_elements=None if states.design is None else states.design.required_elements,
+        vessel_inner_diameter=(
+            None if states.design is None else from_si(states.design.inner_diameter_m, "m")
+        ),
+        vessel_outer_diameter=(
+            None if states.design is None else from_si(states.design.outer_diameter_m, "m")
+        ),
+        vessel_length=(
+            None if states.design is None else from_si(states.design.vessel_length_m, "m")
+        ),
+        shell_thickness=(
+            None if states.design is None else from_si(states.design.shell_thickness_m, "m")
+        ),
+        head_thickness=(
+            None if states.design is None else from_si(states.design.head_thickness_m, "m")
+        ),
+        effective_element_area=(
+            None if states.design is None else from_si(states.design.element_area_m2, "m**2")
+        ),
+        calculated_face_velocity=(
+            None
+            if states.design is None
+            else from_si(states.design.calculated_face_velocity_mps, "m/s")
+        ),
+        required_nozzle_diameter=(
+            None
+            if states.design is None
+            else from_si(states.design.required_nozzle_diameter_m, "m")
+        ),
+        selected_nozzle_diameter=(
+            None
+            if states.design is None
+            else from_si(states.design.selected_nozzle_diameter_m, "m")
+        ),
+        calculated_nozzle_velocity=(
+            None
+            if states.design is None
+            else from_si(states.design.calculated_nozzle_velocity_mps, "m/s")
+        ),
+        empty_vessel_weight=(
+            None if states.design is None else from_si(states.design.empty_vessel_weight_kg, "kg")
+        ),
+        total_equipped_weight=(
+            None if states.design is None else from_si(states.design.total_equipped_weight_kg, "kg")
+        ),
+        collapse_pressure_utilization=(
+            None if states.design is None else states.design.collapse_pressure_utilization
+        ),
+        differential_pressure_design_acceptable=(
+            None if states.design is None else states.design.differential_pressure_design_acceptable
+        ),
+        design_media_area=(
+            None
+            if states.design is None or states.design.design_media_area_m2 is None
+            else from_si(states.design.design_media_area_m2, "m**2")
         ),
         warnings=tuple(warnings),
     )
@@ -427,6 +689,56 @@ class LoadingState:
 
 
 @dataclass(frozen=True, slots=True)
+class DesignRequest:
+    """``FilterMechanicalDesign``'s settings, with the class's defaults resolved."""
+
+    filter_type: str
+    number_of_elements: int
+    max_face_velocity_mps: float | None
+    element_area_m2: float | None
+    max_nozzle_velocity_mps: float | None
+    min_ld_ratio: float
+    max_ld_ratio: float
+    design_pressure_margin: float
+    minimum_design_pressure_margin_pa: float
+    design_temperature_margin_k: float
+    allowable_stress_pa: float
+    joint_efficiency: float
+    corrosion_allowance_m: float
+    element_collapse_pressure_pa: float
+    element_integrity_verified: bool
+    performance_data: bool
+    media_bed_depth_m: float
+    terminal_pressure_drop_pa: float
+
+
+@dataclass(frozen=True, slots=True)
+class FilterDesign:
+    """What ``calcDesign`` computed, in SI."""
+
+    design_pressure_pa: float
+    design_temperature_k: float
+    required_elements: float
+    inner_diameter_m: float
+    outer_diameter_m: float
+    vessel_length_m: float
+    shell_thickness_m: float
+    head_thickness_m: float
+    element_area_m2: float
+    calculated_face_velocity_mps: float
+    required_nozzle_diameter_m: float
+    selected_nozzle_diameter_m: float
+    calculated_nozzle_velocity_mps: float
+    empty_vessel_weight_kg: float
+    total_equipped_weight_kg: float
+    terminal_pressure_utilization: float
+    collapse_pressure_utilization: float
+    differential_pressure_design_acceptable: bool
+    design_media_area_m2: float | None
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class FilterStates:
     """The filter's intermediates, in the order it computes them, in SI."""
 
@@ -452,6 +764,7 @@ class FilterStates:
     differential_pressure_utilization: float
     replacement_required: bool
     holdup_residence_s: float | None
+    design: FilterDesign | None
 
 
 def _route(
@@ -472,6 +785,7 @@ def _route(
     nominal_efficiency: float,
     inlet_concentration: float | None,
     loading: LoadingRequest,
+    design_request: DesignRequest | None,
 ) -> FilterStates:
     """The filter's intermediates, in SI, in the order it computes them."""
     if not inlet_p > 0.0:
@@ -531,6 +845,18 @@ def _route(
     )
     utilization = state.unrestricted_drop / terminal
     replacement_required = utilization >= 1.0 or state.loading_fraction >= 1.0
+    design = None
+    if design_request is not None:
+        density = capacity.system_mass_density(components, inlet_t, inlet_p, inlet_z)
+        design = _design(
+            design_request,
+            t=inlet_t,
+            p=inlet_p,
+            flow_m3h=flow_m3h,
+            density=density,
+            unrestricted_drop=state.unrestricted_drop,
+            terminal_utilization=utilization,
+        )
 
     return FilterStates(
         clean_drop=clean_pa,
@@ -550,6 +876,7 @@ def _route(
         differential_pressure_utilization=utilization,
         replacement_required=replacement_required,
         holdup_residence_s=state.holdup_residence_s,
+        design=design,
     )
 
 
@@ -623,6 +950,150 @@ def _advance(
         flow_m3s = flow_m3h / 3600.0
         residence = None if not math.isfinite(flow_m3s) or flow_m3s <= 0.0 else holdup / flow_m3s
     return replace(state, holdup_residence_s=residence)
+
+
+def _select_nozzle(required_mm: float) -> float:
+    """The next nominal nozzle diameter at or above the required one, mm."""
+    if required_mm <= 0.0:
+        return 0.0
+    for nominal in NOZZLE_DIAMETERS_MM:
+        if nominal >= required_mm:
+            return nominal
+    return required_mm
+
+
+def _design(
+    request: DesignRequest,
+    *,
+    t: float,
+    p: float,
+    flow_m3h: float,
+    density: float,
+    unrestricted_drop: float,
+    terminal_utilization: float,
+) -> FilterDesign:
+    """``FilterMechanicalDesign.calcDesign``, in SI."""
+    face, area, diameter, length, granular = FILTER_TYPE_DEFAULTS[request.filter_type]
+    design_face = face if request.max_face_velocity_mps is None else request.max_face_velocity_mps
+    design_area = area if request.element_area_m2 is None else request.element_area_m2
+    volumetric = max(0.0, flow_m3h / 3600.0)
+    operating_bara = p / 1.0e5
+    design_pressure_bar = max(
+        operating_bara * request.design_pressure_margin,
+        operating_bara + request.minimum_design_pressure_margin_pa / 1.0e5,
+    )
+    design_temperature_k = t + request.design_temperature_margin_k
+    required_area = volumetric / max(design_face, 1.0e-12)
+    if granular:
+        inner = max(math.sqrt(4.0 * required_area / math.pi), 0.5)
+        required_elements = 1.0
+        face_velocity = volumetric / (math.pi * inner * inner / 4.0)
+    else:
+        count = min(math.ceil(required_area / max(design_area, 1.0e-12)), float(2**31 - 1))
+        required_elements = max(1.0, count, float(request.number_of_elements))
+        bundle = math.sqrt(required_elements) * diameter * 1.8
+        inner = max(bundle + 0.2, 0.5)
+        face_velocity = volumetric / (required_elements * design_area)
+    active_length = request.media_bed_depth_m if granular else length
+    vessel_length = active_length + inner
+    ld_ratio = vessel_length / inner
+    if ld_ratio < request.min_ld_ratio:
+        vessel_length = inner * request.min_ld_ratio
+    elif ld_ratio > request.max_ld_ratio:
+        inner = vessel_length / request.max_ld_ratio
+    design_media_area = None
+    if granular:
+        design_media_area = math.pi * inner * inner / 4.0
+        face_velocity = volumetric / design_media_area
+    design_nozzle_velocity = (
+        request.max_nozzle_velocity_mps
+        if request.max_nozzle_velocity_mps is not None
+        else (20.0 if density < 200.0 else 3.0)
+    )
+    required_nozzle = (
+        math.sqrt(4.0 * volumetric / (math.pi * design_nozzle_velocity))
+        if volumetric > 0.0
+        else 0.0
+    )
+    selected_nozzle = _select_nozzle(required_nozzle * 1000.0) / 1000.0
+    selected_area = math.pi * selected_nozzle * selected_nozzle / 4.0
+    nozzle_velocity = volumetric / selected_area if selected_area > 0.0 else 0.0
+    pressure_mpa = max(0.0, design_pressure_bar - 1.01325) * 0.1
+    stress_mpa = request.allowable_stress_pa / 1.0e6
+    shell_denominator = stress_mpa * request.joint_efficiency - 0.6 * pressure_mpa
+    if shell_denominator <= 0.0:
+        raise InvalidInputError(
+            "mechanical_design",
+            "the shell design pressure exceeds the range of the configured material data",
+        )
+    shell = max(
+        pressure_mpa * inner / 2.0 / shell_denominator + request.corrosion_allowance_m,
+        0.006,
+    )
+    head_denominator = 2.0 * stress_mpa * request.joint_efficiency - 0.2 * pressure_mpa
+    if head_denominator <= 0.0:
+        raise InvalidInputError(
+            "mechanical_design",
+            "the head design pressure exceeds the range of the configured material data",
+        )
+    head = max(pressure_mpa * inner / head_denominator + request.corrosion_allowance_m, shell)
+    outer = inner + 2.0 * shell
+    collapse_utilization = unrestricted_drop / request.element_collapse_pressure_pa
+    acceptable = terminal_utilization < 1.0 and collapse_utilization < 1.0
+    warnings: list[str] = []
+    if terminal_utilization >= 1.0:
+        warnings.append(
+            "Terminal differential pressure is exceeded; replace or backwash the element"
+        )
+    if collapse_utilization >= 1.0:
+        warnings.append(
+            "Calculated differential pressure exceeds the element collapse/burst rating"
+        )
+    if request.terminal_pressure_drop_pa >= request.element_collapse_pressure_pa:
+        warnings.append(
+            "Terminal replacement differential pressure must be below the element collapse rating"
+        )
+    if face_velocity > design_face * 1.000001:
+        warnings.append("Calculated element face velocity exceeds the configured design limit")
+    if nozzle_velocity > design_nozzle_velocity * 1.000001:
+        warnings.append("Selected preliminary nozzle size exceeds the configured velocity limit")
+    if not request.element_integrity_verified:
+        warnings.append("Filter element fabrication integrity has not been recorded as verified")
+    if not request.performance_data:
+        warnings.append("No particle-size efficiency or beta-ratio test data have been configured")
+    steel_density = 7850.0
+    shell_area = math.pi * inner * vessel_length
+    head_area = 2.0 * math.pi * (inner / 2.0) ** 2 * 1.084
+    empty_vessel_weight = (shell_area + head_area) * shell * steel_density
+    accessories = empty_vessel_weight * 0.30
+    if granular:
+        media_density = 500.0 if request.filter_type == "activated_carbon" else 1000.0
+        element_weight = math.pi * inner * inner / 4.0 * request.media_bed_depth_m * media_density
+    else:
+        element_weight = required_elements * max(2.0, length * 10.0)
+    total_equipped_weight = empty_vessel_weight + accessories + element_weight
+    return FilterDesign(
+        design_pressure_pa=design_pressure_bar * 1.0e5,
+        design_temperature_k=design_temperature_k,
+        required_elements=required_elements,
+        inner_diameter_m=inner,
+        outer_diameter_m=outer,
+        vessel_length_m=vessel_length,
+        shell_thickness_m=shell,
+        head_thickness_m=head,
+        element_area_m2=design_area,
+        calculated_face_velocity_mps=face_velocity,
+        required_nozzle_diameter_m=required_nozzle,
+        selected_nozzle_diameter_m=selected_nozzle,
+        calculated_nozzle_velocity_mps=nozzle_velocity,
+        empty_vessel_weight_kg=empty_vessel_weight,
+        total_equipped_weight_kg=total_equipped_weight,
+        terminal_pressure_utilization=terminal_utilization,
+        collapse_pressure_utilization=collapse_utilization,
+        differential_pressure_design_acceptable=acceptable,
+        design_media_area_m2=design_media_area,
+        warnings=tuple(warnings),
+    )
 
 
 def _clean_drop(
