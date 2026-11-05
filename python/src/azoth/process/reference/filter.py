@@ -481,9 +481,7 @@ def _route(
     )
 
 
-def _loading_state(
-    clean_pa: float, nominal: float, request: LoadingRequest
-) -> LoadingState:
+def _loading_state(clean_pa: float, nominal: float, request: LoadingRequest) -> LoadingState:
     """``updateHydraulicState`` and the capture's current efficiency, before the clamp."""
     solids_loading_kg = max(
         0.0, 0.0 if request.solids_loading_kg is None else request.solids_loading_kg
@@ -495,15 +493,11 @@ def _loading_state(
         else 0.0
     )
     start = (
-        0.8
-        if request.breakthrough_start_fraction is None
-        else request.breakthrough_start_fraction
+        0.8 if request.breakthrough_start_fraction is None else request.breakthrough_start_fraction
     )
     start = min(max(0.0, start), MAX_BREAKTHROUGH_START)
     breakthrough_fraction = (
-        0.0
-        if loading_fraction <= start
-        else min(1.0, (loading_fraction - start) / (1.0 - start))
+        0.0 if loading_fraction <= start else min(1.0, (loading_fraction - start) / (1.0 - start))
     )
     increase = max(0.0, request.pressure_drop_increase_at_capacity_pa or 0.0)
     unrestricted_drop = clean_pa + increase * max(0.0, loading_fraction)
