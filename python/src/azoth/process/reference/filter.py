@@ -32,7 +32,7 @@ zero when it does not.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import pairwise
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
@@ -85,6 +85,13 @@ def filter(
     breakthrough_start_fraction: float | None = None,
     bypass_cracking_pressure: Q | None = None,
     terminal_pressure_drop: Q | None = None,
+    time_step: Q | None = None,
+    holdup_volume: Q | None = None,
+    solids_loading_rate: Q | None = None,
+    backwash_removal_rate: Q | None = None,
+    regeneration_removal_rate: Q | None = None,
+    backwash_active: bool | None = None,
+    regeneration_active: bool | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by the selected clean-drop model at a constant temperature.
 
@@ -168,6 +175,23 @@ def filter(
         if terminal_pressure_drop is None
         else input_to_si(spec, "terminal_pressure_drop", terminal_pressure_drop)
     )
+    step_si = None if time_step is None else input_to_si(spec, "time_step", time_step)
+    holdup_si = None if holdup_volume is None else input_to_si(spec, "holdup_volume", holdup_volume)
+    rate_si = (
+        None
+        if solids_loading_rate is None
+        else input_to_si(spec, "solids_loading_rate", solids_loading_rate)
+    )
+    backwash_si = (
+        None
+        if backwash_removal_rate is None
+        else input_to_si(spec, "backwash_removal_rate", backwash_removal_rate)
+    )
+    regen_si = (
+        None
+        if regeneration_removal_rate is None
+        else input_to_si(spec, "regeneration_removal_rate", regeneration_removal_rate)
+    )
 
     apply_checks(
         checks.on_input,
@@ -182,6 +206,11 @@ def filter(
             "breakthrough_start_fraction": breakthrough_start_fraction,
             "bypass_cracking_pressure": bypass_si,
             "terminal_pressure_drop": terminal_si,
+            "time_step": step_si,
+            "holdup_volume": holdup_si,
+            "solids_loading_rate": rate_si,
+            "backwash_removal_rate": backwash_si,
+            "regeneration_removal_rate": regen_si,
         }.get,
         warnings,
     )
@@ -255,9 +284,21 @@ def filter(
         ("loading_capacity", capacity_si),
         ("pressure_drop_increase_at_capacity", increase_si),
         ("breakthrough_start_fraction", breakthrough_start_fraction),
+        ("time_step", step_si),
+        ("holdup_volume", holdup_si),
+        ("solids_loading_rate", rate_si),
+        ("backwash_removal_rate", backwash_si),
+        ("regeneration_removal_rate", regen_si),
     ):
         if value is not None and not math.isfinite(float(value)):
             raise InvalidInputError(name, f"{value} is not a finite number")
+    if solids_loading_rate is not None and inlet_particle_concentration is not None:
+        raise InvalidInputError(
+            "solids_loading_rate",
+            "the generic captured rate and the concentration model each disable the other "
+            "in `Filter`, so the last setter decides; the port refuses both rather than "
+            "choosing",
+        )
     if bypass_si is not None and not (math.isfinite(bypass_si) and bypass_si > 0.0):
         raise InvalidInputError(
             "bypass_cracking_pressure",
@@ -284,6 +325,13 @@ def filter(
         breakthrough_start_fraction=breakthrough_start_fraction,
         bypass_cracking_pressure_pa=bypass_si,
         terminal_pressure_drop_pa=terminal_si,
+        time_step_s=step_si,
+        holdup_volume_m3=holdup_si,
+        solids_loading_rate_kg_h=None if rate_si is None else rate_si * 3600.0,
+        backwash_removal_rate_kg_h=None if backwash_si is None else backwash_si * 3600.0,
+        regeneration_removal_rate_kg_h=None if regen_si is None else regen_si * 3600.0,
+        backwash_active=bool(backwash_active),
+        regeneration_active=bool(regeneration_active),
     )
 
     states = _route(
@@ -338,6 +386,9 @@ def filter(
         solids_loading=from_si(states.solids_loading_kg, "kg"),
         differential_pressure_utilization=states.differential_pressure_utilization,
         replacement_required=states.replacement_required,
+        holdup_residence_time=(
+            None if states.holdup_residence_s is None else from_si(states.holdup_residence_s, "s")
+        ),
         warnings=tuple(warnings),
     )
 
@@ -352,6 +403,13 @@ class LoadingRequest:
     breakthrough_start_fraction: float | None = None
     bypass_cracking_pressure_pa: float | None = None
     terminal_pressure_drop_pa: float | None = None
+    time_step_s: float | None = None
+    holdup_volume_m3: float | None = None
+    solids_loading_rate_kg_h: float | None = None
+    backwash_removal_rate_kg_h: float | None = None
+    regeneration_removal_rate_kg_h: float | None = None
+    backwash_active: bool = False
+    regeneration_active: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -365,6 +423,7 @@ class LoadingState:
     unrestricted_drop: float
     restricted_drop: float
     bypass_fraction: float
+    holdup_residence_s: float | None = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -392,6 +451,7 @@ class FilterStates:
     solids_loading_kg: float
     differential_pressure_utilization: float
     replacement_required: bool
+    holdup_residence_s: float | None
 
 
 def _route(
@@ -437,19 +497,30 @@ def _route(
         flow_m3h,
     )
     nominal = _nominal_efficiency(beta_curve, particle_size_m, nominal_efficiency)
-    state = _loading_state(clean_pa, nominal, loading)
+    pre = _loading_state(clean_pa, nominal, loading)
+
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    mass_flow = inlet_n * capacity._molar_mass(mixture, list(inlet_z))
+
+    if (loading.time_step_s or 0.0) > 0.0:
+        captured_kg_s = (
+            mass_flow * inlet_concentration * pre.efficiency
+            if inlet_concentration is not None
+            else max(0.0, loading.solids_loading_rate_kg_h or 0.0) / 3600.0
+        )
+        state = _advance(pre, clean_pa, nominal, loading, flow_m3h, captured_kg_s)
+    else:
+        state = pre
+
     ceiling = max(0.0, inlet_p - CLAMP_MARGIN_PA)
     applied = min(max(0.0, state.restricted_drop), ceiling)
     p_out = inlet_p - applied
-
-    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     h_out, _ = enthalpy_at(mixture, ideal_gas, inlet_t, p_out, inlet_z)
 
     if inlet_concentration is None:
         outlet_concentration = 0.0
         captured_rate = 0.0
     else:
-        mass_flow = inlet_n * capacity._molar_mass(mixture, list(inlet_z))
         outlet_concentration = inlet_concentration * (1.0 - state.efficiency)
         captured_rate = mass_flow * inlet_concentration * state.efficiency
 
@@ -478,14 +549,19 @@ def _route(
         solids_loading_kg=state.solids_loading_kg,
         differential_pressure_utilization=utilization,
         replacement_required=replacement_required,
+        holdup_residence_s=state.holdup_residence_s,
     )
 
 
 def _loading_state(clean_pa: float, nominal: float, request: LoadingRequest) -> LoadingState:
     """``updateHydraulicState`` and the capture's current efficiency, before the clamp."""
-    solids_loading_kg = max(
-        0.0, 0.0 if request.solids_loading_kg is None else request.solids_loading_kg
-    )
+    return _loading_state_at(clean_pa, nominal, request.solids_loading_kg, request)
+
+
+def _loading_state_at(
+    clean_pa: float, nominal: float, loading_kg: float | None, request: LoadingRequest
+) -> LoadingState:
+    solids_loading_kg = max(0.0, 0.0 if loading_kg is None else loading_kg)
     capacity_kg = request.loading_capacity_kg
     loading_fraction = (
         solids_loading_kg / capacity_kg
@@ -520,6 +596,32 @@ def _loading_state(clean_pa: float, nominal: float, request: LoadingRequest) -> 
         restricted_drop=restricted_drop,
         bypass_fraction=bypass_fraction,
     )
+
+
+def _advance(
+    pre: LoadingState,
+    clean_pa: float,
+    nominal: float,
+    request: LoadingRequest,
+    flow_m3h: float,
+    captured_kg_s: float,
+) -> LoadingState:
+    """``updateDynamicLoading`` and ``updateHoldupResidenceTime``, one step."""
+    step = max(0.0, request.time_step_s or 0.0)
+    removed_kg_s = 0.0
+    if request.backwash_active:
+        removed_kg_s += max(0.0, request.backwash_removal_rate_kg_h or 0.0) / 3600.0
+    if request.regeneration_active:
+        removed_kg_s += max(0.0, request.regeneration_removal_rate_kg_h or 0.0) / 3600.0
+    loading_kg = max(0.0, pre.solids_loading_kg + (captured_kg_s - removed_kg_s) * step)
+    state = _loading_state_at(clean_pa, nominal, loading_kg, request)
+    holdup = max(0.0, request.holdup_volume_m3 or 0.0)
+    if holdup <= 0.0:
+        residence = 0.0
+    else:
+        flow_m3s = flow_m3h / 3600.0
+        residence = None if not math.isfinite(flow_m3s) or flow_m3s <= 0.0 else holdup / flow_m3s
+    return replace(state, holdup_residence_s=residence)
 
 
 def _clean_drop(

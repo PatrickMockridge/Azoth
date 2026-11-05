@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/filter/Filter.java**
 
-Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, and a `TPflash` at the feed's temperature.
+Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, a `TPflash` at the feed's temperature, and one `runTransient` step.
 
 
 ## What this model is
@@ -44,6 +44,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `breakthrough_start_fraction` | dimensionless | *Optional.* the loading fraction where breakthrough starts. Absent is the class's `0.8`; the setter clamps it to `[0, 0.999999]`, so a start of one cannot divide by zero. |
 | `bypass_cracking_pressure` | Pa | *Optional.* the differential pressure that opens the bypass. Absent leaves it closed; stating it enables the bypass, and a non-positive value is refused because `setBypassCrackingDeltaP` does. |
 | `terminal_pressure_drop` | Pa | *Optional.* the differential pressure that calls for element replacement. Absent is the class's 5 bar; a non-positive value is refused because `setTerminalDeltaP` does. |
+| `time_step` | s | *Optional.* one `runTransient` step. Absent or zero is the class's steady `run`; a positive value names the `calculateSteadyState=false` branch and integrates the captured solids for that interval. |
+| `holdup_volume` | m**3 | *Optional.* the holdup volume residence time divides by the inlet flow. Absent is 0; a negative value is clamped, as `setHoldupVolume` does. |
+| `solids_loading_rate` | kg/h | *Optional.* the generic captured-solids rate. **Refused with `inlet_particle_concentration`**: the class's two setters each disable the other, so the last call decides and the port refuses the ambiguity. |
+| `backwash_removal_rate` | kg/h | *Optional.* the loading a backwash removes during the step. Absent is 0; a negative value is clamped, as `setBackwashRemovalRate` does. |
+| `regeneration_removal_rate` | kg/h | *Optional.* the loading a regeneration removes during the step. Absent is 0; a negative value is clamped, as `setRegenerationRemovalRate` does. |
+| `backwash_active` | - | *Optional.* whether the backwash removes loading during the step. Absent is false; inert without a positive `time_step`. |
+| `regeneration_active` | - | *Optional.* whether the regeneration removes loading during the step. Absent is false; inert without a positive `time_step`. |
 
 
 ## Outputs
@@ -68,6 +75,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `solids_loading` | kg | the carried solids loading this run read. |
 | `differential_pressure_utilization` | dimensionless | `unrestricted_drop / terminal_pressure_drop`. Bypass does not lower it, because the check reads the unrestricted drop. |
 | `replacement_required` | - | true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`. |
+| `holdup_residence_time` | s | *Optional.* the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -81,6 +89,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `breakthrough_start_fraction >= 0 and breakthrough_start_fraction <= 0.999999` | warns `OUT_OF_VALID_RANGE` | `setBreakthroughStartFraction` clamps the fraction to `[0, 0.999999]`; the ceiling is what keeps the breakthrough division above zero. |
 | `bypass_cracking_pressure > 0` | raises | `setBypassCrackingDeltaP` throws on a non-positive or non-finite pressure; a zero cracking drop would bypass the whole flow. |
 | `terminal_pressure_drop > 0` | raises | `setTerminalDeltaP` throws on a non-positive or non-finite pressure; the utilization divides by it. |
+| `time_step >= 0` | warns `OUT_OF_VALID_RANGE` | `runTransient` takes `Math.max(0, dt)`, so a negative step is no step rather than an error. |
+| `holdup_volume >= 0` | warns `OUT_OF_VALID_RANGE` | `setHoldupVolume` clamps a negative volume to zero. |
+| `solids_loading_rate >= 0` | warns `OUT_OF_VALID_RANGE` | `setSolidsLoadingRate` clamps a negative rate to zero; the loading cannot fall from a negative capture. |
+| `backwash_removal_rate >= 0` | warns `OUT_OF_VALID_RANGE` | `setBackwashRemovalRate` clamps a negative rate to zero. |
+| `regeneration_removal_rate >= 0` | warns `OUT_OF_VALID_RANGE` | `setRegenerationRemovalRate` clamps a negative rate to zero. |
 
 ## Assumptions
 
@@ -101,7 +114,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **The replacement check reads the unrestricted drop.** It is `unrestricted/terminal >= 1` (terminal defaults to 5 bar) or `loading_fraction >= 1`, so a bypass that lowers the applied drop does not postpone the replacement.
 - **The element-integrity pair is stored, not computed.** `setElementIntegrityVerified` records a project claim and `setElementCollapsePressure` stores a rating no arithmetic reads; neither is carried. The exposed check is `replacement_required`.
 - **A non-positive `loading_capacity` is a sentinel, not a clamp.** The setter turns it into positive infinity, so no finite capacity is checked and the fraction is zero; the other loading setters clamp negatives to zero.
-- **The class's `runTransient` is outside this id.** The port is the steady `run` reading the carried state; the one-step advance and backwash/regeneration are owed, and the session loop is outside the port.
+- **The class's `runTransient` is one step here.** A positive `time_step` accretes the captured rate over the interval, subtracts the active backwash and regeneration removals, floors at zero, then runs the loaded state; the session loop is outside the id.
+- **The accretion uses the pre-step efficiency, and the report uses the post-step one.** `runTransient` runs once to compute the captured rate, integrates it, then runs again - so a concentration model's reported capture need not equal the loading increment.
+- **The generic `solids_loading_rate` fills no capture output.** It feeds the accretion when no concentration is stated, and `captured_rate` and `outlet_particle_concentration` stay zero, as the class's disabled concentration model leaves them.
+- **`holdup_residence_time` is the holdup over the inlet flow.** Zero without a holdup, and **absent where the flow is zero and the holdup positive**: the class returns positive infinity and JSON cannot carry it.
+- `resetDynamicState` is the zeroed state - absent loading, zero rates, inactive backwash and regeneration, no step.
 
 ## Cases
 
@@ -121,11 +138,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_terminal_drop_calls_for_replacement` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 20000.0, solids_loading = 5.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 360000.0, bypass_cracking_pressure = 50000.0, terminal_pressure_drop = 50000.0 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1950000.0, outlet_t = 298.15, outlet_h = 527.1855738746241, clean_drop = 20000.0, applied_drop = 50000.0, unrestricted_drop = 200000.0, bypass_fraction = 0.5, loading_fraction = 0.5, breakthrough_fraction = 0.0, current_removal_efficiency = 0.0, solids_loading = 5.0, differential_pressure_utilization = 4.0, replacement_required = True |
 | `loading_past_capacity_breaks_through` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 20000.0, solids_loading = 11.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1870000.0, outlet_t = 298.15, outlet_h = 541.8270857083041, clean_drop = 20000.0, applied_drop = 130000.0, unrestricted_drop = 130000.0, bypass_fraction = 0.0, loading_fraction = 1.1, breakthrough_fraction = 1.0, current_removal_efficiency = 0.0, solids_loading = 11.0, differential_pressure_utilization = 0.26, replacement_required = True |
 | `breakthrough_starts_above_its_boundary` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 20000.0, solids_loading = 5.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1930000.0, outlet_t = 298.15, outlet_h = 530.8461983506398, clean_drop = 20000.0, applied_drop = 70000.0, unrestricted_drop = 70000.0, bypass_fraction = 0.0, loading_fraction = 0.5, breakthrough_fraction = 0.0, current_removal_efficiency = 0.0, solids_loading = 5.0, differential_pressure_utilization = 0.14, replacement_required = False |
+| `the_first_step_accumulates_five_kilograms` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, solids_loading = 0.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5, time_step = 3600.0, holdup_volume = 1.0, solids_loading_rate = 5.0 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1940000.0, outlet_t = 298.15, outlet_h = 529.0159060666894, clean_drop = 10000.0, applied_drop = 60000.0, unrestricted_drop = 60000.0, bypass_fraction = 0.0, loading_fraction = 0.5, breakthrough_fraction = 0.0, current_removal_efficiency = 0.0, solids_loading = 5.0, differential_pressure_utilization = 0.12, holdup_residence_time = 48.47531506255213 |
+| `the_second_step_starts_from_the_first` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, solids_loading = 5.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5, time_step = 1800.0, solids_loading_rate = 5.0 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1915000.0, outlet_t = 298.15, outlet_h = 533.591560841867, clean_drop = 10000.0, applied_drop = 85000.0, unrestricted_drop = 85000.0, bypass_fraction = 0.0, loading_fraction = 0.75, breakthrough_fraction = 0.5, current_removal_efficiency = 0.0, solids_loading = 7.5, differential_pressure_utilization = 0.17, holdup_residence_time = 0.0 |
+| `backwash_and_regeneration_remove_loading` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 20000.0, solids_loading = 9.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5, time_step = 1800.0, solids_loading_rate = 0.0, backwash_removal_rate = 4.0, regeneration_removal_rate = 2.0, backwash_active = True, regeneration_active = True | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1920000.0, outlet_t = 298.15, outlet_h = 532.6764502203005, clean_drop = 20000.0, applied_drop = 80000.0, unrestricted_drop = 80000.0, bypass_fraction = 0.0, loading_fraction = 0.6, breakthrough_fraction = 0.19999999999999996, current_removal_efficiency = 0.0, solids_loading = 6.0, differential_pressure_utilization = 0.16, holdup_residence_time = 0.0 |
+| `the_accretion_uses_the_pre_step_efficiency` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 10000.0, solids_loading = 7.9, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 100000.0, breakthrough_start_fraction = 0.5, time_step = 28800.0, nominal_removal_efficiency = 0.99, inlet_particle_concentration = 0.0001 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1907673.6, outlet_t = 298.15, outlet_h = 534.9324355250758, clean_drop = 10000.0, applied_drop = 92326.4, unrestricted_drop = 92326.4, bypass_fraction = 0.0, loading_fraction = 0.823264, breakthrough_fraction = 0.646528, current_removal_efficiency = 0.34993728, solids_loading = 8.23264, differential_pressure_utilization = 0.1846528, nominal_removal_efficiency = 0.99, outlet_particle_concentration = 6.5006272e-05, captured_rate = 0.034993728, holdup_residence_time = 0.0 |
+| `the_pre_step_bypass_is_in_the_accretion` | components = ['methane'], inlet_n = 17.314578182246326, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 298.15, pressure_drop = 20000.0, solids_loading = 5.0, loading_capacity = 10.0, pressure_drop_increase_at_capacity = 360000.0, bypass_cracking_pressure = 50000.0, time_step = 3600.0, nominal_removal_efficiency = 0.99, inlet_particle_concentration = 0.0001 | outlet_n = 17.314578182246326, outlet_z = [1.0], outlet_p = 1950000.0, outlet_t = 298.15, outlet_h = 527.1855738746241, clean_drop = 20000.0, applied_drop = 50000.0, unrestricted_drop = 201782.0, bypass_fraction = 0.5022127243995583, loading_fraction = 0.50495, breakthrough_fraction = 0.0, current_removal_efficiency = 0.49280940284443725, solids_loading = 5.0495, differential_pressure_utilization = 0.403564, nominal_removal_efficiency = 0.99, outlet_particle_concentration = 5.0719059715556285e-05, captured_rate = 0.04928094028444373, holdup_residence_time = 0.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 14 declared, every one run
+- Tests: 19 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -137,4 +159,5 @@ declared checks *that call* could not evaluate.
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/filter/Filter.java` is the port source, through its steady-state `run`.
 - `validation/neqsim/captures/process_filter.tsv` - three rows: an ordinary drop, none at all, and one larger than the inlet pressure.
 - `validation/neqsim/captures/process_filter_loading.tsv` - seven blocks: a loaded run, the bypass run, the disabled capacity sentinel, the two replacement branches, the breakthrough boundary, and an uncased clamp-after-bypass block.
+- `validation/neqsim/captures/process_filter_dynamic.tsv` - the one-step branch: the two sequential generic-rate steps, backwash plus regeneration, the concentration sequencing, the pre-step bypass and an uncased zero-flow residence.
 - `FilterTest.testBypassLimitsPressureDropAndReducesCapture` and `testDynamicLoadingBuildsPressureDropAndBreakthrough`'s pre-step state are the blocks' scenarios, re-cased on PR methane.

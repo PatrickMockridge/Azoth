@@ -15,7 +15,7 @@ import pytest
 import _helpers as h
 from azoth import _models_gen, ureg
 from azoth._dispatch import available, resolve, use_backend
-from azoth.core.errors import OutOfRangeError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.process import filter as run_filter
 
 MODEL_ID = "process.filter"
@@ -91,3 +91,36 @@ def test_a_non_finite_loading_is_refused() -> None:
     base = h.model_kwargs(SPEC, _case("pressure_drop_1_bar")["inputs"])
     with pytest.raises(OutOfRangeError, match="solids_loading"):
         resolve(MODEL_ID)(**base, solids_loading=Q(float("nan"), "kg"))
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_a_step_accumulates_and_reports_its_residence(backend: str) -> None:
+    result = _run(_case("the_first_step_accumulates_five_kilograms"), backend)
+    assert result.solids_loading.to("kg").magnitude == pytest.approx(5.0)
+    assert result.loading_fraction == pytest.approx(0.5)
+    assert result.holdup_residence_time is not None
+    assert result.holdup_residence_time.to("s").magnitude == pytest.approx(
+        48.47531506255213, rel=1e-6
+    )
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_pre_step_efficiency_is_in_the_accretion(backend: str) -> None:
+    result = _run(_case("the_accretion_uses_the_pre_step_efficiency"), backend)
+    assert result.solids_loading.to("kg").magnitude == pytest.approx(8.23264)
+    assert result.current_removal_efficiency == pytest.approx(0.34993728)
+
+
+def test_a_zero_flow_has_no_residence_time() -> None:
+    base = h.model_kwargs(SPEC, _case("the_first_step_accumulates_five_kilograms")["inputs"])
+    base["inlet_n"] = Q(0.0, "mol/s")
+    for backend in sorted(available()):
+        with use_backend(backend):
+            result = resolve(MODEL_ID)(**base)
+        assert result.holdup_residence_time is None, backend
+
+
+def test_both_capture_sources_are_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("the_first_step_accumulates_five_kilograms")["inputs"])
+    with pytest.raises(InvalidInputError, match="solids_loading_rate"):
+        resolve(MODEL_ID)(**base, inlet_particle_concentration=1.0e-4)

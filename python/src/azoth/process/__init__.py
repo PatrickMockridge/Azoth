@@ -954,6 +954,13 @@ def filter(
     breakthrough_start_fraction: float | None = None,
     bypass_cracking_pressure: Q | None = None,
     terminal_pressure_drop: Q | None = None,
+    time_step: Q | None = None,
+    holdup_volume: Q | None = None,
+    solids_loading_rate: Q | None = None,
+    backwash_removal_rate: Q | None = None,
+    regeneration_removal_rate: Q | None = None,
+    backwash_active: bool | None = None,
+    regeneration_active: bool | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by a fixed amount at a constant temperature.
 
@@ -975,7 +982,9 @@ def filter(
 
     ``solids_loading`` with a ``loading_capacity`` adds the loading's pressure drop, the
     breakthrough retention and the optional ``bypass_cracking_pressure`` to the same run;
-    ``terminal_pressure_drop`` is the replacement threshold.
+    ``terminal_pressure_drop`` is the replacement threshold. A positive ``time_step`` runs one
+    ``runTransient`` step, accreting ``solids_loading_rate`` (or the concentration capture) and
+    subtracting the active backwash and regeneration removals.
 
     See :func:`azoth.process.reference.filter`.
     """
@@ -1005,6 +1014,13 @@ def filter(
         breakthrough_start_fraction=breakthrough_start_fraction,
         bypass_cracking_pressure=bypass_cracking_pressure,
         terminal_pressure_drop=terminal_pressure_drop,
+        time_step=time_step,
+        holdup_volume=holdup_volume,
+        solids_loading_rate=solids_loading_rate,
+        backwash_removal_rate=backwash_removal_rate,
+        regeneration_removal_rate=regeneration_removal_rate,
+        backwash_active=backwash_active,
+        regeneration_active=regeneration_active,
     )
 
 

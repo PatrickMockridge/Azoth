@@ -2839,6 +2839,7 @@ class FilterResult:
     solids_loading: Qty
     differential_pressure_utilization: float
     replacement_required: bool
+    holdup_residence_time: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5707,6 +5708,13 @@ def filter(
     breakthrough_start_fraction: float | None = None,
     bypass_cracking_pressure: float | None = None,
     terminal_pressure_drop: float | None = None,
+    time_step: float | None = None,
+    holdup_volume: float | None = None,
+    solids_loading_rate: float | None = None,
+    backwash_removal_rate: float | None = None,
+    regeneration_removal_rate: float | None = None,
+    backwash_active: bool | None = None,
+    regeneration_active: bool | None = None,
 ) -> FilterResult: ...
 def flare(
     components: list[str],

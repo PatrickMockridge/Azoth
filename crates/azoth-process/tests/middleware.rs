@@ -506,8 +506,9 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // splitter's design velocity's positive bound** takes the walk to a hundred and fifty-one.
     // **And the filter's loading state's five** - the solids loading, the drop increase, the
     // breakthrough start (with its ceiling), the bypass cracking pressure and the terminal
-    // drop - take it to a hundred and fifty-six.
-    assert_eq!(checked, 156, "the bounds this test walked");
+    // drop - take it to a hundred and fifty-six. **And its step's five** - the time step, the
+    // holdup volume and the three rates - take it to a hundred and sixty-one.
+    assert_eq!(checked, 161, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -684,8 +685,11 @@ fn the_generated_input_table_is_the_models_own() {
     // rating** - `rated_recovered_power` - `629 + 1 = 630`. **And the filter's loaded
     // state's six** - `solids_loading`, `loading_capacity`,
     // `pressure_drop_increase_at_capacity`, `breakthrough_start_fraction`,
-    // `bypass_cracking_pressure` and `terminal_pressure_drop` - `630 + 6 = 636`.
-    assert_eq!(walked, 636, "the inputs this test walked");
+    // `bypass_cracking_pressure` and `terminal_pressure_drop` - `630 + 6 = 636`. **And the
+    // filter's step's seven** - `time_step`, `holdup_volume`, `solids_loading_rate`,
+    // `backwash_removal_rate`, `regeneration_removal_rate`, `backwash_active` and
+    // `regeneration_active` - `636 + 7 = 643`.
+    assert_eq!(walked, 643, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

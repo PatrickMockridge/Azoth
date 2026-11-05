@@ -6138,6 +6138,9 @@ class FilterResult(_HasWarnings):
     #: true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
     replacement_required: bool
 
+    #: the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
+    holdup_residence_time: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -22,8 +22,8 @@
 //! lacks.** A finite capacity turns the solids loading into a fraction, the increase at
 //! capacity adds to the clean drop, breakthrough retains the efficiency and a bypass above its
 //! cracking drop lowers the applied drop. The class clamps the drop to the inlet ceiling
-//! **after** the bypass choice, and this reproduces that order. The accretion over `dt` is not
-//! here; it is the separate step the model id raises by `time_step`.
+//! **after** the bypass choice, and this reproduces that order. The accretion over `dt` is
+//! [`advance`], one `runTransient` step at the pre-step efficiency; the session loop is not here.
 
 use azoth_core::Result;
 use azoth_core::units::{MassRate, Pressure, kilograms_per_hour, pascals};
@@ -86,7 +86,7 @@ impl Default for Media {
     }
 }
 
-/// `Filter`'s carried loading state, as the model id's six optional inputs state it.
+/// `Filter`'s carried loading state and one step, as the model id's thirteen optional inputs.
 ///
 /// **The class keeps these as fields on the equipment and `run` reads them every time**, so the
 /// request is resolved here rather than at the boundary: absent is the class's initial value,
@@ -105,6 +105,20 @@ pub struct LoadingRequest {
     pub bypass_cracking_pressure_pa: Option<f64>,
     /// The differential pressure calling for replacement, Pa; absent is 5 bar.
     pub terminal_pressure_drop_pa: Option<f64>,
+    /// One `runTransient` step, s; absent or zero is the steady run.
+    pub time_step_s: Option<f64>,
+    /// The holdup volume residence time divides by, m3; absent is 0.
+    pub holdup_volume_m3: Option<f64>,
+    /// The generic captured-solids rate, kg/hr; absent uses the concentration model.
+    pub solids_loading_rate_kg_h: Option<f64>,
+    /// The backwash's removal rate, kg/hr.
+    pub backwash_removal_rate_kg_h: Option<f64>,
+    /// The regeneration's removal rate, kg/hr.
+    pub regeneration_removal_rate_kg_h: Option<f64>,
+    /// Whether the backwash removes loading during the step.
+    pub backwash_active: bool,
+    /// Whether the regeneration removes loading during the step.
+    pub regeneration_active: bool,
 }
 
 /// The class's `DEFAULT_TERMINAL_DELTA_P` of 5 bar, in Pa.
@@ -129,6 +143,8 @@ pub struct LoadingState {
     pub restricted_drop: f64,
     /// The bypassed flow fraction.
     pub bypass_fraction: f64,
+    /// The holdup over the inlet flow, s; absent where the class returns positive infinity.
+    pub holdup_residence_s: Option<f64>,
 }
 
 /// The settings the clean-drop model and the capture read.
@@ -187,6 +203,8 @@ pub struct FilterOutcome {
     pub differential_pressure_utilization: f64,
     /// Either the terminal drop or the loading capacity has been reached.
     pub replacement_required: bool,
+    /// The holdup over the inlet flow, s; absent where the class returns positive infinity.
+    pub holdup_residence_s: Option<f64>,
 }
 
 /// The class's `FIXED` model, which is what the palette's filter runs.
@@ -233,7 +251,23 @@ pub fn filter_with(
         settings.particle_size_m,
         settings.nominal_efficiency,
     );
-    let state = loading_state(clean_pa, nominal, loading);
+    let pre = loading_state(clean_pa, nominal, loading);
+    let state = if loading.time_step_s.unwrap_or(0.0) > 0.0 {
+        let captured_kg_s = match inlet_concentration {
+            Some(inlet) => feed.n * feed.molar_mass()?.value * inlet * pre.efficiency,
+            None => loading.solids_loading_rate_kg_h.unwrap_or(0.0).max(0.0) / 3600.0,
+        };
+        advance(
+            &pre,
+            clean_pa,
+            nominal,
+            loading,
+            actual_flow_m3h,
+            captured_kg_s,
+        )
+    } else {
+        pre
+    };
 
     // `Math.max(0.0, inletPressure - 1.0e-6)` in the class's bara: a millionth of a bar. The
     // clamp is the class's **last** step: bypass is chosen from the unrestricted drop above.
@@ -285,6 +319,7 @@ pub fn filter_with(
         bypass_fraction: state.bypass_fraction,
         differential_pressure_utilization: utilization,
         replacement_required,
+        holdup_residence_s: state.holdup_residence_s,
     })
 }
 
@@ -300,7 +335,22 @@ fn utilization(unrestricted_drop: f64, terminal_drop: f64, loading_fraction: f64
 /// and `restricted_drop` is the cracking pressure or the unrestricted drop. The bypass decision
 /// reads the unrestricted drop, and the comparison is the class's strict `>`.
 fn loading_state(clean_pa: f64, nominal: f64, request: &LoadingRequest) -> LoadingState {
-    let solids_loading_kg = request.solids_loading_kg.unwrap_or(0.0).max(0.0);
+    loading_state_at(
+        clean_pa,
+        nominal,
+        request.solids_loading_kg.unwrap_or(0.0),
+        request,
+    )
+}
+
+/// The same state at a stated loading, which the one-step advance needs for its post-step run.
+fn loading_state_at(
+    clean_pa: f64,
+    nominal: f64,
+    loading_kg: f64,
+    request: &LoadingRequest,
+) -> LoadingState {
+    let solids_loading_kg = loading_kg.max(0.0);
     let capacity = request.loading_capacity_kg.unwrap_or(f64::INFINITY);
     let loading_fraction = if capacity.is_finite() && capacity > 0.0 {
         solids_loading_kg / capacity
@@ -341,6 +391,52 @@ fn loading_state(clean_pa: f64, nominal: f64, request: &LoadingRequest) -> Loadi
         unrestricted_drop,
         restricted_drop,
         bypass_fraction,
+        holdup_residence_s: Some(0.0),
+    }
+}
+
+/// `updateDynamicLoading` and `updateHoldupResidenceTime`, one step from the carried state.
+///
+/// **The captured rate is the caller's**, because it is the pre-step efficiency's answer or the
+/// generic rate. Removal is the active backwash and regeneration rates, and the loading floors
+/// at zero - the class's `Math.max(0.0, ...)`.
+fn advance(
+    pre: &LoadingState,
+    clean_pa: f64,
+    nominal: f64,
+    request: &LoadingRequest,
+    actual_flow_m3h: f64,
+    captured_kg_s: f64,
+) -> LoadingState {
+    let step = request.time_step_s.unwrap_or(0.0).max(0.0);
+    let mut removed_kg_s = 0.0;
+    if request.backwash_active {
+        removed_kg_s += request.backwash_removal_rate_kg_h.unwrap_or(0.0).max(0.0) / 3600.0;
+    }
+    if request.regeneration_active {
+        removed_kg_s += request
+            .regeneration_removal_rate_kg_h
+            .unwrap_or(0.0)
+            .max(0.0)
+            / 3600.0;
+    }
+    let loading_kg = (pre.solids_loading_kg + (captured_kg_s - removed_kg_s) * step).max(0.0);
+    let mut state = loading_state_at(clean_pa, nominal, loading_kg, request);
+    state.holdup_residence_s = residence(request.holdup_volume_m3.unwrap_or(0.0), actual_flow_m3h);
+    state
+}
+
+/// `updateHoldupResidenceTime`: zero without a holdup, `None` where the class returns `+Infinity`.
+fn residence(holdup_m3: f64, flow_m3h: f64) -> Option<f64> {
+    let holdup = holdup_m3.max(0.0);
+    if holdup <= 0.0 {
+        return Some(0.0);
+    }
+    let flow_m3s = flow_m3h / 3600.0;
+    if !flow_m3s.is_finite() || flow_m3s <= 0.0 {
+        None
+    } else {
+        Some(holdup / flow_m3s)
     }
 }
 
@@ -583,5 +679,106 @@ mod tests {
             utilization(500_000.0, 500_000.0, 0.5);
         assert_eq!(utilization_at_terminal, 1.0);
         assert!(required_at_terminal);
+    }
+
+    const CAPTURE_FLOW_M3H: f64 = 74.264_602_413_714_93;
+
+    fn stepping(
+        loading: f64,
+        capacity: f64,
+        increase: f64,
+        start: f64,
+        step: f64,
+    ) -> LoadingRequest {
+        LoadingRequest {
+            time_step_s: Some(step),
+            ..loaded(loading, capacity, increase, start)
+        }
+    }
+
+    #[test]
+    fn the_first_step_matches_the_capture() {
+        let request = stepping(0.0, 10.0, 100_000.0, 0.5, 3600.0);
+        let pre = loading_state(10_000.0, 0.0, &request);
+        let post = advance(
+            &pre,
+            10_000.0,
+            0.0,
+            &request,
+            CAPTURE_FLOW_M3H,
+            5.0 / 3600.0,
+        );
+        assert!((post.solids_loading_kg - 5.0).abs() < 1.0e-12);
+        assert!((post.loading_fraction - 0.5).abs() < 1.0e-12);
+        assert_eq!(post.breakthrough_fraction, 0.0);
+        assert!((post.unrestricted_drop - 60_000.0).abs() < 1.0e-9);
+        assert!(
+            (post.holdup_residence_s.expect("a holdup") - 48.475_315_062_552_13).abs() < 1.0e-12
+        );
+    }
+
+    #[test]
+    fn the_second_step_matches_the_capture() {
+        let request = stepping(5.0, 10.0, 100_000.0, 0.5, 1800.0);
+        let pre = loading_state(10_000.0, 0.0, &request);
+        let post = advance(
+            &pre,
+            10_000.0,
+            0.0,
+            &request,
+            CAPTURE_FLOW_M3H,
+            5.0 / 3600.0,
+        );
+        assert!((post.solids_loading_kg - 7.5).abs() < 1.0e-12);
+        assert!((post.breakthrough_fraction - 0.5).abs() < 1.0e-12);
+        assert!((post.unrestricted_drop - 85_000.0).abs() < 1.0e-9);
+    }
+
+    #[test]
+    fn the_backwash_and_regeneration_subtract() {
+        let mut request = stepping(9.0, 10.0, 100_000.0, 0.5, 1800.0);
+        request.backwash_active = true;
+        request.backwash_removal_rate_kg_h = Some(4.0);
+        request.regeneration_active = true;
+        request.regeneration_removal_rate_kg_h = Some(2.0);
+        let pre = loading_state(20_000.0, 0.0, &request);
+        let post = advance(&pre, 20_000.0, 0.0, &request, CAPTURE_FLOW_M3H, 0.0);
+        assert!((post.solids_loading_kg - 6.0).abs() < 1.0e-12);
+        assert!((post.loading_fraction - 0.6).abs() < 1.0e-12);
+        assert!((post.breakthrough_fraction - 0.2).abs() < 1.0e-12);
+        assert!((post.unrestricted_drop - 80_000.0).abs() < 1.0e-9);
+    }
+
+    #[test]
+    fn the_accretion_uses_the_pre_step_efficiency() {
+        let request = stepping(7.9, 10.0, 100_000.0, 0.5, 28_800.0);
+        let pre = loading_state(10_000.0, 0.99, &request);
+        assert!((pre.efficiency - 0.4158).abs() < 1.0e-12);
+        let mass_flow = 1000.0 / 3600.0;
+        let captured = mass_flow * 1.0e-4 * pre.efficiency;
+        let post = advance(&pre, 10_000.0, 0.99, &request, CAPTURE_FLOW_M3H, captured);
+        assert!((post.solids_loading_kg - 8.232_64).abs() < 1.0e-12);
+        assert!((post.loading_fraction - 0.823_264).abs() < 1.0e-12);
+        assert!((post.breakthrough_fraction - 0.646_528).abs() < 1.0e-12);
+        assert!((post.efficiency - 0.349_937_28).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn the_step_floors_at_zero() {
+        let mut request = stepping(1.0, 10.0, 100_000.0, 0.5, 3600.0);
+        request.backwash_active = true;
+        request.backwash_removal_rate_kg_h = Some(100.0);
+        let pre = loading_state(10_000.0, 0.0, &request);
+        let post = advance(&pre, 10_000.0, 0.0, &request, CAPTURE_FLOW_M3H, 0.0);
+        assert_eq!(post.solids_loading_kg, 0.0);
+    }
+
+    #[test]
+    fn the_residence_is_zero_or_absent() {
+        assert_eq!(residence(0.0, CAPTURE_FLOW_M3H), Some(0.0));
+        assert_eq!(residence(1.0, 0.0), None);
+        assert_eq!(residence(1.0, f64::NAN), None);
+        let expected = 1.0 / (CAPTURE_FLOW_M3H / 3600.0);
+        assert!((residence(1.0, CAPTURE_FLOW_M3H).expect("a flow") - expected).abs() < 1.0e-12);
     }
 }

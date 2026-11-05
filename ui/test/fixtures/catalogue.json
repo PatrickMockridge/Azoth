@@ -7847,7 +7847,12 @@
         "pressure_drop_increase_at_capacity",
         "breakthrough_start_fraction",
         "bypass_cracking_pressure",
-        "terminal_pressure_drop"
+        "terminal_pressure_drop",
+        "time_step",
+        "holdup_volume",
+        "solids_loading_rate",
+        "backwash_removal_rate",
+        "regeneration_removal_rate"
       ]
     },
     {

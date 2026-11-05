@@ -6,13 +6,14 @@
 
 use azoth_core::units::{
     Area, DynamicViscosity, Length, Mass, MassRate, MolarEnergy, Pressure,
-    ThermodynamicTemperature, VolumeRate, cubic_meter_per_hour, joules_per_mole, kilograms,
+    ThermodynamicTemperature, Time, Volume, VolumeRate, cubic_meter_per_hour, joules_per_mole,
+    kilogram_per_hour, kilograms, seconds,
 };
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_core::{AzothError, Result, apply_checks};
 use serde::Serialize;
 
-use crate::executor::json::{scalar, warnings as wire_warnings};
+use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::filter::{
     self as kernel, BetaPoint, DropPoint, FilterSettings, Media, PressureDropModel,
 };
@@ -84,6 +85,9 @@ pub struct FilterResult {
     pub differential_pressure_utilization: f64,
     /// Either the terminal drop or the loading capacity has been reached.
     pub replacement_required: bool,
+    /// The holdup over the inlet flow, absent where the class returns positive infinity.
+    #[serde(serialize_with = "optional_scalar")]
+    pub holdup_residence_time: Option<Time>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -115,6 +119,7 @@ impl FilterResult {
             solids_loading: kilograms(outcome.solids_loading_kg),
             differential_pressure_utilization: outcome.differential_pressure_utilization,
             replacement_required: outcome.replacement_required,
+            holdup_residence_time: outcome.holdup_residence_s.map(seconds),
             warnings,
         }
     }
@@ -154,6 +159,13 @@ pub fn filter(
     breakthrough_start_fraction: Option<f64>,
     bypass_cracking_pressure: Option<Pressure>,
     terminal_pressure_drop: Option<Pressure>,
+    time_step: Option<Time>,
+    holdup_volume: Option<Volume>,
+    solids_loading_rate: Option<MassRate>,
+    backwash_removal_rate: Option<MassRate>,
+    regeneration_removal_rate: Option<MassRate>,
+    backwash_active: Option<bool>,
+    regeneration_active: Option<bool>,
 ) -> Result<FilterResult> {
     let spec = &model_gen::FILTER_SPEC;
     let mut warnings = Vec::new();
@@ -172,6 +184,11 @@ pub fn filter(
             "breakthrough_start_fraction" => breakthrough_start_fraction,
             "bypass_cracking_pressure" => bypass_cracking_pressure.map(|value| value.value),
             "terminal_pressure_drop" => terminal_pressure_drop.map(|value| value.value),
+            "time_step" => time_step.map(|value| value.value),
+            "holdup_volume" => holdup_volume.map(|value| value.value),
+            "solids_loading_rate" => solids_loading_rate.map(|value| value.value),
+            "backwash_removal_rate" => backwash_removal_rate.map(|value| value.value),
+            "regeneration_removal_rate" => regeneration_removal_rate.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -290,6 +307,20 @@ pub fn filter(
             pressure_drop_increase_at_capacity.map(|value| value.value),
         ),
         ("breakthrough_start_fraction", breakthrough_start_fraction),
+        ("time_step", time_step.map(|value| value.value)),
+        ("holdup_volume", holdup_volume.map(|value| value.value)),
+        (
+            "solids_loading_rate",
+            solids_loading_rate.map(|value| value.get::<kilogram_per_hour>()),
+        ),
+        (
+            "backwash_removal_rate",
+            backwash_removal_rate.map(|value| value.get::<kilogram_per_hour>()),
+        ),
+        (
+            "regeneration_removal_rate",
+            regeneration_removal_rate.map(|value| value.get::<kilogram_per_hour>()),
+        ),
     ] {
         if let Some(value) = value {
             if !value.is_finite() {
@@ -299,6 +330,13 @@ pub fn filter(
                 ));
             }
         }
+    }
+    if solids_loading_rate.is_some() && inlet_particle_concentration.is_some() {
+        return Err(AzothError::invalid_input(
+            "solids_loading_rate",
+            "the generic captured rate and the concentration model each disable the other in \
+             `Filter`, so the last setter decides; the port refuses both rather than choosing",
+        ));
     }
     if let Some(cracking) = bypass_cracking_pressure {
         if !cracking.value.is_finite() || cracking.value <= 0.0 {
@@ -344,6 +382,15 @@ pub fn filter(
         breakthrough_start_fraction,
         bypass_cracking_pressure_pa: bypass_cracking_pressure.map(|value| value.value),
         terminal_pressure_drop_pa: terminal_pressure_drop.map(|value| value.value),
+        time_step_s: time_step.map(|value| value.value),
+        holdup_volume_m3: holdup_volume.map(|value| value.value),
+        solids_loading_rate_kg_h: solids_loading_rate.map(|value| value.get::<kilogram_per_hour>()),
+        backwash_removal_rate_kg_h: backwash_removal_rate
+            .map(|value| value.get::<kilogram_per_hour>()),
+        regeneration_removal_rate_kg_h: regeneration_removal_rate
+            .map(|value| value.get::<kilogram_per_hour>()),
+        backwash_active: backwash_active.unwrap_or(false),
+        regeneration_active: regeneration_active.unwrap_or(false),
     };
 
     let feed = Stream::from_pt(

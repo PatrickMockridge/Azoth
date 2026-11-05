@@ -198,6 +198,9 @@ public class ProcessProbe {
       case "filter_loading":
         filterLoadingRows();
         break;
+      case "filter_dynamic":
+        filterDynamicRows();
+        break;
       case "compressor":
         isentropicRows("Compressor");
         break;
@@ -806,9 +809,95 @@ public class ProcessProbe {
     System.out.println("outlet_particle_concentration_mg_per_kg="
         + filter.getOutletParticleConcentration());
     System.out.println("captured_rate_kg_per_hr=" + filter.getCalculatedCapturedRate());
+    System.out.println("holdup_residence_time_s=" + filter.getHoldupResidenceTime());
     print("inlet", inlet);
     print("outlet", filter.getOutletStream());
     System.out.println();
+  }
+
+  /// `Filter.runTransient`'s `calculateSteadyState=false` branch, one step at a time.
+  ///
+  /// **The accretion uses the pre-step efficiency and the closing `run` reports the post-step
+  /// one**, so each block prints the state before and after its step. The fourth block pins
+  /// that sequencing with a concentration model whose breakthrough is live before the step; the
+  /// fifth adds a bypass, whose pre-step fraction is in the accretion's efficiency too. The last
+  /// block is evidence and is not cased: a zero-flow feed makes the residence time `+Infinity`,
+  /// which the port publishes as absent.
+  static void filterDynamicRows() {
+    Stream firstInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter first =
+        new neqsim.process.equipment.filter.Filter("first", firstInlet);
+    first.setDeltaP(0.1);
+    first.setHoldupVolume(1.0);
+    first.setSolidsLoadingRate(5.0);
+    first.setLoadingCapacity(10.0);
+    first.setPressureDropIncreaseAtCapacity(1.0);
+    first.setBreakthroughStartFraction(0.5);
+    first.setCalculateSteadyState(false);
+    printFilterLoading("dynamic_before_step", firstInlet, first);
+    first.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_first_step_3600", firstInlet, first);
+    first.runTransient(1800.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_second_step_1800", firstInlet, first);
+
+    Stream regenInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter regen =
+        new neqsim.process.equipment.filter.Filter("regen", regenInlet);
+    regen.setDeltaP(0.2);
+    regen.setSolidsLoading(9.0);
+    regen.setLoadingCapacity(10.0);
+    regen.setPressureDropIncreaseAtCapacity(1.0);
+    regen.setBreakthroughStartFraction(0.5);
+    regen.setSolidsLoadingRate(0.0);
+    regen.setBackwashRemovalRate(4.0);
+    regen.setRegenerationRemovalRate(2.0);
+    regen.setCalculateSteadyState(false);
+    printFilterLoading("backwash_before_step", regenInlet, regen);
+    regen.startBackwash();
+    regen.startRegeneration();
+    regen.runTransient(1800.0, java.util.UUID.randomUUID());
+    printFilterLoading("backwash_after_step", regenInlet, regen);
+
+    Stream concentrationInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter concentration =
+        new neqsim.process.equipment.filter.Filter("concentration", concentrationInlet);
+    concentration.setDeltaP(0.1);
+    concentration.setNominalRemovalEfficiency(0.99);
+    concentration.setInletParticleConcentration(100.0);
+    concentration.setSolidsLoading(7.9);
+    concentration.setLoadingCapacity(10.0);
+    concentration.setPressureDropIncreaseAtCapacity(1.0);
+    concentration.setBreakthroughStartFraction(0.5);
+    concentration.setCalculateSteadyState(false);
+    printFilterLoading("concentration_before_step", concentrationInlet, concentration);
+    concentration.runTransient(28800.0, java.util.UUID.randomUUID());
+    printFilterLoading("concentration_after_8h", concentrationInlet, concentration);
+
+    Stream bypassInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter bypass =
+        new neqsim.process.equipment.filter.Filter("bypass dynamic", bypassInlet);
+    bypass.setDeltaP(0.2);
+    bypass.setNominalRemovalEfficiency(0.99);
+    bypass.setInletParticleConcentration(100.0);
+    bypass.setSolidsLoading(5.0);
+    bypass.setLoadingCapacity(10.0);
+    bypass.setPressureDropIncreaseAtCapacity(3.6);
+    bypass.setBypassCrackingDeltaP(0.5);
+    bypass.setCalculateSteadyState(false);
+    printFilterLoading("dynamic_bypass_before_step", bypassInlet, bypass);
+    bypass.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_bypass_after_step", bypassInlet, bypass);
+
+    Stream zeroInlet = filterPrFeed(0.0);
+    neqsim.process.equipment.filter.Filter zero =
+        new neqsim.process.equipment.filter.Filter("zero", zeroInlet);
+    zero.setDeltaP(0.1);
+    zero.setHoldupVolume(1.0);
+    zero.setSolidsLoadingRate(1.0);
+    zero.setLoadingCapacity(10.0);
+    zero.setCalculateSteadyState(false);
+    zero.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("zero_flow_residence_uncased", zeroInlet, zero);
   }
 
   static Stream filterPrFeed(double kgPerHour) {

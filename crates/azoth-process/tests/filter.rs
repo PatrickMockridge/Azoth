@@ -5,7 +5,8 @@
 //! model's wiring: the Ergun bed on a real state, and the beta-ratio capture's three answers.
 
 use azoth_core::units::{
-    kelvins, kilogram_per_hour, kilograms, meters, pascal_seconds, pascals, square_meters,
+    cubic_meters, kelvins, kilogram, kilogram_per_hour, kilograms, kilograms_per_hour, meters,
+    pascal_seconds, pascals, seconds, square_meters,
 };
 use azoth_process::models::filter::{FilterBetaPoint, filter};
 
@@ -35,6 +36,13 @@ fn the_ergun_bed_matches_the_capture() {
         Some(meters(0.002)),
         Some(0.40),
         Some(pascal_seconds(1.1529270713459012e-5)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -111,6 +119,13 @@ fn the_beta_curve_captures_particles() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters");
 
@@ -134,7 +149,7 @@ fn the_beta_curve_captures_particles() {
     );
 }
 
-/// The PR methane feed the loading capture uses, with the six loading inputs.
+/// The PR methane feed the loading capture uses, with the steady loading inputs.
 #[allow(clippy::too_many_arguments)]
 fn loaded_filter(
     drop: f64,
@@ -173,6 +188,67 @@ fn loaded_filter(
         start,
         cracking.map(pascals),
         terminal.map(pascals),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the captured state filters")
+}
+
+/// One `runTransient` step on the PR methane feed; the active rates are the ones stated.
+#[allow(clippy::too_many_arguments)]
+fn dynamic_filter(
+    drop: f64,
+    solids: f64,
+    capacity: f64,
+    increase: f64,
+    start: f64,
+    increment: f64,
+    holdup: Option<f64>,
+    rate: Option<f64>,
+    nominal: Option<f64>,
+    concentration: Option<f64>,
+    backwash: Option<f64>,
+    regeneration: Option<f64>,
+    cracking: Option<f64>,
+) -> azoth_process::models::FilterResult {
+    filter(
+        &["methane".to_string()],
+        17.314578182246326,
+        &[1.0],
+        pascals(2_000_000.0),
+        kelvins(298.15),
+        pascals(drop),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        nominal,
+        concentration,
+        Some(kilograms(solids)),
+        Some(kilograms(capacity)),
+        Some(pascals(increase)),
+        Some(start),
+        cracking.map(pascals),
+        None,
+        Some(seconds(increment)),
+        holdup.map(cubic_meters),
+        rate.map(kilograms_per_hour),
+        backwash.map(kilograms_per_hour),
+        regeneration.map(kilograms_per_hour),
+        backwash.map(|_| true),
+        regeneration.map(|_| true),
     )
     .expect("the captured state filters")
 }
@@ -351,4 +427,268 @@ fn replacement_required_reaches_both_branches() {
         None,
     );
     assert!(!boundary.replacement_required);
+}
+
+#[test]
+fn the_first_step_accumulates_the_generic_rate() {
+    let result = dynamic_filter(
+        10_000.0,
+        0.0,
+        10.0,
+        100_000.0,
+        0.5,
+        3600.0,
+        Some(1.0),
+        Some(5.0),
+        None,
+        None,
+        None,
+        None,
+        None,
+    );
+    close(
+        result.solids_loading.get::<kilogram>(),
+        5.0,
+        1.0e-12,
+        "loading",
+    );
+    close(result.loading_fraction, 0.5, 1.0e-12, "fraction");
+    close(result.applied_drop.value, 60_000.0, 1.0e-12, "applied");
+    close(
+        result.holdup_residence_time.expect("a holdup").value,
+        48.475_315_062_552_13,
+        1.0e-6,
+        "residence",
+    );
+}
+
+#[test]
+fn the_second_step_starts_from_the_carried_loading() {
+    let result = dynamic_filter(
+        10_000.0,
+        5.0,
+        10.0,
+        100_000.0,
+        0.5,
+        1800.0,
+        None,
+        Some(5.0),
+        None,
+        None,
+        None,
+        None,
+        None,
+    );
+    close(
+        result.solids_loading.get::<kilogram>(),
+        7.5,
+        1.0e-12,
+        "loading",
+    );
+    close(result.breakthrough_fraction, 0.5, 1.0e-12, "breakthrough");
+    close(result.applied_drop.value, 85_000.0, 1.0e-12, "applied");
+}
+
+#[test]
+fn the_backwash_and_regeneration_remove_loading() {
+    let result = dynamic_filter(
+        20_000.0,
+        9.0,
+        10.0,
+        100_000.0,
+        0.5,
+        1800.0,
+        None,
+        Some(0.0),
+        None,
+        None,
+        Some(4.0),
+        Some(2.0),
+        None,
+    );
+    close(
+        result.solids_loading.get::<kilogram>(),
+        6.0,
+        1.0e-12,
+        "loading",
+    );
+    close(result.loading_fraction, 0.6, 1.0e-12, "fraction");
+    close(result.breakthrough_fraction, 0.2, 1.0e-12, "breakthrough");
+    close(result.applied_drop.value, 80_000.0, 1.0e-12, "applied");
+}
+
+#[test]
+fn the_concentration_accretion_uses_the_pre_step_efficiency() {
+    let result = dynamic_filter(
+        10_000.0,
+        7.9,
+        10.0,
+        100_000.0,
+        0.5,
+        28_800.0,
+        None,
+        None,
+        Some(0.99),
+        Some(1.0e-4),
+        None,
+        None,
+        None,
+    );
+    close(
+        result.solids_loading.get::<kilogram>(),
+        8.232_64,
+        1.0e-12,
+        "loading",
+    );
+    close(result.loading_fraction, 0.823_264, 1.0e-12, "fraction");
+    close(
+        result.breakthrough_fraction,
+        0.646_528,
+        1.0e-12,
+        "breakthrough",
+    );
+    close(
+        result.current_removal_efficiency,
+        0.349_937_28,
+        1.0e-12,
+        "current efficiency",
+    );
+    close(
+        result.captured_rate.get::<kilogram_per_hour>(),
+        0.034_993_728,
+        1.0e-9,
+        "captured",
+    );
+}
+
+#[test]
+fn the_pre_step_bypass_is_in_the_accretion() {
+    let result = dynamic_filter(
+        20_000.0,
+        5.0,
+        10.0,
+        360_000.0,
+        0.8,
+        3600.0,
+        None,
+        None,
+        Some(0.99),
+        Some(1.0e-4),
+        None,
+        None,
+        Some(50_000.0),
+    );
+    close(
+        result.solids_loading.get::<kilogram>(),
+        5.049_5,
+        1.0e-12,
+        "loading",
+    );
+    close(
+        result.bypass_fraction,
+        0.502_212_724_399_558_3,
+        1.0e-12,
+        "bypass",
+    );
+    close(
+        result.current_removal_efficiency,
+        0.492_809_402_844_437_25,
+        1.0e-12,
+        "current efficiency",
+    );
+    close(
+        result.captured_rate.get::<kilogram_per_hour>(),
+        0.049_280_940_284_443_73,
+        1.0e-9,
+        "captured",
+    );
+}
+
+#[test]
+fn a_zero_flow_has_no_residence_time() {
+    let result = filter(
+        &["methane".to_string()],
+        0.0,
+        &[1.0],
+        pascals(2_000_000.0),
+        kelvins(298.15),
+        pascals(10_000.0),
+        // 1-11: the model selector, reference flow, exponent, curve, four media, viscosity,
+        // the performance curve and the particle size.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 12-13: the nominal efficiency and the inlet concentration.
+        None,
+        None,
+        // 14-19: loading, capacity, increase, breakthrough start, cracking, terminal.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 20-26: the step, holdup, generic rate, backwash, regeneration and the two flags.
+        Some(seconds(3600.0)),
+        Some(cubic_meters(1.0)),
+        Some(kilograms_per_hour(1.0)),
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the captured state filters");
+    assert!(result.holdup_residence_time.is_none());
+}
+
+#[test]
+fn both_capture_sources_are_refused() {
+    let result = filter(
+        &["methane".to_string()],
+        17.314578182246326,
+        &[1.0],
+        pascals(2_000_000.0),
+        kelvins(298.15),
+        pascals(10_000.0),
+        // 1-11: the model selector, reference flow, exponent, curve, four media, viscosity,
+        // the performance curve and the particle size.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 12-13: the nominal efficiency and the inlet concentration.
+        None,
+        Some(1.0e-4),
+        // 14-19: loading, capacity, increase, breakthrough start, cracking, terminal.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        // 20-26: the step, holdup, generic rate, backwash, regeneration and the two flags.
+        None,
+        None,
+        Some(kilograms_per_hour(1.0)),
+        None,
+        None,
+        None,
+        None,
+    );
+    assert!(result.is_err());
 }

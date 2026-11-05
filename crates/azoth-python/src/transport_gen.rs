@@ -15284,6 +15284,9 @@ pub struct PyFilterResult {
     /// true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
     #[pyo3(get)]
     pub replacement_required: bool,
+    /// the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
+    #[pyo3(get)]
+    pub holdup_residence_time: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15293,7 +15296,7 @@ pub struct PyFilterResult {
 impl PyFilterResult {
     fn __repr__(&self) -> String {
         format!(
-            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, {} warning(s))",
+            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, holdup_residence_time={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -15312,6 +15315,7 @@ impl PyFilterResult {
             self.solids_loading,
             self.differential_pressure_utilization,
             self.replacement_required,
+            self.holdup_residence_time,
             self.warnings.len()
         )
     }
@@ -15365,6 +15369,10 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
             },
             differential_pressure_utilization: r.differential_pressure_utilization,
             replacement_required: r.replacement_required,
+            holdup_residence_time: r.holdup_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

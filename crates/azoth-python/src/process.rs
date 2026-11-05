@@ -9,9 +9,9 @@ use std::path::Path;
 
 use azoth_core::units::{
     cubic_meters, cubic_meters_per_second, hours, joules_per_mole, kelvins, kilograms,
-    kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds, pascals, seconds,
-    square_meters, square_meters_per_second, watts, watts_per_cubic_meter, watts_per_kelvin,
-    watts_per_square_meter_kelvin,
+    kilograms_per_cubic_meter, kilograms_per_second, meters, meters_per_second, pascal_seconds,
+    pascals, seconds, square_meters, square_meters_per_second, watts, watts_per_cubic_meter,
+    watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -283,10 +283,10 @@ pub fn pump(
 /// optional; the rows are built from the generated mappings here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None, time_step = None, holdup_volume = None, solids_loading_rate = None, backwash_removal_rate = None, regeneration_removal_rate = None, backwash_active = None, regeneration_active = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None, time_step=None, holdup_volume=None, solids_loading_rate=None, backwash_removal_rate=None, regeneration_removal_rate=None, backwash_active=None, regeneration_active=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn filter(
@@ -316,6 +316,13 @@ pub fn filter(
     breakthrough_start_fraction: Option<f64>,
     bypass_cracking_pressure: Option<f64>,
     terminal_pressure_drop: Option<f64>,
+    time_step: Option<f64>,
+    holdup_volume: Option<f64>,
+    solids_loading_rate: Option<f64>,
+    backwash_removal_rate: Option<f64>,
+    regeneration_removal_rate: Option<f64>,
+    backwash_active: Option<bool>,
+    regeneration_active: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyFilterResult> {
     let drop_points: Option<Vec<azoth_process::models::filter::FilterDropPoint>> =
         pressure_drop_curve.map(|rows| {
@@ -361,6 +368,13 @@ pub fn filter(
         breakthrough_start_fraction,
         bypass_cracking_pressure.map(pascals),
         terminal_pressure_drop.map(pascals),
+        time_step.map(seconds),
+        holdup_volume.map(cubic_meters),
+        solids_loading_rate.map(kilograms_per_second),
+        backwash_removal_rate.map(kilograms_per_second),
+        regeneration_removal_rate.map(kilograms_per_second),
+        backwash_active,
+        regeneration_active,
     )
     .map(|r| crate::transport_gen::PyFilterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

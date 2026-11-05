@@ -333,6 +333,7 @@ impl CalcResult for FilterResult {
         "solids_loading",
         "differential_pressure_utilization",
         "replacement_required",
+        "holdup_residence_time",
         "warnings",
     ];
 

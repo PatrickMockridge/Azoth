@@ -5868,7 +5868,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
     )
 
 
-def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None, solids_loading: Q | None=None, loading_capacity: Q | None=None, pressure_drop_increase_at_capacity: Q | None=None, breakthrough_start_fraction: float | None=None, bypass_cracking_pressure: Q | None=None, terminal_pressure_drop: Q | None=None) -> FilterResult:
+def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None, solids_loading: Q | None=None, loading_capacity: Q | None=None, pressure_drop_increase_at_capacity: Q | None=None, breakthrough_start_fraction: float | None=None, bypass_cracking_pressure: Q | None=None, terminal_pressure_drop: Q | None=None, time_step: Q | None=None, holdup_volume: Q | None=None, solids_loading_rate: Q | None=None, backwash_removal_rate: Q | None=None, regeneration_removal_rate: Q | None=None, backwash_active: bool | None=None, regeneration_active: bool | None=None) -> FilterResult:
     """``process.filter``, computed in Rust."""
     spec = _models_gen.model("process.filter")
     result = _core.filter(
@@ -5897,6 +5897,13 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if breakthrough_start_fraction is None else breakthrough_start_fraction,
         None if bypass_cracking_pressure is None else input_to_si(spec, "bypass_cracking_pressure", bypass_cracking_pressure),
         None if terminal_pressure_drop is None else input_to_si(spec, "terminal_pressure_drop", terminal_pressure_drop),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        None if holdup_volume is None else input_to_si(spec, "holdup_volume", holdup_volume),
+        None if solids_loading_rate is None else input_to_si(spec, "solids_loading_rate", solids_loading_rate),
+        None if backwash_removal_rate is None else input_to_si(spec, "backwash_removal_rate", backwash_removal_rate),
+        None if regeneration_removal_rate is None else input_to_si(spec, "regeneration_removal_rate", regeneration_removal_rate),
+        backwash_active,
+        regeneration_active,
     )
     return FilterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5917,6 +5924,7 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         solids_loading=from_si(result.solids_loading.magnitude_si, result.solids_loading.unit),
         differential_pressure_utilization=result.differential_pressure_utilization,
         replacement_required=result.replacement_required,
+        holdup_residence_time=None if result.holdup_residence_time is None else from_si(result.holdup_residence_time.magnitude_si, result.holdup_residence_time.unit),
         warnings=_warnings(result.warnings),
     )
 

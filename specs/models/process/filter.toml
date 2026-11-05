@@ -19,17 +19,22 @@ assumptions = [
     "**The replacement check reads the unrestricted drop.** It is `unrestricted/terminal >= 1` (terminal defaults to 5 bar) or `loading_fraction >= 1`, so a bypass that lowers the applied drop does not postpone the replacement.",
     "**The element-integrity pair is stored, not computed.** `setElementIntegrityVerified` records a project claim and `setElementCollapsePressure` stores a rating no arithmetic reads; neither is carried. The exposed check is `replacement_required`.",
     "**A non-positive `loading_capacity` is a sentinel, not a clamp.** The setter turns it into positive infinity, so no finite capacity is checked and the fraction is zero; the other loading setters clamp negatives to zero.",
-    "**The class's `runTransient` is outside this id.** The port is the steady `run` reading the carried state; the one-step advance and backwash/regeneration are owed, and the session loop is outside the port.",
+    "**The class's `runTransient` is one step here.** A positive `time_step` accretes the captured rate over the interval, subtracts the active backwash and regeneration removals, floors at zero, then runs the loaded state; the session loop is outside the id.",
+    "**The accretion uses the pre-step efficiency, and the report uses the post-step one.** `runTransient` runs once to compute the captured rate, integrates it, then runs again - so a concentration model's reported capture need not equal the loading increment.",
+    "**The generic `solids_loading_rate` fills no capture output.** It feeds the accretion when no concentration is stated, and `captured_rate` and `outlet_particle_concentration` stay zero, as the class's disabled concentration model leaves them.",
+    "**`holdup_residence_time` is the holdup over the inlet flow.** Zero without a holdup, and **absent where the flow is zero and the holdup positive**: the class returns positive infinity and JSON cannot carry it.",
+    "`resetDynamicState` is the zeroed state - absent loading, zero rates, inactive backwash and regeneration, no step.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/filter/Filter.java` is the port source, through its steady-state `run`.",
     "`validation/neqsim/captures/process_filter.tsv` - three rows: an ordinary drop, none at all, and one larger than the inlet pressure.",
     "`validation/neqsim/captures/process_filter_loading.tsv` - seven blocks: a loaded run, the bypass run, the disabled capacity sentinel, the two replacement branches, the breakthrough boundary, and an uncased clamp-after-bypass block.",
+    "`validation/neqsim/captures/process_filter_dynamic.tsv` - the one-step branch: the two sequential generic-rate steps, backwash plus regeneration, the concentration sequencing, the pre-step bypass and an uncased zero-flow residence.",
     "`FilterTest.testBypassLimitsPressureDropAndReducesCapture` and `testDynamicLoadingBuildsPressureDropAndBreakthrough`'s pre-step state are the blocks' scenarios, re-cased on PR methane.",
 ]
 [source]
 standard = "NeqSim process/equipment/filter/Filter.java"
-edition = "Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, and a `TPflash` at the feed's temperature."
+edition = "Its steady-state `run`: the selected clean drop, the carried loading and breakthrough, the bypass and the replacement check, a `TPflash` at the feed's temperature, and one `runTransient` step."
 [inputs]
 [inputs.components]
 type = "components"
@@ -142,6 +147,34 @@ description = "the differential pressure that opens the bypass. Absent leaves it
 unit = "Pa"
 optional = true
 description = "the differential pressure that calls for element replacement. Absent is the class's 5 bar; a non-positive value is refused because `setTerminalDeltaP` does.\n"
+[inputs.time_step]
+unit = "s"
+optional = true
+description = "one `runTransient` step. Absent or zero is the class's steady `run`; a positive value names the `calculateSteadyState=false` branch and integrates the captured solids for that interval.\n"
+[inputs.holdup_volume]
+unit = "m**3"
+optional = true
+description = "the holdup volume residence time divides by the inlet flow. Absent is 0; a negative value is clamped, as `setHoldupVolume` does.\n"
+[inputs.solids_loading_rate]
+unit = "kg/h"
+optional = true
+description = "the generic captured-solids rate. **Refused with `inlet_particle_concentration`**: the class's two setters each disable the other, so the last call decides and the port refuses the ambiguity.\n"
+[inputs.backwash_removal_rate]
+unit = "kg/h"
+optional = true
+description = "the loading a backwash removes during the step. Absent is 0; a negative value is clamped, as `setBackwashRemovalRate` does.\n"
+[inputs.regeneration_removal_rate]
+unit = "kg/h"
+optional = true
+description = "the loading a regeneration removes during the step. Absent is 0; a negative value is clamped, as `setRegenerationRemovalRate` does.\n"
+[inputs.backwash_active]
+type = "boolean"
+optional = true
+description = "whether the backwash removes loading during the step. Absent is false; inert without a positive `time_step`.\n"
+[inputs.regeneration_active]
+type = "boolean"
+optional = true
+description = "whether the regeneration removes loading during the step. Absent is false; inert without a positive `time_step`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -199,6 +232,10 @@ description = "`unrestricted_drop / terminal_pressure_drop`. Bypass does not low
 [outputs.replacement_required]
 type = "boolean"
 description = "true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.\n"
+[outputs.holdup_residence_time]
+unit = "s"
+optional = true
+description = "the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.\n"
 [[valid_range]]
 quantity = "inlet_t"
 min = 0
@@ -265,6 +302,36 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "`setTerminalDeltaP` throws on a non-positive or non-finite pressure; the utilization divides by it."
+[[valid_range]]
+quantity = "time_step"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`runTransient` takes `Math.max(0, dt)`, so a negative step is no step rather than an error."
+[[valid_range]]
+quantity = "holdup_volume"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setHoldupVolume` clamps a negative volume to zero."
+[[valid_range]]
+quantity = "solids_loading_rate"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setSolidsLoadingRate` clamps a negative rate to zero; the loading cannot fall from a negative capture."
+[[valid_range]]
+quantity = "backwash_removal_rate"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setBackwashRemovalRate` clamps a negative rate to zero."
+[[valid_range]]
+quantity = "regeneration_removal_rate"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setRegenerationRemovalRate` clamps a negative rate to zero."
 [implementations]
 python = "azoth.process.filter"
 rust = "azoth_process::filter"
