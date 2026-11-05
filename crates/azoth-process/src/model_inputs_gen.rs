@@ -1368,6 +1368,20 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("dimensionless"),
             },
+            ModelInput {
+                name: "shaft_power",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("power"),
+            },
+            ModelInput {
+                name: "outlet_temperature",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("thermodynamic_temperature"),
+            },
         ],
     },
     ModelInputs {

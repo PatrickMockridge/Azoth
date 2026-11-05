@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/compressor/Compressor.java**
 
-Its `run`: the isentropic branch - a `PSflash` at the inlet's own entropy and the enthalpy moved by `(h_isentropic - h_in) * eta` - the stepped polytropic branch, `numbersteps` increments each flashed and multiplied, and the `recoveredPower` capacity constraint.
+Its `run`: the isentropic branch, the stepped polytropic branch, the `recoveredPower` capacity constraint, the stated power's back-computed efficiency and `solveEfficiency`'s outlet-temperature secant.
 
 
 ## What this model is
@@ -30,6 +30,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `polytropic_efficiency` | dimensionless | *Optional.* the stepped branch's polytropic efficiency, in `(0, 1]`. Absent takes the class's `1.0`, the reversible limit. Ignored in the isentropic branch. |
 | `rated_recovered_power` | W | *Optional.* `setRatedRecoveredPower`, the recovered-power rating. **Absent is 0, which creates no constraint**, and so does any non-positive value; a positive rating initializes the map. |
 | `number_of_steps` | dimensionless | *Optional.* the stepped branch's pressure increments. Absent takes `Expander.DEFAULT_EXPANDER_CALC_STEPS`' `5`; a value below one is one, as the class's `Math.max(1, ...)` makes it. |
+| `shaft_power` | W | *Optional.* the total shaft power the run applies instead of an efficiency, **negative for an expansion**. Stating it back-computes `reported_isentropic_efficiency`; refused with `outlet_temperature` and with `use_polytropic_calc`. |
+| `outlet_temperature` | K | *Optional.* the outlet temperature the efficiency is solved for. **The class's `solveEfficiency` is a method, not a run mode**; refused with `shaft_power` and the stepped branch. |
 
 
 ## Outputs
@@ -47,6 +49,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `capacity_exceeded` | - | `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating. |
 | `hard_limit_exceeded` | - | `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0. |
 | `bottleneck_constraint` | - | *Optional.* `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise. |
+| `reported_isentropic_efficiency` | dimensionless | *Optional.* the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -63,7 +66,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the shaft power is an output, and it is negative.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which is below zero for an expansion; `power` reports it times the molar flow, so the recovered-work magnitude is its absolute value.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **`use_polytropic_calc` selects the stepped branch.** `Expander.run` divides the pressure range into `number_of_steps` equal increments - five by default - flashes each isentropically, multiplies the step by `polytropic_efficiency` and flashes the enthalpy; a count below one is one.
-- **the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; its `powerSet` and `useOutTemperature` modes and the dynamic nozzle are outside this surface.
+- **the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; the dynamic nozzle and the transient are outside this surface.
+- **`setPower` states the total enthalpy change, and the run back-computes the efficiency.** The port's `shaft_power` is that total, so `power/n` is the molar step; `eta = dH/(h_isentropic - h_in)` may exceed one or be negative.
+- **The outlet-temperature surface is the inherited `solveEfficiency`, not a run mode.** `Expander.run` never reads `useOutTemperature`; a secant over the efficiency runs the isentropic branch, with a `+0.01` first step, a `+-0.01` fallback and the `[1e-6, 1]` clamp.
+- **An unreachable target lands on the nearest clamp**: the hot side is the isenthalpic floor, the cold side the reversible outlet, after at most fifty iterations.
+- **Both modes are the isentropic branch's.** `use_polytropic_calc` with either is refused, and so is stating both; a zero isentropic step leaves the reported efficiency absent, the class's `NaN`.
 - **the recovered-power constraint is the only enabled one.** The parent's `speed`, `surgeMargin` and `stonewallMargin` constraints are disabled without a chart, and the summaries skip them. A positive rating adds HARD `recoveredPower`: design = the rating, max = 1.1 x it, value = `|power|`.
 - **two thresholds, not one.** `capacity_exceeded` is `|power|` above the rating (utilization above 1), while `hard_limit_exceeded` is `|power|` above `1.1 x` the rating - the constraint's `maxValue`. A non-positive rating creates no constraint at all.
 
@@ -81,11 +88,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_rating_inside_the_hard_band_is_not_exceeded` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 1200.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, recovered_power_utilization = 0.9212811237415649, max_utilization = 0.9212811237415649, capacity_exceeded = False, hard_limit_exceeded = False, bottleneck_constraint = recoveredPower |
 | `a_rating_below_the_recovered_power_trips_both_flags` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 1000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, recovered_power_utilization = 1.1055373484898778, max_utilization = 1.1055373484898778, capacity_exceeded = True, hard_limit_exceeded = True, bottleneck_constraint = recoveredPower |
 | `a_non_positive_rating_is_no_constraint` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, rated_recovered_power = 0.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 286.82511684097125, outlet_h = -618.9331837187178, power = -1105.5373484898778, max_utilization = 0.0, capacity_exceeded = False, hard_limit_exceeded = False |
+| `the_stated_power_reports_its_efficiency` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, shaft_power = -985780.7294849169 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 246.50812370121898, outlet_h = -3072.6674020303917, power = -985780.7369576495, reported_isentropic_efficiency = 0.8000000060644207 |
+| `the_half_power_is_the_half_efficiency` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, shaft_power = -492890.3701076645 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 254.98185277472754, outlet_h = -2358.973191575831, power = -492890.3701076645, reported_isentropic_efficiency = 0.40000000303221034 |
+| `zero_power_is_the_isenthalpic_throttle` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, shaft_power = 0.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 263.30703321422186, outlet_h = -1645.2789691147657, reported_isentropic_efficiency = 0.0 |
+| `the_quarter_power_is_the_quarter_efficiency` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, shaft_power = -246445.18785082828 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 259.1743251417612, outlet_h = -2002.1260880400148, power = -246445.18785082828, reported_isentropic_efficiency = 0.20000000151610517 |
+| `a_positive_power_compresses_through_the_expander` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, shaft_power = 98578.06841048808 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 264.93825358076396, outlet_h = -1502.540141494569, power = 98578.06841048808, reported_isentropic_efficiency = -0.08000000060644208 |
+| `the_outlet_temperature_solve_finds_two_hundred_and_fifty` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 250.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 250.00000266550109, outlet_h = -2779.1438208338673, power = -783067.9455467018, reported_isentropic_efficiency = 0.6354905789224377 |
+| `an_unreachable_hot_target_lands_low` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 280.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 263.30701273851537, outlet_h = -1645.2807533505197, reported_isentropic_efficiency = 1e-06 |
+| `an_unreachable_cold_target_lands_high` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 240.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 242.26684001928, outlet_h = -3429.5144813861116, power = -1232225.9025152659, reported_isentropic_efficiency = 1.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 10 declared, every one run
+- Tests: 18 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -98,3 +113,4 @@ declared checks *that call* could not evaluate.
 - Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). "Introduction to Chemical Engineering Thermodynamics.", 7th ed., McGraw-Hill. The isentropic efficiency and the reversible-work reference it divides.
 - `validation/neqsim/captures/process_expander.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.
 - `validation/neqsim/captures/process_expander_steps.tsv` - the stepped branch at five and forty increments, and the isentropic row.
+- `validation/neqsim/captures/process_expander_power_modes.tsv` - the stated power at four fractions and a negative one, and the outlet-temperature solve at 280, 250 and 240 K.

@@ -160,6 +160,8 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.expander", "polytropic_efficiency", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.expander", "rated_recovered_power", "W", [2, 1, -3, 0, 0, 0, 0]),
     ("unit_ops.expander", "number_of_steps", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.expander", "shaft_power", "W", [2, 1, -3, 0, 0, 0, 0]),
+    ("unit_ops.expander", "outlet_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.filter", "inlet_n", "mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("unit_ops.filter", "inlet_z", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.filter", "inlet_p", "Pa", [-1, 1, -2, 0, 0, 0, 0]),

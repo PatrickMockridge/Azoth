@@ -2817,6 +2817,7 @@ class ExpanderResult:
     capacity_exceeded: bool
     hard_limit_exceeded: bool
     bottleneck_constraint: str | None
+    reported_isentropic_efficiency: float | None
     warnings: list[Warning]
 
 @final
@@ -5699,6 +5700,8 @@ def expander(
     polytropic_efficiency: float | None = None,
     rated_recovered_power: float | None = None,
     number_of_steps: float | None = None,
+    shaft_power: float | None = None,
+    outlet_temperature: float | None = None,
 ) -> ExpanderResult: ...
 def filter(
     components: list[str],

@@ -49,6 +49,8 @@ def expander(
     polytropic_efficiency: float | None = None,
     number_of_steps: int | None = None,
     rated_recovered_power: Q | None = None,
+    shaft_power: Q | None = None,
+    outlet_temperature: Q | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, or in polytropic steps.
 
@@ -97,6 +99,12 @@ def expander(
         if rated_recovered_power is None
         else input_to_si(spec, "rated_recovered_power", rated_recovered_power)
     )
+    shaft = None if shaft_power is None else input_to_si(spec, "shaft_power", shaft_power)
+    target = (
+        None
+        if outlet_temperature is None
+        else input_to_si(spec, "outlet_temperature", outlet_temperature)
+    )
 
     apply_checks(
         checks.on_input,
@@ -115,8 +123,30 @@ def expander(
             f"{isentropic_efficiency} is not",
         )
 
+    if shaft is not None and target is not None:
+        raise InvalidInputError(
+            "shaft_power",
+            "a stated power and an outlet temperature are two modes; the class's "
+            "`setPower` and `solveEfficiency` are one at a time",
+        )
+    if (shaft is not None or target is not None) and use_polytropic_calc:
+        raise InvalidInputError(
+            "shaft_power",
+            "the stated-power and outlet-temperature modes are the isentropic branch's",
+        )
+    for name, value in (("shaft_power", shaft), ("outlet_temperature", target)):
+        if value is not None and not math.isfinite(value):
+            raise InvalidInputError(name, f"{value} is not a finite number")
+
     efficiency = 1.0 if polytropic_efficiency is None else float(polytropic_efficiency)
-    if use_polytropic_calc:
+    reported: float | None = None
+    if shaft is not None:
+        h_in, h_out, outlet_t, reported = _at_power(components, t, p, inlet_z, p_out, n, shaft)
+    elif target is not None:
+        h_in, h_out, outlet_t, reported = _solve_efficiency(
+            components, t, p, inlet_z, p_out, target, isentropic_efficiency
+        )
+    elif use_polytropic_calc:
         h_in, h_out, outlet_t = _polytropic_states(
             components,
             inlet_z,
@@ -144,6 +174,7 @@ def expander(
         capacity_exceeded=capacity.capacity_exceeded,
         hard_limit_exceeded=capacity.hard_limit_exceeded,
         bottleneck_constraint=capacity.bottleneck_constraint,
+        reported_isentropic_efficiency=reported,
         warnings=tuple(warnings),
     )
 
@@ -210,6 +241,82 @@ def _states(
         outlet_t=outlet_t.T,
         s_out=s_out,
     )
+
+
+def _at_power(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    n: float,
+    power: float,
+) -> tuple[float, float, Q, float | None]:
+    """The stated-power route: the enthalpy step is `power/n`, and the efficiency divides it."""
+    if not n > 0.0 or not math.isfinite(n):
+        raise InvalidInputError(
+            "shaft_power",
+            f"the stated power divides by the molar flow, and {n} mol/s is not positive",
+        )
+    reference = _states(components, t, p, inlet_z, p_out, 1.0)
+    dh = power / n
+    h_out = reference.h_in + dh
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    outlet_t = ph_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_out, "J/mol"), inlet_z
+    ).T
+    efficiency = None if reference.dh_isentropic == 0.0 else dh / reference.dh_isentropic
+    return reference.h_in, h_out, outlet_t, efficiency
+
+
+def _solve_efficiency(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    target: float,
+    start_efficiency: float,
+) -> tuple[float, float, Q, float]:
+    """`solveEfficiency`: the class's secant, its first step and its clamps."""
+    efficiency = (
+        min(max(start_efficiency, 1.0e-6), 1.0) if math.isfinite(start_efficiency) else 1.0e-6
+    )
+    states = _states(components, t, p, inlet_z, p_out, efficiency)
+    function_old = 0.0
+    delta_poly = 100.0
+    iteration = 0
+    while True:
+        iteration += 1
+        function = states.outlet_t.to("K").magnitude - target
+        slope = (
+            (function - function_old) / delta_poly
+            if delta_poly != 0.0
+            and abs(delta_poly) > 1.0e-12
+            and math.isfinite(delta_poly)
+            and math.isfinite(function)
+            and math.isfinite(function_old)
+            else math.nan
+        )
+        candidate = (
+            efficiency + (0.01 if function > 0.0 else -0.01)
+            if not math.isfinite(slope) or abs(slope) < 1.0e-12
+            else efficiency - function / slope
+        )
+        if iteration <= 1:
+            candidate = efficiency + 0.01
+        if not math.isfinite(candidate):
+            candidate = efficiency + (0.01 if function > 0.0 else -0.01)
+        old = efficiency
+        efficiency = min(max(candidate, 1.0e-6), 1.0)
+        delta_poly = efficiency - old
+        if abs(delta_poly) < 1.0e-12:
+            delta_poly = 1.0e-12 if function > 0.0 else -1.0e-12
+        function_old = function
+        states = _states(components, t, p, inlet_z, p_out, efficiency)
+        residual = states.outlet_t.to("K").magnitude - target
+        if not (abs(residual) > 0.01 or iteration < 3) or iteration >= 50:
+            return states.h_in, states.h_out, states.outlet_t, efficiency
 
 
 @dataclass(frozen=True, slots=True)

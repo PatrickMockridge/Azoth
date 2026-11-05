@@ -5836,7 +5836,7 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
     )
 
 
-def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None, rated_recovered_power: Q | None=None) -> ExpanderResult:
+def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None, rated_recovered_power: Q | None=None, shaft_power: Q | None=None, outlet_temperature: Q | None=None) -> ExpanderResult:
     """``process.expander``, computed in Rust."""
     spec = _models_gen.model("process.expander")
     result = _core.expander(
@@ -5851,6 +5851,8 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         None if polytropic_efficiency is None else polytropic_efficiency,
         None if rated_recovered_power is None else input_to_si(spec, "rated_recovered_power", rated_recovered_power),
         None if number_of_steps is None else _count("number_of_steps", number_of_steps),
+        None if shaft_power is None else input_to_si(spec, "shaft_power", shaft_power),
+        None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
     )
     return ExpanderResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5864,6 +5866,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         capacity_exceeded=result.capacity_exceeded,
         hard_limit_exceeded=result.hard_limit_exceeded,
         bottleneck_constraint=result.bottleneck_constraint,
+        reported_isentropic_efficiency=result.reported_isentropic_efficiency,
         warnings=_warnings(result.warnings),
     )
 

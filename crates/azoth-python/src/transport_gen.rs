@@ -15162,6 +15162,9 @@ pub struct PyExpanderResult {
     /// `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
     #[pyo3(get)]
     pub bottleneck_constraint: Option<String>,
+    /// the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
+    #[pyo3(get)]
+    pub reported_isentropic_efficiency: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15171,7 +15174,7 @@ pub struct PyExpanderResult {
 impl PyExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
+            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, reported_isentropic_efficiency={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -15183,6 +15186,7 @@ impl PyExpanderResult {
             self.capacity_exceeded,
             self.hard_limit_exceeded,
             self.bottleneck_constraint,
+            self.reported_isentropic_efficiency,
             self.warnings.len()
         )
     }
@@ -15217,6 +15221,7 @@ impl From<&azoth_process::models::expander::ExpanderResult> for PyExpanderResult
             capacity_exceeded: r.capacity_exceeded,
             hard_limit_exceeded: r.hard_limit_exceeded,
             bottleneck_constraint: r.bottleneck_constraint.clone(),
+            reported_isentropic_efficiency: r.reported_isentropic_efficiency,
             warnings: transport(&r.warnings),
         }
     }

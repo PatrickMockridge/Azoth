@@ -221,3 +221,177 @@ power = -1105.5373484898778
 max_utilization = 0.0
 capacity_exceeded = false
 hard_limit_exceeded = false
+
+[[cases]]
+id = "the_stated_power_reports_its_efficiency"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `power_set_fraction=1.0`: the total power of the 0.8 row stated instead of an efficiency. The outlet is that row's to the flash's difference, and the back-computed efficiency is 0.8.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+shaft_power = -985780.7294849169
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 246.50812370121898
+outlet_h = -3072.6674020303917
+power = -985780.7369576495
+reported_isentropic_efficiency = 0.8000000060644207
+
+[[cases]]
+id = "the_half_power_is_the_half_efficiency"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `power_set_fraction=0.5`: half the enthalpy step, so the back-computed efficiency is exactly half of 0.8.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+shaft_power = -492890.3701076645
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 254.98185277472754
+outlet_h = -2358.973191575831
+power = -492890.3701076645
+reported_isentropic_efficiency = 0.40000000303221034
+
+[[cases]]
+id = "zero_power_is_the_isenthalpic_throttle"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `power_set_fraction=0.0`: no work, so the state is the isenthalpic throttle at the outlet pressure - the outlet is colder than the inlet with no energy recovered.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+shaft_power = 0.0
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 263.30703321422186
+outlet_h = -1645.2789691147657
+reported_isentropic_efficiency = 0.0
+
+[[cases]]
+id = "the_quarter_power_is_the_quarter_efficiency"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `power_set_fraction=0.25`: a quarter of the step, and a quarter of the efficiency.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+shaft_power = -246445.18785082828
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 259.1743251417612
+outlet_h = -2002.1260880400148
+power = -246445.18785082828
+reported_isentropic_efficiency = 0.20000000151610517
+
+[[cases]]
+id = "a_positive_power_compresses_through_the_expander"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `power_set_fraction=-0.1`: a positive total power adds enthalpy through the machine, and the back-computed efficiency is negative - the class allows both.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+shaft_power = 98578.06841048808
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 264.93825358076396
+outlet_h = -1502.540141494569
+power = 98578.06841048808
+reported_isentropic_efficiency = -0.08000000060644208
+
+[[cases]]
+id = "the_outlet_temperature_solve_finds_two_hundred_and_fifty"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `solve_target_t_k=250`: the secant over the efficiency lands the outlet within the class's 0.01 K tolerance, at `0.63549`.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+outlet_temperature = 250.0
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 250.00000266550109
+outlet_h = -2779.1438208338673
+power = -783067.9455467018
+reported_isentropic_efficiency = 0.6354905789224377
+
+[[cases]]
+id = "an_unreachable_hot_target_lands_low"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `solve_target_t_k=280`: hotter than the isenthalpic floor, so the secant drives the efficiency to its `1e-6` clamp and the outlet stays at the floor.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+outlet_temperature = 280.0
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 263.30701273851537
+outlet_h = -1645.2807533505197
+reported_isentropic_efficiency = 1.0E-6
+
+[[cases]]
+id = "an_unreachable_cold_target_lands_high"
+tolerance = 0.0005
+source = "`process_expander_power_modes.tsv`'s `solve_target_t_k=240`: colder than the reversible outlet, so the efficiency stops at its `1.0` clamp.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+inlet_n = 690.6184184064726
+inlet_z = [0.82, 0.1, 0.05, 0.03]
+inlet_p = 9000000.0
+inlet_t = 298.15
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.8
+outlet_temperature = 240.0
+[cases.expected]
+outlet_n = 690.6184184064726
+outlet_z = [0.82, 0.1, 0.05, 0.03]
+outlet_p = 3000000.0
+outlet_t = 242.26684001928
+outlet_h = -3429.5144813861116
+power = -1232225.9025152659
+reported_isentropic_efficiency = 1.0

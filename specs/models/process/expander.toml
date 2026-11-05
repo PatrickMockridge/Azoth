@@ -9,7 +9,11 @@ assumptions = [
     "**the shaft power is an output, and it is negative.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which is below zero for an expansion; `power` reports it times the molar flow, so the recovered-work magnitude is its absolute value.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**`use_polytropic_calc` selects the stepped branch.** `Expander.run` divides the pressure range into `number_of_steps` equal increments - five by default - flashes each isentropically, multiplies the step by `polytropic_efficiency` and flashes the enthalpy; a count below one is one.",
-    "**the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; its `powerSet` and `useOutTemperature` modes and the dynamic nozzle are outside this surface.",
+    "**the map is `expander_chart.rs`, and its only consumer is `process.turbo_expander_compressor`.** `Expander` never reads one here; the dynamic nozzle and the transient are outside this surface.",
+    "**`setPower` states the total enthalpy change, and the run back-computes the efficiency.** The port's `shaft_power` is that total, so `power/n` is the molar step; `eta = dH/(h_isentropic - h_in)` may exceed one or be negative.",
+    "**The outlet-temperature surface is the inherited `solveEfficiency`, not a run mode.** `Expander.run` never reads `useOutTemperature`; a secant over the efficiency runs the isentropic branch, with a `+0.01` first step, a `+-0.01` fallback and the `[1e-6, 1]` clamp.",
+    "**An unreachable target lands on the nearest clamp**: the hot side is the isenthalpic floor, the cold side the reversible outlet, after at most fifty iterations.",
+    "**Both modes are the isentropic branch's.** `use_polytropic_calc` with either is refused, and so is stating both; a zero isentropic step leaves the reported efficiency absent, the class's `NaN`.",
     "**the recovered-power constraint is the only enabled one.** The parent's `speed`, `surgeMargin` and `stonewallMargin` constraints are disabled without a chart, and the summaries skip them. A positive rating adds HARD `recoveredPower`: design = the rating, max = 1.1 x it, value = `|power|`.",
     "**two thresholds, not one.** `capacity_exceeded` is `|power|` above the rating (utilization above 1), while `hard_limit_exceeded` is `|power|` above `1.1 x` the rating - the constraint's `maxValue`. A non-positive rating creates no constraint at all.",
 ]
@@ -18,10 +22,11 @@ references = [
     "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The isentropic efficiency and the reversible-work reference it divides.",
     "`validation/neqsim/captures/process_expander.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.",
     "`validation/neqsim/captures/process_expander_steps.tsv` - the stepped branch at five and forty increments, and the isentropic row.",
+    "`validation/neqsim/captures/process_expander_power_modes.tsv` - the stated power at four fractions and a negative one, and the outlet-temperature solve at 280, 250 and 240 K.",
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
-edition = "Its `run`: the isentropic branch - a `PSflash` at the inlet's own entropy and the enthalpy moved by `(h_isentropic - h_in) * eta` - the stepped polytropic branch, `numbersteps` increments each flashed and multiplied, and the `recoveredPower` capacity constraint."
+edition = "Its `run`: the isentropic branch, the stepped polytropic branch, the `recoveredPower` capacity constraint, the stated power's back-computed efficiency and `solveEfficiency`'s outlet-temperature secant."
 [inputs]
 [inputs.components]
 type = "components"
@@ -62,6 +67,14 @@ description = "`setRatedRecoveredPower`, the recovered-power rating. **Absent is
 unit = "dimensionless"
 optional = true
 description = "the stepped branch's pressure increments. Absent takes `Expander.DEFAULT_EXPANDER_CALC_STEPS`' `5`; a value below one is one, as the class's `Math.max(1, ...)` makes it.\n"
+[inputs.shaft_power]
+unit = "W"
+optional = true
+description = "the total shaft power the run applies instead of an efficiency, **negative for an expansion**. Stating it back-computes `reported_isentropic_efficiency`; refused with `outlet_temperature` and with `use_polytropic_calc`.\n"
+[inputs.outlet_temperature]
+unit = "K"
+optional = true
+description = "the outlet temperature the efficiency is solved for. **The class's `solveEfficiency` is a method, not a run mode**; refused with `shaft_power` and the stepped branch.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -100,6 +113,10 @@ description = "`isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the co
 type = "string"
 optional = true
 description = "`getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.\n"
+[outputs.reported_isentropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0

@@ -823,8 +823,11 @@ a claim nothing holds.
   lookups, the `CompressorChartKhader2015` map, the speed-solve mode, the no-chart
   polytropic default branch and the deposit model have landed**;
   **`Expander`'s recovered-power capacity constraint landed** - the HARD rating, its two
-  thresholds and the disabled chart constraints - and what remains owed there is
-  `powerSet`/`useOutTemperature`, the dynamic nozzle and the transient;
+  thresholds and the disabled chart constraints - **and so did its stated-power mode and the
+  outlet-temperature solve**: `shaft_power` back-computes the efficiency, and
+  `outlet_temperature` is the inherited secant (the expander's `run` never reads
+  `useOutTemperature`, so it is a method rather than a mode). What remains owed there is the
+  dynamic nozzle and the transient;
   `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`; **`Separator`'s

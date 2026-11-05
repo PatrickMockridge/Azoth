@@ -9,7 +9,7 @@
 use azoth_core::units::{
     MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, watts,
 };
-use azoth_core::{Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -47,6 +47,8 @@ pub struct ExpanderResult {
     pub hard_limit_exceeded: bool,
     /// `getBottleneckConstraint`'s class-side name.
     pub bottleneck_constraint: Option<String>,
+    /// The efficiency a stated power or an outlet-temperature solve produced.
+    pub reported_isentropic_efficiency: Option<f64>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -58,6 +60,7 @@ impl ExpanderResult {
         out: &Stream,
         power: Power,
         rated_recovered_power: Option<Power>,
+        reported_isentropic_efficiency: Option<f64>,
         warnings: Vec<Warning>,
     ) -> Self {
         let capacity = kernel::recovered_power_capacity(power, rated_recovered_power);
@@ -73,6 +76,7 @@ impl ExpanderResult {
             capacity_exceeded: capacity.capacity_exceeded,
             hard_limit_exceeded: capacity.hard_limit_exceeded,
             bottleneck_constraint: capacity.bottleneck_constraint.map(str::to_owned),
+            reported_isentropic_efficiency,
             warnings,
         }
     }
@@ -83,7 +87,7 @@ impl ExpanderResult {
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] if the shapes disagree or an efficiency is
 /// outside `(0, 1]`, and whatever the databank or the flash refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eleven
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are thirteen
 pub fn expander(
     components: &[String],
     inlet_n: f64,
@@ -96,6 +100,8 @@ pub fn expander(
     polytropic_efficiency: Option<f64>,
     number_of_steps: Option<usize>,
     rated_recovered_power: Option<Power>,
+    shaft_power: Option<Power>,
+    outlet_temperature: Option<ThermodynamicTemperature>,
 ) -> Result<ExpanderResult> {
     let spec = &model_gen::EXPANDER_SPEC;
     let mut warnings = Vec::new();
@@ -110,6 +116,38 @@ pub fn expander(
         &mut warnings,
     )?;
 
+    if shaft_power.is_some() && outlet_temperature.is_some() {
+        return Err(AzothError::invalid_input(
+            "shaft_power",
+            "a stated power and an outlet temperature are two modes; the class's `setPower` \
+             and `solveEfficiency` are one at a time",
+        ));
+    }
+    if (shaft_power.is_some() || outlet_temperature.is_some())
+        && use_polytropic_calc.unwrap_or(false)
+    {
+        return Err(AzothError::invalid_input(
+            "shaft_power",
+            "the stated-power and outlet-temperature modes are the isentropic branch's",
+        ));
+    }
+    for (name, value) in [
+        ("shaft_power", shaft_power.map(|value| value.value)),
+        (
+            "outlet_temperature",
+            outlet_temperature.map(|value| value.value),
+        ),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("{value} is not a finite number"),
+                ));
+            }
+        }
+    }
+
     let feed = Stream::from_pt(
         components.to_vec(),
         inlet_z.to_vec(),
@@ -117,15 +155,25 @@ pub fn expander(
         inlet_p,
         inlet_t,
     )?;
-    let out = if use_polytropic_calc.unwrap_or(false) {
-        expander_polytropic(
-            &feed,
-            outlet_pressure,
-            polytropic_efficiency.unwrap_or(1.0),
-            number_of_steps.unwrap_or(5),
-        )?
+    let (out, reported) = if let Some(shaft_power) = shaft_power {
+        let (out, efficiency) = kernel::expander_at_power(&feed, outlet_pressure, shaft_power)?;
+        (out, efficiency)
+    } else if let Some(target) = outlet_temperature {
+        let (out, efficiency) =
+            kernel::solve_efficiency(&feed, outlet_pressure, target, isentropic_efficiency)?;
+        (out, Some(efficiency))
+    } else if use_polytropic_calc.unwrap_or(false) {
+        (
+            expander_polytropic(
+                &feed,
+                outlet_pressure,
+                polytropic_efficiency.unwrap_or(1.0),
+                number_of_steps.unwrap_or(5),
+            )?,
+            None,
+        )
     } else {
-        kernel(&feed, outlet_pressure, isentropic_efficiency)?
+        (kernel(&feed, outlet_pressure, isentropic_efficiency)?, None)
     };
     let power = watts(feed.n * (out.h.value - feed.h.value));
 
@@ -133,6 +181,7 @@ pub fn expander(
         &out,
         power,
         rated_recovered_power,
+        reported,
         warnings,
     ))
 }

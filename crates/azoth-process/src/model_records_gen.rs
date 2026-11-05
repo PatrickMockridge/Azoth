@@ -304,6 +304,7 @@ impl CalcResult for ExpanderResult {
         "capacity_exceeded",
         "hard_limit_exceeded",
         "bottleneck_constraint",
+        "reported_isentropic_efficiency",
         "warnings",
     ];
 

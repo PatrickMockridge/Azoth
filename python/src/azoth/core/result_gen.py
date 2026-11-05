@@ -6074,6 +6074,9 @@ class ExpanderResult(_HasWarnings):
     #: `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
     bottleneck_constraint: str | None
 
+    #: the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
+    reported_isentropic_efficiency: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

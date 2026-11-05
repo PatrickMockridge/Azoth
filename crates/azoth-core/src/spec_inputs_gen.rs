@@ -2939,6 +2939,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.expander", "polytropic_efficiency", "dimensionless"),
     ("process.expander", "rated_recovered_power", "power"),
     ("process.expander", "number_of_steps", "dimensionless"),
+    ("process.expander", "shaft_power", "power"),
+    (
+        "process.expander",
+        "outlet_temperature",
+        "thermodynamic_temperature",
+    ),
     ("process.filter", "inlet_n", "molar_flow"),
     ("process.filter", "inlet_z", "dimensionless"),
     ("process.filter", "inlet_p", "pressure"),

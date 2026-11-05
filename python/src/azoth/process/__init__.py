@@ -1241,6 +1241,8 @@ def expander(
     polytropic_efficiency: float | None = None,
     number_of_steps: int | None = None,
     rated_recovered_power: Q | None = None,
+    shaft_power: Q | None = None,
+    outlet_temperature: Q | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1253,6 +1255,10 @@ def expander(
     ``rated_recovered_power`` is ``setRatedRecoveredPower``: a positive rating adds the HARD
     ``recoveredPower`` constraint, whose utilization is ``|power| / rating`` and whose hard
     band is ``1.1 x`` the rating. Absent or non-positive creates no constraint.
+
+    ``shaft_power`` states the total power instead of an efficiency and reports the
+    back-computed one; ``outlet_temperature`` solves the efficiency for that outlet. Both are
+    the isentropic branch's, and one at a time.
 
     Raises:
         InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
@@ -1271,6 +1277,8 @@ def expander(
         polytropic_efficiency=polytropic_efficiency,
         number_of_steps=number_of_steps,
         rated_recovered_power=rated_recovered_power,
+        shaft_power=shaft_power,
+        outlet_temperature=outlet_temperature,
     )
 
 

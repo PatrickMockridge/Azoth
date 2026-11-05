@@ -695,8 +695,9 @@ fn the_generated_input_table_is_the_models_own() {
     // flag, the type, the element count, the face velocity, the element area, the nozzle
     // velocity, the two L/D ratios, the two pressure margins, the temperature margin, the
     // allowable stress, the joint efficiency, the corrosion allowance, the collapse rating
-    // and the integrity flag - `643 + 16 = 659`.
-    assert_eq!(walked, 659, "the inputs this test walked");
+    // and the integrity flag - `643 + 16 = 659`. **And the expander's two modes** -
+    // `shaft_power` and `outlet_temperature` - `659 + 2 = 661`.
+    assert_eq!(walked, 661, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

@@ -21,6 +21,8 @@ fn expander_with(steps: usize) -> azoth_process::models::ExpanderResult {
         Some(0.80),
         Some(steps),
         None,
+        None,
+        None,
     )
     .expect("the captured state expands")
 }
@@ -59,4 +61,122 @@ fn a_zero_step_count_is_one_step() {
     assert_eq!(zero.outlet_t.value, one.outlet_t.value);
     assert_eq!(zero.outlet_h.value, one.outlet_h.value);
     assert_eq!(zero.power.value, one.power.value);
+}
+
+#[test]
+fn a_stated_power_reports_its_efficiency() {
+    let result = expander(
+        &[
+            "methane".to_string(),
+            "ethane".to_string(),
+            "propane".to_string(),
+            "n-butane".to_string(),
+        ],
+        690.618_418_406_472_6,
+        &[0.82, 0.10, 0.05, 0.03],
+        pascals(9_000_000.0),
+        kelvins(298.15),
+        pascals(3_000_000.0),
+        0.8,
+        None,
+        None,
+        None,
+        None,
+        Some(azoth_core::units::watts(-985_780.729_484_916_9)),
+        None,
+    )
+    .expect("the captured state expands");
+    close(
+        result.outlet_t.value,
+        246.508_123_701_218_98,
+        5.0e-4,
+        "outlet_t",
+    );
+    close(
+        result
+            .reported_isentropic_efficiency
+            .expect("an efficiency"),
+        0.800_000_006_064_420_7,
+        5.0e-4,
+        "efficiency",
+    );
+}
+
+#[test]
+fn the_output_temperature_solve_finds_two_hundred_and_fifty() {
+    let result = expander(
+        &[
+            "methane".to_string(),
+            "ethane".to_string(),
+            "propane".to_string(),
+            "n-butane".to_string(),
+        ],
+        690.618_418_406_472_6,
+        &[0.82, 0.10, 0.05, 0.03],
+        pascals(9_000_000.0),
+        kelvins(298.15),
+        pascals(3_000_000.0),
+        0.8,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(kelvins(250.0)),
+    )
+    .expect("the captured state expands");
+    close(
+        result.outlet_t.value,
+        250.000_002_665_501_09,
+        5.0e-4,
+        "outlet_t",
+    );
+    close(
+        result
+            .reported_isentropic_efficiency
+            .expect("an efficiency"),
+        0.635_490_578_922_437_7,
+        5.0e-4,
+        "efficiency",
+    );
+}
+
+#[test]
+fn both_modes_are_refused() {
+    let result = expander(
+        &["methane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(6_000_000.0),
+        kelvins(320.0),
+        pascals(3_000_000.0),
+        0.75,
+        None,
+        None,
+        None,
+        None,
+        Some(azoth_core::units::watts(-1000.0)),
+        Some(kelvins(280.0)),
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn the_modes_are_the_isentropic_branchs() {
+    let result = expander(
+        &["methane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(6_000_000.0),
+        kelvins(320.0),
+        pascals(3_000_000.0),
+        0.75,
+        Some(true),
+        Some(0.75),
+        None,
+        None,
+        Some(azoth_core::units::watts(-1000.0)),
+        None,
+    );
+    assert!(result.is_err());
 }

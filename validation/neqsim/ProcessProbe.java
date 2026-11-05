@@ -264,6 +264,9 @@ public class ProcessProbe {
       case "expander_capacity":
         expanderCapacityRows();
         break;
+      case "expander_power_modes":
+        expanderPowerModeRows();
+        break;
       case "pipe":
         pipeRows();
         break;
@@ -2466,6 +2469,77 @@ public class ProcessProbe {
     print("inlet", inlet);
     print("outlet", expander.getOutletStream());
     System.out.println();
+  }
+
+  /// `Expander`'s two remaining steady surfaces: the stated power and the outlet-temperature solve.
+  ///
+  /// **`setPower` states the total enthalpy change the run applies**, and the class then
+  /// back-computes `isentropicEfficiency = dH / (h_isentropic - h_in)` - a value above one is
+  /// allowed. **The outlet-temperature surface is the inherited `solveEfficiency`**, a secant
+  /// over the efficiency with a one-hundredth first step and a 50-iteration cap; the expander's
+  /// own `run` never reads `useOutTemperature`, so the solve is a method rather than a mode.
+  static void expanderPowerModeRows() {
+    Stream baseInlet = expanderFeed();
+    neqsim.process.equipment.expander.Expander base =
+        new neqsim.process.equipment.expander.Expander("base", baseInlet);
+    base.setOutletPressure(30.0);
+    base.setIsentropicEfficiency(0.80);
+    base.run();
+    double basePower = base.getPower();
+    System.out.println("base_power_w=" + basePower);
+    System.out.println("base_outlet_t_k=" + base.getOutletStream().getTemperature("K"));
+    print("inlet", baseInlet);
+    print("outlet", base.getOutletStream());
+    System.out.println();
+
+    for (double fraction : new double[] {1.0, 0.5, 0.0, 0.25}) {
+      Stream inlet = expanderFeed();
+      neqsim.process.equipment.expander.Expander expander =
+          new neqsim.process.equipment.expander.Expander("set power", inlet);
+      expander.setOutletPressure(30.0);
+      expander.setIsentropicEfficiency(0.80);
+      expander.setPower(basePower * fraction);
+      expander.run();
+      System.out.println("power_set_fraction=" + fraction);
+      System.out.println("power_w=" + expander.getPower());
+      System.out.println("isentropic_efficiency=" + expander.getIsentropicEfficiency());
+      System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+      print("inlet", inlet);
+      print("outlet", expander.getOutletStream());
+      System.out.println();
+    }
+
+    Stream warmInlet = expanderFeed();
+    neqsim.process.equipment.expander.Expander warm =
+        new neqsim.process.equipment.expander.Expander("warm", warmInlet);
+    warm.setOutletPressure(30.0);
+    warm.setIsentropicEfficiency(0.80);
+    warm.setPower(-basePower * 0.1);
+    warm.run();
+    System.out.println("power_set_fraction=-0.1");
+    System.out.println("power_w=" + warm.getPower());
+    System.out.println("isentropic_efficiency=" + warm.getIsentropicEfficiency());
+    System.out.println("outlet_t_k=" + warm.getOutletStream().getTemperature("K"));
+    print("inlet", warmInlet);
+    print("outlet", warm.getOutletStream());
+    System.out.println();
+
+    for (double target : new double[] {280.0, 250.0, 240.0}) {
+      Stream inlet = expanderFeed();
+      neqsim.process.equipment.expander.Expander expander =
+          new neqsim.process.equipment.expander.Expander("solve", inlet);
+      expander.setOutletPressure(30.0);
+      expander.setIsentropicEfficiency(0.80);
+      double solved = expander.solveEfficiency(target);
+      expander.run();
+      System.out.println("solve_target_t_k=" + target);
+      System.out.println("solved_efficiency=" + solved);
+      System.out.println("power_w=" + expander.getPower());
+      System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+      print("inlet", inlet);
+      print("outlet", expander.getOutletStream());
+      System.out.println();
+    }
   }
 
   static Stream expanderFeed() {
