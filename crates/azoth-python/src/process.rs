@@ -283,10 +283,10 @@ pub fn pump(
 /// optional; the rows are built from the generated mappings here.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn filter(
@@ -310,6 +310,12 @@ pub fn filter(
     particle_size: Option<f64>,
     nominal_removal_efficiency: Option<f64>,
     inlet_particle_concentration: Option<f64>,
+    solids_loading: Option<f64>,
+    loading_capacity: Option<f64>,
+    pressure_drop_increase_at_capacity: Option<f64>,
+    breakthrough_start_fraction: Option<f64>,
+    bypass_cracking_pressure: Option<f64>,
+    terminal_pressure_drop: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyFilterResult> {
     let drop_points: Option<Vec<azoth_process::models::filter::FilterDropPoint>> =
         pressure_drop_curve.map(|rows| {
@@ -349,6 +355,12 @@ pub fn filter(
         particle_size.map(meters),
         nominal_removal_efficiency,
         inlet_particle_concentration,
+        solids_loading.map(kilograms),
+        loading_capacity.map(kilograms),
+        pressure_drop_increase_at_capacity.map(pascals),
+        breakthrough_start_fraction,
+        bypass_cracking_pressure.map(pascals),
+        terminal_pressure_drop.map(pascals),
     )
     .map(|r| crate::transport_gen::PyFilterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

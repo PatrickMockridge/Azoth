@@ -948,6 +948,12 @@ def filter(
     particle_size: Q | None = None,
     nominal_removal_efficiency: float | None = None,
     inlet_particle_concentration: float | None = None,
+    solids_loading: Q | None = None,
+    loading_capacity: Q | None = None,
+    pressure_drop_increase_at_capacity: Q | None = None,
+    breakthrough_start_fraction: float | None = None,
+    bypass_cracking_pressure: Q | None = None,
+    terminal_pressure_drop: Q | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by a fixed amount at a constant temperature.
 
@@ -966,6 +972,10 @@ def filter(
     own settings. The beta-ratio ``performance_curve`` (or a scalar
     ``nominal_removal_efficiency``) with an ``inlet_particle_concentration`` enables the
     particle capture.
+
+    ``solids_loading`` with a ``loading_capacity`` adds the loading's pressure drop, the
+    breakthrough retention and the optional ``bypass_cracking_pressure`` to the same run;
+    ``terminal_pressure_drop`` is the replacement threshold.
 
     See :func:`azoth.process.reference.filter`.
     """
@@ -989,6 +999,12 @@ def filter(
         particle_size=particle_size,
         nominal_removal_efficiency=nominal_removal_efficiency,
         inlet_particle_concentration=inlet_particle_concentration,
+        solids_loading=solids_loading,
+        loading_capacity=loading_capacity,
+        pressure_drop_increase_at_capacity=pressure_drop_increase_at_capacity,
+        breakthrough_start_fraction=breakthrough_start_fraction,
+        bypass_cracking_pressure=bypass_cracking_pressure,
+        terminal_pressure_drop=terminal_pressure_drop,
     )
 
 

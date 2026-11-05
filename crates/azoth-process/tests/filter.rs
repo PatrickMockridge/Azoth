@@ -5,7 +5,7 @@
 //! model's wiring: the Ergun bed on a real state, and the beta-ratio capture's three answers.
 
 use azoth_core::units::{
-    kelvins, kilogram_per_hour, meters, pascal_seconds, pascals, square_meters,
+    kelvins, kilogram_per_hour, kilograms, meters, pascal_seconds, pascals, square_meters,
 };
 use azoth_process::models::filter::{FilterBetaPoint, filter};
 
@@ -35,6 +35,12 @@ fn the_ergun_bed_matches_the_capture() {
         Some(meters(0.002)),
         Some(0.40),
         Some(pascal_seconds(1.1529270713459012e-5)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -99,6 +105,12 @@ fn the_beta_curve_captures_particles() {
         Some(meters(1.0e-5)),
         None,
         Some(1.0e-4),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state filters");
 
@@ -120,4 +132,223 @@ fn the_beta_curve_captures_particles() {
         1.0e-9,
         "captured_rate",
     );
+}
+
+/// The PR methane feed the loading capture uses, with the six loading inputs.
+#[allow(clippy::too_many_arguments)]
+fn loaded_filter(
+    drop: f64,
+    nominal: Option<f64>,
+    concentration: Option<f64>,
+    solids: Option<f64>,
+    capacity: Option<f64>,
+    increase: Option<f64>,
+    start: Option<f64>,
+    cracking: Option<f64>,
+    terminal: Option<f64>,
+) -> azoth_process::models::FilterResult {
+    filter(
+        &["methane".to_string()],
+        17.314578182246326,
+        &[1.0],
+        pascals(2_000_000.0),
+        kelvins(298.15),
+        pascals(drop),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        nominal,
+        concentration,
+        solids.map(kilograms),
+        capacity.map(kilograms),
+        increase.map(pascals),
+        start,
+        cracking.map(pascals),
+        terminal.map(pascals),
+    )
+    .expect("the captured state filters")
+}
+
+#[test]
+fn the_loaded_element_matches_the_capture() {
+    let result = loaded_filter(
+        20_000.0,
+        None,
+        None,
+        Some(9.0),
+        Some(10.0),
+        Some(100_000.0),
+        Some(0.5),
+        None,
+        None,
+    );
+    close(
+        result.unrestricted_drop.value,
+        110_000.0,
+        1.0e-12,
+        "unrestricted_drop",
+    );
+    close(
+        result.applied_drop.value,
+        110_000.0,
+        1.0e-12,
+        "applied_drop",
+    );
+    close(result.loading_fraction, 0.9, 1.0e-12, "loading_fraction");
+    close(
+        result.breakthrough_fraction,
+        0.8,
+        1.0e-12,
+        "breakthrough_fraction",
+    );
+    close(
+        result.differential_pressure_utilization,
+        0.22,
+        1.0e-12,
+        "differential_pressure_utilization",
+    );
+    assert!(!result.replacement_required);
+    close(result.outlet_p.value, 1_890_000.0, 1.0e-12, "outlet_p");
+}
+
+#[test]
+fn the_bypass_carries_half_the_flow() {
+    let result = loaded_filter(
+        20_000.0,
+        Some(0.99),
+        Some(1.0e-4),
+        Some(5.0),
+        Some(10.0),
+        Some(360_000.0),
+        Some(0.5),
+        Some(50_000.0),
+        None,
+    );
+    close(
+        result.unrestricted_drop.value,
+        200_000.0,
+        1.0e-12,
+        "unrestricted_drop",
+    );
+    close(result.applied_drop.value, 50_000.0, 1.0e-12, "applied_drop");
+    close(result.bypass_fraction, 0.5, 1.0e-12, "bypass_fraction");
+    close(
+        result.current_removal_efficiency,
+        0.495,
+        1.0e-12,
+        "current_removal_efficiency",
+    );
+    close(
+        result.captured_rate.get::<kilogram_per_hour>(),
+        0.0495,
+        1.0e-9,
+        "captured_rate",
+    );
+    close(
+        result.outlet_particle_concentration,
+        5.05e-5,
+        1.0e-9,
+        "outlet_particle_concentration",
+    );
+    close(result.outlet_p.value, 1_950_000.0, 1.0e-12, "outlet_p");
+}
+
+#[test]
+fn no_loading_inputs_is_the_class_defaults() {
+    let result = loaded_filter(20_000.0, None, None, None, None, None, None, None, None);
+    assert_eq!(result.loading_fraction, 0.0);
+    assert_eq!(result.breakthrough_fraction, 0.0);
+    assert_eq!(result.bypass_fraction, 0.0);
+    close(
+        result.unrestricted_drop.value,
+        20_000.0,
+        1.0e-12,
+        "unrestricted_drop",
+    );
+    close(
+        result.differential_pressure_utilization,
+        0.04,
+        1.0e-12,
+        "differential_pressure_utilization",
+    );
+    assert!(!result.replacement_required);
+}
+
+#[test]
+fn a_non_positive_capacity_is_the_sentinel() {
+    let result = loaded_filter(
+        20_000.0,
+        None,
+        None,
+        Some(9.0),
+        Some(0.0),
+        Some(100_000.0),
+        Some(0.5),
+        None,
+        None,
+    );
+    assert_eq!(result.loading_fraction, 0.0);
+    close(
+        result.unrestricted_drop.value,
+        20_000.0,
+        1.0e-12,
+        "unrestricted_drop",
+    );
+}
+
+#[test]
+fn replacement_required_reaches_both_branches() {
+    let terminal = loaded_filter(
+        20_000.0,
+        None,
+        None,
+        Some(5.0),
+        Some(10.0),
+        Some(360_000.0),
+        Some(0.5),
+        Some(50_000.0),
+        Some(50_000.0),
+    );
+    close(
+        terminal.differential_pressure_utilization,
+        4.0,
+        1.0e-12,
+        "terminal utilization",
+    );
+    assert!(terminal.replacement_required);
+
+    let loading = loaded_filter(
+        20_000.0,
+        None,
+        None,
+        Some(11.0),
+        Some(10.0),
+        Some(100_000.0),
+        Some(0.5),
+        None,
+        None,
+    );
+    close(loading.loading_fraction, 1.1, 1.0e-12, "loading fraction");
+    assert!(loading.replacement_required);
+
+    let boundary = loaded_filter(
+        20_000.0,
+        None,
+        None,
+        Some(5.0),
+        Some(10.0),
+        Some(100_000.0),
+        Some(0.5),
+        None,
+        None,
+    );
+    assert!(!boundary.replacement_required);
 }

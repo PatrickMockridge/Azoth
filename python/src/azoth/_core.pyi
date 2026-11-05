@@ -2831,6 +2831,14 @@ class FilterResult:
     nominal_removal_efficiency: float
     outlet_particle_concentration: float
     captured_rate: Qty
+    unrestricted_drop: Qty
+    bypass_fraction: float
+    loading_fraction: float
+    breakthrough_fraction: float
+    current_removal_efficiency: float
+    solids_loading: Qty
+    differential_pressure_utilization: float
+    replacement_required: bool
     warnings: list[Warning]
 
 @final
@@ -5693,6 +5701,12 @@ def filter(
     particle_size: float | None = None,
     nominal_removal_efficiency: float | None = None,
     inlet_particle_concentration: float | None = None,
+    solids_loading: float | None = None,
+    loading_capacity: float | None = None,
+    pressure_drop_increase_at_capacity: float | None = None,
+    breakthrough_start_fraction: float | None = None,
+    bypass_cracking_pressure: float | None = None,
+    terminal_pressure_drop: float | None = None,
 ) -> FilterResult: ...
 def flare(
     components: list[str],

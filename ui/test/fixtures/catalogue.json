@@ -7842,7 +7842,12 @@
         "inlet_t",
         "flow_exponent",
         "media_void_fraction",
-        "nominal_removal_efficiency"
+        "nominal_removal_efficiency",
+        "solids_loading",
+        "pressure_drop_increase_at_capacity",
+        "breakthrough_start_fraction",
+        "bypass_cracking_pressure",
+        "terminal_pressure_drop"
       ]
     },
     {

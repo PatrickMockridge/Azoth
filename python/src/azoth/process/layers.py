@@ -1470,7 +1470,10 @@ NO_INTERIOR: dict[str, str] = {
         "flow, both of which the result already carries, and its unit is one this library has "
         "no dimension for. **The capture's third row is uncased rather than dumped**: the "
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
-        "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
+        "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding. "
+        "**The loaded state does not add an interior either**: the loading fraction, "
+        "breakthrough, the bypass and the replacement flag are scalars over the flashed "
+        "record, and `process_filter_loading.tsv` cases them rather than dumping them here"
     ),
     "process.stirred_tank_reactor": (
         "the kernel forms the reacted composition, the outlet pressure and the flashed state, "

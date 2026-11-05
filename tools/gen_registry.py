@@ -229,6 +229,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `heater`'s hard-limit flag, the same shape. `test_heater_capacity.py` reads the
         # heater's raw spec for it, and `test_cross_impl` compares it on both results.
         "hard_limit_exceeded",
+        # `filter`'s replacement flag: the terminal drop or the loading capacity has been
+        # reached. `tests/filter.rs` and `python/tests/models/test_filter.py` assert both
+        # branches, and `test_cross_impl` compares it on both results.
+        "replacement_required",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

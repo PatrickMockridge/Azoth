@@ -53,6 +53,10 @@ DEFAULT_MEDIA_VOID_FRACTION = 0.40
 DEFAULT_PARTICLE_SIZE_M = 10.0e-6
 #: ``Filter.deltaP``'s clamp ceiling: a millionth of a bar, in Pa.
 CLAMP_MARGIN_PA = 0.1
+#: ``Filter``'s default terminal differential pressure, 5 bar, in Pa.
+DEFAULT_TERMINAL_DROP_PA = 500_000.0
+#: ``setBreakthroughStartFraction``'s ceiling; the divisor ``1 - start`` stays positive.
+MAX_BREAKTHROUGH_START = 0.999999
 
 
 def filter(
@@ -75,6 +79,12 @@ def filter(
     particle_size: Q | None = None,
     nominal_removal_efficiency: float | None = None,
     inlet_particle_concentration: float | None = None,
+    solids_loading: Q | None = None,
+    loading_capacity: Q | None = None,
+    pressure_drop_increase_at_capacity: Q | None = None,
+    breakthrough_start_fraction: float | None = None,
+    bypass_cracking_pressure: Q | None = None,
+    terminal_pressure_drop: Q | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by the selected clean-drop model at a constant temperature.
 
@@ -133,6 +143,29 @@ def filter(
         None if reference_flow is None else input_to_si(spec, "reference_flow", reference_flow)
     )
     viscosity_si = None if viscosity is None else input_to_si(spec, "viscosity", viscosity)
+    solids_si = (
+        None if solids_loading is None else input_to_si(spec, "solids_loading", solids_loading)
+    )
+    capacity_si = (
+        None if loading_capacity is None else input_to_si(spec, "loading_capacity", loading_capacity)
+    )
+    increase_si = (
+        None
+        if pressure_drop_increase_at_capacity is None
+        else input_to_si(
+            spec, "pressure_drop_increase_at_capacity", pressure_drop_increase_at_capacity
+        )
+    )
+    bypass_si = (
+        None
+        if bypass_cracking_pressure is None
+        else input_to_si(spec, "bypass_cracking_pressure", bypass_cracking_pressure)
+    )
+    terminal_si = (
+        None
+        if terminal_pressure_drop is None
+        else input_to_si(spec, "terminal_pressure_drop", terminal_pressure_drop)
+    )
 
     apply_checks(
         checks.on_input,
@@ -142,6 +175,11 @@ def filter(
             "flow_exponent": flow_exponent,
             "media_void_fraction": media_void_fraction,
             "nominal_removal_efficiency": nominal_removal_efficiency,
+            "solids_loading": solids_si,
+            "pressure_drop_increase_at_capacity": increase_si,
+            "breakthrough_start_fraction": breakthrough_start_fraction,
+            "bypass_cracking_pressure": bypass_si,
+            "terminal_pressure_drop": terminal_si,
         }.get,
         warnings,
     )
@@ -210,11 +248,40 @@ def filter(
             f"the inlet concentration is {inlet_particle_concentration}, not a non-negative "
             f"fraction",
         )
+    for name, value in (
+        ("solids_loading", solids_si),
+        ("loading_capacity", capacity_si),
+        ("pressure_drop_increase_at_capacity", increase_si),
+        ("breakthrough_start_fraction", breakthrough_start_fraction),
+    ):
+        if value is not None and not math.isfinite(float(value)):
+            raise InvalidInputError(name, f"{value} is not a finite number")
+    if bypass_si is not None and not (math.isfinite(bypass_si) and bypass_si > 0.0):
+        raise InvalidInputError(
+            "bypass_cracking_pressure",
+            f"the cracking pressure is {bypass_si} Pa, and `setBypassCrackingDeltaP` needs a "
+            f"finite positive one",
+        )
+    if terminal_si is not None and not (math.isfinite(terminal_si) and terminal_si > 0.0):
+        raise InvalidInputError(
+            "terminal_pressure_drop",
+            f"the terminal drop is {terminal_si} Pa, and `setTerminalDeltaP` needs a finite "
+            f"positive one",
+        )
 
     size_m = (
         DEFAULT_PARTICLE_SIZE_M
         if particle_size is None
         else input_to_si(spec, "particle_size", particle_size)
+    )
+
+    loading = LoadingRequest(
+        solids_loading_kg=solids_si,
+        loading_capacity_kg=capacity_si,
+        pressure_drop_increase_at_capacity_pa=increase_si,
+        breakthrough_start_fraction=breakthrough_start_fraction,
+        bypass_cracking_pressure_pa=bypass_si,
+        terminal_pressure_drop_pa=terminal_si,
     )
 
     states = _route(
@@ -234,15 +301,16 @@ def filter(
         size_m,
         efficiency,
         inlet_particle_concentration,
+        loading,
     )
 
-    if states.applied_drop != states.clean_drop:
+    if states.applied_drop != states.restricted_drop:
         warnings.append(
             Warning(
                 code=WarningCode.OUT_OF_VALID_RANGE,
                 field="pressure_drop",
                 message=(
-                    f"a clean drop of {states.clean_drop} Pa was computed and "
+                    f"a restricted drop of {states.restricted_drop} Pa was computed and "
                     f"{states.applied_drop} Pa was applied: the outlet is held a millionth "
                     f"of a bar above vacuum, which is the clamp `Filter.run` applies"
                 ),
@@ -260,25 +328,68 @@ def filter(
         nominal_removal_efficiency=states.efficiency,
         outlet_particle_concentration=states.outlet_concentration,
         captured_rate=from_si(states.captured_rate_kg_s, "kg/h"),
+        unrestricted_drop=from_si(states.unrestricted_drop, "Pa"),
+        bypass_fraction=states.bypass_fraction,
+        loading_fraction=states.loading_fraction,
+        breakthrough_fraction=states.breakthrough_fraction,
+        current_removal_efficiency=states.current_efficiency,
+        solids_loading=from_si(states.solids_loading_kg, "kg"),
+        differential_pressure_utilization=states.differential_pressure_utilization,
+        replacement_required=states.replacement_required,
         warnings=tuple(warnings),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class LoadingRequest:
+    """``Filter``'s carried loading state, as the model id's optional inputs state it."""
+
+    solids_loading_kg: float | None = None
+    loading_capacity_kg: float | None = None
+    pressure_drop_increase_at_capacity_pa: float | None = None
+    breakthrough_start_fraction: float | None = None
+    bypass_cracking_pressure_pa: float | None = None
+    terminal_pressure_drop_pa: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LoadingState:
+    """``updateHydraulicState``'s arithmetic and the capture's current efficiency."""
+
+    solids_loading_kg: float
+    loading_fraction: float
+    breakthrough_fraction: float
+    efficiency: float
+    unrestricted_drop: float
+    restricted_drop: float
+    bypass_fraction: float
 
 
 @dataclass(frozen=True, slots=True)
 class FilterStates:
     """The filter's intermediates, in the order it computes them, in SI."""
 
-    #: The clean drop the model computed and the one applied after the clamp.
+    #: The clean drop the model computed, the pre-clamp restricted one and the applied one.
     clean_drop: float
+    restricted_drop: float
     applied_drop: float
     #: The outlet pressure.
     p_out: float
     #: The outlet molar enthalpy, which is not the inlet's: the drop is isothermal.
     h_out: float
-    #: The nominal removal efficiency, and the capture's two answers.
+    #: The nominal removal efficiency, the current one, and the capture's two answers.
     efficiency: float
+    current_efficiency: float
     outlet_concentration: float
     captured_rate_kg_s: float
+    #: The carried loading state and the replacement check.
+    unrestricted_drop: float
+    bypass_fraction: float
+    loading_fraction: float
+    breakthrough_fraction: float
+    solids_loading_kg: float
+    differential_pressure_utilization: float
+    replacement_required: bool
 
 
 def _route(
@@ -298,6 +409,7 @@ def _route(
     particle_size_m: float,
     nominal_efficiency: float,
     inlet_concentration: float | None,
+    loading: LoadingRequest,
 ) -> FilterStates:
     """The filter's intermediates, in SI, in the order it computes them."""
     if not inlet_p > 0.0:
@@ -322,30 +434,95 @@ def _route(
         viscosity,
         flow_m3h,
     )
+    nominal = _nominal_efficiency(beta_curve, particle_size_m, nominal_efficiency)
+    state = _loading_state(clean_pa, nominal, loading)
     ceiling = max(0.0, inlet_p - CLAMP_MARGIN_PA)
-    applied = min(max(0.0, clean_pa), ceiling)
+    applied = min(max(0.0, state.restricted_drop), ceiling)
     p_out = inlet_p - applied
 
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     h_out, _ = enthalpy_at(mixture, ideal_gas, inlet_t, p_out, inlet_z)
 
-    efficiency = _nominal_efficiency(beta_curve, particle_size_m, nominal_efficiency)
     if inlet_concentration is None:
         outlet_concentration = 0.0
         captured_rate = 0.0
     else:
         mass_flow = inlet_n * capacity._molar_mass(mixture, list(inlet_z))
-        outlet_concentration = inlet_concentration * (1.0 - efficiency)
-        captured_rate = mass_flow * inlet_concentration * efficiency
+        outlet_concentration = inlet_concentration * (1.0 - state.efficiency)
+        captured_rate = mass_flow * inlet_concentration * state.efficiency
+
+    terminal = (
+        DEFAULT_TERMINAL_DROP_PA
+        if loading.terminal_pressure_drop_pa is None
+        else loading.terminal_pressure_drop_pa
+    )
+    utilization = state.unrestricted_drop / terminal
+    replacement_required = utilization >= 1.0 or state.loading_fraction >= 1.0
 
     return FilterStates(
         clean_drop=clean_pa,
+        restricted_drop=state.restricted_drop,
         applied_drop=applied,
         p_out=p_out,
         h_out=h_out,
-        efficiency=efficiency,
+        efficiency=nominal,
+        current_efficiency=state.efficiency,
         outlet_concentration=outlet_concentration,
         captured_rate_kg_s=captured_rate,
+        unrestricted_drop=state.unrestricted_drop,
+        bypass_fraction=state.bypass_fraction,
+        loading_fraction=state.loading_fraction,
+        breakthrough_fraction=state.breakthrough_fraction,
+        solids_loading_kg=state.solids_loading_kg,
+        differential_pressure_utilization=utilization,
+        replacement_required=replacement_required,
+    )
+
+
+def _loading_state(
+    clean_pa: float, nominal: float, request: LoadingRequest
+) -> LoadingState:
+    """``updateHydraulicState`` and the capture's current efficiency, before the clamp."""
+    solids_loading_kg = max(
+        0.0, 0.0 if request.solids_loading_kg is None else request.solids_loading_kg
+    )
+    capacity_kg = request.loading_capacity_kg
+    loading_fraction = (
+        solids_loading_kg / capacity_kg
+        if capacity_kg is not None and math.isfinite(capacity_kg) and capacity_kg > 0.0
+        else 0.0
+    )
+    start = (
+        0.8
+        if request.breakthrough_start_fraction is None
+        else request.breakthrough_start_fraction
+    )
+    start = min(max(0.0, start), MAX_BREAKTHROUGH_START)
+    breakthrough_fraction = (
+        0.0
+        if loading_fraction <= start
+        else min(1.0, (loading_fraction - start) / (1.0 - start))
+    )
+    increase = max(0.0, request.pressure_drop_increase_at_capacity_pa or 0.0)
+    unrestricted_drop = clean_pa + increase * max(0.0, loading_fraction)
+    cracking = request.bypass_cracking_pressure_pa
+    if cracking is not None and unrestricted_drop > cracking:
+        bypass_fraction = min(max(1.0 - math.sqrt(cracking / unrestricted_drop), 0.0), 1.0)
+        restricted_drop = cracking
+    else:
+        bypass_fraction = 0.0
+        restricted_drop = unrestricted_drop
+    efficiency = min(
+        max(nominal * (1.0 - breakthrough_fraction) * (1.0 - bypass_fraction), 0.0), 1.0
+    )
+    return LoadingState(
+        solids_loading_kg=solids_loading_kg,
+        loading_fraction=loading_fraction,
+        breakthrough_fraction=breakthrough_fraction,
+        efficiency=efficiency,
+        unrestricted_drop=unrestricted_drop,
+        restricted_drop=restricted_drop,
+        bypass_fraction=bypass_fraction,
     )
 
 

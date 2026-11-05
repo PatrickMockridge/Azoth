@@ -6114,6 +6114,30 @@ class FilterResult(_HasWarnings):
     #: the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
     captured_rate: Q
 
+    #: the clean drop plus `pressure_drop_increase_at_capacity * loading_fraction`, before bypass and before the inlet-pressure clamp. This is `getUnrestrictedDeltaP()`.
+    unrestricted_drop: Q
+
+    #: the fraction of the flow bypassing the element: `1 - sqrt(cracking/unrestricted)` when the bypass is open above its cracking drop, else zero.
+    bypass_fraction: float
+
+    #: `solids_loading / loading_capacity`, or zero when the capacity is not finite or not positive.
+    loading_fraction: float
+
+    #: zero at or below `breakthrough_start_fraction`, else `(fraction - start)/(1 - start)` capped at one.
+    breakthrough_fraction: float
+
+    #: the nominal efficiency retained by breakthrough and bypass: `nominal (1 - breakthrough) (1 - bypass)`, clamped to `[0, 1]`. The capture outputs use this.
+    current_removal_efficiency: float
+
+    #: the carried solids loading this run read.
+    solids_loading: Q
+
+    #: `unrestricted_drop / terminal_pressure_drop`. Bypass does not lower it, because the check reads the unrestricted drop.
+    differential_pressure_utilization: float
+
+    #: true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
+    replacement_required: bool
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

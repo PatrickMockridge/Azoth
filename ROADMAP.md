@@ -714,10 +714,12 @@ a claim nothing holds.
   areas, their diameters, the fixed length multiples, the two connection estimates and the
   swept volumes. The base class's weights and cost estimate are a separate tree and are still
   absent rather than guessed.
-- **`process.filter`'s transient surfaces** — solids loading, breakthrough, backwash,
-  regeneration and the element-integrity check. The four clean-drop models and
-  `updateParticleCapturePerformance` are ported; what remains is the loading the transient
-  accumulates, which is a dynamic state the five-field record has no slot for.
+- **`process.filter`'s loaded state landed** — the carried solids loading, breakthrough, the
+  loading's pressure drop, the bypass above its cracking drop and the terminal-drop replacement
+  check. The class's "element-integrity check" is not a check: `setElementIntegrityVerified`
+  records a project flag and `setElementCollapsePressure` stores a rating no arithmetic reads,
+  so the exposed check is `replacement_required`. Still owed is the `runTransient` accretion -
+  one step, the shape `valve_scale_drift` was ported as - and the session-level loop.
 - **`getCapacityUtilization` is ported**, as a pair of optional inputs — `internal_diameter` and
   `design_gas_load_factor`, **both or neither**, because half a vessel has nothing to check — and
   an optional `capacity_utilization`. **It reads the system `run` entrained rather than the flash
@@ -859,8 +861,9 @@ a claim nothing holds.
   `process.separator_performance`; **`GasScrubber`'s vessel sizing and mesh pad landed**;
   still owed are `Tank`'s residence-time `autoSize` — its wall temperature and steel mass are
   `runTransient`'s, with the level solve —; `ThrottlingValve`'s controller path;
-  `Filter`'s solids loading, breakthrough, backwash, regeneration and element-integrity
-  check; **`StirredTankReactor`'s vessel volume, residence time and agitator power landed as
+  `Filter`'s one-step `runTransient` accretion and the session loop, its steady loading,
+  breakthrough, bypass and replacement check having landed; **`StirredTankReactor`'s vessel
+  volume, residence time and agitator power landed as
   carried state** - declared, echoed, and their product published - with only its
   `runTransient` still owed. **The
   turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled

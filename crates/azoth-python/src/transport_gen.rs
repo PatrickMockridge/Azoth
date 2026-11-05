@@ -15260,6 +15260,30 @@ pub struct PyFilterResult {
     /// the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
     #[pyo3(get)]
     pub captured_rate: PyQty,
+    /// the clean drop plus `pressure_drop_increase_at_capacity * loading_fraction`, before bypass and before the inlet-pressure clamp. This is `getUnrestrictedDeltaP()`.
+    #[pyo3(get)]
+    pub unrestricted_drop: PyQty,
+    /// the fraction of the flow bypassing the element: `1 - sqrt(cracking/unrestricted)` when the bypass is open above its cracking drop, else zero.
+    #[pyo3(get)]
+    pub bypass_fraction: f64,
+    /// `solids_loading / loading_capacity`, or zero when the capacity is not finite or not positive.
+    #[pyo3(get)]
+    pub loading_fraction: f64,
+    /// zero at or below `breakthrough_start_fraction`, else `(fraction - start)/(1 - start)` capped at one.
+    #[pyo3(get)]
+    pub breakthrough_fraction: f64,
+    /// the nominal efficiency retained by breakthrough and bypass: `nominal (1 - breakthrough) (1 - bypass)`, clamped to `[0, 1]`. The capture outputs use this.
+    #[pyo3(get)]
+    pub current_removal_efficiency: f64,
+    /// the carried solids loading this run read.
+    #[pyo3(get)]
+    pub solids_loading: PyQty,
+    /// `unrestricted_drop / terminal_pressure_drop`. Bypass does not lower it, because the check reads the unrestricted drop.
+    #[pyo3(get)]
+    pub differential_pressure_utilization: f64,
+    /// true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
+    #[pyo3(get)]
+    pub replacement_required: bool,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15269,7 +15293,7 @@ pub struct PyFilterResult {
 impl PyFilterResult {
     fn __repr__(&self) -> String {
         format!(
-            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, {} warning(s))",
+            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -15280,6 +15304,14 @@ impl PyFilterResult {
             self.nominal_removal_efficiency,
             self.outlet_particle_concentration,
             self.captured_rate,
+            self.unrestricted_drop,
+            self.bypass_fraction,
+            self.loading_fraction,
+            self.breakthrough_fraction,
+            self.current_removal_efficiency,
+            self.solids_loading,
+            self.differential_pressure_utilization,
+            self.replacement_required,
             self.warnings.len()
         )
     }
@@ -15319,6 +15351,20 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
                 magnitude_si: r.captured_rate.value,
                 unit: "kg/h".to_string(),
             },
+            unrestricted_drop: PyQty {
+                magnitude_si: r.unrestricted_drop.value,
+                unit: "Pa".to_string(),
+            },
+            bypass_fraction: r.bypass_fraction,
+            loading_fraction: r.loading_fraction,
+            breakthrough_fraction: r.breakthrough_fraction,
+            current_removal_efficiency: r.current_removal_efficiency,
+            solids_loading: PyQty {
+                magnitude_si: r.solids_loading.value,
+                unit: "kg".to_string(),
+            },
+            differential_pressure_utilization: r.differential_pressure_utilization,
+            replacement_required: r.replacement_required,
             warnings: transport(&r.warnings),
         }
     }

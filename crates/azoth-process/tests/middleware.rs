@@ -504,7 +504,10 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // six** - its volume safety factor, level fraction, operating pressure, allowable stress,
     // joint efficiency and corrosion allowance - thirty-two to thirty-seven. **And the
     // splitter's design velocity's positive bound** takes the walk to a hundred and fifty-one.
-    assert_eq!(checked, 151, "the bounds this test walked");
+    // **And the filter's loading state's five** - the solids loading, the drop increase, the
+    // breakthrough start (with its ceiling), the bypass cracking pressure and the terminal
+    // drop - take it to a hundred and fifty-six.
+    assert_eq!(checked, 156, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -678,8 +681,11 @@ fn the_generated_input_table_is_the_models_own() {
     // `tensile_strength`, `joint_efficiency` and `corrosion_allowance` - `621 + 6 = 627`.
     // **And the heater's two outlet-temperature limits** - `max_outlet_temperature` and
     // `min_outlet_temperature` - `627 + 2 = 629`. **And the expander's recovered-power
-    // rating** - `rated_recovered_power` - `629 + 1 = 630`.
-    assert_eq!(walked, 630, "the inputs this test walked");
+    // rating** - `rated_recovered_power` - `629 + 1 = 630`. **And the filter's loaded
+    // state's six** - `solids_loading`, `loading_capacity`,
+    // `pressure_drop_increase_at_capacity`, `breakthrough_start_fraction`,
+    // `bypass_cracking_pressure` and `terminal_pressure_drop` - `630 + 6 = 636`.
+    assert_eq!(walked, 636, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

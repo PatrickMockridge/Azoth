@@ -325,6 +325,14 @@ impl CalcResult for FilterResult {
         "nominal_removal_efficiency",
         "outlet_particle_concentration",
         "captured_rate",
+        "unrestricted_drop",
+        "bypass_fraction",
+        "loading_fraction",
+        "breakthrough_fraction",
+        "current_removal_efficiency",
+        "solids_loading",
+        "differential_pressure_utilization",
+        "replacement_required",
         "warnings",
     ];
 

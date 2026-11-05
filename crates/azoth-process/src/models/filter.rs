@@ -5,8 +5,8 @@
 //! address.
 
 use azoth_core::units::{
-    Area, DynamicViscosity, Length, MassRate, MolarEnergy, Pressure, ThermodynamicTemperature,
-    VolumeRate, cubic_meter_per_hour, joules_per_mole,
+    Area, DynamicViscosity, Length, Mass, MassRate, MolarEnergy, Pressure,
+    ThermodynamicTemperature, VolumeRate, cubic_meter_per_hour, joules_per_mole, kilograms,
 };
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -66,6 +66,24 @@ pub struct FilterResult {
     /// The captured mass rate.
     #[serde(serialize_with = "scalar")]
     pub captured_rate: MassRate,
+    /// The clean drop plus the loading increase, before bypass and the clamp.
+    #[serde(serialize_with = "scalar")]
+    pub unrestricted_drop: Pressure,
+    /// The bypassed flow fraction.
+    pub bypass_fraction: f64,
+    /// `solids_loading / loading_capacity`, or zero without a finite capacity.
+    pub loading_fraction: f64,
+    /// The fraction past the breakthrough start, capped at one.
+    pub breakthrough_fraction: f64,
+    /// The nominal efficiency retained by breakthrough and bypass.
+    pub current_removal_efficiency: f64,
+    /// The carried solids loading, kg.
+    #[serde(serialize_with = "scalar")]
+    pub solids_loading: Mass,
+    /// `unrestricted_drop / terminal_pressure_drop`.
+    pub differential_pressure_utilization: f64,
+    /// Either the terminal drop or the loading capacity has been reached.
+    pub replacement_required: bool,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -89,6 +107,14 @@ impl FilterResult {
             nominal_removal_efficiency: outcome.nominal_removal_efficiency,
             outlet_particle_concentration: outcome.outlet_particle_concentration,
             captured_rate: outcome.captured_rate,
+            unrestricted_drop: outcome.unrestricted_drop,
+            bypass_fraction: outcome.bypass_fraction,
+            loading_fraction: outcome.loading_fraction,
+            breakthrough_fraction: outcome.breakthrough_fraction,
+            current_removal_efficiency: outcome.current_removal_efficiency,
+            solids_loading: kilograms(outcome.solids_loading_kg),
+            differential_pressure_utilization: outcome.differential_pressure_utilization,
+            replacement_required: outcome.replacement_required,
             warnings,
         }
     }
@@ -122,6 +148,12 @@ pub fn filter(
     particle_size: Option<Length>,
     nominal_removal_efficiency: Option<f64>,
     inlet_particle_concentration: Option<f64>,
+    solids_loading: Option<Mass>,
+    loading_capacity: Option<Mass>,
+    pressure_drop_increase_at_capacity: Option<Pressure>,
+    breakthrough_start_fraction: Option<f64>,
+    bypass_cracking_pressure: Option<Pressure>,
+    terminal_pressure_drop: Option<Pressure>,
 ) -> Result<FilterResult> {
     let spec = &model_gen::FILTER_SPEC;
     let mut warnings = Vec::new();
@@ -133,6 +165,13 @@ pub fn filter(
             "flow_exponent" => flow_exponent,
             "media_void_fraction" => media_void_fraction,
             "nominal_removal_efficiency" => nominal_removal_efficiency,
+            "solids_loading" => solids_loading.map(|value| value.value),
+            "pressure_drop_increase_at_capacity" => {
+                pressure_drop_increase_at_capacity.map(|value| value.value)
+            }
+            "breakthrough_start_fraction" => breakthrough_start_fraction,
+            "bypass_cracking_pressure" => bypass_cracking_pressure.map(|value| value.value),
+            "terminal_pressure_drop" => terminal_pressure_drop.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -240,6 +279,51 @@ pub fn filter(
             ));
         }
     }
+    for (name, value) in [
+        ("solids_loading", solids_loading.map(|value| value.value)),
+        (
+            "loading_capacity",
+            loading_capacity.map(|value| value.value),
+        ),
+        (
+            "pressure_drop_increase_at_capacity",
+            pressure_drop_increase_at_capacity.map(|value| value.value),
+        ),
+        ("breakthrough_start_fraction", breakthrough_start_fraction),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("{value} is not a finite number"),
+                ));
+            }
+        }
+    }
+    if let Some(cracking) = bypass_cracking_pressure {
+        if !cracking.value.is_finite() || cracking.value <= 0.0 {
+            return Err(AzothError::invalid_input(
+                "bypass_cracking_pressure",
+                format!(
+                    "the cracking pressure is {} Pa, and `setBypassCrackingDeltaP` needs a \
+                     finite positive one",
+                    cracking.value
+                ),
+            ));
+        }
+    }
+    if let Some(terminal) = terminal_pressure_drop {
+        if !terminal.value.is_finite() || terminal.value <= 0.0 {
+            return Err(AzothError::invalid_input(
+                "terminal_pressure_drop",
+                format!(
+                    "the terminal drop is {} Pa, and `setTerminalDeltaP` needs a finite positive \
+                     one",
+                    terminal.value
+                ),
+            ));
+        }
+    }
 
     let settings = FilterSettings {
         model,
@@ -251,6 +335,15 @@ pub fn filter(
         beta_curve: &beta_curve,
         particle_size_m: particle_size.map_or(1.0e-5, |value| value.value),
         nominal_efficiency: efficiency,
+    };
+    let loading = kernel::LoadingRequest {
+        solids_loading_kg: solids_loading.map(|value| value.value),
+        loading_capacity_kg: loading_capacity.map(|value| value.value),
+        pressure_drop_increase_at_capacity_pa: pressure_drop_increase_at_capacity
+            .map(|value| value.value),
+        breakthrough_start_fraction,
+        bypass_cracking_pressure_pa: bypass_cracking_pressure.map(|value| value.value),
+        terminal_pressure_drop_pa: terminal_pressure_drop.map(|value| value.value),
     };
 
     let feed = Stream::from_pt(
@@ -265,6 +358,7 @@ pub fn filter(
         pressure_drop,
         &settings,
         inlet_particle_concentration,
+        &loading,
     )?;
 
     // **The clamp is reported rather than hidden.** `Filter.run` logs a warning when the drop
@@ -273,14 +367,14 @@ pub fn filter(
     // and said nothing would be the silent-improvement failure this library is written
     // against. A negative `pressure_drop` is clamped by the same path and warned about by the
     // range check above.
-    if (outcome.applied_drop.value - outcome.clean_drop.value).abs() > 0.0 {
+    if (outcome.applied_drop.value - outcome.restricted_drop.value).abs() > 0.0 {
         warnings.push(Warning::for_field(
             WarningCode::OutOfValidRange,
             "pressure_drop",
             format!(
-                "a clean drop of {} Pa was computed and {} Pa was applied: the outlet is held a \
-                 millionth of a bar above vacuum, which is the clamp `Filter.run` applies",
-                outcome.clean_drop.value, outcome.applied_drop.value
+                "a restricted drop of {} Pa was computed and {} Pa was applied: the outlet is \
+                 held a millionth of a bar above vacuum, which is the clamp `Filter.run` applies",
+                outcome.restricted_drop.value, outcome.applied_drop.value
             ),
         ));
     }

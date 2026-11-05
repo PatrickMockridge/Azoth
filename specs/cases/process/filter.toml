@@ -215,3 +215,196 @@ applied_drop = 1000.0
 nominal_removal_efficiency = 0.99
 outlet_particle_concentration = 1.0000000000000009e-06
 captured_rate = 0.099
+
+[[cases]]
+id = "the_loaded_element_adds_its_pressure_drop"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `loaded_run`: `testBackwashAndRegenerationReduceLoading`'s pre-step state on PR methane - `9/10` kg of loading at `1.0` bar per capacity, breakthrough starting at `0.5` - so the clean `0.2` bar becomes `1.1` and the fraction `0.9` starts breakthrough at `0.8`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 9.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1890000.0
+outlet_t = 298.15
+outlet_h = 538.1669582968343
+clean_drop = 20000.0
+applied_drop = 110000.0
+unrestricted_drop = 110000.0
+bypass_fraction = 0.0
+loading_fraction = 0.9
+breakthrough_fraction = 0.8
+current_removal_efficiency = 0.0
+solids_loading = 9.0
+differential_pressure_utilization = 0.22
+replacement_required = false
+[[cases]]
+id = "the_bypass_holds_the_drop_and_carries_the_particles"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `bypass_run`: `testBypassLimitsPressureDropAndReducesCapture` - the loaded `2.0` bar opens the `0.5` bar bypass, so half the flow bypasses, the applied drop is `0.5` bar and the current efficiency is `0.99 x 0.5`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 360000.0
+bypass_cracking_pressure = 50000.0
+nominal_removal_efficiency = 0.99
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1950000.0
+outlet_t = 298.15
+outlet_h = 527.1855738746241
+clean_drop = 20000.0
+applied_drop = 50000.0
+unrestricted_drop = 200000.0
+bypass_fraction = 0.5
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.495
+solids_loading = 5.0
+differential_pressure_utilization = 0.4
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 5.05e-05
+captured_rate = 0.0495
+replacement_required = false
+[[cases]]
+id = "a_non_positive_capacity_is_no_capacity"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `capacity_disabled`: `setLoadingCapacity(0)` restores the class's positive-infinity default, so nine kilograms of loading are carried but no fraction and no extra drop are computed.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 9.0
+loading_capacity = 0.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1980000.0
+outlet_t = 298.15
+outlet_h = 521.6943429265608
+clean_drop = 20000.0
+applied_drop = 20000.0
+unrestricted_drop = 20000.0
+bypass_fraction = 0.0
+loading_fraction = 0.0
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 9.0
+differential_pressure_utilization = 0.04
+replacement_required = false
+[[cases]]
+id = "the_terminal_drop_calls_for_replacement"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `terminal_drop`: the same loaded state with a `0.5` bar terminal drop. The utilization is `2.0/0.5 = 4`, so `isReplacementRequired` is true even though the bypass holds the applied drop at `0.5`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 360000.0
+bypass_cracking_pressure = 50000.0
+terminal_pressure_drop = 50000.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1950000.0
+outlet_t = 298.15
+outlet_h = 527.1855738746241
+clean_drop = 20000.0
+applied_drop = 50000.0
+unrestricted_drop = 200000.0
+bypass_fraction = 0.5
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 5.0
+differential_pressure_utilization = 4.0
+replacement_required = true
+[[cases]]
+id = "loading_past_capacity_breaks_through"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `loading_beyond_capacity`: eleven kilograms against a ten-kilogram capacity is a fraction of `1.1`, breakthrough is capped at one, and the loading branch of `isReplacementRequired` fires.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 11.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1870000.0
+outlet_t = 298.15
+outlet_h = 541.8270857083041
+clean_drop = 20000.0
+applied_drop = 130000.0
+unrestricted_drop = 130000.0
+bypass_fraction = 0.0
+loading_fraction = 1.1
+breakthrough_fraction = 1.0
+current_removal_efficiency = 0.0
+solids_loading = 11.0
+differential_pressure_utilization = 0.26
+replacement_required = true
+[[cases]]
+id = "breakthrough_starts_above_its_boundary"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `breakthrough_boundary`: a loading fraction exactly at the `0.5` start is not yet broken through - the class's comparison is `<=` - so the extra drop is `0.5` bar and breakthrough is zero.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1930000.0
+outlet_t = 298.15
+outlet_h = 530.8461983506398
+clean_drop = 20000.0
+applied_drop = 70000.0
+unrestricted_drop = 70000.0
+bypass_fraction = 0.0
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 5.0
+differential_pressure_utilization = 0.14
+replacement_required = false
