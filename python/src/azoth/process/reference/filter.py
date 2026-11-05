@@ -616,6 +616,7 @@ def _advance(
     loading_kg = max(0.0, pre.solids_loading_kg + (captured_kg_s - removed_kg_s) * step)
     state = _loading_state_at(clean_pa, nominal, loading_kg, request)
     holdup = max(0.0, request.holdup_volume_m3 or 0.0)
+    residence: float | None
     if holdup <= 0.0:
         residence = 0.0
     else:
