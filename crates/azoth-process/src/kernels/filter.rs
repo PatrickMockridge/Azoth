@@ -307,6 +307,7 @@ fn loading_state(clean_pa: f64, nominal: f64, request: &LoadingRequest) -> Loadi
     } else {
         0.0
     };
+    // numerics-ok: `setBreakthroughStartFraction` clamps the fraction to [0, 0.999999].
     let start = request
         .breakthrough_start_fraction
         .unwrap_or(0.8)
@@ -323,11 +324,13 @@ fn loading_state(clean_pa: f64, nominal: f64, request: &LoadingRequest) -> Loadi
     let unrestricted_drop = clean_pa + increase * loading_fraction.max(0.0);
     let (bypass_fraction, restricted_drop) = match request.bypass_cracking_pressure_pa {
         Some(cracking) if unrestricted_drop > cracking => (
+            // numerics-ok: `updateHydraulicState` clamps the bypass with Math.max/Math.min.
             (1.0 - (cracking / unrestricted_drop).sqrt()).clamp(0.0, 1.0),
             cracking,
         ),
         _ => (0.0, unrestricted_drop),
     };
+    // numerics-ok: `getCurrentRemovalEfficiency` clamps with Math.max(0, Math.min(1, ...)).
     let efficiency =
         (nominal * (1.0 - breakthrough_fraction) * (1.0 - bypass_fraction)).clamp(0.0, 1.0);
     LoadingState {
