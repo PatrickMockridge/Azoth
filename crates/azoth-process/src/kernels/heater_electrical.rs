@@ -9,7 +9,6 @@
 //! Not here: the cable, switchgear, VFD, transformer and hazardous-area components (each its own
 //! class), the motor's frame, weight and cost, and the NEMA frame table - all named as outside.
 
-
 /// `HeatExchangerInstrumentDesign.HeatExchangerType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeatExchangerType {
@@ -36,11 +35,11 @@ impl HeatExchangerType {
 
 /// `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
 pub const IEC_POWERS_KW: [f64; 56] = [
-    0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0,
-    45.0, 55.0, 75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 355.0, 400.0, 450.0,
-    500.0, 560.0, 630.0, 710.0, 800.0, 900.0, 1000.0, 1120.0, 1250.0, 1400.0, 1600.0, 1800.0,
-    2000.0, 2240.0, 2500.0, 2800.0, 3150.0, 3550.0, 4000.0, 4500.0, 5000.0, 5600.0, 6300.0,
-    7100.0, 8000.0, 9000.0, 10000.0,
+    0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0, 45.0,
+    55.0, 75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 355.0, 400.0, 450.0, 500.0, 560.0,
+    630.0, 710.0, 800.0, 900.0, 1000.0, 1120.0, 1250.0, 1400.0, 1600.0, 1800.0, 2000.0, 2240.0,
+    2500.0, 2800.0, 3150.0, 3550.0, 4000.0, 4500.0, 5000.0, 5600.0, 6300.0, 7100.0, 8000.0, 9000.0,
+    10000.0,
 ];
 
 /// `ElectricalMotor.efficiencyClass`.
@@ -335,7 +334,9 @@ pub fn design(
         shaft_power_w: shaft_kw * 1000.0,
         electrical_input_w: input_kw * 1000.0,
         apparent_power_va: apparent * 1000.0,
-        reactive_power_var: apparent * 1000.0 * (1.0 - motor_power_factor * motor_power_factor).sqrt(),
+        reactive_power_var: apparent
+            * 1000.0
+            * (1.0 - motor_power_factor * motor_power_factor).sqrt(),
         power_factor: motor_power_factor,
         rated_voltage_v: rated_voltage,
         frequency_hz: request.frequency_hz,
@@ -379,11 +380,30 @@ mod tests {
 
     #[test]
     fn the_five_kilowatt_heater_is_the_capture() {
-        let design = design(HeatExchangerType::ElectricHeater, 4999.9999986086605, &request());
+        let design = design(
+            HeatExchangerType::ElectricHeater,
+            4999.9999986086605,
+            &request(),
+        );
         close(design.electrical_input_w, 5494.50549297655, 1.0e-9, "input");
-        close(design.apparent_power_va, 6619.886136116326, 1.0e-9, "apparent");
-        close(design.reactive_power_var, 3692.330137297538, 1.0e-9, "reactive");
-        close(design.full_load_current_a, 9.55498260672858, 1.0e-12, "current");
+        close(
+            design.apparent_power_va,
+            6619.886136116326,
+            1.0e-9,
+            "apparent",
+        );
+        close(
+            design.reactive_power_var,
+            3692.330137297538,
+            1.0e-9,
+            "reactive",
+        );
+        close(
+            design.full_load_current_a,
+            9.55498260672858,
+            1.0e-12,
+            "current",
+        );
         close(
             design.starting_current_a,
             57.329895640371475,
@@ -393,12 +413,21 @@ mod tests {
         close(design.motor_rated_power_w, 5500.0, 1.0e-12, "motor");
         close(design.motor_efficiency, 0.91, 1.0e-12, "efficiency");
         close(design.motor_rated_speed_rpm, 1425.0, 1.0e-12, "speed");
-        close(design.total_connected_w, 6994.50549297655, 1.0e-9, "connected");
+        close(
+            design.total_connected_w,
+            6994.50549297655,
+            1.0e-9,
+            "connected",
+        );
     }
 
     #[test]
     fn the_hundred_kilowatt_heater_takes_the_690_volt_tap() {
-        let design = design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &request());
+        let design = design(
+            HeatExchangerType::ElectricHeater,
+            99_999.99997673612,
+            &request(),
+        );
         close(design.rated_voltage_v, 690.0, 1.0e-12, "voltage");
         close(design.motor_rated_power_w, 110_000.0, 1.0e-12, "motor");
         close(design.motor_efficiency, 0.95, 1.0e-12, "efficiency");
@@ -417,12 +446,21 @@ mod tests {
             1.0e-9,
             "starting",
         );
-        close(design.total_connected_w, 106_763.15787024854, 1.0e-9, "connected");
+        close(
+            design.total_connected_w,
+            106_763.15787024854,
+            1.0e-9,
+            "connected",
+        );
     }
 
     #[test]
     fn the_five_hundred_kilowatt_heater_takes_the_6600_volt_tap() {
-        let design = design(HeatExchangerType::ElectricHeater, 499_999.9998608659, &request());
+        let design = design(
+            HeatExchangerType::ElectricHeater,
+            499_999.9998608659,
+            &request(),
+        );
         close(design.rated_voltage_v, 6600.0, 1.0e-12, "voltage");
         close(design.motor_rated_power_w, 560_000.0, 1.0e-12, "motor");
         close(design.motor_efficiency, 0.965, 1.0e-12, "efficiency");
@@ -444,8 +482,18 @@ mod tests {
         close(design.shaft_power_w, 0.0, 1.0e-12, "shaft");
         close(design.electrical_input_w, 4500.0, 1.0e-12, "input");
         close(design.power_factor, 0.85, 1.0e-12, "factor");
-        close(design.apparent_power_va, 5294.117647058823, 1.0e-12, "apparent");
-        close(design.full_load_current_a, 7.6414006216274, 1.0e-12, "current");
+        close(
+            design.apparent_power_va,
+            5294.117647058823,
+            1.0e-12,
+            "apparent",
+        );
+        close(
+            design.full_load_current_a,
+            7.6414006216274,
+            1.0e-12,
+            "current",
+        );
         close(design.motor_rated_power_w, 0.0, 1.0e-12, "motor");
         close(design.total_auxiliary_w, 4500.0, 1.0e-12, "auxiliary");
         close(design.total_connected_w, 9000.0, 1.0e-12, "connected");
@@ -482,8 +530,17 @@ mod tests {
         );
         let mut two_pole = request();
         two_pole.motor_poles = 2;
-        let design = design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &two_pole);
+        let design = design(
+            HeatExchangerType::ElectricHeater,
+            99_999.99997673612,
+            &two_pole,
+        );
         close(design.motor_efficiency, 0.945, 1.0e-12, "2-pole efficiency");
-        close(design.motor_rated_speed_rpm, 2940.0, 1.0e-12, "2-pole speed");
+        close(
+            design.motor_rated_speed_rpm,
+            2940.0,
+            1.0e-12,
+            "2-pole speed",
+        );
     }
 }

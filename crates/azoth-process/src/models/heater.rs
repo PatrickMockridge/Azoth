@@ -200,8 +200,7 @@ impl HeaterResult {
             frequency_hz: electrical.map(|value| value.frequency_hz),
             full_load_current: electrical.map(|value| value.full_load_current_a),
             starting_current: electrical.map(|value| value.starting_current_a),
-            total_electrical_losses: electrical
-                .map(|value| watts(value.total_electrical_losses_w)),
+            total_electrical_losses: electrical.map(|value| watts(value.total_electrical_losses_w)),
             motor_rated_power: electrical.map(|value| watts(value.motor_rated_power_w)),
             motor_efficiency: electrical.map(|value| value.motor_efficiency),
             motor_power_factor: electrical.map(|value| value.motor_power_factor),
@@ -329,14 +328,12 @@ pub fn heater(
         }
     }
     let efficiency_class = match efficiency_class {
-        Some(spelling) => {
-            heater_electrical::EfficiencyClass::parse(spelling).ok_or_else(|| {
-                AzothError::invalid_input(
-                    "efficiency_class",
-                    format!("{spelling} is not one of ie1, ie2, ie3 or ie4"),
-                )
-            })?
-        }
+        Some(spelling) => heater_electrical::EfficiencyClass::parse(spelling).ok_or_else(|| {
+            AzothError::invalid_input(
+                "efficiency_class",
+                format!("{spelling} is not one of ie1, ie2, ie3 or ie4"),
+            )
+        })?,
         None => heater_electrical::EfficiencyClass::Ie3,
     };
     let motor_poles = motor_poles.unwrap_or(4.0);
@@ -366,12 +363,16 @@ pub fn heater(
         ));
     }
     let instrument_type = match heat_exchanger_type {
-        Some(spelling) => heater_electrical::HeatExchangerType::parse(spelling).ok_or_else(|| {
-            AzothError::invalid_input(
-                "heat_exchanger_type",
-                format!("{spelling} is not one of electric_heater, air_cooler or shell_and_tube"),
-            )
-        })?,
+        Some(spelling) => {
+            heater_electrical::HeatExchangerType::parse(spelling).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "heat_exchanger_type",
+                    format!(
+                        "{spelling} is not one of electric_heater, air_cooler or shell_and_tube"
+                    ),
+                )
+            })?
+        }
         None => heater_electrical::HeatExchangerType::ElectricHeater,
     };
 
@@ -421,10 +422,8 @@ pub fn heater(
             frequency_hz: frequency_hz.unwrap_or(50.0),
             phases: phases as u32,
             number_of_fans: number_of_fans as u32,
-            instrumentation_power_w: instrumentation_power
-                .map_or(1500.0, |value| value.value),
-            cooling_water_pump_power_w: cooling_water_pump_power
-                .map_or(0.0, |value| value.value),
+            instrumentation_power_w: instrumentation_power.map_or(1500.0, |value| value.value),
+            cooling_water_pump_power_w: cooling_water_pump_power.map_or(0.0, |value| value.value),
         };
         Some(heater_electrical::design(
             instrument_type,
