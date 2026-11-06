@@ -6195,7 +6195,7 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
     )
 
 
-def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None, electrical_design: bool | None=None, motor_sizing_margin: float | None=None, motor_poles: float | None=None, efficiency_class: str | None=None, frequency_hz: float | None=None, phases: float | None=None, number_of_fans: float | None=None, instrumentation_power: Q | None=None, cooling_water_pump_power: Q | None=None) -> HeaterResult:
+def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None, electrical_design: bool | None=None, motor_sizing_margin: float | None=None, motor_poles: float | None=None, efficiency_class: str | None=None, frequency_hz: float | None=None, phases: float | None=None, number_of_fans: float | None=None, instrumentation_power: Q | None=None, cooling_water_pump_power: Q | None=None, utility_specification: bool | None=None, utility_supply_temperature: Q | None=None, utility_return_temperature: Q | None=None, utility_approach_temperature: Q | None=None, utility_heat_capacity_rate: Q | None=None, utility_overall_heat_transfer_coefficient: Q | None=None) -> HeaterResult:
     """``process.heater``, computed in Rust."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
@@ -6222,6 +6222,12 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if number_of_fans is None else number_of_fans,
         None if instrumentation_power is None else input_to_si(spec, "instrumentation_power", instrumentation_power),
         None if cooling_water_pump_power is None else input_to_si(spec, "cooling_water_pump_power", cooling_water_pump_power),
+        utility_specification,
+        None if utility_supply_temperature is None else input_to_si(spec, "utility_supply_temperature", utility_supply_temperature),
+        None if utility_return_temperature is None else input_to_si(spec, "utility_return_temperature", utility_return_temperature),
+        None if utility_approach_temperature is None else input_to_si(spec, "utility_approach_temperature", utility_approach_temperature),
+        None if utility_heat_capacity_rate is None else input_to_si(spec, "utility_heat_capacity_rate", utility_heat_capacity_rate),
+        None if utility_overall_heat_transfer_coefficient is None else input_to_si(spec, "utility_overall_heat_transfer_coefficient", utility_overall_heat_transfer_coefficient),
     )
     return HeaterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6261,6 +6267,11 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         motor_locked_rotor_multiplier=result.motor_locked_rotor_multiplier,
         total_auxiliary_power=None if result.total_auxiliary_power is None else from_si(result.total_auxiliary_power.magnitude_si, result.total_auxiliary_power.unit),
         total_connected_power=None if result.total_connected_power is None else from_si(result.total_connected_power.magnitude_si, result.total_connected_power.unit),
+        has_supply_temperature=result.has_supply_temperature,
+        has_return_temperature=result.has_return_temperature,
+        has_approach_temperature=result.has_approach_temperature,
+        has_heat_capacity_rate=result.has_heat_capacity_rate,
+        has_overall_heat_transfer_coefficient=result.has_overall_heat_transfer_coefficient,
         warnings=_warnings(result.warnings),
     )
 

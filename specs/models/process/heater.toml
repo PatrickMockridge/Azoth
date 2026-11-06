@@ -18,14 +18,15 @@ assumptions = [
     "**The air cooler's fan power is `max(2 kW per fan, 1% of the duty)`**, and the motor is sized on that. The voltage taps are `400/690/6600` V for the electric heater and `400/690` for the cooler.",
     "**The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.",
     "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
-    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, a utility specification, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument and motor surfaces above are the steady ones.",
+    "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when also positive. Its consumer is the mechanical design, which is owed.",
+    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument, motor and utility surfaces above are the steady ones.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, the two outlet-temperature capacity constraints, the instrument list and the motor/electrical sizing."
+edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing and the utility-specification predicates."
 [inputs]
 [inputs.components]
 type = "components"
@@ -118,6 +119,30 @@ description = "the auxiliary instrumentation load. Absent is the class's 1.5 kW.
 unit = "W"
 optional = true
 description = "the shell-and-tube cooling-water pump load, added to the auxiliary for that type only. Absent is the class's 0.\n"
+[inputs.utility_specification]
+type = "boolean"
+optional = true
+description = "whether the utility-side specification is stated. Absent is false; every `has_*` output is absent without it.\n"
+[inputs.utility_supply_temperature]
+unit = "K"
+optional = true
+description = "the utility supply temperature. Stating it sets `has_supply_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_return_temperature]
+unit = "K"
+optional = true
+description = "the utility return temperature. Stating it sets `has_return_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_approach_temperature]
+unit = "K"
+optional = true
+description = "the minimum approach temperature, a difference. Stating it sets `has_approach_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_heat_capacity_rate]
+unit = "W/K"
+optional = true
+description = "the utility heat-capacity rate. **Specified only when positive**: zero and below store but leave `has_heat_capacity_rate` false.\n"
+[inputs.utility_overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the assumed overall heat-transfer coefficient. **Specified only when positive**: zero and below store but leave the predicate false.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -287,6 +312,26 @@ description = "the instrumentation load, plus the cooling-water pump load for sh
 unit = "W"
 optional = true
 description = "the electrical input plus the auxiliary load.\n"
+[outputs.has_supply_temperature]
+type = "boolean"
+optional = true
+description = "whether a utility supply temperature is stated.\n"
+[outputs.has_return_temperature]
+type = "boolean"
+optional = true
+description = "whether a utility return temperature is stated.\n"
+[outputs.has_approach_temperature]
+type = "boolean"
+optional = true
+description = "whether a minimum approach temperature is stated.\n"
+[outputs.has_heat_capacity_rate]
+type = "boolean"
+optional = true
+description = "whether a heat-capacity rate is stated **and positive**.\n"
+[outputs.has_overall_heat_transfer_coefficient]
+type = "boolean"
+optional = true
+description = "whether an overall heat-transfer coefficient is stated **and positive**.\n"
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

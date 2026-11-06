@@ -406,6 +406,54 @@ pub fn instruments(
     rows
 }
 
+/// `UtilityStreamSpecification`'s five values and their predicates.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UtilitySpecification {
+    /// The utility supply temperature, K.
+    pub supply_temperature: Option<f64>,
+    /// The utility return temperature, K.
+    pub return_temperature: Option<f64>,
+    /// The minimum approach temperature, K.
+    pub approach_temperature: Option<f64>,
+    /// The heat-capacity rate, W/K.
+    pub heat_capacity_rate: Option<f64>,
+    /// The overall heat-transfer coefficient, W/(m2 K).
+    pub overall_heat_transfer_coefficient: Option<f64>,
+}
+
+impl UtilitySpecification {
+    /// `hasSupplyTemperature`.
+    #[must_use]
+    pub fn has_supply_temperature(&self) -> bool {
+        self.supply_temperature.is_some()
+    }
+
+    /// `hasReturnTemperature`.
+    #[must_use]
+    pub fn has_return_temperature(&self) -> bool {
+        self.return_temperature.is_some()
+    }
+
+    /// `hasApproachTemperature`.
+    #[must_use]
+    pub fn has_approach_temperature(&self) -> bool {
+        self.approach_temperature.is_some()
+    }
+
+    /// `hasHeatCapacityRate`: stated **and positive**.
+    #[must_use]
+    pub fn has_heat_capacity_rate(&self) -> bool {
+        self.heat_capacity_rate.is_some_and(|value| value > 0.0)
+    }
+
+    /// `hasOverallHeatTransferCoefficient`: stated **and positive**.
+    #[must_use]
+    pub fn has_overall_heat_transfer_coefficient(&self) -> bool {
+        self.overall_heat_transfer_coefficient
+            .is_some_and(|value| value > 0.0)
+    }
+}
+
 #[cfg(test)]
 mod capacity_tests {
     use super::*;

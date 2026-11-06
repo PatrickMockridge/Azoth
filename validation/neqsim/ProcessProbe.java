@@ -192,6 +192,9 @@ public class ProcessProbe {
       case "heater_electrical":
         heaterElectricalRows();
         break;
+      case "heater_utility":
+        heaterUtilityRows();
+        break;
       case "cooler":
         heatRows("Cooler");
         break;
@@ -795,6 +798,67 @@ public class ProcessProbe {
     System.out.println("total_auxiliary_kw=" + design.getTotalAuxiliaryKW());
     System.out.println("total_connected_load_kw=" + design.getTotalConnectedLoadKW());
     System.out.println();
+  }
+
+  /// `Heater`'s utility specification: five optional values and their `has*` predicates.
+  ///
+  /// **No arithmetic.** The class stores a supply and a return temperature, an approach, a
+  /// heat-capacity rate and an overall heat-transfer coefficient, each `NaN` until set. The
+  /// temperatures and the approach are "specified" when not `NaN`; the two rates are specified
+  /// only when they are also positive.
+  static void heaterUtilityRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    String[] labels = new String[] {
+        "default", "supply_450", "return_350", "approach_20", "heat_capacity_500",
+        "heat_capacity_0", "u_value_100", "u_value_negative"};
+    for (String label : labels) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.run();
+      neqsim.process.equipment.heatexchanger.UtilityStreamSpecification utility =
+          heater.getUtilitySpecification();
+      switch (label) {
+        case "supply_450":
+          utility.setSupplyTemperature(450.0);
+          break;
+        case "return_350":
+          utility.setReturnTemperature(350.0);
+          break;
+        case "approach_20":
+          utility.setApproachTemperature(20.0);
+          break;
+        case "heat_capacity_500":
+          utility.setHeatCapacityRate(500.0);
+          break;
+        case "heat_capacity_0":
+          utility.setHeatCapacityRate(0.0);
+          break;
+        case "u_value_100":
+          utility.setOverallHeatTransferCoefficient(100.0);
+          break;
+        case "u_value_negative":
+          utility.setOverallHeatTransferCoefficient(-1.0);
+          break;
+        default:
+          break;
+      }
+      System.out.println("case=" + label);
+      System.out.println("supply_temperature_k=" + utility.getSupplyTemperature());
+      System.out.println("return_temperature_k=" + utility.getReturnTemperature());
+      System.out.println("approach_temperature_k=" + utility.getApproachTemperature());
+      System.out.println("heat_capacity_rate_w_per_k=" + utility.getHeatCapacityRate());
+      System.out.println("overall_heat_transfer_coefficient="
+          + utility.getOverallHeatTransferCoefficient());
+      System.out.println("has_supply_temperature=" + utility.hasSupplyTemperature());
+      System.out.println("has_return_temperature=" + utility.hasReturnTemperature());
+      System.out.println("has_approach_temperature=" + utility.hasApproachTemperature());
+      System.out.println("has_heat_capacity_rate=" + utility.hasHeatCapacityRate());
+      System.out.println("has_overall_heat_transfer_coefficient="
+          + utility.hasOverallHeatTransferCoefficient());
+      System.out.println();
+    }
   }
 
   /// `Filter`, whose steady state is a pressure drop and a flash - and two things the class

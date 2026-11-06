@@ -3188,6 +3188,31 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.heater", "number_of_fans", "dimensionless"),
     ("process.heater", "instrumentation_power", "power"),
     ("process.heater", "cooling_water_pump_power", "power"),
+    (
+        "process.heater",
+        "utility_supply_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.heater",
+        "utility_return_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.heater",
+        "utility_approach_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.heater",
+        "utility_heat_capacity_rate",
+        "thermal_conductance",
+    ),
+    (
+        "process.heater",
+        "utility_overall_heat_transfer_coefficient",
+        "heat_transfer",
+    ),
     ("process.hem_release", "upstream_z", "dimensionless"),
     (
         "process.hem_release",

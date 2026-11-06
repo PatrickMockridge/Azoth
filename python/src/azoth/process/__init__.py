@@ -1490,6 +1490,12 @@ def heater(
     number_of_fans: float | None = None,
     instrumentation_power: Q | None = None,
     cooling_water_pump_power: Q | None = None,
+    utility_specification: bool | None = None,
+    utility_supply_temperature: Q | None = None,
+    utility_return_temperature: Q | None = None,
+    utility_approach_temperature: Q | None = None,
+    utility_heat_capacity_rate: Q | None = None,
+    utility_overall_heat_transfer_coefficient: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1538,6 +1544,12 @@ def heater(
         number_of_fans=number_of_fans,
         instrumentation_power=instrumentation_power,
         cooling_water_pump_power=cooling_water_pump_power,
+        utility_specification=utility_specification,
+        utility_supply_temperature=utility_supply_temperature,
+        utility_return_temperature=utility_return_temperature,
+        utility_approach_temperature=utility_approach_temperature,
+        utility_heat_capacity_rate=utility_heat_capacity_rate,
+        utility_overall_heat_transfer_coefficient=utility_overall_heat_transfer_coefficient,
     )
 
 

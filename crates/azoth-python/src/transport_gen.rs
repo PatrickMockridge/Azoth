@@ -16558,6 +16558,21 @@ pub struct PyHeaterResult {
     /// the electrical input plus the auxiliary load.
     #[pyo3(get)]
     pub total_connected_power: Option<PyQty>,
+    /// whether a utility supply temperature is stated.
+    #[pyo3(get)]
+    pub has_supply_temperature: Option<bool>,
+    /// whether a utility return temperature is stated.
+    #[pyo3(get)]
+    pub has_return_temperature: Option<bool>,
+    /// whether a minimum approach temperature is stated.
+    #[pyo3(get)]
+    pub has_approach_temperature: Option<bool>,
+    /// whether a heat-capacity rate is stated **and positive**.
+    #[pyo3(get)]
+    pub has_heat_capacity_rate: Option<bool>,
+    /// whether an overall heat-transfer coefficient is stated **and positive**.
+    #[pyo3(get)]
+    pub has_overall_heat_transfer_coefficient: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16567,7 +16582,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16605,6 +16620,11 @@ impl PyHeaterResult {
             self.motor_locked_rotor_multiplier,
             self.total_auxiliary_power,
             self.total_connected_power,
+            self.has_supply_temperature,
+            self.has_return_temperature,
+            self.has_approach_temperature,
+            self.has_heat_capacity_rate,
+            self.has_overall_heat_transfer_coefficient,
             self.warnings.len()
         )
     }
@@ -16683,6 +16703,11 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
                 magnitude_si: v.value,
                 unit: "W".to_string(),
             }),
+            has_supply_temperature: r.has_supply_temperature,
+            has_return_temperature: r.has_return_temperature,
+            has_approach_temperature: r.has_approach_temperature,
+            has_heat_capacity_rate: r.has_heat_capacity_rate,
+            has_overall_heat_transfer_coefficient: r.has_overall_heat_transfer_coefficient,
             warnings: transport(&r.warnings),
         }
     }

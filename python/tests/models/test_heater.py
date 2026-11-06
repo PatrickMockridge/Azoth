@@ -140,3 +140,36 @@ def test_an_unknown_efficiency_class_is_refused() -> None:
     base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
     with pytest.raises(InvalidInputError, match="efficiency_class"):
         resolve(MODEL_ID)(**base, electrical_design=True, efficiency_class="ie5")
+
+
+UTILITY_FIELDS = (
+    "has_supply_temperature",
+    "has_return_temperature",
+    "has_approach_temperature",
+    "has_heat_capacity_rate",
+    "has_overall_heat_transfer_coefficient",
+)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_utility_outputs_are_absent_without_their_flag(backend: str) -> None:
+    result = _run(_case("outlet_temperature_380"), backend)
+    for name in UTILITY_FIELDS:
+        assert getattr(result, name) is None, name
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_utility_predicates_are_the_captures(backend: str) -> None:
+    supply = _run(_case("a_utility_supply_temperature_is_specified"), backend)
+    assert supply.has_supply_temperature is True
+    assert supply.has_return_temperature is False
+    zero = _run(_case("a_zero_heat_capacity_rate_is_not_specified"), backend)
+    assert zero.has_heat_capacity_rate is False
+    negative = _run(_case("a_negative_u_value_is_not_specified"), backend)
+    assert negative.has_overall_heat_transfer_coefficient is False
+
+
+def test_a_utility_input_without_the_flag_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="utility_supply_temperature"):
+        resolve(MODEL_ID)(**base, utility_supply_temperature=Q(450.0, "K"))

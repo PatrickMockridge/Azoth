@@ -727,3 +727,154 @@ motor_rated_speed = 1470.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 106763.15787024854
+
+[[cases]]
+id = "the_default_utility_specification_is_empty"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `default`: a `Heater`'s utility specification starts with all five values `NaN`, so no predicate holds.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_utility_supply_temperature_is_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `supply_450`: one stated temperature sets only its own predicate.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_supply_temperature = 450.0
+[cases.expected]
+has_supply_temperature = true
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_utility_return_temperature_is_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `return_350`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_return_temperature = 350.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = true
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_utility_approach_temperature_is_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `approach_20`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_approach_temperature = 20.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = true
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_positive_heat_capacity_rate_is_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `heat_capacity_500`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_heat_capacity_rate = 500.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = true
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_zero_heat_capacity_rate_is_not_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `heat_capacity_0`: the class stores zero but `hasHeatCapacityRate` also needs it positive.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_heat_capacity_rate = 0.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false
+
+[[cases]]
+id = "a_positive_u_value_is_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `u_value_100`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_overall_heat_transfer_coefficient = 100.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = true
+
+[[cases]]
+id = "a_negative_u_value_is_not_specified"
+tolerance = 1e-12
+source = "`process_heater_utility.tsv`'s `u_value_negative`: stored, but the predicate needs it positive.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+utility_specification = true
+utility_overall_heat_transfer_coefficient = -1.0
+[cases.expected]
+has_supply_temperature = false
+has_return_temperature = false
+has_approach_temperature = false
+has_heat_capacity_rate = false
+has_overall_heat_transfer_coefficient = false

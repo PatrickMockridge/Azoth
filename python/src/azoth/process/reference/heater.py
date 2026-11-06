@@ -70,6 +70,12 @@ def heater(
     number_of_fans: float | None = None,
     instrumentation_power: Q | None = None,
     cooling_water_pump_power: Q | None = None,
+    utility_specification: bool | None = None,
+    utility_supply_temperature: Q | None = None,
+    utility_return_temperature: Q | None = None,
+    utility_approach_temperature: Q | None = None,
+    utility_heat_capacity_rate: Q | None = None,
+    utility_overall_heat_transfer_coefficient: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -236,6 +242,62 @@ def heater(
         else ()
     )
 
+    utility_requested = bool(utility_specification)
+    utility_inputs = (
+        ("utility_supply_temperature", utility_supply_temperature),
+        ("utility_return_temperature", utility_return_temperature),
+        ("utility_approach_temperature", utility_approach_temperature),
+        ("utility_heat_capacity_rate", utility_heat_capacity_rate),
+        (
+            "utility_overall_heat_transfer_coefficient",
+            utility_overall_heat_transfer_coefficient,
+        ),
+    )
+    for name, given in utility_inputs:
+        if given is not None and not utility_requested:
+            raise InvalidInputError(
+                name,
+                "a utility-specification input is stated without `utility_specification`",
+            )
+    utility_supply_si = (
+        None
+        if utility_supply_temperature is None
+        else input_to_si(spec, "utility_supply_temperature", utility_supply_temperature)
+    )
+    utility_return_si = (
+        None
+        if utility_return_temperature is None
+        else input_to_si(spec, "utility_return_temperature", utility_return_temperature)
+    )
+    utility_approach_si = (
+        None
+        if utility_approach_temperature is None
+        else input_to_si(spec, "utility_approach_temperature", utility_approach_temperature)
+    )
+    utility_capacity_si = (
+        None
+        if utility_heat_capacity_rate is None
+        else input_to_si(spec, "utility_heat_capacity_rate", utility_heat_capacity_rate)
+    )
+    utility_u_si = (
+        None
+        if utility_overall_heat_transfer_coefficient is None
+        else input_to_si(
+            spec,
+            "utility_overall_heat_transfer_coefficient",
+            utility_overall_heat_transfer_coefficient,
+        )
+    )
+    for name, value in (
+        ("utility_supply_temperature", utility_supply_si),
+        ("utility_return_temperature", utility_return_si),
+        ("utility_approach_temperature", utility_approach_si),
+        ("utility_heat_capacity_rate", utility_capacity_si),
+        ("utility_overall_heat_transfer_coefficient", utility_u_si),
+    ):
+        if value is not None and not math.isfinite(float(value)):
+            raise InvalidInputError(name, f"{value} is not a finite number")
+
     states = _states(components, n, inlet_z, p, t, t_out, q, drop)
     capacity = _capacity(states.outlet_t.to("K").magnitude, max_t, min_t)
     electrical = (
@@ -321,6 +383,19 @@ def heater(
         ),
         total_connected_power=(
             None if electrical is None else from_si(electrical.total_connected_w, "W")
+        ),
+        has_supply_temperature=(None if not utility_requested else utility_supply_si is not None),
+        has_return_temperature=(None if not utility_requested else utility_return_si is not None),
+        has_approach_temperature=(
+            None if not utility_requested else utility_approach_si is not None
+        ),
+        has_heat_capacity_rate=(
+            None
+            if not utility_requested
+            else utility_capacity_si is not None and utility_capacity_si > 0.0
+        ),
+        has_overall_heat_transfer_coefficient=(
+            None if not utility_requested else utility_u_si is not None and utility_u_si > 0.0
         ),
         warnings=tuple(warnings),
     )

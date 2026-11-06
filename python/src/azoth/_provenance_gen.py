@@ -2592,12 +2592,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heater': {
         "calc_id": 'process.heater',
         "name": 'Heater',
-        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': '4d85cc6a203a3f07d96f6050e6686a9e3e2b81e4f9bc328f95ae9d479e9cdc77'},
-        "code": [{'path': 'python/src/azoth/process/reference/heater.py', 'sha256': '597b5679ae14b7c33a02ee6d79248a183c476620438cc37352b7e122de395727'}, {'path': 'crates/azoth-process/src/models/heater.rs', 'sha256': 'bdf780dcc80160147c8cdb1340884faefa211ceb3439d141a11feb4852d1e655'}],
+        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': '4fb1ccd0bd09e9969c6536e26df7c19ee1613fba0f8f89e53cf9c1921da4f9f7'},
+        "code": [{'path': 'python/src/azoth/process/reference/heater.py', 'sha256': '6e5b2d643f13c0e8e562da620b2d993ef9fcbb527ad109e850704ebf412d5051'}, {'path': 'crates/azoth-process/src/models/heater.rs', 'sha256': 'f0cd540520172c3296766c7cda094ba8eb594c88a4376c3715a5065fca546167'}],
         "source": 'NeqSim process/equipment/heatexchanger/Heater.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 28,
+        "tests_active": 36,
         "tests_skipped": 0,
     },
     'process.hem_release': {

@@ -701,8 +701,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `default_sil_level` and `heat_exchanger_type` - `661 + 4 = 665`. **And the heater's
     // electrical design's nine** - `electrical_design`, `motor_sizing_margin`, `motor_poles`,
     // `efficiency_class`, `frequency_hz`, `phases`, `number_of_fans`, `instrumentation_power`
-    // and `cooling_water_pump_power` - `665 + 9 = 674`.
-    assert_eq!(walked, 674, "the inputs this test walked");
+    // and `cooling_water_pump_power` - `665 + 9 = 674`. **And the heater's utility
+    // specification's six** - the flag, the two temperatures, the approach, the
+    // heat-capacity rate and the coefficient - `674 + 6 = 680`.
+    assert_eq!(walked, 680, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

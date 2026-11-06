@@ -3037,6 +3037,11 @@ class HeaterResult:
     motor_locked_rotor_multiplier: float | None
     total_auxiliary_power: Qty | None
     total_connected_power: Qty | None
+    has_supply_temperature: bool | None
+    has_return_temperature: bool | None
+    has_approach_temperature: bool | None
+    has_heat_capacity_rate: bool | None
+    has_overall_heat_transfer_coefficient: bool | None
     warnings: list[Warning]
 
 @final
@@ -5905,6 +5910,12 @@ def heater(
     number_of_fans: float | None = None,
     instrumentation_power: float | None = None,
     cooling_water_pump_power: float | None = None,
+    utility_specification: bool | None = None,
+    utility_supply_temperature: float | None = None,
+    utility_return_temperature: float | None = None,
+    utility_approach_temperature: float | None = None,
+    utility_heat_capacity_rate: float | None = None,
+    utility_overall_heat_transfer_coefficient: float | None = None,
 ) -> HeaterResult: ...
 def hem_release(
     components: list[str],

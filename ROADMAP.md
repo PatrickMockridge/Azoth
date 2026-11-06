@@ -818,9 +818,10 @@ a claim nothing holds.
   **and so did its instrument design**: the static list of eight (or six, or another type's),
   its I/O counts and the SIL trips behind `instrument_design`; **and its electrical design's
   motor surface**: the duty as shaft power, the IEC 60034 motor tables, the voltage taps,
-  currents, losses and auxiliary loads behind `electrical_design`. What remains owed there is
-  the utility specification, the mechanical design, `runTransient`, and the electrical cable,
-  switchgear, VFD and hazardous-area components;
+  currents, losses and auxiliary loads behind `electrical_design`; **and its utility
+  specification as carried state**: five values and their `has_*` predicates. What remains owed
+  there is the mechanical design, `runTransient`, and the electrical cable, switchgear, VFD and
+  hazardous-area components;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and

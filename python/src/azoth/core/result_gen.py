@@ -6681,6 +6681,21 @@ class HeaterResult(_HasWarnings):
     #: the electrical input plus the auxiliary load.
     total_connected_power: Q | None
 
+    #: whether a utility supply temperature is stated.
+    has_supply_temperature: bool | None
+
+    #: whether a utility return temperature is stated.
+    has_return_temperature: bool | None
+
+    #: whether a minimum approach temperature is stated.
+    has_approach_temperature: bool | None
+
+    #: whether a heat-capacity rate is stated **and positive**.
+    has_heat_capacity_rate: bool | None
+
+    #: whether an overall heat-transfer coefficient is stated **and positive**.
+    has_overall_heat_transfer_coefficient: bool | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

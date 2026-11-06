@@ -552,6 +552,11 @@ impl CalcResult for HeaterResult {
         "motor_locked_rotor_multiplier",
         "total_auxiliary_power",
         "total_connected_power",
+        "has_supply_temperature",
+        "has_return_temperature",
+        "has_approach_temperature",
+        "has_heat_capacity_rate",
+        "has_overall_heat_transfer_coefficient",
         "warnings",
     ];
 

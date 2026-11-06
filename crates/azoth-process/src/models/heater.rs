@@ -132,6 +132,16 @@ pub struct HeaterResult {
     /// The input plus the auxiliary load.
     #[serde(serialize_with = "optional_scalar")]
     pub total_connected_power: Option<Power>,
+    /// Whether a utility supply temperature is stated.
+    pub has_supply_temperature: Option<bool>,
+    /// Whether a utility return temperature is stated.
+    pub has_return_temperature: Option<bool>,
+    /// Whether an approach temperature is stated.
+    pub has_approach_temperature: Option<bool>,
+    /// Whether a heat-capacity rate is stated and positive.
+    pub has_heat_capacity_rate: Option<bool>,
+    /// Whether an overall heat-transfer coefficient is stated and positive.
+    pub has_overall_heat_transfer_coefficient: Option<bool>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -150,6 +160,7 @@ impl HeaterResult {
         capacity: HeaterCapacity,
         instruments: Option<Vec<HeaterInstrument>>,
         electrical: Option<&heater_electrical::ElectricalDesign>,
+        utility: Option<&kernel::UtilitySpecification>,
         warnings: Vec<Warning>,
     ) -> Self {
         let counts = instruments.as_ref().map(|rows| {
@@ -209,6 +220,12 @@ impl HeaterResult {
                 .map(|value| value.motor_locked_rotor_multiplier),
             total_auxiliary_power: electrical.map(|value| watts(value.total_auxiliary_w)),
             total_connected_power: electrical.map(|value| watts(value.total_connected_w)),
+            has_supply_temperature: utility.map(kernel::UtilitySpecification::has_supply_temperature),
+            has_return_temperature: utility.map(kernel::UtilitySpecification::has_return_temperature),
+            has_approach_temperature: utility.map(kernel::UtilitySpecification::has_approach_temperature),
+            has_heat_capacity_rate: utility.map(kernel::UtilitySpecification::has_heat_capacity_rate),
+            has_overall_heat_transfer_coefficient: utility
+                .map(kernel::UtilitySpecification::has_overall_heat_transfer_coefficient),
             warnings,
         }
     }
@@ -245,6 +262,12 @@ pub fn heater(
     number_of_fans: Option<f64>,
     instrumentation_power: Option<Power>,
     cooling_water_pump_power: Option<Power>,
+    utility_specification: Option<bool>,
+    utility_supply_temperature: Option<ThermodynamicTemperature>,
+    utility_return_temperature: Option<ThermodynamicTemperature>,
+    utility_approach_temperature: Option<ThermodynamicTemperature>,
+    utility_heat_capacity_rate: Option<f64>,
+    utility_overall_heat_transfer_coefficient: Option<f64>,
 ) -> Result<HeaterResult> {
     let spec = &model_gen::HEATER_SPEC;
     let mut warnings = Vec::new();
@@ -376,6 +399,65 @@ pub fn heater(
         None => heater_electrical::HeatExchangerType::ElectricHeater,
     };
 
+    let utility_requested = utility_specification.unwrap_or(false);
+    for (name, stated) in [
+        (
+            "utility_supply_temperature",
+            utility_supply_temperature.is_some(),
+        ),
+        (
+            "utility_return_temperature",
+            utility_return_temperature.is_some(),
+        ),
+        (
+            "utility_approach_temperature",
+            utility_approach_temperature.is_some(),
+        ),
+        (
+            "utility_heat_capacity_rate",
+            utility_heat_capacity_rate.is_some(),
+        ),
+        (
+            "utility_overall_heat_transfer_coefficient",
+            utility_overall_heat_transfer_coefficient.is_some(),
+        ),
+    ] {
+        if stated && !utility_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "a utility-specification input is stated without `utility_specification`",
+            ));
+        }
+    }
+    for (name, value) in [
+        (
+            "utility_supply_temperature",
+            utility_supply_temperature.map(|value| value.value),
+        ),
+        (
+            "utility_return_temperature",
+            utility_return_temperature.map(|value| value.value),
+        ),
+        (
+            "utility_approach_temperature",
+            utility_approach_temperature.map(|value| value.value),
+        ),
+        ("utility_heat_capacity_rate", utility_heat_capacity_rate),
+        (
+            "utility_overall_heat_transfer_coefficient",
+            utility_overall_heat_transfer_coefficient,
+        ),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("{value} is not a finite number"),
+                ));
+            }
+        }
+    }
+
     let feed = Stream::from_pt(
         components.to_vec(),
         inlet_z.to_vec(),
@@ -434,11 +516,24 @@ pub fn heater(
         None
     };
 
+    let utility = if utility_requested {
+        Some(kernel::UtilitySpecification {
+            supply_temperature: utility_supply_temperature.map(|value| value.value),
+            return_temperature: utility_return_temperature.map(|value| value.value),
+            approach_temperature: utility_approach_temperature.map(|value| value.value),
+            heat_capacity_rate: utility_heat_capacity_rate,
+            overall_heat_transfer_coefficient: utility_overall_heat_transfer_coefficient,
+        })
+    } else {
+        None
+    };
+
     Ok(HeaterResult::of(
         &outcome,
         capacity,
         instruments,
         electrical.as_ref(),
+        utility.as_ref(),
         warnings,
     ))
 }

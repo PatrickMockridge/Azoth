@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/Heater.java**
 
-Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, the two outlet-temperature capacity constraints, the instrument list and the motor/electrical sizing.
+Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing and the utility-specification predicates.
 
 
 ## What this model is
@@ -42,6 +42,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `number_of_fans` | dimensionless | *Optional.* the air cooler's fan count. Absent is the class's `2`; the fan power is `max(2 per fan, 1% of the duty)`. |
 | `instrumentation_power` | W | *Optional.* the auxiliary instrumentation load. Absent is the class's 1.5 kW. |
 | `cooling_water_pump_power` | W | *Optional.* the shell-and-tube cooling-water pump load, added to the auxiliary for that type only. Absent is the class's 0. |
+| `utility_specification` | - | *Optional.* whether the utility-side specification is stated. Absent is false; every `has_*` output is absent without it. |
+| `utility_supply_temperature` | K | *Optional.* the utility supply temperature. Stating it sets `has_supply_temperature`; absent leaves the class's `NaN`. |
+| `utility_return_temperature` | K | *Optional.* the utility return temperature. Stating it sets `has_return_temperature`; absent leaves the class's `NaN`. |
+| `utility_approach_temperature` | K | *Optional.* the minimum approach temperature, a difference. Stating it sets `has_approach_temperature`; absent leaves the class's `NaN`. |
+| `utility_heat_capacity_rate` | W/K | *Optional.* the utility heat-capacity rate. **Specified only when positive**: zero and below store but leave `has_heat_capacity_rate` false. |
+| `utility_overall_heat_transfer_coefficient` | W/(m**2*K) | *Optional.* the assumed overall heat-transfer coefficient. **Specified only when positive**: zero and below store but leave the predicate false. |
 
 
 ## Outputs
@@ -85,6 +91,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `motor_locked_rotor_multiplier` | dimensionless | *Optional.* the locked-rotor current multiplier by motor size; 7.0 when no motor is sized. |
 | `total_auxiliary_power` | W | *Optional.* the instrumentation load, plus the cooling-water pump load for shell-and-tube. |
 | `total_connected_power` | W | *Optional.* the electrical input plus the auxiliary load. |
+| `has_supply_temperature` | - | *Optional.* whether a utility supply temperature is stated. |
+| `has_return_temperature` | - | *Optional.* whether a utility return temperature is stated. |
+| `has_approach_temperature` | - | *Optional.* whether a minimum approach temperature is stated. |
+| `has_heat_capacity_rate` | - | *Optional.* whether a heat-capacity rate is stated **and positive**. |
+| `has_overall_heat_transfer_coefficient` | - | *Optional.* whether an overall heat-transfer coefficient is stated **and positive**. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -109,7 +120,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **The air cooler's fan power is `max(2 kW per fan, 1% of the duty)`**, and the motor is sized on that. The voltage taps are `400/690/6600` V for the electric heater and `400/690` for the cooler.
 - **The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.
 - **Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.
-- NeqSim's `Heater` also carries a `runTransient`, the mechanical design, a utility specification, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument and motor surfaces above are the steady ones.
+- **The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when also positive. Its consumer is the mechanical design, which is owed.
+- NeqSim's `Heater` also carries a `runTransient`, the mechanical design, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument, motor and utility surfaces above are the steady ones.
 
 ## Cases
 
@@ -143,6 +155,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_two_pole_motor_runs_at_the_synchronous_speed_less_its_slip` | components = ['methane', 'n-butane'], inlet_n = 100.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = 100000.0, electrical_design = True, motor_poles = 2 | shaft_power = 99999.99997673612, electrical_input_power = 105820.10579548797, apparent_power = 120250.12022214542, reactive_power = 57115.642541007626, power_factor = 0.88, rated_voltage = 690.0, full_load_current = 100.61802794252247, starting_current = 704.3261955976573, total_electrical_losses = 5820.105818751841, motor_rated_power = 110000.0, motor_efficiency = 0.9450000000000001, motor_power_factor = 0.88, motor_rated_speed = 2940.0, motor_locked_rotor_multiplier = 7.0, total_auxiliary_power = 1500.0, total_connected_power = 107320.10579548797 |
 | `a_single_phase_machine_drops_the_square_root_of_three` | components = ['methane', 'n-butane'], inlet_n = 100.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = 100000.0, electrical_design = True, phases = 1 | shaft_power = 99999.99997673612, electrical_input_power = 105263.15787024854, apparent_power = 119617.22485255517, reactive_power = 56815.03389605495, power_factor = 0.88, rated_voltage = 690.0, full_load_current = 173.3582968877611, starting_current = 1213.5080782143277, total_electrical_losses = 5263.157893512428, motor_rated_power = 110000.0, motor_efficiency = 0.9500000000000001, motor_power_factor = 0.88, motor_rated_speed = 1470.0, motor_locked_rotor_multiplier = 7.0, total_auxiliary_power = 1500.0, total_connected_power = 106763.15787024854 |
 | `a_sixty_hertz_supply_moves_the_synchronous_speed` | components = ['methane', 'n-butane'], inlet_n = 100.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = 100000.0, electrical_design = True, frequency_hz = 60.0 | frequency_hz = 60.0, shaft_power = 99999.99997673612, electrical_input_power = 105263.15787024854, apparent_power = 119617.22485255517, reactive_power = 56815.03389605495, power_factor = 0.88, rated_voltage = 690.0, full_load_current = 100.08845937440393, starting_current = 700.6192156208275, total_electrical_losses = 5263.157893512428, motor_rated_power = 110000.0, motor_efficiency = 0.9500000000000001, motor_power_factor = 0.88, motor_rated_speed = 1470.0, motor_locked_rotor_multiplier = 7.0, total_auxiliary_power = 1500.0, total_connected_power = 106763.15787024854 |
+| `the_default_utility_specification_is_empty` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
+| `a_utility_supply_temperature_is_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_supply_temperature = 450.0 | has_supply_temperature = True, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
+| `a_utility_return_temperature_is_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_return_temperature = 350.0 | has_supply_temperature = False, has_return_temperature = True, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
+| `a_utility_approach_temperature_is_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_approach_temperature = 20.0 | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = True, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
+| `a_positive_heat_capacity_rate_is_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_heat_capacity_rate = 500.0 | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = True, has_overall_heat_transfer_coefficient = False |
+| `a_zero_heat_capacity_rate_is_not_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_heat_capacity_rate = 0.0 | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
+| `a_positive_u_value_is_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_overall_heat_transfer_coefficient = 100.0 | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = True |
+| `a_negative_u_value_is_not_specified` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, utility_specification = True, utility_overall_heat_transfer_coefficient = -1.0 | has_supply_temperature = False, has_return_temperature = False, has_approach_temperature = False, has_heat_capacity_rate = False, has_overall_heat_transfer_coefficient = False |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
