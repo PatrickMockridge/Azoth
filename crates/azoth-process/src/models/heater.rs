@@ -366,13 +366,13 @@ pub fn heater(
         ));
     }
     let instrument_type = match heat_exchanger_type {
-        Some(spelling) => kernel::InstrumentType::parse(spelling).ok_or_else(|| {
+        Some(spelling) => heater_electrical::HeatExchangerType::parse(spelling).ok_or_else(|| {
             AzothError::invalid_input(
                 "heat_exchanger_type",
                 format!("{spelling} is not one of electric_heater, air_cooler or shell_and_tube"),
             )
         })?,
-        None => kernel::InstrumentType::ElectricHeater,
+        None => heater_electrical::HeatExchangerType::ElectricHeater,
     };
 
     let feed = Stream::from_pt(

@@ -9,7 +9,30 @@
 //! Not here: the cable, switchgear, VFD, transformer and hazardous-area components (each its own
 //! class), the motor's frame, weight and cost, and the NEMA frame table - all named as outside.
 
-use crate::kernels::heater::InstrumentType;
+
+/// `HeatExchangerInstrumentDesign.HeatExchangerType`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeatExchangerType {
+    /// An electric resistance heater; the class detects this for a `Heater`.
+    ElectricHeater,
+    /// An air cooler's fan instrumentation.
+    AirCooler,
+    /// A shell-and-tube exchanger's utility-side instrumentation.
+    ShellAndTube,
+}
+
+impl HeatExchangerType {
+    /// The class's string spelling.
+    #[must_use]
+    pub fn parse(spelling: &str) -> Option<Self> {
+        Some(match spelling {
+            "electric_heater" => Self::ElectricHeater,
+            "air_cooler" => Self::AirCooler,
+            "shell_and_tube" => Self::ShellAndTube,
+            _ => return None,
+        })
+    }
+}
 
 /// `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
 pub const IEC_POWERS_KW: [f64; 56] = [
@@ -208,20 +231,20 @@ fn current(input_kw: f64, voltage_v: f64, factor: f64, phases: u32) -> f64 {
 /// `HeatExchangerElectricalDesign.calcDesign`.
 #[must_use]
 pub fn design(
-    kind: InstrumentType,
+    kind: HeatExchangerType,
     process_duty_w: f64,
     request: &ElectricalRequest,
 ) -> ElectricalDesign {
     let duty_kw = process_duty_w.abs() / 1000.0;
     let shaft_kw = match kind {
-        InstrumentType::ElectricHeater => duty_kw,
-        InstrumentType::AirCooler => {
+        HeatExchangerType::ElectricHeater => duty_kw,
+        HeatExchangerType::AirCooler => {
             (2.0 * f64::from(request.number_of_fans)).max(duty_kw * 0.01)
         }
-        InstrumentType::ShellAndTube => 0.0,
+        HeatExchangerType::ShellAndTube => 0.0,
     };
     let rated_voltage = match kind {
-        InstrumentType::ElectricHeater => {
+        HeatExchangerType::ElectricHeater => {
             if shaft_kw > 200.0 {
                 6600.0
             } else if shaft_kw > 75.0 {
@@ -230,14 +253,14 @@ pub fn design(
                 400.0
             }
         }
-        InstrumentType::AirCooler => {
+        HeatExchangerType::AirCooler => {
             if shaft_kw > 200.0 {
                 690.0
             } else {
                 400.0
             }
         }
-        InstrumentType::ShellAndTube => 400.0,
+        HeatExchangerType::ShellAndTube => 400.0,
     };
 
     let (rated_power, motor_efficiency, motor_power_factor, speed, locked) = if shaft_kw > 0.0 {
@@ -259,13 +282,13 @@ pub fn design(
     };
     let instrumentation = request.instrumentation_power_w;
     let auxiliary = instrumentation
-        + if kind == InstrumentType::ShellAndTube {
+        + if kind == HeatExchangerType::ShellAndTube {
             request.cooling_water_pump_power_w
         } else {
             0.0
         };
 
-    if kind == InstrumentType::ShellAndTube {
+    if kind == HeatExchangerType::ShellAndTube {
         let input_w = auxiliary;
         let factor = 0.85;
         let apparent = if factor > 0.0 { input_w / factor } else { 0.0 };
@@ -356,7 +379,7 @@ mod tests {
 
     #[test]
     fn the_five_kilowatt_heater_is_the_capture() {
-        let design = design(InstrumentType::ElectricHeater, 4999.9999986086605, &request());
+        let design = design(HeatExchangerType::ElectricHeater, 4999.9999986086605, &request());
         close(design.electrical_input_w, 5494.50549297655, 1.0e-9, "input");
         close(design.apparent_power_va, 6619.886136116326, 1.0e-9, "apparent");
         close(design.reactive_power_var, 3692.330137297538, 1.0e-9, "reactive");
@@ -375,7 +398,7 @@ mod tests {
 
     #[test]
     fn the_hundred_kilowatt_heater_takes_the_690_volt_tap() {
-        let design = design(InstrumentType::ElectricHeater, 99_999.99997673612, &request());
+        let design = design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &request());
         close(design.rated_voltage_v, 690.0, 1.0e-12, "voltage");
         close(design.motor_rated_power_w, 110_000.0, 1.0e-12, "motor");
         close(design.motor_efficiency, 0.95, 1.0e-12, "efficiency");
@@ -399,7 +422,7 @@ mod tests {
 
     #[test]
     fn the_five_hundred_kilowatt_heater_takes_the_6600_volt_tap() {
-        let design = design(InstrumentType::ElectricHeater, 499_999.9998608659, &request());
+        let design = design(HeatExchangerType::ElectricHeater, 499_999.9998608659, &request());
         close(design.rated_voltage_v, 6600.0, 1.0e-12, "voltage");
         close(design.motor_rated_power_w, 560_000.0, 1.0e-12, "motor");
         close(design.motor_efficiency, 0.965, 1.0e-12, "efficiency");
@@ -417,7 +440,7 @@ mod tests {
     fn the_shell_and_tube_design_is_the_auxiliary_load() {
         let mut request = request();
         request.cooling_water_pump_power_w = 3000.0;
-        let design = design(InstrumentType::ShellAndTube, 100_000.0, &request);
+        let design = design(HeatExchangerType::ShellAndTube, 100_000.0, &request);
         close(design.shaft_power_w, 0.0, 1.0e-12, "shaft");
         close(design.electrical_input_w, 4500.0, 1.0e-12, "input");
         close(design.power_factor, 0.85, 1.0e-12, "factor");
@@ -430,7 +453,7 @@ mod tests {
 
     #[test]
     fn the_air_cooler_sizes_the_fans() {
-        let design = design(InstrumentType::AirCooler, 100_000.0, &request());
+        let design = design(HeatExchangerType::AirCooler, 100_000.0, &request());
         close(design.shaft_power_w, 4000.0, 1.0e-12, "shaft");
         close(design.motor_rated_power_w, 5500.0, 1.0e-12, "motor");
         close(
@@ -452,14 +475,14 @@ mod tests {
         let mut ie4 = request();
         ie4.efficiency_class = EfficiencyClass::Ie4;
         close(
-            design(InstrumentType::ElectricHeater, 99_999.99997673612, &ie4).motor_efficiency,
+            design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &ie4).motor_efficiency,
             0.96,
             1.0e-12,
             "IE4 efficiency",
         );
         let mut two_pole = request();
         two_pole.motor_poles = 2;
-        let design = design(InstrumentType::ElectricHeater, 99_999.99997673612, &two_pole);
+        let design = design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &two_pole);
         close(design.motor_efficiency, 0.945, 1.0e-12, "2-pole efficiency");
         close(design.motor_rated_speed_rpm, 2940.0, 1.0e-12, "2-pole speed");
     }

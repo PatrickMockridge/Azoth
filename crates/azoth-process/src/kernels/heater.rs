@@ -5,6 +5,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result};
 
+use crate::kernels::heater_electrical::HeatExchangerType;
 use crate::stream::Stream;
 
 /// What a heater did: the outlet record, and the duty it moved.
@@ -193,30 +194,6 @@ pub fn capacity(
     }
 }
 
-/// `HeatExchangerInstrumentDesign.HeatExchangerType`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InstrumentType {
-    /// An electric resistance heater; the class detects this for a `Heater`.
-    ElectricHeater,
-    /// An air cooler's fan instrumentation.
-    AirCooler,
-    /// A shell-and-tube exchanger's utility-side instrumentation.
-    ShellAndTube,
-}
-
-impl InstrumentType {
-    /// The class's string spelling.
-    #[must_use]
-    pub fn parse(spelling: &str) -> Option<Self> {
-        Some(match spelling {
-            "electric_heater" => Self::ElectricHeater,
-            "air_cooler" => Self::AirCooler,
-            "shell_and_tube" => Self::ShellAndTube,
-            _ => return None,
-        })
-    }
-}
-
 /// One `InstrumentSpecification` row, before the list assigns its tag.
 #[derive(Debug, Clone, PartialEq)]
 pub struct InstrumentRow {
@@ -268,7 +245,7 @@ fn row(
 /// The tag is `SYMBOL-(1000 + position)`, which the list assigns on insertion.
 #[must_use]
 pub fn instruments(
-    kind: InstrumentType,
+    kind: HeatExchangerType,
     include_safety: bool,
     sil_rating: u32,
 ) -> Vec<InstrumentRow> {
@@ -337,7 +314,7 @@ pub fn instruments(
         ));
     }
     match kind {
-        InstrumentType::ElectricHeater => {
+        HeatExchangerType::ElectricHeater => {
             rows.push(row(
                 "TT",
                 "Heating Element Temperature",
@@ -361,7 +338,7 @@ pub fn instruments(
                 ));
             }
         }
-        InstrumentType::ShellAndTube => {
+        HeatExchangerType::ShellAndTube => {
             rows.push(row(
                 "TT",
                 "Utility Inlet Temperature",
@@ -393,7 +370,7 @@ pub fn instruments(
                 false,
             ));
         }
-        InstrumentType::AirCooler => {
+        HeatExchangerType::AirCooler => {
             rows.push(row(
                 "TT",
                 "Ambient Air Temperature",
@@ -520,7 +497,7 @@ mod instrument_tests {
 
     #[test]
     fn the_electric_heater_has_eight_with_safety_and_six_without() {
-        let with = instruments(InstrumentType::ElectricHeater, true, 2);
+        let with = instruments(HeatExchangerType::ElectricHeater, true, 2);
         assert_eq!(with.len(), 8);
         assert_eq!(
             with.iter()
@@ -532,20 +509,20 @@ mod instrument_tests {
         assert!(with[5].safety_related);
         assert_eq!(with[5].range_unit, None);
 
-        let without = instruments(InstrumentType::ElectricHeater, false, 2);
+        let without = instruments(HeatExchangerType::ElectricHeater, false, 2);
         assert_eq!(without.len(), 6);
         assert!(without.iter().all(|row| !row.safety_related));
     }
 
     #[test]
     fn the_other_types_add_three_instruments_each() {
-        let shell = instruments(InstrumentType::ShellAndTube, true, 2);
+        let shell = instruments(HeatExchangerType::ShellAndTube, true, 2);
         assert_eq!(shell.len(), 9);
         assert_eq!(shell[6].service, "Utility Inlet Temperature");
         assert_eq!(shell[7].service, "Utility Outlet Temperature");
         assert_eq!(shell[8].service, "Utility Inlet Pressure");
 
-        let air = instruments(InstrumentType::AirCooler, true, 2);
+        let air = instruments(HeatExchangerType::AirCooler, true, 2);
         assert_eq!(air.len(), 9);
         assert_eq!(air[7].isa_symbol, "ST");
         assert_eq!(air[8].isa_symbol, "VT");
@@ -554,13 +531,13 @@ mod instrument_tests {
     #[test]
     fn the_type_parses_its_three_spellings() {
         assert_eq!(
-            InstrumentType::parse("electric_heater"),
-            Some(InstrumentType::ElectricHeater)
+            HeatExchangerType::parse("electric_heater"),
+            Some(HeatExchangerType::ElectricHeater)
         );
         assert_eq!(
-            InstrumentType::parse("shell_and_tube"),
-            Some(InstrumentType::ShellAndTube)
+            HeatExchangerType::parse("shell_and_tube"),
+            Some(HeatExchangerType::ShellAndTube)
         );
-        assert_eq!(InstrumentType::parse("coalescer"), None);
+        assert_eq!(HeatExchangerType::parse("coalescer"), None);
     }
 }
