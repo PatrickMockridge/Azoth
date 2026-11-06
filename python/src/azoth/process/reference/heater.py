@@ -229,9 +229,7 @@ def heater(
         ("number_of_fans", fans),
     ):
         if value < 1.0 or not value.is_integer():
-            raise InvalidInputError(
-                name, f"{value} is not an integer of at least one"
-            )
+            raise InvalidInputError(name, f"{value} is not an integer of at least one")
     instruments = (
         _instruments(kind, include_safety_instruments is not False, int(sil))
         if instrument_requested
@@ -295,40 +293,26 @@ def heater(
         total_io_count=None if counts is None else counts[5],
         safety_instrument_count=None if counts is None else counts[6],
         instruments=instruments,
-        shaft_power=(
-            None if electrical is None else from_si(electrical.shaft_power_w, "W")
-        ),
+        shaft_power=(None if electrical is None else from_si(electrical.shaft_power_w, "W")),
         electrical_input_power=(
-            None
-            if electrical is None
-            else from_si(electrical.electrical_input_w, "W")
+            None if electrical is None else from_si(electrical.electrical_input_w, "W")
         ),
         apparent_power=None if electrical is None else electrical.apparent_power_va,
         reactive_power=None if electrical is None else electrical.reactive_power_var,
         power_factor=None if electrical is None else electrical.power_factor,
         rated_voltage=None if electrical is None else electrical.rated_voltage_v,
         frequency_hz=None if electrical is None else electrical.frequency_hz,
-        full_load_current=(
-            None if electrical is None else electrical.full_load_current_a
-        ),
-        starting_current=(
-            None if electrical is None else electrical.starting_current_a
-        ),
+        full_load_current=(None if electrical is None else electrical.full_load_current_a),
+        starting_current=(None if electrical is None else electrical.starting_current_a),
         total_electrical_losses=(
-            None
-            if electrical is None
-            else from_si(electrical.total_electrical_losses_w, "W")
+            None if electrical is None else from_si(electrical.total_electrical_losses_w, "W")
         ),
         motor_rated_power=(
             None if electrical is None else from_si(electrical.motor_rated_power_w, "W")
         ),
         motor_efficiency=None if electrical is None else electrical.motor_efficiency,
-        motor_power_factor=(
-            None if electrical is None else electrical.motor_power_factor
-        ),
-        motor_rated_speed=(
-            None if electrical is None else electrical.motor_rated_speed_rpm
-        ),
+        motor_power_factor=(None if electrical is None else electrical.motor_power_factor),
+        motor_rated_speed=(None if electrical is None else electrical.motor_rated_speed_rpm),
         motor_locked_rotor_multiplier=(
             None if electrical is None else electrical.motor_locked_rotor_multiplier
         ),
@@ -367,11 +351,62 @@ class Electrical:
 
 #: `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
 IEC_POWERS_KW = (
-    0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0,
-    45.0, 55.0, 75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 355.0, 400.0, 450.0,
-    500.0, 560.0, 630.0, 710.0, 800.0, 900.0, 1000.0, 1120.0, 1250.0, 1400.0, 1600.0, 1800.0,
-    2000.0, 2240.0, 2500.0, 2800.0, 3150.0, 3550.0, 4000.0, 4500.0, 5000.0, 5600.0, 6300.0,
-    7100.0, 8000.0, 9000.0, 10000.0,
+    0.37,
+    0.55,
+    0.75,
+    1.1,
+    1.5,
+    2.2,
+    3.0,
+    4.0,
+    5.5,
+    7.5,
+    11.0,
+    15.0,
+    18.5,
+    22.0,
+    30.0,
+    37.0,
+    45.0,
+    55.0,
+    75.0,
+    90.0,
+    110.0,
+    132.0,
+    160.0,
+    200.0,
+    250.0,
+    315.0,
+    355.0,
+    400.0,
+    450.0,
+    500.0,
+    560.0,
+    630.0,
+    710.0,
+    800.0,
+    900.0,
+    1000.0,
+    1120.0,
+    1250.0,
+    1400.0,
+    1600.0,
+    1800.0,
+    2000.0,
+    2240.0,
+    2500.0,
+    2800.0,
+    3150.0,
+    3550.0,
+    4000.0,
+    4500.0,
+    5000.0,
+    5600.0,
+    6300.0,
+    7100.0,
+    8000.0,
+    9000.0,
+    10000.0,
 )
 
 #: The efficiency-class offsets, in points.
