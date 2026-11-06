@@ -111,11 +111,8 @@ impl HeaterResult {
         warnings: Vec<Warning>,
     ) -> Self {
         let counts = instruments.as_ref().map(|rows| {
-            let count = |io_type: &str| {
-                rows.iter()
-                    .filter(|row| row.io_type == io_type)
-                    .count() as f64
-            };
+            let count =
+                |io_type: &str| rows.iter().filter(|row| row.io_type == io_type).count() as f64;
             let analog_input = count("AI");
             let analog_output = count("AO");
             let digital_input = count("DI");
@@ -271,10 +268,5 @@ pub fn heater(
         None
     };
 
-    Ok(HeaterResult::of(
-        &outcome,
-        capacity,
-        instruments,
-        warnings,
-    ))
+    Ok(HeaterResult::of(&outcome, capacity, instruments, warnings))
 }
