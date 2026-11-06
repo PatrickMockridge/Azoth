@@ -220,10 +220,14 @@ impl HeaterResult {
                 .map(|value| value.motor_locked_rotor_multiplier),
             total_auxiliary_power: electrical.map(|value| watts(value.total_auxiliary_w)),
             total_connected_power: electrical.map(|value| watts(value.total_connected_w)),
-            has_supply_temperature: utility.map(kernel::UtilitySpecification::has_supply_temperature),
-            has_return_temperature: utility.map(kernel::UtilitySpecification::has_return_temperature),
-            has_approach_temperature: utility.map(kernel::UtilitySpecification::has_approach_temperature),
-            has_heat_capacity_rate: utility.map(kernel::UtilitySpecification::has_heat_capacity_rate),
+            has_supply_temperature: utility
+                .map(kernel::UtilitySpecification::has_supply_temperature),
+            has_return_temperature: utility
+                .map(kernel::UtilitySpecification::has_return_temperature),
+            has_approach_temperature: utility
+                .map(kernel::UtilitySpecification::has_approach_temperature),
+            has_heat_capacity_rate: utility
+                .map(kernel::UtilitySpecification::has_heat_capacity_rate),
             has_overall_heat_transfer_coefficient: utility
                 .map(kernel::UtilitySpecification::has_overall_heat_transfer_coefficient),
             warnings,
