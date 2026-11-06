@@ -109,6 +109,7 @@ from azoth.core.result import (
     GtSurfaceTensionSimpleResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
+    HeaterInstrument,
     HeaterResult,
     HeatExchangerResult,
     HeatOfVaporizationResult,
@@ -6194,7 +6195,7 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
     )
 
 
-def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None) -> HeaterResult:
+def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None) -> HeaterResult:
     """``process.heater``, computed in Rust."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
@@ -6208,6 +6209,10 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
         None if max_outlet_temperature is None else input_to_si(spec, "max_outlet_temperature", max_outlet_temperature),
         None if min_outlet_temperature is None else input_to_si(spec, "min_outlet_temperature", min_outlet_temperature),
+        instrument_design,
+        include_safety_instruments,
+        None if default_sil_level is None else default_sil_level,
+        heat_exchanger_type,
     )
     return HeaterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6222,6 +6227,14 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         capacity_exceeded=result.capacity_exceeded,
         hard_limit_exceeded=result.hard_limit_exceeded,
         bottleneck_constraint=result.bottleneck_constraint,
+        instrument_count=result.instrument_count,
+        analog_input_count=result.analog_input_count,
+        analog_output_count=result.analog_output_count,
+        digital_input_count=result.digital_input_count,
+        digital_output_count=result.digital_output_count,
+        total_io_count=result.total_io_count,
+        safety_instrument_count=result.safety_instrument_count,
+        instruments=tuple(HeaterInstrument(tag=c.tag, isa_symbol=c.isa_symbol, service=c.service, io_type=c.io_type, range_unit=c.range_unit, range_min=c.range_min, range_max=c.range_max, sil_rating=c.sil_rating, safety_related=c.safety_related) for c in result.instruments),
         warnings=_warnings(result.warnings),
     )
 

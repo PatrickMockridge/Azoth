@@ -524,6 +524,8 @@ public surface of forty-odd getters.
   > captures/process_filter_dynamic.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_mechanical_design \
   > captures/process_filter_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_instruments \
+  > captures/process_heater_instruments.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pipe_modes \
   > captures/process_pipe_modes.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \

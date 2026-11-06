@@ -815,7 +815,9 @@ a claim nothing holds.
   overload flag - what remains owed there is `runTransient`, the cumulative accumulators and
   the performance DTO's per-component emission map; **`Heater`'s bounded outlet temperatures
   landed** - the two HARD limits, their inverse/minimum utilization and the hard-flag quirk -
-  and what remains owed there is its electrical and instrument design and `runTransient`;
+  **and so did its instrument design**: the static list of eight (or six, or another type's),
+  its I/O counts and the SIL trips behind `instrument_design`. What remains owed there is the
+  electrical design, the utility specification, the mechanical design and `runTransient`;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and

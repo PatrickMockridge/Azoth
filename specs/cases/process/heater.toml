@@ -322,3 +322,130 @@ max_utilization = 1.0511440934733403
 capacity_exceeded = true
 hard_limit_exceeded = false
 bottleneck_constraint = "maxOutletTemperature"
+
+[[cases]]
+id = "the_electric_heater_instrument_list"
+tolerance = 1e-12
+source = "`process_heater_instruments.tsv`'s `include_safety=true`: the electric heater's eight instruments, the two SIL trips included, and their I/O counts.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 340.0
+instrument_design = true
+[cases.expected]
+instrument_count = 8.0
+analog_input_count = 6.0
+analog_output_count = 0.0
+digital_input_count = 2.0
+digital_output_count = 0.0
+total_io_count = 8.0
+safety_instrument_count = 2.0
+instruments = [
+    { tag = "TT-1001", isa_symbol = "TT", service = "Process Inlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1002", isa_symbol = "TT", service = "Process Outlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1003", isa_symbol = "PT", service = "Process Inlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1004", isa_symbol = "PT", service = "Process Outlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PDT-1005", isa_symbol = "PDT", service = "Process Side dP", io_type = "AI", range_unit = "bar", range_min = 0.0, range_max = 10.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TSHH-1006", isa_symbol = "TSHH", service = "Overtemperature Trip", io_type = "DI", range_min = 0.0, range_max = 0.0, sil_rating = 2.0, safety_related = true },
+    { tag = "TT-1007", isa_symbol = "TT", service = "Heating Element Temperature", io_type = "AI", range_unit = "degC", range_min = 0.0, range_max = 600.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TSHH-1008", isa_symbol = "TSHH", service = "Element Overtemperature Trip", io_type = "DI", range_min = 0.0, range_max = 0.0, sil_rating = 2.0, safety_related = true },
+]
+
+[[cases]]
+id = "the_instrument_list_without_safety"
+tolerance = 1e-12
+source = "`process_heater_instruments.tsv`'s `include_safety=false`: the two trips removed, so six analog inputs and no digital ones.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 340.0
+instrument_design = true
+include_safety_instruments = false
+[cases.expected]
+instrument_count = 6.0
+analog_input_count = 6.0
+analog_output_count = 0.0
+digital_input_count = 0.0
+digital_output_count = 0.0
+total_io_count = 6.0
+safety_instrument_count = 0.0
+instruments = [
+    { tag = "TT-1001", isa_symbol = "TT", service = "Process Inlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1002", isa_symbol = "TT", service = "Process Outlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1003", isa_symbol = "PT", service = "Process Inlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1004", isa_symbol = "PT", service = "Process Outlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PDT-1005", isa_symbol = "PDT", service = "Process Side dP", io_type = "AI", range_unit = "bar", range_min = 0.0, range_max = 10.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1006", isa_symbol = "TT", service = "Heating Element Temperature", io_type = "AI", range_unit = "degC", range_min = 0.0, range_max = 600.0, sil_rating = 0.0, safety_related = false },
+]
+
+[[cases]]
+id = "the_shell_and_tube_instrument_list"
+tolerance = 1e-12
+source = "`process_heater_instruments.tsv`'s `heat_exchanger_type=SHELL_AND_TUBE`: the utility side's two temperatures and pressure added to the heater's base.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 340.0
+instrument_design = true
+heat_exchanger_type = "shell_and_tube"
+[cases.expected]
+instrument_count = 9.0
+analog_input_count = 8.0
+analog_output_count = 0.0
+digital_input_count = 1.0
+digital_output_count = 0.0
+total_io_count = 9.0
+safety_instrument_count = 1.0
+instruments = [
+    { tag = "TT-1001", isa_symbol = "TT", service = "Process Inlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1002", isa_symbol = "TT", service = "Process Outlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1003", isa_symbol = "PT", service = "Process Inlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1004", isa_symbol = "PT", service = "Process Outlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PDT-1005", isa_symbol = "PDT", service = "Process Side dP", io_type = "AI", range_unit = "bar", range_min = 0.0, range_max = 10.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TSHH-1006", isa_symbol = "TSHH", service = "Overtemperature Trip", io_type = "DI", range_min = 0.0, range_max = 0.0, sil_rating = 2.0, safety_related = true },
+    { tag = "TT-1007", isa_symbol = "TT", service = "Utility Inlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1008", isa_symbol = "TT", service = "Utility Outlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1009", isa_symbol = "PT", service = "Utility Inlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 50.0, sil_rating = 0.0, safety_related = false },
+]
+
+[[cases]]
+id = "the_air_cooler_instrument_list"
+tolerance = 1e-12
+source = "`process_heater_instruments.tsv`'s `heat_exchanger_type=AIR_COOLER`: the ambient temperature and the fan's speed and vibration, in place of the element monitor.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 340.0
+instrument_design = true
+heat_exchanger_type = "air_cooler"
+[cases.expected]
+instrument_count = 9.0
+analog_input_count = 8.0
+analog_output_count = 0.0
+digital_input_count = 1.0
+digital_output_count = 0.0
+total_io_count = 9.0
+safety_instrument_count = 1.0
+instruments = [
+    { tag = "TT-1001", isa_symbol = "TT", service = "Process Inlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TT-1002", isa_symbol = "TT", service = "Process Outlet Temperature", io_type = "AI", range_unit = "degC", range_min = -50.0, range_max = 400.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1003", isa_symbol = "PT", service = "Process Inlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PT-1004", isa_symbol = "PT", service = "Process Outlet Pressure", io_type = "AI", range_unit = "bara", range_min = 0.0, range_max = 200.0, sil_rating = 0.0, safety_related = false },
+    { tag = "PDT-1005", isa_symbol = "PDT", service = "Process Side dP", io_type = "AI", range_unit = "bar", range_min = 0.0, range_max = 10.0, sil_rating = 0.0, safety_related = false },
+    { tag = "TSHH-1006", isa_symbol = "TSHH", service = "Overtemperature Trip", io_type = "DI", range_min = 0.0, range_max = 0.0, sil_rating = 2.0, safety_related = true },
+    { tag = "TT-1007", isa_symbol = "TT", service = "Ambient Air Temperature", io_type = "AI", range_unit = "degC", range_min = -40.0, range_max = 60.0, sil_rating = 0.0, safety_related = false },
+    { tag = "ST-1008", isa_symbol = "ST", service = "Fan Speed", io_type = "AI", range_unit = "rpm", range_min = 0.0, range_max = 1800.0, sil_rating = 0.0, safety_related = false },
+    { tag = "VT-1009", isa_symbol = "VT", service = "Fan Vibration", io_type = "AI", range_unit = "mm/s", range_min = 0.0, range_max = 100.0, sil_rating = 0.0, safety_related = false },
+]

@@ -502,6 +502,78 @@ impl From<&azoth_eos::results::FlowlineScaleSegment> for PyFlowlineScaleSegment 
     }
 }
 
+/// the design's instrument list, in the class's insertion order; empty when the design did not run.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterInstrument"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeaterInstrument {
+    /// the tag the list assigns: `SYMBOL-(1000 + position)`.
+    #[pyo3(get)]
+    pub tag: String,
+    /// the ISA symbol, e.g. `TT` or `TSHH`.
+    #[pyo3(get)]
+    pub isa_symbol: String,
+    /// the service description.
+    #[pyo3(get)]
+    pub service: String,
+    /// `AI`, `AO`, `DI` or `DO`.
+    #[pyo3(get)]
+    pub io_type: String,
+    /// the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.
+    #[pyo3(get)]
+    pub range_unit: Option<String>,
+    /// the range's lower bound, in the row's `range_unit`.
+    #[pyo3(get)]
+    pub range_min: f64,
+    /// the range's upper bound, in the row's `range_unit`.
+    #[pyo3(get)]
+    pub range_max: f64,
+    /// the SIL rating; zero for a non-safety instrument.
+    #[pyo3(get)]
+    pub sil_rating: f64,
+    /// whether the row is safety-related.
+    #[pyo3(get)]
+    pub safety_related: bool,
+}
+
+#[pymethods]
+impl PyHeaterInstrument {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterInstrument(tag={}, isa_symbol={}, service={}, io_type={}, range_unit={:?}, range_min={}, range_max={}, sil_rating={}, safety_related={:?})",
+            self.tag,
+            self.isa_symbol,
+            self.service,
+            self.io_type,
+            self.range_unit,
+            self.range_min,
+            self.range_max,
+            self.sil_rating,
+            self.safety_related
+        )
+    }
+}
+
+impl From<&azoth_process::models::heater::HeaterInstrument> for PyHeaterInstrument {
+    fn from(row: &azoth_process::models::heater::HeaterInstrument) -> Self {
+        Self {
+            tag: row.tag.clone(),
+            isa_symbol: row.isa_symbol.clone(),
+            service: row.service.clone(),
+            io_type: row.io_type.clone(),
+            range_unit: row.range_unit.clone(),
+            range_min: row.range_min,
+            range_max: row.range_max,
+            sil_rating: row.sil_rating,
+            safety_related: row.safety_related,
+        }
+    }
+}
+
 /// the model's assumption and warning records, in the order it forms them.
 #[pyclass(
     frozen,

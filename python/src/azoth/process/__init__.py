@@ -1477,6 +1477,10 @@ def heater(
     pressure_drop: Q | None = None,
     max_outlet_temperature: Q | None = None,
     min_outlet_temperature: Q | None = None,
+    instrument_design: bool | None = None,
+    include_safety_instruments: bool | None = None,
+    default_sil_level: float | None = None,
+    heat_exchanger_type: str | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1512,6 +1516,10 @@ def heater(
         pressure_drop=pressure_drop,
         max_outlet_temperature=max_outlet_temperature,
         min_outlet_temperature=min_outlet_temperature,
+        instrument_design=instrument_design,
+        include_safety_instruments=include_safety_instruments,
+        default_sil_level=default_sil_level,
+        heat_exchanger_type=heat_exchanger_type,
     )
 
 

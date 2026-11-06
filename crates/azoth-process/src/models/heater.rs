@@ -7,7 +7,7 @@
 use azoth_core::units::{
     MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, watts,
 };
-use azoth_core::{Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -15,6 +15,29 @@ use crate::kernels::heater as kernel;
 use crate::kernels::heater::HeaterCapacity;
 use crate::model_gen;
 use crate::stream::Stream;
+
+/// One row of `Heater`'s instrument design.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct HeaterInstrument {
+    /// The tag the list assigns: `SYMBOL-(1000 + position)`.
+    pub tag: String,
+    /// The ISA symbol.
+    pub isa_symbol: String,
+    /// The service description.
+    pub service: String,
+    /// `AI`, `AO`, `DI` or `DO`.
+    pub io_type: String,
+    /// The range's unit; absent for a digital trip.
+    pub range_unit: Option<String>,
+    /// The range's lower bound, in `range_unit`.
+    pub range_min: f64,
+    /// The range's upper bound, in `range_unit`.
+    pub range_max: f64,
+    /// The SIL rating; zero for a non-safety instrument.
+    pub sil_rating: f64,
+    /// Whether the row is safety-related.
+    pub safety_related: bool,
+}
 
 /// Result of `process.heater`.
 ///
@@ -52,6 +75,22 @@ pub struct HeaterResult {
     pub hard_limit_exceeded: bool,
     /// `getBottleneckConstraint`'s class-side name.
     pub bottleneck_constraint: Option<String>,
+    /// The instruments in the design's list.
+    pub instrument_count: Option<f64>,
+    /// The `AI` rows.
+    pub analog_input_count: Option<f64>,
+    /// The `AO` rows.
+    pub analog_output_count: Option<f64>,
+    /// The `DI` rows.
+    pub digital_input_count: Option<f64>,
+    /// The `DO` rows.
+    pub digital_output_count: Option<f64>,
+    /// The four counts' sum.
+    pub total_io_count: Option<f64>,
+    /// The safety-related rows.
+    pub safety_instrument_count: Option<f64>,
+    /// The design's instrument list, in the class's insertion order; empty when it did not run.
+    pub instruments: Vec<HeaterInstrument>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -68,8 +107,30 @@ impl HeaterResult {
     pub fn of(
         outcome: &kernel::HeaterOutcome,
         capacity: HeaterCapacity,
+        instruments: Option<Vec<HeaterInstrument>>,
         warnings: Vec<Warning>,
     ) -> Self {
+        let counts = instruments.as_ref().map(|rows| {
+            let count = |io_type: &str| {
+                rows.iter()
+                    .filter(|row| row.io_type == io_type)
+                    .count() as f64
+            };
+            let analog_input = count("AI");
+            let analog_output = count("AO");
+            let digital_input = count("DI");
+            let digital_output = count("DO");
+            let safety = rows.iter().filter(|row| row.safety_related).count() as f64;
+            (
+                rows.len() as f64,
+                analog_input,
+                analog_output,
+                digital_input,
+                digital_output,
+                analog_input + analog_output + digital_input + digital_output,
+                safety,
+            )
+        });
         Self {
             outlet_n: outcome.outlet.n,
             outlet_z: outcome.outlet.z.clone(),
@@ -83,6 +144,14 @@ impl HeaterResult {
             capacity_exceeded: capacity.capacity_exceeded,
             hard_limit_exceeded: capacity.hard_limit_exceeded,
             bottleneck_constraint: capacity.bottleneck_constraint.map(str::to_owned),
+            instrument_count: counts.map(|values| values.0),
+            analog_input_count: counts.map(|values| values.1),
+            analog_output_count: counts.map(|values| values.2),
+            digital_input_count: counts.map(|values| values.3),
+            digital_output_count: counts.map(|values| values.4),
+            total_io_count: counts.map(|values| values.5),
+            safety_instrument_count: counts.map(|values| values.6),
+            instruments: instruments.unwrap_or_default(),
             warnings,
         }
     }
@@ -94,7 +163,7 @@ impl HeaterResult {
 /// [`azoth_core::AzothError::InvalidInput`] if the shapes disagree, if the pressure drop
 /// leaves a non-positive pressure, or if a duty is asked of a stream carrying no flow, and
 /// whatever the databank or the flash refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are ten
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
 pub fn heater(
     components: &[String],
     inlet_n: f64,
@@ -106,6 +175,10 @@ pub fn heater(
     pressure_drop: Option<Pressure>,
     max_outlet_temperature: Option<ThermodynamicTemperature>,
     min_outlet_temperature: Option<ThermodynamicTemperature>,
+    instrument_design: Option<bool>,
+    include_safety_instruments: Option<bool>,
+    default_sil_level: Option<f64>,
+    heat_exchanger_type: Option<&str>,
 ) -> Result<HeaterResult> {
     let spec = &model_gen::HEATER_SPEC;
     let mut warnings = Vec::new();
@@ -122,6 +195,43 @@ pub fn heater(
         &mut warnings,
     )?;
 
+    let instrument_requested = instrument_design.unwrap_or(false);
+    for (name, stated) in [
+        (
+            "include_safety_instruments",
+            include_safety_instruments.is_some(),
+        ),
+        ("default_sil_level", default_sil_level.is_some()),
+        ("heat_exchanger_type", heat_exchanger_type.is_some()),
+    ] {
+        if stated && !instrument_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "an instrument-design input is stated without `instrument_design`",
+            ));
+        }
+    }
+    let sil_level = default_sil_level.unwrap_or(2.0);
+    if !sil_level.is_finite()
+        || sil_level < 0.0
+        || sil_level.fract() != 0.0
+        || sil_level > f64::from(u32::MAX)
+    {
+        return Err(AzothError::invalid_input(
+            "default_sil_level",
+            format!("the SIL level is {sil_level}, and the class's setter takes an integer"),
+        ));
+    }
+    let instrument_type = match heat_exchanger_type {
+        Some(spelling) => kernel::InstrumentType::parse(spelling).ok_or_else(|| {
+            AzothError::invalid_input(
+                "heat_exchanger_type",
+                format!("{spelling} is not one of electric_heater, air_cooler or shell_and_tube"),
+            )
+        })?,
+        None => kernel::InstrumentType::ElectricHeater,
+    };
+
     let feed = Stream::from_pt(
         components.to_vec(),
         inlet_z.to_vec(),
@@ -135,6 +245,36 @@ pub fn heater(
         max_outlet_temperature,
         min_outlet_temperature,
     );
+    let instruments = if instrument_requested {
+        let rows = kernel::instruments(
+            instrument_type,
+            include_safety_instruments.unwrap_or(true),
+            sil_level as u32,
+        );
+        Some(
+            rows.into_iter()
+                .enumerate()
+                .map(|(index, row)| HeaterInstrument {
+                    tag: format!("{}-{}", row.isa_symbol, 1000 + index + 1),
+                    isa_symbol: row.isa_symbol,
+                    service: row.service,
+                    io_type: row.io_type,
+                    range_unit: row.range_unit,
+                    range_min: row.range_min,
+                    range_max: row.range_max,
+                    sil_rating: f64::from(row.sil_rating),
+                    safety_related: row.safety_related,
+                })
+                .collect(),
+        )
+    } else {
+        None
+    };
 
-    Ok(HeaterResult::of(&outcome, capacity, warnings))
+    Ok(HeaterResult::of(
+        &outcome,
+        capacity,
+        instruments,
+        warnings,
+    ))
 }

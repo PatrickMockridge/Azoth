@@ -277,6 +277,7 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.heater", "pressure_drop", "Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("unit_ops.heater", "max_outlet_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.heater", "min_outlet_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
+    ("unit_ops.heater", "default_sil_level", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.manifold", "feed_n", "mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("unit_ops.manifold", "feed_z", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.manifold", "feed_p", "Pa", [-1, 1, -2, 0, 0, 0, 0]),

@@ -618,6 +618,20 @@ class WaterMixingResult:
     si_feco3: float | None
 
 @final
+class HeaterInstrument:
+    """the design's instrument list, in the class's insertion order; empty when the design did not run."""
+
+    tag: str
+    isa_symbol: str
+    service: str
+    io_type: str
+    range_unit: str | None
+    range_min: float
+    range_max: float
+    sil_rating: float
+    safety_related: bool
+
+@final
 class HemReleaseStation:
     """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
 
@@ -2998,6 +3012,14 @@ class HeaterResult:
     capacity_exceeded: bool
     hard_limit_exceeded: bool
     bottleneck_constraint: str | None
+    instrument_count: float | None
+    analog_input_count: float | None
+    analog_output_count: float | None
+    digital_input_count: float | None
+    digital_output_count: float | None
+    total_io_count: float | None
+    safety_instrument_count: float | None
+    instruments: list[HeaterInstrument]
     warnings: list[Warning]
 
 @final
@@ -5853,6 +5875,10 @@ def heater(
     pressure_drop: float | None = None,
     max_outlet_temperature: float | None = None,
     min_outlet_temperature: float | None = None,
+    instrument_design: bool | None = None,
+    include_safety_instruments: bool | None = None,
+    default_sil_level: float | None = None,
+    heat_exchanger_type: str | None = None,
 ) -> HeaterResult: ...
 def hem_release(
     components: list[str],

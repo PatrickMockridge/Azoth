@@ -527,6 +527,14 @@ impl CalcResult for HeaterResult {
         "capacity_exceeded",
         "hard_limit_exceeded",
         "bottleneck_constraint",
+        "instrument_count",
+        "analog_input_count",
+        "analog_output_count",
+        "digital_input_count",
+        "digital_output_count",
+        "total_io_count",
+        "safety_instrument_count",
+        "instruments",
         "warnings",
     ];
 

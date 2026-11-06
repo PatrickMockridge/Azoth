@@ -25874,6 +25874,1353 @@ static HEATER_CASES: &[TestCase] = &[
         records: &[],
         expected_records: &[],
     },
+    TestCase {
+        id: "the_electric_heater_instrument_list",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_temperature", 340.0),
+        ],
+        flags: &[("instrument_design", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("instrument_count", 8.0),
+            ("analog_input_count", 6.0),
+            ("analog_output_count", 0.0),
+            ("digital_input_count", 2.0),
+            ("digital_output_count", 0.0),
+            ("total_io_count", 8.0),
+            ("safety_instrument_count", 2.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "instruments",
+            &[
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1001"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1002"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1003"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1004"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PDT-1005"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PDT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Side dP"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bar"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TSHH-1006"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TSHH"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Overtemperature Trip"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("DI"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(true),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1007"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Heating Element Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TSHH-1008"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TSHH"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Element Overtemperature Trip"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("DI"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(true),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_instrument_list_without_safety",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_temperature", 340.0),
+        ],
+        flags: &[
+            ("instrument_design", true),
+            ("include_safety_instruments", false),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("instrument_count", 6.0),
+            ("analog_input_count", 6.0),
+            ("analog_output_count", 0.0),
+            ("digital_input_count", 0.0),
+            ("digital_output_count", 0.0),
+            ("total_io_count", 6.0),
+            ("safety_instrument_count", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "instruments",
+            &[
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1001"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1002"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1003"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1004"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PDT-1005"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PDT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Side dP"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bar"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1006"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Heating Element Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_shell_and_tube_instrument_list",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_temperature", 340.0),
+        ],
+        flags: &[("instrument_design", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("heat_exchanger_type", "shell_and_tube")],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("instrument_count", 9.0),
+            ("analog_input_count", 8.0),
+            ("analog_output_count", 0.0),
+            ("digital_input_count", 1.0),
+            ("digital_output_count", 0.0),
+            ("total_io_count", 9.0),
+            ("safety_instrument_count", 1.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "instruments",
+            &[
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1001"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1002"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1003"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1004"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PDT-1005"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PDT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Side dP"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bar"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TSHH-1006"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TSHH"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Overtemperature Trip"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("DI"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(true),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1007"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Utility Inlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1008"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Utility Outlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1009"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Utility Inlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_air_cooler_instrument_list",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_temperature", 340.0),
+        ],
+        flags: &[("instrument_design", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("heat_exchanger_type", "air_cooler")],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("instrument_count", 9.0),
+            ("analog_input_count", 8.0),
+            ("analog_output_count", 0.0),
+            ("digital_input_count", 1.0),
+            ("digital_output_count", 0.0),
+            ("total_io_count", 9.0),
+            ("safety_instrument_count", 1.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "instruments",
+            &[
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1001"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1002"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-50.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1003"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Inlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PT-1004"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Outlet Pressure"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bara"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("PDT-1005"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("PDT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Process Side dP"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("bar"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TSHH-1006"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TSHH"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Overtemperature Trip"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("DI"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(true),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("TT-1007"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("TT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Ambient Air Temperature"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("degC"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(-40.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(60.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("ST-1008"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("ST"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Fan Speed"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("rpm"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(1800.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "tag",
+                        value: FieldValue::Name("VT-1009"),
+                    },
+                    RecordField {
+                        name: "isa_symbol",
+                        value: FieldValue::Name("VT"),
+                    },
+                    RecordField {
+                        name: "service",
+                        value: FieldValue::Name("Fan Vibration"),
+                    },
+                    RecordField {
+                        name: "io_type",
+                        value: FieldValue::Name("AI"),
+                    },
+                    RecordField {
+                        name: "range_unit",
+                        value: FieldValue::Name("mm/s"),
+                    },
+                    RecordField {
+                        name: "range_min",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "range_max",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "sil_rating",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "safety_related",
+                        value: FieldValue::Flag(false),
+                    },
+                ],
+            ],
+        )],
+    },
 ];
 
 /// Registry entry for `process.heater`.

@@ -294,6 +294,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyEquilibriumSoundSpeedSample>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
+    m.add_class::<crate::record_outputs_gen::PyHeaterInstrument>()?;
     m.add_class::<crate::record_outputs_gen::PyHemReleaseDiagnostic>()?;
     m.add_class::<crate::record_outputs_gen::PyHemReleaseStation>()?;
     m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;

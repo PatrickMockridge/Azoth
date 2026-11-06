@@ -29,6 +29,7 @@ from azoth.core.record_outputs_gen import (
     DepositionSegmentRow,
     EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
+    HeaterInstrument,
     HemReleaseDiagnostic,
     HemReleaseStation,
     HydrateRiskPoint,
@@ -6604,6 +6605,30 @@ class HeaterResult(_HasWarnings):
 
     #: `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
     bottleneck_constraint: str | None
+
+    #: the instruments in the design's list.
+    instrument_count: float | None
+
+    #: the rows whose I/O type is `AI`.
+    analog_input_count: float | None
+
+    #: the rows whose I/O type is `AO`.
+    analog_output_count: float | None
+
+    #: the rows whose I/O type is `DI`.
+    digital_input_count: float | None
+
+    #: the rows whose I/O type is `DO`.
+    digital_output_count: float | None
+
+    #: the four counts' sum, which is the instrument count for this list.
+    total_io_count: float | None
+
+    #: the rows marked safety-related: the overtemperature trips.
+    safety_instrument_count: float | None
+
+    #: the design's instrument list, in the class's insertion order; empty when the design did not run.
+    instruments: tuple[HeaterInstrument, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

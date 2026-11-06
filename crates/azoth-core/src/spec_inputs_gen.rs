@@ -3180,6 +3180,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "min_outlet_temperature",
         "thermodynamic_temperature",
     ),
+    ("process.heater", "default_sil_level", "dimensionless"),
     ("process.hem_release", "upstream_z", "dimensionless"),
     (
         "process.hem_release",

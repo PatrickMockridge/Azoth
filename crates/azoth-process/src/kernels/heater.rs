@@ -193,6 +193,242 @@ pub fn capacity(
     }
 }
 
+/// `HeatExchangerInstrumentDesign.HeatExchangerType`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstrumentType {
+    /// An electric resistance heater; the class detects this for a `Heater`.
+    ElectricHeater,
+    /// An air cooler's fan instrumentation.
+    AirCooler,
+    /// A shell-and-tube exchanger's utility-side instrumentation.
+    ShellAndTube,
+}
+
+impl InstrumentType {
+    /// The class's string spelling.
+    #[must_use]
+    pub fn parse(spelling: &str) -> Option<Self> {
+        Some(match spelling {
+            "electric_heater" => Self::ElectricHeater,
+            "air_cooler" => Self::AirCooler,
+            "shell_and_tube" => Self::ShellAndTube,
+            _ => return None,
+        })
+    }
+}
+
+/// One `InstrumentSpecification` row, before the list assigns its tag.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InstrumentRow {
+    /// The ISA symbol, e.g. `TT`.
+    pub isa_symbol: String,
+    /// The service description.
+    pub service: String,
+    /// The range's lower bound, in `range_unit`.
+    pub range_min: f64,
+    /// The range's upper bound, in `range_unit`.
+    pub range_max: f64,
+    /// The range's unit; absent for a digital trip, whose constructor leaves it null.
+    pub range_unit: Option<String>,
+    /// `AI`, `AO`, `DI` or `DO`.
+    pub io_type: String,
+    /// The SIL rating; zero for a non-safety instrument.
+    pub sil_rating: u32,
+    /// Whether the row is safety-related.
+    pub safety_related: bool,
+}
+
+#[allow(clippy::too_many_arguments)] // one parameter per column of the class's row
+fn row(
+    isa_symbol: &str,
+    service: &str,
+    range_min: f64,
+    range_max: f64,
+    range_unit: Option<&str>,
+    io_type: &str,
+    sil_rating: u32,
+    safety_related: bool,
+) -> InstrumentRow {
+    InstrumentRow {
+        isa_symbol: isa_symbol.to_string(),
+        service: service.to_string(),
+        range_min,
+        range_max,
+        range_unit: range_unit.map(str::to_owned),
+        io_type: io_type.to_string(),
+        sil_rating,
+        safety_related,
+    }
+}
+
+/// `HeatExchangerInstrumentDesign.calcDesign`'s list, in the class's insertion order.
+///
+/// **The list is static.** The five process instruments and the overtemperature trip are
+/// common; the type adds the element monitor, the utility side's three, or the fan's three.
+/// The tag is `SYMBOL-(1000 + position)`, which the list assigns on insertion.
+#[must_use]
+pub fn instruments(
+    kind: InstrumentType,
+    include_safety: bool,
+    sil_rating: u32,
+) -> Vec<InstrumentRow> {
+    let mut rows = vec![
+        row(
+            "TT",
+            "Process Inlet Temperature",
+            -50.0,
+            400.0,
+            Some("degC"),
+            "AI",
+            0,
+            false,
+        ),
+        row(
+            "TT",
+            "Process Outlet Temperature",
+            -50.0,
+            400.0,
+            Some("degC"),
+            "AI",
+            0,
+            false,
+        ),
+        row(
+            "PT",
+            "Process Inlet Pressure",
+            0.0,
+            200.0,
+            Some("bara"),
+            "AI",
+            0,
+            false,
+        ),
+        row(
+            "PT",
+            "Process Outlet Pressure",
+            0.0,
+            200.0,
+            Some("bara"),
+            "AI",
+            0,
+            false,
+        ),
+        row(
+            "PDT",
+            "Process Side dP",
+            0.0,
+            10.0,
+            Some("bar"),
+            "AI",
+            0,
+            false,
+        ),
+    ];
+    if include_safety {
+        rows.push(row(
+            "TSHH",
+            "Overtemperature Trip",
+            0.0,
+            0.0,
+            None,
+            "DI",
+            sil_rating,
+            true,
+        ));
+    }
+    match kind {
+        InstrumentType::ElectricHeater => {
+            rows.push(row(
+                "TT",
+                "Heating Element Temperature",
+                0.0,
+                600.0,
+                Some("degC"),
+                "AI",
+                0,
+                false,
+            ));
+            if include_safety {
+                rows.push(row(
+                    "TSHH",
+                    "Element Overtemperature Trip",
+                    0.0,
+                    0.0,
+                    None,
+                    "DI",
+                    sil_rating,
+                    true,
+                ));
+            }
+        }
+        InstrumentType::ShellAndTube => {
+            rows.push(row(
+                "TT",
+                "Utility Inlet Temperature",
+                -50.0,
+                400.0,
+                Some("degC"),
+                "AI",
+                0,
+                false,
+            ));
+            rows.push(row(
+                "TT",
+                "Utility Outlet Temperature",
+                -50.0,
+                400.0,
+                Some("degC"),
+                "AI",
+                0,
+                false,
+            ));
+            rows.push(row(
+                "PT",
+                "Utility Inlet Pressure",
+                0.0,
+                50.0,
+                Some("bara"),
+                "AI",
+                0,
+                false,
+            ));
+        }
+        InstrumentType::AirCooler => {
+            rows.push(row(
+                "TT",
+                "Ambient Air Temperature",
+                -40.0,
+                60.0,
+                Some("degC"),
+                "AI",
+                0,
+                false,
+            ));
+            rows.push(row(
+                "ST",
+                "Fan Speed",
+                0.0,
+                1800.0,
+                Some("rpm"),
+                "AI",
+                0,
+                false,
+            ));
+            rows.push(row(
+                "VT",
+                "Fan Vibration",
+                0.0,
+                100.0,
+                Some("mm/s"),
+                "AI",
+                0,
+                false,
+            ));
+        }
+    }
+    rows
+}
+
 #[cfg(test)]
 mod capacity_tests {
     use super::*;
@@ -275,5 +511,56 @@ mod capacity_tests {
         assert_eq!(map.max_utilization, 0.95);
         assert_eq!(map.bottleneck_constraint, Some("maxOutletTemperature"));
         assert!(!map.capacity_exceeded);
+    }
+}
+
+#[cfg(test)]
+mod instrument_tests {
+    use super::*;
+
+    #[test]
+    fn the_electric_heater_has_eight_with_safety_and_six_without() {
+        let with = instruments(InstrumentType::ElectricHeater, true, 2);
+        assert_eq!(with.len(), 8);
+        assert_eq!(
+            with.iter()
+                .map(|row| row.isa_symbol.as_str())
+                .collect::<Vec<_>>(),
+            vec!["TT", "TT", "PT", "PT", "PDT", "TSHH", "TT", "TSHH"]
+        );
+        assert_eq!(with[5].sil_rating, 2);
+        assert!(with[5].safety_related);
+        assert_eq!(with[5].range_unit, None);
+
+        let without = instruments(InstrumentType::ElectricHeater, false, 2);
+        assert_eq!(without.len(), 6);
+        assert!(without.iter().all(|row| !row.safety_related));
+    }
+
+    #[test]
+    fn the_other_types_add_three_instruments_each() {
+        let shell = instruments(InstrumentType::ShellAndTube, true, 2);
+        assert_eq!(shell.len(), 9);
+        assert_eq!(shell[6].service, "Utility Inlet Temperature");
+        assert_eq!(shell[7].service, "Utility Outlet Temperature");
+        assert_eq!(shell[8].service, "Utility Inlet Pressure");
+
+        let air = instruments(InstrumentType::AirCooler, true, 2);
+        assert_eq!(air.len(), 9);
+        assert_eq!(air[7].isa_symbol, "ST");
+        assert_eq!(air[8].isa_symbol, "VT");
+    }
+
+    #[test]
+    fn the_type_parses_its_three_spellings() {
+        assert_eq!(
+            InstrumentType::parse("electric_heater"),
+            Some(InstrumentType::ElectricHeater)
+        );
+        assert_eq!(
+            InstrumentType::parse("shell_and_tube"),
+            Some(InstrumentType::ShellAndTube)
+        );
+        assert_eq!(InstrumentType::parse("coalescer"), None);
     }
 }

@@ -186,6 +186,9 @@ public class ProcessProbe {
       case "heater_capacity":
         heaterCapacity();
         break;
+      case "heater_instruments":
+        heaterInstrumentRows();
+        break;
       case "cooler":
         heatRows("Cooler");
         break;
@@ -584,6 +587,89 @@ public class ProcessProbe {
         .getBottleneckConstraint();
     System.out.println(
         "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
+  }
+
+  /// `Heater`'s instrument design: the static list, its I/O counts and its three types.
+  ///
+  /// **The list is not physics.** A heater's design is eight instruments by default - process
+  /// inlet/outlet temperature and pressure, a differential pressure, two SIL trips and the
+  /// element's own temperature - and the only branch is the type. The estimated costs are USD
+  /// and are printed as evidence, not carried.
+  static void heaterInstrumentRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    for (boolean safety : new boolean[] {true, false}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setOutletTemperature(340.0);
+      heater.run();
+      neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign design =
+          heater.getInstrumentDesign();
+      design.setIncludeSafetyInstruments(safety);
+      design.calcDesign();
+      System.out.println("include_safety=" + safety);
+      printInstrumentDesign(design);
+    }
+
+    for (neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType type :
+        new neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType[] {
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.SHELL_AND_TUBE,
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.AIR_COOLER,
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.ELECTRIC_HEATER}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setOutletTemperature(340.0);
+      heater.run();
+      neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign design =
+          heater.getInstrumentDesign();
+      design.setHeatExchangerType(type);
+      design.calcDesign();
+      System.out.println("heat_exchanger_type=" + type.name());
+      printInstrumentDesign(design);
+    }
+  }
+
+  static void printInstrumentDesign(
+      neqsim.process.instrumentdesign.InstrumentDesign design) {
+    System.out.println("instrument_count=" + design.getInstrumentList().size());
+    System.out.println("analog_input_count=" + design.getInstrumentList().getAnalogInputCount());
+    System.out.println(
+        "analog_output_count=" + design.getInstrumentList().getAnalogOutputCount());
+    System.out.println(
+        "digital_input_count=" + design.getInstrumentList().getDigitalInputCount());
+    System.out.println(
+        "digital_output_count=" + design.getInstrumentList().getDigitalOutputCount());
+    System.out.println("total_io_count=" + design.getTotalIOCount());
+    System.out.println(
+        "safety_instrument_count=" + design.getInstrumentList().getSafetyInstrumentCount());
+    System.out.println("estimated_cost_usd=" + design.getEstimatedCostUSD());
+    System.out.println("hazardous_area_zone=" + design.getHazardousAreaZone());
+    System.out.println("protection_concept=" + design.getProtectionConcept());
+    System.out.println("instrument_standard=" + design.getInstrumentStandard());
+    System.out.println("include_safety_instruments=" + design.isIncludeSafetyInstruments());
+    System.out.println("default_sil_level=" + design.getDefaultSilLevel());
+    int index = 0;
+    for (neqsim.process.instrumentdesign.InstrumentSpecification instrument :
+        design.getInstrumentList().getAll()) {
+      System.out.println("instrument_" + index + "_tag=" + instrument.getTagNumber());
+      System.out.println("instrument_" + index + "_isa_symbol=" + instrument.getIsaSymbol());
+      System.out.println("instrument_" + index + "_service=" + instrument.getService());
+      System.out.println("instrument_" + index + "_range_min=" + instrument.getRangeMin());
+      System.out.println("instrument_" + index + "_range_max=" + instrument.getRangeMax());
+      System.out.println("instrument_" + index + "_range_unit=" + instrument.getRangeUnit());
+      System.out.println("instrument_" + index + "_io_type=" + instrument.getIoType());
+      System.out.println("instrument_" + index + "_sil_rating=" + instrument.getSilRating());
+      System.out.println(
+          "instrument_" + index + "_safety_related=" + instrument.isSafetyRelated());
+      System.out.println(
+          "instrument_" + index + "_device_class=" + instrument.getDeviceClassName());
+      System.out.println(
+          "instrument_" + index + "_estimated_cost_usd=" + instrument.getEstimatedCostUSD());
+      index++;
+    }
     System.out.println();
   }
 

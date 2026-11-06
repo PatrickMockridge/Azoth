@@ -12,7 +12,9 @@ assumptions = [
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**the outlet-temperature limits are two HARD constraints.** Either setter initializes the map; the maximum's utilization is `temperature / limit`, the minimum's is `limit / temperature`, both capped at 9.99. A non-positive minimum is not a constraint.",
     "**the maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads `maxValue`, which `setMaxOutletTemperature` never sets, so only the minimum can trip it. The map holds no duty or pressure-drop constraint while the design's limits are zero.",
-    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, an electrical and an instrument design, and a utility specification. **Those are owed**: the bounded outlet temperatures above are the steady capacity surface.",
+    "**The instrument design is a static list, not physics.** Five process instruments and an overtemperature trip are common; the type adds the element monitor, the utility side's three, or the fan's three. The tag is `SYMBOL-(1000 + position)`.",
+    "**The instrument ranges are stated in their own units.** The list stores a number pair and a unit string, and the port publishes both; the values are not converted to SI because the class does not convert them.",
+    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, an electrical design and a utility specification. **Those are owed**: the loading, capacity and instrument surfaces above are the steady ones.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
@@ -58,6 +60,23 @@ description = "`setMaxOutletTemperature`, the maximum outlet-temperature limit. 
 unit = "K"
 optional = true
 description = "`setMinOutletTemperature`, the minimum outlet-temperature limit. **Absent is 0, and only a positive limit is a constraint** (`hasMinOutletTemperatureLimit`). Supplying any value initializes the map.\n"
+[inputs.instrument_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerInstrumentDesign.calcDesign`. Absent is false; every instrument output is absent without it.\n"
+[inputs.include_safety_instruments]
+type = "boolean"
+optional = true
+description = "whether the overtemperature trips are in the list. Absent takes the class's `true`.\n"
+[inputs.default_sil_level]
+unit = "dimensionless"
+optional = true
+description = "the SIL rating the safety trips carry. Absent takes the class's `2`; the setter takes an integer and clamps nothing.\n"
+[inputs.heat_exchanger_type]
+type = "enum"
+values = ["electric_heater", "air_cooler", "shell_and_tube"]
+optional = true
+description = "the construction the type-specific instruments follow. Absent is `electric_heater`, which the class detects for a `Heater`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -100,6 +119,65 @@ description = "`isHardLimitExceeded`: true only when the outlet temperature is b
 type = "string"
 optional = true
 description = "`getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.\n"
+[outputs.instrument_count]
+unit = "dimensionless"
+optional = true
+description = "the instruments in the design's list.\n"
+[outputs.analog_input_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `AI`.\n"
+[outputs.analog_output_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `AO`.\n"
+[outputs.digital_input_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `DI`.\n"
+[outputs.digital_output_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `DO`.\n"
+[outputs.total_io_count]
+unit = "dimensionless"
+optional = true
+description = "the four counts' sum, which is the instrument count for this list.\n"
+[outputs.safety_instrument_count]
+unit = "dimensionless"
+optional = true
+description = "the rows marked safety-related: the overtemperature trips.\n"
+[outputs.instruments]
+type = "record_list"
+description = "the design's instrument list, in the class's insertion order; empty when the design did not run.\n"
+[outputs.instruments.fields.tag]
+type = "string"
+description = "the tag the list assigns: `SYMBOL-(1000 + position)`.\n"
+[outputs.instruments.fields.isa_symbol]
+type = "string"
+description = "the ISA symbol, e.g. `TT` or `TSHH`.\n"
+[outputs.instruments.fields.service]
+type = "string"
+description = "the service description.\n"
+[outputs.instruments.fields.io_type]
+type = "string"
+description = "`AI`, `AO`, `DI` or `DO`.\n"
+[outputs.instruments.fields.range_unit]
+type = "string"
+optional = true
+description = "the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.\n"
+[outputs.instruments.fields.range_min]
+unit = "dimensionless"
+description = "the range's lower bound, in the row's `range_unit`.\n"
+[outputs.instruments.fields.range_max]
+unit = "dimensionless"
+description = "the range's upper bound, in the row's `range_unit`.\n"
+[outputs.instruments.fields.sil_rating]
+unit = "dimensionless"
+description = "the SIL rating; zero for a non-safety instrument.\n"
+[outputs.instruments.fields.safety_related]
+type = "boolean"
+description = "whether the row is safety-related.\n"
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

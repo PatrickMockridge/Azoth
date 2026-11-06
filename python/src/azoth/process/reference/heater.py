@@ -27,16 +27,21 @@ palette parameter - so a heater that specifies nothing still moves the pressure.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
+from azoth.core.record_outputs_gen import HeaterInstrument
 from azoth.core.result import HeaterResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
+
+#: `HeatExchangerInstrumentDesign.HeatExchangerType`'s spellings.
+INSTRUMENT_TYPES = ("electric_heater", "air_cooler", "shell_and_tube")
 
 
 def heater(
@@ -50,6 +55,10 @@ def heater(
     pressure_drop: Q | None = None,
     max_outlet_temperature: Q | None = None,
     min_outlet_temperature: Q | None = None,
+    instrument_design: bool | None = None,
+    include_safety_instruments: bool | None = None,
+    default_sil_level: float | None = None,
+    heat_exchanger_type: str | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -131,8 +140,53 @@ def heater(
             "in and not a function of these inputs",
         )
 
+    instrument_requested = bool(instrument_design)
+    for name, stated in (
+        ("include_safety_instruments", include_safety_instruments is not None),
+        ("default_sil_level", default_sil_level is not None),
+        ("heat_exchanger_type", heat_exchanger_type is not None),
+    ):
+        if stated and not instrument_requested:
+            raise InvalidInputError(
+                name, "an instrument-design input is stated without `instrument_design`"
+            )
+    sil = 2.0 if default_sil_level is None else float(default_sil_level)
+    if not math.isfinite(sil) or sil < 0.0 or not sil.is_integer():
+        raise InvalidInputError(
+            "default_sil_level",
+            f"the SIL level is {sil}, and the class's setter takes an integer",
+        )
+    kind = "electric_heater" if heat_exchanger_type is None else heat_exchanger_type
+    if kind not in INSTRUMENT_TYPES:
+        raise InvalidInputError(
+            "heat_exchanger_type",
+            f"{kind} is not one of electric_heater, air_cooler or shell_and_tube",
+        )
+    instruments = (
+        _instruments(kind, include_safety_instruments is not False, int(sil))
+        if instrument_requested
+        else ()
+    )
+
     states = _states(components, n, inlet_z, p, t, t_out, q, drop)
     capacity = _capacity(states.outlet_t.to("K").magnitude, max_t, min_t)
+    analog_input = sum(1 for row in instruments if row.io_type == "AI")
+    analog_output = sum(1 for row in instruments if row.io_type == "AO")
+    digital_input = sum(1 for row in instruments if row.io_type == "DI")
+    digital_output = sum(1 for row in instruments if row.io_type == "DO")
+    counts = (
+        None
+        if not instrument_requested
+        else (
+            float(len(instruments)),
+            float(analog_input),
+            float(analog_output),
+            float(digital_input),
+            float(digital_output),
+            float(analog_input + analog_output + digital_input + digital_output),
+            float(sum(1 for row in instruments if row.safety_related)),
+        )
+    )
 
     return HeaterResult(
         outlet_n=from_si(n, "mol/s"),
@@ -147,6 +201,14 @@ def heater(
         capacity_exceeded=capacity.capacity_exceeded,
         hard_limit_exceeded=capacity.hard_limit_exceeded,
         bottleneck_constraint=capacity.bottleneck_constraint,
+        instrument_count=None if counts is None else counts[0],
+        analog_input_count=None if counts is None else counts[1],
+        analog_output_count=None if counts is None else counts[2],
+        digital_input_count=None if counts is None else counts[3],
+        digital_output_count=None if counts is None else counts[4],
+        total_io_count=None if counts is None else counts[5],
+        safety_instrument_count=None if counts is None else counts[6],
+        instruments=instruments,
         warnings=tuple(warnings),
     )
 
@@ -290,6 +352,62 @@ def _capacity(
         or (min_utilization is not None and min_utilization > 1.0),
         hard_limit_exceeded=(min_limit is not None and outlet_temperature < min_limit),
         bottleneck_constraint=bottleneck_constraint,
+    )
+
+
+def _instruments(kind: str, include_safety: bool, sil: int) -> tuple[HeaterInstrument, ...]:
+    """`HeatExchangerInstrumentDesign.calcDesign`'s list, in the class's order."""
+    rows: list[tuple[str, str, float, float, str | None, str, int, bool]] = [
+        ("TT", "Process Inlet Temperature", -50.0, 400.0, "degC", "AI", 0, False),
+        ("TT", "Process Outlet Temperature", -50.0, 400.0, "degC", "AI", 0, False),
+        ("PT", "Process Inlet Pressure", 0.0, 200.0, "bara", "AI", 0, False),
+        ("PT", "Process Outlet Pressure", 0.0, 200.0, "bara", "AI", 0, False),
+        ("PDT", "Process Side dP", 0.0, 10.0, "bar", "AI", 0, False),
+    ]
+    if include_safety:
+        rows.append(("TSHH", "Overtemperature Trip", 0.0, 0.0, None, "DI", sil, True))
+    if kind == "electric_heater":
+        rows.append(("TT", "Heating Element Temperature", 0.0, 600.0, "degC", "AI", 0, False))
+        if include_safety:
+            rows.append(("TSHH", "Element Overtemperature Trip", 0.0, 0.0, None, "DI", sil, True))
+    elif kind == "shell_and_tube":
+        rows.extend(
+            [
+                ("TT", "Utility Inlet Temperature", -50.0, 400.0, "degC", "AI", 0, False),
+                ("TT", "Utility Outlet Temperature", -50.0, 400.0, "degC", "AI", 0, False),
+                ("PT", "Utility Inlet Pressure", 0.0, 50.0, "bara", "AI", 0, False),
+            ]
+        )
+    else:
+        rows.extend(
+            [
+                ("TT", "Ambient Air Temperature", -40.0, 60.0, "degC", "AI", 0, False),
+                ("ST", "Fan Speed", 0.0, 1800.0, "rpm", "AI", 0, False),
+                ("VT", "Fan Vibration", 0.0, 100.0, "mm/s", "AI", 0, False),
+            ]
+        )
+    return tuple(
+        HeaterInstrument(
+            tag=f"{symbol}-{1000 + index + 1}",
+            isa_symbol=symbol,
+            service=service,
+            io_type=io_type,
+            range_unit=unit,
+            range_min=low,
+            range_max=high,
+            sil_rating=float(sil_rating),
+            safety_related=safety,
+        )
+        for index, (
+            symbol,
+            service,
+            low,
+            high,
+            unit,
+            io_type,
+            sil_rating,
+            safety,
+        ) in enumerate(rows)
     )
 
 

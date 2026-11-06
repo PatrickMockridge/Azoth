@@ -16,10 +16,11 @@
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
-    PyFlowlineScaleSegment, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
-    PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint, PyMineralEquilibriumRow,
-    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
-    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyFlowlineScaleSegment, PyHeaterInstrument, PyHemReleaseDiagnostic, PyHemReleaseStation,
+    PyHydrateRiskPoint, PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint,
+    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
+    PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction,
+    PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -16482,6 +16483,30 @@ pub struct PyHeaterResult {
     /// `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
     #[pyo3(get)]
     pub bottleneck_constraint: Option<String>,
+    /// the instruments in the design's list.
+    #[pyo3(get)]
+    pub instrument_count: Option<f64>,
+    /// the rows whose I/O type is `AI`.
+    #[pyo3(get)]
+    pub analog_input_count: Option<f64>,
+    /// the rows whose I/O type is `AO`.
+    #[pyo3(get)]
+    pub analog_output_count: Option<f64>,
+    /// the rows whose I/O type is `DI`.
+    #[pyo3(get)]
+    pub digital_input_count: Option<f64>,
+    /// the rows whose I/O type is `DO`.
+    #[pyo3(get)]
+    pub digital_output_count: Option<f64>,
+    /// the four counts' sum, which is the instrument count for this list.
+    #[pyo3(get)]
+    pub total_io_count: Option<f64>,
+    /// the rows marked safety-related: the overtemperature trips.
+    #[pyo3(get)]
+    pub safety_instrument_count: Option<f64>,
+    /// the design's instrument list, in the class's insertion order; empty when the design did not run.
+    #[pyo3(get)]
+    pub instruments: Vec<PyHeaterInstrument>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16491,7 +16516,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16504,6 +16529,14 @@ impl PyHeaterResult {
             self.capacity_exceeded,
             self.hard_limit_exceeded,
             self.bottleneck_constraint,
+            self.instrument_count,
+            self.analog_input_count,
+            self.analog_output_count,
+            self.digital_input_count,
+            self.digital_output_count,
+            self.total_io_count,
+            self.safety_instrument_count,
+            self.instruments,
             self.warnings.len()
         )
     }
@@ -16539,6 +16572,14 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
             capacity_exceeded: r.capacity_exceeded,
             hard_limit_exceeded: r.hard_limit_exceeded,
             bottleneck_constraint: r.bottleneck_constraint.clone(),
+            instrument_count: r.instrument_count,
+            analog_input_count: r.analog_input_count,
+            analog_output_count: r.analog_output_count,
+            digital_input_count: r.digital_input_count,
+            digital_output_count: r.digital_output_count,
+            total_io_count: r.total_io_count,
+            safety_instrument_count: r.safety_instrument_count,
+            instruments: r.instruments.iter().map(PyHeaterInstrument::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

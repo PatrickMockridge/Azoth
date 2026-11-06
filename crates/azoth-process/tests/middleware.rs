@@ -696,8 +696,10 @@ fn the_generated_input_table_is_the_models_own() {
     // velocity, the two L/D ratios, the two pressure margins, the temperature margin, the
     // allowable stress, the joint efficiency, the corrosion allowance, the collapse rating
     // and the integrity flag - `643 + 16 = 659`. **And the expander's two modes** -
-    // `shaft_power` and `outlet_temperature` - `659 + 2 = 661`.
-    assert_eq!(walked, 661, "the inputs this test walked");
+    // `shaft_power` and `outlet_temperature` - `659 + 2 = 661`. **And the heater's instrument
+    // design's four** - `instrument_design`, `include_safety_instruments`,
+    // `default_sil_level` and `heat_exchanger_type` - `661 + 4 = 665`.
+    assert_eq!(walked, 665, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

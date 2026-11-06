@@ -192,6 +192,38 @@ class FlowlineScaleSegment:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeaterInstrument:
+    """the design's instrument list, in the class's insertion order; empty when the design did not run."""
+
+    #: the tag the list assigns: `SYMBOL-(1000 + position)`.
+    tag: str
+
+    #: the ISA symbol, e.g. `TT` or `TSHH`.
+    isa_symbol: str
+
+    #: the service description.
+    service: str
+
+    #: `AI`, `AO`, `DI` or `DO`.
+    io_type: str
+
+    #: the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.
+    range_unit: str | None
+
+    #: the range's lower bound, in the row's `range_unit`.
+    range_min: float
+
+    #: the range's upper bound, in the row's `range_unit`.
+    range_max: float
+
+    #: the SIL rating; zero for a non-safety instrument.
+    sil_rating: float
+
+    #: whether the row is safety-related.
+    safety_related: bool
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HemReleaseDiagnostic:
     """the model's assumption and warning records, in the order it forms them."""
 
