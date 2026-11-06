@@ -6630,6 +6630,57 @@ class HeaterResult(_HasWarnings):
     #: the design's instrument list, in the class's insertion order; empty when the design did not run.
     instruments: tuple[HeaterInstrument, ...]
 
+    #: the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.
+    shaft_power: Q | None
+
+    #: the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.
+    electrical_input_power: Q | None
+
+    #: the apparent power in VA: the electrical input over the power factor.
+    apparent_power: float | None
+
+    #: the reactive power in VAR: the apparent power times `sin(acos(power factor))`.
+    reactive_power: float | None
+
+    #: the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.
+    power_factor: float | None
+
+    #: the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.
+    rated_voltage: float | None
+
+    #: the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.
+    frequency_hz: float | None
+
+    #: the full-load current in amperes, from the input, voltage, power factor and phase count.
+    full_load_current: float | None
+
+    #: the full-load current times the motor's locked-rotor multiplier.
+    starting_current: float | None
+
+    #: the electrical input less the shaft power.
+    total_electrical_losses: Q | None
+
+    #: the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.
+    motor_rated_power: Q | None
+
+    #: the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.
+    motor_efficiency: float | None
+
+    #: the motor's full-load power factor; 0.86 when no motor is sized.
+    motor_power_factor: float | None
+
+    #: the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.
+    motor_rated_speed: float | None
+
+    #: the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.
+    motor_locked_rotor_multiplier: float | None
+
+    #: the instrumentation load, plus the cooling-water pump load for shell-and-tube.
+    total_auxiliary_power: Q | None
+
+    #: the electrical input plus the auxiliary load.
+    total_connected_power: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -698,8 +698,11 @@ fn the_generated_input_table_is_the_models_own() {
     // and the integrity flag - `643 + 16 = 659`. **And the expander's two modes** -
     // `shaft_power` and `outlet_temperature` - `659 + 2 = 661`. **And the heater's instrument
     // design's four** - `instrument_design`, `include_safety_instruments`,
-    // `default_sil_level` and `heat_exchanger_type` - `661 + 4 = 665`.
-    assert_eq!(walked, 665, "the inputs this test walked");
+    // `default_sil_level` and `heat_exchanger_type` - `661 + 4 = 665`. **And the heater's
+    // electrical design's nine** - `electrical_design`, `motor_sizing_margin`, `motor_poles`,
+    // `efficiency_class`, `frequency_hz`, `phases`, `number_of_fans`, `instrumentation_power`
+    // and `cooling_water_pump_power` - `665 + 9 = 674`.
+    assert_eq!(walked, 674, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

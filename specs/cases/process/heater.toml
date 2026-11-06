@@ -449,3 +449,281 @@ instruments = [
     { tag = "ST-1008", isa_symbol = "ST", service = "Fan Speed", io_type = "AI", range_unit = "rpm", range_min = 0.0, range_max = 1800.0, sil_rating = 0.0, safety_related = false },
     { tag = "VT-1009", isa_symbol = "VT", service = "Fan Vibration", io_type = "AI", range_unit = "mm/s", range_min = 0.0, range_max = 100.0, sil_rating = 0.0, safety_related = false },
 ]
+
+[[cases]]
+id = "the_five_kilowatt_heater_is_the_captures"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `electric_5kw`: a 5 kW duty at 1 mol/s, the 5.5 kW motor at the 400 V tap.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 5000.0
+electrical_design = true
+[cases.expected]
+shaft_power = 4999.9999986086605
+electrical_input_power = 5494.505492976549
+apparent_power = 6619.886136116325
+reactive_power = 3692.330137297538
+power_factor = 0.83
+rated_voltage = 400.0
+full_load_current = 9.55498260672858
+starting_current = 57.329895640371475
+total_electrical_losses = 494.505494367889
+motor_rated_power = 5500.0
+motor_efficiency = 0.91
+motor_power_factor = 0.83
+motor_rated_speed = 1425.0
+motor_locked_rotor_multiplier = 6.0
+total_auxiliary_power = 1500.0
+total_connected_power = 6994.505492976549
+
+[[cases]]
+id = "the_hundred_kilowatt_heater_takes_the_690_volt_tap"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `electric_100kw`: 100 kW at 100 mol/s, the 110 kW motor and the 690 V tap.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+[cases.expected]
+shaft_power = 99999.99997673612
+electrical_input_power = 105263.15787024854
+apparent_power = 119617.22485255517
+reactive_power = 56815.03389605495
+power_factor = 0.88
+rated_voltage = 690.0
+full_load_current = 100.08845937440393
+starting_current = 700.6192156208275
+total_electrical_losses = 5263.157893512428
+motor_rated_power = 110000.0
+motor_efficiency = 0.9500000000000001
+motor_power_factor = 0.88
+motor_rated_speed = 1470.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 1500.0
+total_connected_power = 106763.15787024854
+
+[[cases]]
+id = "the_five_hundred_kilowatt_heater_takes_the_6600_volt_tap"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `electric_500kw`: 500 kW asks for the 560 kW motor and the 6600 V tap.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 500000.0
+electrical_design = true
+[cases.expected]
+shaft_power = 499999.9998608659
+electrical_input_power = 518134.71488172637
+apparent_power = 575705.2387574736
+reactive_power = 250944.09570107827
+power_factor = 0.9
+rated_voltage = 6600.0
+full_load_current = 50.361147662197766
+starting_current = 327.34745980428545
+total_electrical_losses = 18134.715020860483
+motor_rated_power = 560000.0
+motor_efficiency = 0.965
+motor_power_factor = 0.9
+motor_rated_speed = 1477.5
+motor_locked_rotor_multiplier = 6.5
+total_auxiliary_power = 1500.0
+total_connected_power = 519634.71488172637
+
+[[cases]]
+id = "the_shell_and_tube_design_is_the_auxiliary_load"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `shell_and_tube_aux`: no motor, so the 1.5 kW instrumentation plus the 3 kW pump at the base class's 0.85 power factor.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+heat_exchanger_type = "shell_and_tube"
+cooling_water_pump_power = 3000.0
+[cases.expected]
+shaft_power = 0.0
+electrical_input_power = 4500.0
+apparent_power = 5294.117647058823
+reactive_power = 2788.84952281396
+power_factor = 0.85
+rated_voltage = 400.0
+full_load_current = 7.6414006216274
+starting_current = 53.489804351391804
+total_electrical_losses = 4500.0
+motor_rated_power = 0.0
+motor_efficiency = 0.9500000000000001
+motor_power_factor = 0.86
+motor_rated_speed = 0.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 4500.0
+total_connected_power = 9000.0
+
+[[cases]]
+id = "the_air_cooler_sizes_the_fans"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `air_cooler_fans`: two fans at 2 kW each, a 5.5 kW motor, and the 400 V tap.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+heat_exchanger_type = "air_cooler"
+[cases.expected]
+shaft_power = 4000.0
+electrical_input_power = 4395.604395604395
+apparent_power = 5295.908910366741
+reactive_power = 2953.8641106599957
+power_factor = 0.83
+rated_voltage = 400.0
+full_load_current = 7.64398608750994
+starting_current = 45.863916525059636
+total_electrical_losses = 395.6043956043951
+motor_rated_power = 5500.0
+motor_efficiency = 0.91
+motor_power_factor = 0.83
+motor_rated_speed = 1425.0
+motor_locked_rotor_multiplier = 6.0
+total_auxiliary_power = 1500.0
+total_connected_power = 5895.604395604395
+
+[[cases]]
+id = "the_ie4_motor_class_lifts_the_efficiency"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `ie4_100kw`: the same 110 kW motor at 96% instead of 95%, so the input, current and losses fall.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+efficiency_class = "ie4"
+[cases.expected]
+shaft_power = 99999.99997673612
+electrical_input_power = 104166.66664243347
+apparent_power = 118371.2120936744
+reactive_power = 56223.21062630438
+power_factor = 0.88
+rated_voltage = 690.0
+full_load_current = 99.04587125592057
+starting_current = 693.321098791444
+total_electrical_losses = 4166.666665697349
+motor_rated_power = 110000.0
+motor_efficiency = 0.96
+motor_power_factor = 0.88
+motor_rated_speed = 1470.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 1500.0
+total_connected_power = 105666.66664243347
+
+[[cases]]
+id = "a_two_pole_motor_runs_at_the_synchronous_speed_less_its_slip"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `two_pole_100kw`: 3000 rpm less the 2% slip, and the efficiency table's 0.5-point penalty.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+motor_poles = 2
+[cases.expected]
+shaft_power = 99999.99997673612
+electrical_input_power = 105820.10579548797
+apparent_power = 120250.12022214542
+reactive_power = 57115.642541007626
+power_factor = 0.88
+rated_voltage = 690.0
+full_load_current = 100.61802794252247
+starting_current = 704.3261955976573
+total_electrical_losses = 5820.105818751841
+motor_rated_power = 110000.0
+motor_efficiency = 0.9450000000000001
+motor_power_factor = 0.88
+motor_rated_speed = 2940.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 1500.0
+total_connected_power = 107320.10579548797
+
+[[cases]]
+id = "a_single_phase_machine_drops_the_square_root_of_three"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `single_phase_100kw`: the same input over `V x pf` rather than `sqrt(3) x V x pf`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+phases = 1
+[cases.expected]
+shaft_power = 99999.99997673612
+electrical_input_power = 105263.15787024854
+apparent_power = 119617.22485255517
+reactive_power = 56815.03389605495
+power_factor = 0.88
+rated_voltage = 690.0
+full_load_current = 173.3582968877611
+starting_current = 1213.5080782143277
+total_electrical_losses = 5263.157893512428
+motor_rated_power = 110000.0
+motor_efficiency = 0.9500000000000001
+motor_power_factor = 0.88
+motor_rated_speed = 1470.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 1500.0
+total_connected_power = 106763.15787024854
+
+[[cases]]
+id = "a_sixty_hertz_supply_moves_the_synchronous_speed"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `sixty_hz_100kw`: the design reports 60 Hz, but the motor is sized before the frequency is copied to it, so the speed stays the 50 Hz row's 1470 rpm.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+frequency_hz = 60.0
+[cases.expected]
+frequency_hz = 60.0
+shaft_power = 99999.99997673612
+electrical_input_power = 105263.15787024854
+apparent_power = 119617.22485255517
+reactive_power = 56815.03389605495
+power_factor = 0.88
+rated_voltage = 690.0
+full_load_current = 100.08845937440393
+starting_current = 700.6192156208275
+total_electrical_losses = 5263.157893512428
+motor_rated_power = 110000.0
+motor_efficiency = 0.9500000000000001
+motor_power_factor = 0.88
+motor_rated_speed = 1470.0
+motor_locked_rotor_multiplier = 7.0
+total_auxiliary_power = 1500.0
+total_connected_power = 106763.15787024854

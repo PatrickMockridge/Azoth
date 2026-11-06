@@ -10,9 +10,10 @@ use azoth_core::units::{
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
-use crate::executor::json::{scalar, warnings as wire_warnings};
+use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::heater as kernel;
 use crate::kernels::heater::HeaterCapacity;
+use crate::kernels::heater_electrical;
 use crate::model_gen;
 use crate::stream::Stream;
 
@@ -91,6 +92,46 @@ pub struct HeaterResult {
     pub safety_instrument_count: Option<f64>,
     /// The design's instrument list, in the class's insertion order; empty when it did not run.
     pub instruments: Vec<HeaterInstrument>,
+    /// The shaft power the electrical type implies.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shaft_power: Option<Power>,
+    /// The electrical input.
+    #[serde(serialize_with = "optional_scalar")]
+    pub electrical_input_power: Option<Power>,
+    /// The apparent power in VA.
+    pub apparent_power: Option<f64>,
+    /// The reactive power in VAR.
+    pub reactive_power: Option<f64>,
+    /// The power factor.
+    pub power_factor: Option<f64>,
+    /// The selected voltage in volts.
+    pub rated_voltage: Option<f64>,
+    /// The stated supply frequency in Hz.
+    pub frequency_hz: Option<f64>,
+    /// The full-load current in amperes.
+    pub full_load_current: Option<f64>,
+    /// The starting current in amperes.
+    pub starting_current: Option<f64>,
+    /// The electrical losses.
+    #[serde(serialize_with = "optional_scalar")]
+    pub total_electrical_losses: Option<Power>,
+    /// The selected motor's rated power.
+    #[serde(serialize_with = "optional_scalar")]
+    pub motor_rated_power: Option<Power>,
+    /// The motor's efficiency as a fraction.
+    pub motor_efficiency: Option<f64>,
+    /// The motor's power factor.
+    pub motor_power_factor: Option<f64>,
+    /// The motor's rated speed in rpm.
+    pub motor_rated_speed: Option<f64>,
+    /// The locked-rotor current multiplier.
+    pub motor_locked_rotor_multiplier: Option<f64>,
+    /// The auxiliary load.
+    #[serde(serialize_with = "optional_scalar")]
+    pub total_auxiliary_power: Option<Power>,
+    /// The input plus the auxiliary load.
+    #[serde(serialize_with = "optional_scalar")]
+    pub total_connected_power: Option<Power>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -108,6 +149,7 @@ impl HeaterResult {
         outcome: &kernel::HeaterOutcome,
         capacity: HeaterCapacity,
         instruments: Option<Vec<HeaterInstrument>>,
+        electrical: Option<&heater_electrical::ElectricalDesign>,
         warnings: Vec<Warning>,
     ) -> Self {
         let counts = instruments.as_ref().map(|rows| {
@@ -149,6 +191,25 @@ impl HeaterResult {
             total_io_count: counts.map(|values| values.5),
             safety_instrument_count: counts.map(|values| values.6),
             instruments: instruments.unwrap_or_default(),
+            shaft_power: electrical.map(|value| watts(value.shaft_power_w)),
+            electrical_input_power: electrical.map(|value| watts(value.electrical_input_w)),
+            apparent_power: electrical.map(|value| value.apparent_power_va),
+            reactive_power: electrical.map(|value| value.reactive_power_var),
+            power_factor: electrical.map(|value| value.power_factor),
+            rated_voltage: electrical.map(|value| value.rated_voltage_v),
+            frequency_hz: electrical.map(|value| value.frequency_hz),
+            full_load_current: electrical.map(|value| value.full_load_current_a),
+            starting_current: electrical.map(|value| value.starting_current_a),
+            total_electrical_losses: electrical
+                .map(|value| watts(value.total_electrical_losses_w)),
+            motor_rated_power: electrical.map(|value| watts(value.motor_rated_power_w)),
+            motor_efficiency: electrical.map(|value| value.motor_efficiency),
+            motor_power_factor: electrical.map(|value| value.motor_power_factor),
+            motor_rated_speed: electrical.map(|value| value.motor_rated_speed_rpm),
+            motor_locked_rotor_multiplier: electrical
+                .map(|value| value.motor_locked_rotor_multiplier),
+            total_auxiliary_power: electrical.map(|value| watts(value.total_auxiliary_w)),
+            total_connected_power: electrical.map(|value| watts(value.total_connected_w)),
             warnings,
         }
     }
@@ -176,6 +237,15 @@ pub fn heater(
     include_safety_instruments: Option<bool>,
     default_sil_level: Option<f64>,
     heat_exchanger_type: Option<&str>,
+    electrical_design: Option<bool>,
+    motor_sizing_margin: Option<f64>,
+    motor_poles: Option<f64>,
+    efficiency_class: Option<&str>,
+    frequency_hz: Option<f64>,
+    phases: Option<f64>,
+    number_of_fans: Option<f64>,
+    instrumentation_power: Option<Power>,
+    cooling_water_pump_power: Option<Power>,
 ) -> Result<HeaterResult> {
     let spec = &model_gen::HEATER_SPEC;
     let mut warnings = Vec::new();
@@ -193,18 +263,94 @@ pub fn heater(
     )?;
 
     let instrument_requested = instrument_design.unwrap_or(false);
+    let electrical_requested = electrical_design.unwrap_or(false);
     for (name, stated) in [
         (
             "include_safety_instruments",
             include_safety_instruments.is_some(),
         ),
         ("default_sil_level", default_sil_level.is_some()),
-        ("heat_exchanger_type", heat_exchanger_type.is_some()),
     ] {
         if stated && !instrument_requested {
             return Err(AzothError::invalid_input(
                 name,
                 "an instrument-design input is stated without `instrument_design`",
+            ));
+        }
+    }
+    if heat_exchanger_type.is_some() && !instrument_requested && !electrical_requested {
+        return Err(AzothError::invalid_input(
+            "heat_exchanger_type",
+            "the type is shared by the two designs, and neither flag is set",
+        ));
+    }
+    for (name, stated) in [
+        ("motor_sizing_margin", motor_sizing_margin.is_some()),
+        ("motor_poles", motor_poles.is_some()),
+        ("efficiency_class", efficiency_class.is_some()),
+        ("frequency_hz", frequency_hz.is_some()),
+        ("phases", phases.is_some()),
+        ("number_of_fans", number_of_fans.is_some()),
+        ("instrumentation_power", instrumentation_power.is_some()),
+        (
+            "cooling_water_pump_power",
+            cooling_water_pump_power.is_some(),
+        ),
+    ] {
+        if stated && !electrical_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "an electrical-design input is stated without `electrical_design`",
+            ));
+        }
+    }
+    for (name, value) in [
+        ("motor_sizing_margin", motor_sizing_margin),
+        ("motor_poles", motor_poles),
+        ("frequency_hz", frequency_hz),
+        ("phases", phases),
+        ("number_of_fans", number_of_fans),
+        (
+            "instrumentation_power",
+            instrumentation_power.map(|value| value.value),
+        ),
+        (
+            "cooling_water_pump_power",
+            cooling_water_pump_power.map(|value| value.value),
+        ),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("{value} is not a finite number"),
+                ));
+            }
+        }
+    }
+    let efficiency_class = match efficiency_class {
+        Some(spelling) => {
+            heater_electrical::EfficiencyClass::parse(spelling).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "efficiency_class",
+                    format!("{spelling} is not one of ie1, ie2, ie3 or ie4"),
+                )
+            })?
+        }
+        None => heater_electrical::EfficiencyClass::Ie3,
+    };
+    let motor_poles = motor_poles.unwrap_or(4.0);
+    let phases = phases.unwrap_or(3.0);
+    let number_of_fans = number_of_fans.unwrap_or(2.0);
+    for (name, value) in [
+        ("motor_poles", motor_poles),
+        ("phases", phases),
+        ("number_of_fans", number_of_fans),
+    ] {
+        if value < 1.0 || value.fract() != 0.0 {
+            return Err(AzothError::invalid_input(
+                name,
+                format!("{value} is not an integer of at least one"),
             ));
         }
     }
@@ -267,6 +413,33 @@ pub fn heater(
     } else {
         None
     };
+    let electrical = if electrical_requested {
+        let request = heater_electrical::ElectricalRequest {
+            motor_sizing_margin: motor_sizing_margin.unwrap_or(1.10),
+            motor_poles: motor_poles as u32,
+            efficiency_class,
+            frequency_hz: frequency_hz.unwrap_or(50.0),
+            phases: phases as u32,
+            number_of_fans: number_of_fans as u32,
+            instrumentation_power_w: instrumentation_power
+                .map_or(1500.0, |value| value.value),
+            cooling_water_pump_power_w: cooling_water_pump_power
+                .map_or(0.0, |value| value.value),
+        };
+        Some(heater_electrical::design(
+            instrument_type,
+            outcome.duty.value,
+            &request,
+        ))
+    } else {
+        None
+    };
 
-    Ok(HeaterResult::of(&outcome, capacity, instruments, warnings))
+    Ok(HeaterResult::of(
+        &outcome,
+        capacity,
+        instruments,
+        electrical.as_ref(),
+        warnings,
+    ))
 }

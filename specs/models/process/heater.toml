@@ -14,14 +14,18 @@ assumptions = [
     "**the maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads `maxValue`, which `setMaxOutletTemperature` never sets, so only the minimum can trip it. The map holds no duty or pressure-drop constraint while the design's limits are zero.",
     "**The instrument design is a static list, not physics.** Five process instruments and an overtemperature trip are common; the type adds the element monitor, the utility side's three, or the fan's three. The tag is `SYMBOL-(1000 + position)`.",
     "**The instrument ranges are stated in their own units.** The list stores a number pair and a unit string, and the port publishes both; the values are not converted to SI because the class does not convert them.",
-    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, an electrical design and a utility specification. **Those are owed**: the loading, capacity and instrument surfaces above are the steady ones.",
+    "**The electrical design's \"motor\" is the element bank.** For an electric heater the process duty is the shaft power, and the base class sizes a standard IEC motor on it; a shell-and-tube heater has no motor and only the auxiliary load.",
+    "**The air cooler's fan power is `max(2 kW per fan, 1% of the duty)`**, and the motor is sized on that. The voltage taps are `400/690/6600` V for the electric heater and `400/690` for the cooler.",
+    "**The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.",
+    "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
+    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, a utility specification, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument and motor surfaces above are the steady ones.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, and the two outlet-temperature capacity constraints."
+edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, the duty reported as the enthalpy the outlet reached, the two outlet-temperature capacity constraints, the instrument list and the motor/electrical sizing."
 [inputs]
 [inputs.components]
 type = "components"
@@ -76,7 +80,44 @@ description = "the SIL rating the safety trips carry. Absent takes the class's `
 type = "enum"
 values = ["electric_heater", "air_cooler", "shell_and_tube"]
 optional = true
-description = "the construction the type-specific instruments follow. Absent is `electric_heater`, which the class detects for a `Heater`.\n"
+description = "the construction the instruments and the electrical design follow. Absent is `electric_heater`, which the class detects for a `Heater`; stating it needs one of the two design flags.\n"
+[inputs.electrical_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerElectricalDesign.calcDesign`. Absent is false; every electrical output is absent without it.\n"
+[inputs.motor_sizing_margin]
+unit = "dimensionless"
+optional = true
+description = "the motor sizing margin over the shaft power. Absent is the class's `1.10`.\n"
+[inputs.motor_poles]
+unit = "dimensionless"
+optional = true
+description = "the motor's pole count. Absent is the class's `4`; it moves the synchronous speed and the efficiency table.\n"
+[inputs.efficiency_class]
+type = "enum"
+values = ["ie1", "ie2", "ie3", "ie4"]
+optional = true
+description = "the motor's IEC 60034-30-1 efficiency class. Absent is `ie3`; the class offsets the base efficiency by `-3`, `-1.5`, `0` or `+1` points.\n"
+[inputs.frequency_hz]
+unit = "dimensionless"
+optional = true
+description = "the supply frequency in Hz. Absent is the class's `50`; the synchronous speed is `120 f / poles`.\n"
+[inputs.phases]
+unit = "dimensionless"
+optional = true
+description = "the supply phases. Absent is the class's `3`; a single-phase machine takes the current without the `sqrt(3)`.\n"
+[inputs.number_of_fans]
+unit = "dimensionless"
+optional = true
+description = "the air cooler's fan count. Absent is the class's `2`; the fan power is `max(2 per fan, 1% of the duty)`.\n"
+[inputs.instrumentation_power]
+unit = "W"
+optional = true
+description = "the auxiliary instrumentation load. Absent is the class's 1.5 kW.\n"
+[inputs.cooling_water_pump_power]
+unit = "W"
+optional = true
+description = "the shell-and-tube cooling-water pump load, added to the auxiliary for that type only. Absent is the class's 0.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -178,6 +219,74 @@ description = "the SIL rating; zero for a non-safety instrument.\n"
 [outputs.instruments.fields.safety_related]
 type = "boolean"
 description = "whether the row is safety-related.\n"
+[outputs.shaft_power]
+unit = "W"
+optional = true
+description = "the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.\n"
+[outputs.electrical_input_power]
+unit = "W"
+optional = true
+description = "the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.\n"
+[outputs.apparent_power]
+unit = "dimensionless"
+optional = true
+description = "the apparent power in VA: the electrical input over the power factor.\n"
+[outputs.reactive_power]
+unit = "dimensionless"
+optional = true
+description = "the reactive power in VAR: the apparent power times `sin(acos(power factor))`.\n"
+[outputs.power_factor]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.\n"
+[outputs.rated_voltage]
+unit = "dimensionless"
+optional = true
+description = "the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.\n"
+[outputs.frequency_hz]
+unit = "dimensionless"
+optional = true
+description = "the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.\n"
+[outputs.full_load_current]
+unit = "dimensionless"
+optional = true
+description = "the full-load current in amperes, from the input, voltage, power factor and phase count.\n"
+[outputs.starting_current]
+unit = "dimensionless"
+optional = true
+description = "the full-load current times the motor's locked-rotor multiplier.\n"
+[outputs.total_electrical_losses]
+unit = "W"
+optional = true
+description = "the electrical input less the shaft power.\n"
+[outputs.motor_rated_power]
+unit = "W"
+optional = true
+description = "the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.\n"
+[outputs.motor_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.\n"
+[outputs.motor_power_factor]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load power factor; 0.86 when no motor is sized.\n"
+[outputs.motor_rated_speed]
+unit = "dimensionless"
+optional = true
+description = "the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.\n"
+[outputs.motor_locked_rotor_multiplier]
+unit = "dimensionless"
+optional = true
+description = "the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.\n"
+[outputs.total_auxiliary_power]
+unit = "W"
+optional = true
+description = "the instrumentation load, plus the cooling-water pump load for shell-and-tube.\n"
+[outputs.total_connected_power]
+unit = "W"
+optional = true
+description = "the electrical input plus the auxiliary load.\n"
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

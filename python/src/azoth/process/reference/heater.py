@@ -42,6 +42,8 @@ from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 
 #: `HeatExchangerInstrumentDesign.HeatExchangerType`'s spellings.
 INSTRUMENT_TYPES = ("electric_heater", "air_cooler", "shell_and_tube")
+#: `ElectricalMotor.efficiencyClass`'s spellings.
+IE_CLASSES = ("ie1", "ie2", "ie3", "ie4")
 
 
 def heater(
@@ -59,6 +61,15 @@ def heater(
     include_safety_instruments: bool | None = None,
     default_sil_level: float | None = None,
     heat_exchanger_type: str | None = None,
+    electrical_design: bool | None = None,
+    motor_sizing_margin: float | None = None,
+    motor_poles: float | None = None,
+    efficiency_class: str | None = None,
+    frequency_hz: float | None = None,
+    phases: float | None = None,
+    number_of_fans: float | None = None,
+    instrumentation_power: Q | None = None,
+    cooling_water_pump_power: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -144,7 +155,6 @@ def heater(
     for name, stated in (
         ("include_safety_instruments", include_safety_instruments is not None),
         ("default_sil_level", default_sil_level is not None),
-        ("heat_exchanger_type", heat_exchanger_type is not None),
     ):
         if stated and not instrument_requested:
             raise InvalidInputError(
@@ -162,6 +172,66 @@ def heater(
             "heat_exchanger_type",
             f"{kind} is not one of electric_heater, air_cooler or shell_and_tube",
         )
+
+    electrical_requested = bool(electrical_design)
+    if heat_exchanger_type is not None and not instrument_requested and not electrical_requested:
+        raise InvalidInputError(
+            "heat_exchanger_type",
+            "the type is shared by the two designs, and neither flag is set",
+        )
+    for name, stated in (
+        ("motor_sizing_margin", motor_sizing_margin is not None),
+        ("motor_poles", motor_poles is not None),
+        ("efficiency_class", efficiency_class is not None),
+        ("frequency_hz", frequency_hz is not None),
+        ("phases", phases is not None),
+        ("number_of_fans", number_of_fans is not None),
+        ("instrumentation_power", instrumentation_power is not None),
+        (
+            "cooling_water_pump_power",
+            cooling_water_pump_power is not None,
+        ),
+    ):
+        if stated and not electrical_requested:
+            raise InvalidInputError(
+                name, "an electrical-design input is stated without `electrical_design`"
+            )
+    instrumentation_si = (
+        None
+        if instrumentation_power is None
+        else input_to_si(spec, "instrumentation_power", instrumentation_power)
+    )
+    pump_si = (
+        None
+        if cooling_water_pump_power is None
+        else input_to_si(spec, "cooling_water_pump_power", cooling_water_pump_power)
+    )
+    for name, value in (
+        ("motor_sizing_margin", motor_sizing_margin),
+        ("frequency_hz", frequency_hz),
+        ("instrumentation_power", instrumentation_si),
+        ("cooling_water_pump_power", pump_si),
+    ):
+        if value is not None and not math.isfinite(float(value)):
+            raise InvalidInputError(name, f"{value} is not a finite number")
+    efficiency = "ie3" if efficiency_class is None else efficiency_class
+    if efficiency not in IE_CLASSES:
+        raise InvalidInputError(
+            "efficiency_class",
+            f"{efficiency} is not one of ie1, ie2, ie3 or ie4",
+        )
+    poles = 4.0 if motor_poles is None else float(motor_poles)
+    phase_count = 3.0 if phases is None else float(phases)
+    fans = 2.0 if number_of_fans is None else float(number_of_fans)
+    for name, value in (
+        ("motor_poles", poles),
+        ("phases", phase_count),
+        ("number_of_fans", fans),
+    ):
+        if value < 1.0 or not value.is_integer():
+            raise InvalidInputError(
+                name, f"{value} is not an integer of at least one"
+            )
     instruments = (
         _instruments(kind, include_safety_instruments is not False, int(sil))
         if instrument_requested
@@ -170,6 +240,22 @@ def heater(
 
     states = _states(components, n, inlet_z, p, t, t_out, q, drop)
     capacity = _capacity(states.outlet_t.to("K").magnitude, max_t, min_t)
+    electrical = (
+        None
+        if not electrical_requested
+        else _electrical(
+            kind,
+            states.duty,
+            1.10 if motor_sizing_margin is None else float(motor_sizing_margin),
+            int(poles),
+            efficiency,
+            50.0 if frequency_hz is None else float(frequency_hz),
+            int(phase_count),
+            int(fans),
+            1500.0 if instrumentation_si is None else float(instrumentation_si),
+            0.0 if pump_si is None else float(pump_si),
+        )
+    )
     analog_input = sum(1 for row in instruments if row.io_type == "AI")
     analog_output = sum(1 for row in instruments if row.io_type == "AO")
     digital_input = sum(1 for row in instruments if row.io_type == "DI")
@@ -209,8 +295,234 @@ def heater(
         total_io_count=None if counts is None else counts[5],
         safety_instrument_count=None if counts is None else counts[6],
         instruments=instruments,
+        shaft_power=(
+            None if electrical is None else from_si(electrical.shaft_power_w, "W")
+        ),
+        electrical_input_power=(
+            None
+            if electrical is None
+            else from_si(electrical.electrical_input_w, "W")
+        ),
+        apparent_power=None if electrical is None else electrical.apparent_power_va,
+        reactive_power=None if electrical is None else electrical.reactive_power_var,
+        power_factor=None if electrical is None else electrical.power_factor,
+        rated_voltage=None if electrical is None else electrical.rated_voltage_v,
+        frequency_hz=None if electrical is None else electrical.frequency_hz,
+        full_load_current=(
+            None if electrical is None else electrical.full_load_current_a
+        ),
+        starting_current=(
+            None if electrical is None else electrical.starting_current_a
+        ),
+        total_electrical_losses=(
+            None
+            if electrical is None
+            else from_si(electrical.total_electrical_losses_w, "W")
+        ),
+        motor_rated_power=(
+            None if electrical is None else from_si(electrical.motor_rated_power_w, "W")
+        ),
+        motor_efficiency=None if electrical is None else electrical.motor_efficiency,
+        motor_power_factor=(
+            None if electrical is None else electrical.motor_power_factor
+        ),
+        motor_rated_speed=(
+            None if electrical is None else electrical.motor_rated_speed_rpm
+        ),
+        motor_locked_rotor_multiplier=(
+            None if electrical is None else electrical.motor_locked_rotor_multiplier
+        ),
+        total_auxiliary_power=(
+            None if electrical is None else from_si(electrical.total_auxiliary_w, "W")
+        ),
+        total_connected_power=(
+            None if electrical is None else from_si(electrical.total_connected_w, "W")
+        ),
         warnings=tuple(warnings),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class Electrical:
+    """`HeatExchangerElectricalDesign.calcDesign`'s numbers, in SI."""
+
+    shaft_power_w: float
+    electrical_input_w: float
+    apparent_power_va: float
+    reactive_power_var: float
+    power_factor: float
+    rated_voltage_v: float
+    frequency_hz: float
+    full_load_current_a: float
+    starting_current_a: float
+    total_electrical_losses_w: float
+    motor_rated_power_w: float
+    motor_efficiency: float
+    motor_power_factor: float
+    motor_rated_speed_rpm: float
+    motor_locked_rotor_multiplier: float
+    total_auxiliary_w: float
+    total_connected_w: float
+
+
+#: `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
+IEC_POWERS_KW = (
+    0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0,
+    45.0, 55.0, 75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 355.0, 400.0, 450.0,
+    500.0, 560.0, 630.0, 710.0, 800.0, 900.0, 1000.0, 1120.0, 1250.0, 1400.0, 1600.0, 1800.0,
+    2000.0, 2240.0, 2500.0, 2800.0, 3150.0, 3550.0, 4000.0, 4500.0, 5000.0, 5600.0, 6300.0,
+    7100.0, 8000.0, 9000.0, 10000.0,
+)
+
+#: The efficiency-class offsets, in points.
+IE_OFFSETS = {"ie1": -3.0, "ie2": -1.5, "ie3": 0.0, "ie4": 1.0}
+
+
+def _electrical(
+    kind: str,
+    process_duty_w: float,
+    margin: float,
+    poles: int,
+    efficiency_class: str,
+    frequency: float,
+    phases: int,
+    fans: int,
+    instrumentation_w: float,
+    pump_w: float,
+) -> Electrical:
+    """`HeatExchangerElectricalDesign.calcDesign`, in SI."""
+    duty_kw = abs(process_duty_w) / 1000.0
+    if kind == "electric_heater":
+        shaft_kw = duty_kw
+    elif kind == "air_cooler":
+        shaft_kw = max(2.0 * fans, duty_kw * 0.01)
+    else:
+        shaft_kw = 0.0
+    if kind == "electric_heater":
+        voltage = 6600.0 if shaft_kw > 200.0 else (690.0 if shaft_kw > 75.0 else 400.0)
+    elif kind == "air_cooler":
+        voltage = 690.0 if shaft_kw > 200.0 else 400.0
+    else:
+        voltage = 400.0
+
+    if shaft_kw > 0.0:
+        required = shaft_kw * margin
+        rated = next(
+            (size for size in IEC_POWERS_KW if size >= required * (1.0 - 1.0e-9)),
+            None,
+        )
+        if rated is None:
+            rated = math.ceil(required / 100.0) * 100.0
+        # The motor is sized before the design's frequency is copied to it.
+        synchronous = 120.0 * 50.0 / max(1, poles)
+        if rated <= 7.5:
+            slip = 0.05
+        elif rated <= 75.0:
+            slip = 0.03
+        elif rated <= 375.0:
+            slip = 0.02
+        else:
+            slip = 0.015
+        if rated <= 1.1:
+            base = 82.5
+        elif rated <= 4.0:
+            base = 87.7
+        elif rated <= 11.0:
+            base = 91.0
+        elif rated <= 37.0:
+            base = 93.3
+        elif rated <= 110.0:
+            base = 95.0
+        elif rated <= 375.0:
+            base = 96.0
+        else:
+            base = 96.5
+        pole_offset = {2: -0.5, 6: -1.0, 8: -1.5}.get(poles, 0.0)
+        efficiency = min(99.0, base + IE_OFFSETS[efficiency_class] + pole_offset)
+        if rated <= 4.0:
+            factor = 0.78
+        elif rated <= 15.0:
+            factor = 0.83
+        elif rated <= 55.0:
+            factor = 0.86
+        elif rated <= 200.0:
+            factor = 0.88
+        elif rated <= 1000.0:
+            factor = 0.90
+        else:
+            factor = 0.91
+        if rated <= 7.5:
+            locked = 6.0
+        elif rated <= 75.0:
+            locked = 6.5
+        elif rated <= 500.0:
+            locked = 7.0
+        else:
+            locked = 6.5
+        speed = synchronous * (1.0 - slip)
+    else:
+        rated = 0.0
+        efficiency = 95.0
+        factor = 0.86
+        speed = 0.0
+        locked = 7.0
+
+    auxiliary = instrumentation_w + (pump_w if kind == "shell_and_tube" else 0.0)
+    if kind == "shell_and_tube":
+        input_w = auxiliary
+        base_factor = 0.85
+        apparent = input_w / base_factor if base_factor > 0.0 else 0.0
+        full_load = _current(input_w / 1000.0, voltage, base_factor, phases)
+        return Electrical(
+            shaft_power_w=0.0,
+            electrical_input_w=input_w,
+            apparent_power_va=apparent,
+            reactive_power_var=apparent * math.sqrt(1.0 - base_factor * base_factor),
+            power_factor=base_factor,
+            rated_voltage_v=voltage,
+            frequency_hz=frequency,
+            full_load_current_a=full_load,
+            starting_current_a=full_load * locked,
+            total_electrical_losses_w=input_w,
+            motor_rated_power_w=0.0,
+            motor_efficiency=efficiency / 100.0,
+            motor_power_factor=factor,
+            motor_rated_speed_rpm=speed,
+            motor_locked_rotor_multiplier=locked,
+            total_auxiliary_w=auxiliary,
+            total_connected_w=input_w + auxiliary,
+        )
+    efficiency_fraction = efficiency / 100.0 if efficiency > 0.0 else 0.0
+    input_kw = shaft_kw / efficiency_fraction if efficiency_fraction > 0.0 else shaft_kw
+    apparent = input_kw / factor if factor > 0.0 else 0.0
+    full_load = _current(input_kw, voltage, factor, phases)
+    return Electrical(
+        shaft_power_w=shaft_kw * 1000.0,
+        electrical_input_w=input_kw * 1000.0,
+        apparent_power_va=apparent * 1000.0,
+        reactive_power_var=apparent * 1000.0 * math.sqrt(1.0 - factor * factor),
+        power_factor=factor,
+        rated_voltage_v=voltage,
+        frequency_hz=frequency,
+        full_load_current_a=full_load,
+        starting_current_a=full_load * locked,
+        total_electrical_losses_w=(input_kw - shaft_kw) * 1000.0,
+        motor_rated_power_w=rated * 1000.0,
+        motor_efficiency=efficiency_fraction,
+        motor_power_factor=factor,
+        motor_rated_speed_rpm=speed,
+        motor_locked_rotor_multiplier=locked,
+        total_auxiliary_w=auxiliary,
+        total_connected_w=input_kw * 1000.0 + auxiliary,
+    )
+
+
+def _current(input_kw: float, voltage: float, factor: float, phases: int) -> float:
+    if voltage <= 0.0 or factor <= 0.0:
+        return 0.0
+    if phases == 3:
+        return input_kw * 1000.0 / (math.sqrt(3.0) * voltage * factor)
+    return input_kw * 1000.0 / (voltage * factor)
 
 
 @dataclass(frozen=True, slots=True)

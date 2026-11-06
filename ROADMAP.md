@@ -816,8 +816,11 @@ a claim nothing holds.
   the performance DTO's per-component emission map; **`Heater`'s bounded outlet temperatures
   landed** - the two HARD limits, their inverse/minimum utilization and the hard-flag quirk -
   **and so did its instrument design**: the static list of eight (or six, or another type's),
-  its I/O counts and the SIL trips behind `instrument_design`. What remains owed there is the
-  electrical design, the utility specification, the mechanical design and `runTransient`;
+  its I/O counts and the SIL trips behind `instrument_design`; **and its electrical design's
+  motor surface**: the duty as shaft power, the IEC 60034 motor tables, the voltage taps,
+  currents, losses and auxiliary loads behind `electrical_design`. What remains owed there is
+  the utility specification, the mechanical design, `runTransient`, and the electrical cable,
+  switchgear, VFD and hazardous-area components;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and

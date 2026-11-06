@@ -3181,6 +3181,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("process.heater", "default_sil_level", "dimensionless"),
+    ("process.heater", "motor_sizing_margin", "dimensionless"),
+    ("process.heater", "motor_poles", "dimensionless"),
+    ("process.heater", "frequency_hz", "dimensionless"),
+    ("process.heater", "phases", "dimensionless"),
+    ("process.heater", "number_of_fans", "dimensionless"),
+    ("process.heater", "instrumentation_power", "power"),
+    ("process.heater", "cooling_water_pump_power", "power"),
     ("process.hem_release", "upstream_z", "dimensionless"),
     (
         "process.hem_release",

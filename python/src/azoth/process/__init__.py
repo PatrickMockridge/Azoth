@@ -1481,6 +1481,15 @@ def heater(
     include_safety_instruments: bool | None = None,
     default_sil_level: float | None = None,
     heat_exchanger_type: str | None = None,
+    electrical_design: bool | None = None,
+    motor_sizing_margin: float | None = None,
+    motor_poles: float | None = None,
+    efficiency_class: str | None = None,
+    frequency_hz: float | None = None,
+    phases: float | None = None,
+    number_of_fans: float | None = None,
+    instrumentation_power: Q | None = None,
+    cooling_water_pump_power: Q | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1520,6 +1529,15 @@ def heater(
         include_safety_instruments=include_safety_instruments,
         default_sil_level=default_sil_level,
         heat_exchanger_type=heat_exchanger_type,
+        electrical_design=electrical_design,
+        motor_sizing_margin=motor_sizing_margin,
+        motor_poles=motor_poles,
+        efficiency_class=efficiency_class,
+        frequency_hz=frequency_hz,
+        phases=phases,
+        number_of_fans=number_of_fans,
+        instrumentation_power=instrumentation_power,
+        cooling_water_pump_power=cooling_water_pump_power,
     )
 
 

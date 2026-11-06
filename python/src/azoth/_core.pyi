@@ -3020,6 +3020,23 @@ class HeaterResult:
     total_io_count: float | None
     safety_instrument_count: float | None
     instruments: list[HeaterInstrument]
+    shaft_power: Qty | None
+    electrical_input_power: Qty | None
+    apparent_power: float | None
+    reactive_power: float | None
+    power_factor: float | None
+    rated_voltage: float | None
+    frequency_hz: float | None
+    full_load_current: float | None
+    starting_current: float | None
+    total_electrical_losses: Qty | None
+    motor_rated_power: Qty | None
+    motor_efficiency: float | None
+    motor_power_factor: float | None
+    motor_rated_speed: float | None
+    motor_locked_rotor_multiplier: float | None
+    total_auxiliary_power: Qty | None
+    total_connected_power: Qty | None
     warnings: list[Warning]
 
 @final
@@ -5879,6 +5896,15 @@ def heater(
     include_safety_instruments: bool | None = None,
     default_sil_level: float | None = None,
     heat_exchanger_type: str | None = None,
+    electrical_design: bool | None = None,
+    motor_sizing_margin: float | None = None,
+    motor_poles: float | None = None,
+    efficiency_class: str | None = None,
+    frequency_hz: float | None = None,
+    phases: float | None = None,
+    number_of_fans: float | None = None,
+    instrumentation_power: float | None = None,
+    cooling_water_pump_power: float | None = None,
 ) -> HeaterResult: ...
 def hem_release(
     components: list[str],

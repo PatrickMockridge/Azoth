@@ -16507,6 +16507,57 @@ pub struct PyHeaterResult {
     /// the design's instrument list, in the class's insertion order; empty when the design did not run.
     #[pyo3(get)]
     pub instruments: Vec<PyHeaterInstrument>,
+    /// the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.
+    #[pyo3(get)]
+    pub shaft_power: Option<PyQty>,
+    /// the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.
+    #[pyo3(get)]
+    pub electrical_input_power: Option<PyQty>,
+    /// the apparent power in VA: the electrical input over the power factor.
+    #[pyo3(get)]
+    pub apparent_power: Option<f64>,
+    /// the reactive power in VAR: the apparent power times `sin(acos(power factor))`.
+    #[pyo3(get)]
+    pub reactive_power: Option<f64>,
+    /// the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.
+    #[pyo3(get)]
+    pub power_factor: Option<f64>,
+    /// the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.
+    #[pyo3(get)]
+    pub rated_voltage: Option<f64>,
+    /// the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.
+    #[pyo3(get)]
+    pub frequency_hz: Option<f64>,
+    /// the full-load current in amperes, from the input, voltage, power factor and phase count.
+    #[pyo3(get)]
+    pub full_load_current: Option<f64>,
+    /// the full-load current times the motor's locked-rotor multiplier.
+    #[pyo3(get)]
+    pub starting_current: Option<f64>,
+    /// the electrical input less the shaft power.
+    #[pyo3(get)]
+    pub total_electrical_losses: Option<PyQty>,
+    /// the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.
+    #[pyo3(get)]
+    pub motor_rated_power: Option<PyQty>,
+    /// the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_efficiency: Option<f64>,
+    /// the motor's full-load power factor; 0.86 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_power_factor: Option<f64>,
+    /// the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.
+    #[pyo3(get)]
+    pub motor_rated_speed: Option<f64>,
+    /// the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_locked_rotor_multiplier: Option<f64>,
+    /// the instrumentation load, plus the cooling-water pump load for shell-and-tube.
+    #[pyo3(get)]
+    pub total_auxiliary_power: Option<PyQty>,
+    /// the electrical input plus the auxiliary load.
+    #[pyo3(get)]
+    pub total_connected_power: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16516,7 +16567,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16537,6 +16588,23 @@ impl PyHeaterResult {
             self.total_io_count,
             self.safety_instrument_count,
             self.instruments,
+            self.shaft_power,
+            self.electrical_input_power,
+            self.apparent_power,
+            self.reactive_power,
+            self.power_factor,
+            self.rated_voltage,
+            self.frequency_hz,
+            self.full_load_current,
+            self.starting_current,
+            self.total_electrical_losses,
+            self.motor_rated_power,
+            self.motor_efficiency,
+            self.motor_power_factor,
+            self.motor_rated_speed,
+            self.motor_locked_rotor_multiplier,
+            self.total_auxiliary_power,
+            self.total_connected_power,
             self.warnings.len()
         )
     }
@@ -16580,6 +16648,41 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
             total_io_count: r.total_io_count,
             safety_instrument_count: r.safety_instrument_count,
             instruments: r.instruments.iter().map(PyHeaterInstrument::from).collect(),
+            shaft_power: r.shaft_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            electrical_input_power: r.electrical_input_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            apparent_power: r.apparent_power,
+            reactive_power: r.reactive_power,
+            power_factor: r.power_factor,
+            rated_voltage: r.rated_voltage,
+            frequency_hz: r.frequency_hz,
+            full_load_current: r.full_load_current,
+            starting_current: r.starting_current,
+            total_electrical_losses: r.total_electrical_losses.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            motor_rated_power: r.motor_rated_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            motor_efficiency: r.motor_efficiency,
+            motor_power_factor: r.motor_power_factor,
+            motor_rated_speed: r.motor_rated_speed,
+            motor_locked_rotor_multiplier: r.motor_locked_rotor_multiplier,
+            total_auxiliary_power: r.total_auxiliary_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            total_connected_power: r.total_connected_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

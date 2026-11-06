@@ -189,6 +189,9 @@ public class ProcessProbe {
       case "heater_instruments":
         heaterInstrumentRows();
         break;
+      case "heater_electrical":
+        heaterElectricalRows();
+        break;
       case "cooler":
         heatRows("Cooler");
         break;
@@ -670,6 +673,127 @@ public class ProcessProbe {
           "instrument_" + index + "_estimated_cost_usd=" + instrument.getEstimatedCostUSD());
       index++;
     }
+    System.out.println();
+  }
+
+  /// `Heater`'s electrical design: the duty as shaft power, the motor table, and the type branches.
+  ///
+  /// **The electric heater's "motor" is the element bank.** `getProcessShaftPowerKW` returns the
+  /// duty in kW, the base class sizes a standard IEC motor on it, and the motor's tabulated
+  /// efficiency and power factor are what the electrical input and current come from. A
+  /// shell-and-tube heater has no motor: its shaft power is zero and only the auxiliary load is
+  /// left. The air-cooler branch sizes fan power at `max(2 x fans, 1% duty)`.
+  static void heaterElectricalRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    for (double dutyKW : new double[] {5.0, 100.0, 500.0}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, dutyKW <= 5.0 ? 1.0 : 100.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setDuty(dutyKW * 1000.0);
+      heater.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design =
+          heater.getElectricalDesign();
+      design.calcDesign();
+      printHeaterElectrical("electric_" + (int) dutyKW + "kw", design);
+    }
+
+    Stream shellInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater shell =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", shellInlet);
+    shell.setDuty(100_000.0);
+    shell.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign shellDesign =
+        shell.getElectricalDesign();
+    shellDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.SHELL_AND_TUBE);
+    shellDesign.setCoolingWaterPumpKW(3.0);
+    shellDesign.calcDesign();
+    printHeaterElectrical("shell_and_tube_aux", shellDesign);
+
+    Stream airInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater air =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", airInlet);
+    air.setDuty(100_000.0);
+    air.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign airDesign =
+        air.getElectricalDesign();
+    airDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.AIR_COOLER);
+    airDesign.calcDesign();
+    printHeaterElectrical("air_cooler_fans", airDesign);
+
+    Stream ie4Inlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater ie4 =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", ie4Inlet);
+    ie4.setDuty(100_000.0);
+    ie4.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign ie4Design =
+        ie4.getElectricalDesign();
+    ie4Design.getMotor().setEfficiencyClass("IE4");
+    ie4Design.calcDesign();
+    printHeaterElectrical("ie4_100kw", ie4Design);
+
+    Stream polesInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater poles =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", polesInlet);
+    poles.setDuty(100_000.0);
+    poles.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign polesDesign =
+        poles.getElectricalDesign();
+    polesDesign.getMotor().setPoles(2);
+    polesDesign.calcDesign();
+    printHeaterElectrical("two_pole_100kw", polesDesign);
+
+    Stream singleInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater single =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", singleInlet);
+    single.setDuty(100_000.0);
+    single.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign singleDesign =
+        single.getElectricalDesign();
+    singleDesign.setPhases(1);
+    singleDesign.calcDesign();
+    printHeaterElectrical("single_phase_100kw", singleDesign);
+
+    Stream hzInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater hz =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", hzInlet);
+    hz.setDuty(100_000.0);
+    hz.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign hzDesign =
+        hz.getElectricalDesign();
+    hzDesign.setFrequencyHz(60.0);
+    hzDesign.calcDesign();
+    printHeaterElectrical("sixty_hz_100kw", hzDesign);
+  }
+
+  static void printHeaterElectrical(String label,
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design) {
+    System.out.println("label=" + label);
+    System.out.println("electrical_type=" + design.getHeatExchangerType().name());
+    System.out.println("shaft_power_kw=" + design.getShaftPowerKW());
+    System.out.println("electrical_input_kw=" + design.getElectricalInputKW());
+    System.out.println("apparent_power_kva=" + design.getApparentPowerKVA());
+    System.out.println("reactive_power_kvar=" + design.getReactivePowerKVAR());
+    System.out.println("power_factor=" + design.getPowerFactor());
+    System.out.println("rated_voltage_v=" + design.getRatedVoltageV());
+    System.out.println("frequency_hz=" + design.getFrequencyHz());
+    System.out.println("phases=" + design.getPhases());
+    System.out.println("full_load_current_a=" + design.getFullLoadCurrentA());
+    System.out.println("starting_current_a=" + design.getStartingCurrentA());
+    System.out.println("total_electrical_losses_kw=" + design.getTotalElectricalLossesKW());
+    System.out.println("motor_rated_power_kw=" + design.getMotor().getRatedPowerKW());
+    System.out.println("motor_efficiency_percent=" + design.getMotor().getEfficiencyPercent());
+    System.out.println("motor_power_factor_fl=" + design.getMotor().getPowerFactorFL());
+    System.out.println("motor_rated_speed_rpm=" + design.getMotor().getRatedSpeedRPM());
+    System.out.println("motor_poles=" + design.getMotor().getPoles());
+    System.out.println("motor_efficiency_class=" + design.getMotor().getEfficiencyClass());
+    System.out.println(
+        "motor_locked_rotor_multiplier=" + design.getMotor().getLockedRotorCurrentMultiplier());
+    System.out.println("motor_frame=" + design.getMotor().getFrameSize());
+    System.out.println("total_auxiliary_kw=" + design.getTotalAuxiliaryKW());
+    System.out.println("total_connected_load_kw=" + design.getTotalConnectedLoadKW());
     System.out.println();
   }
 
