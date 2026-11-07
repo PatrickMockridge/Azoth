@@ -772,6 +772,19 @@ public class ProcessProbe {
     hzDesign.setFrequencyHz(60.0);
     hzDesign.calcDesign();
     printHeaterElectrical("sixty_hz_100kw", hzDesign);
+
+    for (double lengthM : new double[] {500.0, 2000.0}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 100.0);
+      neqsim.process.equipment.heatexchanger.Heater cable =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      cable.setDuty(100_000.0);
+      cable.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign cableDesign =
+          cable.getElectricalDesign();
+      cableDesign.getPowerCable().setLengthM(lengthM);
+      cableDesign.calcDesign();
+      printHeaterElectrical("cable_" + (int) lengthM + "m", cableDesign);
+    }
   }
 
   static void printHeaterElectrical(String label,
@@ -800,6 +813,22 @@ public class ProcessProbe {
     System.out.println("motor_frame=" + design.getMotor().getFrameSize());
     System.out.println("total_auxiliary_kw=" + design.getTotalAuxiliaryKW());
     System.out.println("total_connected_load_kw=" + design.getTotalConnectedLoadKW());
+    System.out.println("cable_length_m=" + design.getPowerCable().getLengthM());
+    System.out.println("cable_cross_section_mm2=" + design.getPowerCable().getCrossSectionMM2());
+    System.out.println("cable_ampacity_a=" + design.getPowerCable().getAmpacityA());
+    System.out.println("cable_voltage_drop_percent="
+        + design.getPowerCable().getVoltageDropPercent());
+    System.out.println("cable_short_circuit_withstand_ka="
+        + design.getPowerCable().getShortCircuitWithstandKA());
+    System.out.println("switchgear_starter=" + design.getSwitchgear().getStarterType());
+    System.out.println("switchgear_type=" + design.getSwitchgear().getSwitchgearType());
+    System.out.println("switchgear_circuit_breaker_a="
+        + design.getSwitchgear().getCircuitBreakerRatingA());
+    System.out.println("switchgear_fuse_a=" + design.getSwitchgear().getFuseRatingA());
+    System.out.println("switchgear_rated_current_a=" + design.getSwitchgear().getRatedCurrentA());
+    System.out.println("switchgear_short_circuit_ka="
+        + design.getSwitchgear().getShortCircuitCurrentKA());
+    System.out.println("switchgear_weight_kg=" + design.getSwitchgear().getWeightKg());
     System.out.println();
   }
 
