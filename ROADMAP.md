@@ -823,9 +823,11 @@ a claim nothing holds.
   design's thermal estimate**: the LMTD, approach, UA and the five candidate types with their
   required areas, geometry models and selection; **and its cable and switchgear**: the tray
   ampacity derating, the voltage-drop upsizing, the starter, breaker and fuse ratings and the
-  short-circuit rating and weight. The detailed `ShellAndTubeDesignCalculator`, the two-stream
-  `HeatExchanger` branch, `runTransient` and the VFD, transformer and hazardous-area
-  components remain owed;
+  short-circuit rating and weight; **and its VFD**: the topology, pulse, harmonic, cooling,
+  weight and enclosure tables and the input losses the drive adds. The detailed
+  `ShellAndTubeDesignCalculator`, the two-stream `HeatExchanger` branch and `runTransient`
+  remain owed, and the transformer and hazardous-area classification are the class's carried
+  fields that `calcDesign` never reads;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and
