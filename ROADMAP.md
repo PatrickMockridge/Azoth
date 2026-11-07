@@ -825,9 +825,10 @@ a claim nothing holds.
   ampacity derating, the voltage-drop upsizing, the starter, breaker and fuse ratings and the
   short-circuit rating and weight; **and its VFD**: the topology, pulse, harmonic, cooling,
   weight and enclosure tables and the input losses the drive adds. The detailed
-  `ShellAndTubeDesignCalculator`, the two-stream `HeatExchanger` branch and `runTransient`
-  remain owed, and the transformer and hazardous-area classification are the class's carried
-  fields that `calcDesign` never reads;
+  `ShellAndTubeDesignCalculator` and `runTransient` remain owed - the two-stream
+  `HeatExchanger` branch's thermal estimate is `process.heat_exchanger`'s and has landed -
+  and the transformer and hazardous-area classification are the class's carried fields that
+  `calcDesign` never reads;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and
@@ -842,7 +843,10 @@ a claim nothing holds.
   dynamic nozzle and the transient;
   `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
-  `process_heat_exchanger_delta_t.tsv`; **`Separator`'s
+  `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
+  thermal estimate**: the LMTD and approach from the four stream temperatures, the
+  type-specific areas and the five-candidate selection, held to
+  `process_heat_exchanger_mechanical_design.tsv`; **`Separator`'s
   capacity surface landed** - utilisation, the maximum allowable and superficial velocities,
   the no-argument gas load factor and the overload flag, with the sizing rule's and the load
   factor's density rules kept apart - **and `SeparatorCapacityAssessment` landed as
