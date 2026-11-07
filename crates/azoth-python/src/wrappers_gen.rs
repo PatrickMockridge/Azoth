@@ -5926,9 +5926,9 @@ pub fn gibbs_reactor(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature, instrument_design, include_safety_instruments, default_sil_level, heat_exchanger_type, electrical_design, motor_sizing_margin, motor_poles, efficiency_class, frequency_hz, phases, number_of_fans, instrumentation_power, cooling_water_pump_power, utility_specification, utility_supply_temperature, utility_return_temperature, utility_approach_temperature, utility_heat_capacity_rate, utility_overall_heat_transfer_coefficient))]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature, instrument_design, include_safety_instruments, default_sil_level, heat_exchanger_type, electrical_design, motor_sizing_margin, motor_poles, efficiency_class, frequency_hz, phases, number_of_fans, instrumentation_power, cooling_water_pump_power, utility_specification, utility_supply_temperature, utility_return_temperature, utility_approach_temperature, utility_heat_capacity_rate, utility_overall_heat_transfer_coefficient, mechanical_design, mechanical_type, mechanical_selection))]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature, instrument_design, include_safety_instruments, default_sil_level, heat_exchanger_type, electrical_design, motor_sizing_margin, motor_poles, efficiency_class, frequency_hz, phases, number_of_fans, instrumentation_power, cooling_water_pump_power, utility_specification, utility_supply_temperature, utility_return_temperature, utility_approach_temperature, utility_heat_capacity_rate, utility_overall_heat_transfer_coefficient)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop, max_outlet_temperature, min_outlet_temperature, instrument_design, include_safety_instruments, default_sil_level, heat_exchanger_type, electrical_design, motor_sizing_margin, motor_poles, efficiency_class, frequency_hz, phases, number_of_fans, instrumentation_power, cooling_water_pump_power, utility_specification, utility_supply_temperature, utility_return_temperature, utility_approach_temperature, utility_heat_capacity_rate, utility_overall_heat_transfer_coefficient, mechanical_design, mechanical_type, mechanical_selection)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn heater(
@@ -5962,6 +5962,9 @@ pub fn heater(
     utility_approach_temperature: Option<f64>,
     utility_heat_capacity_rate: Option<f64>,
     utility_overall_heat_transfer_coefficient: Option<f64>,
+    mechanical_design: Option<bool>,
+    mechanical_type: Option<&str>,
+    mechanical_selection: Option<&str>,
 ) -> PyResult<crate::transport_gen::PyHeaterResult> {
     azoth_process::models::heater::heater(
         &components,
@@ -5993,6 +5996,9 @@ pub fn heater(
         utility_approach_temperature.map(kelvins),
         utility_heat_capacity_rate,
         utility_overall_heat_transfer_coefficient,
+        mechanical_design,
+        mechanical_type,
+        mechanical_selection,
     )
     .map(|r| crate::transport_gen::PyHeaterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

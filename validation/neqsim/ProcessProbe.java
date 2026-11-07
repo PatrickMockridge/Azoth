@@ -195,6 +195,9 @@ public class ProcessProbe {
       case "heater_utility":
         heaterUtilityRows();
         break;
+      case "heater_mechanical":
+        heaterMechanicalRows();
+        break;
       case "cooler":
         heatRows("Cooler");
         break;
@@ -859,6 +862,100 @@ public class ProcessProbe {
           + utility.hasOverallHeatTransferCoefficient());
       System.out.println();
     }
+  }
+
+  /// `HeatExchangerMechanicalDesign`'s single-stream thermal estimate.
+  ///
+  /// The heater path: the utility specification's supply and return temperatures and the
+  /// process temperatures give an LMTD and an approach; UA is duty/LMTD; the five candidate
+  /// types turn that into a required area with their own allowable approach and typical U. The
+  /// detailed calculator and the two-stream exchanger branch are separate.
+  static void heaterMechanicalRows() {
+    heaterMechanicalRow("no_utility", 100_000.0, false, null, null, null, null, null);
+    heaterMechanicalRow("supply_450", 100_000.0, true, 450.0, null, null, null, null);
+    heaterMechanicalRow("supply_and_capacity", 100_000.0, true, 450.0, 5000.0, null, null, null);
+    heaterMechanicalRow("supply_and_u", 100_000.0, true, 450.0, null, 300.0, null, null);
+    heaterMechanicalRow("approach_and_capacity", 100_000.0, true, null, 6000.0, null, 20.0, null);
+    heaterMechanicalRow("manual_plate", 100_000.0, true, 450.0, null, null, null,
+        neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType.PLATE_AND_FRAME);
+    heaterMechanicalRow("cooling", -100_000.0, true, 250.0, null, null, null, null);
+  }
+
+  static void heaterMechanicalRow(String label, double dutyW, boolean utility, Double supplyK,
+      Double capacityWK, Double uValue, Double approachK,
+      neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType manual) {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    Stream inlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater heater =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+    heater.setDuty(dutyW);
+    if (utility) {
+      neqsim.process.equipment.heatexchanger.UtilityStreamSpecification spec =
+          heater.getUtilitySpecification();
+      if (supplyK != null) {
+        spec.setSupplyTemperature(supplyK);
+      }
+      if (capacityWK != null) {
+        spec.setHeatCapacityRate(capacityWK);
+      }
+      if (uValue != null) {
+        spec.setOverallHeatTransferCoefficient(uValue);
+      }
+      if (approachK != null) {
+        spec.setApproachTemperature(approachK);
+      }
+    }
+    heater.run();
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign design =
+        heater.getMechanicalDesign();
+    if (manual != null) {
+      design.setManualSelection(manual);
+    }
+    design.calcDesign();
+
+    System.out.println("case=" + label);
+    System.out.println("duty_w=" + dutyW);
+    System.out.println("process_in_k=" + inlet.getTemperature("K"));
+    System.out.println("process_out_k=" + heater.getOutletStream().getTemperature("K"));
+    System.out.println("utility_supply_k="
+        + heater.getUtilitySpecification().getSupplyTemperature());
+    System.out.println("utility_return_k="
+        + heater.getUtilitySpecification().getReturnTemperature());
+    System.out.println("log_mean_temperature_difference_k="
+        + design.getLogMeanTemperatureDifference());
+    System.out.println("approach_temperature_k=" + design.getApproachTemperature());
+    System.out.println("used_u_w_per_m2k=" + design.getUsedOverallHeatTransferCoefficient());
+    System.out.println("calculated_ua_w_per_k=" + design.getCalculatedUA());
+    for (neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult result :
+        design.getSizingResults()) {
+      String type = result.getType().name().toLowerCase(java.util.Locale.ROOT);
+      System.out.println("type_" + type + "_required_area_m2=" + result.getRequiredArea());
+      System.out.println("type_" + type + "_required_ua_w_per_k=" + result.getRequiredUA());
+      System.out.println("type_" + type + "_u_w_per_m2k="
+          + result.getOverallHeatTransferCoefficient());
+      System.out.println("type_" + type + "_approach_k=" + result.getApproachTemperature());
+      System.out.println("type_" + type + "_inner_diameter_m=" + result.getInnerDiameter());
+      System.out.println("type_" + type + "_outer_diameter_m=" + result.getOuterDiameter());
+      System.out.println("type_" + type + "_wall_thickness_m=" + result.getWallThickness());
+      System.out.println("type_" + type + "_length_m=" + result.getEstimatedLength());
+      System.out.println("type_" + type + "_tube_count=" + result.getTubeCount());
+      System.out.println("type_" + type + "_tube_passes=" + result.getTubePasses());
+      System.out.println("type_" + type + "_fin_surface_area_m2=" + result.getFinSurfaceArea());
+      System.out.println("type_" + type + "_estimated_pressure_drop="
+          + result.getEstimatedPressureDrop());
+      System.out.println("type_" + type + "_estimated_weight_kg=" + result.getEstimatedWeight());
+      System.out.println("type_" + type + "_module_length_m=" + result.getModuleLength());
+      System.out.println("type_" + type + "_module_width_m=" + result.getModuleWidth());
+      System.out.println("type_" + type + "_module_height_m=" + result.getModuleHeight());
+    }
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult selected =
+        design.getSelectedSizingResult();
+    System.out.println("selected_type="
+        + (selected == null ? "none" : selected.getType().name().toLowerCase(java.util.Locale.ROOT)));
+    System.out.println("selected_area_m2="
+        + (selected == null ? "none" : selected.getRequiredArea()));
+    System.out.println();
   }
 
   /// `Filter`, whose steady state is a pressure drop and a flash - and two things the class

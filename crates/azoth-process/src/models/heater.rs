@@ -5,7 +5,9 @@
 //! address.
 
 use azoth_core::units::{
-    MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, watts,
+    Area, HeatTransfer, Length, Mass, MolarEnergy, Power, Pressure, ThermalConductance,
+    ThermodynamicTemperature, joules_per_mole, kelvins, kilograms, meters, square_meters, watts,
+    watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -14,6 +16,7 @@ use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::heater as kernel;
 use crate::kernels::heater::HeaterCapacity;
 use crate::kernels::heater_electrical;
+use crate::kernels::heater_mechanical;
 use crate::model_gen;
 use crate::stream::Stream;
 
@@ -38,6 +41,41 @@ pub struct HeaterInstrument {
     pub sil_rating: f64,
     /// Whether the row is safety-related.
     pub safety_related: bool,
+}
+
+/// One row of the mechanical design's candidate table.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct HeaterMechanicalType {
+    pub mechanical_type: String,
+    #[serde(serialize_with = "scalar")]
+    pub required_area: Area,
+    #[serde(serialize_with = "scalar")]
+    pub required_ua: ThermalConductance,
+    #[serde(serialize_with = "scalar")]
+    pub overall_heat_transfer_coefficient: HeatTransfer,
+    #[serde(serialize_with = "scalar")]
+    pub approach_temperature: ThermodynamicTemperature,
+    #[serde(serialize_with = "scalar")]
+    pub estimated_length: Length,
+    #[serde(serialize_with = "scalar")]
+    pub inner_diameter: Length,
+    #[serde(serialize_with = "scalar")]
+    pub outer_diameter: Length,
+    #[serde(serialize_with = "scalar")]
+    pub wall_thickness: Length,
+    pub tube_count: f64,
+    pub tube_passes: f64,
+    #[serde(serialize_with = "scalar")]
+    pub fin_surface_area: Area,
+    pub estimated_pressure_drop: f64,
+    #[serde(serialize_with = "scalar")]
+    pub estimated_weight: Mass,
+    #[serde(serialize_with = "scalar")]
+    pub module_length: Length,
+    #[serde(serialize_with = "scalar")]
+    pub module_width: Length,
+    #[serde(serialize_with = "scalar")]
+    pub module_height: Length,
 }
 
 /// Result of `process.heater`.
@@ -142,6 +180,25 @@ pub struct HeaterResult {
     pub has_heat_capacity_rate: Option<bool>,
     /// Whether an overall heat-transfer coefficient is stated and positive.
     pub has_overall_heat_transfer_coefficient: Option<bool>,
+    /// The selected mechanical configuration.
+    pub mechanical_selected_type: Option<String>,
+    /// The selected configuration's required area.
+    #[serde(serialize_with = "optional_scalar")]
+    pub mechanical_selected_area: Option<Area>,
+    /// The log-mean temperature difference.
+    #[serde(serialize_with = "optional_scalar")]
+    pub log_mean_temperature_difference: Option<ThermodynamicTemperature>,
+    /// The approach temperature.
+    #[serde(serialize_with = "optional_scalar")]
+    pub mechanical_approach_temperature: Option<ThermodynamicTemperature>,
+    /// The overall coefficient the estimate used.
+    #[serde(serialize_with = "optional_scalar")]
+    pub used_overall_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The calculated UA.
+    #[serde(serialize_with = "optional_scalar")]
+    pub calculated_ua: Option<ThermalConductance>,
+    /// The five candidates, in the class's enum order.
+    pub mechanical_types: Vec<HeaterMechanicalType>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -160,7 +217,8 @@ impl HeaterResult {
         capacity: HeaterCapacity,
         instruments: Option<Vec<HeaterInstrument>>,
         electrical: Option<&heater_electrical::ElectricalDesign>,
-        utility: Option<&kernel::UtilitySpecification>,
+        utility: Option<&heater_mechanical::UtilitySpecification>,
+        mechanical: Option<&heater_mechanical::MechanicalDesign>,
         warnings: Vec<Warning>,
     ) -> Self {
         let counts = instruments.as_ref().map(|rows| {
@@ -221,15 +279,54 @@ impl HeaterResult {
             total_auxiliary_power: electrical.map(|value| watts(value.total_auxiliary_w)),
             total_connected_power: electrical.map(|value| watts(value.total_connected_w)),
             has_supply_temperature: utility
-                .map(kernel::UtilitySpecification::has_supply_temperature),
+                .map(heater_mechanical::UtilitySpecification::has_supply_temperature),
             has_return_temperature: utility
-                .map(kernel::UtilitySpecification::has_return_temperature),
+                .map(heater_mechanical::UtilitySpecification::has_return_temperature),
             has_approach_temperature: utility
-                .map(kernel::UtilitySpecification::has_approach_temperature),
+                .map(heater_mechanical::UtilitySpecification::has_approach_temperature),
             has_heat_capacity_rate: utility
-                .map(kernel::UtilitySpecification::has_heat_capacity_rate),
+                .map(heater_mechanical::UtilitySpecification::has_heat_capacity_rate),
             has_overall_heat_transfer_coefficient: utility
-                .map(kernel::UtilitySpecification::has_overall_heat_transfer_coefficient),
+                .map(heater_mechanical::UtilitySpecification::has_overall_heat_transfer_coefficient),
+            mechanical_selected_type: mechanical.map(|value| value.selected.kind.spelling().to_string()),
+            mechanical_selected_area: mechanical.map(|value| square_meters(value.selected.required_area_m2)),
+            log_mean_temperature_difference: mechanical
+                .map(|value| kelvins(value.log_mean_temperature_difference)),
+            mechanical_approach_temperature: mechanical
+                .map(|value| kelvins(value.approach_temperature)),
+            used_overall_heat_transfer_coefficient: mechanical.map(|value| {
+                watts_per_square_meter_kelvin(value.used_overall_heat_transfer_coefficient)
+            }),
+            calculated_ua: mechanical.map(|value| watts_per_kelvin(value.calculated_ua)),
+            mechanical_types: mechanical
+                .map(|value| {
+                    value
+                        .types
+                        .iter()
+                        .map(|row| HeaterMechanicalType {
+                            mechanical_type: row.kind.spelling().to_string(),
+                            required_area: square_meters(row.required_area_m2),
+                            required_ua: watts_per_kelvin(row.required_ua_w_per_k),
+                            overall_heat_transfer_coefficient: watts_per_square_meter_kelvin(
+                                row.overall_heat_transfer_coefficient,
+                            ),
+                            approach_temperature: kelvins(row.approach_temperature_k),
+                            estimated_length: meters(row.estimated_length_m),
+                            inner_diameter: meters(row.inner_diameter_m),
+                            outer_diameter: meters(row.outer_diameter_m),
+                            wall_thickness: meters(row.wall_thickness_m),
+                            tube_count: row.tube_count,
+                            tube_passes: row.tube_passes,
+                            fin_surface_area: square_meters(row.fin_surface_area_m2),
+                            estimated_pressure_drop: row.estimated_pressure_drop_bar,
+                            estimated_weight: kilograms(row.estimated_weight_kg),
+                            module_length: meters(row.module_length_m),
+                            module_width: meters(row.module_width_m),
+                            module_height: meters(row.module_height_m),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
             warnings,
         }
     }
@@ -272,6 +369,9 @@ pub fn heater(
     utility_approach_temperature: Option<ThermodynamicTemperature>,
     utility_heat_capacity_rate: Option<f64>,
     utility_overall_heat_transfer_coefficient: Option<f64>,
+    mechanical_design: Option<bool>,
+    mechanical_type: Option<&str>,
+    mechanical_selection: Option<&str>,
 ) -> Result<HeaterResult> {
     let spec = &model_gen::HEATER_SPEC;
     let mut warnings = Vec::new();
@@ -403,6 +503,45 @@ pub fn heater(
         None => heater_electrical::HeatExchangerType::ElectricHeater,
     };
 
+    let mechanical_requested = mechanical_design.unwrap_or(false);
+    for (name, stated) in [
+        ("mechanical_type", mechanical_type.is_some()),
+        ("mechanical_selection", mechanical_selection.is_some()),
+    ] {
+        if stated && !mechanical_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "a mechanical-design input is stated without `mechanical_design`",
+            ));
+        }
+    }
+    let manual_selection = match mechanical_type {
+        Some(spelling) => Some(heater_mechanical::MechanicalType::parse(spelling).ok_or_else(
+            || {
+                AzothError::invalid_input(
+                    "mechanical_type",
+                    format!("{spelling} is not one of the five mechanical configurations"),
+                )
+            },
+        )?),
+        None => None,
+    };
+    let selection_criterion = match mechanical_selection {
+        Some(spelling) => Some(
+            heater_mechanical::SelectionCriterion::parse(spelling).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "mechanical_selection",
+                    format!("{spelling} is not one of min_area, min_weight or min_pressure_drop"),
+                )
+            })?,
+        ),
+        None => None,
+    };
+    let mechanical_request = heater_mechanical::MechanicalRequest {
+        manual_selection,
+        selection_criterion,
+    };
+
     let utility_requested = utility_specification.unwrap_or(false);
     for (name, stated) in [
         (
@@ -520,14 +659,26 @@ pub fn heater(
         None
     };
 
+    let utility_specification = heater_mechanical::UtilitySpecification {
+        supply_temperature: utility_supply_temperature.map(|value| value.value),
+        return_temperature: utility_return_temperature.map(|value| value.value),
+        approach_temperature: utility_approach_temperature.map(|value| value.value),
+        heat_capacity_rate: utility_heat_capacity_rate,
+        overall_heat_transfer_coefficient: utility_overall_heat_transfer_coefficient,
+    };
     let utility = if utility_requested {
-        Some(kernel::UtilitySpecification {
-            supply_temperature: utility_supply_temperature.map(|value| value.value),
-            return_temperature: utility_return_temperature.map(|value| value.value),
-            approach_temperature: utility_approach_temperature.map(|value| value.value),
-            heat_capacity_rate: utility_heat_capacity_rate,
-            overall_heat_transfer_coefficient: utility_overall_heat_transfer_coefficient,
-        })
+        Some(utility_specification)
+    } else {
+        None
+    };
+    let mechanical = if mechanical_requested {
+        Some(heater_mechanical::design(
+            outcome.duty.value,
+            feed.t.value,
+            outcome.outlet.t.value,
+            &utility_specification,
+            &mechanical_request,
+        ))
     } else {
         None
     };
@@ -538,6 +689,7 @@ pub fn heater(
         instruments,
         electrical.as_ref(),
         utility.as_ref(),
+        mechanical.as_ref(),
         warnings,
     ))
 }

@@ -574,6 +574,157 @@ impl From<&azoth_process::models::heater::HeaterInstrument> for PyHeaterInstrume
     }
 }
 
+/// the five candidates in the class's enum order; empty when the design did not run.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterMechanicalType"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeaterMechanicalType {
+    /// the configuration's spelling.
+    #[pyo3(get)]
+    pub mechanical_type: String,
+    /// the required heat-transfer area.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// the UA the type's area is computed from.
+    #[pyo3(get)]
+    pub required_ua: PyQty,
+    /// the type's typical overall coefficient.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the larger of the estimate's approach and the type's allowable approach.
+    #[pyo3(get)]
+    pub approach_temperature: PyQty,
+    /// the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    #[pyo3(get)]
+    pub estimated_length: PyQty,
+    /// the equivalent inside diameter.
+    #[pyo3(get)]
+    pub inner_diameter: PyQty,
+    /// the equivalent outside diameter.
+    #[pyo3(get)]
+    pub outer_diameter: PyQty,
+    /// the wall or sheet thickness.
+    #[pyo3(get)]
+    pub wall_thickness: PyQty,
+    /// the tube or plate count.
+    #[pyo3(get)]
+    pub tube_count: f64,
+    /// the tube passes or plate pairs.
+    #[pyo3(get)]
+    pub tube_passes: f64,
+    /// the fin surface area; zero for the unfinned types.
+    #[pyo3(get)]
+    pub fin_surface_area: PyQty,
+    /// the class's qualitative pressure-drop proxy, in bar.
+    #[pyo3(get)]
+    pub estimated_pressure_drop: f64,
+    /// the estimated weight.
+    #[pyo3(get)]
+    pub estimated_weight: PyQty,
+    /// the module length.
+    #[pyo3(get)]
+    pub module_length: PyQty,
+    /// the module width.
+    #[pyo3(get)]
+    pub module_width: PyQty,
+    /// the module height.
+    #[pyo3(get)]
+    pub module_height: PyQty,
+}
+
+#[pymethods]
+impl PyHeaterMechanicalType {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterMechanicalType(mechanical_type={}, required_area={:?}, required_ua={:?}, overall_heat_transfer_coefficient={:?}, approach_temperature={:?}, estimated_length={:?}, inner_diameter={:?}, outer_diameter={:?}, wall_thickness={:?}, tube_count={}, tube_passes={}, fin_surface_area={:?}, estimated_pressure_drop={}, estimated_weight={:?}, module_length={:?}, module_width={:?}, module_height={:?})",
+            self.mechanical_type,
+            self.required_area,
+            self.required_ua,
+            self.overall_heat_transfer_coefficient,
+            self.approach_temperature,
+            self.estimated_length,
+            self.inner_diameter,
+            self.outer_diameter,
+            self.wall_thickness,
+            self.tube_count,
+            self.tube_passes,
+            self.fin_surface_area,
+            self.estimated_pressure_drop,
+            self.estimated_weight,
+            self.module_length,
+            self.module_width,
+            self.module_height
+        )
+    }
+}
+
+impl From<&azoth_process::models::heater::HeaterMechanicalType> for PyHeaterMechanicalType {
+    fn from(row: &azoth_process::models::heater::HeaterMechanicalType) -> Self {
+        Self {
+            mechanical_type: row.mechanical_type.clone(),
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            required_ua: PyQty {
+                magnitude_si: row.required_ua.value,
+                unit: "W/K".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            approach_temperature: PyQty {
+                magnitude_si: row.approach_temperature.value,
+                unit: "K".to_string(),
+            },
+            estimated_length: PyQty {
+                magnitude_si: row.estimated_length.value,
+                unit: "m".to_string(),
+            },
+            inner_diameter: PyQty {
+                magnitude_si: row.inner_diameter.value,
+                unit: "m".to_string(),
+            },
+            outer_diameter: PyQty {
+                magnitude_si: row.outer_diameter.value,
+                unit: "m".to_string(),
+            },
+            wall_thickness: PyQty {
+                magnitude_si: row.wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            tube_count: row.tube_count,
+            tube_passes: row.tube_passes,
+            fin_surface_area: PyQty {
+                magnitude_si: row.fin_surface_area.value,
+                unit: "m**2".to_string(),
+            },
+            estimated_pressure_drop: row.estimated_pressure_drop,
+            estimated_weight: PyQty {
+                magnitude_si: row.estimated_weight.value,
+                unit: "kg".to_string(),
+            },
+            module_length: PyQty {
+                magnitude_si: row.module_length.value,
+                unit: "m".to_string(),
+            },
+            module_width: PyQty {
+                magnitude_si: row.module_width.value,
+                unit: "m".to_string(),
+            },
+            module_height: PyQty {
+                magnitude_si: row.module_height.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
 /// the model's assumption and warning records, in the order it forms them.
 #[pyclass(
     frozen,

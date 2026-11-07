@@ -32,7 +32,7 @@ from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.record_outputs_gen import HeaterInstrument
+from azoth.core.record_outputs_gen import HeaterInstrument, HeaterMechanicalType
 from azoth.core.result import HeaterResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
@@ -76,6 +76,9 @@ def heater(
     utility_approach_temperature: Q | None = None,
     utility_heat_capacity_rate: Q | None = None,
     utility_overall_heat_transfer_coefficient: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -298,6 +301,31 @@ def heater(
         if value is not None and not math.isfinite(float(value)):
             raise InvalidInputError(name, f"{value} is not a finite number")
 
+    mechanical_requested = bool(mechanical_design)
+    for name, stated in (
+        ("mechanical_type", mechanical_type is not None),
+        ("mechanical_selection", mechanical_selection is not None),
+    ):
+        if stated and not mechanical_requested:
+            raise InvalidInputError(
+                name,
+                "a mechanical-design input is stated without `mechanical_design`",
+            )
+    manual = None
+    if mechanical_type is not None:
+        if mechanical_type not in MECHANICAL_NAMES:
+            raise InvalidInputError(
+                "mechanical_type",
+                f"{mechanical_type} is not one of the five mechanical configurations",
+            )
+        manual = mechanical_type
+    criterion = "min_area" if mechanical_selection is None else mechanical_selection
+    if criterion not in MECHANICAL_CRITERIA:
+        raise InvalidInputError(
+            "mechanical_selection",
+            f"{criterion} is not one of min_area, min_weight or min_pressure_drop",
+        )
+
     states = _states(components, n, inlet_z, p, t, t_out, q, drop)
     capacity = _capacity(states.outlet_t.to("K").magnitude, max_t, min_t)
     electrical = (
@@ -320,6 +348,25 @@ def heater(
     analog_output = sum(1 for row in instruments if row.io_type == "AO")
     digital_input = sum(1 for row in instruments if row.io_type == "DI")
     digital_output = sum(1 for row in instruments if row.io_type == "DO")
+    utility_state = {
+        "supply": utility_supply_si,
+        "return": utility_return_si,
+        "approach": utility_approach_si,
+        "rate": utility_capacity_si,
+        "u": utility_u_si,
+    }
+    mechanical = (
+        _mechanical(
+            states.duty,
+            t,
+            states.outlet_t.to("K").magnitude,
+            utility_state,
+            manual,
+            criterion,
+        )
+        if mechanical_requested
+        else None
+    )
     counts = (
         None
         if not instrument_requested
@@ -397,6 +444,23 @@ def heater(
         has_overall_heat_transfer_coefficient=(
             None if not utility_requested else utility_u_si is not None and utility_u_si > 0.0
         ),
+        mechanical_selected_type=(
+            None if mechanical is None else mechanical.selected.mechanical_type
+        ),
+        mechanical_selected_area=(
+            None if mechanical is None else mechanical.selected.required_area
+        ),
+        log_mean_temperature_difference=(
+            None if mechanical is None else from_si(mechanical.lmtd, "K")
+        ),
+        mechanical_approach_temperature=(
+            None if mechanical is None else from_si(mechanical.approach, "K")
+        ),
+        used_overall_heat_transfer_coefficient=(
+            None if mechanical is None else from_si(mechanical.used_u, "W/(m**2*K)")
+        ),
+        calculated_ua=(None if mechanical is None else from_si(mechanical.ua, "W/K")),
+        mechanical_types=() if mechanical is None else mechanical.types,
         warnings=tuple(warnings),
     )
 
@@ -774,6 +838,224 @@ def _capacity(
         or (min_utilization is not None and min_utilization > 1.0),
         hard_limit_exceeded=(min_limit is not None and outlet_temperature < min_limit),
         bottleneck_constraint=bottleneck_constraint,
+    )
+
+
+#: The five mechanical configurations and their (typical U, allowable approach).
+MECHANICAL_TYPES = (
+    ("shell_and_tube", 580.0, 5.0),
+    ("plate_and_frame", 1150.0, 2.0),
+    ("air_cooler", 90.0, 12.0),
+    ("double_pipe", 350.0, 8.0),
+    ("plate_fin", 600.0, 1.5),
+)
+#: The five configurations' spellings.
+MECHANICAL_NAMES = tuple(kind for kind, _, _ in MECHANICAL_TYPES)
+#: `HeatExchangerMechanicalDesign.SelectionCriterion`'s spellings.
+MECHANICAL_CRITERIA = ("min_area", "min_weight", "min_pressure_drop")
+
+
+def _lmtd(delta_t1: float, delta_t2: float) -> float:
+    safe1 = max(delta_t1, 1.0e-6)
+    safe2 = max(delta_t2, 1.0e-6)
+    if abs(safe1 - safe2) < 1.0e-6:
+        return (safe1 + safe2) / 2.0
+    return abs((safe1 - safe2) / math.log(safe1 / safe2))
+
+
+def _geometry(name: str, area: float, ua: float, approach: float) -> HeaterMechanicalType:
+    """One `HeatExchangerType.createSizingResult`, in SI."""
+    length = width = height = inner = outer = thickness = 0.0
+    tubes = passes = fin_area = drop = weight = 0.0
+    if name == "shell_and_tube":
+        length = max(6.0, min(area / (math.pi * 0.019 * 40.0), 12.0))
+        tubes = max(math.ceil(area / (math.pi * 0.019 * length)), 2)
+        passes = 4.0 if tubes > 100 else 2.0
+        bundle = math.sqrt(tubes) * (0.019 * 1.25)
+        inner = max(bundle, 0.3)
+        outer = inner + 2.0 * 0.012
+        thickness = 0.012
+        drop = 0.05 * passes * length
+        weight = math.pi * inner * length * 0.012 * 7850.0
+        width = height = outer + 0.8
+    elif name == "plate_and_frame":
+        passes = max(math.ceil(area / 2.2), 5)
+        tubes = passes * 2.0 + 1.0
+        length = 0.6 + tubes * 0.003
+        inner = math.sqrt(area / math.pi)
+        outer = inner + 0.016
+        thickness = 0.008
+        drop = 0.02 * passes
+        weight = tubes * 12.0
+        width = 1.0
+        height = 1.8
+    elif name == "air_cooler":
+        plan = max(area / 2.5, 5.0)
+        width = math.sqrt(plan)
+        length = plan / width
+        inner = math.sqrt(4.0 * plan / math.pi)
+        outer = inner + 0.012
+        thickness = 0.006
+        fin_area = area * 2.5
+        drop = 0.01 * area
+        weight = plan * 45.0
+        height = 3.2
+    elif name == "double_pipe":
+        length = max(area / (math.pi * 0.05), 2.5)
+        inner = 0.05
+        outer = 0.11
+        thickness = 0.005
+        tubes = 2.0
+        passes = 2.0
+        drop = 0.08 * length
+        weight = math.pi * outer * length * 0.005 * 7850.0
+        width = height = outer + 0.6
+    else:  # plate_fin
+        volume = area / 1000.0
+        wh = (volume / 6.0) ** (1.0 / 3.0)
+        length = 6.0 * wh
+        inner = wh
+        outer = wh + 2.0 * 0.0016
+        thickness = 0.0016
+        fin_area = area
+        drop = 0.03 * length
+        weight = volume * 0.30 * 2730.0
+        width = wh + 0.8
+        height = wh + 0.5
+    return HeaterMechanicalType(
+        mechanical_type=name,
+        required_area=from_si(area, "m**2"),
+        required_ua=from_si(ua, "W/K"),
+        overall_heat_transfer_coefficient=from_si(
+            next(typical for kind, typical, _ in MECHANICAL_TYPES if kind == name),
+            "W/(m**2*K)",
+        ),
+        approach_temperature=from_si(approach, "K"),
+        estimated_length=from_si(length, "m"),
+        inner_diameter=from_si(inner, "m"),
+        outer_diameter=from_si(outer, "m"),
+        wall_thickness=from_si(thickness, "m"),
+        tube_count=float(tubes),
+        tube_passes=float(passes),
+        fin_surface_area=from_si(fin_area, "m**2"),
+        estimated_pressure_drop=drop,
+        estimated_weight=from_si(weight, "kg"),
+        module_length=from_si(
+            length
+            + (1.5 if name == "shell_and_tube" else 0.0)
+            + (
+                0.0
+                if name not in ("double_pipe", "plate_fin")
+                else (0.5 if name == "double_pipe" else 2.0)
+            ),
+            "m",
+        ),
+        module_width=from_si(width, "m"),
+        module_height=from_si(height, "m"),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _Mechanical:
+    lmtd: float
+    approach: float
+    used_u: float
+    ua: float
+    types: tuple[HeaterMechanicalType, ...]
+    selected: HeaterMechanicalType
+
+
+def _mechanical(
+    duty_w: float,
+    process_in: float,
+    process_out: float,
+    utility: dict[str, float | None],
+    manual: str | None,
+    criterion: str,
+) -> _Mechanical:
+    """`HeatExchangerMechanicalDesign.calcDesign`'s heater branch."""
+    duty = abs(duty_w)
+    used_u = 500.0
+    if utility["u"] is not None and utility["u"] > 0.0:
+        used_u = utility["u"]
+    heating = process_out >= process_in
+    supply = utility["supply"]
+    ret = utility["return"]
+    if supply is None and utility["approach"] is not None:
+        supply = process_out + utility["approach"] if heating else process_out - utility["approach"]
+    if (
+        ret is None
+        and utility["rate"] is not None
+        and utility["rate"] > 0.0
+        and duty > 0.0
+        and supply is not None
+    ):
+        delta = duty / utility["rate"]
+        ret = supply - delta if heating else supply + delta
+    if ret is None and supply is not None:
+        ret = supply
+    if supply is None or ret is None:
+        lmtd = None
+        approach = None
+        delta = abs(process_out - process_in)
+        if delta > 0.0:
+            lmtd = delta
+            approach = delta
+    else:
+        temperatures = (
+            (supply, ret, process_in, process_out)
+            if heating
+            else (process_in, process_out, supply, ret)
+        )
+        delta_t1 = abs(temperatures[0] - temperatures[3])
+        delta_t2 = abs(temperatures[1] - temperatures[2])
+        lmtd = _lmtd(delta_t1, delta_t2)
+        approach = min(delta_t1, delta_t2)
+    ua = None
+    if duty > 0.0 and lmtd is not None and lmtd > 0.0:
+        ua = duty / lmtd
+    if approach is None or approach < 0.0:
+        approach = 0.0
+    if lmtd is None or lmtd <= 0.0:
+        if approach > 0.0:
+            lmtd = approach
+        elif duty > 0.0 and used_u > 0.0:
+            lmtd = duty / used_u
+        else:
+            lmtd = 1.0
+    if (ua is None or not ua > 0.0) and duty > 0.0 and lmtd > 0.0:
+        ua = duty / lmtd
+    if ua is None or ua <= 0.0:
+        ua = used_u
+    rows = []
+    for name, typical, allowable in MECHANICAL_TYPES:
+        type_approach = max(approach, allowable) if approach > 0.0 else allowable
+        ua_for_type = ua
+        if not ua_for_type > 0.0 and duty > 0.0:
+            ua_for_type = duty / max(type_approach, 1.0)
+        if ua_for_type is None or ua_for_type <= 0.0:
+            ua_for_type = typical
+        area = max(ua_for_type / max(used_u, typical), 0.1)
+        rows.append(_geometry(name, area, ua_for_type, type_approach))
+    if manual is not None:
+        selected = next(row for row in rows if row.mechanical_type == manual)
+    else:
+
+        def metric(row: HeaterMechanicalType) -> float:
+            if criterion == "min_weight":
+                return row.estimated_weight.to("kg").magnitude
+            if criterion == "min_pressure_drop":
+                return row.estimated_pressure_drop
+            return row.required_area.to("m**2").magnitude
+
+        selected = min(rows, key=metric)
+    return _Mechanical(
+        lmtd=lmtd,
+        approach=approach,
+        used_u=used_u,
+        ua=ua,
+        types=tuple(rows),
+        selected=selected,
     )
 
 

@@ -30,6 +30,7 @@ from azoth.core.record_outputs_gen import (
     EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
     HeaterInstrument,
+    HeaterMechanicalType,
     HemReleaseDiagnostic,
     HemReleaseStation,
     HydrateRiskPoint,
@@ -6695,6 +6696,27 @@ class HeaterResult(_HasWarnings):
 
     #: whether an overall heat-transfer coefficient is stated **and positive**.
     has_overall_heat_transfer_coefficient: bool | None
+
+    #: the selected configuration's spelling.
+    mechanical_selected_type: str | None
+
+    #: the selected configuration's required area.
+    mechanical_selected_area: Q | None
+
+    #: the log-mean temperature difference the utility and process temperatures give.
+    log_mean_temperature_difference: Q | None
+
+    #: the smallest of the two temperature differences, floored at zero.
+    mechanical_approach_temperature: Q | None
+
+    #: the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.
+    used_overall_heat_transfer_coefficient: Q | None
+
+    #: `duty / log_mean_temperature_difference`, after the class's fallbacks.
+    calculated_ua: Q | None
+
+    #: the five candidates in the class's enum order; empty when the design did not run.
+    mechanical_types: tuple[HeaterMechanicalType, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

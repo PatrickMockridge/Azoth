@@ -819,9 +819,11 @@ a claim nothing holds.
   its I/O counts and the SIL trips behind `instrument_design`; **and its electrical design's
   motor surface**: the duty as shaft power, the IEC 60034 motor tables, the voltage taps,
   currents, losses and auxiliary loads behind `electrical_design`; **and its utility
-  specification as carried state**: five values and their `has_*` predicates. What remains owed
-  there is the mechanical design, `runTransient`, and the electrical cable, switchgear, VFD and
-  hazardous-area components;
+  specification as carried state**: five values and their `has_*` predicates; **and its mechanical
+  design's thermal estimate**: the LMTD, approach, UA and the five candidate types with their
+  required areas, geometry models and selection. The detailed `ShellAndTubeDesignCalculator`,
+  the two-stream `HeatExchanger` branch, `runTransient` and the electrical cable, switchgear,
+  VFD and hazardous-area components remain owed;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and

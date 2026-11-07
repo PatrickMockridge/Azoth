@@ -2533,6 +2533,33 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("heat_transfer"),
             },
+            ModelInput {
+                name: "mechanical_design",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "mechanical_type",
+                kind: "enum",
+                values: &[
+                    "shell_and_tube",
+                    "plate_and_frame",
+                    "air_cooler",
+                    "double_pipe",
+                    "plate_fin",
+                ],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "mechanical_selection",
+                kind: "enum",
+                values: &["min_area", "min_weight", "min_pressure_drop"],
+                optional: true,
+                dimension: None,
+            },
         ],
     },
     ModelInputs {

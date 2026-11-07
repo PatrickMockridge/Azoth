@@ -632,6 +632,28 @@ class HeaterInstrument:
     safety_related: bool
 
 @final
+class HeaterMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    mechanical_type: str
+    required_area: Qty
+    required_ua: Qty
+    overall_heat_transfer_coefficient: Qty
+    approach_temperature: Qty
+    estimated_length: Qty
+    inner_diameter: Qty
+    outer_diameter: Qty
+    wall_thickness: Qty
+    tube_count: float
+    tube_passes: float
+    fin_surface_area: Qty
+    estimated_pressure_drop: float
+    estimated_weight: Qty
+    module_length: Qty
+    module_width: Qty
+    module_height: Qty
+
+@final
 class HemReleaseStation:
     """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
 
@@ -3042,6 +3064,13 @@ class HeaterResult:
     has_approach_temperature: bool | None
     has_heat_capacity_rate: bool | None
     has_overall_heat_transfer_coefficient: bool | None
+    mechanical_selected_type: str | None
+    mechanical_selected_area: Qty | None
+    log_mean_temperature_difference: Qty | None
+    mechanical_approach_temperature: Qty | None
+    used_overall_heat_transfer_coefficient: Qty | None
+    calculated_ua: Qty | None
+    mechanical_types: list[HeaterMechanicalType]
     warnings: list[Warning]
 
 @final
@@ -5916,6 +5945,9 @@ def heater(
     utility_approach_temperature: float | None = None,
     utility_heat_capacity_rate: float | None = None,
     utility_overall_heat_transfer_coefficient: float | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeaterResult: ...
 def hem_release(
     components: list[str],

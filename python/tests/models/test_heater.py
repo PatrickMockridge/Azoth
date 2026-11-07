@@ -173,3 +173,62 @@ def test_a_utility_input_without_the_flag_is_refused() -> None:
     base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
     with pytest.raises(InvalidInputError, match="utility_supply_temperature"):
         resolve(MODEL_ID)(**base, utility_supply_temperature=Q(450.0, "K"))
+
+
+MECHANICAL_FIELDS = (
+    "mechanical_selected_type",
+    "mechanical_selected_area",
+    "log_mean_temperature_difference",
+    "mechanical_approach_temperature",
+    "used_overall_heat_transfer_coefficient",
+    "calculated_ua",
+)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_mechanical_outputs_are_absent_without_their_flag(backend: str) -> None:
+    result = _run(_case("outlet_temperature_380"), backend)
+    for name in MECHANICAL_FIELDS:
+        assert getattr(result, name) is None, name
+    assert result.mechanical_types == ()
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_no_utility_mechanical_design_is_the_captures(backend: str) -> None:
+    result = _run(_case("mechanical_no_utility"), backend)
+    assert result.mechanical_selected_type == "plate_and_frame"
+    assert result.mechanical_selected_area.to("m**2").magnitude == pytest.approx(
+        4.167901647148911, rel=5e-4
+    )
+    assert result.log_mean_temperature_difference.to("K").magnitude == pytest.approx(
+        20.863381404017616, rel=5e-4
+    )
+    assert result.calculated_ua.to("W/K").magnitude == pytest.approx(4793.086894221247, rel=5e-4)
+    assert len(result.mechanical_types) == 5
+    assert result.mechanical_types[1].mechanical_type == "plate_and_frame"
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_stated_u_is_the_used_one(backend: str) -> None:
+    result = _run(_case("mechanical_supply_and_u"), backend)
+    assert result.used_overall_heat_transfer_coefficient.to(
+        "W/(m**2*K)"
+    ).magnitude == pytest.approx(300.0)
+
+
+def test_a_mechanical_input_without_the_flag_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="mechanical_type"):
+        resolve(MODEL_ID)(**base, mechanical_type="plate_and_frame")
+
+
+def test_an_unknown_mechanical_type_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="mechanical_type"):
+        resolve(MODEL_ID)(**base, mechanical_design=True, mechanical_type="coalescer")
+
+
+def test_an_unknown_selection_criterion_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="mechanical_selection"):
+        resolve(MODEL_ID)(**base, mechanical_design=True, mechanical_selection="cheapest")

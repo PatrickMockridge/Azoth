@@ -703,8 +703,10 @@ fn the_generated_input_table_is_the_models_own() {
     // `efficiency_class`, `frequency_hz`, `phases`, `number_of_fans`, `instrumentation_power`
     // and `cooling_water_pump_power` - `665 + 9 = 674`. **And the heater's utility
     // specification's six** - the flag, the two temperatures, the approach, the
-    // heat-capacity rate and the coefficient - `674 + 6 = 680`.
-    assert_eq!(walked, 680, "the inputs this test walked");
+    // heat-capacity rate and the coefficient - `674 + 6 = 680`. **And the heater's
+    // mechanical design's three** - `mechanical_design`, `mechanical_type` and
+    // `mechanical_selection` - `680 + 3 = 683`.
+    assert_eq!(walked, 683, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

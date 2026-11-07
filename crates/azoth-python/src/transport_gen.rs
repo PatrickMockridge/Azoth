@@ -16,11 +16,11 @@
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
-    PyFlowlineScaleSegment, PyHeaterInstrument, PyHemReleaseDiagnostic, PyHemReleaseStation,
-    PyHydrateRiskPoint, PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint,
-    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
-    PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction,
-    PyWaterMixingResult,
+    PyFlowlineScaleSegment, PyHeaterInstrument, PyHeaterMechanicalType, PyHemReleaseDiagnostic,
+    PyHemReleaseStation, PyHydrateRiskPoint, PyKComponent, PyLeakBlowdownDiagnostic,
+    PyLeakBlowdownPoint, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
+    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
+    PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -16573,6 +16573,27 @@ pub struct PyHeaterResult {
     /// whether an overall heat-transfer coefficient is stated **and positive**.
     #[pyo3(get)]
     pub has_overall_heat_transfer_coefficient: Option<bool>,
+    /// the selected configuration's spelling.
+    #[pyo3(get)]
+    pub mechanical_selected_type: Option<String>,
+    /// the selected configuration's required area.
+    #[pyo3(get)]
+    pub mechanical_selected_area: Option<PyQty>,
+    /// the log-mean temperature difference the utility and process temperatures give.
+    #[pyo3(get)]
+    pub log_mean_temperature_difference: Option<PyQty>,
+    /// the smallest of the two temperature differences, floored at zero.
+    #[pyo3(get)]
+    pub mechanical_approach_temperature: Option<PyQty>,
+    /// the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.
+    #[pyo3(get)]
+    pub used_overall_heat_transfer_coefficient: Option<PyQty>,
+    /// `duty / log_mean_temperature_difference`, after the class's fallbacks.
+    #[pyo3(get)]
+    pub calculated_ua: Option<PyQty>,
+    /// the five candidates in the class's enum order; empty when the design did not run.
+    #[pyo3(get)]
+    pub mechanical_types: Vec<PyHeaterMechanicalType>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16582,7 +16603,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16625,6 +16646,13 @@ impl PyHeaterResult {
             self.has_approach_temperature,
             self.has_heat_capacity_rate,
             self.has_overall_heat_transfer_coefficient,
+            self.mechanical_selected_type,
+            self.mechanical_selected_area,
+            self.log_mean_temperature_difference,
+            self.mechanical_approach_temperature,
+            self.used_overall_heat_transfer_coefficient,
+            self.calculated_ua,
+            self.mechanical_types,
             self.warnings.len()
         )
     }
@@ -16708,6 +16736,34 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
             has_approach_temperature: r.has_approach_temperature,
             has_heat_capacity_rate: r.has_heat_capacity_rate,
             has_overall_heat_transfer_coefficient: r.has_overall_heat_transfer_coefficient,
+            mechanical_selected_type: r.mechanical_selected_type.clone(),
+            mechanical_selected_area: r.mechanical_selected_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            log_mean_temperature_difference: r.log_mean_temperature_difference.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            mechanical_approach_temperature: r.mechanical_approach_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            used_overall_heat_transfer_coefficient: r.used_overall_heat_transfer_coefficient.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                },
+            ),
+            calculated_ua: r.calculated_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            mechanical_types: r
+                .mechanical_types
+                .iter()
+                .map(PyHeaterMechanicalType::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

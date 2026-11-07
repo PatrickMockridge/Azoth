@@ -18,15 +18,15 @@ assumptions = [
     "**The air cooler's fan power is `max(2 kW per fan, 1% of the duty)`**, and the motor is sized on that. The voltage taps are `400/690/6600` V for the electric heater and `400/690` for the cooler.",
     "**The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.",
     "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
-    "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when also positive. Its consumer is the mechanical design, which is owed.",
-    "NeqSim's `Heater` also carries a `runTransient`, the mechanical design, and the electrical design's cable, switchgear, VFD and hazardous-area components. **Those are owed**: the loading, capacity, instrument, motor and utility surfaces above are the steady ones.",
+    "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when positive.",
+    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch, `runTransient` and the electrical components are outside.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing and the utility-specification predicates."
+edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the utility-specification predicates and the mechanical thermal estimate."
 [inputs]
 [inputs.components]
 type = "components"
@@ -143,6 +143,20 @@ description = "the utility heat-capacity rate. **Specified only when positive**:
 unit = "W/(m**2*K)"
 optional = true
 description = "the assumed overall heat-transfer coefficient. **Specified only when positive**: zero and below store but leave the predicate false.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerMechanicalDesign.calcDesign`'s thermal estimate. Absent is false; every mechanical output is absent without it.\n"
+[inputs.mechanical_type]
+type = "enum"
+values = ["shell_and_tube", "plate_and_frame", "air_cooler", "double_pipe", "plate_fin"]
+optional = true
+description = "the manual type selection. Absent evaluates all five and ranks them by `mechanical_selection`; stating it selects that type from the five.\n"
+[inputs.mechanical_selection]
+type = "enum"
+values = ["min_area", "min_weight", "min_pressure_drop"]
+optional = true
+description = "the automatic ranking's metric. Absent is the class's `MIN_AREA`. Ignored with a stated `mechanical_type`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -332,6 +346,85 @@ description = "whether a heat-capacity rate is stated **and positive**.\n"
 type = "boolean"
 optional = true
 description = "whether an overall heat-transfer coefficient is stated **and positive**.\n"
+[outputs.mechanical_selected_type]
+type = "string"
+optional = true
+description = "the selected configuration's spelling.\n"
+[outputs.mechanical_selected_area]
+unit = "m**2"
+optional = true
+description = "the selected configuration's required area.\n"
+[outputs.log_mean_temperature_difference]
+unit = "K"
+optional = true
+description = "the log-mean temperature difference the utility and process temperatures give.\n"
+[outputs.mechanical_approach_temperature]
+unit = "K"
+optional = true
+description = "the smallest of the two temperature differences, floored at zero.\n"
+[outputs.used_overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.\n"
+[outputs.calculated_ua]
+unit = "W/K"
+optional = true
+description = "`duty / log_mean_temperature_difference`, after the class's fallbacks.\n"
+[outputs.mechanical_types]
+type = "record_list"
+description = "the five candidates in the class's enum order; empty when the design did not run.\n"
+[outputs.mechanical_types.fields.mechanical_type]
+type = "string"
+description = "the configuration's spelling.\n"
+[outputs.mechanical_types.fields.required_area]
+unit = "m**2"
+description = "the required heat-transfer area.\n"
+[outputs.mechanical_types.fields.required_ua]
+unit = "W/K"
+description = "the UA the type's area is computed from.\n"
+[outputs.mechanical_types.fields.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the type's typical overall coefficient.\n"
+[outputs.mechanical_types.fields.approach_temperature]
+unit = "K"
+description = "the larger of the estimate's approach and the type's allowable approach.\n"
+[outputs.mechanical_types.fields.estimated_length]
+unit = "m"
+description = "the estimated length: tube length, stack length, fan-module length, pipe length or core length.\n"
+[outputs.mechanical_types.fields.inner_diameter]
+unit = "m"
+description = "the equivalent inside diameter.\n"
+[outputs.mechanical_types.fields.outer_diameter]
+unit = "m"
+description = "the equivalent outside diameter.\n"
+[outputs.mechanical_types.fields.wall_thickness]
+unit = "m"
+description = "the wall or sheet thickness.\n"
+[outputs.mechanical_types.fields.tube_count]
+unit = "dimensionless"
+description = "the tube or plate count.\n"
+[outputs.mechanical_types.fields.tube_passes]
+unit = "dimensionless"
+description = "the tube passes or plate pairs.\n"
+[outputs.mechanical_types.fields.fin_surface_area]
+unit = "m**2"
+description = "the fin surface area; zero for the unfinned types.\n"
+[outputs.mechanical_types.fields.estimated_pressure_drop]
+unit = "dimensionless"
+description = "the class's qualitative pressure-drop proxy, in bar.\n"
+[outputs.mechanical_types.fields.estimated_weight]
+unit = "kg"
+description = "the estimated weight.\n"
+[outputs.mechanical_types.fields.module_length]
+unit = "m"
+description = "the module length.\n"
+[outputs.mechanical_types.fields.module_width]
+unit = "m"
+description = "the module width.\n"
+[outputs.mechanical_types.fields.module_height]
+unit = "m"
+description = "the module height.\n"
+
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

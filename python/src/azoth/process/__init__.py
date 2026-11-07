@@ -1496,6 +1496,9 @@ def heater(
     utility_approach_temperature: Q | None = None,
     utility_heat_capacity_rate: Q | None = None,
     utility_overall_heat_transfer_coefficient: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1550,6 +1553,9 @@ def heater(
         utility_approach_temperature=utility_approach_temperature,
         utility_heat_capacity_rate=utility_heat_capacity_rate,
         utility_overall_heat_transfer_coefficient=utility_overall_heat_transfer_coefficient,
+        mechanical_design=mechanical_design,
+        mechanical_type=mechanical_type,
+        mechanical_selection=mechanical_selection,
     )
 
 

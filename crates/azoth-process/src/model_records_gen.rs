@@ -557,6 +557,13 @@ impl CalcResult for HeaterResult {
         "has_approach_temperature",
         "has_heat_capacity_rate",
         "has_overall_heat_transfer_coefficient",
+        "mechanical_selected_type",
+        "mechanical_selected_area",
+        "log_mean_temperature_difference",
+        "mechanical_approach_temperature",
+        "used_overall_heat_transfer_coefficient",
+        "calculated_ua",
+        "mechanical_types",
         "warnings",
     ];
 

@@ -22,6 +22,7 @@ pub mod gibbs_reactor;
 pub mod heat_exchanger;
 pub mod heater;
 pub mod heater_electrical;
+pub mod heater_mechanical;
 pub mod manifold;
 pub mod map_turbo_expander_compressor;
 pub mod mixer;
