@@ -213,6 +213,22 @@ a `NaN` enthalpy; the PR rows here therefore use the class's own `HeatExchangerT
 fluid on PR, where the same arithmetic stays in a state the cubic is for. **The SRK row is
 that test's own `15780.77130`**, and it is a labelled control rather than a PR case.
 
+## The heat exchanger's mechanical design
+
+`process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
+two-stream branch: the four stream temperatures give the LMTD and approach, `getUAvalue()` is
+the starting UA, and the five candidate types give their areas at their own typical
+coefficients. The pinned rows set the two outlets to the **reference state** - the pin, and
+the other side at the duty's enthalpy from a fresh flash - because `runSpecifiedStream`'s own
+clone-and-flash lands its enthalpy elsewhere; the class's `duty` field stays zero there,
+which is what the estimate reads.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_mechanical \
+  > captures/process_heat_exchanger_mechanical_design.tsv
+```
+
 ## The compressor's no-chart modes
 
 Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the

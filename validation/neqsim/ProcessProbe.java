@@ -180,6 +180,9 @@ public class ProcessProbe {
       case "heat_exchanger_delta_t":
         heatExchangerDeltaT();
         break;
+      case "heat_exchanger_mechanical":
+        heatExchangerMechanicalRows();
+        break;
       case "heater":
         heatRows("Heater");
         break;
@@ -1009,6 +1012,143 @@ public class ProcessProbe {
         + heater.getUtilitySpecification().getSupplyTemperature());
     System.out.println("utility_return_k="
         + heater.getUtilitySpecification().getReturnTemperature());
+    System.out.println("log_mean_temperature_difference_k="
+        + design.getLogMeanTemperatureDifference());
+    System.out.println("approach_temperature_k=" + design.getApproachTemperature());
+    System.out.println("used_u_w_per_m2k=" + design.getUsedOverallHeatTransferCoefficient());
+    System.out.println("calculated_ua_w_per_k=" + design.getCalculatedUA());
+    for (neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult result :
+        design.getSizingResults()) {
+      String type = result.getType().name().toLowerCase(java.util.Locale.ROOT);
+      System.out.println("type_" + type + "_required_area_m2=" + result.getRequiredArea());
+      System.out.println("type_" + type + "_required_ua_w_per_k=" + result.getRequiredUA());
+      System.out.println("type_" + type + "_u_w_per_m2k="
+          + result.getOverallHeatTransferCoefficient());
+      System.out.println("type_" + type + "_approach_k=" + result.getApproachTemperature());
+      System.out.println("type_" + type + "_inner_diameter_m=" + result.getInnerDiameter());
+      System.out.println("type_" + type + "_outer_diameter_m=" + result.getOuterDiameter());
+      System.out.println("type_" + type + "_wall_thickness_m=" + result.getWallThickness());
+      System.out.println("type_" + type + "_length_m=" + result.getEstimatedLength());
+      System.out.println("type_" + type + "_tube_count=" + result.getTubeCount());
+      System.out.println("type_" + type + "_tube_passes=" + result.getTubePasses());
+      System.out.println("type_" + type + "_fin_surface_area_m2=" + result.getFinSurfaceArea());
+      System.out.println("type_" + type + "_estimated_pressure_drop="
+          + result.getEstimatedPressureDrop());
+      System.out.println("type_" + type + "_estimated_weight_kg=" + result.getEstimatedWeight());
+      System.out.println("type_" + type + "_module_length_m=" + result.getModuleLength());
+      System.out.println("type_" + type + "_module_width_m=" + result.getModuleWidth());
+      System.out.println("type_" + type + "_module_height_m=" + result.getModuleHeight());
+    }
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult selected =
+        design.getSelectedSizingResult();
+    System.out.println("selected_type="
+        + (selected == null ? "none" : selected.getType().name().toLowerCase(java.util.Locale.ROOT)));
+    System.out.println("selected_area_m2="
+        + (selected == null ? "none" : selected.getRequiredArea()));
+    System.out.println();
+  }
+
+  /// `HeatExchangerMechanicalDesign.calcDesign`'s two-stream branch.
+  ///
+  /// **The branch is selected by the equipment, not by an input**: `calcDesign` asks
+  /// `instanceof HeatExchanger` first, so a two-stream exchanger takes it and a `Heater`
+  /// takes the single-stream one. The temperatures are the exchanger's own four stream
+  /// temperatures, ordered by their mean; the UA the estimate starts from is
+  /// `getUAvalue()`; and the sizing coefficient is the **type's typical** U rather than the
+  /// larger of the type's and a used U - the flag the heater branch calls with `false`.
+  ///
+  /// **Three things the rows are here to settle.** `calcDesign` resets
+  /// `usedOverallHeatTransferCoefficient` to the class's 500 and the two-stream handler
+  /// never touches it, so the printed used U is 500 even when the exchanger's UA is 100.
+  /// The effectiveness-derived UA branch (`cmin * -ln(1 - effectiveness)`) only replaces
+  /// the starting UA when it is **larger**, which the rating that produced it makes
+  /// impossible; a pinned or delta-T run leaves the effectiveness field at zero, so the
+  /// branch is skipped there. And the pinned rows read the exchanger's `UAvalue` - the
+  /// stated one, or the class's 500 default when none was stated - even though `run`
+  /// itself never reads it in that mode.
+  static void heatExchangerMechanicalRows() {
+    hxMechanicalRow("rating_ua_100", 100.0, true, null, null, null, false);
+    hxMechanicalRow("rating_ua_300", 300.0, true, null, null, null, false);
+    // Near-saturated: the effectiveness is above 0.999 and the approach is 8.5e-5 K, so this
+    // row is evidence for the arm's skip rather than a case.
+    hxMechanicalRow("rating_ua_1000", 1000.0, true, null, null, null, false);
+    // The manual pick is not the area winner here: plate-and-frame is.
+    hxMechanicalRow("manual_shell_and_tube", 100.0, true, "SHELL_AND_TUBE", null, null, false);
+    hxMechanicalRow("min_weight", 100.0, true, null, "MIN_WEIGHT", null, false);
+    hxMechanicalRow("min_pressure_drop", 100.0, true, null, "MIN_PRESSURE_DROP", null, false);
+    // A pinned hot outlet: `run` never recomputes `UAvalue`, so the estimate reads the
+    // class's 500 default when the caller stated none.
+    hxMechanicalRow("pinned_hot_outlet_default_ua", 0.0, false, null, null, 350.0, false);
+    hxMechanicalRow("pinned_hot_outlet_stated_ua", 200.0, true, null, null, 350.0, false);
+    // The delta-T closure writes `UAvalue = duty / (T_out,set - T_in,set)` and leaves
+    // `thermalEffectiveness` at zero; this row is what the estimate reads there. The
+    // equal-capacity fluids keep the closure's state non-degenerate.
+    hxMechanicalRow("delta_t", 0.0, false, null, null, null, true);
+  }
+
+  static void hxMechanicalRow(String label, double ua, boolean setUa, String manual,
+      String criterion, Double pinnedK, boolean equalCapacity) {
+    Stream hot;
+    Stream cold;
+    if (equalCapacity) {
+      hot = feed(new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, 400.0, 20.0, 1.0);
+      cold = feed(new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, 300.0, 20.0, 1.0);
+    } else {
+      hot = feed(new String[] {"methane", "n-butane"}, new double[] {0.8, 0.2}, 400.0, 20.0, 1.0);
+      cold = feed(new String[] {"n-butane", "n-pentane"}, new double[] {0.5, 0.5}, 300.0, 5.0,
+          1.0);
+    }
+    hot.setName("hot");
+    cold.setName("cold");
+
+    neqsim.process.equipment.heatexchanger.HeatExchanger hx =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("hx1", hot, cold);
+    if (setUa) {
+      hx.setUAvalue(ua);
+    }
+    if (pinnedK != null) {
+      // **The reference state, not `runSpecifiedStream`'s.** That method clones an
+      // already-flashed fluid and lands its enthalpy elsewhere, so the port's own pinned solve
+      // reaches the fresh-fluid state instead - and this block hands the class exactly the two
+      // outlets the port carries: the pin, and the other side at the duty's enthalpy.
+      Stream pinned = feed(new String[] {"methane", "n-butane"}, new double[] {0.8, 0.2}, pinnedK,
+          20.0, 1.0);
+      double hotSwing = duty(hot, pinned);
+      SystemInterface coldIn = cold.getThermoSystem();
+      SystemInterface coldOut = phFlash(new String[] {"n-butane", "n-pentane"},
+          new double[] {0.5, 0.5}, 300.0, 5.0, 1.0,
+          coldIn.getEnthalpy() / coldIn.getTotalNumberOfMoles() - hotSwing);
+      hx.getOutStream(0).setThermoSystem(pinned.getThermoSystem());
+      hx.getOutStream(1).setThermoSystem(coldOut);
+    } else {
+      if ("delta_t".equals(label)) {
+        hx.setDeltaT(1.0);
+      }
+      hx.run();
+    }
+
+    hx.initMechanicalDesign();
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign design =
+        hx.getMechanicalDesign();
+    if (manual != null) {
+      design.setManualSelection(
+          neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType.valueOf(manual));
+    }
+    if (criterion != null) {
+      design.setSelectionCriterion(
+          neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign.SelectionCriterion
+              .valueOf(criterion));
+    }
+    design.calcDesign();
+
+    System.out.println("case=" + label);
+    System.out.println("duty_w=" + Math.abs(hx.getDuty()));
+    System.out.println("hot_in_k=" + hx.getInTemperature(0));
+    System.out.println("hot_out_k=" + hx.getOutTemperature(0));
+    System.out.println("cold_in_k=" + hx.getInTemperature(1));
+    System.out.println("cold_out_k=" + hx.getOutTemperature(1));
+    System.out.println("ua_value_w_per_k=" + hx.getUAvalue());
+    System.out.println("thermal_effectiveness=" + hx.getThermalEffectiveness());
     System.out.println("log_mean_temperature_difference_k="
         + design.getLogMeanTemperatureDifference());
     System.out.println("approach_temperature_k=" + design.getApproachTemperature());
