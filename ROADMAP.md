@@ -821,9 +821,11 @@ a claim nothing holds.
   currents, losses and auxiliary loads behind `electrical_design`; **and its utility
   specification as carried state**: five values and their `has_*` predicates; **and its mechanical
   design's thermal estimate**: the LMTD, approach, UA and the five candidate types with their
-  required areas, geometry models and selection. The detailed `ShellAndTubeDesignCalculator`,
-  the two-stream `HeatExchanger` branch, `runTransient` and the electrical cable, switchgear,
-  VFD and hazardous-area components remain owed;
+  required areas, geometry models and selection; **and its cable and switchgear**: the tray
+  ampacity derating, the voltage-drop upsizing, the starter, breaker and fuse ratings and the
+  short-circuit rating and weight. The detailed `ShellAndTubeDesignCalculator`, the two-stream
+  `HeatExchanger` branch, `runTransient` and the VFD, transformer and hazardous-area
+  components remain owed;
   `Compressor`'s
   catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
   recycle block and steady recycle calculator have landed), and
