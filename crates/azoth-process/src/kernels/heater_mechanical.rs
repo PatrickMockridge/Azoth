@@ -9,7 +9,6 @@
 
 use std::f64::consts::PI;
 
-
 /// `UtilityStreamSpecification`'s five values and their predicates.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct UtilitySpecification {
@@ -249,7 +248,11 @@ fn single_stream_temperatures(
     }
     if ret.is_nan() && utility.has_heat_capacity_rate() && duty > 0.0 && !supply.is_nan() {
         let delta = duty / utility.heat_capacity_rate.unwrap_or(1.0);
-        ret = if heating { supply - delta } else { supply + delta };
+        ret = if heating {
+            supply - delta
+        } else {
+            supply + delta
+        };
     }
     if ret.is_nan() && !supply.is_nan() {
         ret = supply;
@@ -292,9 +295,7 @@ fn size_type(
     match kind {
         MechanicalType::ShellAndTube => {
             let tube_length = 6.0_f64.max((required_area / (PI * 0.019 * 40.0)).min(12.0));
-            let count = (required_area / (PI * 0.019 * tube_length))
-                .ceil()
-                .max(2.0);
+            let count = (required_area / (PI * 0.019 * tube_length)).ceil().max(2.0);
             let passes = if count > 100.0 { 4.0 } else { 2.0 };
             let pitch = 0.019 * 1.25;
             let bundle = count.sqrt() * pitch;
@@ -399,7 +400,8 @@ pub fn design(
 
     let mut lmtd = f64::NAN;
     let mut approach = f64::NAN;
-    if let Some(temperatures) = single_stream_temperatures(process_in_k, process_out_k, duty, utility)
+    if let Some(temperatures) =
+        single_stream_temperatures(process_in_k, process_out_k, duty, utility)
     {
         let delta_t1 = (temperatures[0] - temperatures[3]).abs();
         let delta_t2 = (temperatures[1] - temperatures[2]).abs();
@@ -470,7 +472,9 @@ pub fn design(
             .copied()
             .unwrap_or(types[0]),
         None => {
-            let criterion = request.selection_criterion.unwrap_or(SelectionCriterion::MinArea);
+            let criterion = request
+                .selection_criterion
+                .unwrap_or(SelectionCriterion::MinArea);
             let metric = |row: &TypeSizing| match criterion {
                 SelectionCriterion::MinArea => row.required_area_m2,
                 SelectionCriterion::MinWeight => row.estimated_weight_kg,
@@ -512,16 +516,51 @@ mod tests {
 
     #[test]
     fn the_no_utility_estimate_is_the_capture() {
-        let design = design(100_000.0, 320.0, 340.863_381_404_017_6, &no_utility(),
-            &MechanicalRequest::default());
-        close(design.log_mean_temperature_difference, 20.863_381_404_017_616, 1.0e-9, "lmtd");
+        let design = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &no_utility(),
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.log_mean_temperature_difference,
+            20.863_381_404_017_616,
+            1.0e-9,
+            "lmtd",
+        );
         close(design.calculated_ua, 4_793.086_894_221_247, 1.0e-9, "ua");
-        close(design.used_overall_heat_transfer_coefficient, 500.0, 1.0e-12, "u");
-        close(design.types[0].required_area_m2, 8.263_942_921_071_116, 1.0e-9, "shell area");
-        close(design.types[1].required_area_m2, 4.167_901_647_148_911, 1.0e-9, "plate area");
-        close(design.types[2].required_area_m2, 9.586_173_788_442_494, 1.0e-9, "air area");
+        close(
+            design.used_overall_heat_transfer_coefficient,
+            500.0,
+            1.0e-12,
+            "u",
+        );
+        close(
+            design.types[0].required_area_m2,
+            8.263_942_921_071_116,
+            1.0e-9,
+            "shell area",
+        );
+        close(
+            design.types[1].required_area_m2,
+            4.167_901_647_148_911,
+            1.0e-9,
+            "plate area",
+        );
+        close(
+            design.types[2].required_area_m2,
+            9.586_173_788_442_494,
+            1.0e-9,
+            "air area",
+        );
         assert_eq!(design.selected.kind, MechanicalType::PlateAndFrame);
-        close(design.selected.required_area_m2, 4.167_901_647_148_911, 1.0e-9, "selected");
+        close(
+            design.selected.required_area_m2,
+            4.167_901_647_148_911,
+            1.0e-9,
+            "selected",
+        );
     }
 
     #[test]
@@ -530,12 +569,32 @@ mod tests {
             supply_temperature: Some(450.0),
             ..UtilitySpecification::default()
         };
-        let design = design(100_000.0, 320.0, 340.863_381_404_017_6, &utility,
-            &MechanicalRequest::default());
-        close(design.log_mean_temperature_difference, 119.264_321_460_286_68, 1.0e-9, "lmtd");
-        close(design.approach_temperature, 109.136_618_595_982_38, 1.0e-9, "approach");
+        let design = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &utility,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.log_mean_temperature_difference,
+            119.264_321_460_286_68,
+            1.0e-9,
+            "lmtd",
+        );
+        close(
+            design.approach_temperature,
+            109.136_618_595_982_38,
+            1.0e-9,
+            "approach",
+        );
         close(design.calculated_ua, 838.473_725_858_027_8, 1.0e-9, "ua");
-        close(design.selected.required_area_m2, 0.729_107_587_702_632_8, 1.0e-9, "area");
+        close(
+            design.selected.required_area_m2,
+            0.729_107_587_702_632_8,
+            1.0e-9,
+            "area",
+        );
     }
 
     #[test]
@@ -545,9 +604,19 @@ mod tests {
             heat_capacity_rate: Some(5000.0),
             ..UtilitySpecification::default()
         };
-        let design = design(100_000.0, 320.0, 340.863_381_404_017_6, &utility,
-            &MechanicalRequest::default());
-        close(design.log_mean_temperature_difference, 109.567_742_355_256_06, 1.0e-9, "lmtd");
+        let design = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &utility,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.log_mean_temperature_difference,
+            109.567_742_355_256_06,
+            1.0e-9,
+            "lmtd",
+        );
         close(design.calculated_ua, 912.677_379_556_676, 1.0e-9, "ua");
     }
 
@@ -558,11 +627,25 @@ mod tests {
             overall_heat_transfer_coefficient: Some(300.0),
             ..UtilitySpecification::default()
         };
-        let design = design(100_000.0, 320.0, 340.863_381_404_017_6, &utility,
-            &MechanicalRequest::default());
-        close(design.used_overall_heat_transfer_coefficient, 300.0, 1.0e-12, "used u");
-        close(design.types[1].required_area_m2, 0.729_107_587_702_632_8, 1.0e-9,
-            "the plate area still uses its 1150");
+        let design = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &utility,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.used_overall_heat_transfer_coefficient,
+            300.0,
+            1.0e-12,
+            "used u",
+        );
+        close(
+            design.types[1].required_area_m2,
+            0.729_107_587_702_632_8,
+            1.0e-9,
+            "the plate area still uses its 1150",
+        );
     }
 
     #[test]
@@ -572,10 +655,20 @@ mod tests {
             heat_capacity_rate: Some(6000.0),
             ..UtilitySpecification::default()
         };
-        let design = design(100_000.0, 320.0, 340.863_381_404_017_6, &utility,
-            &MechanicalRequest::default());
+        let design = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &utility,
+            &MechanicalRequest::default(),
+        );
         close(design.approach_temperature, 20.0, 1.0e-12, "approach");
-        close(design.log_mean_temperature_difference, 22.031_780_162_764_73, 1.0e-9, "lmtd");
+        close(
+            design.log_mean_temperature_difference,
+            22.031_780_162_764_73,
+            1.0e-9,
+            "lmtd",
+        );
         close(design.calculated_ua, 4_538.897_866_534_779_5, 1.0e-9, "ua");
     }
 
@@ -585,10 +678,25 @@ mod tests {
             supply_temperature: Some(250.0),
             ..UtilitySpecification::default()
         };
-        let design = design(-100_000.0, 320.0, 298.904_911_855_824_54, &utility,
-            &MechanicalRequest::default());
-        close(design.approach_temperature, 48.904_911_855_824_54, 1.0e-9, "approach");
-        close(design.log_mean_temperature_difference, 58.823_380_930_957_015, 1.0e-9, "lmtd");
+        let design = design(
+            -100_000.0,
+            320.0,
+            298.904_911_855_824_54,
+            &utility,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.approach_temperature,
+            48.904_911_855_824_54,
+            1.0e-9,
+            "approach",
+        );
+        close(
+            design.log_mean_temperature_difference,
+            58.823_380_930_957_015,
+            1.0e-9,
+            "lmtd",
+        );
         close(design.calculated_ua, 1_700.004_291_072_858_2, 1.0e-9, "ua");
     }
 
@@ -598,14 +706,26 @@ mod tests {
             manual_selection: Some(MechanicalType::DoublePipe),
             selection_criterion: None,
         };
-        let chosen = design(100_000.0, 320.0, 340.863_381_404_017_6, &no_utility(), &manual);
+        let chosen = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &no_utility(),
+            &manual,
+        );
         assert_eq!(chosen.selected.kind, MechanicalType::DoublePipe);
 
         let by_weight = MechanicalRequest {
             manual_selection: None,
             selection_criterion: Some(SelectionCriterion::MinWeight),
         };
-        let ranked = design(100_000.0, 320.0, 340.863_381_404_017_6, &no_utility(), &by_weight);
+        let ranked = design(
+            100_000.0,
+            320.0,
+            340.863_381_404_017_6,
+            &no_utility(),
+            &by_weight,
+        );
         let lightest = ranked
             .types
             .iter()

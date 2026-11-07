@@ -24,8 +24,7 @@
 
 use azoth_core::units::{
     Area, DiffusionCoefficient, DynamicViscosity, Force, HeatFluxDensity, HeatTransfer, Length,
-    Mass,
-    MassDensity, MassFlux, MassRate, MolarEnergy, MolarHeatCapacity, Power, Pressure,
+    Mass, MassDensity, MassFlux, MassRate, MolarEnergy, MolarHeatCapacity, Power, Pressure,
     ThermalConductance, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 use azoth_core::{AzothError, Result, Warning};

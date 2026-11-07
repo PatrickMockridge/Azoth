@@ -433,7 +433,8 @@ pub(crate) fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
         p.optional_si("max_outlet_temperature")?.map(kelvins),
         p.optional_si("min_outlet_temperature")?.map(kelvins),
     );
-    let result = crate::models::HeaterResult::of(&out, capacity, None, None, None, None, Vec::new());
+    let result =
+        crate::models::HeaterResult::of(&out, capacity, None, None, None, None, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 

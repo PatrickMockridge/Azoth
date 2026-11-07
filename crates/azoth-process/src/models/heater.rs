@@ -286,10 +286,13 @@ impl HeaterResult {
                 .map(heater_mechanical::UtilitySpecification::has_approach_temperature),
             has_heat_capacity_rate: utility
                 .map(heater_mechanical::UtilitySpecification::has_heat_capacity_rate),
-            has_overall_heat_transfer_coefficient: utility
-                .map(heater_mechanical::UtilitySpecification::has_overall_heat_transfer_coefficient),
-            mechanical_selected_type: mechanical.map(|value| value.selected.kind.spelling().to_string()),
-            mechanical_selected_area: mechanical.map(|value| square_meters(value.selected.required_area_m2)),
+            has_overall_heat_transfer_coefficient: utility.map(
+                heater_mechanical::UtilitySpecification::has_overall_heat_transfer_coefficient,
+            ),
+            mechanical_selected_type: mechanical
+                .map(|value| value.selected.kind.spelling().to_string()),
+            mechanical_selected_area: mechanical
+                .map(|value| square_meters(value.selected.required_area_m2)),
             log_mean_temperature_difference: mechanical
                 .map(|value| kelvins(value.log_mean_temperature_difference)),
             mechanical_approach_temperature: mechanical
@@ -516,14 +519,14 @@ pub fn heater(
         }
     }
     let manual_selection = match mechanical_type {
-        Some(spelling) => Some(heater_mechanical::MechanicalType::parse(spelling).ok_or_else(
-            || {
+        Some(spelling) => Some(
+            heater_mechanical::MechanicalType::parse(spelling).ok_or_else(|| {
                 AzothError::invalid_input(
                     "mechanical_type",
                     format!("{spelling} is not one of the five mechanical configurations"),
                 )
-            },
-        )?),
+            })?,
+        ),
         None => None,
     };
     let selection_criterion = match mechanical_selection {
