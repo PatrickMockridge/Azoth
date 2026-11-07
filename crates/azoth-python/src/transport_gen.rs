@@ -16558,6 +16558,42 @@ pub struct PyHeaterResult {
     /// the electrical input plus the auxiliary load.
     #[pyo3(get)]
     pub total_connected_power: Option<PyQty>,
+    /// the power cable's route length the design used.
+    #[pyo3(get)]
+    pub cable_length: Option<PyQty>,
+    /// the selected cable cross-section in mm2, from the class's 19 standard sizes.
+    #[pyo3(get)]
+    pub cable_cross_section: Option<f64>,
+    /// the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.
+    #[pyo3(get)]
+    pub cable_ampacity: Option<f64>,
+    /// the three-phase voltage drop in percent at the class's 0.85 power factor.
+    #[pyo3(get)]
+    pub cable_voltage_drop: Option<f64>,
+    /// the cable's 1-second short-circuit withstand in kA.
+    #[pyo3(get)]
+    pub cable_short_circuit_withstand: Option<f64>,
+    /// the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.
+    #[pyo3(get)]
+    pub switchgear_starter: Option<String>,
+    /// `MCC` at 1000 V and below, `MV Switchgear` above it.
+    #[pyo3(get)]
+    pub switchgear_type: Option<String>,
+    /// the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.
+    #[pyo3(get)]
+    pub switchgear_circuit_breaker: Option<f64>,
+    /// the next standard fuse rating above 1.6 times the full-load current, in amperes.
+    #[pyo3(get)]
+    pub switchgear_fuse: Option<f64>,
+    /// the switchgear's rated current, the circuit-breaker rating.
+    #[pyo3(get)]
+    pub switchgear_rated_current: Option<f64>,
+    /// the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.
+    #[pyo3(get)]
+    pub switchgear_short_circuit: Option<f64>,
+    /// the switchgear's estimated weight.
+    #[pyo3(get)]
+    pub switchgear_weight: Option<PyQty>,
     /// whether a utility supply temperature is stated.
     #[pyo3(get)]
     pub has_supply_temperature: Option<bool>,
@@ -16603,7 +16639,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, cable_length={:?}, cable_cross_section={:?}, cable_ampacity={:?}, cable_voltage_drop={:?}, cable_short_circuit_withstand={:?}, switchgear_starter={:?}, switchgear_type={:?}, switchgear_circuit_breaker={:?}, switchgear_fuse={:?}, switchgear_rated_current={:?}, switchgear_short_circuit={:?}, switchgear_weight={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16641,6 +16677,18 @@ impl PyHeaterResult {
             self.motor_locked_rotor_multiplier,
             self.total_auxiliary_power,
             self.total_connected_power,
+            self.cable_length,
+            self.cable_cross_section,
+            self.cable_ampacity,
+            self.cable_voltage_drop,
+            self.cable_short_circuit_withstand,
+            self.switchgear_starter,
+            self.switchgear_type,
+            self.switchgear_circuit_breaker,
+            self.switchgear_fuse,
+            self.switchgear_rated_current,
+            self.switchgear_short_circuit,
+            self.switchgear_weight,
             self.has_supply_temperature,
             self.has_return_temperature,
             self.has_approach_temperature,
@@ -16730,6 +16778,24 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
             total_connected_power: r.total_connected_power.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "W".to_string(),
+            }),
+            cable_length: r.cable_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            cable_cross_section: r.cable_cross_section,
+            cable_ampacity: r.cable_ampacity,
+            cable_voltage_drop: r.cable_voltage_drop,
+            cable_short_circuit_withstand: r.cable_short_circuit_withstand,
+            switchgear_starter: r.switchgear_starter.clone(),
+            switchgear_type: r.switchgear_type.clone(),
+            switchgear_circuit_breaker: r.switchgear_circuit_breaker,
+            switchgear_fuse: r.switchgear_fuse,
+            switchgear_rated_current: r.switchgear_rated_current,
+            switchgear_short_circuit: r.switchgear_short_circuit,
+            switchgear_weight: r.switchgear_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
             }),
             has_supply_temperature: r.has_supply_temperature,
             has_return_temperature: r.has_return_temperature,

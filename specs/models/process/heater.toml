@@ -19,14 +19,15 @@ assumptions = [
     "**The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.",
     "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
     "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when positive.",
-    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch, `runTransient` and the electrical components are outside.",
+    "**The cable sizes on the tray ampacity and then upsizes for voltage drop, but its reported ampacity stays the base-selected section's**: the class computes the derated rating before the drop loop.",
+    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch, `runTransient`, VFD, transformer and hazardous-area parts are outside.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the utility-specification predicates and the mechanical thermal estimate."
+edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable and switchgear, the utility-specification predicates and the mechanical thermal estimate."
 [inputs]
 [inputs.components]
 type = "components"
@@ -119,6 +120,10 @@ description = "the auxiliary instrumentation load. Absent is the class's 1.5 kW.
 unit = "W"
 optional = true
 description = "the shell-and-tube cooling-water pump load, added to the auxiliary for that type only. Absent is the class's 0.\n"
+[inputs.cable_length]
+unit = "m"
+optional = true
+description = "the power cable's route length. Absent takes the class's 50 m; a longer run upsizes the cross-section until the voltage drop is under 5 percent.\n"
 [inputs.utility_specification]
 type = "boolean"
 optional = true
@@ -326,6 +331,54 @@ description = "the instrumentation load, plus the cooling-water pump load for sh
 unit = "W"
 optional = true
 description = "the electrical input plus the auxiliary load.\n"
+[outputs.cable_length]
+unit = "m"
+optional = true
+description = "the power cable's route length the design used.\n"
+[outputs.cable_cross_section]
+unit = "dimensionless"
+optional = true
+description = "the selected cable cross-section in mm2, from the class's 19 standard sizes.\n"
+[outputs.cable_ampacity]
+unit = "dimensionless"
+optional = true
+description = "the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.\n"
+[outputs.cable_voltage_drop]
+unit = "dimensionless"
+optional = true
+description = "the three-phase voltage drop in percent at the class's 0.85 power factor.\n"
+[outputs.cable_short_circuit_withstand]
+unit = "dimensionless"
+optional = true
+description = "the cable's 1-second short-circuit withstand in kA.\n"
+[outputs.switchgear_starter]
+type = "string"
+optional = true
+description = "the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.\n"
+[outputs.switchgear_type]
+type = "string"
+optional = true
+description = "`MCC` at 1000 V and below, `MV Switchgear` above it.\n"
+[outputs.switchgear_circuit_breaker]
+unit = "dimensionless"
+optional = true
+description = "the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.\n"
+[outputs.switchgear_fuse]
+unit = "dimensionless"
+optional = true
+description = "the next standard fuse rating above 1.6 times the full-load current, in amperes.\n"
+[outputs.switchgear_rated_current]
+unit = "dimensionless"
+optional = true
+description = "the switchgear's rated current, the circuit-breaker rating.\n"
+[outputs.switchgear_short_circuit]
+unit = "dimensionless"
+optional = true
+description = "the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.\n"
+[outputs.switchgear_weight]
+unit = "kg"
+optional = true
+description = "the switchgear's estimated weight.\n"
 [outputs.has_supply_temperature]
 type = "boolean"
 optional = true

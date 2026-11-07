@@ -70,6 +70,7 @@ def heater(
     number_of_fans: float | None = None,
     instrumentation_power: Q | None = None,
     cooling_water_pump_power: Q | None = None,
+    cable_length: Q | None = None,
     utility_specification: bool | None = None,
     utility_supply_temperature: Q | None = None,
     utility_return_temperature: Q | None = None,
@@ -200,6 +201,7 @@ def heater(
             "cooling_water_pump_power",
             cooling_water_pump_power is not None,
         ),
+        ("cable_length", cable_length is not None),
     ):
         if stated and not electrical_requested:
             raise InvalidInputError(
@@ -215,11 +217,15 @@ def heater(
         if cooling_water_pump_power is None
         else input_to_si(spec, "cooling_water_pump_power", cooling_water_pump_power)
     )
+    cable_length_si = (
+        None if cable_length is None else input_to_si(spec, "cable_length", cable_length)
+    )
     for name, value in (
         ("motor_sizing_margin", motor_sizing_margin),
         ("frequency_hz", frequency_hz),
         ("instrumentation_power", instrumentation_si),
         ("cooling_water_pump_power", pump_si),
+        ("cable_length", cable_length_si),
     ):
         if value is not None and not math.isfinite(float(value)):
             raise InvalidInputError(name, f"{value} is not a finite number")
@@ -342,6 +348,7 @@ def heater(
             int(fans),
             1500.0 if instrumentation_si is None else float(instrumentation_si),
             0.0 if pump_si is None else float(pump_si),
+            50.0 if cable_length_si is None else float(cable_length_si),
         )
     )
     analog_input = sum(1 for row in instruments if row.io_type == "AI")
@@ -431,6 +438,28 @@ def heater(
         total_connected_power=(
             None if electrical is None else from_si(electrical.total_connected_w, "W")
         ),
+        cable_length=(None if electrical is None else from_si(electrical.cable_length_m, "m")),
+        cable_cross_section=(None if electrical is None else electrical.cable_cross_section_mm2),
+        cable_ampacity=None if electrical is None else electrical.cable_ampacity_a,
+        cable_voltage_drop=(None if electrical is None else electrical.cable_voltage_drop_percent),
+        cable_short_circuit_withstand=(
+            None if electrical is None else electrical.cable_short_circuit_withstand_ka
+        ),
+        switchgear_starter=None if electrical is None else electrical.switchgear_starter,
+        switchgear_type=None if electrical is None else electrical.switchgear_type,
+        switchgear_circuit_breaker=(
+            None if electrical is None else electrical.switchgear_circuit_breaker_a
+        ),
+        switchgear_fuse=None if electrical is None else electrical.switchgear_fuse_a,
+        switchgear_rated_current=(
+            None if electrical is None else electrical.switchgear_rated_current_a
+        ),
+        switchgear_short_circuit=(
+            None if electrical is None else electrical.switchgear_short_circuit_ka
+        ),
+        switchgear_weight=(
+            None if electrical is None else from_si(electrical.switchgear_weight_kg, "kg")
+        ),
         has_supply_temperature=(None if not utility_requested else utility_supply_si is not None),
         has_return_temperature=(None if not utility_requested else utility_return_si is not None),
         has_approach_temperature=(
@@ -486,6 +515,18 @@ class Electrical:
     motor_locked_rotor_multiplier: float
     total_auxiliary_w: float
     total_connected_w: float
+    cable_length_m: float
+    cable_cross_section_mm2: float
+    cable_ampacity_a: float
+    cable_voltage_drop_percent: float
+    cable_short_circuit_withstand_ka: float
+    switchgear_starter: str
+    switchgear_type: str
+    switchgear_circuit_breaker_a: float
+    switchgear_fuse_a: float
+    switchgear_rated_current_a: float
+    switchgear_short_circuit_ka: float
+    switchgear_weight_kg: float
 
 
 #: `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
@@ -551,6 +592,168 @@ IEC_POWERS_KW = (
 #: The efficiency-class offsets, in points.
 IE_OFFSETS = {"ie1": -3.0, "ie2": -1.5, "ie3": 0.0, "ie4": 1.0}
 
+#: `ElectricalCable.STANDARD_CROSS_SECTIONS`, mm2.
+CABLE_CROSS_SECTIONS_MM2 = (
+    1.5,
+    2.5,
+    4.0,
+    6.0,
+    10.0,
+    16.0,
+    25.0,
+    35.0,
+    50.0,
+    70.0,
+    95.0,
+    120.0,
+    150.0,
+    185.0,
+    240.0,
+    300.0,
+    400.0,
+    500.0,
+    630.0,
+)
+#: `ElectricalCable.BASE_AMPACITY_XLPE_TRAY`, A.
+CABLE_BASE_AMPACITY_A = (
+    18.0,
+    25.0,
+    33.0,
+    43.0,
+    60.0,
+    80.0,
+    106.0,
+    131.0,
+    158.0,
+    200.0,
+    241.0,
+    278.0,
+    315.0,
+    360.0,
+    420.0,
+    480.0,
+    560.0,
+    640.0,
+    740.0,
+)
+#: `Switchgear.STANDARD_RATINGS_A`.
+SWITCHGEAR_RATINGS_A = (
+    100.0,
+    160.0,
+    250.0,
+    400.0,
+    630.0,
+    800.0,
+    1000.0,
+    1250.0,
+    1600.0,
+    2000.0,
+    2500.0,
+    3150.0,
+    4000.0,
+    5000.0,
+)
+#: `Switchgear.selectStandardFuseRating`'s ratings.
+FUSE_RATINGS_A = (
+    16.0,
+    20.0,
+    25.0,
+    32.0,
+    40.0,
+    50.0,
+    63.0,
+    80.0,
+    100.0,
+    125.0,
+    160.0,
+    200.0,
+    250.0,
+    315.0,
+    400.0,
+    500.0,
+    630.0,
+    800.0,
+    1000.0,
+    1250.0,
+)
+
+
+def _next_cable_size(min_mm2: float) -> float:
+    return next(
+        (standard for standard in CABLE_CROSS_SECTIONS_MM2 if standard >= min_mm2),
+        CABLE_CROSS_SECTIONS_MM2[-1],
+    )
+
+
+def _voltage_drop_percent(
+    current_a: float, voltage_v: float, length_m: float, section: float
+) -> float:
+    if section <= 0.0 or voltage_v <= 0.0 or length_m <= 0.0:
+        return 0.0
+    resistance = 0.0175 / section
+    reactance = 0.00008
+    cos_phi = 0.85
+    sin_phi = math.sqrt(1.0 - cos_phi * cos_phi)
+    drop = math.sqrt(3.0) * current_a * length_m * (resistance * cos_phi + reactance * sin_phi)
+    return drop / voltage_v * 100.0
+
+
+def _size_cable(
+    current_a: float, voltage_v: float, length_m: float
+) -> tuple[float, float, float, float]:
+    """`ElectricalCable.sizeCable` on the heater path's Tray/40 C/copper defaults."""
+    ambient = min(1.0, max(0.5, math.sqrt((90.0 - 40.0) / (90.0 - 30.0))))
+    derating = ambient * 0.85
+    required = current_a / derating if derating > 0.0 else current_a
+    section = CABLE_CROSS_SECTIONS_MM2[0]
+    base_ampacity = CABLE_BASE_AMPACITY_A[0]
+    for index, standard in enumerate(CABLE_CROSS_SECTIONS_MM2):
+        if CABLE_BASE_AMPACITY_A[index] >= required:
+            section = standard
+            base_ampacity = CABLE_BASE_AMPACITY_A[index]
+            break
+        if index == len(CABLE_CROSS_SECTIONS_MM2) - 1:
+            section = standard
+            base_ampacity = CABLE_BASE_AMPACITY_A[index]
+    ampacity = base_ampacity * derating
+    drop = _voltage_drop_percent(current_a, voltage_v, length_m, section)
+    while drop > 5.0 and section < CABLE_CROSS_SECTIONS_MM2[-1]:
+        section = _next_cable_size(section + 1.0)
+        drop = _voltage_drop_percent(current_a, voltage_v, length_m, section)
+    withstand = 143.0 * section / 1000.0
+    return section, ampacity, drop, withstand
+
+
+def _size_switchgear(
+    current_a: float, rated_power_kw: float, voltage_v: float
+) -> tuple[str, str, float, float, float, float, float]:
+    """`Switchgear.sizeSwitchgear` with ``useVFD = False``."""
+    if rated_power_kw > 200.0:
+        starter = "Soft Starter"
+    elif rated_power_kw > 11.0:
+        starter = "Star-Delta"
+    else:
+        starter = "DOL"
+    switchgear_type = "MV Switchgear" if voltage_v > 1000.0 else "MCC"
+    required = current_a * 1.25
+    breaker = next(
+        (rating for rating in SWITCHGEAR_RATINGS_A if rating >= required),
+        math.ceil(required / 100.0) * 100.0,
+    )
+    target = current_a * 1.6
+    fuse = next(
+        (rating for rating in FUSE_RATINGS_A if rating >= target),
+        FUSE_RATINGS_A[-1],
+    )
+    if voltage_v > 6000.0:
+        short_circuit = 40.0
+    elif voltage_v > 1000.0:
+        short_circuit = 31.5
+    else:
+        short_circuit = 25.0
+    weight = breaker * 0.5 + 200.0 if voltage_v > 1000.0 else breaker * 0.15 + 50.0
+    return starter, switchgear_type, breaker, fuse, breaker, short_circuit, weight
+
 
 def _electrical(
     kind: str,
@@ -563,6 +766,7 @@ def _electrical(
     fans: int,
     instrumentation_w: float,
     pump_w: float,
+    cable_length_m: float,
 ) -> Electrical:
     """`HeatExchangerElectricalDesign.calcDesign`, in SI."""
     duty_kw = abs(process_duty_w) / 1000.0
@@ -665,11 +869,29 @@ def _electrical(
             motor_locked_rotor_multiplier=locked,
             total_auxiliary_w=auxiliary,
             total_connected_w=input_w + auxiliary,
+            cable_length_m=cable_length_m,
+            cable_cross_section_mm2=0.0,
+            cable_ampacity_a=0.0,
+            cable_voltage_drop_percent=0.0,
+            cable_short_circuit_withstand_ka=0.0,
+            switchgear_starter="DOL",
+            switchgear_type="MCC",
+            switchgear_circuit_breaker_a=0.0,
+            switchgear_fuse_a=0.0,
+            switchgear_rated_current_a=0.0,
+            switchgear_short_circuit_ka=25.0,
+            switchgear_weight_kg=0.0,
         )
     efficiency_fraction = efficiency / 100.0 if efficiency > 0.0 else 0.0
     input_kw = shaft_kw / efficiency_fraction if efficiency_fraction > 0.0 else shaft_kw
     apparent = input_kw / factor if factor > 0.0 else 0.0
     full_load = _current(input_kw, voltage, factor, phases)
+    cable_section, cable_ampacity, cable_drop, cable_withstand = _size_cable(
+        full_load, voltage, cable_length_m
+    )
+    starter, switchgear_type, breaker, fuse, rated_current, short_circuit, weight = (
+        _size_switchgear(full_load, rated, voltage)
+    )
     return Electrical(
         shaft_power_w=shaft_kw * 1000.0,
         electrical_input_w=input_kw * 1000.0,
@@ -688,6 +910,18 @@ def _electrical(
         motor_locked_rotor_multiplier=locked,
         total_auxiliary_w=auxiliary,
         total_connected_w=input_kw * 1000.0 + auxiliary,
+        cable_length_m=cable_length_m,
+        cable_cross_section_mm2=cable_section,
+        cable_ampacity_a=cable_ampacity,
+        cable_voltage_drop_percent=cable_drop,
+        cable_short_circuit_withstand_ka=cable_withstand,
+        switchgear_starter=starter,
+        switchgear_type=switchgear_type,
+        switchgear_circuit_breaker_a=breaker,
+        switchgear_fuse_a=fuse,
+        switchgear_rated_current_a=rated_current,
+        switchgear_short_circuit_ka=short_circuit,
+        switchgear_weight_kg=weight,
     )
 
 

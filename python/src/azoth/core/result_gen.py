@@ -6682,6 +6682,42 @@ class HeaterResult(_HasWarnings):
     #: the electrical input plus the auxiliary load.
     total_connected_power: Q | None
 
+    #: the power cable's route length the design used.
+    cable_length: Q | None
+
+    #: the selected cable cross-section in mm2, from the class's 19 standard sizes.
+    cable_cross_section: float | None
+
+    #: the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.
+    cable_ampacity: float | None
+
+    #: the three-phase voltage drop in percent at the class's 0.85 power factor.
+    cable_voltage_drop: float | None
+
+    #: the cable's 1-second short-circuit withstand in kA.
+    cable_short_circuit_withstand: float | None
+
+    #: the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.
+    switchgear_starter: str | None
+
+    #: `MCC` at 1000 V and below, `MV Switchgear` above it.
+    switchgear_type: str | None
+
+    #: the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.
+    switchgear_circuit_breaker: float | None
+
+    #: the next standard fuse rating above 1.6 times the full-load current, in amperes.
+    switchgear_fuse: float | None
+
+    #: the switchgear's rated current, the circuit-breaker rating.
+    switchgear_rated_current: float | None
+
+    #: the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.
+    switchgear_short_circuit: float | None
+
+    #: the switchgear's estimated weight.
+    switchgear_weight: Q | None
+
     #: whether a utility supply temperature is stated.
     has_supply_temperature: bool | None
 

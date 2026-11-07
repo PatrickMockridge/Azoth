@@ -285,6 +285,7 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.heater", "number_of_fans", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.heater", "instrumentation_power", "W", [2, 1, -3, 0, 0, 0, 0]),
     ("unit_ops.heater", "cooling_water_pump_power", "W", [2, 1, -3, 0, 0, 0, 0]),
+    ("unit_ops.heater", "cable_length", "m", [1, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.heater", "utility_supply_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.heater", "utility_return_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.heater", "utility_approach_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),

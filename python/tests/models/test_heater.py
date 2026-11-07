@@ -100,6 +100,18 @@ ELECTRICAL_FIELDS = (
     "motor_locked_rotor_multiplier",
     "total_auxiliary_power",
     "total_connected_power",
+    "cable_length",
+    "cable_cross_section",
+    "cable_ampacity",
+    "cable_voltage_drop",
+    "cable_short_circuit_withstand",
+    "switchgear_starter",
+    "switchgear_type",
+    "switchgear_circuit_breaker",
+    "switchgear_fuse",
+    "switchgear_rated_current",
+    "switchgear_short_circuit",
+    "switchgear_weight",
 )
 
 
@@ -128,6 +140,49 @@ def test_the_frequency_does_not_reach_the_motor(backend: str) -> None:
     result = _run(_case("a_sixty_hertz_supply_moves_the_synchronous_speed"), backend)
     assert result.frequency_hz == pytest.approx(60.0)
     assert result.motor_rated_speed == pytest.approx(1470.0)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_hundred_kilowatt_cable_and_switchgear_are_the_captures(backend: str) -> None:
+    result = _run(_case("the_hundred_kilowatt_heater_takes_the_690_volt_tap"), backend)
+    assert result.cable_length.to("m").magnitude == pytest.approx(50.0)
+    assert result.cable_cross_section == pytest.approx(35.0)
+    assert result.cable_ampacity == pytest.approx(101.64817796366708, rel=5e-4)
+    assert result.cable_voltage_drop == pytest.approx(0.5868336821889366, rel=5e-4)
+    assert result.cable_short_circuit_withstand == pytest.approx(5.005)
+    assert result.switchgear_starter == "Star-Delta"
+    assert result.switchgear_type == "MCC"
+    assert result.switchgear_circuit_breaker == pytest.approx(160.0)
+    assert result.switchgear_fuse == pytest.approx(200.0)
+    assert result.switchgear_rated_current == pytest.approx(160.0)
+    assert result.switchgear_short_circuit == pytest.approx(25.0)
+    assert result.switchgear_weight.to("kg").magnitude == pytest.approx(74.0)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_cable_upsizes_for_voltage_drop(backend: str) -> None:
+    result = _run(_case("the_cable_upsizes_for_two_kilometres"), backend)
+    assert result.cable_cross_section == pytest.approx(300.0)
+    assert result.cable_voltage_drop == pytest.approx(4.609117155205686, rel=5e-4)
+    # The ampacity stays at the base-selected 35 mm2 row; only the section upsizes.
+    assert result.cable_ampacity == pytest.approx(101.64817796366708, rel=5e-4)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_shell_branch_carries_no_cable(backend: str) -> None:
+    result = _run(_case("the_shell_and_tube_design_is_the_auxiliary_load"), backend)
+    assert result.cable_cross_section == pytest.approx(0.0)
+    assert result.cable_short_circuit_withstand == pytest.approx(0.0)
+    assert result.switchgear_starter == "DOL"
+    assert result.switchgear_circuit_breaker == pytest.approx(0.0)
+    assert result.switchgear_short_circuit == pytest.approx(25.0)
+    assert result.switchgear_weight.to("kg").magnitude == pytest.approx(0.0)
+
+
+def test_a_cable_length_without_the_flag_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="cable_length"):
+        resolve(MODEL_ID)(**base, cable_length=Q(500.0, "m"))
 
 
 def test_an_electrical_input_without_the_flag_is_refused() -> None:

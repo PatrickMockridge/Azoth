@@ -2492,6 +2492,13 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("power"),
             },
             ModelInput {
+                name: "cable_length",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
                 name: "utility_specification",
                 kind: "boolean",
                 values: &[],

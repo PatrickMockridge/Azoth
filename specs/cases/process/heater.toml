@@ -479,6 +479,18 @@ motor_rated_speed = 1425.0
 motor_locked_rotor_multiplier = 6.0
 total_auxiliary_power = 1500.0
 total_connected_power = 6994.505492976549
+cable_length = 50.0
+cable_cross_section = 1.5
+cable_ampacity = 13.966925216381735
+cable_voltage_drop = 2.0601932342502276
+cable_short_circuit_withstand = 0.2145
+switchgear_starter = "DOL"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 100.0
+switchgear_fuse = 16.0
+switchgear_rated_current = 100.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 65.0
 
 [[cases]]
 id = "the_hundred_kilowatt_heater_takes_the_690_volt_tap"
@@ -509,6 +521,18 @@ motor_rated_speed = 1470.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 106763.15787024854
+cable_length = 50.0
+cable_cross_section = 35.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 0.5868336821889366
+cable_short_circuit_withstand = 5.005
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 200.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
 
 [[cases]]
 id = "the_five_hundred_kilowatt_heater_takes_the_6600_volt_tap"
@@ -539,6 +563,18 @@ motor_rated_speed = 1477.5
 motor_locked_rotor_multiplier = 6.5
 total_auxiliary_power = 1500.0
 total_connected_power = 519634.71488172637
+cable_length = 50.0
+cable_cross_section = 16.0
+cable_ampacity = 62.07522318391882
+cable_voltage_drop = 0.06422034990752382
+cable_short_circuit_withstand = 2.288
+switchgear_starter = "Soft Starter"
+switchgear_type = "MV Switchgear"
+switchgear_circuit_breaker = 100.0
+switchgear_fuse = 100.0
+switchgear_rated_current = 100.0
+switchgear_short_circuit = 40.0
+switchgear_weight = 250.0
 
 [[cases]]
 id = "the_shell_and_tube_design_is_the_auxiliary_load"
@@ -571,6 +607,18 @@ motor_rated_speed = 0.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 4500.0
 total_connected_power = 9000.0
+cable_length = 50.0
+cable_cross_section = 0.0
+cable_ampacity = 0.0
+cable_voltage_drop = 0.0
+cable_short_circuit_withstand = 0.0
+switchgear_starter = "DOL"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 0.0
+switchgear_fuse = 0.0
+switchgear_rated_current = 0.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 0.0
 
 [[cases]]
 id = "the_air_cooler_sizes_the_fans"
@@ -602,6 +650,18 @@ motor_rated_speed = 1425.0
 motor_locked_rotor_multiplier = 6.0
 total_auxiliary_power = 1500.0
 total_connected_power = 5895.604395604395
+cable_length = 50.0
+cable_cross_section = 1.5
+cable_ampacity = 13.966925216381735
+cable_voltage_drop = 1.6481545878588109
+cable_short_circuit_withstand = 0.2145
+switchgear_starter = "DOL"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 100.0
+switchgear_fuse = 16.0
+switchgear_rated_current = 100.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 65.0
 
 [[cases]]
 id = "the_ie4_motor_class_lifts_the_efficiency"
@@ -633,6 +693,18 @@ motor_rated_speed = 1470.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 105666.66664243347
+cable_length = 50.0
+cable_cross_section = 35.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 0.580720831332802
+cable_short_circuit_withstand = 5.005
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 160.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
 
 [[cases]]
 id = "a_two_pole_motor_runs_at_the_synchronous_speed_less_its_slip"
@@ -664,6 +736,18 @@ motor_rated_speed = 2940.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 107320.10579548797
+cable_length = 50.0
+cable_cross_section = 35.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 0.5899386223063384
+cable_short_circuit_withstand = 5.005
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 200.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
 
 [[cases]]
 id = "a_single_phase_machine_drops_the_square_root_of_three"
@@ -695,6 +779,18 @@ motor_rated_speed = 1470.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 106763.15787024854
+cable_length = 50.0
+cable_cross_section = 95.0
+cable_ampacity = 187.00160984155548
+cable_voltage_drop = 0.43238554397982376
+cable_short_circuit_withstand = 13.585
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 250.0
+switchgear_fuse = 315.0
+switchgear_rated_current = 250.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 87.5
 
 [[cases]]
 id = "a_sixty_hertz_supply_moves_the_synchronous_speed"
@@ -727,6 +823,72 @@ motor_rated_speed = 1470.0
 motor_locked_rotor_multiplier = 7.0
 total_auxiliary_power = 1500.0
 total_connected_power = 106763.15787024854
+cable_length = 50.0
+cable_cross_section = 35.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 0.5868336821889366
+cable_short_circuit_withstand = 5.005
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 200.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
+
+[[cases]]
+id = "the_cable_upsizes_for_a_half_kilometre"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `cable_500m`: the 100 kW heater's 35 mm2 cable drops 5.87 percent over 500 m, so the section upsizes for the 5 percent limit.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+cable_length = 500.0
+[cases.expected]
+cable_length = 500.0
+cable_cross_section = 50.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 4.2666569049915735
+cable_short_circuit_withstand = 7.15
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 200.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
+
+[[cases]]
+id = "the_cable_upsizes_for_two_kilometres"
+tolerance = 0.0005
+source = "`process_heater_electrical.tsv`'s `cable_2000m`: two kilometres of run upsizes the same 100 kW load to 300 mm2, still under the 5 percent limit.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 100000.0
+electrical_design = true
+cable_length = 2000.0
+[cases.expected]
+cable_length = 2000.0
+cable_cross_section = 300.0
+cable_ampacity = 101.64817796366708
+cable_voltage_drop = 4.609117155205686
+cable_short_circuit_withstand = 42.9
+switchgear_starter = "Star-Delta"
+switchgear_type = "MCC"
+switchgear_circuit_breaker = 160.0
+switchgear_fuse = 200.0
+switchgear_rated_current = 160.0
+switchgear_short_circuit = 25.0
+switchgear_weight = 74.0
 
 [[cases]]
 id = "the_default_utility_specification_is_empty"

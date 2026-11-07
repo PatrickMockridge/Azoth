@@ -170,6 +170,32 @@ pub struct HeaterResult {
     /// The input plus the auxiliary load.
     #[serde(serialize_with = "optional_scalar")]
     pub total_connected_power: Option<Power>,
+    /// The power cable's route length.
+    #[serde(serialize_with = "optional_scalar")]
+    pub cable_length: Option<Length>,
+    /// The selected cable cross-section, in mm2.
+    pub cable_cross_section: Option<f64>,
+    /// The derated cable ampacity, in amperes.
+    pub cable_ampacity: Option<f64>,
+    /// The cable's voltage drop, in percent.
+    pub cable_voltage_drop: Option<f64>,
+    /// The cable's 1-second short-circuit withstand, in kA.
+    pub cable_short_circuit_withstand: Option<f64>,
+    /// The switchgear's starter type.
+    pub switchgear_starter: Option<String>,
+    /// The switchgear's type.
+    pub switchgear_type: Option<String>,
+    /// The circuit-breaker rating, in amperes.
+    pub switchgear_circuit_breaker: Option<f64>,
+    /// The fuse rating, in amperes.
+    pub switchgear_fuse: Option<f64>,
+    /// The switchgear's rated current, in amperes.
+    pub switchgear_rated_current: Option<f64>,
+    /// The switchgear's short-circuit rating, in kA.
+    pub switchgear_short_circuit: Option<f64>,
+    /// The switchgear's estimated weight.
+    #[serde(serialize_with = "optional_scalar")]
+    pub switchgear_weight: Option<Mass>,
     /// Whether a utility supply temperature is stated.
     pub has_supply_temperature: Option<bool>,
     /// Whether a utility return temperature is stated.
@@ -278,6 +304,19 @@ impl HeaterResult {
                 .map(|value| value.motor_locked_rotor_multiplier),
             total_auxiliary_power: electrical.map(|value| watts(value.total_auxiliary_w)),
             total_connected_power: electrical.map(|value| watts(value.total_connected_w)),
+            cable_length: electrical.map(|value| meters(value.cable_length_m)),
+            cable_cross_section: electrical.map(|value| value.cable_cross_section_mm2),
+            cable_ampacity: electrical.map(|value| value.cable_ampacity_a),
+            cable_voltage_drop: electrical.map(|value| value.cable_voltage_drop_percent),
+            cable_short_circuit_withstand: electrical
+                .map(|value| value.cable_short_circuit_withstand_ka),
+            switchgear_starter: electrical.map(|value| value.switchgear_starter.to_string()),
+            switchgear_type: electrical.map(|value| value.switchgear_type.to_string()),
+            switchgear_circuit_breaker: electrical.map(|value| value.switchgear_circuit_breaker_a),
+            switchgear_fuse: electrical.map(|value| value.switchgear_fuse_a),
+            switchgear_rated_current: electrical.map(|value| value.switchgear_rated_current_a),
+            switchgear_short_circuit: electrical.map(|value| value.switchgear_short_circuit_ka),
+            switchgear_weight: electrical.map(|value| kilograms(value.switchgear_weight_kg)),
             has_supply_temperature: utility
                 .map(heater_mechanical::UtilitySpecification::has_supply_temperature),
             has_return_temperature: utility
@@ -366,6 +405,7 @@ pub fn heater(
     number_of_fans: Option<f64>,
     instrumentation_power: Option<Power>,
     cooling_water_pump_power: Option<Power>,
+    cable_length: Option<Length>,
     utility_specification: Option<bool>,
     utility_supply_temperature: Option<ThermodynamicTemperature>,
     utility_return_temperature: Option<ThermodynamicTemperature>,
@@ -425,6 +465,7 @@ pub fn heater(
             "cooling_water_pump_power",
             cooling_water_pump_power.is_some(),
         ),
+        ("cable_length", cable_length.is_some()),
     ] {
         if stated && !electrical_requested {
             return Err(AzothError::invalid_input(
@@ -447,6 +488,7 @@ pub fn heater(
             "cooling_water_pump_power",
             cooling_water_pump_power.map(|value| value.value),
         ),
+        ("cable_length", cable_length.map(|value| value.value)),
     ] {
         if let Some(value) = value {
             if !value.is_finite() {
@@ -652,6 +694,7 @@ pub fn heater(
             number_of_fans: number_of_fans as u32,
             instrumentation_power_w: instrumentation_power.map_or(1500.0, |value| value.value),
             cooling_water_pump_power_w: cooling_water_pump_power.map_or(0.0, |value| value.value),
+            cable_length_m: cable_length.map_or(50.0, |value| value.value),
         };
         Some(heater_electrical::design(
             instrument_type,

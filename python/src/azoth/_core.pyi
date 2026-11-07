@@ -3059,6 +3059,18 @@ class HeaterResult:
     motor_locked_rotor_multiplier: float | None
     total_auxiliary_power: Qty | None
     total_connected_power: Qty | None
+    cable_length: Qty | None
+    cable_cross_section: float | None
+    cable_ampacity: float | None
+    cable_voltage_drop: float | None
+    cable_short_circuit_withstand: float | None
+    switchgear_starter: str | None
+    switchgear_type: str | None
+    switchgear_circuit_breaker: float | None
+    switchgear_fuse: float | None
+    switchgear_rated_current: float | None
+    switchgear_short_circuit: float | None
+    switchgear_weight: Qty | None
     has_supply_temperature: bool | None
     has_return_temperature: bool | None
     has_approach_temperature: bool | None
@@ -5939,6 +5951,7 @@ def heater(
     number_of_fans: float | None = None,
     instrumentation_power: float | None = None,
     cooling_water_pump_power: float | None = None,
+    cable_length: float | None = None,
     utility_specification: bool | None = None,
     utility_supply_temperature: float | None = None,
     utility_return_temperature: float | None = None,

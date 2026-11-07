@@ -3188,6 +3188,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.heater", "number_of_fans", "dimensionless"),
     ("process.heater", "instrumentation_power", "power"),
     ("process.heater", "cooling_water_pump_power", "power"),
+    ("process.heater", "cable_length", "length"),
     (
         "process.heater",
         "utility_supply_temperature",
