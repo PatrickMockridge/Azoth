@@ -6718,6 +6718,48 @@ class HeaterResult(_HasWarnings):
     #: the switchgear's estimated weight.
     switchgear_weight: Q | None
 
+    #: the VFD's rated power, the motor's own rating. Absent when no VFD is sized.
+    vfd_rated_power: Q | None
+
+    #: 1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.
+    vfd_rated_current: float | None
+
+    #: the VFD's input voltage in volts, copied from the motor's rated voltage.
+    vfd_input_voltage: float | None
+
+    #: `2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.
+    vfd_topology: str | None
+
+    #: `6-pulse`, `12-pulse` or `AFE`, with the topology.
+    vfd_pulse_configuration: str | None
+
+    #: the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.
+    vfd_efficiency: float | None
+
+    #: the drive's input power factor: 0.98 with an active rectifier, else 0.95.
+    vfd_input_power_factor: float | None
+
+    #: the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.
+    vfd_thd_current: float | None
+
+    #: whether the drive has an active front-end rectifier.
+    vfd_has_active_rectifier: bool | None
+
+    #: whether a 6-pulse drive above 100 kW needs an input filter.
+    vfd_requires_input_filter: bool | None
+
+    #: the drive's loss at its rated power, `rated power x (1 - efficiency)`.
+    vfd_heat_dissipation: Q | None
+
+    #: `Water` above 500 kW or above 3300 V, else `Air`.
+    vfd_cooling_method: str | None
+
+    #: the drive's estimated weight, by the voltage band.
+    vfd_weight: Q | None
+
+    #: `IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.
+    vfd_enclosure_rating: str | None
+
     #: whether a utility supply temperature is stated.
     has_supply_temperature: bool | None
 

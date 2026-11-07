@@ -2499,6 +2499,13 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("length"),
             },
             ModelInput {
+                name: "use_vfd",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
                 name: "utility_specification",
                 kind: "boolean",
                 values: &[],

@@ -1,5 +1,5 @@
-//! `HeatExchangerElectricalDesign` - the duty as shaft power, the IEC motor tables, the cable and
-//! the switchgear.
+//! `HeatExchangerElectricalDesign` - the duty as shaft power, the IEC motor tables, the cable,
+//! the switchgear and the VFD.
 //!
 //! **The electric heater's "motor" is the element bank.** `getProcessShaftPowerKW` returns the
 //! process duty in kW, the base `ElectricalDesign` sizes a standard IEC motor on it, and the
@@ -13,8 +13,14 @@
 //! `Switchgear.sizeSwitchgear` picks the starter from the rated power and the voltage's class, a
 //! 1.25x breaker, a 1.6x fuse and the class's short-circuit rating and weight.
 //!
-//! Not here: the VFD, transformer and hazardous-area components (each its own class), the motor's
-//! frame, weight and cost, the NEMA frame table, and the cable's and switchgear's costs.
+//! `VariableFrequencyDrive.sizeVFD` picks the drive's topology, pulse configuration, harmonic
+//! table, cooling, weight and enclosure from the motor's rating and the design's tap, and adds
+//! its own losses to the input; the starting current becomes the full-load current and the
+//! switchgear's starter is `VFD`.
+//!
+//! Not here: the transformer and hazardous-area components (both constructed and settable but
+//! never read by `calcDesign`), the motor's frame, weight and cost, the NEMA frame table, and
+//! the cable's, switchgear's and VFD's costs.
 
 /// `HeatExchangerInstrumentDesign.HeatExchangerType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -106,6 +112,41 @@ pub struct ElectricalRequest {
     pub cooling_water_pump_power_w: f64,
     /// The power cable's route length, m.
     pub cable_length_m: f64,
+    /// Whether the motor is fed through a variable-frequency drive.
+    pub use_vfd: bool,
+}
+
+/// `VariableFrequencyDrive.sizeVFD`'s table and ratings.
+#[derive(Debug, Clone, Copy)]
+pub struct VfdDesign {
+    /// The drive's rated power, kW.
+    pub rated_power_kw: f64,
+    /// The drive's rated current, A.
+    pub rated_current_a: f64,
+    /// The drive's input voltage, V.
+    pub input_voltage_v: f64,
+    /// The topology.
+    pub topology: &'static str,
+    /// The pulse configuration.
+    pub pulse_configuration: &'static str,
+    /// The efficiency, percent.
+    pub efficiency_percent: f64,
+    /// The input power factor.
+    pub input_power_factor: f64,
+    /// The input current's total harmonic distortion, percent.
+    pub thd_current_percent: f64,
+    /// Whether the drive has an active front-end rectifier.
+    pub has_active_rectifier: bool,
+    /// Whether a 6-pulse drive above 100 kW needs an input filter.
+    pub requires_input_filter: bool,
+    /// The loss at rated power, kW.
+    pub heat_dissipation_kw: f64,
+    /// The cooling method.
+    pub cooling_method: &'static str,
+    /// The estimated weight, kg.
+    pub weight_kg: f64,
+    /// The enclosure rating.
+    pub enclosure_rating: &'static str,
 }
 
 /// What the electrical design computed, in SI.
@@ -169,6 +210,8 @@ pub struct ElectricalDesign {
     pub switchgear_short_circuit_ka: f64,
     /// The switchgear's estimated weight, kg.
     pub switchgear_weight_kg: f64,
+    /// The drive, when one is sized.
+    pub vfd: Option<VfdDesign>,
 }
 
 fn select_power(required_kw: f64) -> f64 {
@@ -335,8 +378,11 @@ fn size_switchgear(
     current_a: f64,
     rated_power_kw: f64,
     voltage_v: f64,
+    use_vfd: bool,
 ) -> (&'static str, &'static str, f64, f64, f64, f64, f64) {
-    let starter = if rated_power_kw > 200.0 {
+    let starter = if use_vfd {
+        "VFD"
+    } else if rated_power_kw > 200.0 {
         "Soft Starter"
     } else if rated_power_kw > 11.0 {
         "Star-Delta"
@@ -389,6 +435,72 @@ fn size_switchgear(
         short_circuit,
         weight,
     )
+}
+
+/// `VariableFrequencyDrive.sizeVFD`, on the motor's rating and rated current.
+fn size_vfd(rated_power_kw: f64, motor_rated_current_a: f64, input_voltage_v: f64) -> VfdDesign {
+    let rated_current_a = motor_rated_current_a * 1.10;
+    let (topology, pulse_configuration, has_active_rectifier, thd_current_percent) =
+        if input_voltage_v > 3300.0 {
+            if rated_power_kw > 2000.0 {
+                ("Multi-level", "AFE", true, 3.0)
+            } else {
+                ("3-level", "12-pulse", false, 10.0)
+            }
+        } else if rated_power_kw > 250.0 {
+            ("2-level", "AFE", true, 5.0)
+        } else {
+            ("2-level", "6-pulse", false, 35.0)
+        };
+    // The 3-level arm is tested before the Multi-level one, and a Multi-level drive always has
+    // an active rectifier, so the class's `"Multi-level"` efficiency arm is unreachable.
+    let (efficiency_percent, input_power_factor) = if has_active_rectifier {
+        (96.5, 0.98)
+    } else if topology == "3-level" {
+        (97.0, 0.95)
+    } else if topology == "Multi-level" {
+        (97.5, 0.99)
+    } else {
+        (97.5, 0.95)
+    };
+    let heat_dissipation_kw = rated_power_kw * (1.0 - efficiency_percent / 100.0);
+    let cooling_method = if rated_power_kw > 500.0 || input_voltage_v > 3300.0 {
+        "Water"
+    } else {
+        "Air"
+    };
+    let weight_kg = if input_voltage_v > 3300.0 {
+        rated_power_kw * 1.5 + 500.0
+    } else if input_voltage_v > 690.0 {
+        rated_power_kw + 200.0
+    } else {
+        rated_power_kw * 0.6 + 50.0
+    };
+    let enclosure_rating = if input_voltage_v > 1000.0 {
+        "IP42"
+    } else if cooling_method == "Water" {
+        "IP54"
+    } else {
+        "IP21"
+    };
+    VfdDesign {
+        rated_power_kw,
+        rated_current_a,
+        input_voltage_v,
+        topology,
+        pulse_configuration,
+        efficiency_percent,
+        input_power_factor,
+        thd_current_percent,
+        has_active_rectifier,
+        requires_input_filter: !has_active_rectifier
+            && pulse_configuration == "6-pulse"
+            && rated_power_kw > 100.0,
+        heat_dissipation_kw,
+        cooling_method,
+        weight_kg,
+        enclosure_rating,
+    }
 }
 
 /// `HeatExchangerElectricalDesign.calcDesign`.
@@ -487,6 +599,7 @@ pub fn design(
             switchgear_rated_current_a: 0.0,
             switchgear_short_circuit_ka: 25.0,
             switchgear_weight_kg: 0.0,
+            vfd: None,
         };
     }
 
@@ -495,33 +608,57 @@ pub fn design(
     } else {
         0.0
     };
-    let input_kw = if efficiency_fraction > 0.0 {
+    let motor_input_kw = if efficiency_fraction > 0.0 {
         shaft_kw / efficiency_fraction
     } else {
         shaft_kw
     };
-    let apparent = if motor_power_factor > 0.0 {
-        input_kw / motor_power_factor
+    // The motor's rated current is computed inside `sizeMotor`, before `calcDesign` copies the
+    // design's tap to the motor, so it is always at the motor's own 400 V default.
+    let motor_rated_current = {
+        let denominator = 3.0_f64.sqrt() * 400.0 * efficiency_fraction * motor_power_factor;
+        if denominator > 0.0 {
+            rated_power * 1000.0 / denominator
+        } else {
+            0.0
+        }
+    };
+    let vfd = if request.use_vfd {
+        Some(size_vfd(rated_power, motor_rated_current, rated_voltage))
+    } else {
+        None
+    };
+    let (input_kw, effective_pf) = match vfd {
+        Some(drive) => (
+            motor_input_kw / (drive.efficiency_percent / 100.0),
+            drive.input_power_factor,
+        ),
+        None => (motor_input_kw, motor_power_factor),
+    };
+    let apparent = if effective_pf > 0.0 {
+        input_kw / effective_pf
     } else {
         0.0
     };
-    let full_load = current(input_kw, rated_voltage, motor_power_factor, request.phases);
+    let full_load = current(input_kw, rated_voltage, effective_pf, request.phases);
     let (cable_section, cable_ampacity, cable_drop, cable_withstand) =
         size_cable(full_load, rated_voltage, request.cable_length_m);
     let (starter, switchgear_type, breaker, fuse, rated_current, short_circuit, weight) =
-        size_switchgear(full_load, rated_power, rated_voltage);
+        size_switchgear(full_load, rated_power, rated_voltage, request.use_vfd);
     ElectricalDesign {
         shaft_power_w: shaft_kw * 1000.0,
         electrical_input_w: input_kw * 1000.0,
         apparent_power_va: apparent * 1000.0,
-        reactive_power_var: apparent
-            * 1000.0
-            * (1.0 - motor_power_factor * motor_power_factor).sqrt(),
-        power_factor: motor_power_factor,
+        reactive_power_var: apparent * 1000.0 * (1.0 - effective_pf * effective_pf).sqrt(),
+        power_factor: effective_pf,
         rated_voltage_v: rated_voltage,
         frequency_hz: request.frequency_hz,
         full_load_current_a: full_load,
-        starting_current_a: full_load * locked,
+        starting_current_a: if vfd.is_some() {
+            full_load
+        } else {
+            full_load * locked
+        },
         total_electrical_losses_w: (input_kw - shaft_kw) * 1000.0,
         motor_rated_power_w: rated_power * 1000.0,
         motor_efficiency: efficiency_fraction,
@@ -542,6 +679,7 @@ pub fn design(
         switchgear_rated_current_a: rated_current,
         switchgear_short_circuit_ka: short_circuit,
         switchgear_weight_kg: weight,
+        vfd,
     }
 }
 
@@ -560,6 +698,7 @@ mod tests {
             instrumentation_power_w: 1500.0,
             cooling_water_pump_power_w: 0.0,
             cable_length_m: 50.0,
+            use_vfd: false,
         }
     }
 
@@ -932,6 +1071,128 @@ mod tests {
             1.0e-9,
             "drop",
         );
+    }
+
+    #[test]
+    fn the_vfd_is_the_capture() {
+        let mut vfd = request();
+        vfd.use_vfd = true;
+
+        let five = design(HeatExchangerType::ElectricHeater, 4_999.9999986086605, &vfd);
+        let drive = five.vfd.expect("a drive on the motor branch");
+        close(drive.rated_power_kw, 5.5, 1.0e-12, "5 kW drive power");
+        close(
+            drive.rated_current_a,
+            11.561528957358785,
+            1.0e-9,
+            "5 kW drive current",
+        );
+        close(drive.input_voltage_v, 400.0, 1.0e-12, "5 kW drive voltage");
+        assert_eq!(drive.topology, "2-level");
+        assert_eq!(drive.pulse_configuration, "6-pulse");
+        close(drive.efficiency_percent, 97.5, 1.0e-12, "5 kW efficiency");
+        close(drive.input_power_factor, 0.95, 1.0e-12, "5 kW factor");
+        close(drive.thd_current_percent, 35.0, 1.0e-12, "5 kW THD");
+        assert!(!drive.has_active_rectifier);
+        assert!(!drive.requires_input_filter);
+        close(
+            drive.heat_dissipation_kw,
+            0.13750000000000012,
+            1.0e-9,
+            "5 kW heat",
+        );
+        assert_eq!(drive.cooling_method, "Air");
+        close(drive.weight_kg, 53.3, 1.0e-9, "5 kW weight");
+        assert_eq!(drive.enclosure_rating, "IP21");
+        close(
+            five.electrical_input_w,
+            5635.390249206718,
+            1.0e-9,
+            "5 kW input",
+        );
+        close(five.power_factor, 0.95, 1.0e-12, "5 kW design factor");
+        close(
+            five.full_load_current_a,
+            8.56208967728445,
+            1.0e-9,
+            "5 kW design current",
+        );
+        close(
+            five.starting_current_a,
+            8.56208967728445,
+            1.0e-9,
+            "5 kW starting",
+        );
+        assert_eq!(five.switchgear_starter, "VFD");
+
+        let hundred = design(HeatExchangerType::ElectricHeater, 99_999.99997673612, &vfd);
+        let drive = hundred.vfd.expect("a drive");
+        close(
+            drive.rated_current_a,
+            208.90963687782514,
+            1.0e-9,
+            "100 kW drive current",
+        );
+        assert!(drive.requires_input_filter);
+
+        let five_hundred = design(HeatExchangerType::ElectricHeater, 499_999.9998608659, &vfd);
+        let drive = five_hundred.vfd.expect("a drive");
+        assert_eq!(drive.topology, "3-level");
+        assert_eq!(drive.pulse_configuration, "12-pulse");
+        close(drive.efficiency_percent, 97.0, 1.0e-12, "500 kW efficiency");
+        close(drive.thd_current_percent, 10.0, 1.0e-12, "500 kW THD");
+        assert_eq!(drive.cooling_method, "Water");
+        assert_eq!(drive.enclosure_rating, "IP42");
+        close(
+            drive.rated_current_a,
+            1023.7414099620308,
+            1.0e-9,
+            "500 kW drive current",
+        );
+        assert!(!drive.has_active_rectifier);
+
+        let two_and_a_half = design(
+            HeatExchangerType::ElectricHeater,
+            2_499_999.9979531644,
+            &vfd,
+        );
+        let drive = two_and_a_half.vfd.expect("a drive");
+        assert_eq!(drive.topology, "Multi-level");
+        assert_eq!(drive.pulse_configuration, "AFE");
+        // The class's `"Multi-level"` efficiency arm never runs: an active rectifier wins.
+        close(
+            drive.efficiency_percent,
+            96.5,
+            1.0e-12,
+            "multi-level efficiency",
+        );
+        close(
+            drive.input_power_factor,
+            0.98,
+            1.0e-12,
+            "multi-level factor",
+        );
+        close(drive.thd_current_percent, 3.0, 1.0e-12, "multi-level THD");
+        assert!(drive.has_active_rectifier);
+        close(drive.weight_kg, 4700.0, 1.0e-12, "multi-level weight");
+
+        let air = design(HeatExchangerType::AirCooler, 30_000_000.0, &vfd);
+        let drive = air.vfd.expect("a drive");
+        close(drive.rated_power_kw, 355.0, 1.0e-12, "air drive power");
+        assert_eq!(drive.pulse_configuration, "AFE");
+        close(drive.thd_current_percent, 5.0, 1.0e-12, "air THD");
+        close(drive.weight_kg, 263.0, 1.0e-12, "air weight");
+        assert!(drive.has_active_rectifier);
+        assert!(!drive.requires_input_filter);
+    }
+
+    #[test]
+    fn the_shell_branch_ignores_the_vfd() {
+        let mut vfd = request();
+        vfd.use_vfd = true;
+        let shell = design(HeatExchangerType::ShellAndTube, 100_000.0, &vfd);
+        assert!(shell.vfd.is_none());
+        assert_eq!(shell.switchgear_starter, "DOL");
     }
 
     #[test]

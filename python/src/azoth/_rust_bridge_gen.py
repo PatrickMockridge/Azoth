@@ -6196,7 +6196,7 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
     )
 
 
-def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None, electrical_design: bool | None=None, motor_sizing_margin: float | None=None, motor_poles: float | None=None, efficiency_class: str | None=None, frequency_hz: float | None=None, phases: float | None=None, number_of_fans: float | None=None, instrumentation_power: Q | None=None, cooling_water_pump_power: Q | None=None, cable_length: Q | None=None, utility_specification: bool | None=None, utility_supply_temperature: Q | None=None, utility_return_temperature: Q | None=None, utility_approach_temperature: Q | None=None, utility_heat_capacity_rate: Q | None=None, utility_overall_heat_transfer_coefficient: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None) -> HeaterResult:
+def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None, electrical_design: bool | None=None, motor_sizing_margin: float | None=None, motor_poles: float | None=None, efficiency_class: str | None=None, frequency_hz: float | None=None, phases: float | None=None, number_of_fans: float | None=None, instrumentation_power: Q | None=None, cooling_water_pump_power: Q | None=None, cable_length: Q | None=None, use_vfd: bool | None=None, utility_specification: bool | None=None, utility_supply_temperature: Q | None=None, utility_return_temperature: Q | None=None, utility_approach_temperature: Q | None=None, utility_heat_capacity_rate: Q | None=None, utility_overall_heat_transfer_coefficient: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None) -> HeaterResult:
     """``process.heater``, computed in Rust."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
@@ -6224,6 +6224,7 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if instrumentation_power is None else input_to_si(spec, "instrumentation_power", instrumentation_power),
         None if cooling_water_pump_power is None else input_to_si(spec, "cooling_water_pump_power", cooling_water_pump_power),
         None if cable_length is None else input_to_si(spec, "cable_length", cable_length),
+        use_vfd,
         utility_specification,
         None if utility_supply_temperature is None else input_to_si(spec, "utility_supply_temperature", utility_supply_temperature),
         None if utility_return_temperature is None else input_to_si(spec, "utility_return_temperature", utility_return_temperature),
@@ -6284,6 +6285,20 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         switchgear_rated_current=result.switchgear_rated_current,
         switchgear_short_circuit=result.switchgear_short_circuit,
         switchgear_weight=None if result.switchgear_weight is None else from_si(result.switchgear_weight.magnitude_si, result.switchgear_weight.unit),
+        vfd_rated_power=None if result.vfd_rated_power is None else from_si(result.vfd_rated_power.magnitude_si, result.vfd_rated_power.unit),
+        vfd_rated_current=result.vfd_rated_current,
+        vfd_input_voltage=result.vfd_input_voltage,
+        vfd_topology=result.vfd_topology,
+        vfd_pulse_configuration=result.vfd_pulse_configuration,
+        vfd_efficiency=result.vfd_efficiency,
+        vfd_input_power_factor=result.vfd_input_power_factor,
+        vfd_thd_current=result.vfd_thd_current,
+        vfd_has_active_rectifier=result.vfd_has_active_rectifier,
+        vfd_requires_input_filter=result.vfd_requires_input_filter,
+        vfd_heat_dissipation=None if result.vfd_heat_dissipation is None else from_si(result.vfd_heat_dissipation.magnitude_si, result.vfd_heat_dissipation.unit),
+        vfd_cooling_method=result.vfd_cooling_method,
+        vfd_weight=None if result.vfd_weight is None else from_si(result.vfd_weight.magnitude_si, result.vfd_weight.unit),
+        vfd_enclosure_rating=result.vfd_enclosure_rating,
         has_supply_temperature=result.has_supply_temperature,
         has_return_temperature=result.has_return_temperature,
         has_approach_temperature=result.has_approach_temperature,

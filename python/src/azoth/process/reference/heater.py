@@ -71,6 +71,7 @@ def heater(
     instrumentation_power: Q | None = None,
     cooling_water_pump_power: Q | None = None,
     cable_length: Q | None = None,
+    use_vfd: bool | None = None,
     utility_specification: bool | None = None,
     utility_supply_temperature: Q | None = None,
     utility_return_temperature: Q | None = None,
@@ -202,6 +203,7 @@ def heater(
             cooling_water_pump_power is not None,
         ),
         ("cable_length", cable_length is not None),
+        ("use_vfd", use_vfd is not None),
     ):
         if stated and not electrical_requested:
             raise InvalidInputError(
@@ -349,6 +351,7 @@ def heater(
             1500.0 if instrumentation_si is None else float(instrumentation_si),
             0.0 if pump_si is None else float(pump_si),
             50.0 if cable_length_si is None else float(cable_length_si),
+            bool(use_vfd),
         )
     )
     analog_input = sum(1 for row in instruments if row.io_type == "AI")
@@ -388,6 +391,7 @@ def heater(
         )
     )
 
+    vfd = None if electrical is None else electrical.vfd
     return HeaterResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
@@ -460,6 +464,22 @@ def heater(
         switchgear_weight=(
             None if electrical is None else from_si(electrical.switchgear_weight_kg, "kg")
         ),
+        vfd_rated_power=(None if vfd is None else from_si(vfd.rated_power_kw * 1000.0, "W")),
+        vfd_rated_current=None if vfd is None else vfd.rated_current_a,
+        vfd_input_voltage=None if vfd is None else vfd.input_voltage_v,
+        vfd_topology=None if vfd is None else vfd.topology,
+        vfd_pulse_configuration=None if vfd is None else vfd.pulse_configuration,
+        vfd_efficiency=None if vfd is None else vfd.efficiency_percent / 100.0,
+        vfd_input_power_factor=None if vfd is None else vfd.input_power_factor,
+        vfd_thd_current=None if vfd is None else vfd.thd_current_percent,
+        vfd_has_active_rectifier=None if vfd is None else vfd.has_active_rectifier,
+        vfd_requires_input_filter=None if vfd is None else vfd.requires_input_filter,
+        vfd_heat_dissipation=(
+            None if vfd is None else from_si(vfd.heat_dissipation_kw * 1000.0, "W")
+        ),
+        vfd_cooling_method=None if vfd is None else vfd.cooling_method,
+        vfd_weight=None if vfd is None else from_si(vfd.weight_kg, "kg"),
+        vfd_enclosure_rating=None if vfd is None else vfd.enclosure_rating,
         has_supply_temperature=(None if not utility_requested else utility_supply_si is not None),
         has_return_temperature=(None if not utility_requested else utility_return_si is not None),
         has_approach_temperature=(
@@ -495,6 +515,26 @@ def heater(
 
 
 @dataclass(frozen=True, slots=True)
+class Vfd:
+    """`VariableFrequencyDrive.sizeVFD`'s table and ratings."""
+
+    rated_power_kw: float
+    rated_current_a: float
+    input_voltage_v: float
+    topology: str
+    pulse_configuration: str
+    efficiency_percent: float
+    input_power_factor: float
+    thd_current_percent: float
+    has_active_rectifier: bool
+    requires_input_filter: bool
+    heat_dissipation_kw: float
+    cooling_method: str
+    weight_kg: float
+    enclosure_rating: str
+
+
+@dataclass(frozen=True, slots=True)
 class Electrical:
     """`HeatExchangerElectricalDesign.calcDesign`'s numbers, in SI."""
 
@@ -527,6 +567,7 @@ class Electrical:
     switchgear_rated_current_a: float
     switchgear_short_circuit_ka: float
     switchgear_weight_kg: float
+    vfd: Vfd | None
 
 
 #: `ElectricalMotor.IEC_STANDARD_POWERS_KW`.
@@ -724,11 +765,67 @@ def _size_cable(
     return section, ampacity, drop, withstand
 
 
+def _size_vfd(rated_power_kw: float, motor_rated_current_a: float, input_voltage_v: float) -> Vfd:
+    """`VariableFrequencyDrive.sizeVFD`, on the motor's rating and rated current."""
+    rated_current_a = motor_rated_current_a * 1.10
+    if input_voltage_v > 3300.0:
+        if rated_power_kw > 2000.0:
+            topology, pulse, active, thd = ("Multi-level", "AFE", True, 3.0)
+        else:
+            topology, pulse, active, thd = ("3-level", "12-pulse", False, 10.0)
+    elif rated_power_kw > 250.0:
+        topology, pulse, active, thd = ("2-level", "AFE", True, 5.0)
+    else:
+        topology, pulse, active, thd = ("2-level", "6-pulse", False, 35.0)
+    # The 3-level arm is tested before the Multi-level one, and a Multi-level drive always has
+    # an active rectifier, so the class's ``"Multi-level"`` efficiency arm is unreachable.
+    if active:
+        efficiency_percent, input_power_factor = (96.5, 0.98)
+    elif topology == "3-level":
+        efficiency_percent, input_power_factor = (97.0, 0.95)
+    elif topology == "Multi-level":
+        efficiency_percent, input_power_factor = (97.5, 0.99)
+    else:
+        efficiency_percent, input_power_factor = (97.5, 0.95)
+    heat_dissipation_kw = rated_power_kw * (1.0 - efficiency_percent / 100.0)
+    cooling_method = "Water" if rated_power_kw > 500.0 or input_voltage_v > 3300.0 else "Air"
+    if input_voltage_v > 3300.0:
+        weight_kg = rated_power_kw * 1.5 + 500.0
+    elif input_voltage_v > 690.0:
+        weight_kg = rated_power_kw + 200.0
+    else:
+        weight_kg = rated_power_kw * 0.6 + 50.0
+    if input_voltage_v > 1000.0:
+        enclosure_rating = "IP42"
+    elif cooling_method == "Water":
+        enclosure_rating = "IP54"
+    else:
+        enclosure_rating = "IP21"
+    return Vfd(
+        rated_power_kw=rated_power_kw,
+        rated_current_a=rated_current_a,
+        input_voltage_v=input_voltage_v,
+        topology=topology,
+        pulse_configuration=pulse,
+        efficiency_percent=efficiency_percent,
+        input_power_factor=input_power_factor,
+        thd_current_percent=thd,
+        has_active_rectifier=active,
+        requires_input_filter=not active and pulse == "6-pulse" and rated_power_kw > 100.0,
+        heat_dissipation_kw=heat_dissipation_kw,
+        cooling_method=cooling_method,
+        weight_kg=weight_kg,
+        enclosure_rating=enclosure_rating,
+    )
+
+
 def _size_switchgear(
-    current_a: float, rated_power_kw: float, voltage_v: float
+    current_a: float, rated_power_kw: float, voltage_v: float, use_vfd: bool
 ) -> tuple[str, str, float, float, float, float, float]:
-    """`Switchgear.sizeSwitchgear` with ``useVFD = False``."""
-    if rated_power_kw > 200.0:
+    """`Switchgear.sizeSwitchgear`."""
+    if use_vfd:
+        starter = "VFD"
+    elif rated_power_kw > 200.0:
         starter = "Soft Starter"
     elif rated_power_kw > 11.0:
         starter = "Star-Delta"
@@ -767,6 +864,7 @@ def _electrical(
     instrumentation_w: float,
     pump_w: float,
     cable_length_m: float,
+    use_vfd: bool,
 ) -> Electrical:
     """`HeatExchangerElectricalDesign.calcDesign`, in SI."""
     duty_kw = abs(process_duty_w) / 1000.0
@@ -881,27 +979,41 @@ def _electrical(
             switchgear_rated_current_a=0.0,
             switchgear_short_circuit_ka=25.0,
             switchgear_weight_kg=0.0,
+            vfd=None,
         )
     efficiency_fraction = efficiency / 100.0 if efficiency > 0.0 else 0.0
-    input_kw = shaft_kw / efficiency_fraction if efficiency_fraction > 0.0 else shaft_kw
-    apparent = input_kw / factor if factor > 0.0 else 0.0
-    full_load = _current(input_kw, voltage, factor, phases)
+    motor_input_kw = shaft_kw / efficiency_fraction if efficiency_fraction > 0.0 else shaft_kw
+    # The motor's rated current is computed inside ``sizeMotor``, before ``calcDesign`` copies
+    # the design's tap to the motor, so it is always at the motor's own 400 V default.
+    motor_current_denominator = math.sqrt(3.0) * 400.0 * efficiency_fraction * factor
+    motor_rated_current = (
+        rated * 1000.0 / motor_current_denominator if motor_current_denominator > 0.0 else 0.0
+    )
+    vfd = _size_vfd(rated, motor_rated_current, voltage) if use_vfd else None
+    if vfd is None:
+        input_kw = motor_input_kw
+        effective_factor = factor
+    else:
+        input_kw = motor_input_kw / (vfd.efficiency_percent / 100.0)
+        effective_factor = vfd.input_power_factor
+    apparent = input_kw / effective_factor if effective_factor > 0.0 else 0.0
+    full_load = _current(input_kw, voltage, effective_factor, phases)
     cable_section, cable_ampacity, cable_drop, cable_withstand = _size_cable(
         full_load, voltage, cable_length_m
     )
     starter, switchgear_type, breaker, fuse, rated_current, short_circuit, weight = (
-        _size_switchgear(full_load, rated, voltage)
+        _size_switchgear(full_load, rated, voltage, use_vfd)
     )
     return Electrical(
         shaft_power_w=shaft_kw * 1000.0,
         electrical_input_w=input_kw * 1000.0,
         apparent_power_va=apparent * 1000.0,
-        reactive_power_var=apparent * 1000.0 * math.sqrt(1.0 - factor * factor),
-        power_factor=factor,
+        reactive_power_var=apparent * 1000.0 * math.sqrt(1.0 - effective_factor * effective_factor),
+        power_factor=effective_factor,
         rated_voltage_v=voltage,
         frequency_hz=frequency,
         full_load_current_a=full_load,
-        starting_current_a=full_load * locked,
+        starting_current_a=full_load if use_vfd else full_load * locked,
         total_electrical_losses_w=(input_kw - shaft_kw) * 1000.0,
         motor_rated_power_w=rated * 1000.0,
         motor_efficiency=efficiency_fraction,
@@ -922,6 +1034,7 @@ def _electrical(
         switchgear_rated_current_a=rated_current,
         switchgear_short_circuit_ka=short_circuit,
         switchgear_weight_kg=weight,
+        vfd=vfd,
     )
 
 

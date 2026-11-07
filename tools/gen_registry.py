@@ -245,6 +245,12 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         "has_approach_temperature",
         "has_heat_capacity_rate",
         "has_overall_heat_transfer_coefficient",
+        # `heater`'s two VFD flags, booleans with no `TestCase` slot.
+        # `crates/azoth-process/src/kernels/heater_electrical.rs` asserts both arms against
+        # the capture, `python/tests/models/test_heater.py` asserts them on both results, and
+        # `test_cross_impl` compares them.
+        "vfd_has_active_rectifier",
+        "vfd_requires_input_filter",
         # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
         # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
         # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`

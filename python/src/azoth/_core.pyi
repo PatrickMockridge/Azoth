@@ -3071,6 +3071,20 @@ class HeaterResult:
     switchgear_rated_current: float | None
     switchgear_short_circuit: float | None
     switchgear_weight: Qty | None
+    vfd_rated_power: Qty | None
+    vfd_rated_current: float | None
+    vfd_input_voltage: float | None
+    vfd_topology: str | None
+    vfd_pulse_configuration: str | None
+    vfd_efficiency: float | None
+    vfd_input_power_factor: float | None
+    vfd_thd_current: float | None
+    vfd_has_active_rectifier: bool | None
+    vfd_requires_input_filter: bool | None
+    vfd_heat_dissipation: Qty | None
+    vfd_cooling_method: str | None
+    vfd_weight: Qty | None
+    vfd_enclosure_rating: str | None
     has_supply_temperature: bool | None
     has_return_temperature: bool | None
     has_approach_temperature: bool | None
@@ -5952,6 +5966,7 @@ def heater(
     instrumentation_power: float | None = None,
     cooling_water_pump_power: float | None = None,
     cable_length: float | None = None,
+    use_vfd: bool | None = None,
     utility_specification: bool | None = None,
     utility_supply_temperature: float | None = None,
     utility_return_temperature: float | None = None,

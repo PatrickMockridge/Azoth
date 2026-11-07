@@ -196,6 +196,37 @@ pub struct HeaterResult {
     /// The switchgear's estimated weight.
     #[serde(serialize_with = "optional_scalar")]
     pub switchgear_weight: Option<Mass>,
+    /// The drive's rated power.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vfd_rated_power: Option<Power>,
+    /// The drive's rated current, in amperes.
+    pub vfd_rated_current: Option<f64>,
+    /// The drive's input voltage, in volts.
+    pub vfd_input_voltage: Option<f64>,
+    /// The drive's topology.
+    pub vfd_topology: Option<String>,
+    /// The drive's pulse configuration.
+    pub vfd_pulse_configuration: Option<String>,
+    /// The drive's efficiency, a fraction.
+    pub vfd_efficiency: Option<f64>,
+    /// The drive's input power factor.
+    pub vfd_input_power_factor: Option<f64>,
+    /// The input current's total harmonic distortion, percent.
+    pub vfd_thd_current: Option<f64>,
+    /// Whether the drive has an active rectifier.
+    pub vfd_has_active_rectifier: Option<bool>,
+    /// Whether the drive needs an input filter.
+    pub vfd_requires_input_filter: Option<bool>,
+    /// The drive's loss at rated power.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vfd_heat_dissipation: Option<Power>,
+    /// The drive's cooling method.
+    pub vfd_cooling_method: Option<String>,
+    /// The drive's estimated weight.
+    #[serde(serialize_with = "optional_scalar")]
+    pub vfd_weight: Option<Mass>,
+    /// The drive's enclosure rating.
+    pub vfd_enclosure_rating: Option<String>,
     /// Whether a utility supply temperature is stated.
     pub has_supply_temperature: Option<bool>,
     /// Whether a utility return temperature is stated.
@@ -317,6 +348,48 @@ impl HeaterResult {
             switchgear_rated_current: electrical.map(|value| value.switchgear_rated_current_a),
             switchgear_short_circuit: electrical.map(|value| value.switchgear_short_circuit_ka),
             switchgear_weight: electrical.map(|value| kilograms(value.switchgear_weight_kg)),
+            vfd_rated_power: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| watts(value.rated_power_kw * 1000.0)),
+            vfd_rated_current: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.rated_current_a),
+            vfd_input_voltage: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.input_voltage_v),
+            vfd_topology: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.topology.to_string()),
+            vfd_pulse_configuration: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.pulse_configuration.to_string()),
+            vfd_efficiency: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.efficiency_percent / 100.0),
+            vfd_input_power_factor: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.input_power_factor),
+            vfd_thd_current: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.thd_current_percent),
+            vfd_has_active_rectifier: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.has_active_rectifier),
+            vfd_requires_input_filter: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.requires_input_filter),
+            vfd_heat_dissipation: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| watts(value.heat_dissipation_kw * 1000.0)),
+            vfd_cooling_method: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.cooling_method.to_string()),
+            vfd_weight: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| kilograms(value.weight_kg)),
+            vfd_enclosure_rating: electrical
+                .and_then(|value| value.vfd)
+                .map(|value| value.enclosure_rating.to_string()),
             has_supply_temperature: utility
                 .map(heater_mechanical::UtilitySpecification::has_supply_temperature),
             has_return_temperature: utility
@@ -406,6 +479,7 @@ pub fn heater(
     instrumentation_power: Option<Power>,
     cooling_water_pump_power: Option<Power>,
     cable_length: Option<Length>,
+    use_vfd: Option<bool>,
     utility_specification: Option<bool>,
     utility_supply_temperature: Option<ThermodynamicTemperature>,
     utility_return_temperature: Option<ThermodynamicTemperature>,
@@ -466,6 +540,7 @@ pub fn heater(
             cooling_water_pump_power.is_some(),
         ),
         ("cable_length", cable_length.is_some()),
+        ("use_vfd", use_vfd.is_some()),
     ] {
         if stated && !electrical_requested {
             return Err(AzothError::invalid_input(
@@ -695,6 +770,7 @@ pub fn heater(
             instrumentation_power_w: instrumentation_power.map_or(1500.0, |value| value.value),
             cooling_water_pump_power_w: cooling_water_pump_power.map_or(0.0, |value| value.value),
             cable_length_m: cable_length.map_or(50.0, |value| value.value),
+            use_vfd: use_vfd.unwrap_or(false),
         };
         Some(heater_electrical::design(
             instrument_type,

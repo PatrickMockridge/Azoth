@@ -112,6 +112,20 @@ ELECTRICAL_FIELDS = (
     "switchgear_rated_current",
     "switchgear_short_circuit",
     "switchgear_weight",
+    "vfd_rated_power",
+    "vfd_rated_current",
+    "vfd_input_voltage",
+    "vfd_topology",
+    "vfd_pulse_configuration",
+    "vfd_efficiency",
+    "vfd_input_power_factor",
+    "vfd_thd_current",
+    "vfd_has_active_rectifier",
+    "vfd_requires_input_filter",
+    "vfd_heat_dissipation",
+    "vfd_cooling_method",
+    "vfd_weight",
+    "vfd_enclosure_rating",
 )
 
 
@@ -177,6 +191,83 @@ def test_the_shell_branch_carries_no_cable(backend: str) -> None:
     assert result.switchgear_circuit_breaker == pytest.approx(0.0)
     assert result.switchgear_short_circuit == pytest.approx(25.0)
     assert result.switchgear_weight.to("kg").magnitude == pytest.approx(0.0)
+
+
+VFD_FIELDS = (
+    "vfd_rated_power",
+    "vfd_rated_current",
+    "vfd_input_voltage",
+    "vfd_topology",
+    "vfd_pulse_configuration",
+    "vfd_efficiency",
+    "vfd_input_power_factor",
+    "vfd_thd_current",
+    "vfd_has_active_rectifier",
+    "vfd_requires_input_filter",
+    "vfd_heat_dissipation",
+    "vfd_cooling_method",
+    "vfd_weight",
+    "vfd_enclosure_rating",
+)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_vfd_outputs_are_absent_without_their_flag(backend: str) -> None:
+    result = _run(_case("the_five_kilowatt_heater_is_the_captures"), backend)
+    for name in VFD_FIELDS:
+        assert getattr(result, name) is None, name
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_vfd_sets_the_starting_current_and_the_starter(backend: str) -> None:
+    result = _run(_case("the_hundred_kilowatt_vfd_needs_an_input_filter"), backend)
+    assert result.switchgear_starter == "VFD"
+    assert result.starting_current == pytest.approx(95.09079001292898, rel=5e-4)
+    assert result.starting_current == pytest.approx(result.full_load_current)
+    assert result.vfd_topology == "2-level"
+    assert result.vfd_pulse_configuration == "6-pulse"
+    assert result.vfd_efficiency == pytest.approx(0.975)
+    assert result.vfd_rated_current == pytest.approx(208.90963687782514, rel=5e-4)
+    assert result.vfd_heat_dissipation.to("W").magnitude == pytest.approx(
+        2750.0000000000027, rel=5e-4
+    )
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_vfd_flags_are_the_captures(backend: str) -> None:
+    filtered = _run(_case("the_hundred_kilowatt_vfd_needs_an_input_filter"), backend)
+    assert filtered.vfd_requires_input_filter is True
+    assert filtered.vfd_has_active_rectifier is False
+    three_level = _run(_case("the_five_hundred_kilowatt_vfd_is_a_three_level_drive"), backend)
+    assert three_level.vfd_topology == "3-level"
+    assert three_level.vfd_requires_input_filter is False
+    assert three_level.vfd_has_active_rectifier is False
+    assert three_level.vfd_cooling_method == "Water"
+    multi = _run(_case("the_multi_level_drive_uses_its_active_rectifier_table"), backend)
+    assert multi.vfd_topology == "Multi-level"
+    assert multi.vfd_has_active_rectifier is True
+    assert multi.vfd_input_power_factor == pytest.approx(0.98)
+    air = _run(_case("the_air_coolers_low_voltage_drive_can_use_an_active_rectifier"), backend)
+    assert air.vfd_topology == "2-level"
+    assert air.vfd_pulse_configuration == "AFE"
+    assert air.vfd_has_active_rectifier is True
+    assert air.vfd_thd_current == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_shell_branch_ignores_the_vfd(backend: Any) -> None:
+    case = _case("the_shell_and_tube_design_is_the_auxiliary_load")
+    with use_backend(backend):
+        result = resolve(MODEL_ID)(**h.model_kwargs(SPEC, case["inputs"]), use_vfd=True)
+    for name in VFD_FIELDS:
+        assert getattr(result, name) is None, name
+    assert result.switchgear_starter == "DOL"
+
+
+def test_a_vfd_ask_without_the_electrical_design_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("outlet_temperature_380")["inputs"])
+    with pytest.raises(InvalidInputError, match="use_vfd"):
+        resolve(MODEL_ID)(**base, use_vfd=True)
 
 
 def test_a_cable_length_without_the_flag_is_refused() -> None:

@@ -16594,6 +16594,48 @@ pub struct PyHeaterResult {
     /// the switchgear's estimated weight.
     #[pyo3(get)]
     pub switchgear_weight: Option<PyQty>,
+    /// the VFD's rated power, the motor's own rating. Absent when no VFD is sized.
+    #[pyo3(get)]
+    pub vfd_rated_power: Option<PyQty>,
+    /// 1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.
+    #[pyo3(get)]
+    pub vfd_rated_current: Option<f64>,
+    /// the VFD's input voltage in volts, copied from the motor's rated voltage.
+    #[pyo3(get)]
+    pub vfd_input_voltage: Option<f64>,
+    /// `2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.
+    #[pyo3(get)]
+    pub vfd_topology: Option<String>,
+    /// `6-pulse`, `12-pulse` or `AFE`, with the topology.
+    #[pyo3(get)]
+    pub vfd_pulse_configuration: Option<String>,
+    /// the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.
+    #[pyo3(get)]
+    pub vfd_efficiency: Option<f64>,
+    /// the drive's input power factor: 0.98 with an active rectifier, else 0.95.
+    #[pyo3(get)]
+    pub vfd_input_power_factor: Option<f64>,
+    /// the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.
+    #[pyo3(get)]
+    pub vfd_thd_current: Option<f64>,
+    /// whether the drive has an active front-end rectifier.
+    #[pyo3(get)]
+    pub vfd_has_active_rectifier: Option<bool>,
+    /// whether a 6-pulse drive above 100 kW needs an input filter.
+    #[pyo3(get)]
+    pub vfd_requires_input_filter: Option<bool>,
+    /// the drive's loss at its rated power, `rated power x (1 - efficiency)`.
+    #[pyo3(get)]
+    pub vfd_heat_dissipation: Option<PyQty>,
+    /// `Water` above 500 kW or above 3300 V, else `Air`.
+    #[pyo3(get)]
+    pub vfd_cooling_method: Option<String>,
+    /// the drive's estimated weight, by the voltage band.
+    #[pyo3(get)]
+    pub vfd_weight: Option<PyQty>,
+    /// `IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.
+    #[pyo3(get)]
+    pub vfd_enclosure_rating: Option<String>,
     /// whether a utility supply temperature is stated.
     #[pyo3(get)]
     pub has_supply_temperature: Option<bool>,
@@ -16639,7 +16681,7 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, cable_length={:?}, cable_cross_section={:?}, cable_ampacity={:?}, cable_voltage_drop={:?}, cable_short_circuit_withstand={:?}, switchgear_starter={:?}, switchgear_type={:?}, switchgear_circuit_breaker={:?}, switchgear_fuse={:?}, switchgear_rated_current={:?}, switchgear_short_circuit={:?}, switchgear_weight={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, cable_length={:?}, cable_cross_section={:?}, cable_ampacity={:?}, cable_voltage_drop={:?}, cable_short_circuit_withstand={:?}, switchgear_starter={:?}, switchgear_type={:?}, switchgear_circuit_breaker={:?}, switchgear_fuse={:?}, switchgear_rated_current={:?}, switchgear_short_circuit={:?}, switchgear_weight={:?}, vfd_rated_power={:?}, vfd_rated_current={:?}, vfd_input_voltage={:?}, vfd_topology={:?}, vfd_pulse_configuration={:?}, vfd_efficiency={:?}, vfd_input_power_factor={:?}, vfd_thd_current={:?}, vfd_has_active_rectifier={:?}, vfd_requires_input_filter={:?}, vfd_heat_dissipation={:?}, vfd_cooling_method={:?}, vfd_weight={:?}, vfd_enclosure_rating={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -16689,6 +16731,20 @@ impl PyHeaterResult {
             self.switchgear_rated_current,
             self.switchgear_short_circuit,
             self.switchgear_weight,
+            self.vfd_rated_power,
+            self.vfd_rated_current,
+            self.vfd_input_voltage,
+            self.vfd_topology,
+            self.vfd_pulse_configuration,
+            self.vfd_efficiency,
+            self.vfd_input_power_factor,
+            self.vfd_thd_current,
+            self.vfd_has_active_rectifier,
+            self.vfd_requires_input_filter,
+            self.vfd_heat_dissipation,
+            self.vfd_cooling_method,
+            self.vfd_weight,
+            self.vfd_enclosure_rating,
             self.has_supply_temperature,
             self.has_return_temperature,
             self.has_approach_temperature,
@@ -16797,6 +16853,29 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
                 magnitude_si: v.value,
                 unit: "kg".to_string(),
             }),
+            vfd_rated_power: r.vfd_rated_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            vfd_rated_current: r.vfd_rated_current,
+            vfd_input_voltage: r.vfd_input_voltage,
+            vfd_topology: r.vfd_topology.clone(),
+            vfd_pulse_configuration: r.vfd_pulse_configuration.clone(),
+            vfd_efficiency: r.vfd_efficiency,
+            vfd_input_power_factor: r.vfd_input_power_factor,
+            vfd_thd_current: r.vfd_thd_current,
+            vfd_has_active_rectifier: r.vfd_has_active_rectifier,
+            vfd_requires_input_filter: r.vfd_requires_input_filter,
+            vfd_heat_dissipation: r.vfd_heat_dissipation.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            vfd_cooling_method: r.vfd_cooling_method.clone(),
+            vfd_weight: r.vfd_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            vfd_enclosure_rating: r.vfd_enclosure_rating.clone(),
             has_supply_temperature: r.has_supply_temperature,
             has_return_temperature: r.has_return_temperature,
             has_approach_temperature: r.has_approach_temperature,

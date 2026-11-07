@@ -20,14 +20,16 @@ assumptions = [
     "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
     "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when positive.",
     "**The cable sizes on the tray ampacity and then upsizes for voltage drop, but its reported ampacity stays the base-selected section's**: the class computes the derated rating before the drop loop.",
-    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch, `runTransient`, VFD, transformer and hazardous-area parts are outside.",
+    "**The VFD sizes on the motor's rating, and its rated current is computed at the motor's own 400 V default** because `calcDesign` copies the design's tap to the motor after sizing it.",
+    "**The transformer and hazardous-area classification are constructed and settable but never sized or read by `calcDesign`**; this surface stops at the drive.",
+    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch and `runTransient` are outside.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable and switchgear, the utility-specification predicates and the mechanical thermal estimate."
+edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable, switchgear and VFD, the utility-specification predicates and the mechanical thermal estimate."
 [inputs]
 [inputs.components]
 type = "components"
@@ -124,6 +126,10 @@ description = "the shell-and-tube cooling-water pump load, added to the auxiliar
 unit = "m"
 optional = true
 description = "the power cable's route length. Absent takes the class's 50 m; a longer run upsizes the cross-section until the voltage drop is under 5 percent.\n"
+[inputs.use_vfd]
+type = "boolean"
+optional = true
+description = "whether the motor is fed through a variable-frequency drive. Absent is false; a VFD raises the input by its losses and sets the input power factor.\n"
 [inputs.utility_specification]
 type = "boolean"
 optional = true
@@ -379,6 +385,62 @@ description = "the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 
 unit = "kg"
 optional = true
 description = "the switchgear's estimated weight.\n"
+[outputs.vfd_rated_power]
+unit = "W"
+optional = true
+description = "the VFD's rated power, the motor's own rating. Absent when no VFD is sized.\n"
+[outputs.vfd_rated_current]
+unit = "dimensionless"
+optional = true
+description = "1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.\n"
+[outputs.vfd_input_voltage]
+unit = "dimensionless"
+optional = true
+description = "the VFD's input voltage in volts, copied from the motor's rated voltage.\n"
+[outputs.vfd_topology]
+type = "string"
+optional = true
+description = "`2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.\n"
+[outputs.vfd_pulse_configuration]
+type = "string"
+optional = true
+description = "`6-pulse`, `12-pulse` or `AFE`, with the topology.\n"
+[outputs.vfd_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.\n"
+[outputs.vfd_input_power_factor]
+unit = "dimensionless"
+optional = true
+description = "the drive's input power factor: 0.98 with an active rectifier, else 0.95.\n"
+[outputs.vfd_thd_current]
+unit = "dimensionless"
+optional = true
+description = "the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.\n"
+[outputs.vfd_has_active_rectifier]
+type = "boolean"
+optional = true
+description = "whether the drive has an active front-end rectifier.\n"
+[outputs.vfd_requires_input_filter]
+type = "boolean"
+optional = true
+description = "whether a 6-pulse drive above 100 kW needs an input filter.\n"
+[outputs.vfd_heat_dissipation]
+unit = "W"
+optional = true
+description = "the drive's loss at its rated power, `rated power x (1 - efficiency)`.\n"
+[outputs.vfd_cooling_method]
+type = "string"
+optional = true
+description = "`Water` above 500 kW or above 3300 V, else `Air`.\n"
+[outputs.vfd_weight]
+unit = "kg"
+optional = true
+description = "the drive's estimated weight, by the voltage band.\n"
+[outputs.vfd_enclosure_rating]
+type = "string"
+optional = true
+description = "`IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.\n"
 [outputs.has_supply_temperature]
 type = "boolean"
 optional = true
