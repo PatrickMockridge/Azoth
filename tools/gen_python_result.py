@@ -163,7 +163,9 @@ def emit() -> str:
     # that reach a record field come from there and the rest from `result_base`.
     rows = set(record_output_rows())
     from_base = sorted(used - {"Q", "Warning"} - rows)
-    from_rows = sorted(used & rows)
+    # isort's own order, which is case-insensitive: `HeatExchangerMechanicalType` follows
+    # `HeaterMechanicalType`, where a plain `sorted()` would put it first.
+    from_rows = sorted(used & rows, key=str.lower)
     imports = [
         "from __future__ import annotations",
         "",
