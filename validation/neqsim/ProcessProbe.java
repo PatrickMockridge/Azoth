@@ -192,6 +192,9 @@ public class ProcessProbe {
       case "heater_electrical":
         heaterElectricalRows();
         break;
+      case "heater_vfd":
+        heaterVfdRows();
+        break;
       case "heater_utility":
         heaterUtilityRows();
         break;
@@ -787,6 +790,44 @@ public class ProcessProbe {
     }
   }
 
+  /// `useVFD = true` on the heater's electrical design: the topology arms and their tables.
+  ///
+  /// The electric-heater voltage taps make the 2-level AFE arm (P > 250 kW at 3300 V or less)
+  /// unreachable from a heater, so that block is an air cooler sized to 300 kW of fan power at
+  /// 690 V. The rated current is the motor's, and `calcDesign` sets the motor's rated voltage
+  /// after it sizes the motor, so it is computed at the motor's own 400 V default.
+  static void heaterVfdRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    double[] dutiesKW = new double[] {5.0, 100.0, 500.0, 2500.0};
+    for (double dutyKW : dutiesKW) {
+      double flow = dutyKW <= 5.0 ? 1.0 : (dutyKW >= 2500.0 ? 1000.0 : 100.0);
+      Stream inlet = feed(names, z, 320.0, 30.0, flow);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setDuty(dutyKW * 1000.0);
+      heater.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design =
+          heater.getElectricalDesign();
+      design.setUseVFD(true);
+      design.calcDesign();
+      printHeaterElectrical("electric_" + (int) dutyKW + "kw_vfd", design);
+    }
+
+    Stream airInlet = feed(names, z, 320.0, 30.0, 10000.0);
+    neqsim.process.equipment.heatexchanger.Heater air =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", airInlet);
+    air.setDuty(30_000_000.0);
+    air.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign airDesign =
+        air.getElectricalDesign();
+    airDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.AIR_COOLER);
+    airDesign.setUseVFD(true);
+    airDesign.calcDesign();
+    printHeaterElectrical("air_cooler_30mw_vfd", airDesign);
+  }
+
   static void printHeaterElectrical(String label,
       neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design) {
     System.out.println("label=" + label);
@@ -829,6 +870,23 @@ public class ProcessProbe {
     System.out.println("switchgear_short_circuit_ka="
         + design.getSwitchgear().getShortCircuitCurrentKA());
     System.out.println("switchgear_weight_kg=" + design.getSwitchgear().getWeightKg());
+    if (design.isUseVFD() && design.getVfd() != null) {
+      neqsim.process.electricaldesign.components.VariableFrequencyDrive vfd = design.getVfd();
+      System.out.println("vfd_rated_power_kw=" + vfd.getRatedPowerKW());
+      System.out.println("vfd_rated_current_a=" + vfd.getRatedCurrentA());
+      System.out.println("vfd_input_voltage_v=" + vfd.getInputVoltageV());
+      System.out.println("vfd_topology=" + vfd.getTopologyType());
+      System.out.println("vfd_pulse_configuration=" + vfd.getPulseConfiguration());
+      System.out.println("vfd_efficiency_percent=" + vfd.getEfficiencyPercent());
+      System.out.println("vfd_input_power_factor=" + vfd.getInputPowerFactor());
+      System.out.println("vfd_thd_current_percent=" + vfd.getThdCurrentPercent());
+      System.out.println("vfd_has_active_rectifier=" + vfd.isHasActiveRectifier());
+      System.out.println("vfd_requires_input_filter=" + vfd.isRequiresInputFilter());
+      System.out.println("vfd_heat_dissipation_kw=" + vfd.getHeatDissipationKW());
+      System.out.println("vfd_cooling_method=" + vfd.getCoolingMethod());
+      System.out.println("vfd_weight_kg=" + vfd.getWeightKg());
+      System.out.println("vfd_enclosure_rating=" + vfd.getEnclosureRating());
+    }
     System.out.println();
   }
 

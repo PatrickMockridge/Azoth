@@ -528,6 +528,8 @@ public surface of forty-odd getters.
   > captures/process_heater_instruments.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_electrical \
   > captures/process_heater_electrical.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_vfd \
+  > captures/process_heater_vfd.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_utility \
   > captures/process_heater_utility.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_mechanical \
