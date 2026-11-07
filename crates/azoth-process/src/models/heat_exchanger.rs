@@ -9,15 +9,70 @@
 //! the boundary derives the two `Stream`s from them separately.
 
 use azoth_core::units::{
-    MolarEnergy, Power, Pressure, ThermalConductance, ThermodynamicTemperature, joules_per_mole,
+    Area, HeatTransfer, Length, Mass, MolarEnergy, Power, Pressure, ThermalConductance,
+    ThermodynamicTemperature, joules_per_mole, kelvins, kilograms, meters, square_meters,
+    watts_per_kelvin, watts_per_square_meter_kelvin,
 };
-use azoth_core::{Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
 use crate::kernels::heat_exchanger as kernel;
+use crate::kernels::heater_mechanical;
 use crate::model_gen;
 use crate::stream::Stream;
+
+/// One row of the mechanical design's candidate table.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct HeatExchangerMechanicalType {
+    /// The configuration's spelling.
+    pub mechanical_type: String,
+    /// The required area.
+    #[serde(serialize_with = "scalar")]
+    pub required_area: Area,
+    /// The UA the area is computed from.
+    #[serde(serialize_with = "scalar")]
+    pub required_ua: ThermalConductance,
+    /// The type's typical overall coefficient.
+    #[serde(serialize_with = "scalar")]
+    pub overall_heat_transfer_coefficient: HeatTransfer,
+    /// The type's approach.
+    #[serde(serialize_with = "scalar")]
+    pub approach_temperature: ThermodynamicTemperature,
+    /// The estimated length.
+    #[serde(serialize_with = "scalar")]
+    pub estimated_length: Length,
+    /// The equivalent inside diameter.
+    #[serde(serialize_with = "scalar")]
+    pub inner_diameter: Length,
+    /// The equivalent outside diameter.
+    #[serde(serialize_with = "scalar")]
+    pub outer_diameter: Length,
+    /// The wall or sheet thickness.
+    #[serde(serialize_with = "scalar")]
+    pub wall_thickness: Length,
+    /// The tube or plate count.
+    pub tube_count: f64,
+    /// The tube passes or plate pairs.
+    pub tube_passes: f64,
+    /// The fin surface area; zero for the unfinned types.
+    #[serde(serialize_with = "scalar")]
+    pub fin_surface_area: Area,
+    /// The class's qualitative pressure-drop proxy, bar.
+    pub estimated_pressure_drop: f64,
+    /// The estimated weight.
+    #[serde(serialize_with = "scalar")]
+    pub estimated_weight: Mass,
+    /// The module length.
+    #[serde(serialize_with = "scalar")]
+    pub module_length: Length,
+    /// The module width.
+    #[serde(serialize_with = "scalar")]
+    pub module_width: Length,
+    /// The module height.
+    #[serde(serialize_with = "scalar")]
+    pub module_height: Length,
+}
 
 /// Result of `process.heat_exchanger`.
 ///
@@ -77,6 +132,25 @@ pub struct HeatExchangerResult {
     pub ua_value: Option<f64>,
     /// Which side `runDeltaT` set, `"hot"` or `"cold"`; present only in that mode.
     pub delta_t_side: Option<String>,
+    /// The selected mechanical configuration.
+    pub mechanical_selected_type: Option<String>,
+    /// The selected configuration's required area.
+    #[serde(serialize_with = "optional_scalar")]
+    pub mechanical_selected_area: Option<Area>,
+    /// The log-mean temperature difference.
+    #[serde(serialize_with = "optional_scalar")]
+    pub log_mean_temperature_difference: Option<ThermodynamicTemperature>,
+    /// The approach temperature.
+    #[serde(serialize_with = "optional_scalar")]
+    pub mechanical_approach_temperature: Option<ThermodynamicTemperature>,
+    /// The overall coefficient the estimate used.
+    #[serde(serialize_with = "optional_scalar")]
+    pub used_overall_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The calculated UA.
+    #[serde(serialize_with = "optional_scalar")]
+    pub calculated_ua: Option<ThermalConductance>,
+    /// The five candidates, in the class's enum order.
+    pub mechanical_types: Vec<HeatExchangerMechanicalType>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -87,7 +161,7 @@ pub struct HeatExchangerResult {
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] for the mode and arrangement refusals
 /// [`crate::kernels::heat_exchanger`] lists, and whatever the databank refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seventeen
 pub fn heat_exchanger(
     hot_components: &[String],
     hot_in_n: f64,
@@ -106,6 +180,9 @@ pub fn heat_exchanger(
     use_delta_t: Option<bool>,
     delta_t: Option<ThermodynamicTemperature>,
     guess_out_temperature: Option<ThermodynamicTemperature>,
+    mechanical_design: Option<bool>,
+    mechanical_type: Option<&str>,
+    mechanical_selection: Option<&str>,
 ) -> Result<HeatExchangerResult> {
     let spec = &model_gen::HEAT_EXCHANGER_SPEC;
     let mut warnings = Vec::new();
@@ -122,6 +199,45 @@ pub fn heat_exchanger(
         },
         &mut warnings,
     )?;
+
+    let mechanical_requested = mechanical_design.unwrap_or(false);
+    for (name, stated) in [
+        ("mechanical_type", mechanical_type.is_some()),
+        ("mechanical_selection", mechanical_selection.is_some()),
+    ] {
+        if stated && !mechanical_requested {
+            return Err(AzothError::invalid_input(
+                name,
+                "a mechanical-design input is stated without `mechanical_design`",
+            ));
+        }
+    }
+    let manual_selection = match mechanical_type {
+        Some(spelling) => Some(
+            heater_mechanical::MechanicalType::parse(spelling).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "mechanical_type",
+                    format!("{spelling} is not one of the five mechanical configurations"),
+                )
+            })?,
+        ),
+        None => None,
+    };
+    let selection_criterion = match mechanical_selection {
+        Some(spelling) => Some(
+            heater_mechanical::SelectionCriterion::parse(spelling).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "mechanical_selection",
+                    format!("{spelling} is not one of min_area, min_weight or min_pressure_drop"),
+                )
+            })?,
+        ),
+        None => None,
+    };
+    let mechanical_request = heater_mechanical::MechanicalRequest {
+        manual_selection,
+        selection_criterion,
+    };
 
     // **A zero flow is not a state**, and every duty-per-flow divides by one.
     for (field, n) in [("hot_in_n", hot_in_n), ("cold_in_n", cold_in_n)] {
@@ -161,6 +277,10 @@ pub fn heat_exchanger(
              `runSpecifiedStream`, so `use_delta_t` is ignored on this state",
         ));
     }
+    // The class's own `UAvalue` basis: the stated one, or its 500 default, which the setter
+    // rather than `run` writes - so a pinned run that states none leaves 500 here.
+    let class_ua = ua.map_or(500.0, |value| value.value);
+    let pinned = hot_outlet_temperature.is_some() || cold_outlet_temperature.is_some();
     let outcome = kernel(
         &hot,
         &cold,
@@ -171,7 +291,36 @@ pub fn heat_exchanger(
         use_delta_t.unwrap_or(false),
         delta_t.unwrap_or_else(|| azoth_core::units::kelvins(1.0)),
     )?;
-    Ok(HeatExchangerResult::of(&outcome, warnings))
+    let mechanical = if mechanical_requested {
+        // **The class's `getDuty()` basis, not this result's `duty`**: the pinned branch
+        // writes neither, so `determineDuty` sees zero there.
+        let duty_basis = if pinned {
+            0.0
+        } else {
+            outcome.duty.value.abs()
+        };
+        let effectiveness = outcome
+            .rating
+            .as_ref()
+            .map_or(0.0, |rating| rating.effectiveness);
+        Some(heater_mechanical::two_stream_design(
+            hot_in_t.value,
+            outcome.hot_out.t.value,
+            cold_in_t.value,
+            outcome.cold_out.t.value,
+            duty_basis,
+            outcome.ua_value.unwrap_or(class_ua),
+            effectiveness,
+            &mechanical_request,
+        ))
+    } else {
+        None
+    };
+    Ok(HeatExchangerResult::of(
+        &outcome,
+        mechanical.as_ref(),
+        warnings,
+    ))
 }
 
 impl HeatExchangerResult {
@@ -183,7 +332,11 @@ impl HeatExchangerResult {
     /// So an empty list here means "this kernel raised none" and not "nothing checked this call" -
     /// and this kernel raises none of its own, which is why the dispatcher hands it `Vec::new()`.
     #[must_use]
-    pub fn of(outcome: &kernel::HeatExchangerOutcome, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &kernel::HeatExchangerOutcome,
+        mechanical: Option<&heater_mechanical::MechanicalDesign>,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             hot_out_n: outcome.hot_out.n,
             hot_out_z: outcome.hot_out.z.clone(),
@@ -203,6 +356,47 @@ impl HeatExchangerResult {
             capacity_ratio: outcome.rating.as_ref().map(|rating| rating.capacity_ratio),
             ua_value: outcome.ua_value,
             delta_t_side: outcome.delta_t_side.map(str::to_string),
+            mechanical_selected_type: mechanical
+                .map(|value| value.selected.kind.spelling().to_string()),
+            mechanical_selected_area: mechanical
+                .map(|value| square_meters(value.selected.required_area_m2)),
+            log_mean_temperature_difference: mechanical
+                .map(|value| kelvins(value.log_mean_temperature_difference)),
+            mechanical_approach_temperature: mechanical
+                .map(|value| kelvins(value.approach_temperature)),
+            used_overall_heat_transfer_coefficient: mechanical.map(|value| {
+                watts_per_square_meter_kelvin(value.used_overall_heat_transfer_coefficient)
+            }),
+            calculated_ua: mechanical.map(|value| watts_per_kelvin(value.calculated_ua)),
+            mechanical_types: mechanical
+                .map(|value| {
+                    value
+                        .types
+                        .iter()
+                        .map(|row| HeatExchangerMechanicalType {
+                            mechanical_type: row.kind.spelling().to_string(),
+                            required_area: square_meters(row.required_area_m2),
+                            required_ua: watts_per_kelvin(row.required_ua_w_per_k),
+                            overall_heat_transfer_coefficient: watts_per_square_meter_kelvin(
+                                row.overall_heat_transfer_coefficient,
+                            ),
+                            approach_temperature: kelvins(row.approach_temperature_k),
+                            estimated_length: meters(row.estimated_length_m),
+                            inner_diameter: meters(row.inner_diameter_m),
+                            outer_diameter: meters(row.outer_diameter_m),
+                            wall_thickness: meters(row.wall_thickness_m),
+                            tube_count: row.tube_count,
+                            tube_passes: row.tube_passes,
+                            fin_surface_area: square_meters(row.fin_surface_area_m2),
+                            estimated_pressure_drop: row.estimated_pressure_drop_bar,
+                            estimated_weight: kilograms(row.estimated_weight_kg),
+                            module_length: meters(row.module_length_m),
+                            module_width: meters(row.module_width_m),
+                            module_height: meters(row.module_height_m),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
             warnings,
         }
     }

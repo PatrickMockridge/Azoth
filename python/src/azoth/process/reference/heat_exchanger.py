@@ -43,12 +43,20 @@ from dataclasses import dataclass
 from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
+from azoth.core.record_outputs_gen import HeaterMechanicalType, HeatExchangerMechanicalType
 from azoth.core.result import HeatExchangerResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
+from azoth.process.reference.heater import (
+    MECHANICAL_CRITERIA,
+    MECHANICAL_NAMES,
+    MECHANICAL_TYPES,
+    _geometry,
+    _lmtd,
+)
 
 #: The arrangements ``calcThermalEffectivenes`` names, in azoth's own spelling.
 FLOW_ARRANGEMENTS = ("counterflow", "parallelflow", "shell_and_tube")
@@ -72,6 +80,9 @@ def heat_exchanger(
     use_delta_t: bool | None = None,
     delta_t: Q | None = None,
     guess_out_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -90,6 +101,9 @@ def heat_exchanger(
         flow_arrangement: ``counterflow``, ``parallelflow`` or ``shell_and_tube``.
         hot_outlet_temperature: pin the hot outlet at this temperature.
         cold_outlet_temperature: pin the cold outlet at this temperature.
+        mechanical_design: run the mechanical design's thermal estimate.
+        mechanical_type: the manual type selection.
+        mechanical_selection: the automatic ranking's metric.
 
     Returns:
         Both outlets' records.
@@ -158,6 +172,27 @@ def heat_exchanger(
             )
         )
 
+    mechanical_requested = bool(mechanical_design)
+    for name, stated in (
+        ("mechanical_type", mechanical_type is not None),
+        ("mechanical_selection", mechanical_selection is not None),
+    ):
+        if stated and not mechanical_requested:
+            raise InvalidInputError(
+                name, "a mechanical-design input is stated without `mechanical_design`"
+            )
+    if mechanical_type is not None and mechanical_type not in MECHANICAL_NAMES:
+        raise InvalidInputError(
+            "mechanical_type",
+            f"{mechanical_type} is not one of the five mechanical configurations",
+        )
+    criterion = "min_area" if mechanical_selection is None else mechanical_selection
+    if criterion not in MECHANICAL_CRITERIA:
+        raise InvalidInputError(
+            "mechanical_selection",
+            f"{mechanical_selection} is not one of min_area, min_weight or min_pressure_drop",
+        )
+
     hot_n = input_to_si(spec, "hot_in_n", hot_in_n)
     cold_n = input_to_si(spec, "cold_in_n", cold_in_n)
     # A zero flow is not a state, and every duty-per-flow divides by one.
@@ -184,6 +219,30 @@ def heat_exchanger(
         delta_t_si,
     )
 
+    mechanical = None
+    if mechanical_requested:
+        pinned = hot_out_t_si is not None or cold_out_t_si is not None
+        # **The class's `getDuty()` basis, not this result's `duty`**: the pinned branch
+        # writes neither, so `determineDuty` sees zero there.
+        duty_basis = 0.0 if pinned else abs(states.duty)
+        ua_basis = (
+            states.ua_value
+            if states.ua_value is not None
+            else (ua_si if ua_si is not None else 500.0)
+        )
+        effectiveness = 0.0 if states.rating is None else states.rating.effectiveness
+        mechanical = _two_stream_mechanical(
+            hot_t_si,
+            states.hot_out_t.to("K").magnitude,
+            cold_t_si,
+            states.cold_out_t.to("K").magnitude,
+            duty_basis,
+            ua_basis,
+            effectiveness,
+            mechanical_type,
+            criterion,
+        )
+
     return HeatExchangerResult(
         hot_out_n=from_si(hot_n, "mol/s"),
         hot_out_z=tuple(hot_in_z),
@@ -208,6 +267,21 @@ def heat_exchanger(
         capacity_ratio=None if states.rating is None else states.rating.capacity_ratio,
         ua_value=None if states.ua_value is None else from_si(states.ua_value, "W/K"),
         delta_t_side=states.delta_t_side,
+        mechanical_selected_type=(
+            None if mechanical is None else mechanical.selected.mechanical_type
+        ),
+        mechanical_selected_area=None if mechanical is None else mechanical.selected.required_area,
+        log_mean_temperature_difference=(
+            None if mechanical is None else from_si(mechanical.lmtd, "K")
+        ),
+        mechanical_approach_temperature=(
+            None if mechanical is None else from_si(mechanical.approach, "K")
+        ),
+        used_overall_heat_transfer_coefficient=(
+            None if mechanical is None else from_si(mechanical.used_u, "W/(m**2*K)")
+        ),
+        calculated_ua=None if mechanical is None else from_si(mechanical.ua, "W/K"),
+        mechanical_types=() if mechanical is None else mechanical.types,
         warnings=tuple(warnings),
     )
 
@@ -414,6 +488,130 @@ def _states(
         rating=rating,
         ua_value=ua_value,
         delta_t_side=delta_t_side,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _Mechanical:
+    """The two-stream thermal estimate, in SI."""
+
+    lmtd: float
+    approach: float
+    used_u: float
+    ua: float
+    types: tuple[HeatExchangerMechanicalType, ...]
+    selected: HeatExchangerMechanicalType
+
+
+def _as_exchanger_row(row: HeaterMechanicalType) -> HeatExchangerMechanicalType:
+    """The shared geometry model's row, under this model's generated record type."""
+    return HeatExchangerMechanicalType(
+        mechanical_type=row.mechanical_type,
+        required_area=row.required_area,
+        required_ua=row.required_ua,
+        overall_heat_transfer_coefficient=row.overall_heat_transfer_coefficient,
+        approach_temperature=row.approach_temperature,
+        estimated_length=row.estimated_length,
+        inner_diameter=row.inner_diameter,
+        outer_diameter=row.outer_diameter,
+        wall_thickness=row.wall_thickness,
+        tube_count=row.tube_count,
+        tube_passes=row.tube_passes,
+        fin_surface_area=row.fin_surface_area,
+        estimated_pressure_drop=row.estimated_pressure_drop,
+        estimated_weight=row.estimated_weight,
+        module_length=row.module_length,
+        module_width=row.module_width,
+        module_height=row.module_height,
+    )
+
+
+def _two_stream_mechanical(
+    hot_in: float,
+    hot_out: float,
+    cold_in: float,
+    cold_out: float,
+    duty_w: float,
+    ua_w_per_k: float,
+    effectiveness: float,
+    manual: str | None,
+    criterion: str,
+) -> _Mechanical:
+    """``HeatExchangerMechanicalDesign.calcDesign``'s two-stream branch.
+
+    **The sizing coefficient is the type's own typical U**, not the larger of it and a used
+    coefficient as the heater branch takes; the used coefficient is the class's 500 and this
+    branch never reads the exchanger's ``UAvalue`` for it.
+    """
+    duty = abs(duty_w)
+    used_u = 500.0
+    hot_mean = (hot_in + hot_out) / 2.0
+    cold_mean = (cold_in + cold_out) / 2.0
+    lmtd = None
+    approach = None
+    if not math.isnan(hot_mean) and not math.isnan(cold_mean):
+        ordered = (
+            (hot_in, hot_out, cold_in, cold_out)
+            if hot_mean >= cold_mean
+            else (cold_in, cold_out, hot_in, hot_out)
+        )
+        delta_t1 = abs(ordered[0] - ordered[3])
+        delta_t2 = abs(ordered[1] - ordered[2])
+        lmtd = _lmtd(delta_t1, delta_t2)
+        approach = min(delta_t1, delta_t2)
+    ua = ua_w_per_k if ua_w_per_k > 0.0 else None
+    # **Carried although it cannot win through the declared inputs**: the rating that wrote
+    # the effectiveness already produced the UA this compares against; a pinned or delta-T
+    # run leaves the field at zero.
+    if duty > 0.0 and effectiveness > 0.0 and effectiveness < 0.999:
+        delta_max = abs(hot_in - cold_in)
+        if delta_max > 0.0:
+            c_min = duty / (effectiveness * delta_max)
+            derived = c_min * -math.log(1.0 - effectiveness)
+            if math.isfinite(derived) and derived > 0.0 and (ua is None or derived > ua):
+                ua = derived
+    if approach is None or approach < 0.0:
+        approach = 0.0
+    if lmtd is None or lmtd <= 0.0:
+        if approach > 0.0:
+            lmtd = approach
+        elif duty > 0.0 and used_u > 0.0:
+            lmtd = duty / used_u
+        else:
+            lmtd = 1.0
+    if (ua is None or not ua > 0.0) and duty > 0.0 and lmtd > 0.0:
+        ua = duty / lmtd
+    if ua is None or ua <= 0.0:
+        ua = used_u
+    rows = []
+    for name, typical, allowable in MECHANICAL_TYPES:
+        type_approach = max(approach, allowable) if approach > 0.0 else allowable
+        ua_for_type = ua
+        if not ua_for_type > 0.0 and duty > 0.0:
+            ua_for_type = duty / max(type_approach, 1.0)
+        if ua_for_type is None or ua_for_type <= 0.0:
+            ua_for_type = typical
+        area = max(ua_for_type / max(typical, 1.0e-6), 0.1)
+        rows.append(_as_exchanger_row(_geometry(name, area, ua_for_type, type_approach)))
+    if manual is not None:
+        selected = next(row for row in rows if row.mechanical_type == manual)
+    else:
+
+        def metric(row: HeatExchangerMechanicalType) -> float:
+            if criterion == "min_weight":
+                return row.estimated_weight.to("kg").magnitude
+            if criterion == "min_pressure_drop":
+                return row.estimated_pressure_drop
+            return row.required_area.to("m**2").magnitude
+
+        selected = min(rows, key=metric)
+    return _Mechanical(
+        lmtd=lmtd,
+        approach=approach,
+        used_u=used_u,
+        ua=ua,
+        types=tuple(rows),
+        selected=selected,
     )
 
 

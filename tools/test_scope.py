@@ -358,7 +358,7 @@ KERNEL_CONSUMERS: dict[str, tuple[str, ...]] = {
     "filter_design": ("filter",),
     "heater": ("cooler",),
     "heater_electrical": ("heater",),
-    "heater_mechanical": ("heater",),
+    "heater_mechanical": ("heater", "heat_exchanger"),
     "mixer": ("anti_surge_recycle", "ejector", "manifold", "tank"),
     "pump": ("compressor",),
     "separator": ("gas_scrubber", "separator_capacity_assessment", "tank"),

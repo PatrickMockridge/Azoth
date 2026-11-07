@@ -25355,6 +25355,3136 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         records: &[],
         expected_records: &[],
     },
+    TestCase {
+        id: "the_rating_state_is_the_twostream_estimate",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 100.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[("flow_arrangement", "counterflow")],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.1),
+            ("log_mean_temperature_difference", 34.38376494949978),
+            ("mechanical_approach_temperature", 13.75707990040786),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 100.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_and_frame")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1724137931034483),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.1784124116152771),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.19441241161527711),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.1111111111111112),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(2.7777777777777777),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.011111111111111112),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2857142857142857),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.5),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(33.90956570468483),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.030285343213868998),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.033485343213869),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.181712059283214),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.005451361778496419),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.13649999999999998),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.181712059283214),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.830285343213869),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.530285343213869),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_higher_conductance_sizes_a_smaller_exchanger",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 300.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[("flow_arrangement", "counterflow")],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.2608695652173913),
+            ("log_mean_temperature_difference", 13.443177692876876),
+            ("mechanical_approach_temperature", 0.6869321359658898),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 300.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_and_frame")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.5172413793103449),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2608695652173913),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.2881620405486517),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.3041620405486517),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(3.3333333333333335),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(12.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(8.333333333333334),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.03333333333333333),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.8571428571428571),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(8.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(5.45674090600784),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.43653927248062724),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(74.01428571428572),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(5.95674090600784),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.043679023236814954),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.046879023236814955),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.26207413942088975),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.007862224182626693),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.4095),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.2620741394208896),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.843679023236815),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.5436790232368149),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_manual_selection_wins_over_the_area_ranking",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 100.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[
+            ("flow_arrangement", "counterflow"),
+            ("mechanical_type", "shell_and_tube"),
+        ],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.1724137931034483),
+            ("log_mean_temperature_difference", 34.38376494949978),
+            ("mechanical_approach_temperature", 13.75707990040786),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 100.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "shell_and_tube")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1724137931034483),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.1784124116152771),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.19441241161527711),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.1111111111111112),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(2.7777777777777777),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.011111111111111112),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2857142857142857),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.5),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(33.90956570468483),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.030285343213868998),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.033485343213869),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.181712059283214),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.005451361778496419),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.13649999999999998),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.181712059283214),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.830285343213869),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.530285343213869),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_lightest_candidate_is_selected",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 100.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[
+            ("flow_arrangement", "counterflow"),
+            ("mechanical_selection", "min_weight"),
+        ],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.16666666666666666),
+            ("log_mean_temperature_difference", 34.38376494949978),
+            ("mechanical_approach_temperature", 13.75707990040786),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 100.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_fin")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1724137931034483),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.1784124116152771),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.19441241161527711),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.1111111111111112),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(2.7777777777777777),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.011111111111111112),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2857142857142857),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.5),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(33.90956570468483),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.030285343213868998),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.033485343213869),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.181712059283214),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.005451361778496419),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.13649999999999998),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.181712059283214),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.830285343213869),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.530285343213869),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_smallest_pressure_drop_is_selected",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 100.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[
+            ("flow_arrangement", "counterflow"),
+            ("mechanical_selection", "min_pressure_drop"),
+        ],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.16666666666666666),
+            ("log_mean_temperature_difference", 34.38376494949978),
+            ("mechanical_approach_temperature", 13.75707990040786),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 100.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_fin")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1724137931034483),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.1784124116152771),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.19441241161527711),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.1111111111111112),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(2.7777777777777777),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.011111111111111112),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2857142857142857),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.5),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(33.90956570468483),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(100.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(13.75707990040786),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.030285343213868998),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.033485343213869),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.181712059283214),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.16666666666666666),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.005451361778496419),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.13649999999999998),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.181712059283214),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.830285343213869),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.530285343213869),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_pinned_state_reads_the_500_default",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("hot_outlet_temperature", 350.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[("flow_arrangement", "counterflow")],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.43478260869565216),
+            ("log_mean_temperature_difference", 64.4990589168491),
+            ("mechanical_approach_temperature", 50.0),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 500.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_and_frame")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.8620689655172413),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.43478260869565216),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3720155946846915),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.3880155946846915),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(5.555555555555555),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(13.88888888888889),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.05555555555555555),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.4285714285714286),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(9.094568176679735),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.7275654541343788),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(123.35714285714286),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(9.594568176679735),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.8333333333333334),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.051787208432564326),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.05498720843256433),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.31072325059538597),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.8333333333333334),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.009321697517861579),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.6825),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.310723250595386),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.8517872084325644),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.5517872084325643),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_pinned_state_reads_the_stated_ua",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 500000.0),
+            ("cold_in_t", 300.0),
+            ("ua", 200.0),
+            ("hot_outlet_temperature", 350.0),
+        ],
+        flags: &[("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["n-butane", "n-pentane"]),
+        ],
+        strings: &[("flow_arrangement", "counterflow")],
+        vectors: &[("hot_in_z", &[0.8, 0.2]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.17391304347826086),
+            ("log_mean_temperature_difference", 64.4990589168491),
+            ("mechanical_approach_temperature", 50.0),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 200.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_and_frame")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.3448275862068966),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.17391304347826086),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.23528332086113085),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.25128332086113087),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(2.2222222222222223),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(5.555555555555555),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.022222222222222223),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.5714285714285714),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(3.6378272706718935),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2910261816537515),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(49.34285714285714),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(4.1378272706718935),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.3333333333333333),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(200.0),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.0381571414184444),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.041357141418444404),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.22894284851066643),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.3333333333333333),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.006868285455319993),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.27299999999999996),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.2289428485106666),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.8381571414184444),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.5381571414184444),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "the_delta_t_state_reads_its_computed_conductance",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("hot_in_n", 1.0),
+            ("hot_in_p", 2000000.0),
+            ("hot_in_t", 400.0),
+            ("cold_in_n", 1.0),
+            ("cold_in_p", 2000000.0),
+            ("cold_in_t", 300.0),
+            ("delta_t", 1.0),
+        ],
+        flags: &[("use_delta_t", true), ("mechanical_design", true)],
+        lists: &[
+            ("hot_components", &["methane", "n-butane"]),
+            ("cold_components", &["methane", "n-butane"]),
+        ],
+        strings: &[("flow_arrangement", "counterflow")],
+        vectors: &[("hot_in_z", &[0.5, 0.5]), ("cold_in_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("mechanical_selected_area", 0.136903008642746),
+            ("log_mean_temperature_difference", 1.3341285819191462),
+            ("mechanical_approach_temperature", 1.0),
+            ("used_overall_heat_transfer_coefficient", 500.0),
+            ("calculated_ua", 157.4384599391579),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("mechanical_selected_type", "plate_and_frame")],
+        records: &[],
+        expected_records: &[(
+            "mechanical_types",
+            &[
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("shell_and_tube"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.27144562058475497),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(157.4384599391579),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(580.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.324),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.012),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(6.0),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.6000000000000001),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(532.6884503426853),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(7.5),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.124),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.124),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_and_frame"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.136903008642746),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(157.4384599391579),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1150.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.20875243974452368),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.2247524397445237),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(132.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(0.633),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(1.8),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("air_cooler"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.7493162215461988),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(157.4384599391579),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(90.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(12.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(2.5231325220201604),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(2.5351325220201604),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.006),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(4.373290553865497),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.017493162215461988),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(225.0),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(2.23606797749979),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(3.2),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("double_pipe"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.44982417125473684),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(157.4384599391579),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(8.0),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.11),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.005),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(2.863669615096265),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.2290935692077012),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(38.842317187846525),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(3.363669615096265),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.71),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.71),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mechanical_type",
+                        value: FieldValue::Name("plate_fin"),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.2623974332319298),
+                    },
+                    RecordField {
+                        name: "required_ua",
+                        value: FieldValue::Number(157.4384599391579),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(600.0),
+                    },
+                    RecordField {
+                        name: "approach_temperature",
+                        value: FieldValue::Number(1.5),
+                    },
+                    RecordField {
+                        name: "inner_diameter",
+                        value: FieldValue::Number(0.03523190373767395),
+                    },
+                    RecordField {
+                        name: "outer_diameter",
+                        value: FieldValue::Number(0.03843190373767395),
+                    },
+                    RecordField {
+                        name: "wall_thickness",
+                        value: FieldValue::Number(0.0016),
+                    },
+                    RecordField {
+                        name: "estimated_length",
+                        value: FieldValue::Number(0.2113914224260437),
+                    },
+                    RecordField {
+                        name: "tube_count",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_passes",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fin_surface_area",
+                        value: FieldValue::Number(0.2623974332319298),
+                    },
+                    RecordField {
+                        name: "estimated_pressure_drop",
+                        value: FieldValue::Number(0.006341742672781311),
+                    },
+                    RecordField {
+                        name: "estimated_weight",
+                        value: FieldValue::Number(0.21490349781695053),
+                    },
+                    RecordField {
+                        name: "module_length",
+                        value: FieldValue::Number(2.211391422426044),
+                    },
+                    RecordField {
+                        name: "module_width",
+                        value: FieldValue::Number(0.835231903737674),
+                    },
+                    RecordField {
+                        name: "module_height",
+                        value: FieldValue::Number(0.5352319037376739),
+                    },
+                ],
+            ],
+        )],
+    },
 ];
 
 /// Registry entry for `process.heat_exchanger`.

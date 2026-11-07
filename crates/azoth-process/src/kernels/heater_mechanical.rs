@@ -1,11 +1,14 @@
-//! `HeatExchangerMechanicalDesign`'s single-stream thermal estimate.
+//! `HeatExchangerMechanicalDesign`'s thermal estimate.
 //!
-//! **The heater path only.** The utility specification supplies the utility-side temperatures,
-//! the process inlet and outlet give the other two, and the two pairs give an LMTD and an
-//! approach. `UA = duty / LMTD`; each of the five candidate types turns that into a required
-//! area with its own allowable approach and typical overall coefficient, and its own geometry
-//! model. The detailed `ShellAndTubeDesignCalculator`, the two-stream `HeatExchanger` branch,
-//! the fouling and velocity setters and the vessel pressure boundary are outside.
+//! **Two branches, selected by the equipment rather than by an input.** The heater path takes
+//! the utility specification's two temperatures and the process inlet and outlet; the
+//! two-stream path takes the exchanger's four stream temperatures. Either way the pairs give
+//! an LMTD and an approach, `UA = duty / LMTD`, and each of the five candidate types turns
+//! that into a required area with its own allowable approach and typical overall coefficient
+//! and its own geometry model. **The sizing coefficient differs**: the heater path divides by
+//! the larger of a used coefficient and the type's, the exchanger path by the type's alone.
+//! The detailed `ShellAndTubeDesignCalculator`, the fouling and velocity setters and the
+//! vessel pressure boundary are outside.
 
 use std::f64::consts::PI;
 
@@ -383,6 +386,108 @@ fn size_type(
     row
 }
 
+/// `finalizeThermalEstimates`, shared by both branches.
+fn finalize(
+    mut approach: f64,
+    mut lmtd: f64,
+    mut calculated_ua: f64,
+    duty: f64,
+    used_u: f64,
+) -> (f64, f64, f64) {
+    if approach.is_nan() || approach < 0.0 {
+        approach = 0.0;
+    }
+    if lmtd.is_nan() || lmtd <= 0.0 {
+        if approach > 0.0 {
+            lmtd = approach;
+        } else if duty > 0.0 && used_u > 0.0 {
+            lmtd = duty / used_u;
+        } else {
+            lmtd = 1.0;
+        }
+    }
+    if (calculated_ua.is_nan() || calculated_ua <= 0.0) && duty > 0.0 && lmtd > 0.0 {
+        calculated_ua = duty / lmtd;
+    }
+    if calculated_ua.is_nan() || calculated_ua <= 0.0 {
+        calculated_ua = used_u;
+    }
+    (lmtd, approach, calculated_ua)
+}
+
+/// The five candidates and the selection, with the branch's own sizing coefficient.
+fn size_candidates(
+    calculated_ua: f64,
+    lmtd: f64,
+    approach: f64,
+    duty: f64,
+    used_u: f64,
+    use_type_specific_coefficient: bool,
+    request: &MechanicalRequest,
+) -> MechanicalDesign {
+    let kinds = [
+        MechanicalType::ShellAndTube,
+        MechanicalType::PlateAndFrame,
+        MechanicalType::AirCooler,
+        MechanicalType::DoublePipe,
+        MechanicalType::PlateFin,
+    ];
+    let mut types = Vec::with_capacity(kinds.len());
+    for kind in kinds {
+        let type_approach = if approach > 0.0 {
+            approach.max(kind.allowable_approach())
+        } else {
+            kind.allowable_approach()
+        };
+        let mut ua_for_type = calculated_ua;
+        if (ua_for_type.is_nan() || ua_for_type <= 0.0) && duty > 0.0 {
+            ua_for_type = duty / type_approach.max(1.0);
+        }
+        if ua_for_type.is_nan() || ua_for_type <= 0.0 {
+            ua_for_type = kind.typical_u();
+        }
+        let sizing_coefficient = if use_type_specific_coefficient {
+            kind.typical_u()
+        } else {
+            used_u.max(kind.typical_u())
+        };
+        let area = (ua_for_type / sizing_coefficient.max(1.0e-6)).max(0.1);
+        types.push(size_type(kind, area, ua_for_type, type_approach));
+    }
+
+    let selected = match request.manual_selection {
+        Some(kind) => types
+            .iter()
+            .find(|row| row.kind == kind)
+            .copied()
+            .unwrap_or(types[0]),
+        None => {
+            let criterion = request
+                .selection_criterion
+                .unwrap_or(SelectionCriterion::MinArea);
+            let metric = |row: &TypeSizing| match criterion {
+                SelectionCriterion::MinArea => row.required_area_m2,
+                SelectionCriterion::MinWeight => row.estimated_weight_kg,
+                SelectionCriterion::MinPressureDrop => row.estimated_pressure_drop_bar,
+            };
+            types
+                .iter()
+                .copied()
+                .min_by(|a, b| metric(a).total_cmp(&metric(b)))
+                .unwrap_or(types[0])
+        }
+    };
+
+    MechanicalDesign {
+        log_mean_temperature_difference: lmtd,
+        approach_temperature: approach,
+        used_overall_heat_transfer_coefficient: used_u,
+        calculated_ua,
+        types,
+        selected,
+    }
+}
+
 /// `HeatExchangerMechanicalDesign.calcDesign`'s heater branch.
 #[must_use]
 pub fn design(
@@ -419,83 +524,81 @@ pub fn design(
         calculated_ua = duty / lmtd;
     }
 
-    // `finalizeThermalEstimates`.
-    if approach.is_nan() || approach < 0.0 {
-        approach = 0.0;
-    }
-    if lmtd.is_nan() || lmtd <= 0.0 {
-        if approach > 0.0 {
-            lmtd = approach;
-        } else if duty > 0.0 && used_u > 0.0 {
-            lmtd = duty / used_u;
-        } else {
-            lmtd = 1.0;
-        }
-    }
-    if (calculated_ua.is_nan() || calculated_ua <= 0.0) && duty > 0.0 && lmtd > 0.0 {
-        calculated_ua = duty / lmtd;
-    }
-    if calculated_ua.is_nan() || calculated_ua <= 0.0 {
-        calculated_ua = used_u;
-    }
+    let (lmtd, approach, calculated_ua) = finalize(approach, lmtd, calculated_ua, duty, used_u);
+    size_candidates(calculated_ua, lmtd, approach, duty, used_u, false, request)
+}
 
-    let kinds = [
-        MechanicalType::ShellAndTube,
-        MechanicalType::PlateAndFrame,
-        MechanicalType::AirCooler,
-        MechanicalType::DoublePipe,
-        MechanicalType::PlateFin,
-    ];
-    let mut types = Vec::with_capacity(kinds.len());
-    for kind in kinds {
-        let type_approach = if approach > 0.0 {
-            approach.max(kind.allowable_approach())
+/// `HeatExchangerMechanicalDesign.calcDesign`'s two-stream branch.
+///
+/// **The branch a `HeatExchanger` takes**, and two things differ from the heater's: the
+/// sizing coefficient is the configuration's own typical U rather than the larger of it and a
+/// used U, and the used coefficient is the class's 500 whatever the exchanger states.
+///
+/// The temperatures are the exchanger's own four stream temperatures, ordered by their mean;
+/// the UA is `getUAvalue()`, zero meaning absent. `duty_w` is the class's `getDuty()` basis,
+/// which the caller resolves: the rating and the delta-T closure write the field, a pinned
+/// outlet does not. `effectiveness` is the class's `thermalEffectiveness`, zero where the run
+/// did not rate.
+#[must_use]
+#[allow(clippy::too_many_arguments)] // one parameter per temperature and state it reads
+pub fn two_stream_design(
+    hot_in_k: f64,
+    hot_out_k: f64,
+    cold_in_k: f64,
+    cold_out_k: f64,
+    duty_w: f64,
+    ua_w_per_k: f64,
+    effectiveness: f64,
+    request: &MechanicalRequest,
+) -> MechanicalDesign {
+    let duty = duty_w.abs();
+    let used_u = 500.0;
+
+    // `determineTwoStreamTemperatures`: the two sides ordered by mean, not by which the
+    // construction calls hot.
+    let hot_mean = (hot_in_k + hot_out_k) / 2.0;
+    let cold_mean = (cold_in_k + cold_out_k) / 2.0;
+    let mut lmtd = f64::NAN;
+    let mut approach = f64::NAN;
+    if !hot_mean.is_nan() && !cold_mean.is_nan() {
+        let (t0, t1, t2, t3) = if hot_mean >= cold_mean {
+            (hot_in_k, hot_out_k, cold_in_k, cold_out_k)
         } else {
-            kind.allowable_approach()
+            (cold_in_k, cold_out_k, hot_in_k, hot_out_k)
         };
-        let mut ua_for_type = calculated_ua;
-        if (ua_for_type.is_nan() || ua_for_type <= 0.0) && duty > 0.0 {
-            ua_for_type = duty / type_approach.max(1.0);
-        }
-        if ua_for_type.is_nan() || ua_for_type <= 0.0 {
-            ua_for_type = kind.typical_u();
-        }
-        let sizing_coefficient = used_u.max(kind.typical_u());
-        let area = (ua_for_type / sizing_coefficient.max(1.0e-6)).max(0.1);
-        types.push(size_type(kind, area, ua_for_type, type_approach));
+        let delta_t1 = (t0 - t3).abs();
+        let delta_t2 = (t1 - t2).abs();
+        lmtd = calculate_lmtd(delta_t1, delta_t2);
+        approach = delta_t1.min(delta_t2);
     }
 
-    let selected = match request.manual_selection {
-        Some(kind) => types
-            .iter()
-            .find(|row| row.kind == kind)
-            .copied()
-            .unwrap_or(types[0]),
-        None => {
-            let criterion = request
-                .selection_criterion
-                .unwrap_or(SelectionCriterion::MinArea);
-            let metric = |row: &TypeSizing| match criterion {
-                SelectionCriterion::MinArea => row.required_area_m2,
-                SelectionCriterion::MinWeight => row.estimated_weight_kg,
-                SelectionCriterion::MinPressureDrop => row.estimated_pressure_drop_bar,
-            };
-            types
-                .iter()
-                .copied()
-                .min_by(|a, b| metric(a).total_cmp(&metric(b)))
-                .unwrap_or(types[0])
-        }
+    let mut calculated_ua = if ua_w_per_k > 0.0 {
+        ua_w_per_k
+    } else {
+        f64::NAN
     };
-
-    MechanicalDesign {
-        log_mean_temperature_difference: lmtd,
-        approach_temperature: approach,
-        used_overall_heat_transfer_coefficient: used_u,
-        calculated_ua,
-        types,
-        selected,
+    // **Carried although it cannot win through the declared inputs**: the rating that wrote
+    // the effectiveness already produced the UA this compares against, so the derived value
+    // is never larger; a pinned or delta-T run leaves the field at zero.
+    if duty > 0.0 && effectiveness > 0.0 && effectiveness < 0.999 {
+        let delta_max = (hot_in_k - cold_in_k).abs();
+        if delta_max > 0.0 {
+            let c_min = duty / (effectiveness * delta_max);
+            let ntu = -(1.0 - effectiveness).ln();
+            let ua_from_effectiveness = c_min * ntu;
+            if ua_from_effectiveness.is_finite()
+                && ua_from_effectiveness > 0.0
+                && (calculated_ua.is_nan()
+                    || calculated_ua <= 0.0
+                    || ua_from_effectiveness > calculated_ua)
+            {
+                calculated_ua = ua_from_effectiveness;
+            }
+        }
     }
+
+    let (lmtd, approach, calculated_ua) = finalize(approach, lmtd, calculated_ua, duty, used_u);
+    size_candidates(calculated_ua, lmtd, approach, duty, used_u, true, request)
 }
 
 #[cfg(test)]
@@ -732,5 +835,198 @@ mod tests {
             .min_by(|a, b| a.estimated_weight_kg.total_cmp(&b.estimated_weight_kg))
             .expect("a row");
         assert_eq!(ranked.selected.kind, lightest.kind);
+    }
+
+    /// The capture's `rating_ua_100`: the rating state, read by the two-stream branch.
+    fn rating_state() -> MechanicalDesign {
+        two_stream_design(
+            400.0,
+            313.757_079_900_407_86,
+            300.0,
+            330.597_085_014_208_4,
+            4_861.386_048_470_768,
+            100.0,
+            0.761_089_933_102_921_7,
+            &MechanicalRequest::default(),
+        )
+    }
+
+    #[test]
+    fn the_two_stream_rating_is_the_capture() {
+        let design = rating_state();
+        close(
+            design.log_mean_temperature_difference,
+            34.383_764_949_499_78,
+            1.0e-9,
+            "lmtd",
+        );
+        close(
+            design.approach_temperature,
+            13.757_079_900_407_86,
+            1.0e-9,
+            "approach",
+        );
+        close(
+            design.used_overall_heat_transfer_coefficient,
+            500.0,
+            1.0e-12,
+            "the class's 500, not the exchanger's 100",
+        );
+        close(design.calculated_ua, 100.0, 1.0e-12, "ua");
+        assert_eq!(design.selected.kind, MechanicalType::PlateAndFrame);
+        close(
+            design.selected.required_area_m2,
+            0.1,
+            1.0e-12,
+            "the 0.1 floor",
+        );
+    }
+
+    #[test]
+    fn the_two_stream_area_divides_by_the_type_s_own_coefficient() {
+        let design = rating_state();
+        let shell = design
+            .types
+            .iter()
+            .find(|row| row.kind == MechanicalType::ShellAndTube)
+            .expect("the shell row");
+        close(shell.required_area_m2, 100.0 / 580.0, 1.0e-12, "shell area");
+        let air = design
+            .types
+            .iter()
+            .find(|row| row.kind == MechanicalType::AirCooler)
+            .expect("the air row");
+        close(air.required_area_m2, 100.0 / 90.0, 1.0e-12, "air area");
+    }
+
+    #[test]
+    fn the_effectiveness_arm_is_carried_and_cannot_beat_a_stated_ua() {
+        close(
+            rating_state().calculated_ua,
+            100.0,
+            1.0e-12,
+            "the stated UA stands",
+        );
+        // With no usable UA the derived one answers: `cmin * -ln(1 - effectiveness)`.
+        let derived = two_stream_design(
+            400.0,
+            313.757_079_900_407_86,
+            300.0,
+            330.597_085_014_208_4,
+            4_861.386_048_470_768,
+            0.0,
+            0.761_089_933_102_921_7,
+            &MechanicalRequest::default(),
+        );
+        close(
+            derived.calculated_ua,
+            91.446_371_334_873_32,
+            1.0e-9,
+            "derived ua",
+        );
+    }
+
+    #[test]
+    fn an_effectiveness_above_0999_skips_the_derived_arm() {
+        // The capture's `rating_ua_1000`: the arm's own `effectiveness < 0.999` guard refuses.
+        let design = two_stream_design(
+            400.0,
+            300.000_085_440_696_64,
+            300.0,
+            339.654_504_041_168_7,
+            6_387.386_513_645_394,
+            1000.0,
+            0.999_997_845_450_292_1,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.calculated_ua,
+            1000.0,
+            1.0e-12,
+            "the stated UA stands",
+        );
+    }
+
+    #[test]
+    fn the_sides_order_by_mean_not_by_name() {
+        let swapped = two_stream_design(
+            300.0,
+            330.597_085_014_208_4,
+            400.0,
+            313.757_079_900_407_86,
+            4_861.386_048_470_768,
+            100.0,
+            0.761_089_933_102_921_7,
+            &MechanicalRequest::default(),
+        );
+        close(
+            swapped.log_mean_temperature_difference,
+            34.383_764_949_499_78,
+            1.0e-9,
+            "lmtd",
+        );
+        close(
+            swapped.approach_temperature,
+            13.757_079_900_407_86,
+            1.0e-9,
+            "approach",
+        );
+    }
+
+    #[test]
+    fn a_pinned_state_reads_the_classes_500_and_a_zero_duty() {
+        // `runSpecifiedStream` never writes the `duty` field, so `determineDuty` sees zero.
+        let design = two_stream_design(
+            400.0,
+            350.0,
+            300.0,
+            318.438_003_460_016_26,
+            0.0,
+            500.0,
+            0.0,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.log_mean_temperature_difference,
+            64.499_058_916_849_1,
+            1.0e-9,
+            "lmtd",
+        );
+        close(design.approach_temperature, 50.0, 1.0e-12, "approach");
+        close(design.calculated_ua, 500.0, 1.0e-12, "ua");
+        close(
+            design.selected.required_area_m2,
+            0.434_782_608_695_652_16,
+            1.0e-9,
+            "area",
+        );
+    }
+
+    #[test]
+    fn the_delta_t_state_reads_its_computed_conductance() {
+        let design = two_stream_design(
+            400.0,
+            299.0,
+            300.0,
+            401.735_496_362_576_6,
+            15_901.284_453_854_947,
+            157.438_459_939_157_9,
+            0.0,
+            &MechanicalRequest::default(),
+        );
+        close(
+            design.log_mean_temperature_difference,
+            1.334_128_581_919_146_2,
+            1.0e-9,
+            "lmtd",
+        );
+        close(design.approach_temperature, 1.0, 1.0e-12, "approach");
+        close(design.calculated_ua, 157.438_459_939_157_9, 1.0e-9, "ua");
+        close(
+            design.selected.required_area_m2,
+            0.136_903_008_642_746,
+            1.0e-9,
+            "area",
+        );
     }
 }

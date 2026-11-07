@@ -29,6 +29,7 @@ from azoth.core.record_outputs_gen import (
     DepositionSegmentRow,
     EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
+    HeatExchangerMechanicalType,
     HeaterInstrument,
     HeaterMechanicalType,
     HemReleaseDiagnostic,
@@ -6560,6 +6561,27 @@ class HeatExchangerResult(_HasWarnings):
 
     #: which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
     delta_t_side: str | None
+
+    #: the selected configuration's spelling; present only with `mechanical_design`.
+    mechanical_selected_type: str | None
+
+    #: the selected configuration's required area.
+    mechanical_selected_area: Q | None
+
+    #: the log-mean temperature difference the four stream temperatures give, the sides ordered by their mean.
+    log_mean_temperature_difference: Q | None
+
+    #: the smallest of the two temperature differences, floored at zero.
+    mechanical_approach_temperature: Q | None
+
+    #: the coefficient the estimate used: the class's 500. This branch never reads the exchanger's `UAvalue` for it.
+    used_overall_heat_transfer_coefficient: Q | None
+
+    #: `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
+    calculated_ua: Q | None
+
+    #: the five candidates in the class's enum order; empty when the design did not run.
+    mechanical_types: tuple[HeatExchangerMechanicalType, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

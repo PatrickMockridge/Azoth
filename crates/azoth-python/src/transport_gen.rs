@@ -16,11 +16,11 @@
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
-    PyFlowlineScaleSegment, PyHeaterInstrument, PyHeaterMechanicalType, PyHemReleaseDiagnostic,
-    PyHemReleaseStation, PyHydrateRiskPoint, PyKComponent, PyLeakBlowdownDiagnostic,
-    PyLeakBlowdownPoint, PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow,
-    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
-    PySubFraction, PyWaterMixingResult,
+    PyFlowlineScaleSegment, PyHeatExchangerMechanicalType, PyHeaterInstrument,
+    PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
+    PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint, PyMineralEquilibriumRow,
+    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
+    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -16344,6 +16344,27 @@ pub struct PyHeatExchangerResult {
     /// which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
     #[pyo3(get)]
     pub delta_t_side: Option<String>,
+    /// the selected configuration's spelling; present only with `mechanical_design`.
+    #[pyo3(get)]
+    pub mechanical_selected_type: Option<String>,
+    /// the selected configuration's required area.
+    #[pyo3(get)]
+    pub mechanical_selected_area: Option<PyQty>,
+    /// the log-mean temperature difference the four stream temperatures give, the sides ordered by their mean.
+    #[pyo3(get)]
+    pub log_mean_temperature_difference: Option<PyQty>,
+    /// the smallest of the two temperature differences, floored at zero.
+    #[pyo3(get)]
+    pub mechanical_approach_temperature: Option<PyQty>,
+    /// the coefficient the estimate used: the class's 500. This branch never reads the exchanger's `UAvalue` for it.
+    #[pyo3(get)]
+    pub used_overall_heat_transfer_coefficient: Option<PyQty>,
+    /// `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
+    #[pyo3(get)]
+    pub calculated_ua: Option<PyQty>,
+    /// the five candidates in the class's enum order; empty when the design did not run.
+    #[pyo3(get)]
+    pub mechanical_types: Vec<PyHeatExchangerMechanicalType>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -16353,7 +16374,7 @@ pub struct PyHeatExchangerResult {
 impl PyHeatExchangerResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, {} warning(s))",
+            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
             self.hot_out_n,
             self.hot_out_z,
             self.hot_out_p,
@@ -16372,6 +16393,13 @@ impl PyHeatExchangerResult {
             self.capacity_ratio,
             self.ua_value,
             self.delta_t_side,
+            self.mechanical_selected_type,
+            self.mechanical_selected_area,
+            self.log_mean_temperature_difference,
+            self.mechanical_approach_temperature,
+            self.used_overall_heat_transfer_coefficient,
+            self.calculated_ua,
+            self.mechanical_types,
             self.warnings.len()
         )
     }
@@ -16434,6 +16462,34 @@ impl From<&azoth_process::models::heat_exchanger::HeatExchangerResult> for PyHea
                 unit: "W/K".to_string(),
             }),
             delta_t_side: r.delta_t_side.clone(),
+            mechanical_selected_type: r.mechanical_selected_type.clone(),
+            mechanical_selected_area: r.mechanical_selected_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            log_mean_temperature_difference: r.log_mean_temperature_difference.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            mechanical_approach_temperature: r.mechanical_approach_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            used_overall_heat_transfer_coefficient: r.used_overall_heat_transfer_coefficient.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                },
+            ),
+            calculated_ua: r.calculated_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            mechanical_types: r
+                .mechanical_types
+                .iter()
+                .map(PyHeatExchangerMechanicalType::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

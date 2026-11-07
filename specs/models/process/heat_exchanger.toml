@@ -8,7 +8,13 @@ assumptions = [
     "**`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.",
     "**an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.",
     "**the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.",
-    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
+    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a UA from correlations and a mechanical design. **The mechanical design's thermal estimate is here**; the rating, the correlation-based UA and the detailed `ShellAndTubeDesignCalculator` are outside.",
+    "**the mechanical design is its thermal estimate only.** The four stream temperatures give an LMTD and an approach, the starting UA is `getUAvalue()`, and five candidate types give their areas and geometry.",
+    "**the two-stream branch's sizing coefficient is the type's own typical U**, not the larger of it and a used coefficient as the heater branch takes. The used coefficient is the class's 500: the branch never reads the exchanger's `UAvalue` for it.",
+    "**a pinned outlet feeds the estimate a zero duty.** `runSpecifiedStream` writes neither the `duty` field nor the effectiveness, so `determineDuty` sees zero and the effectiveness arm is skipped; the UA still comes from `getUAvalue()`.",
+    "**the UA the estimate starts from is `getUAvalue()`**: the stated `ua` in the rating, the class's 500 when a pinned run states none - the setter writes that default, not `run` - and the computed `ua_value` in delta-T mode.",
+    "**the effectiveness-derived UA is carried and cannot win.** `cmin * -ln(1 - effect)` replaces the starting UA only when larger; the rating that produced the effectiveness already used that UA, and the other modes leave the field at zero.",
+    "**the required area is floored at 0.1 m2**, so a small UA gives every candidate the same minimum area and the selection then ranks by that floor.",
     "**`runDeltaT`'s first pass is not modelled.** It seeds `outStream[0]` at `guessOutTemperature` and recurses; the branch that answers then re-clones both inlets, so the seed cannot reach `UAvalue` - the class's own test agrees to `1e-3` with and without a prior rating.",
     "**the two dead tests are carried as the class has them**: `thermalEffectiveness` is compared with `1.0` and is the class's field, and `hotColdDutyBalance` is hard-set to `1.0`. On a fresh exchanger the field is `0.0`, so the second `PHflash` runs and is a no-op at the enthalpy it was given.",
     "**a pinned outlet wins over `use_delta_t`**: `runDeltaT` delegates to `runSpecifiedStream`, so the pin runs and the delta-T branch is unreachable. The result carries a `FALLBACK_TO_INPUT` warning naming it.",
@@ -18,7 +24,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
-edition = "Its steady-state `run`: the effectiveness-NTU rating its default branch runs, and the `outTemperature` specification that pins one side. **The capture's `out_temperature_*` rows are not used**: `runSpecifiedStream` pins through a clone of an already-flashed fluid."
+edition = "Its steady-state `run` - the rating, the `outTemperature` pin and `runDeltaT`'s closure - **and the mechanical design's two-stream estimate**. The detailed calculator and the thermal-hydraulic rating are outside; the `out_temperature_*` capture rows are not used."
 [inputs]
 [inputs.hot_components]
 type = "components"
@@ -82,6 +88,20 @@ description = "the `runDeltaT` step. **Absent is the class's `1.0` K.**\n"
 unit = "K"
 optional = true
 description = "the class's `guessOutTemperature`. **Absent is `403.15` K.** Carried and unread: the first pass it seeds is overwritten by the branch that answers.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerMechanicalDesign.calcDesign`'s two-stream thermal estimate. Absent is false; every mechanical output is absent without it.\n"
+[inputs.mechanical_type]
+type = "enum"
+values = ["shell_and_tube", "plate_and_frame", "air_cooler", "double_pipe", "plate_fin"]
+optional = true
+description = "the manual type selection. Absent evaluates all five and ranks them by `mechanical_selection`; stating it selects that type from the five.\n"
+[inputs.mechanical_selection]
+type = "enum"
+values = ["min_area", "min_weight", "min_pressure_drop"]
+optional = true
+description = "the automatic ranking's metric. Absent is the class's `MIN_AREA`. Ignored with a stated `mechanical_type`.\n"
 [outputs]
 [outputs.hot_out_n]
 unit = "mol/s"
@@ -143,6 +163,84 @@ description = "`runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_
 type = "string"
 optional = true
 description = "which side `runDeltaT` set, `hot` or `cold`; present only in that mode.\n"
+[outputs.mechanical_selected_type]
+type = "string"
+optional = true
+description = "the selected configuration's spelling; present only with `mechanical_design`.\n"
+[outputs.mechanical_selected_area]
+unit = "m**2"
+optional = true
+description = "the selected configuration's required area.\n"
+[outputs.log_mean_temperature_difference]
+unit = "K"
+optional = true
+description = "the log-mean temperature difference the four stream temperatures give, the sides ordered by their mean.\n"
+[outputs.mechanical_approach_temperature]
+unit = "K"
+optional = true
+description = "the smallest of the two temperature differences, floored at zero.\n"
+[outputs.used_overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the coefficient the estimate used: the class's 500. This branch never reads the exchanger's `UAvalue` for it.\n"
+[outputs.calculated_ua]
+unit = "W/K"
+optional = true
+description = "`getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.\n"
+[outputs.mechanical_types]
+type = "record_list"
+description = "the five candidates in the class's enum order; empty when the design did not run.\n"
+[outputs.mechanical_types.fields.mechanical_type]
+type = "string"
+description = "the configuration's spelling.\n"
+[outputs.mechanical_types.fields.required_area]
+unit = "m**2"
+description = "the required heat-transfer area, floored at 0.1.\n"
+[outputs.mechanical_types.fields.required_ua]
+unit = "W/K"
+description = "the UA the type's area is computed from.\n"
+[outputs.mechanical_types.fields.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the type's typical overall coefficient, which is also the area's divisor on this branch.\n"
+[outputs.mechanical_types.fields.approach_temperature]
+unit = "K"
+description = "the larger of the estimate's approach and the type's allowable approach.\n"
+[outputs.mechanical_types.fields.estimated_length]
+unit = "m"
+description = "the estimated length: tube length, stack length, fan-module length, pipe length or core length.\n"
+[outputs.mechanical_types.fields.inner_diameter]
+unit = "m"
+description = "the equivalent inside diameter.\n"
+[outputs.mechanical_types.fields.outer_diameter]
+unit = "m"
+description = "the equivalent outside diameter.\n"
+[outputs.mechanical_types.fields.wall_thickness]
+unit = "m"
+description = "the wall or sheet thickness.\n"
+[outputs.mechanical_types.fields.tube_count]
+unit = "dimensionless"
+description = "the tube or plate count.\n"
+[outputs.mechanical_types.fields.tube_passes]
+unit = "dimensionless"
+description = "the tube passes or plate pairs.\n"
+[outputs.mechanical_types.fields.fin_surface_area]
+unit = "m**2"
+description = "the fin surface area; zero for the unfinned types.\n"
+[outputs.mechanical_types.fields.estimated_pressure_drop]
+unit = "dimensionless"
+description = "the class's qualitative pressure-drop proxy, in bar.\n"
+[outputs.mechanical_types.fields.estimated_weight]
+unit = "kg"
+description = "the estimated weight.\n"
+[outputs.mechanical_types.fields.module_length]
+unit = "m"
+description = "the module length.\n"
+[outputs.mechanical_types.fields.module_width]
+unit = "m"
+description = "the module width.\n"
+[outputs.mechanical_types.fields.module_height]
+unit = "m"
+description = "the module height.\n"
 
 [[valid_range]]
 quantity = "ua"

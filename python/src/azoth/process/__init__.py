@@ -2547,6 +2547,9 @@ def heat_exchanger(
     use_delta_t: bool | None = None,
     delta_t: Q | None = None,
     guess_out_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -2585,6 +2588,9 @@ def heat_exchanger(
         use_delta_t=use_delta_t,
         delta_t=delta_t,
         guess_out_temperature=guess_out_temperature,
+        mechanical_design=mechanical_design,
+        mechanical_type=mechanical_type,
+        mechanical_selection=mechanical_selection,
     )
 
 

@@ -659,7 +659,7 @@ pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ke
     // rating names are what tell a reader whether the exchanger was area-limited or
     // capacity-limited - which is the difference between a bigger one helping and it not
     // helping at all.
-    let result = crate::models::HeatExchangerResult::of(&out, Vec::new());
+    let result = crate::models::HeatExchangerResult::of(&out, None, Vec::new());
     KernelOutcome::publishing(vec![out.hot_out, out.cold_out], &result)
 }
 

@@ -192,6 +192,62 @@ class FlowlineScaleSegment:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeatExchangerMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    #: the configuration's spelling.
+    mechanical_type: str
+
+    #: the required heat-transfer area, floored at 0.1.
+    required_area: Q
+
+    #: the UA the type's area is computed from.
+    required_ua: Q
+
+    #: the type's typical overall coefficient, which is also the area's divisor on this branch.
+    overall_heat_transfer_coefficient: Q
+
+    #: the larger of the estimate's approach and the type's allowable approach.
+    approach_temperature: Q
+
+    #: the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    estimated_length: Q
+
+    #: the equivalent inside diameter.
+    inner_diameter: Q
+
+    #: the equivalent outside diameter.
+    outer_diameter: Q
+
+    #: the wall or sheet thickness.
+    wall_thickness: Q
+
+    #: the tube or plate count.
+    tube_count: float
+
+    #: the tube passes or plate pairs.
+    tube_passes: float
+
+    #: the fin surface area; zero for the unfinned types.
+    fin_surface_area: Q
+
+    #: the class's qualitative pressure-drop proxy, in bar.
+    estimated_pressure_drop: float
+
+    #: the estimated weight.
+    estimated_weight: Q
+
+    #: the module length.
+    module_length: Q
+
+    #: the module width.
+    module_width: Q
+
+    #: the module height.
+    module_height: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HeaterInstrument:
     """the design's instrument list, in the class's insertion order; empty when the design did not run."""
 

@@ -706,8 +706,10 @@ fn the_generated_input_table_is_the_models_own() {
     // heat-capacity rate and the coefficient - `674 + 6 = 680`. **And the heater's
     // mechanical design's three** - `mechanical_design`, `mechanical_type` and
     // `mechanical_selection` - `680 + 3 = 683`. **And the heater's electrical cable's
-    // `cable_length`** - `683 + 1 = 684` - **and its `use_vfd`** - `684 + 1 = 685`.
-    assert_eq!(walked, 685, "the inputs this test walked");
+    // `cable_length`** - `683 + 1 = 684` - **and its `use_vfd`** - `684 + 1 = 685` - **and the
+    // heat exchanger's mechanical design's three** - `mechanical_design`, `mechanical_type` and
+    // `mechanical_selection` - `685 + 3 = 688`.
+    assert_eq!(walked, 688, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

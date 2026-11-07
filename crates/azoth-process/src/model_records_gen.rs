@@ -504,6 +504,13 @@ impl CalcResult for HeatExchangerResult {
         "capacity_ratio",
         "ua_value",
         "delta_t_side",
+        "mechanical_selected_type",
+        "mechanical_selected_area",
+        "log_mean_temperature_difference",
+        "mechanical_approach_temperature",
+        "used_overall_heat_transfer_coefficient",
+        "calculated_ua",
+        "mechanical_types",
         "warnings",
     ];
 

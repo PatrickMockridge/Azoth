@@ -112,6 +112,7 @@ from azoth.core.result import (
     HeaterInstrument,
     HeaterMechanicalType,
     HeaterResult,
+    HeatExchangerMechanicalType,
     HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
@@ -6151,7 +6152,7 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
     )
 
 
-def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None) -> HeatExchangerResult:
+def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None) -> HeatExchangerResult:
     """``process.heat_exchanger``, computed in Rust."""
     spec = _models_gen.model("process.heat_exchanger")
     result = _core.heat_exchanger(
@@ -6172,6 +6173,9 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         use_delta_t,
         None if delta_t is None else input_to_si(spec, "delta_t", delta_t),
         None if guess_out_temperature is None else input_to_si(spec, "guess_out_temperature", guess_out_temperature),
+        mechanical_design,
+        mechanical_type,
+        mechanical_selection,
     )
     return HeatExchangerResult(
         hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
@@ -6192,6 +6196,13 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         capacity_ratio=result.capacity_ratio,
         ua_value=None if result.ua_value is None else from_si(result.ua_value.magnitude_si, result.ua_value.unit),
         delta_t_side=result.delta_t_side,
+        mechanical_selected_type=result.mechanical_selected_type,
+        mechanical_selected_area=None if result.mechanical_selected_area is None else from_si(result.mechanical_selected_area.magnitude_si, result.mechanical_selected_area.unit),
+        log_mean_temperature_difference=None if result.log_mean_temperature_difference is None else from_si(result.log_mean_temperature_difference.magnitude_si, result.log_mean_temperature_difference.unit),
+        mechanical_approach_temperature=None if result.mechanical_approach_temperature is None else from_si(result.mechanical_approach_temperature.magnitude_si, result.mechanical_approach_temperature.unit),
+        used_overall_heat_transfer_coefficient=None if result.used_overall_heat_transfer_coefficient is None else from_si(result.used_overall_heat_transfer_coefficient.magnitude_si, result.used_overall_heat_transfer_coefficient.unit),
+        calculated_ua=None if result.calculated_ua is None else from_si(result.calculated_ua.magnitude_si, result.calculated_ua.unit),
+        mechanical_types=tuple(HeatExchangerMechanicalType(mechanical_type=c.mechanical_type, required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), required_ua=from_si(c.required_ua.magnitude_si, c.required_ua.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), approach_temperature=from_si(c.approach_temperature.magnitude_si, c.approach_temperature.unit), estimated_length=from_si(c.estimated_length.magnitude_si, c.estimated_length.unit), inner_diameter=from_si(c.inner_diameter.magnitude_si, c.inner_diameter.unit), outer_diameter=from_si(c.outer_diameter.magnitude_si, c.outer_diameter.unit), wall_thickness=from_si(c.wall_thickness.magnitude_si, c.wall_thickness.unit), tube_count=c.tube_count, tube_passes=c.tube_passes, fin_surface_area=from_si(c.fin_surface_area.magnitude_si, c.fin_surface_area.unit), estimated_pressure_drop=c.estimated_pressure_drop, estimated_weight=from_si(c.estimated_weight.magnitude_si, c.estimated_weight.unit), module_length=from_si(c.module_length.magnitude_si, c.module_length.unit), module_width=from_si(c.module_width.magnitude_si, c.module_width.unit), module_height=from_si(c.module_height.magnitude_si, c.module_height.unit)) for c in result.mechanical_types),
         warnings=_warnings(result.warnings),
     )
 

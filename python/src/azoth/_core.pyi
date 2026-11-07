@@ -618,6 +618,28 @@ class WaterMixingResult:
     si_feco3: float | None
 
 @final
+class HeatExchangerMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    mechanical_type: str
+    required_area: Qty
+    required_ua: Qty
+    overall_heat_transfer_coefficient: Qty
+    approach_temperature: Qty
+    estimated_length: Qty
+    inner_diameter: Qty
+    outer_diameter: Qty
+    wall_thickness: Qty
+    tube_count: float
+    tube_passes: float
+    fin_surface_area: Qty
+    estimated_pressure_drop: float
+    estimated_weight: Qty
+    module_length: Qty
+    module_width: Qty
+    module_height: Qty
+
+@final
 class HeaterInstrument:
     """the design's instrument list, in the class's insertion order; empty when the design did not run."""
 
@@ -3018,6 +3040,13 @@ class HeatExchangerResult:
     capacity_ratio: float | None
     ua_value: Qty | None
     delta_t_side: str | None
+    mechanical_selected_type: str | None
+    mechanical_selected_area: Qty | None
+    log_mean_temperature_difference: Qty | None
+    mechanical_approach_temperature: Qty | None
+    used_overall_heat_transfer_coefficient: Qty | None
+    calculated_ua: Qty | None
+    mechanical_types: list[HeatExchangerMechanicalType]
     warnings: list[Warning]
 
 @final
@@ -5940,6 +5969,9 @@ def heat_exchanger(
     use_delta_t: bool | None = None,
     delta_t: float | None = None,
     guess_out_temperature: float | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeatExchangerResult: ...
 def heater(
     components: list[str],
