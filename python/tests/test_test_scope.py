@@ -128,6 +128,24 @@ def test_a_change_inside_a_namespace_reaches_that_namespaces_ids() -> None:
     assert "standards." in joined, "the namespace's own ids are what verifies it"
 
 
+def test_a_calc_only_namespace_does_not_open_the_model_cases() -> None:
+    """A thermal calculation change used to claim `thermal.` model cases that cannot exist.
+
+    `test_model_cases.py` holds model cases only, and `thermal` has no models. The narrowed
+    command collected nothing and pytest exited 5, which the lane read as a red run over a
+    green diff. The model target is emitted only for a term that names a model.
+    """
+    joined = " ".join(commands_for(["python/src/azoth/thermal/__init__.py"]))
+    assert "test_model_cases.py" not in joined
+    assert "test_cross_impl.py" in joined, "the calc's own cross-implementation cases remain"
+
+
+def test_a_model_namespace_still_opens_the_model_cases() -> None:
+    """The other side of the same rule: `eos.` does name models, so its cases run."""
+    joined = " ".join(commands_for(["python/src/azoth/eos/__init__.py"]))
+    assert "test_model_cases.py" in joined
+
+
 def test_a_namespace_the_table_does_not_know_is_refused() -> None:
     """The guard that makes the table complete rather than merely written down.
 

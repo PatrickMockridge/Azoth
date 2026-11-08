@@ -1329,6 +1329,29 @@ def id_named_files(ids: set[str]) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
+@lru_cache(maxsize=1)
+def model_spec_ids() -> frozenset[str]:
+    """The ids under `specs/models/`, the only ids `test_model_cases.py` can select.
+
+    **The calc ids and the model ids share a `-k` expression but not a test file.** A bare
+    namespace term is how a namespace without a sample reaches its ids, and a namespace that
+    holds calculations alone - `thermal`, `hydraulics`, `reactions` - has no model case for
+    `thermal.` to select: the narrowed command collected nothing and pytest exited 5, which
+    the lane read as a failure over a diff that was green.
+    """
+    return frozenset(
+        tomllib.loads(path.read_text(encoding="utf-8"))["id"]
+        for path in (ROOT / "specs" / "models").glob("**/*.toml")
+    )
+
+
+def selects_a_model(term: str) -> bool:
+    """Whether a `-k` term can select a model case: an id there, or a namespace with one."""
+    if term.endswith("."):
+        return any(identifier.startswith(term) for identifier in model_spec_ids())
+    return term in model_spec_ids()
+
+
 def python_commands(
     namespaces: set[str], ids: set[str], files: set[str], shared: set[str]
 ) -> list[Command]:
@@ -1391,13 +1414,15 @@ def python_commands(
                 "`id =` line out of any spec file, including the ones whose id is not a model."
             )
         expression = " or ".join(sorted(terms))
-        out.append(
-            Command(
-                f"the cases of {sorted(terms)}",
-                PYTEST,
-                f'{TESTS}/models/test_model_cases.py -k "{expression}"',
+        model_terms = sorted(term for term in terms if selects_a_model(term))
+        if model_terms:
+            out.append(
+                Command(
+                    f"the cases of {model_terms}",
+                    PYTEST,
+                    f'{TESTS}/models/test_model_cases.py -k "{" or ".join(model_terms)}"',
+                )
             )
-        )
         out.append(
             Command(
                 f"{sorted(terms)} on both kernels",
