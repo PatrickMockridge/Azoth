@@ -7,3 +7,4 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`thermal.conduction_plane_wall`](./conduction_plane_wall.md) | $q = \frac{k\,A\,\Delta T}{L}$ | Fourier, J. (1822) |
+| [`thermal.shell_and_tube_rating`](./shell_and_tube_rating.md) | $\frac{1}{U_o} = \frac{1}{h_o} + R_{f,o} + \frac{d_o \ln(d_o/d_i)}{2 k_w} + \frac{d_o}{d_i} R_{f,i} + \frac{d_o}{d_f h_i}$ | NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java |

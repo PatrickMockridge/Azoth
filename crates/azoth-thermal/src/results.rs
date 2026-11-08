@@ -5,6 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
+use azoth_core::units::{Area, HeatTransfer, Length, Pressure, Velocity};
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::Power;
 
@@ -22,6 +23,75 @@ pub struct ConductionPlaneWallResult {
 impl CalcResult for ConductionPlaneWallResult {
     const CALC_ID: &'static str = "thermal.conduction_plane_wall";
     const FIELDS: &'static [&'static str] = &["q", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `thermal.shell_and_tube_rating`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellAndTubeRatingResult {
+    /// The tube-side film coefficient.
+    pub tube_side_heat_transfer_coefficient: HeatTransfer,
+    /// The shell-side film coefficient.
+    pub shell_side_heat_transfer_coefficient: HeatTransfer,
+    /// The overall coefficient on the outside area.
+    pub overall_heat_transfer_coefficient: HeatTransfer,
+    /// The tube-side pressure drop over all passes.
+    pub tube_side_pressure_drop: Pressure,
+    /// The shell-side pressure drop.
+    pub shell_side_pressure_drop: Pressure,
+    /// The tube-side velocity in one pass.
+    pub tube_side_velocity: Velocity,
+    /// The shell-side crossflow velocity.
+    pub shell_side_velocity: Velocity,
+    /// The tube-side Reynolds number.
+    pub tube_side_reynolds: f64,
+    /// The shell-side Reynolds number.
+    pub shell_side_reynolds: f64,
+    /// The effective tube flow diameter.
+    pub effective_tube_inside_diameter: Length,
+    /// The nominal outside heat-transfer area.
+    pub outside_heat_transfer_area: Area,
+    /// The deposit's cylindrical resistance on the outside area, m**2*K/W.
+    pub tube_fouling_layer_resistance_outside: f64,
+    /// The baffle-cut correction factor.
+    pub jc: f64,
+    /// The baffle-leakage correction factor.
+    pub jl: f64,
+    /// The bundle-bypass correction factor.
+    pub jb: f64,
+    /// The unequal-spacing correction factor.
+    pub js: f64,
+    /// The adverse-temperature-gradient correction factor.
+    pub jr: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ShellAndTubeRatingResult {
+    const CALC_ID: &'static str = "thermal.shell_and_tube_rating";
+    const FIELDS: &'static [&'static str] = &[
+        "tube_side_heat_transfer_coefficient",
+        "shell_side_heat_transfer_coefficient",
+        "overall_heat_transfer_coefficient",
+        "tube_side_pressure_drop",
+        "shell_side_pressure_drop",
+        "tube_side_velocity",
+        "shell_side_velocity",
+        "tube_side_reynolds",
+        "shell_side_reynolds",
+        "effective_tube_inside_diameter",
+        "outside_heat_transfer_area",
+        "tube_fouling_layer_resistance_outside",
+        "jc",
+        "jl",
+        "jb",
+        "js",
+        "jr",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

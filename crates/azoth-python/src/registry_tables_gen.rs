@@ -288,6 +288,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "reactions.reference_potentials" => azoth_reactions::reference_potentials::ReferencePotentialsResult::FIELDS.to_vec(),
         "standards.iso6976" => azoth_standards::results::Iso6976Result::FIELDS.to_vec(),
         "thermal.conduction_plane_wall" => azoth_thermal::results::ConductionPlaneWallResult::FIELDS.to_vec(),
+        "thermal.shell_and_tube_rating" => azoth_thermal::results::ShellAndTubeRatingResult::FIELDS.to_vec(),
         _ => Vec::new(),
     }
     .into_iter()
@@ -386,5 +387,6 @@ pub fn calc_ids() -> Vec<String> {
         "hydraulics.tray_hydraulics".to_string(),
         "reactions.equilibrium_constant".to_string(),
         "thermal.conduction_plane_wall".to_string(),
+        "thermal.shell_and_tube_rating".to_string(),
     ]
 }

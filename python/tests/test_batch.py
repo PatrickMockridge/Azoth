@@ -261,6 +261,10 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # rather than scaling it, so there is no column to vary them down: a batch would
         # compute one reaction N times.
         "reactions.equilibrium_constant",
+        # The rating carries three categorical inputs - `triangular_pitch`, the shell-side
+        # method and the sealing flag - and each selects a branch rather than scaling one,
+        # so there is no float-array column to vary any of them down.
+        "thermal.shell_and_tube_rating",
     }, sorted(excluded)
 
 

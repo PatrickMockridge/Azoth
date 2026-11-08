@@ -269,6 +269,7 @@
 //!   - specs/models/reactions/reference_potentials.toml
 //!   - specs/models/standards/iso6976.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
+//!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!
 //! Regenerate with `python tools/gen_registry.py`; CI runs `--check` and fails on
 //! any difference.
@@ -4513,6 +4514,140 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("thermal.conduction_plane_wall", "L", "length"),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_outside_diameter",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_inside_diameter",
+        "length",
+    ),
+    ("thermal.shell_and_tube_rating", "tube_length", "length"),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_count",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_passes",
+        "dimensionless",
+    ),
+    ("thermal.shell_and_tube_rating", "tube_pitch", "length"),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_inside_diameter",
+        "length",
+    ),
+    ("thermal.shell_and_tube_rating", "baffle_spacing", "length"),
+    (
+        "thermal.shell_and_tube_rating",
+        "baffle_count",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "baffle_cut",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_wall_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_mass_flow",
+        "mass_rate",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_mass_flow",
+        "mass_rate",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "fouling_tube",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "fouling_shell",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_fouling_layer_thickness",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_fouling_layer_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_viscosity_wall",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "sealing_pairs",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "tube_to_baffle_clearance",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_rating",
+        "shell_to_baffle_clearance",
+        "length",
+    ),
+    ("thermal.shell_and_tube_rating", "bypass_area", "area"),
 ];
 
 /// One input's declared dimension, or `None` where the id is unknown or the input

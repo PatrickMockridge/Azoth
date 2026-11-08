@@ -4034,6 +4034,21 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         tests_active: 5,
         tests_skipped: 0,
     },
+    ProvenanceStatic {
+        calc_id: "thermal.shell_and_tube_rating",
+        name: "A shell-and-tube exchanger's thermal-hydraulic rating",
+        spec_path: "specs/calcs/thermal/shell_and_tube_rating.toml",
+        spec_sha256: "46f9b7aa190d1235673a57c05483ae2df2126eaab4a0da0862d573d60e9728a1",
+        python_path: "python/src/azoth/thermal/reference/shell_and_tube_rating.py",
+        python_sha256: "b8ed5425781637838258cfd60e04c6d1db9013fb06d803d3e681b4be255720ba",
+        rust_path: "crates/azoth-thermal/src/shell_and_tube_rating.rs",
+        rust_sha256: "f5c0a937e80a543e8146dd74fff755d5573cd04d44e3d761d252b926b921ac5d",
+        source: "NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java",
+        verification: VerificationStatus::PartiallyVerified,
+        validation_cases: 0,
+        tests_active: 9,
+        tests_skipped: 0,
+    },
 ];
 
 /// One id's provenance, or `None` where the id is not one this build ships.

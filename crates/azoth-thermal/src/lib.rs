@@ -7,9 +7,12 @@
 //!
 //! * [`conduction_plane_wall`] - steady conduction through a slab
 
+pub mod bell_delaware;
 pub mod conduction_plane_wall;
 pub mod results;
+pub mod shell_and_tube_rating;
 pub mod spec_gen;
 
 pub use conduction_plane_wall::conduction_plane_wall;
-pub use results::ConductionPlaneWallResult;
+pub use results::{ConductionPlaneWallResult, ShellAndTubeRatingResult};
+pub use shell_and_tube_rating::{RatingRequest, ShellSideMethod, rate, shell_and_tube_rating};

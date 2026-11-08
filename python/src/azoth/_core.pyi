@@ -3755,6 +3755,27 @@ class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
 
+@final
+class ShellAndTubeRatingResult:
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    tube_side_pressure_drop: Qty
+    shell_side_pressure_drop: Qty
+    tube_side_velocity: Qty
+    shell_side_velocity: Qty
+    tube_side_reynolds: float
+    shell_side_reynolds: float
+    effective_tube_inside_diameter: Qty
+    outside_heat_transfer_area: Qty
+    tube_fouling_layer_resistance_outside: float
+    jc: float
+    jl: float
+    jb: float
+    js: float
+    jr: float
+    warnings: list[Warning]
+
 # --- calculations ---------------------------------------------------------
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
@@ -6572,6 +6593,41 @@ def iso6976(
     energy_reference_temperature: float,
 ) -> Iso6976Result: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
+def shell_and_tube_rating(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    baffle_count: float,
+    baffle_cut: float,
+    tube_wall_conductivity: float,
+    tube_density: float,
+    tube_viscosity: float,
+    tube_cp: float,
+    tube_conductivity: float,
+    tube_mass_flow: float,
+    shell_density: float,
+    shell_viscosity: float,
+    shell_cp: float,
+    shell_conductivity: float,
+    shell_mass_flow: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    shell_side_method: str,
+    tube_fouling_layer_thickness: float | None = None,
+    tube_fouling_layer_conductivity: float | None = None,
+    shell_viscosity_wall: float | None = None,
+    has_sealing: bool | None = None,
+    sealing_pairs: float | None = None,
+    tube_to_baffle_clearance: float | None = None,
+    shell_to_baffle_clearance: float | None = None,
+    bypass_area: float | None = None,
+) -> ShellAndTubeRatingResult: ...
 
 # --- introspection --------------------------------------------------------
 

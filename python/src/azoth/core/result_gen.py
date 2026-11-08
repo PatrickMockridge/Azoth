@@ -8635,3 +8635,64 @@ class ConductionPlaneWallResult(_HasWarnings):
 
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeRatingResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_rating``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_rating"
+
+    #: the tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the overall coefficient on the outside area, from the five resistances.
+    overall_heat_transfer_coefficient: Q
+
+    #: the tube-side pressure drop over all passes, friction plus return losses.
+    tube_side_pressure_drop: Q
+
+    #: the shell-side pressure drop: Kern's, or Bell-Delaware's crossflow, window and end-zone terms.
+    shell_side_pressure_drop: Q
+
+    #: the tube-side velocity in one pass.
+    tube_side_velocity: Q
+
+    #: the shell-side crossflow velocity.
+    shell_side_velocity: Q
+
+    #: the tube-side Reynolds number on the effective flow diameter.
+    tube_side_reynolds: float
+
+    #: the shell-side Reynolds number; Kern uses the equivalent diameter, Bell-Delaware the tube outside diameter.
+    shell_side_reynolds: float
+
+    #: `tube_inside_diameter - 2*deposit_thickness`, the flow diameter.
+    effective_tube_inside_diameter: Q
+
+    #: `pi * tube_outside_diameter * tube_length * tube_count`.
+    outside_heat_transfer_area: Q
+
+    #: the deposit's cylindrical resistance in m**2*K/W on the outside area; zero without a layer.
+    tube_fouling_layer_resistance_outside: float
+
+    #: the baffle-cut correction factor; 1.0 on the Kern path.
+    jc: float
+
+    #: the baffle-leakage correction factor; 1.0 on the Kern path.
+    jl: float
+
+    #: the bundle-bypass correction factor; 1.0 on the Kern path.
+    jb: float
+
+    #: the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times.
+    js: float
+
+    #: the adverse-temperature-gradient correction factor; 1.0 above Re 100.
+    jr: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]

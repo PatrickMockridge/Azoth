@@ -21661,3 +21661,146 @@ impl From<&azoth_thermal::results::ConductionPlaneWallResult> for PyConductionPl
         }
     }
 }
+/// Result of `thermal.shell_and_tube_rating`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeRatingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeRatingResult {
+    /// the tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the overall coefficient on the outside area, from the five resistances.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the tube-side pressure drop over all passes, friction plus return losses.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: PyQty,
+    /// the shell-side pressure drop: Kern's, or Bell-Delaware's crossflow, window and end-zone terms.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: PyQty,
+    /// the tube-side velocity in one pass.
+    #[pyo3(get)]
+    pub tube_side_velocity: PyQty,
+    /// the shell-side crossflow velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: PyQty,
+    /// the tube-side Reynolds number on the effective flow diameter.
+    #[pyo3(get)]
+    pub tube_side_reynolds: f64,
+    /// the shell-side Reynolds number; Kern uses the equivalent diameter, Bell-Delaware the tube outside diameter.
+    #[pyo3(get)]
+    pub shell_side_reynolds: f64,
+    /// `tube_inside_diameter - 2*deposit_thickness`, the flow diameter.
+    #[pyo3(get)]
+    pub effective_tube_inside_diameter: PyQty,
+    /// `pi * tube_outside_diameter * tube_length * tube_count`.
+    #[pyo3(get)]
+    pub outside_heat_transfer_area: PyQty,
+    /// the deposit's cylindrical resistance in m**2*K/W on the outside area; zero without a layer.
+    #[pyo3(get)]
+    pub tube_fouling_layer_resistance_outside: f64,
+    /// the baffle-cut correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jc: f64,
+    /// the baffle-leakage correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jl: f64,
+    /// the bundle-bypass correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jb: f64,
+    /// the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times.
+    #[pyo3(get)]
+    pub js: f64,
+    /// the adverse-temperature-gradient correction factor; 1.0 above Re 100.
+    #[pyo3(get)]
+    pub jr: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeRatingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeRatingResult(tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, effective_tube_inside_diameter={:?}, outside_heat_transfer_area={:?}, tube_fouling_layer_resistance_outside={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, {} warning(s))",
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.effective_tube_inside_diameter,
+            self.outside_heat_transfer_area,
+            self.tube_fouling_layer_resistance_outside,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeRatingResult> for PyShellAndTubeRatingResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeRatingResult) -> Self {
+        Self {
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            tube_side_pressure_drop: PyQty {
+                magnitude_si: r.tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            shell_side_pressure_drop: PyQty {
+                magnitude_si: r.shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            tube_side_velocity: PyQty {
+                magnitude_si: r.tube_side_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            shell_side_velocity: PyQty {
+                magnitude_si: r.shell_side_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            effective_tube_inside_diameter: PyQty {
+                magnitude_si: r.effective_tube_inside_diameter.value,
+                unit: "m".to_string(),
+            },
+            outside_heat_transfer_area: PyQty {
+                magnitude_si: r.outside_heat_transfer_area.value,
+                unit: "m**2".to_string(),
+            },
+            tube_fouling_layer_resistance_outside: r.tube_fouling_layer_resistance_outside,
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
