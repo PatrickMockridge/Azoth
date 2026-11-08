@@ -6859,6 +6859,48 @@ pub fn lmtd_correction_factor(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// In-tube condensation heat transfer, Shah's correlation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mass_flux, tube_inner_diameter, liquid_density, liquid_viscosity, liquid_cp, liquid_conductivity, vapor_density, reduced_pressure, vapor_quality, quality_in, quality_out, intervals))]
+#[pyo3(
+    text_signature = "(mass_flux, tube_inner_diameter, liquid_density, liquid_viscosity, liquid_cp, liquid_conductivity, vapor_density, reduced_pressure, vapor_quality, quality_in, quality_out, intervals)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn shah_condensation(
+    py: Python<'_>,
+    mass_flux: f64,
+    tube_inner_diameter: f64,
+    liquid_density: f64,
+    liquid_viscosity: f64,
+    liquid_cp: f64,
+    liquid_conductivity: f64,
+    vapor_density: f64,
+    reduced_pressure: f64,
+    vapor_quality: f64,
+    quality_in: f64,
+    quality_out: f64,
+    intervals: Option<f64>,
+) -> PyResult<crate::transport_gen::PyShahCondensationResult> {
+    azoth_thermal::shah_condensation::shah_condensation(
+        mass_flux,
+        tube_inner_diameter,
+        liquid_density,
+        liquid_viscosity,
+        liquid_cp,
+        liquid_conductivity,
+        vapor_density,
+        reduced_pressure,
+        vapor_quality,
+        quality_in,
+        quality_out,
+        intervals,
+    )
+    .map(|r| crate::transport_gen::PyShahCondensationResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A shell-and-tube exchanger's thermal-hydraulic rating.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -298,6 +298,7 @@
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
   - [The LMTD correction factor for a shell-and-tube exchanger](./thermal/lmtd_correction_factor.md)
+  - [In-tube condensation heat transfer, Shah's correlation](./thermal/shah_condensation.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)
   - [A shell-and-tube exchanger's tube-vibration screen](./thermal/shell_and_tube_vibration.md)
 <!-- END GENERATED: calcs -->

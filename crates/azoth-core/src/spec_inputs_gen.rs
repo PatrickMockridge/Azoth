@@ -270,6 +270,7 @@
 //!   - specs/models/standards/iso6976.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
+//!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
 //!
@@ -4626,6 +4627,42 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "shell_passes",
         "dimensionless",
     ),
+    ("thermal.shah_condensation", "mass_flux", "mass_flux"),
+    ("thermal.shah_condensation", "tube_inner_diameter", "length"),
+    (
+        "thermal.shah_condensation",
+        "liquid_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shah_condensation",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shah_condensation",
+        "liquid_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.shah_condensation",
+        "liquid_conductivity",
+        "thermal_conductivity",
+    ),
+    ("thermal.shah_condensation", "vapor_density", "mass_density"),
+    (
+        "thermal.shah_condensation",
+        "reduced_pressure",
+        "dimensionless",
+    ),
+    (
+        "thermal.shah_condensation",
+        "vapor_quality",
+        "dimensionless",
+    ),
+    ("thermal.shah_condensation", "quality_in", "dimensionless"),
+    ("thermal.shah_condensation", "quality_out", "dimensionless"),
+    ("thermal.shah_condensation", "intervals", "dimensionless"),
     (
         "thermal.shell_and_tube_rating",
         "tube_outside_diameter",

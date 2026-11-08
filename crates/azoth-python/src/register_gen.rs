@@ -288,6 +288,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::transport_gen::PyLmtdCorrectionFactorResult>()?;
+    m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeRatingResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeVibrationResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
@@ -943,6 +944,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::lmtd_correction_factor,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::shah_condensation, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::shell_and_tube_rating,
         m

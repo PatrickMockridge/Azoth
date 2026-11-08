@@ -244,6 +244,7 @@ from azoth.core.result import (
     SeparatorPerformanceResult,
     SeparatorResult,
     SetHeavyTbpToPlusResult,
+    ShahCondensationResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
     ShortcutDistillationColumnResult,
@@ -555,6 +556,7 @@ __all__ = [
     "separator_capacity_assessment",
     "separator_performance",
     "set_heavy_tbp_to_plus",
+    "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
     "shortcut_distillation_column",
@@ -7722,6 +7724,34 @@ def lmtd_correction_factor(hot_inlet_temperature: Q, hot_outlet_temperature: Q, 
         ft_1_shell_pass=result.ft_1_shell_pass,
         ft_2_shell_passes=result.ft_2_shell_passes,
         required_shell_passes=result.required_shell_passes,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shah_condensation(mass_flux: Q, tube_inner_diameter: Q, liquid_density: Q, liquid_viscosity: Q, liquid_cp: Q, liquid_conductivity: Q, vapor_density: Q, reduced_pressure: float, vapor_quality: float, quality_in: float, quality_out: float, intervals: float | None=None) -> ShahCondensationResult:
+    """``thermal.shah_condensation``, computed in Rust."""
+    spec = _spec_for("thermal.shah_condensation")
+    result = _core.shah_condensation(
+        input_to_si(spec, "mass_flux", mass_flux),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "liquid_cp", liquid_cp),
+        input_to_si(spec, "liquid_conductivity", liquid_conductivity),
+        input_to_si(spec, "vapor_density", vapor_density),
+        reduced_pressure,
+        vapor_quality,
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+    )
+    return ShahCondensationResult(
+        liquid_only_htc=from_si(result.liquid_only_htc.magnitude_si, result.liquid_only_htc.unit),
+        liquid_only_reynolds=result.liquid_only_reynolds,
+        local_htc=from_si(result.local_htc.magnitude_si, result.local_htc.unit),
+        average_htc=from_si(result.average_htc.magnitude_si, result.average_htc.unit),
+        vertical_htc=from_si(result.vertical_htc.magnitude_si, result.vertical_htc.unit),
+        in_valid_range=result.in_valid_range,
         warnings=_warnings(result.warnings),
     )
 

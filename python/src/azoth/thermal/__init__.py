@@ -20,6 +20,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     ConductionPlaneWallResult,
     LmtdCorrectionFactorResult,
+    ShahCondensationResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
 )
@@ -28,12 +29,14 @@ from azoth.core.units import Q
 __all__ = [
     "conduction_plane_wall",
     "lmtd_correction_factor",
+    "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
 ]
 
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
+_SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
 
@@ -197,4 +200,42 @@ def lmtd_correction_factor(
         cold_inlet_temperature=cold_inlet_temperature,
         cold_outlet_temperature=cold_outlet_temperature,
         shell_passes=shell_passes,
+    )
+
+
+def shah_condensation(
+    mass_flux: Q,
+    tube_inner_diameter: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    liquid_cp: Q,
+    liquid_conductivity: Q,
+    vapor_density: Q,
+    reduced_pressure: float,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> ShahCondensationResult:
+    """Shah's in-tube condensation correlation, composed as the zone analysis uses it.
+
+    Raises:
+        InvalidInputError: for a non-integral interval count.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.shah_condensation`.
+    """
+    return resolve(_SHAH_CONDENSATION)(  # type: ignore[no-any-return]
+        mass_flux=mass_flux,
+        tube_inner_diameter=tube_inner_diameter,
+        liquid_density=liquid_density,
+        liquid_viscosity=liquid_viscosity,
+        liquid_cp=liquid_cp,
+        liquid_conductivity=liquid_conductivity,
+        vapor_density=vapor_density,
+        reduced_pressure=reduced_pressure,
+        vapor_quality=vapor_quality,
+        quality_in=quality_in,
+        quality_out=quality_out,
+        intervals=intervals,
     )

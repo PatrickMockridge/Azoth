@@ -98,6 +98,42 @@ impl CalcResult for ShellAndTubeRatingResult {
     }
 }
 
+/// Result of `thermal.shah_condensation`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShahCondensationResult {
+    /// The all-liquid Dittus-Boelter coefficient.
+    pub liquid_only_htc: HeatTransfer,
+    /// `G*D/mu_l`.
+    pub liquid_only_reynolds: f64,
+    /// The local Shah coefficient at the stated quality.
+    pub local_htc: HeatTransfer,
+    /// The Simpson's-rule average over the range.
+    pub average_htc: HeatTransfer,
+    /// The vertical-tube coefficient.
+    pub vertical_htc: HeatTransfer,
+    /// Whether the stated values are inside the validated bands.
+    pub in_valid_range: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ShahCondensationResult {
+    const CALC_ID: &'static str = "thermal.shah_condensation";
+    const FIELDS: &'static [&'static str] = &[
+        "liquid_only_htc",
+        "liquid_only_reynolds",
+        "local_htc",
+        "average_htc",
+        "vertical_htc",
+        "in_valid_range",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `thermal.lmtd_correction_factor`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LmtdCorrectionFactorResult {

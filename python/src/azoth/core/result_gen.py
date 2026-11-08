@@ -8714,6 +8714,34 @@ class LmtdCorrectionFactorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ShahCondensationResult(_HasWarnings):
+    """Result of ``thermal.shah_condensation``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shah_condensation"
+
+    #: the all-liquid Dittus-Boelter coefficient.
+    liquid_only_htc: Q
+
+    #: `G*D/mu_l`, the validity band's Reynolds number.
+    liquid_only_reynolds: float
+
+    #: the Shah coefficient at `vapor_quality`.
+    local_htc: Q
+
+    #: the Simpson's-rule average over `quality_in` to `quality_out`.
+    average_htc: Q
+
+    #: the vertical-tube coefficient at `vapor_quality`.
+    vertical_htc: Q
+
+    #: whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.
+    in_valid_range: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ShellAndTubeRatingResult(_HasWarnings):
     """Result of ``thermal.shell_and_tube_rating``."""
 

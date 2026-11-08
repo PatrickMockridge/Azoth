@@ -1,0 +1,370 @@
+id = "thermal.shah_condensation"
+name = "In-tube condensation heat transfer, Shah's correlation"
+equation = "h_lo = 0.023*(G*D/mu_l)**0.8*(cp_l*mu_l/k_l)**0.4*k_l/D; h = h_lo*((1-x)**0.8 + 3.8*x**0.76*(1-x)**0.04/Pr**0.38)"
+latex = '''h = h_{lo}\left[(1-x)^{0.8} + 3.8\,x^{0.76}\,(1-x)^{0.04}\,P_r^{-0.38}\right]'''
+assumptions = [
+    "**the local coefficient clamps the quality to `[0, 1]` and the reduced pressure to `[0.001, 0.44]`.** At a quality of one both terms vanish and the answer is zero; a quality at or below zero clamps to zero and answers the liquid-only coefficient.\n",
+    "**the liquid-only coefficient is Dittus-Boelter**, `0.023 Re_lo**0.8 Pr_l**0.4 k/D`, and it is the `h_lo` the local, average and vertical entries take - the path `IncrementalZoneAnalysis` takes.\n",
+    "**the average is Simpson's rule** with `n = max(4, intervals)` rounded up to even, and the class's `sum*|dx|/3`: the two `|x_out - x_in|` factors in its expression cancel.\n",
+    "**the vertical coefficient is shear-dominated above `Jg = 0.98`**, where it is the local coefficient; below it, the gravity branch `max(h_shah, 1.32 Pr**-1/3 h_lo (1-x)**0.8)` runs, with `Pr` floored at 0.001 and not capped.\n",
+    "**a liquid density not above the vapour makes the `Jg` denominator non-positive and falls back to the shear-dominated local coefficient**, as the class does.\n",
+    "**the validity bands are `0.001 <= Pr <= 0.44`, `Re_lo >= 350` and `4 <= G <= 820`**, over the stated values rather than the clamped ones.\n",
+    "**the class's external `h_lo` entry is not a separate input**: the composed calc computes it, which is the consumer's path.\n",
+]
+references = [
+    "Shah, M.M. (1979). \"A general correlation for heat transfer during film condensation inside pipes.\" Int. J. Heat Mass Transfer 22, 547-556. The local coefficient.",
+    "Shah, M.M. (2009). \"An improved and extended general correlation for heat transfer during condensation in plain tubes.\" HVAC&R Research 15(5), 889-913. The extended validity.",
+    "Shah, M.M. (2017). The vertical-tube gravity correction the class applies below `Jg = 0.98`.",
+    "Dittus, F.W.; Boelter, L.M.K. (1930). The liquid-only single-phase coefficient.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/ShahCondensation.java` is the port source.",
+    "`validation/neqsim/captures/shah_condensation_probe.tsv` - the helpers on the class's R134a-like test fluid, and the composed state at each branch.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/ShahCondensation.java"
+edition = "`calcLiquidOnlyHTC`, `calcLocalHTC`, `calcAverageHTC`, `calcVerticalTubeHTC` and `isInValidRange`, composed as the zone analysis uses them."
+[inputs]
+[inputs.mass_flux]
+unit = "kg/(m**2*s)"
+description = "the total mass flux, which the liquid-only coefficient and the vertical `Jg` read.\n"
+[inputs.tube_inner_diameter]
+unit = "m"
+description = "the tube inner diameter.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid density, in the vertical `Jg` denominator.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid dynamic viscosity.\n"
+[inputs.liquid_cp]
+unit = "J/(kg*K)"
+description = "the liquid specific heat capacity.\n"
+[inputs.liquid_conductivity]
+unit = "W/(m*K)"
+description = "the liquid thermal conductivity.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour density, in the vertical `Jg` denominator.\n"
+[inputs.reduced_pressure]
+unit = "dimensionless"
+description = "the reduced pressure `P/P_crit`; the local and average entries clamp it to `[0.001, 0.44]`.\n"
+[inputs.vapor_quality]
+unit = "dimensionless"
+description = "the local vapour quality, clamped to `[0, 1]` by the local coefficient. **One answers zero**, because both terms vanish there.\n"
+[inputs.quality_in]
+unit = "dimensionless"
+description = "the inlet quality of the averaged range, clamped to `[0, 1]`.\n"
+[inputs.quality_out]
+unit = "dimensionless"
+description = "the outlet quality of the averaged range, clamped to `[0, 1]`.\n"
+[inputs.intervals]
+unit = "dimensionless"
+optional = true
+description = "the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number.\n"
+[outputs]
+[outputs.liquid_only_htc]
+unit = "W/(m**2*K)"
+description = "the all-liquid Dittus-Boelter coefficient.\n"
+[outputs.liquid_only_reynolds]
+unit = "dimensionless"
+description = "`G*D/mu_l`, the validity band's Reynolds number.\n"
+[outputs.local_htc]
+unit = "W/(m**2*K)"
+description = "the Shah coefficient at `vapor_quality`.\n"
+[outputs.average_htc]
+unit = "W/(m**2*K)"
+description = "the Simpson's-rule average over `quality_in` to `quality_out`.\n"
+[outputs.vertical_htc]
+unit = "W/(m**2*K)"
+description = "the vertical-tube coefficient at `vapor_quality`.\n"
+[outputs.in_valid_range]
+type = "boolean"
+description = "whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.\n"
+[[valid_range]]
+quantity = "mass_flux"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a mass flux is positive; the class's guards return zero for a non-positive one.\n"
+[[valid_range]]
+quantity = "tube_inner_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is positive.\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive.\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Reynolds number divides by it.\n"
+[[valid_range]]
+quantity = "liquid_cp"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Prandtl number multiplies by it.\n"
+[[valid_range]]
+quantity = "liquid_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the coefficient multiplies by it.\n"
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive.\n"
+[[valid_range]]
+quantity = "reduced_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's guards return zero for a non-positive reduced pressure.\n"
+[worked_example]
+source = "the capture's `composed_test_fluid` row at NeqSim f0c7436c, the class's own R134a-like test fluid."
+derivation = "The class's test fluid: G = 300 kg/(m2 s), D = 0.01905 m, rho_l = 1147, mu_l = 1.65e-4, cp_l = 1480, k_l = 0.078, rho_v = 50.1, P_r = 0.1, x = 0.5, quality 0.9 to 0.1, 20 intervals.\n\n  Re_lo = 300*0.01905/1.65e-4 = 34636.36363636363\n  Pr_l = 1480*1.65e-4/0.078 = 3.130769\n  Nu = 0.023*Re_lo**0.8*Pr_l**0.4;  h_lo = Nu*0.078/0.01905 = 636.5224326345639\n  local: term1 = 0.5**0.8 = 0.574349;  term2 = 3.8*0.5**0.76*0.5**0.04/0.1**0.38 = 5.235516\n  h_local = 636.5224*(0.574349 + 5.235516) = 3698.110351929876\n  average = 2860.9227997298617;  vertical = 3698.110351929876 (Jg = 1.48, shear-dominated)\n  in_valid_range = true\n\nAt x = 1 the local and vertical answers are zero; below zero the local is the liquid-only coefficient and the vertical takes the gravity branch.\n"
+tolerance = 1e-9
+[worked_example.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[worked_example.expected]
+liquid_only_htc = 636.5224326345639
+liquid_only_reynolds = 34636.36363636363
+local_htc = 3698.110351929876
+average_htc = 2860.9227997298617
+vertical_htc = 3698.110351929876
+in_valid_range = true
+[implementations]
+python = "azoth.thermal.shah_condensation"
+rust = "azoth_thermal::shah_condensation"
+[[tests]]
+id = "the_composed_test_fluid_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_quality_of_one_answers_zero"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_one` row: the worked example at a vapour quality of one. The local and vertical coefficients are zero because both Shah terms vanish; the average still integrates 0.9 to 0.1 and keeps its value.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 1.0
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+local_htc = 0.0
+vertical_htc = 0.0
+average_htc = 2860.9227997298617
+[[tests]]
+id = "a_quality_below_zero_answers_the_liquid_only_coefficient"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_below_zero` row: the worked example at a quality of -0.4, which clamps to zero. The local coefficient is the liquid-only 636.52, while the vertical takes the gravity branch at 1810.18 because `Jg` is zero.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = -0.4
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+local_htc = 636.5224326345639
+vertical_htc = 1810.176733003831
+[[tests]]
+id = "the_reduced_pressure_floor_is_clamped_but_the_predicate_reads_the_stated_value"
+type = "reference"
+status = "active"
+source = "The capture's `composed_pressure_floor` row: the worked example at a reduced pressure of 1e-4. The local and average clamp it to 0.001 and answer 19542.26 and 15098.71; the validity predicate reads the stated 1e-4 and answers false.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 1e-4
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+local_htc = 19542.2613975897
+average_htc = 15098.711954115497
+vertical_htc = 19542.2613975897
+in_valid_range = false
+[[tests]]
+id = "the_reduced_pressure_ceiling_is_clamped"
+type = "reference"
+status = "active"
+source = "The capture's `composed_pressure_ceiling` row: the worked example at a reduced pressure of 0.9, clamped to 0.44. The local coefficient is 2263.43 and the predicate reads the stated 0.9 and answers false.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.9
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+local_htc = 2263.4335691626143
+average_htc = 1752.7995609648835
+vertical_htc = 2263.4335691626143
+in_valid_range = false
+[[tests]]
+id = "an_odd_interval_count_is_raised_to_even"
+type = "reference"
+status = "active"
+source = "The capture's `composed_odd_intervals` row: the worked example with 7 intervals, raised to 8. The average moves from 2860.9228 to 2860.7200, which is the even-count answer rather than a truncated one.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 7.0
+[tests.expected]
+average_htc = 2860.720043736063
+[[tests]]
+id = "a_low_flux_takes_the_gravity_branch"
+type = "reference"
+status = "active"
+source = "The capture's `composed_gravity` row: a mass flux of 5 kg/(m2 s) at a quality of 0.1. `Jg` is below 0.98, so the vertical coefficient takes the gravity branch, 62.89, above the local 60.07; the average is 108.14 and the predicate is true because Re_lo 577 and G 5 are inside the bands.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 5.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 0.1
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+liquid_only_htc = 24.059838817375518
+liquid_only_reynolds = 577.2727272727273
+local_htc = 60.06797993638464
+average_htc = 108.13969453606565
+vertical_htc = 62.89179435134077
+in_valid_range = true
+[[tests]]
+id = "a_liquid_lighter_than_the_vapour_falls_back_to_the_local_coefficient"
+type = "reference"
+status = "active"
+source = "The capture's `composed_liquid_lighter` row: the vapour density at 1200 against the liquid's 1147. The `Jg` denominator is non-positive and the class falls back to the shear-dominated local coefficient, 3698.11.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 1200.0
+reduced_pressure = 0.1
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+vertical_htc = 3698.110351929876
+[[tests]]
+id = "a_flux_above_the_band_is_outside_the_validated_range"
+type = "reference"
+status = "active"
+source = "The capture's `composed_high_flux` row: 900 kg/(m2 s) against the band's 820 ceiling. The coefficients still compute, and the predicate answers false.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 900.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+liquid_only_htc = 1532.8890350054737
+local_htc = 8905.880638409597
+average_htc = 6889.744908991807
+in_valid_range = false
+[[tests]]
+id = "a_flux_below_the_band_is_outside_the_validated_range"
+type = "reference"
+status = "active"
+source = "The capture's `composed_low_flux` row: 3 kg/(m2 s) against the band's 4 floor. Re_lo is 346.36, also below its 350 floor, and the predicate answers false.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 3.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+liquid_viscosity = 1.65e-4
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+vapor_density = 50.1
+reduced_pressure = 0.1
+vapor_quality = 0.5
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+liquid_only_htc = 15.98872061886232
+liquid_only_reynolds = 346.36363636363643
+local_htc = 92.89233215237775
+average_htc = 71.8631316223784
+in_valid_range = false

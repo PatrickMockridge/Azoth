@@ -3782,6 +3782,16 @@ class LmtdCorrectionFactorResult:
     warnings: list[Warning]
 
 @final
+class ShahCondensationResult:
+    liquid_only_htc: Qty
+    liquid_only_reynolds: float
+    local_htc: Qty
+    average_htc: Qty
+    vertical_htc: Qty
+    in_valid_range: bool
+    warnings: list[Warning]
+
+@final
 class ShellAndTubeRatingResult:
     tube_side_heat_transfer_coefficient: Qty
     shell_side_heat_transfer_coefficient: Qty
@@ -6667,6 +6677,20 @@ def lmtd_correction_factor(
     cold_outlet_temperature: float,
     shell_passes: float | None = None,
 ) -> LmtdCorrectionFactorResult: ...
+def shah_condensation(
+    mass_flux: float,
+    tube_inner_diameter: float,
+    liquid_density: float,
+    liquid_viscosity: float,
+    liquid_cp: float,
+    liquid_conductivity: float,
+    vapor_density: float,
+    reduced_pressure: float,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> ShahCondensationResult: ...
 def shell_and_tube_rating(
     tube_outside_diameter: float,
     tube_inside_diameter: float,

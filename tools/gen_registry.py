@@ -212,6 +212,9 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         "fluid_elastic_critical",
         "acoustic_critical",
         "passed",
+        # `thermal.shah_condensation`'s validated-range flag, a boolean with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/shah_condensation.rs` asserts it.
+        "in_valid_range",
         # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
         # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
         # `test_cross_impl` compares it on both results.

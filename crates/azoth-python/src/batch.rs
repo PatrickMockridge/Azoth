@@ -491,6 +491,61 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             );
         }
 
+        "thermal.shah_condensation" => {
+            let mass_flux = take(&inputs, "mass_flux")?;
+            let diameter = take(&inputs, "tube_inner_diameter")?;
+            let liquid_density = take(&inputs, "liquid_density")?;
+            let liquid_viscosity = take(&inputs, "liquid_viscosity")?;
+            let liquid_cp = take(&inputs, "liquid_cp")?;
+            let liquid_conductivity = take(&inputs, "liquid_conductivity")?;
+            let vapor_density = take(&inputs, "vapor_density")?;
+            let reduced_pressure = take(&inputs, "reduced_pressure")?;
+            let vapor_quality = take(&inputs, "vapor_quality")?;
+            let quality_in = take(&inputs, "quality_in")?;
+            let quality_out = take(&inputs, "quality_out")?;
+            let intervals = take_optional(&inputs, "intervals");
+            let (mut h_lo, mut re, mut local, mut average, mut vertical, mut valid) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::shah_condensation(
+                        mass_flux[i],
+                        diameter[i],
+                        liquid_density[i],
+                        liquid_viscosity[i],
+                        liquid_cp[i],
+                        liquid_conductivity[i],
+                        vapor_density[i],
+                        reduced_pressure[i],
+                        vapor_quality[i],
+                        quality_in[i],
+                        quality_out[i],
+                        intervals.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                h_lo.push(out.liquid_only_htc.value);
+                re.push(out.liquid_only_reynolds);
+                local.push(out.local_htc.value);
+                average.push(out.average_htc.value);
+                vertical.push(out.vertical_htc.value);
+                valid.push(flag(out.in_valid_range));
+            }
+            push_values(&mut columns, "liquid_only_htc", "W/(m**2*K)", h_lo);
+            push_values(&mut columns, "liquid_only_reynolds", "dimensionless", re);
+            push_values(&mut columns, "local_htc", "W/(m**2*K)", local);
+            push_values(&mut columns, "average_htc", "W/(m**2*K)", average);
+            push_values(&mut columns, "vertical_htc", "W/(m**2*K)", vertical);
+            push_values(&mut columns, "in_valid_range", "dimensionless", valid);
+        }
+
         "eos.pr_kappa" => {
             let omega = take(&inputs, "omega")?;
             let mut kappa = Vec::with_capacity(n);

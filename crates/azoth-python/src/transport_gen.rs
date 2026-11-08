@@ -21833,6 +21833,79 @@ impl From<&azoth_thermal::results::LmtdCorrectionFactorResult> for PyLmtdCorrect
         }
     }
 }
+/// Result of `thermal.shah_condensation`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShahCondensationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShahCondensationResult {
+    /// the all-liquid Dittus-Boelter coefficient.
+    #[pyo3(get)]
+    pub liquid_only_htc: PyQty,
+    /// `G*D/mu_l`, the validity band's Reynolds number.
+    #[pyo3(get)]
+    pub liquid_only_reynolds: f64,
+    /// the Shah coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub local_htc: PyQty,
+    /// the Simpson's-rule average over `quality_in` to `quality_out`.
+    #[pyo3(get)]
+    pub average_htc: PyQty,
+    /// the vertical-tube coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub vertical_htc: PyQty,
+    /// whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.
+    #[pyo3(get)]
+    pub in_valid_range: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShahCondensationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShahCondensationResult(liquid_only_htc={:?}, liquid_only_reynolds={:?}, local_htc={:?}, average_htc={:?}, vertical_htc={:?}, in_valid_range={:?}, {} warning(s))",
+            self.liquid_only_htc,
+            self.liquid_only_reynolds,
+            self.local_htc,
+            self.average_htc,
+            self.vertical_htc,
+            self.in_valid_range,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShahCondensationResult> for PyShahCondensationResult {
+    fn from(r: &azoth_thermal::results::ShahCondensationResult) -> Self {
+        Self {
+            liquid_only_htc: PyQty {
+                magnitude_si: r.liquid_only_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            liquid_only_reynolds: r.liquid_only_reynolds,
+            local_htc: PyQty {
+                magnitude_si: r.local_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            average_htc: PyQty {
+                magnitude_si: r.average_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            vertical_htc: PyQty {
+                magnitude_si: r.vertical_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            in_valid_range: r.in_valid_range,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.shell_and_tube_rating`, transported.
 #[pyclass(
     frozen,
