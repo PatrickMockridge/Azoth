@@ -345,6 +345,22 @@ analytical one.
   > captures/fouling_model_probe.tsv
 ```
 
+## The tube-insert enhancement
+
+`tube_insert_probe.tsv` drives `TubeInsertModel` on its four insert types: the plain tube,
+the twisted tape, the wire matrix and the coiled wire, across each regime boundary and the
+twist-ratio clamp, with `applyEnhancement` applied to a 1000 W/(m2 K) and 5000 Pa plain
+state. **The twisted tape's blockage factor cancels the tape thickness** (`t/(t/0.05)` is
+`0.05` for any non-zero thickness), and **the coiled wire's pitch cancels against itself**,
+so both parameters are carried and unread; the laminar branches read neither Reynolds nor
+Prandtl number.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeInsertProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeInsertProbe \
+  > captures/tube_insert_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
