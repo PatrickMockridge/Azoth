@@ -2999,7 +2999,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'thermal.shell_and_tube_rating': {
         "calc_id": 'thermal.shell_and_tube_rating',
         "name": "A shell-and-tube exchanger's thermal-hydraulic rating",
-        "spec": {'path': 'specs/calcs/thermal/shell_and_tube_rating.toml', 'sha256': '46f9b7aa190d1235673a57c05483ae2df2126eaab4a0da0862d573d60e9728a1'},
+        "spec": {'path': 'specs/calcs/thermal/shell_and_tube_rating.toml', 'sha256': 'aea2b24a50847b6018d46545c48d5a07548c36c979760dd5b543f1353e261aeb'},
         "code": [{'path': 'python/src/azoth/thermal/reference/shell_and_tube_rating.py', 'sha256': 'b8ed5425781637838258cfd60e04c6d1db9013fb06d803d3e681b4be255720ba'}, {'path': 'crates/azoth-thermal/src/shell_and_tube_rating.rs', 'sha256': 'f5c0a937e80a543e8146dd74fff755d5573cd04d44e3d761d252b926b921ac5d'}],
         "source": 'NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java',
         "verification": 'partially_verified',

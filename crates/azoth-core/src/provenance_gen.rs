@@ -4083,7 +4083,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "thermal.shell_and_tube_rating",
         name: "A shell-and-tube exchanger's thermal-hydraulic rating",
         spec_path: "specs/calcs/thermal/shell_and_tube_rating.toml",
-        spec_sha256: "46f9b7aa190d1235673a57c05483ae2df2126eaab4a0da0862d573d60e9728a1",
+        spec_sha256: "aea2b24a50847b6018d46545c48d5a07548c36c979760dd5b543f1353e261aeb",
         python_path: "python/src/azoth/thermal/reference/shell_and_tube_rating.py",
         python_sha256: "b8ed5425781637838258cfd60e04c6d1db9013fb06d803d3e681b4be255720ba",
         rust_path: "crates/azoth-thermal/src/shell_and_tube_rating.rs",

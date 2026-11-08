@@ -6960,9 +6960,9 @@ pub fn shah_condensation(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_density, tube_viscosity, tube_cp, tube_conductivity, tube_mass_flow, shell_density, shell_viscosity, shell_cp, shell_conductivity, shell_mass_flow, fouling_tube, fouling_shell, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_side_method, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area))]
+#[pyo3(signature = (tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_density, tube_viscosity, tube_cp, tube_conductivity, tube_mass_flow, shell_density, shell_viscosity, shell_cp, shell_conductivity, shell_mass_flow, fouling_tube, fouling_shell, shell_side_method, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area))]
 #[pyo3(
-    text_signature = "(tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_density, tube_viscosity, tube_cp, tube_conductivity, tube_mass_flow, shell_density, shell_viscosity, shell_cp, shell_conductivity, shell_mass_flow, fouling_tube, fouling_shell, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_side_method, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area)"
+    text_signature = "(tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_density, tube_viscosity, tube_cp, tube_conductivity, tube_mass_flow, shell_density, shell_viscosity, shell_cp, shell_conductivity, shell_mass_flow, fouling_tube, fouling_shell, shell_side_method, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn shell_and_tube_rating(
@@ -6991,9 +6991,9 @@ pub fn shell_and_tube_rating(
     shell_mass_flow: f64,
     fouling_tube: f64,
     fouling_shell: f64,
+    shell_side_method: &str,
     tube_fouling_layer_thickness: Option<f64>,
     tube_fouling_layer_conductivity: Option<f64>,
-    shell_side_method: &str,
     shell_viscosity_wall: Option<f64>,
     has_sealing: Option<bool>,
     sealing_pairs: Option<f64>,

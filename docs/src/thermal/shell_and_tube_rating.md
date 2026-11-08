@@ -50,9 +50,9 @@ h_tube = Nu * k_tube / d_f; h_shell = h_ideal * Jc * Jl * Jb * Js * Jr; 1/U = 1/
 | `shell_mass_flow` | kg/s | the shell-side mass flow. NeqSim's default is `5` kg/s. |
 | `fouling_tube` | dimensionless | the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`. |
 | `fouling_shell` | dimensionless | the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`. |
+| `shell_side_method` | kern / bell_delaware | the shell-side method. NeqSim's default is `kern`. |
 | `tube_fouling_layer_thickness` | m | *Optional.* a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer. |
 | `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* the deposit's thermal conductivity. Absent is the class's `1.0`; it is ignored when the thickness is zero, but a non-positive value is refused. |
-| `shell_side_method` | kern / bell_delaware | the shell-side method. NeqSim's default is `kern`. |
 | `shell_viscosity_wall` | Pa*s | *Optional.* the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity, as the class does; zero is refused. |
 | `has_sealing` | - | *Optional.* whether sealing strips are installed. Absent is false. |
 | `sealing_pairs` | dimensionless | *Optional.* the sealing-strip pairs. Absent is `0`; a stated seal with no pair is refused in Bell-Delaware. |

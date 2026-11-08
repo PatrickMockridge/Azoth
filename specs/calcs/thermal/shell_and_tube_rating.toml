@@ -98,6 +98,10 @@ description = "the tube-side fouling resistance in m**2*K/W, declared dimensionl
 [inputs.fouling_shell]
 unit = "dimensionless"
 description = "the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`.\n"
+[inputs.shell_side_method]
+type = "enum"
+values = ["kern", "bell_delaware"]
+description = "the shell-side method. NeqSim's default is `kern`.\n"
 [inputs.tube_fouling_layer_thickness]
 unit = "m"
 optional = true
@@ -106,10 +110,6 @@ description = "a uniform deposit thickness measured inward from the nominal inne
 unit = "W/(m*K)"
 optional = true
 description = "the deposit's thermal conductivity. Absent is the class's `1.0`; it is ignored when the thickness is zero, but a non-positive value is refused.\n"
-[inputs.shell_side_method]
-type = "enum"
-values = ["kern", "bell_delaware"]
-description = "the shell-side method. NeqSim's default is `kern`.\n"
 [inputs.shell_viscosity_wall]
 unit = "Pa*s"
 optional = true
