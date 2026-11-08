@@ -361,6 +361,24 @@ Prandtl number.
   > captures/tube_insert_probe.tsv
 ```
 
+## The TEMA standard
+
+`tema_standard_probe.tsv` drives `TEMAStandard`: five common and two custom configurations across
+the three construction classes, every tube size, pitch pattern and baffle type, all eight
+`recommendConfiguration` branches, the tube-count estimate at one, two and four passes on one
+geometry, and the unsupported span across the diameter bands and the three material factors.
+**The class speaks millimetres in every static method**, the tube count is an `int`
+truncation, and a material name is matched by upper-cased substring (`STAINLESS` or `SS`,
+`COPPER` or `CU`, `TITANIUM` or `TI`). A designation not in the common table - `AEW`, which
+the recommendation itself can return - makes `getConfiguration` answer null, so the probe
+builds `AJW` instead.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TemaStandardProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TemaStandardProbe \
+  > captures/tema_standard_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
