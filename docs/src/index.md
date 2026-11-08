@@ -382,6 +382,7 @@ Five sections, and the difference between them is the point:
 
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
+- [`thermal.boiling_heat_transfer`](./thermal/boiling_heat_transfer.md)
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
 - [`thermal.lmtd_correction_factor`](./thermal/lmtd_correction_factor.md)
 - [`thermal.shah_condensation`](./thermal/shah_condensation.md)

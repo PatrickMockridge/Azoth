@@ -6,6 +6,7 @@ Every calculation in this section is generated from its specification. Each page
 
 | Calculation | Equation | Source |
 |---|---|---|
+| [`thermal.boiling_heat_transfer`](./boiling_heat_transfer.md) | $h_{tp} = h_l F + h_{nuc} S, \qquad h_{GW} = h_l\left[1 + 3000\,Bo^{0.86} + 1.12\left(\frac{x}{1-x}\right)^{0.75}\left(\frac{\rho_l}{\rho_v}\right)^{0.41}\right]$ | NeqSim process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java |
 | [`thermal.conduction_plane_wall`](./conduction_plane_wall.md) | $q = \frac{k\,A\,\Delta T}{L}$ | Fourier, J. (1822) |
 | [`thermal.lmtd_correction_factor`](./lmtd_correction_factor.md) | $F_t = \frac{\sqrt{R^2+1}\,\ln\!\left(\frac{1-P}{1-RP}\right)}{(R-1)\ln\!\left(\frac{2-P(R+1-\sqrt{R^2+1})}{2-P(R+1+\sqrt{R^2+1})}\right)}$ | NeqSim process/mechanicaldesign/heatexchanger/LMTDcorrectionFactor.java |
 | [`thermal.shah_condensation`](./shah_condensation.md) | $h = h_{lo}\left[(1-x)^{0.8} + 3.8\,x^{0.76}\,(1-x)^{0.04}\,P_r^{-0.38}\right]$ | NeqSim process/mechanicaldesign/heatexchanger/ShahCondensation.java |

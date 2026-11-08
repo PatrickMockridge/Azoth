@@ -98,6 +98,45 @@ impl CalcResult for ShellAndTubeRatingResult {
     }
 }
 
+/// Result of `thermal.boiling_heat_transfer`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BoilingHeatTransferResult {
+    /// The Chen local coefficient.
+    pub chen_htc: HeatTransfer,
+    /// The Gungor-Winterton local coefficient.
+    pub gungor_winterton_htc: HeatTransfer,
+    /// The same coefficient with the horizontal correction.
+    pub gungor_winterton_corrected_htc: HeatTransfer,
+    /// The Simpson's-rule average over the range.
+    pub average_htc: HeatTransfer,
+    /// The Lockhart-Martinelli parameter.
+    pub martinelli_parameter: f64,
+    /// The Chen enhancement factor.
+    pub chen_enhancement_factor: f64,
+    /// The Chen suppression factor.
+    pub chen_suppression_factor: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BoilingHeatTransferResult {
+    const CALC_ID: &'static str = "thermal.boiling_heat_transfer";
+    const FIELDS: &'static [&'static str] = &[
+        "chen_htc",
+        "gungor_winterton_htc",
+        "gungor_winterton_corrected_htc",
+        "average_htc",
+        "martinelli_parameter",
+        "chen_enhancement_factor",
+        "chen_suppression_factor",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `thermal.shah_condensation`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ShahCondensationResult {

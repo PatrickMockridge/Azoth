@@ -21733,6 +21733,84 @@ impl From<&azoth_standards::results::Iso6976Result> for PyIso6976Result {
         }
     }
 }
+/// Result of `thermal.boiling_heat_transfer`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BoilingHeatTransferResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBoilingHeatTransferResult {
+    /// the Chen local coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub chen_htc: PyQty,
+    /// the Gungor-Winterton local coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub gungor_winterton_htc: PyQty,
+    /// the same coefficient with the horizontal stratified correction where it applies.
+    #[pyo3(get)]
+    pub gungor_winterton_corrected_htc: PyQty,
+    /// the Simpson's-rule average of the uncorrected coefficient over the range.
+    #[pyo3(get)]
+    pub average_htc: PyQty,
+    /// the Lockhart-Martinelli parameter at `vapor_quality`.
+    #[pyo3(get)]
+    pub martinelli_parameter: f64,
+    /// the Chen enhancement factor `F`.
+    #[pyo3(get)]
+    pub chen_enhancement_factor: f64,
+    /// the Chen suppression factor `S`.
+    #[pyo3(get)]
+    pub chen_suppression_factor: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBoilingHeatTransferResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BoilingHeatTransferResult(chen_htc={:?}, gungor_winterton_htc={:?}, gungor_winterton_corrected_htc={:?}, average_htc={:?}, martinelli_parameter={:?}, chen_enhancement_factor={:?}, chen_suppression_factor={:?}, {} warning(s))",
+            self.chen_htc,
+            self.gungor_winterton_htc,
+            self.gungor_winterton_corrected_htc,
+            self.average_htc,
+            self.martinelli_parameter,
+            self.chen_enhancement_factor,
+            self.chen_suppression_factor,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::BoilingHeatTransferResult> for PyBoilingHeatTransferResult {
+    fn from(r: &azoth_thermal::results::BoilingHeatTransferResult) -> Self {
+        Self {
+            chen_htc: PyQty {
+                magnitude_si: r.chen_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            gungor_winterton_htc: PyQty {
+                magnitude_si: r.gungor_winterton_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            gungor_winterton_corrected_htc: PyQty {
+                magnitude_si: r.gungor_winterton_corrected_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            average_htc: PyQty {
+                magnitude_si: r.average_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            martinelli_parameter: r.martinelli_parameter,
+            chen_enhancement_factor: r.chen_enhancement_factor,
+            chen_suppression_factor: r.chen_suppression_factor,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.conduction_plane_wall`, transported.
 #[pyclass(
     frozen,

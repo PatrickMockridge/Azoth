@@ -8673,6 +8673,37 @@ class Iso6976Result(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BoilingHeatTransferResult(_HasWarnings):
+    """Result of ``thermal.boiling_heat_transfer``."""
+
+    CALC_ID: ClassVar[str] = "thermal.boiling_heat_transfer"
+
+    #: the Chen local coefficient at `vapor_quality`.
+    chen_htc: Q
+
+    #: the Gungor-Winterton local coefficient at `vapor_quality`.
+    gungor_winterton_htc: Q
+
+    #: the same coefficient with the horizontal stratified correction where it applies.
+    gungor_winterton_corrected_htc: Q
+
+    #: the Simpson's-rule average of the uncorrected coefficient over the range.
+    average_htc: Q
+
+    #: the Lockhart-Martinelli parameter at `vapor_quality`.
+    martinelli_parameter: float
+
+    #: the Chen enhancement factor `F`.
+    chen_enhancement_factor: float
+
+    #: the Chen suppression factor `S`.
+    chen_suppression_factor: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ConductionPlaneWallResult(_HasWarnings):
     """Result of ``thermal.conduction_plane_wall``."""
 

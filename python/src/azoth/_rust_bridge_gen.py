@@ -27,6 +27,7 @@ from azoth.core.result import (
     BariteCelestiteSolidSolutionResult,
     BeggsBrillRegime,
     BeggsBrillSegmentResult,
+    BoilingHeatTransferResult,
     BrineMixingPointRow,
     BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
@@ -368,6 +369,7 @@ __all__ = [
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
     "beggs_brill_segment",
+    "boiling_heat_transfer",
     "brine_mixing_scale_evaluator",
     "bubble_pressure",
     "bubble_temperature",
@@ -7688,6 +7690,41 @@ def iso6976(components: list[str], z: list[float], volumetric_reference_temperat
         density_real=from_si(result.density_real.magnitude_si, result.density_real.unit),
         superior_calorific_value=from_si(result.superior_calorific_value.magnitude_si, result.superior_calorific_value.unit),
         inferior_calorific_value=from_si(result.inferior_calorific_value.magnitude_si, result.inferior_calorific_value.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def boiling_heat_transfer(mass_flux: Q, tube_inner_diameter: Q, liquid_density: Q, vapor_density: Q, liquid_viscosity: Q, vapor_viscosity: Q, liquid_cp: Q, liquid_conductivity: Q, surface_tension: Q, heat_of_vaporization: float, wall_superheat: Q, saturation_pressure_difference: Q, heat_flux: Q, vapor_quality: float, quality_in: float, quality_out: float, intervals: float | None=None, horizontal: bool | None=None) -> BoilingHeatTransferResult:
+    """``thermal.boiling_heat_transfer``, computed in Rust."""
+    spec = _spec_for("thermal.boiling_heat_transfer")
+    result = _core.boiling_heat_transfer(
+        input_to_si(spec, "mass_flux", mass_flux),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "vapor_viscosity", vapor_viscosity),
+        input_to_si(spec, "liquid_cp", liquid_cp),
+        input_to_si(spec, "liquid_conductivity", liquid_conductivity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        heat_of_vaporization,
+        input_to_si(spec, "wall_superheat", wall_superheat),
+        input_to_si(spec, "saturation_pressure_difference", saturation_pressure_difference),
+        input_to_si(spec, "heat_flux", heat_flux),
+        vapor_quality,
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+        horizontal,
+    )
+    return BoilingHeatTransferResult(
+        chen_htc=from_si(result.chen_htc.magnitude_si, result.chen_htc.unit),
+        gungor_winterton_htc=from_si(result.gungor_winterton_htc.magnitude_si, result.gungor_winterton_htc.unit),
+        gungor_winterton_corrected_htc=from_si(result.gungor_winterton_corrected_htc.magnitude_si, result.gungor_winterton_corrected_htc.unit),
+        average_htc=from_si(result.average_htc.magnitude_si, result.average_htc.unit),
+        martinelli_parameter=result.martinelli_parameter,
+        chen_enhancement_factor=result.chen_enhancement_factor,
+        chen_suppression_factor=result.chen_suppression_factor,
         warnings=_warnings(result.warnings),
     )
 

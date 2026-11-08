@@ -3767,6 +3767,17 @@ class Iso6976Result:
     warnings: list[Warning]
 
 @final
+class BoilingHeatTransferResult:
+    chen_htc: Qty
+    gungor_winterton_htc: Qty
+    gungor_winterton_corrected_htc: Qty
+    average_htc: Qty
+    martinelli_parameter: float
+    chen_enhancement_factor: float
+    chen_suppression_factor: float
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
@@ -6669,6 +6680,26 @@ def iso6976(
     volumetric_reference_temperature: float,
     energy_reference_temperature: float,
 ) -> Iso6976Result: ...
+def boiling_heat_transfer(
+    mass_flux: float,
+    tube_inner_diameter: float,
+    liquid_density: float,
+    vapor_density: float,
+    liquid_viscosity: float,
+    vapor_viscosity: float,
+    liquid_cp: float,
+    liquid_conductivity: float,
+    surface_tension: float,
+    heat_of_vaporization: float,
+    wall_superheat: float,
+    saturation_pressure_difference: float,
+    heat_flux: float,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+    horizontal: bool | None = None,
+) -> BoilingHeatTransferResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 def lmtd_correction_factor(
     hot_inlet_temperature: float,

@@ -12,8 +12,9 @@ use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_kilogram_kelvin,
     joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms_per_cubic_meter,
     kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
-    meters_per_second, moles_per_cubic_meter, pascal_seconds, pascals, seconds, square_meters,
-    watts, watts_per_meter_kelvin, watts_per_square_meter, watts_per_square_meter_kelvin,
+    meters_per_second, moles_per_cubic_meter, newtons_per_meter, pascal_seconds, pascals, seconds,
+    square_meters, watts, watts_per_meter_kelvin, watts_per_square_meter,
+    watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -6805,6 +6806,60 @@ pub fn iso6976(
         kelvins(energy_reference_temperature),
     )
     .map(|r| crate::transport_gen::PyIso6976Result::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Flow boiling heat transfer, Chen and Gungor-Winterton.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mass_flux, tube_inner_diameter, liquid_density, vapor_density, liquid_viscosity, vapor_viscosity, liquid_cp, liquid_conductivity, surface_tension, heat_of_vaporization, wall_superheat, saturation_pressure_difference, heat_flux, vapor_quality, quality_in, quality_out, intervals, horizontal))]
+#[pyo3(
+    text_signature = "(mass_flux, tube_inner_diameter, liquid_density, vapor_density, liquid_viscosity, vapor_viscosity, liquid_cp, liquid_conductivity, surface_tension, heat_of_vaporization, wall_superheat, saturation_pressure_difference, heat_flux, vapor_quality, quality_in, quality_out, intervals, horizontal)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn boiling_heat_transfer(
+    py: Python<'_>,
+    mass_flux: f64,
+    tube_inner_diameter: f64,
+    liquid_density: f64,
+    vapor_density: f64,
+    liquid_viscosity: f64,
+    vapor_viscosity: f64,
+    liquid_cp: f64,
+    liquid_conductivity: f64,
+    surface_tension: f64,
+    heat_of_vaporization: f64,
+    wall_superheat: f64,
+    saturation_pressure_difference: f64,
+    heat_flux: f64,
+    vapor_quality: f64,
+    quality_in: f64,
+    quality_out: f64,
+    intervals: Option<f64>,
+    horizontal: Option<bool>,
+) -> PyResult<crate::transport_gen::PyBoilingHeatTransferResult> {
+    azoth_thermal::boiling_heat_transfer::boiling_heat_transfer(
+        kilograms_per_square_meter_second(mass_flux),
+        meters(tube_inner_diameter),
+        kilograms_per_cubic_meter(liquid_density),
+        kilograms_per_cubic_meter(vapor_density),
+        pascal_seconds(liquid_viscosity),
+        pascal_seconds(vapor_viscosity),
+        joules_per_kilogram_kelvin(liquid_cp),
+        watts_per_meter_kelvin(liquid_conductivity),
+        newtons_per_meter(surface_tension),
+        heat_of_vaporization,
+        kelvin_intervals(wall_superheat),
+        pascals(saturation_pressure_difference),
+        watts_per_square_meter(heat_flux),
+        vapor_quality,
+        quality_in,
+        quality_out,
+        intervals,
+        horizontal,
+    )
+    .map(|r| crate::transport_gen::PyBoilingHeatTransferResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

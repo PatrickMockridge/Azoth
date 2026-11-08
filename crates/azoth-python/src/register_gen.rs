@@ -286,6 +286,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyReactiveTpFlashResult>()?;
     m.add_class::<crate::transport_gen::PyReferencePotentialsResult>()?;
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
+    m.add_class::<crate::transport_gen::PyBoilingHeatTransferResult>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::transport_gen::PyLmtdCorrectionFactorResult>()?;
     m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
@@ -936,6 +937,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::reactions::reactive_tp_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::reactions::reference_potentials, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::iso6976, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::boiling_heat_transfer,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::conduction_plane_wall,
         m

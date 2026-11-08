@@ -8,6 +8,7 @@
 //! * [`conduction_plane_wall`] - steady conduction through a slab
 
 pub mod bell_delaware;
+pub mod boiling_heat_transfer;
 pub mod conduction_plane_wall;
 pub mod lmtd_correction_factor;
 pub mod results;
@@ -16,11 +17,12 @@ pub mod shell_and_tube_rating;
 pub mod shell_and_tube_vibration;
 pub mod spec_gen;
 
+pub use boiling_heat_transfer::{BoilingRequest, boiling_heat_transfer};
 pub use conduction_plane_wall::conduction_plane_wall;
 pub use lmtd_correction_factor::{LmtdRequest, lmtd_correction_factor, rate as lmtd_rate};
 pub use results::{
-    ConductionPlaneWallResult, LmtdCorrectionFactorResult, ShahCondensationResult,
-    ShellAndTubeRatingResult, ShellAndTubeVibrationResult,
+    BoilingHeatTransferResult, ConductionPlaneWallResult, LmtdCorrectionFactorResult,
+    ShahCondensationResult, ShellAndTubeRatingResult, ShellAndTubeVibrationResult,
 };
 pub use shah_condensation::{ShahRequest, shah_condensation};
 pub use shell_and_tube_rating::{RatingRequest, ShellSideMethod, rate, shell_and_tube_rating};

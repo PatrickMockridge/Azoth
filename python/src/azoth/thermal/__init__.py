@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    BoilingHeatTransferResult,
     ConductionPlaneWallResult,
     LmtdCorrectionFactorResult,
     ShahCondensationResult,
@@ -27,6 +28,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 __all__ = [
+    "boiling_heat_transfer",
     "conduction_plane_wall",
     "lmtd_correction_factor",
     "shah_condensation",
@@ -34,6 +36,7 @@ __all__ = [
     "shell_and_tube_vibration",
 ]
 
+_BOILING_HEAT_TRANSFER = "thermal.boiling_heat_transfer"
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
@@ -238,4 +241,54 @@ def shah_condensation(
         quality_in=quality_in,
         quality_out=quality_out,
         intervals=intervals,
+    )
+
+
+def boiling_heat_transfer(
+    mass_flux: Q,
+    tube_inner_diameter: Q,
+    liquid_density: Q,
+    vapor_density: Q,
+    liquid_viscosity: Q,
+    vapor_viscosity: Q,
+    liquid_cp: Q,
+    liquid_conductivity: Q,
+    surface_tension: Q,
+    heat_of_vaporization: float,
+    wall_superheat: Q,
+    saturation_pressure_difference: Q,
+    heat_flux: Q,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+    horizontal: bool | None = None,
+) -> BoilingHeatTransferResult:
+    """Chen and Gungor-Winterton flow boiling, composed as the zone analysis uses it.
+
+    Raises:
+        InvalidInputError: for a non-integral interval count.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.boiling_heat_transfer`.
+    """
+    return resolve(_BOILING_HEAT_TRANSFER)(  # type: ignore[no-any-return]
+        mass_flux=mass_flux,
+        tube_inner_diameter=tube_inner_diameter,
+        liquid_density=liquid_density,
+        vapor_density=vapor_density,
+        liquid_viscosity=liquid_viscosity,
+        vapor_viscosity=vapor_viscosity,
+        liquid_cp=liquid_cp,
+        liquid_conductivity=liquid_conductivity,
+        surface_tension=surface_tension,
+        heat_of_vaporization=heat_of_vaporization,
+        wall_superheat=wall_superheat,
+        saturation_pressure_difference=saturation_pressure_difference,
+        heat_flux=heat_flux,
+        vapor_quality=vapor_quality,
+        quality_in=quality_in,
+        quality_out=quality_out,
+        intervals=intervals,
+        horizontal=horizontal,
     )

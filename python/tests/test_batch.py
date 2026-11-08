@@ -268,6 +268,8 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The vibration screen's `triangular_pitch` is a categorical layout switch, the same
         # reason: the two Connors constants are different arithmetic, not a scale factor.
         "thermal.shell_and_tube_vibration",
+        # The boiling calc's `horizontal` switch is categorical, the same reason.
+        "thermal.boiling_heat_transfer",
     }, sorted(excluded)
 
 

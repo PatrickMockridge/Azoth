@@ -268,6 +268,7 @@
 //!   - specs/models/reactions/reactive_tp_flash.toml
 //!   - specs/models/reactions/reference_potentials.toml
 //!   - specs/models/standards/iso6976.toml
+//!   - specs/calcs/thermal/boiling_heat_transfer.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shah_condensation.toml
@@ -4593,6 +4594,87 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "standards.iso6976",
         "energy_reference_temperature",
         "thermodynamic_temperature",
+    ),
+    ("thermal.boiling_heat_transfer", "mass_flux", "mass_flux"),
+    (
+        "thermal.boiling_heat_transfer",
+        "tube_inner_diameter",
+        "length",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "liquid_density",
+        "mass_density",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "vapor_density",
+        "mass_density",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "vapor_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "liquid_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "liquid_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "surface_tension",
+        "surface_tension",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "heat_of_vaporization",
+        "dimensionless",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "wall_superheat",
+        "thermodynamic_temperature",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "saturation_pressure_difference",
+        "pressure",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "heat_flux",
+        "heat_flux_density",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "vapor_quality",
+        "dimensionless",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "quality_in",
+        "dimensionless",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "quality_out",
+        "dimensionless",
+    ),
+    (
+        "thermal.boiling_heat_transfer",
+        "intervals",
+        "dimensionless",
     ),
     ("thermal.conduction_plane_wall", "k", "thermal_conductivity"),
     ("thermal.conduction_plane_wall", "A", "area"),
