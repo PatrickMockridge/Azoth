@@ -98,6 +98,42 @@ impl CalcResult for ShellAndTubeRatingResult {
     }
 }
 
+/// Result of `thermal.lmtd_correction_factor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LmtdCorrectionFactorResult {
+    /// The capacity ratio.
+    pub r: f64,
+    /// The thermal effectiveness.
+    pub p: f64,
+    /// The correction factor for the stated shell passes.
+    pub ft: f64,
+    /// The correction factor for one shell pass.
+    pub ft_1_shell_pass: f64,
+    /// The correction factor for two shell passes.
+    pub ft_2_shell_passes: f64,
+    /// The first pass count reaching 0.75, or -1.
+    pub required_shell_passes: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for LmtdCorrectionFactorResult {
+    const CALC_ID: &'static str = "thermal.lmtd_correction_factor";
+    const FIELDS: &'static [&'static str] = &[
+        "r",
+        "p",
+        "ft",
+        "ft_1_shell_pass",
+        "ft_2_shell_passes",
+        "required_shell_passes",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `thermal.shell_and_tube_vibration`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ShellAndTubeVibrationResult {

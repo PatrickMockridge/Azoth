@@ -8686,6 +8686,34 @@ class ConductionPlaneWallResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class LmtdCorrectionFactorResult(_HasWarnings):
+    """Result of ``thermal.lmtd_correction_factor``."""
+
+    CALC_ID: ClassVar[str] = "thermal.lmtd_correction_factor"
+
+    #: the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`.
+    r: float
+
+    #: the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`.
+    p: float
+
+    #: the correction factor for the stated number of shell passes.
+    ft: float
+
+    #: the correction factor for one shell pass, the class's dedicated wrapper.
+    ft_1_shell_pass: float
+
+    #: the correction factor for two shell passes, the class's dedicated wrapper.
+    ft_2_shell_passes: float
+
+    #: the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
+    required_shell_passes: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ShellAndTubeRatingResult(_HasWarnings):
     """Result of ``thermal.shell_and_tube_rating``."""
 

@@ -269,6 +269,7 @@
 //!   - specs/models/reactions/reference_potentials.toml
 //!   - specs/models/standards/iso6976.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
+//!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
 //!
@@ -4600,6 +4601,31 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("thermal.conduction_plane_wall", "L", "length"),
+    (
+        "thermal.lmtd_correction_factor",
+        "hot_inlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "thermal.lmtd_correction_factor",
+        "hot_outlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "thermal.lmtd_correction_factor",
+        "cold_inlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "thermal.lmtd_correction_factor",
+        "cold_outlet_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "thermal.lmtd_correction_factor",
+        "shell_passes",
+        "dimensionless",
+    ),
     (
         "thermal.shell_and_tube_rating",
         "tube_outside_diameter",

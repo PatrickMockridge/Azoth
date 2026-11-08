@@ -7,5 +7,6 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`thermal.conduction_plane_wall`](./conduction_plane_wall.md) | $q = \frac{k\,A\,\Delta T}{L}$ | Fourier, J. (1822) |
+| [`thermal.lmtd_correction_factor`](./lmtd_correction_factor.md) | $F_t = \frac{\sqrt{R^2+1}\,\ln\!\left(\frac{1-P}{1-RP}\right)}{(R-1)\ln\!\left(\frac{2-P(R+1-\sqrt{R^2+1})}{2-P(R+1+\sqrt{R^2+1})}\right)}$ | NeqSim process/mechanicaldesign/heatexchanger/LMTDcorrectionFactor.java |
 | [`thermal.shell_and_tube_rating`](./shell_and_tube_rating.md) | $\frac{1}{U_o} = \frac{1}{h_o} + R_{f,o} + \frac{d_o \ln(d_o/d_i)}{2 k_w} + \frac{d_o}{d_i} R_{f,i} + \frac{d_o}{d_f h_i}$ | NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java |
 | [`thermal.shell_and_tube_vibration`](./shell_and_tube_vibration.md) | $f_n = \frac{C_n}{2\pi}\sqrt{\frac{E I}{m_\mathrm{eff} L^4}}, \qquad I = \frac{\pi}{64}\left(d_o^4 - d_i^4\right)$ | NeqSim process/mechanicaldesign/heatexchanger/VibrationAnalysis.java |

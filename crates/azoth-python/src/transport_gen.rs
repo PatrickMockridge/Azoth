@@ -21772,6 +21772,67 @@ impl From<&azoth_thermal::results::ConductionPlaneWallResult> for PyConductionPl
         }
     }
 }
+/// Result of `thermal.lmtd_correction_factor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LmtdCorrectionFactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLmtdCorrectionFactorResult {
+    /// the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`.
+    #[pyo3(get)]
+    pub r: f64,
+    /// the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`.
+    #[pyo3(get)]
+    pub p: f64,
+    /// the correction factor for the stated number of shell passes.
+    #[pyo3(get)]
+    pub ft: f64,
+    /// the correction factor for one shell pass, the class's dedicated wrapper.
+    #[pyo3(get)]
+    pub ft_1_shell_pass: f64,
+    /// the correction factor for two shell passes, the class's dedicated wrapper.
+    #[pyo3(get)]
+    pub ft_2_shell_passes: f64,
+    /// the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
+    #[pyo3(get)]
+    pub required_shell_passes: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLmtdCorrectionFactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LmtdCorrectionFactorResult(r={:?}, p={:?}, ft={:?}, ft_1_shell_pass={:?}, ft_2_shell_passes={:?}, required_shell_passes={:?}, {} warning(s))",
+            self.r,
+            self.p,
+            self.ft,
+            self.ft_1_shell_pass,
+            self.ft_2_shell_passes,
+            self.required_shell_passes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::LmtdCorrectionFactorResult> for PyLmtdCorrectionFactorResult {
+    fn from(r: &azoth_thermal::results::LmtdCorrectionFactorResult) -> Self {
+        Self {
+            r: r.r,
+            p: r.p,
+            ft: r.ft,
+            ft_1_shell_pass: r.ft_1_shell_pass,
+            ft_2_shell_passes: r.ft_2_shell_passes,
+            required_shell_passes: r.required_shell_passes,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.shell_and_tube_rating`, transported.
 #[pyclass(
     frozen,

@@ -147,6 +147,7 @@ from azoth.core.result import (
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
+    LmtdCorrectionFactorResult,
     LumpingResult,
     ManifoldResult,
     MapTurboExpanderResult,
@@ -464,6 +465,7 @@ __all__ = [
     "liquid_conductivity_polynom",
     "liquid_heat_capacity",
     "liquid_viscosity_pure",
+    "lmtd_correction_factor",
     "lumping",
     "manifold",
     "map_turbo_expander_compressor",
@@ -7699,6 +7701,27 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     )
     return ConductionPlaneWallResult(
         q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def lmtd_correction_factor(hot_inlet_temperature: Q, hot_outlet_temperature: Q, cold_inlet_temperature: Q, cold_outlet_temperature: Q, shell_passes: float | None=None) -> LmtdCorrectionFactorResult:
+    """``thermal.lmtd_correction_factor``, computed in Rust."""
+    spec = _spec_for("thermal.lmtd_correction_factor")
+    result = _core.lmtd_correction_factor(
+        input_to_si(spec, "hot_inlet_temperature", hot_inlet_temperature),
+        input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
+        input_to_si(spec, "cold_inlet_temperature", cold_inlet_temperature),
+        input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+        None if shell_passes is None else shell_passes,
+    )
+    return LmtdCorrectionFactorResult(
+        r=result.r,
+        p=result.p,
+        ft=result.ft,
+        ft_1_shell_pass=result.ft_1_shell_pass,
+        ft_2_shell_passes=result.ft_2_shell_passes,
+        required_shell_passes=result.required_shell_passes,
         warnings=_warnings(result.warnings),
     )
 

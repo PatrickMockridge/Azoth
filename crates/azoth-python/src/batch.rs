@@ -443,6 +443,54 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "q", "W", q);
         }
 
+        "thermal.lmtd_correction_factor" => {
+            let (hot_in, hot_out, cold_in, cold_out) = (
+                take(&inputs, "hot_inlet_temperature")?,
+                take(&inputs, "hot_outlet_temperature")?,
+                take(&inputs, "cold_inlet_temperature")?,
+                take(&inputs, "cold_outlet_temperature")?,
+            );
+            let shell_passes = take_optional(&inputs, "shell_passes");
+            let (mut r, mut p, mut ft, mut ft1, mut ft2, mut required) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::lmtd_correction_factor(
+                        kelvins(hot_in[i]),
+                        kelvins(hot_out[i]),
+                        kelvins(cold_in[i]),
+                        kelvins(cold_out[i]),
+                        shell_passes.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                r.push(out.r);
+                p.push(out.p);
+                ft.push(out.ft);
+                ft1.push(out.ft_1_shell_pass);
+                ft2.push(out.ft_2_shell_passes);
+                required.push(out.required_shell_passes);
+            }
+            push_values(&mut columns, "r", "dimensionless", r);
+            push_values(&mut columns, "p", "dimensionless", p);
+            push_values(&mut columns, "ft", "dimensionless", ft);
+            push_values(&mut columns, "ft_1_shell_pass", "dimensionless", ft1);
+            push_values(&mut columns, "ft_2_shell_passes", "dimensionless", ft2);
+            push_values(
+                &mut columns,
+                "required_shell_passes",
+                "dimensionless",
+                required,
+            );
+        }
+
         "eos.pr_kappa" => {
             let omega = take(&inputs, "omega")?;
             let mut kappa = Vec::with_capacity(n);

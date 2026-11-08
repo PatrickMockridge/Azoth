@@ -3772,6 +3772,16 @@ class ConductionPlaneWallResult:
     warnings: list[Warning]
 
 @final
+class LmtdCorrectionFactorResult:
+    r: float
+    p: float
+    ft: float
+    ft_1_shell_pass: float
+    ft_2_shell_passes: float
+    required_shell_passes: float
+    warnings: list[Warning]
+
+@final
 class ShellAndTubeRatingResult:
     tube_side_heat_transfer_coefficient: Qty
     shell_side_heat_transfer_coefficient: Qty
@@ -6650,6 +6660,13 @@ def iso6976(
     energy_reference_temperature: float,
 ) -> Iso6976Result: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
+def lmtd_correction_factor(
+    hot_inlet_temperature: float,
+    hot_outlet_temperature: float,
+    cold_inlet_temperature: float,
+    cold_outlet_temperature: float,
+    shell_passes: float | None = None,
+) -> LmtdCorrectionFactorResult: ...
 def shell_and_tube_rating(
     tube_outside_diameter: float,
     tube_inside_diameter: float,

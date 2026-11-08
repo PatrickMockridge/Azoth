@@ -6832,6 +6832,33 @@ pub fn conduction_plane_wall(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The LMTD correction factor for a shell-and-tube exchanger.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (hot_inlet_temperature, hot_outlet_temperature, cold_inlet_temperature, cold_outlet_temperature, shell_passes))]
+#[pyo3(
+    text_signature = "(hot_inlet_temperature, hot_outlet_temperature, cold_inlet_temperature, cold_outlet_temperature, shell_passes)"
+)]
+pub fn lmtd_correction_factor(
+    py: Python<'_>,
+    hot_inlet_temperature: f64,
+    hot_outlet_temperature: f64,
+    cold_inlet_temperature: f64,
+    cold_outlet_temperature: f64,
+    shell_passes: Option<f64>,
+) -> PyResult<crate::transport_gen::PyLmtdCorrectionFactorResult> {
+    azoth_thermal::lmtd_correction_factor::lmtd_correction_factor(
+        kelvins(hot_inlet_temperature),
+        kelvins(hot_outlet_temperature),
+        kelvins(cold_inlet_temperature),
+        kelvins(cold_outlet_temperature),
+        shell_passes,
+    )
+    .map(|r| crate::transport_gen::PyLmtdCorrectionFactorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A shell-and-tube exchanger's thermal-hydraulic rating.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

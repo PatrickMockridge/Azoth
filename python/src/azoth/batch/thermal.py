@@ -15,9 +15,15 @@ from azoth.batch._core import run, sequence
 from azoth.batch._result import BatchResult
 from azoth.core.warnings import Warning
 
-__all__ = ["ConductionPlaneWallBatch", "conduction_plane_wall"]
+__all__ = [
+    "ConductionPlaneWallBatch",
+    "LmtdCorrectionFactorBatch",
+    "conduction_plane_wall",
+    "lmtd_correction_factor",
+]
 
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
+_LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -68,4 +74,66 @@ def conduction_plane_wall(
         },
         _build,
     )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class LmtdCorrectionFactorBatch(BatchResult):
+    """Result of a batch :func:`azoth.thermal.lmtd_correction_factor`."""
+
+    #: The capacity ratio per element.
+    r: array[float]
+    #: The thermal effectiveness per element.
+    p: array[float]
+    #: The correction factor for the stated shell passes.
+    ft: array[float]
+    #: The correction factor for one shell pass.
+    ft_1_shell_pass: array[float]
+    #: The correction factor for two shell passes.
+    ft_2_shell_passes: array[float]
+    #: The first pass count reaching 0.75, or -1.
+    required_shell_passes: array[float]
+
+
+def _build_lmtd(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> LmtdCorrectionFactorBatch:
+    return LmtdCorrectionFactorBatch(
+        warnings=warnings,
+        units=units,
+        r=columns["r"],  # type: ignore[arg-type]
+        p=columns["p"],  # type: ignore[arg-type]
+        ft=columns["ft"],  # type: ignore[arg-type]
+        ft_1_shell_pass=columns["ft_1_shell_pass"],  # type: ignore[arg-type]
+        ft_2_shell_passes=columns["ft_2_shell_passes"],  # type: ignore[arg-type]
+        required_shell_passes=columns["required_shell_passes"],  # type: ignore[arg-type]
+    )
+
+
+def lmtd_correction_factor(
+    *,
+    hot_inlet_temperature: Sequence[float],
+    hot_outlet_temperature: Sequence[float],
+    cold_inlet_temperature: Sequence[float],
+    cold_outlet_temperature: Sequence[float],
+    shell_passes: Sequence[float] | None = None,
+) -> LmtdCorrectionFactorBatch:
+    """The LMTD correction factor, over arrays. Inputs in K.
+
+    ``shell_passes`` is optional **per batch, not per element**: present for every
+    element or for none. Omit it and every element is one shell pass.
+
+    See :func:`azoth.thermal.lmtd_correction_factor` for the calculation itself.
+    """
+    arrays: dict[str, object] = {
+        "hot_inlet_temperature": sequence(hot_inlet_temperature, "hot_inlet_temperature"),
+        "hot_outlet_temperature": sequence(hot_outlet_temperature, "hot_outlet_temperature"),
+        "cold_inlet_temperature": sequence(cold_inlet_temperature, "cold_inlet_temperature"),
+        "cold_outlet_temperature": sequence(cold_outlet_temperature, "cold_outlet_temperature"),
+    }
+    if shell_passes is not None:
+        arrays["shell_passes"] = sequence(shell_passes, "shell_passes")
+    result: LmtdCorrectionFactorBatch = run(_LMTD_CORRECTION_FACTOR, arrays, _build_lmtd)
     return result

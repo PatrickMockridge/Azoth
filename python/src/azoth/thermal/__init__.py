@@ -19,6 +19,7 @@ from __future__ import annotations
 from azoth._dispatch import resolve
 from azoth.core.result import (
     ConductionPlaneWallResult,
+    LmtdCorrectionFactorResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
 )
@@ -26,11 +27,13 @@ from azoth.core.units import Q
 
 __all__ = [
     "conduction_plane_wall",
+    "lmtd_correction_factor",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
 ]
 
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
+_LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
 
@@ -170,4 +173,28 @@ def shell_and_tube_vibration(
         sonic_velocity=sonic_velocity,
         damping_ratio=damping_ratio,
         triangular_pitch=triangular_pitch,
+    )
+
+
+def lmtd_correction_factor(
+    hot_inlet_temperature: Q,
+    hot_outlet_temperature: Q,
+    cold_inlet_temperature: Q,
+    cold_outlet_temperature: Q,
+    shell_passes: float | None = None,
+) -> LmtdCorrectionFactorResult:
+    """The LMTD correction factor for a shell-and-tube exchanger.
+
+    Raises:
+        InvalidInputError: for a non-integral shell-pass count.
+        OutOfRangeError: for a temperature outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.lmtd_correction_factor`.
+    """
+    return resolve(_LMTD_CORRECTION_FACTOR)(  # type: ignore[no-any-return]
+        hot_inlet_temperature=hot_inlet_temperature,
+        hot_outlet_temperature=hot_outlet_temperature,
+        cold_inlet_temperature=cold_inlet_temperature,
+        cold_outlet_temperature=cold_outlet_temperature,
+        shell_passes=shell_passes,
     )
