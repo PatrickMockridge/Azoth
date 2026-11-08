@@ -137,6 +137,26 @@ vapor_density_kg_per_m3=1200.0
 liquid_density_kg_per_m3=1147.0
 vertical_htc_w_per_m2k=17429.59947204097
 
+composed_test_fluid
+mass_flux_kg_per_m2s=300.0
+tube_id_m=0.01905
+liquid_density_kg_per_m3=1147.0
+liquid_viscosity_pa_s=1.65E-4
+liquid_cp_j_per_kgk=1480.0
+liquid_conductivity_w_per_mk=0.078
+vapor_density_kg_per_m3=50.1
+reduced_pressure=0.1
+vapor_quality=0.5
+quality_in=0.9
+quality_out=0.1
+intervals=20
+liquid_only_htc_w_per_m2k=636.5224326345639
+liquid_only_reynolds=34636.36363636363
+local_htc_w_per_m2k=3698.110351929876
+average_htc_w_per_m2k=2860.9227997298617
+vertical_htc_w_per_m2k=3698.110351929876
+in_valid_range=true
+
 range_valid
 reduced_pressure=0.1
 liquid_only_reynolds=1000.0

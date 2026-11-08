@@ -52,7 +52,38 @@ public class ShahCondensationProbe {
     verticalRow("vertical_gravity", 3000.0, 0.1, 0.1, 5.0, 0.01905, 50.1, 1147.0);
     verticalRow("vertical_liquid_lighter", 3000.0, 0.5, 0.1, 300.0, 0.01905, 1200.0, 1147.0);
 
-    // 7. The validity predicate, valid and one state per boundary.
+    // 7. The composed state the zone analysis takes: the liquid-only coefficient feeds
+    //    the local, average and vertical entries.
+    double hLo = ShahCondensation.calcLiquidOnlyHTC(massFlux, tubeId, liquidDensity,
+        liquidViscosity, liquidCp, liquidConductivity);
+    double reLo = massFlux * tubeId / liquidViscosity;
+    System.out.println("composed_test_fluid");
+    System.out.println("mass_flux_kg_per_m2s=" + massFlux);
+    System.out.println("tube_id_m=" + tubeId);
+    System.out.println("liquid_density_kg_per_m3=" + liquidDensity);
+    System.out.println("liquid_viscosity_pa_s=" + liquidViscosity);
+    System.out.println("liquid_cp_j_per_kgk=" + liquidCp);
+    System.out.println("liquid_conductivity_w_per_mk=" + liquidConductivity);
+    System.out.println("vapor_density_kg_per_m3=" + vaporDensity);
+    System.out.println("reduced_pressure=0.1");
+    System.out.println("vapor_quality=0.5");
+    System.out.println("quality_in=0.9");
+    System.out.println("quality_out=0.1");
+    System.out.println("intervals=20");
+    System.out.println("liquid_only_htc_w_per_m2k=" + hLo);
+    System.out.println("liquid_only_reynolds=" + reLo);
+    System.out.println("local_htc_w_per_m2k="
+        + ShahCondensation.calcLocalHTC(hLo, 0.5, 0.1));
+    System.out.println("average_htc_w_per_m2k="
+        + ShahCondensation.calcAverageHTC(hLo, 0.1, 0.9, 0.1, 20));
+    System.out.println("vertical_htc_w_per_m2k="
+        + ShahCondensation.calcVerticalTubeHTC(hLo, 0.5, 0.1, massFlux, tubeId, vaporDensity,
+            liquidDensity));
+    System.out.println("in_valid_range="
+        + ShahCondensation.isInValidRange(0.1, reLo, massFlux));
+    System.out.println();
+
+    // 8. The validity predicate, valid and one state per boundary.
     rangeRow("range_valid", 0.1, 1000.0, 300.0);
     rangeRow("range_pressure_low", 1e-4, 1000.0, 300.0);
     rangeRow("range_pressure_high", 0.5, 1000.0, 300.0);
