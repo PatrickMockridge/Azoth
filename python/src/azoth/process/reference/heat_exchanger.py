@@ -738,12 +738,7 @@ def _phase_properties(
     reduced = reduced_parameters(mixture, temperature, pressure)
     label = phase_label(mixture, reduced, composition, root)
     molar_mass = sum(
-        (
-            component.molar_mass.to("kg/mol").magnitude
-            if component.molar_mass
-            else 0.0
-        )
-        * fraction
+        (component.molar_mass.to("kg/mol").magnitude if component.molar_mass else 0.0) * fraction
         for component, fraction in zip(mixture.components, composition, strict=True)
     )
     volume = (

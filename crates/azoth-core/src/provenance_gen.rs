@@ -3515,7 +3515,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         spec_path: "specs/models/process/heat_exchanger.toml",
         spec_sha256: "65430f9acd8e2cc32f10bc53b93fd5d88dd2b1bc955b53e862543b1d285cd1f6",
         python_path: "python/src/azoth/process/reference/heat_exchanger.py",
-        python_sha256: "e7ae5c89d63b082e2ebf47010065328d23b1f006f3308b608017990a83a37bd8",
+        python_sha256: "ad80a458d634a52afff9dbcb4c457aa273c9dcf7444bba02f8fa1598aa52df85",
         rust_path: "crates/azoth-process/src/models/heat_exchanger.rs",
         rust_sha256: "63eb7b64340b8029bfb978f041e8656612cda1af06f12fa96ddac5e8c2d7f455",
         source: "NeqSim process/equipment/heatexchanger/HeatExchanger.java",

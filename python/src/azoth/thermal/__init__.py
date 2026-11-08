@@ -43,7 +43,7 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     return resolve(_CONDUCTION_PLANE_WALL)(k=k, A=A, dT=dT, L=L)  # type: ignore[no-any-return]
 
 
-def shell_and_tube_rating(  # noqa: PLR0913 - one parameter per declared input
+def shell_and_tube_rating(
     tube_outside_diameter: Q,
     tube_inside_diameter: Q,
     tube_length: Q,
