@@ -88,7 +88,7 @@ satisfy for the result to mean what it says.
 
 - **Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.
 
-- **the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller and is not carried.
+- **the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.
 
 - **the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.
 

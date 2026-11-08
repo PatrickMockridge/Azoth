@@ -6,7 +6,7 @@ assumptions = [
     "**the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.\n",
     "**the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.\n",
     "**Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.\n",
-    "**the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller and is not carried.\n",
+    "**the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.\n",
     "**the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.\n",
     "**a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.\n",
     "**the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.\n",

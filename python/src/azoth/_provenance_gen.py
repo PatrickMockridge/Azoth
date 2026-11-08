@@ -2977,7 +2977,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'thermal.shell_and_tube_vibration': {
         "calc_id": 'thermal.shell_and_tube_vibration',
         "name": "A shell-and-tube exchanger's tube-vibration screen",
-        "spec": {'path': 'specs/calcs/thermal/shell_and_tube_vibration.toml', 'sha256': '81ca0866669a7c0f5260b92949cd62224e7f4213799d27dcb7ec6b164b7666fa'},
+        "spec": {'path': 'specs/calcs/thermal/shell_and_tube_vibration.toml', 'sha256': 'db6dadae15f6f68260b540fddefd6c74dc1edd0d5c343c064035e454cc573244'},
         "code": [{'path': 'python/src/azoth/thermal/reference/shell_and_tube_vibration.py', 'sha256': '5522716b475bd629eac37accdb4a194c2e9f5f484d6e2077e3ba4d7043e75b5a'}, {'path': 'crates/azoth-thermal/src/shell_and_tube_vibration.rs', 'sha256': '40633eef41d95fe6186cd8acb19560c4b8bbed508bbfaa0e0ee3f5b67437c493'}],
         "source": 'NeqSim process/mechanicaldesign/heatexchanger/VibrationAnalysis.java',
         "verification": 'partially_verified',

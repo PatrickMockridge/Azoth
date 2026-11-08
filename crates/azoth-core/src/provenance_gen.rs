@@ -4053,7 +4053,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "thermal.shell_and_tube_vibration",
         name: "A shell-and-tube exchanger's tube-vibration screen",
         spec_path: "specs/calcs/thermal/shell_and_tube_vibration.toml",
-        spec_sha256: "81ca0866669a7c0f5260b92949cd62224e7f4213799d27dcb7ec6b164b7666fa",
+        spec_sha256: "db6dadae15f6f68260b540fddefd6c74dc1edd0d5c343c064035e454cc573244",
         python_path: "python/src/azoth/thermal/reference/shell_and_tube_vibration.py",
         python_sha256: "5522716b475bd629eac37accdb4a194c2e9f5f484d6e2077e3ba4d7043e75b5a",
         rust_path: "crates/azoth-thermal/src/shell_and_tube_vibration.rs",
