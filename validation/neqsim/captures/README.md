@@ -246,6 +246,22 @@ the strict one throws.
   > captures/thermal_rating_probe.tsv
 ```
 
+## The tube-vibration screen
+
+`tube_vibration_probe.tsv` drives `VibrationAnalysis` directly: the natural frequency
+under all three end conditions, the vortex-shedding frequency with the Fitzhugh pitch
+correction, Connors' critical velocity for both layouts, the first three acoustic modes,
+the effective acoustic velocity, and `performScreening` on a passing state and on one
+state for each of the three critical mechanisms. The degenerate rows print the class's
+`Double.MAX_VALUE` sentinel and its "passed" answer; the port refuses those geometry
+states at the boundary instead.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeVibrationProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeVibrationProbe \
+  > captures/tube_vibration_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
