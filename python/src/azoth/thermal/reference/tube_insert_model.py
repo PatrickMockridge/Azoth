@@ -144,7 +144,9 @@ def tube_insert_model(
     spec = _spec_for(CALC_ID)
     checks = checks_for(spec)
     warnings: list[Warning] = []
-    plain_htc = input_to_si(spec, "plain_heat_transfer_coefficient", plain_heat_transfer_coefficient)
+    plain_htc = input_to_si(
+        spec, "plain_heat_transfer_coefficient", plain_heat_transfer_coefficient
+    )
     plain_drop = input_to_si(spec, "plain_pressure_drop", plain_pressure_drop)
     values = {
         "reynolds_number": reynolds_number,
