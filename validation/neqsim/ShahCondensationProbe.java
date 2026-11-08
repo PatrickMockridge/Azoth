@@ -83,7 +83,29 @@ public class ShahCondensationProbe {
         + ShahCondensation.isInValidRange(0.1, reLo, massFlux));
     System.out.println();
 
-    // 8. The validity predicate, valid and one state per boundary.
+    // 8. The composed state at each branch the calc's cases pin.
+    composedRow("composed_quality_one", massFlux, tubeId, liquidDensity, liquidViscosity, liquidCp,
+        liquidConductivity, vaporDensity, 0.1, 1.0, 0.9, 0.1, 20);
+    composedRow("composed_quality_below_zero", massFlux, tubeId, liquidDensity, liquidViscosity,
+        liquidCp, liquidConductivity, vaporDensity, 0.1, -0.4, 0.9, 0.1, 20);
+    composedRow("composed_pressure_floor", massFlux, tubeId, liquidDensity, liquidViscosity,
+        liquidCp, liquidConductivity, vaporDensity, 1e-4, 0.5, 0.9, 0.1, 20);
+    composedRow("composed_pressure_ceiling", massFlux, tubeId, liquidDensity, liquidViscosity,
+        liquidCp, liquidConductivity, vaporDensity, 0.9, 0.5, 0.9, 0.1, 20);
+    composedRow("composed_odd_intervals", massFlux, tubeId, liquidDensity, liquidViscosity,
+        liquidCp, liquidConductivity, vaporDensity, 0.1, 0.5, 0.9, 0.1, 7);
+    composedRow("composed_gravity", 5.0, tubeId, liquidDensity, liquidViscosity, liquidCp,
+        liquidConductivity, vaporDensity, 0.1, 0.1, 0.9, 0.1, 20);
+    composedRow("composed_liquid_lighter", massFlux, tubeId, liquidDensity, liquidViscosity,
+        liquidCp, liquidConductivity, 1200.0, 0.1, 0.5, 0.9, 0.1, 20);
+    composedRow("composed_low_flux", 3.0, tubeId, liquidDensity, liquidViscosity, liquidCp,
+        liquidConductivity, vaporDensity, 0.1, 0.5, 0.9, 0.1, 20);
+    composedRow("composed_high_flux", 900.0, tubeId, liquidDensity, liquidViscosity, liquidCp,
+        liquidConductivity, vaporDensity, 0.1, 0.5, 0.9, 0.1, 20);
+    composedRow("composed_low_reynolds", 10.0, tubeId, liquidDensity, 1e-3, liquidCp,
+        liquidConductivity, vaporDensity, 0.1, 0.5, 0.9, 0.1, 20);
+
+    // 9. The validity predicate, valid and one state per boundary.
     rangeRow("range_valid", 0.1, 1000.0, 300.0);
     rangeRow("range_pressure_low", 1e-4, 1000.0, 300.0);
     rangeRow("range_pressure_high", 0.5, 1000.0, 300.0);
@@ -146,6 +168,40 @@ public class ShahCondensationProbe {
     System.out.println("vapor_density_kg_per_m3=" + vaporDensity);
     System.out.println("liquid_density_kg_per_m3=" + liquidDensity);
     System.out.println("vertical_htc_w_per_m2k=" + h);
+    System.out.println();
+  }
+
+  static void composedRow(String label, double massFlux, double tubeId, double liquidDensity,
+      double liquidViscosity, double liquidCp, double liquidConductivity, double vaporDensity,
+      double reducedPressure, double quality, double qualityIn, double qualityOut,
+      int intervals) {
+    double hLo = ShahCondensation.calcLiquidOnlyHTC(massFlux, tubeId, liquidDensity,
+        liquidViscosity, liquidCp, liquidConductivity);
+    double reLo = massFlux * tubeId / liquidViscosity;
+    System.out.println(label);
+    System.out.println("mass_flux_kg_per_m2s=" + massFlux);
+    System.out.println("tube_id_m=" + tubeId);
+    System.out.println("liquid_density_kg_per_m3=" + liquidDensity);
+    System.out.println("liquid_viscosity_pa_s=" + liquidViscosity);
+    System.out.println("liquid_cp_j_per_kgk=" + liquidCp);
+    System.out.println("liquid_conductivity_w_per_mk=" + liquidConductivity);
+    System.out.println("vapor_density_kg_per_m3=" + vaporDensity);
+    System.out.println("reduced_pressure=" + reducedPressure);
+    System.out.println("vapor_quality=" + quality);
+    System.out.println("quality_in=" + qualityIn);
+    System.out.println("quality_out=" + qualityOut);
+    System.out.println("intervals=" + intervals);
+    System.out.println("liquid_only_htc_w_per_m2k=" + hLo);
+    System.out.println("liquid_only_reynolds=" + reLo);
+    System.out.println("local_htc_w_per_m2k="
+        + ShahCondensation.calcLocalHTC(hLo, quality, reducedPressure));
+    System.out.println("average_htc_w_per_m2k="
+        + ShahCondensation.calcAverageHTC(hLo, reducedPressure, qualityIn, qualityOut, intervals));
+    System.out.println("vertical_htc_w_per_m2k="
+        + ShahCondensation.calcVerticalTubeHTC(hLo, quality, reducedPressure, massFlux, tubeId,
+            vaporDensity, liquidDensity));
+    System.out.println("in_valid_range="
+        + ShahCondensation.isInValidRange(reducedPressure, reLo, massFlux));
     System.out.println();
   }
 
