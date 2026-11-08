@@ -169,6 +169,7 @@ pub fn zone_rating(
     fouling_tube: f64,
     fouling_shell: f64,
     shell_side_method: ShellSideMethod,
+    zones: &[ZoneDefinitionRow],
     tube_fouling_layer_thickness: Option<Length>,
     tube_fouling_layer_conductivity: Option<ThermalConductivity>,
     shell_viscosity_wall: Option<DynamicViscosity>,
@@ -177,7 +178,6 @@ pub fn zone_rating(
     tube_to_baffle_clearance: Option<Length>,
     shell_to_baffle_clearance: Option<Length>,
     bypass_area: Option<Area>,
-    zones: &[ZoneDefinitionRow],
 ) -> Result<ZoneRatingResult> {
     let defaults = RatingRequest::default();
     rate(&ZoneRatingRequest {

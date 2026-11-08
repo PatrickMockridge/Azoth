@@ -171,7 +171,9 @@ pub fn rate(request: &VibrationRequest) -> Result<ShellAndTubeVibrationResult> {
     )?;
     validate(request)?;
 
-    Ok(screen(request))
+    let mut result = screen(request);
+    result.warnings = warnings;
+    Ok(result)
 }
 
 /// `performScreening` without the input bounds and the guards, for the design calculator

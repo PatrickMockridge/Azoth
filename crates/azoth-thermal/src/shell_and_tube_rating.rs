@@ -235,7 +235,9 @@ pub fn rate(request: &RatingRequest) -> Result<ShellAndTubeRatingResult> {
 
     validate_strict(request)?;
 
-    evaluate(request)
+    let mut result = evaluate(request)?;
+    result.warnings = warnings;
+    Ok(result)
 }
 
 /// The class's permissive arithmetic, without the input bounds and the strict guards.

@@ -8037,7 +8037,7 @@ def two_phase_pressure_drop(mass_flux: Q, vapor_quality: float, tube_inner_diame
     )
 
 
-def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, tube_pitch: Q, triangular_pitch: bool, shell_inside_diameter: Q, baffle_spacing: Q, baffle_count: float, baffle_cut: float, tube_wall_conductivity: Q, tube_mass_flow: Q, shell_mass_flow: Q, fouling_tube: float, fouling_shell: float, shell_side_method: str, tube_fouling_layer_thickness: Q | None=None, tube_fouling_layer_conductivity: Q | None=None, shell_viscosity_wall: Q | None=None, has_sealing: bool | None=None, sealing_pairs: float | None=None, tube_to_baffle_clearance: Q | None=None, shell_to_baffle_clearance: Q | None=None, bypass_area: Q | None=None, *, zones: list[dict[str, Any]]) -> ZoneRatingResult:
+def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, tube_pitch: Q, triangular_pitch: bool, shell_inside_diameter: Q, baffle_spacing: Q, baffle_count: float, baffle_cut: float, tube_wall_conductivity: Q, tube_mass_flow: Q, shell_mass_flow: Q, fouling_tube: float, fouling_shell: float, shell_side_method: str, zones: list[dict[str, Any]], tube_fouling_layer_thickness: Q | None=None, tube_fouling_layer_conductivity: Q | None=None, shell_viscosity_wall: Q | None=None, has_sealing: bool | None=None, sealing_pairs: float | None=None, tube_to_baffle_clearance: Q | None=None, shell_to_baffle_clearance: Q | None=None, bypass_area: Q | None=None) -> ZoneRatingResult:
     """``thermal.zone_rating``, computed in Rust."""
     spec = _spec_for("thermal.zone_rating")
     result = _core.zone_rating(
@@ -8058,6 +8058,7 @@ def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: 
         fouling_tube,
         fouling_shell,
         shell_side_method,
+        input_records_to_si(spec, "zones", zones),
         None if tube_fouling_layer_thickness is None else input_to_si(spec, "tube_fouling_layer_thickness", tube_fouling_layer_thickness),
         None if tube_fouling_layer_conductivity is None else input_to_si(spec, "tube_fouling_layer_conductivity", tube_fouling_layer_conductivity),
         None if shell_viscosity_wall is None else input_to_si(spec, "shell_viscosity_wall", shell_viscosity_wall),
@@ -8066,7 +8067,6 @@ def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: 
         None if tube_to_baffle_clearance is None else input_to_si(spec, "tube_to_baffle_clearance", tube_to_baffle_clearance),
         None if shell_to_baffle_clearance is None else input_to_si(spec, "shell_to_baffle_clearance", shell_to_baffle_clearance),
         None if bypass_area is None else input_to_si(spec, "bypass_area", bypass_area),
-        input_records_to_si(spec, "zones", zones),
     )
     return ZoneRatingResult(
         zone_count=result.zone_count,

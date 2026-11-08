@@ -510,6 +510,7 @@ def zone_rating(
     fouling_tube: float,
     fouling_shell: float,
     shell_side_method: str,
+    zones: list[dict[str, Any]],
     tube_fouling_layer_thickness: Q | None = None,
     tube_fouling_layer_conductivity: Q | None = None,
     shell_viscosity_wall: Q | None = None,
@@ -518,8 +519,6 @@ def zone_rating(
     tube_to_baffle_clearance: Q | None = None,
     shell_to_baffle_clearance: Q | None = None,
     bypass_area: Q | None = None,
-    *,
-    zones: list[dict[str, Any]],
 ) -> ZoneRatingResult:
     """The shell-and-tube rating run zone by zone.
 

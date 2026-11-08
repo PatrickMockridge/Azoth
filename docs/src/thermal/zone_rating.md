@@ -43,6 +43,7 @@ U_i = evaluate(geometry, zone_i); A_i = dutyFraction_i * totalDuty_i / (U_i * lm
 | `fouling_tube` | dimensionless | the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`. |
 | `fouling_shell` | dimensionless | the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`. |
 | `shell_side_method` | kern / bell_delaware | the shell-side method. NeqSim's default is `kern`. |
+| `zones` | - | the zones, in the caller's order; each carries its own transport properties and its caller-stated LMTD. |
 | `tube_fouling_layer_thickness` | m | *Optional.* a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer. |
 | `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* the deposit's thermal conductivity. Absent is the class's `1.0`; a non-positive value is refused even at zero thickness. |
 | `shell_viscosity_wall` | Pa*s | *Optional.* the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity; zero is refused. |
@@ -51,7 +52,6 @@ U_i = evaluate(geometry, zone_i); A_i = dutyFraction_i * totalDuty_i / (U_i * lm
 | `tube_to_baffle_clearance` | m | *Optional.* the tube-to-baffle hole clearance. Absent is the class's `0.0004` m. |
 | `shell_to_baffle_clearance` | m | *Optional.* the shell-to-baffle clearance. Absent is the class's `0.003` m. |
 | `bypass_area` | m**2 | *Optional.* the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`. |
-| `zones` | - | the zones, in the caller's order; each carries its own transport properties and its caller-stated LMTD. |
 
 
 ## Outputs

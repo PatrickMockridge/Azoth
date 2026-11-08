@@ -70,38 +70,6 @@ description = "the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's
 type = "enum"
 values = ["kern", "bell_delaware"]
 description = "the shell-side method. NeqSim's default is `kern`.\n"
-[inputs.tube_fouling_layer_thickness]
-unit = "m"
-optional = true
-description = "a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer.\n"
-[inputs.tube_fouling_layer_conductivity]
-unit = "W/(m*K)"
-optional = true
-description = "the deposit's thermal conductivity. Absent is the class's `1.0`; a non-positive value is refused even at zero thickness.\n"
-[inputs.shell_viscosity_wall]
-unit = "Pa*s"
-optional = true
-description = "the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity; zero is refused.\n"
-[inputs.has_sealing]
-type = "boolean"
-optional = true
-description = "whether sealing strips are installed. Absent is false.\n"
-[inputs.sealing_pairs]
-unit = "dimensionless"
-optional = true
-description = "the sealing-strip pairs. Absent is `0`; a stated seal with no pair is refused in Bell-Delaware.\n"
-[inputs.tube_to_baffle_clearance]
-unit = "m"
-optional = true
-description = "the tube-to-baffle hole clearance. Absent is the class's `0.0004` m.\n"
-[inputs.shell_to_baffle_clearance]
-unit = "m"
-optional = true
-description = "the shell-to-baffle clearance. Absent is the class's `0.003` m.\n"
-[inputs.bypass_area]
-unit = "m**2"
-optional = true
-description = "the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`.\n"
 [inputs.zones]
 type = "record_list"
 row_type = "ZoneDefinitionRow"
@@ -144,6 +112,39 @@ description = "the zone's shell-side specific heat capacity.\n"
 [inputs.zones.fields.shell_conductivity]
 unit = "W/(m*K)"
 description = "the zone's shell-side thermal conductivity.\n"
+
+[inputs.tube_fouling_layer_thickness]
+unit = "m"
+optional = true
+description = "a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer.\n"
+[inputs.tube_fouling_layer_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the deposit's thermal conductivity. Absent is the class's `1.0`; a non-positive value is refused even at zero thickness.\n"
+[inputs.shell_viscosity_wall]
+unit = "Pa*s"
+optional = true
+description = "the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity; zero is refused.\n"
+[inputs.has_sealing]
+type = "boolean"
+optional = true
+description = "whether sealing strips are installed. Absent is false.\n"
+[inputs.sealing_pairs]
+unit = "dimensionless"
+optional = true
+description = "the sealing-strip pairs. Absent is `0`; a stated seal with no pair is refused in Bell-Delaware.\n"
+[inputs.tube_to_baffle_clearance]
+unit = "m"
+optional = true
+description = "the tube-to-baffle hole clearance. Absent is the class's `0.0004` m.\n"
+[inputs.shell_to_baffle_clearance]
+unit = "m"
+optional = true
+description = "the shell-to-baffle clearance. Absent is the class's `0.003` m.\n"
+[inputs.bypass_area]
+unit = "m**2"
+optional = true
+description = "the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`.\n"
 [outputs]
 [outputs.zone_count]
 unit = "dimensionless"
