@@ -180,6 +180,9 @@ public class ProcessProbe {
       case "heat_exchanger_delta_t":
         heatExchangerDeltaT();
         break;
+      case "heat_exchanger_rating":
+        heatExchangerRating();
+        break;
       case "heat_exchanger_mechanical":
         heatExchangerMechanicalRows();
         break;
@@ -7966,6 +7969,256 @@ public class ProcessProbe {
     Stream srkCold = new Stream("Stream2", coldFluid);
 
     deltaTRow("srk_test_run2_delta_t_1", srkHot, srkCold, 1.0);
+  }
+
+  /// `HeatExchanger.runThermalHydraulicRating`, which `setUseRatingPressureDrop` enables.
+  ///
+  /// **The class's own fouling-rating test, re-cased on PR.** The class test is SRK
+  /// (`SystemSrkEos`); every row here is `SystemPrEos` with the databank's kij, because that
+  /// is the cubic `azoth_process::Stream` builds. The SRK row is printed separately as the
+  /// class's control and is never presented as a PR case.
+  static void heatExchangerRating() {
+    String[] names = new String[] {"n-heptane", "n-octane"};
+    double[] z = new double[] {0.7, 0.3};
+
+    // The two orientations, the equal-inlet state, the deposit, and Bell-Delaware.
+    hxRatingRow("tube_30_shell_110", names, z, 303.15, 383.15, 0.0, 0.0, false);
+    hxRatingRow("tube_110_shell_30", names, z, 383.15, 303.15, 0.0, 0.0, false);
+    hxRatingRow("equal_inlets_60", names, z, 333.15, 333.15, 0.0, 0.0, false);
+    hxRatingRow("deposit_layer", names, z, 303.15, 383.15, 0.001, 0.2, false);
+    hxRatingRow("bell_delaware", names, z, 303.15, 383.15, 0.0, 0.0, true);
+
+    // The class's own SRK control row.
+    hxRatingSrkControl();
+
+    // The refusals the class's own tests assert.
+    hxRatingMultiphaseRefusal();
+    hxRatingPhaseCrossingRefusal();
+    hxRatingConfigurationRefusal("missing_calculator", "none");
+    hxRatingConfigurationRefusal("zero_area", "zero_area");
+    hxRatingConfigurationRefusal("conflicting_pin", "pin");
+  }
+
+  static void hxRatingRow(String label, String[] names, double[] z, double tubeT, double shellT,
+      double depositThickness, double depositConductivity, boolean bellDelaware) {
+    Stream tube = feedMass("tube feed", names, z, tubeT, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", names, z, shellT, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("feed preheater", tube, shell);
+    neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+        new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+    calculator.setTubeIDm(0.020);
+    calculator.setTubeODm(0.025);
+    calculator.setTubePitchm(0.032);
+    calculator.setTubeCount(100);
+    calculator.setTubePasses(2);
+    calculator.setTubeLengthm(4.0);
+    calculator.setFoulingTube(0.0);
+    calculator.setFoulingShell(0.0);
+    if (depositThickness > 0.0) {
+      calculator.setTubeFoulingLayer(depositThickness, depositConductivity);
+    }
+    if (bellDelaware) {
+      calculator.setShellSideMethod(
+          neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator.ShellSideMethod
+              .BELL_DELAWARE);
+    }
+    exchanger.setRatingCalculator(calculator);
+    exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+    exchanger.setUseRatingPressureDrop(true);
+
+    System.out.println(label);
+    try {
+      exchanger.run();
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+      System.out.println();
+      return;
+    }
+    printHxRating(exchanger, calculator);
+    System.out.println();
+  }
+
+  /// The class's own `HeatExchangerTest` fluid, SRK: the control row, not a PR case.
+  static void hxRatingSrkControl() {
+    String[] names = new String[] {"n-heptane", "n-octane"};
+    double[] z = new double[] {0.7, 0.3};
+    Stream tube = srkMassFeed("tube feed", names, z, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = srkMassFeed("shell feed", names, z, 383.15, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("srk control", tube, shell);
+    neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+        new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+    calculator.setTubeIDm(0.020);
+    calculator.setTubeODm(0.025);
+    calculator.setTubePitchm(0.032);
+    calculator.setTubeCount(100);
+    calculator.setTubePasses(2);
+    calculator.setTubeLengthm(4.0);
+    calculator.setFoulingTube(0.0);
+    calculator.setFoulingShell(0.0);
+    exchanger.setRatingCalculator(calculator);
+    exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+    exchanger.setUseRatingPressureDrop(true);
+    System.out.println("srk_control");
+    try {
+      exchanger.run();
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+      System.out.println();
+      return;
+    }
+    printHxRating(exchanger, calculator);
+    System.out.println();
+  }
+
+  static Stream srkMassFeed(String name, String[] names, double[] z, double temperatureK,
+      double pressureBara, double kgPerHour) {
+    SystemInterface fluid = new SystemSrkEos(temperatureK, pressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream stream = new Stream(name, fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static void printHxRating(neqsim.process.equipment.heatexchanger.HeatExchanger exchanger,
+      neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator) {
+    print("tube_in", exchanger.getInStream(0));
+    print("shell_in", exchanger.getInStream(1));
+    print("tube_out", exchanger.getOutStream(0));
+    print("shell_out", exchanger.getOutStream(1));
+    System.out.println("duty_w_java=" + exchanger.getDuty());
+    System.out.println("rating_u_w_per_m2k=" + exchanger.getRatingU());
+    System.out.println("rating_area_m2=" + exchanger.getRatingArea());
+    System.out.println("ua_value_w_per_k=" + exchanger.getUAvalue());
+    System.out.println("thermal_effectiveness=" + exchanger.getThermalEffectiveness());
+    double t0 = exchanger.getInTemperature(0);
+    double t1 = exchanger.getInTemperature(1);
+    double span = t0 - t1;
+    double c0 = span == 0.0 ? 0.0
+        : Math.abs((ratingLimitEnthalpy(exchanger.getInStream(0), t1)
+            - exchanger.getInStream(0).getThermoSystem().getEnthalpy()) / span);
+    double c1 = span == 0.0 ? 0.0
+        : Math.abs((ratingLimitEnthalpy(exchanger.getInStream(1), t0)
+            - exchanger.getInStream(1).getThermoSystem().getEnthalpy()) / span);
+    double cMin = Math.min(c0, c1);
+    System.out.println("derived_c_tube_w_per_k=" + c0);
+    System.out.println("derived_c_shell_w_per_k=" + c1);
+    System.out.println("derived_c_min_w_per_k=" + cMin);
+    System.out.println("derived_ntu=" + (cMin > 0.0 ? exchanger.getUAvalue() / cMin : 0.0));
+    // The five properties the calculator received, so a divergence is localised to the
+    // property layer rather than read as a correlation error.
+    for (int side = 0; side < 2; side++) {
+      SystemInterface fluid = exchanger.getInStream(side).getThermoSystem();
+      String prefix = side == 0 ? "tube_props" : "shell_props";
+      System.out.println(prefix + "_density_kg_per_m3=" + fluid.getDensity("kg/m3"));
+      System.out.println(prefix + "_viscosity_Pa_s=" + fluid.getViscosity("kg/msec"));
+      System.out.println(prefix + "_cp_J_per_kgK=" + fluid.getCp("J/kgK"));
+      System.out.println(prefix + "_conductivity_W_per_mK=" + fluid.getThermalConductivity("W/mK"));
+      System.out.println(prefix + "_mass_flow_kg_per_s=" + fluid.getFlowRate("kg/sec"));
+    }
+    // The calculator's own quantities, which the equipment result publishes.
+    System.out.println("calc_tube_side_htc=" + calculator.getTubeSideHTC());
+    System.out.println("calc_shell_side_htc=" + calculator.getShellSideHTC());
+    System.out.println("calc_overall_u=" + calculator.getOverallU());
+    System.out.println("calc_tube_side_pressure_drop_Pa=" + calculator.getTubeSidePressureDrop());
+    System.out.println("calc_shell_side_pressure_drop_Pa=" + calculator.getShellSidePressureDrop());
+    System.out.println("calc_tube_side_velocity=" + calculator.getTubeSideVelocity());
+    System.out.println("calc_shell_side_velocity=" + calculator.getShellSideVelocity());
+    System.out.println("calc_tube_side_re=" + calculator.getTubeSideRe());
+    System.out.println("calc_shell_side_re=" + calculator.getShellSideRe());
+  }
+
+  static double ratingLimitEnthalpy(StreamInterface inlet, double temperatureK) {
+    SystemInterface limit = inlet.getThermoSystem().clone();
+    limit.setTemperature(temperatureK);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(limit).TPflash();
+    return limit.getEnthalpy();
+  }
+
+  static void hxRatingMultiphaseRefusal() {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 383.15, 20.0, 10.0 * 3600.0);
+    SystemInterface wet = new SystemPrEos(303.15, 20.0);
+    wet.addComponent("methane", 0.5);
+    wet.addComponent("n-heptane", 0.5);
+    wet.setMixingRule(2);
+    tube.setThermoSystem(wet);
+    tube.setFlowRate(8.0 * 3600.0, "kg/hr");
+    tube.run();
+    hxRatingRefusal("multiphase_feed", tube, shell, null);
+  }
+
+  /// The class's own `singlePhaseEndpointsOnOppositeSidesOfBoilingAreRejected`: pure
+  /// n-heptane at 1 bara, 30 C against 200 C.
+  static void hxRatingPhaseCrossingRefusal() {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane"}, new double[] {1.0}, 303.15,
+        1.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane"}, new double[] {1.0}, 473.15,
+        1.0, 1.0 * 3600.0);
+    hxRatingRefusal("phase_crossing", tube, shell, null);
+  }
+
+  static void hxRatingConfigurationRefusal(String label, String mode) {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 383.15, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger(label, tube, shell);
+    exchanger.setUseRatingPressureDrop(true);
+    if (!"none".equals(mode)) {
+      neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+          new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+      calculator.setTubeIDm(0.020);
+      calculator.setTubeODm(0.025);
+      calculator.setTubePitchm(0.032);
+      calculator.setTubeCount(100);
+      calculator.setTubePasses(2);
+      calculator.setTubeLengthm(4.0);
+      exchanger.setRatingCalculator(calculator);
+      exchanger.setRatingArea("zero_area".equals(mode) ? 0.0 : Math.PI * 0.025 * 4.0 * 100);
+    }
+    if ("pin".equals(mode)) {
+      exchanger.setOutTemperature(60.0, "C");
+    }
+    hxRatingRefusal(label, tube, shell, exchanger);
+  }
+
+  static void hxRatingRefusal(String label, Stream tube, Stream shell,
+      neqsim.process.equipment.heatexchanger.HeatExchanger prepared) {
+    System.out.println(label);
+    try {
+      neqsim.process.equipment.heatexchanger.HeatExchanger exchanger = prepared;
+      if (exchanger == null) {
+        exchanger = new neqsim.process.equipment.heatexchanger.HeatExchanger(label, tube, shell);
+        neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+            new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+        calculator.setTubeIDm(0.020);
+        calculator.setTubeODm(0.025);
+        calculator.setTubePitchm(0.032);
+        calculator.setTubeCount(100);
+        calculator.setTubePasses(2);
+        calculator.setTubeLengthm(4.0);
+        exchanger.setRatingCalculator(calculator);
+        exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+        exchanger.setUseRatingPressureDrop(true);
+      }
+      exchanger.run();
+      System.out.println("run_result=accepted");
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+    }
+    System.out.println();
   }
 
   static Stream prTestFluid(double temperature, double pressureBar, String[] names,

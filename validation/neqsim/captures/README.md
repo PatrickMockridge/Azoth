@@ -213,6 +213,39 @@ a `NaN` enthalpy; the PR rows here therefore use the class's own `HeatExchangerT
 fluid on PR, where the same arithmetic stays in a state the cubic is for. **The SRK row is
 that test's own `15780.77130`**, and it is a labelled control rather than a PR case.
 
+## The heat exchanger's thermal-hydraulic rating
+
+`process_heat_exchanger_rating.tsv` is `HeatExchanger.runThermalHydraulicRating`, which
+`setUseRatingPressureDrop(true)` enables: both inlets are flashed and required single-phase,
+the calculator is fed their five transport properties, the correlated pressure drops move
+the outlet pressures, and the outlets are `PHflash`ed at the effectiveness-NTU duty. The
+rows are the class's own `HeatExchangerFoulingRatingTest` re-cased on **PR** (the class test
+is SRK); the SRK row is a labelled control and is not a PR case. The refusals are the
+class's own: a multiphase feed, a capacity clone across a phase transition, and the three
+configuration checks.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_rating \
+  > captures/process_heat_exchanger_rating.tsv
+```
+
+## The rating calculator, directly
+
+`thermal_rating_probe.tsv` drives `ThermalDesignCalculator` with stated geometry and fluid
+properties, so the arithmetic is observable without a flash: Kern and Bell-Delaware, square
+and triangular pitch, laminar/transition/turbulent tube side, the fouling pair, a deposit
+layer, a stated wall viscosity and bypass area, and the two entry points' refusals. The J
+factors come from the class's own `toMap()`, because they have no getters. Both `calculate()`
+and `calculateStrict()` are printed where they disagree: the permissive path leaves zeros,
+the strict one throws.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ThermalRatingProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ThermalRatingProbe \
+  > captures/thermal_rating_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
