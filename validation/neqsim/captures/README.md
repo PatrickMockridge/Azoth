@@ -262,6 +262,22 @@ states at the boundary instead.
   > captures/tube_vibration_probe.tsv
 ```
 
+## The LMTD correction factor
+
+`lmtd_correction_probe.tsv` drives `LMTDcorrectionFactor` on the class's own R/P state and
+on six edge states: R = 1, a small effectiveness, no heat transfer, equal inlets, a
+temperature cross, a state that needs four shell passes, and one no number of passes up to
+six clears. Each row prints `R`, `P`, the two dedicated shell-pass wrappers, `F_t` for one
+to six passes and the required-pass count. **The multi-pass path converts the overall P to
+a per-shell P1**, and an undefined conversion answers 1.0 rather than zero — which is why
+the cross row reads 1.0 at two passes.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar LmtdCorrectionProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar LmtdCorrectionProbe \
+  > captures/lmtd_correction_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
