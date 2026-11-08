@@ -314,10 +314,12 @@ correlation's `[0, 1]`.
 test fluid: the Friedel gradient across quality, with no surface tension and with no flux;
 the total drop and the Simpson average over a quality range in both directions, with odd
 and below-minimum interval counts; the Muller-Steinhagen-Heck gradient; and the
-gravitational and acceleration terms. **At quality zero the Friedel and M-S-H gradients
-both reduce to the liquid-only Fanning term**, the gravitational endpoints are exactly
-`rho * 9.81`, and the average is direction-symmetric because the class takes the absolute
-value of the Simpson sum over the span.
+gravitational and acceleration terms, and the composed state each case pins, including
+zero flux and quality one. **At quality zero the Friedel and M-S-H gradients both reduce
+to the liquid-only Fanning term, and at quality one both reduce to the vapour-only term**,
+the gravitational endpoints are exactly `rho * 9.81`, and the average is
+direction-symmetric because the class takes the absolute value of the Simpson sum over the
+span. A zero flux answers zero for every flow term and leaves the gravitational gradient.
 
 ```bash
 ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TwoPhasePressureDropProbe.java

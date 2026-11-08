@@ -77,6 +77,10 @@ public class TwoPhasePressureDropProbe {
         vaporDensity, liquidViscosity, vaporViscosity, 0.0, 0.1, 0.9, 20);
     composedRow("composed_odd_intervals", massFlux, 0.5, tubeId, 5.0, liquidDensity, vaporDensity,
         liquidViscosity, vaporViscosity, surfaceTension, 0.1, 0.9, 7);
+    composedRow("composed_zero_flux", 0.0, 0.5, tubeId, 5.0, liquidDensity, vaporDensity,
+        liquidViscosity, vaporViscosity, surfaceTension, 0.1, 0.9, 20);
+    composedRow("composed_quality_one", massFlux, 1.0, tubeId, 5.0, liquidDensity, vaporDensity,
+        liquidViscosity, vaporViscosity, surfaceTension, 0.1, 0.9, 20);
 
     System.out.flush();
   }
