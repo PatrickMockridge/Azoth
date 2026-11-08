@@ -853,7 +853,8 @@ a claim nothing holds.
   two-phase pressure drop** as `thermal.two_phase_pressure_drop`, held to
   `two_phase_pressure_drop_probe.tsv`, **and its fouling model** as
   `thermal.fouling_model`, held to `fouling_model_probe.tsv`, **and its tube-insert
-  enhancement** as `thermal.tube_insert_model`, held to `tube_insert_probe.tsv`; the port
+  enhancement** as `thermal.tube_insert_model`, held to `tube_insert_probe.tsv`, **and its
+  TEMA standard** as `thermal.tema_standard`, held to `tema_standard_probe.tsv`; the port
   is the single-phase half, with the zone analysis and the detailed
   `ShellAndTubeDesignCalculator`'s design loop still owed;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
