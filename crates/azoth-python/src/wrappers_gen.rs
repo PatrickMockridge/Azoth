@@ -7140,6 +7140,50 @@ pub fn shell_and_tube_vibration(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Tube-insert heat-transfer enhancement and pressure-drop penalty.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (insert, reynolds_number, prandtl_number, plain_heat_transfer_coefficient, plain_pressure_drop, twist_ratio, tape_thickness, tape_width_fraction, wire_diameter, wire_coil_pitch, matrix_density, roughness_ratio, helix_angle))]
+#[pyo3(
+    text_signature = "(insert, reynolds_number, prandtl_number, plain_heat_transfer_coefficient, plain_pressure_drop, twist_ratio, tape_thickness, tape_width_fraction, wire_diameter, wire_coil_pitch, matrix_density, roughness_ratio, helix_angle)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tube_insert_model(
+    py: Python<'_>,
+    insert: &str,
+    reynolds_number: f64,
+    prandtl_number: f64,
+    plain_heat_transfer_coefficient: f64,
+    plain_pressure_drop: f64,
+    twist_ratio: Option<f64>,
+    tape_thickness: Option<f64>,
+    tape_width_fraction: Option<f64>,
+    wire_diameter: Option<f64>,
+    wire_coil_pitch: Option<f64>,
+    matrix_density: Option<f64>,
+    roughness_ratio: Option<f64>,
+    helix_angle: Option<f64>,
+) -> PyResult<crate::transport_gen::PyTubeInsertModelResult> {
+    azoth_thermal::tube_insert_model::tube_insert_model(
+        insert,
+        reynolds_number,
+        prandtl_number,
+        twist_ratio,
+        tape_thickness,
+        tape_width_fraction,
+        wire_diameter,
+        wire_coil_pitch,
+        matrix_density,
+        roughness_ratio,
+        helix_angle,
+        watts_per_square_meter_kelvin(plain_heat_transfer_coefficient),
+        pascals(plain_pressure_drop),
+    )
+    .map(|r| crate::transport_gen::PyTubeInsertModelResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

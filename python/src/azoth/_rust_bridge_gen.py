@@ -289,6 +289,7 @@ from azoth.core.result import (
     TransferBinaryInteractionParametersResult,
     TrayHydraulicsResult,
     TsFlashResult,
+    TubeInsertModelResult,
     TuFlashResult,
     TurboExpanderResult,
     TvFlashResult,
@@ -602,6 +603,7 @@ __all__ = [
     "tray_hydraulics",
     "ts_flash",
     "tu_flash",
+    "tube_insert_model",
     "turbo_expander_compressor",
     "tv_flash",
     "tv_fraction_flash",
@@ -7925,6 +7927,34 @@ def shell_and_tube_vibration(tube_outside_diameter: Q, tube_inside_diameter: Q, 
         acoustic_ratio=result.acoustic_ratio,
         acoustic_critical=result.acoustic_critical,
         passed=result.passed,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tube_insert_model(insert: str, reynolds_number: float, prandtl_number: float, plain_heat_transfer_coefficient: Q, plain_pressure_drop: Q, twist_ratio: float | None=None, tape_thickness: Q | None=None, tape_width_fraction: float | None=None, wire_diameter: Q | None=None, wire_coil_pitch: Q | None=None, matrix_density: float | None=None, roughness_ratio: float | None=None, helix_angle: float | None=None) -> TubeInsertModelResult:
+    """``thermal.tube_insert_model``, computed in Rust."""
+    spec = _spec_for("thermal.tube_insert_model")
+    result = _core.tube_insert_model(
+        insert,
+        reynolds_number,
+        prandtl_number,
+        input_to_si(spec, "plain_heat_transfer_coefficient", plain_heat_transfer_coefficient),
+        input_to_si(spec, "plain_pressure_drop", plain_pressure_drop),
+        None if twist_ratio is None else twist_ratio,
+        None if tape_thickness is None else input_to_si(spec, "tape_thickness", tape_thickness),
+        None if tape_width_fraction is None else tape_width_fraction,
+        None if wire_diameter is None else input_to_si(spec, "wire_diameter", wire_diameter),
+        None if wire_coil_pitch is None else input_to_si(spec, "wire_coil_pitch", wire_coil_pitch),
+        None if matrix_density is None else matrix_density,
+        None if roughness_ratio is None else roughness_ratio,
+        None if helix_angle is None else helix_angle,
+    )
+    return TubeInsertModelResult(
+        heat_transfer_enhancement_ratio=result.heat_transfer_enhancement_ratio,
+        pressure_drop_penalty_ratio=result.pressure_drop_penalty_ratio,
+        performance_evaluation_criteria=result.performance_evaluation_criteria,
+        enhanced_heat_transfer_coefficient=from_si(result.enhanced_heat_transfer_coefficient.magnitude_si, result.enhanced_heat_transfer_coefficient.unit),
+        enhanced_pressure_drop=from_si(result.enhanced_pressure_drop.magnitude_si, result.enhanced_pressure_drop.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -22321,6 +22321,68 @@ impl From<&azoth_thermal::results::ShellAndTubeVibrationResult> for PyShellAndTu
         }
     }
 }
+/// Result of `thermal.tube_insert_model`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TubeInsertModelResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTubeInsertModelResult {
+    /// `h_enhanced/h_plain` at the stated Reynolds and Prandtl numbers.
+    #[pyo3(get)]
+    pub heat_transfer_enhancement_ratio: f64,
+    /// `f_enhanced/f_plain` at the stated Reynolds number.
+    #[pyo3(get)]
+    pub pressure_drop_penalty_ratio: f64,
+    /// `h_ratio/f_ratio**(1/3)` at constant pumping power.
+    #[pyo3(get)]
+    pub performance_evaluation_criteria: f64,
+    /// `plain_heat_transfer_coefficient * heat_transfer_enhancement_ratio`.
+    #[pyo3(get)]
+    pub enhanced_heat_transfer_coefficient: PyQty,
+    /// `plain_pressure_drop * pressure_drop_penalty_ratio`.
+    #[pyo3(get)]
+    pub enhanced_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTubeInsertModelResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TubeInsertModelResult(heat_transfer_enhancement_ratio={:?}, pressure_drop_penalty_ratio={:?}, performance_evaluation_criteria={:?}, enhanced_heat_transfer_coefficient={:?}, enhanced_pressure_drop={:?}, {} warning(s))",
+            self.heat_transfer_enhancement_ratio,
+            self.pressure_drop_penalty_ratio,
+            self.performance_evaluation_criteria,
+            self.enhanced_heat_transfer_coefficient,
+            self.enhanced_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TubeInsertModelResult> for PyTubeInsertModelResult {
+    fn from(r: &azoth_thermal::results::TubeInsertModelResult) -> Self {
+        Self {
+            heat_transfer_enhancement_ratio: r.heat_transfer_enhancement_ratio,
+            pressure_drop_penalty_ratio: r.pressure_drop_penalty_ratio,
+            performance_evaluation_criteria: r.performance_evaluation_criteria,
+            enhanced_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.enhanced_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            enhanced_pressure_drop: PyQty {
+                magnitude_si: r.enhanced_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.two_phase_pressure_drop`, transported.
 #[pyclass(
     frozen,

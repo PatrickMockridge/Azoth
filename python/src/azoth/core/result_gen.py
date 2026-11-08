@@ -8917,6 +8917,31 @@ class ShellAndTubeVibrationResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TubeInsertModelResult(_HasWarnings):
+    """Result of ``thermal.tube_insert_model``."""
+
+    CALC_ID: ClassVar[str] = "thermal.tube_insert_model"
+
+    #: `h_enhanced/h_plain` at the stated Reynolds and Prandtl numbers.
+    heat_transfer_enhancement_ratio: float
+
+    #: `f_enhanced/f_plain` at the stated Reynolds number.
+    pressure_drop_penalty_ratio: float
+
+    #: `h_ratio/f_ratio**(1/3)` at constant pumping power.
+    performance_evaluation_criteria: float
+
+    #: `plain_heat_transfer_coefficient * heat_transfer_enhancement_ratio`.
+    enhanced_heat_transfer_coefficient: Q
+
+    #: `plain_pressure_drop * pressure_drop_penalty_ratio`.
+    enhanced_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TwoPhasePressureDropResult(_HasWarnings):
     """Result of ``thermal.two_phase_pressure_drop``."""
 

@@ -14,6 +14,7 @@ from azoth.thermal.reference.lmtd_correction_factor import lmtd_correction_facto
 from azoth.thermal.reference.shah_condensation import shah_condensation
 from azoth.thermal.reference.shell_and_tube_rating import shell_and_tube_rating
 from azoth.thermal.reference.shell_and_tube_vibration import shell_and_tube_vibration
+from azoth.thermal.reference.tube_insert_model import tube_insert_model
 from azoth.thermal.reference.two_phase_pressure_drop import two_phase_pressure_drop
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
+    "tube_insert_model",
     "two_phase_pressure_drop",
 ]

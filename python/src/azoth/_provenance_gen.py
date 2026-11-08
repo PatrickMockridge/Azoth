@@ -3029,6 +3029,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'thermal.tube_insert_model': {
+        "calc_id": 'thermal.tube_insert_model',
+        "name": 'Tube-insert heat-transfer enhancement and pressure-drop penalty',
+        "spec": {'path': 'specs/calcs/thermal/tube_insert_model.toml', 'sha256': '716c84e748df4e2eb2c28c781a3d29a297b904af04e7f49b1d2455c72d361381'},
+        "code": [{'path': 'python/src/azoth/thermal/reference/tube_insert_model.py', 'sha256': 'a05814571d1224f8a8a88ef2c4fbf4869e219a44177a89ff2ffba1d86e60ce4f'}, {'path': 'crates/azoth-thermal/src/tube_insert_model.rs', 'sha256': '4652c5879ec4beb2f586143d7624e8488725e68569931b5bce9505cef56467c3'}],
+        "source": 'NeqSim process/mechanicaldesign/heatexchanger/TubeInsertModel.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 10,
+        "tests_skipped": 0,
+    },
     'thermal.two_phase_pressure_drop': {
         "calc_id": 'thermal.two_phase_pressure_drop',
         "name": 'Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck',

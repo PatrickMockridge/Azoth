@@ -3853,6 +3853,15 @@ class ShellAndTubeVibrationResult:
     warnings: list[Warning]
 
 @final
+class TubeInsertModelResult:
+    heat_transfer_enhancement_ratio: float
+    pressure_drop_penalty_ratio: float
+    performance_evaluation_criteria: float
+    enhanced_heat_transfer_coefficient: Qty
+    enhanced_pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
 class TwoPhasePressureDropResult:
     friedel_gradient: Qty
     friedel_pressure_drop: Qty
@@ -6816,6 +6825,21 @@ def shell_and_tube_vibration(
     damping_ratio: float,
     triangular_pitch: bool,
 ) -> ShellAndTubeVibrationResult: ...
+def tube_insert_model(
+    insert: str,
+    reynolds_number: float,
+    prandtl_number: float,
+    plain_heat_transfer_coefficient: float,
+    plain_pressure_drop: float,
+    twist_ratio: float | None = None,
+    tape_thickness: float | None = None,
+    tape_width_fraction: float | None = None,
+    wire_diameter: float | None = None,
+    wire_coil_pitch: float | None = None,
+    matrix_density: float | None = None,
+    roughness_ratio: float | None = None,
+    helix_angle: float | None = None,
+) -> TubeInsertModelResult: ...
 def two_phase_pressure_drop(
     mass_flux: float,
     vapor_quality: float,

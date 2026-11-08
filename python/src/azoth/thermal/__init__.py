@@ -25,6 +25,7 @@ from azoth.core.result import (
     ShahCondensationResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
+    TubeInsertModelResult,
     TwoPhasePressureDropResult,
 )
 from azoth.core.units import Q
@@ -37,6 +38,7 @@ __all__ = [
     "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
+    "tube_insert_model",
     "two_phase_pressure_drop",
 ]
 
@@ -47,6 +49,7 @@ _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
+_TUBE_INSERT_MODEL = "thermal.tube_insert_model"
 _TWO_PHASE_PRESSURE_DROP = "thermal.two_phase_pressure_drop"
 
 
@@ -389,4 +392,46 @@ def fouling_model(
         threshold_rate=threshold_rate,
         euler_steps=euler_steps,
         euler_step_hours=euler_step_hours,
+    )
+
+
+def tube_insert_model(
+    insert: str,
+    reynolds_number: float,
+    prandtl_number: float,
+    plain_heat_transfer_coefficient: Q,
+    plain_pressure_drop: Q,
+    twist_ratio: float | None = None,
+    tape_thickness: Q | None = None,
+    tape_width_fraction: float | None = None,
+    wire_diameter: Q | None = None,
+    wire_coil_pitch: Q | None = None,
+    matrix_density: float | None = None,
+    roughness_ratio: float | None = None,
+    helix_angle: float | None = None,
+) -> TubeInsertModelResult:
+    """Twisted tape, wire matrix and coiled wire enhancement.
+
+    Every insert parameter is optional and carries the class's default when absent;
+    ``helix_angle`` is in degrees and ``roughness_ratio`` and the fractions are dimensionless.
+
+    Raises:
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.tube_insert_model`.
+    """
+    return resolve(_TUBE_INSERT_MODEL)(  # type: ignore[no-any-return]
+        insert=insert,
+        reynolds_number=reynolds_number,
+        prandtl_number=prandtl_number,
+        plain_heat_transfer_coefficient=plain_heat_transfer_coefficient,
+        plain_pressure_drop=plain_pressure_drop,
+        twist_ratio=twist_ratio,
+        tape_thickness=tape_thickness,
+        tape_width_fraction=tape_width_fraction,
+        wire_diameter=wire_diameter,
+        wire_coil_pitch=wire_coil_pitch,
+        matrix_density=matrix_density,
+        roughness_ratio=roughness_ratio,
+        helix_angle=helix_angle,
     )

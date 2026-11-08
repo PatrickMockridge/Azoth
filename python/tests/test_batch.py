@@ -273,6 +273,8 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The fouling calc's `model` picks one of three resistances - a categorical choice
         # that changes the arithmetic, so a batch has no column to vary it down.
         "thermal.fouling_model",
+        # The insert calc's `insert` picks one of three correlation pairs, the same reason.
+        "thermal.tube_insert_model",
     }, sorted(excluded)
 
 

@@ -345,3 +345,36 @@ impl CalcResult for FoulingModelResult {
         &self.warnings
     }
 }
+
+/// Result of `thermal.tube_insert_model`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TubeInsertModelResult {
+    /// `h_enhanced/h_plain`.
+    pub heat_transfer_enhancement_ratio: f64,
+    /// `f_enhanced/f_plain`.
+    pub pressure_drop_penalty_ratio: f64,
+    /// The performance evaluation criterion at constant pumping power.
+    pub performance_evaluation_criteria: f64,
+    /// The enhanced coefficient.
+    pub enhanced_heat_transfer_coefficient: HeatTransfer,
+    /// The enhanced pressure drop.
+    pub enhanced_pressure_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TubeInsertModelResult {
+    const CALC_ID: &'static str = "thermal.tube_insert_model";
+    const FIELDS: &'static [&'static str] = &[
+        "heat_transfer_enhancement_ratio",
+        "pressure_drop_penalty_ratio",
+        "performance_evaluation_criteria",
+        "enhanced_heat_transfer_coefficient",
+        "enhanced_pressure_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

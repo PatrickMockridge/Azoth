@@ -275,6 +275,7 @@
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
+//!   - specs/calcs/thermal/tube_insert_model.toml
 //!   - specs/calcs/thermal/two_phase_pressure_drop.toml
 //!
 //! Regenerate with `python tools/gen_registry.py`; CI runs `--check` and fails on
@@ -4970,6 +4971,46 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "damping_ratio",
         "dimensionless",
     ),
+    (
+        "thermal.tube_insert_model",
+        "reynolds_number",
+        "dimensionless",
+    ),
+    (
+        "thermal.tube_insert_model",
+        "prandtl_number",
+        "dimensionless",
+    ),
+    (
+        "thermal.tube_insert_model",
+        "plain_heat_transfer_coefficient",
+        "heat_transfer",
+    ),
+    (
+        "thermal.tube_insert_model",
+        "plain_pressure_drop",
+        "pressure",
+    ),
+    ("thermal.tube_insert_model", "twist_ratio", "dimensionless"),
+    ("thermal.tube_insert_model", "tape_thickness", "length"),
+    (
+        "thermal.tube_insert_model",
+        "tape_width_fraction",
+        "dimensionless",
+    ),
+    ("thermal.tube_insert_model", "wire_diameter", "length"),
+    ("thermal.tube_insert_model", "wire_coil_pitch", "length"),
+    (
+        "thermal.tube_insert_model",
+        "matrix_density",
+        "dimensionless",
+    ),
+    (
+        "thermal.tube_insert_model",
+        "roughness_ratio",
+        "dimensionless",
+    ),
+    ("thermal.tube_insert_model", "helix_angle", "dimensionless"),
     ("thermal.two_phase_pressure_drop", "mass_flux", "mass_flux"),
     (
         "thermal.two_phase_pressure_drop",
