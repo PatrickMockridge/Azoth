@@ -288,6 +288,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyBoilingHeatTransferResult>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
+    m.add_class::<crate::transport_gen::PyFoulingModelResult>()?;
     m.add_class::<crate::transport_gen::PyLmtdCorrectionFactorResult>()?;
     m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeRatingResult>()?;
@@ -946,6 +947,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::conduction_plane_wall,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::fouling_model, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::lmtd_correction_factor,
         m

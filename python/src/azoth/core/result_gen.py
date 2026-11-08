@@ -8717,6 +8717,46 @@ class ConductionPlaneWallResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FoulingModelResult(_HasWarnings):
+    """Result of ``thermal.fouling_model``."""
+
+    CALC_ID: ClassVar[str] = "thermal.fouling_model"
+
+    #: the model's resistance at `time_hours`, in m**2*K/W: the fixed value, the Ebert-Panchal analytical approach, or the Kern-Seaton asymptote.
+    fouling_resistance_at_time: float
+
+    #: the resistance after the Euler steps, in m**2*K/W; for Kern-Seaton it is the no-argument getter at the operating time.
+    current_fouling_resistance: float
+
+    #: the model's asymptote in m**2*K/W: the fixed value, `Rf_max`, or the deposition over removal; `MAX_VALUE` when there is no removal.
+    asymptotic_fouling_resistance: float
+
+    #: the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
+    threshold_wall_temperature: Q
+
+    #: the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.
+    threshold_velocity: Q
+
+    #: the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
+    time_to_target: Q
+
+    #: the time advanced by the Euler steps.
+    operating_time: Q
+
+    #: the Ebert-Panchal rate at the current resistance, in m**2*K/(W*h), which is zero when the wall temperature or Reynolds number is non-positive.
+    fouling_rate: float
+
+    #: `rho*v*D/mu` of the stated conditions.
+    reynolds_number: float
+
+    #: `f/8*rho*v**2` with the class's Darcy friction factor.
+    wall_shear_stress: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LmtdCorrectionFactorResult(_HasWarnings):
     """Result of ``thermal.lmtd_correction_factor``."""
 

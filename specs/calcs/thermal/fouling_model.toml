@@ -1,0 +1,557 @@
+id = "thermal.fouling_model"
+name = "Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal"
+equation = "dRf/dt = alpha*Re**beta*exp(-E/(R*Tw)) - gamma*tau_w*Rf; Rf(t) = Rf_inf*(1 - exp(-t/tau)); tau_w = f/8*rho*v**2"
+latex = '''\frac{dR_f}{dt} = \alpha Re^{\beta} e^{-E/(R T_w)} - \gamma \tau_w R_f, \qquad R_f(t) = R_{f,\infty}\left(1 - e^{-t/\tau}\right)'''
+assumptions = [
+    "**the operating conditions are always applied** through the class's `updateConditions` (`Re = rho v D/mu`, `tau_w = f/8 rho v**2`), with its `calcDarcyFriction`; the class's cached field defaults are not a reachable state.\n",
+    "**the Ebert-Panchal resistance at a time is the analytical approach to `Rf_inf = deposition/(gamma tau_w)`**, `Rf_inf (1 - exp(-t/tau))` with `tau = 1/(gamma tau_w)` in hours, and a zero removal coefficient answers linear growth `deposition*t*3600`.\n",
+    "**the deposition is `alpha Re**beta exp(-E/(R Tw))` with `R = 8.314` and the rate converted to hours by `3600`**, and a non-positive wall temperature or Reynolds number answers a zero rate, as the class guards.\n",
+    "**the threshold temperature is `-E/(R ln(rate/(alpha Re**beta)))`**, answers zero outside its guards, and **answers the class's `Double.MAX_VALUE` sentinel when the logarithm is non-negative** - the state where any deposition exceeds the threshold rate.\n",
+    "**the threshold velocity is the class's 50-step bisection over `[0.1, 10]` m/s** on `Rf_inf = fixed_fouling_resistance`, so it stops at `10` when the asymptote stays above the fixed resistance across the bracket, and at `0.1` when it never does.\n",
+    "**the time to a target resistance is `-tau ln(1 - target/Rf_inf)`**, answering `-1` when the target is at or beyond the asymptote, `0` for the fixed model - whose resistance does not grow - and `-0.0` where the asymptote is the `MAX_VALUE` sentinel.\n",
+    "**the stateful `advanceTime` path is an optional Euler step**: `euler_steps` steps of `euler_step_hours`, adding `rate * euler_step_hours` to the current resistance for Ebert-Panchal only, flooring at zero, and incrementing the operating time for every model. Absent steps are zero.\n",
+    "**`time_hours` drives the analytical resistance of both time-dependent models** while `current_fouling_resistance` is the state after the Euler steps; for Kern-Seaton that state is `Rf_max (1 - exp(-operating_time/tau))`, as the class's no-argument getter answers.\n",
+    "**the fouling resistance and rate are declared dimensionless** because the vocabulary and `uom` carry no area-specific resistance or its rate; the SI units are m**2*K/W and m**2*K/(W*h) in the descriptions, the `k_ga` precedent.\n",
+]
+references = [
+    "Ebert, W.; Panchal, C.B. (1997). \"Analysis of Exxon Crude-Oil Slip-Stream Coking Data.\" Fouling Mitigation of Industrial Heat-Exchange Equipment, Begell House, 451-460. The threshold model.",
+    "Kern, D.Q.; Seaton, R.E. (1959). \"A Theoretical Analysis of Thermal Surface Fouling.\" British Chemical Engineering 4(5), 258-262. The asymptotic model.",
+    "Polley, G.T.; Wilson, D.I.; Yeap, B.L.; Pugh, S.J. (2002). \"Evaluation of laboratory crude oil threshold fouling data for application to refinery pre-heat trains.\" Applied Thermal Engineering 22, 777-788. The crude parameters and the threshold condition.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/FoulingModel.java` is the port source.",
+    "`validation/neqsim/captures/fouling_model_probe.tsv` - the three models across flow, wall temperature, removal rate, threshold and Euler states, each row stating its conditions.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/FoulingModel.java"
+edition = "`getFoulingResistance` at a time, `calcEbertPanchalFoulingRate`, `calcEbertPanchalResistance`, `calcKernSeatonResistance`, `calcThresholdTemperature`, `calcThresholdVelocity`, `getAsymptoticFoulingResistance`, `predictTimeToFouling` and `advanceTime`, with the three factories' parameter sets."
+[inputs]
+[inputs.model]
+type = "enum"
+values = ["fixed", "ebert_panchal", "kern_seaton"]
+description = "the fouling model: a fixed TEMA resistance, the Ebert-Panchal threshold model, or the Kern-Seaton asymptote.\n"
+[inputs.velocity]
+unit = "m/s"
+description = "the tube-side velocity, in the Reynolds number and the wall shear stress.\n"
+[inputs.fluid_density]
+unit = "kg/m**3"
+description = "the bulk fluid density.\n"
+[inputs.fluid_viscosity]
+unit = "Pa*s"
+description = "the bulk dynamic viscosity.\n"
+[inputs.wall_temperature]
+unit = "K"
+description = "the wall temperature, in the Arrhenius deposition term.\n"
+[inputs.tube_inner_diameter]
+unit = "m"
+description = "the tube inner diameter, in the Reynolds number.\n"
+[inputs.alpha]
+unit = "dimensionless"
+description = "the Ebert-Panchal deposition pre-exponential constant. Polley's crude value is `0.5`, the heavy crude's `1.0`.\n"
+[inputs.beta]
+unit = "dimensionless"
+description = "the Reynolds exponent, typically `-0.66` for crude oils.\n"
+[inputs.activation_energy]
+unit = "J/mol"
+description = "the deposition activation energy: `48000` for crude, `68000` for heavy crude.\n"
+[inputs.gamma]
+unit = "dimensionless"
+description = "the removal rate constant in 1/(Pa*s), declared dimensionless because the vocabulary carries no inverse-pressure-time unit. Crude is `5e-9`, heavy crude `3e-9`.\n"
+[inputs.fixed_fouling_resistance]
+unit = "dimensionless"
+description = "the fixed TEMA resistance in m**2*K/W, used by the fixed model and as the threshold-velocity comparison. The class's default is `0.000176`.\n"
+[inputs.rf_max]
+unit = "dimensionless"
+description = "the Kern-Seaton asymptotic resistance in m**2*K/W. The class's default is `0.0005`.\n"
+[inputs.time_constant]
+unit = "h"
+description = "the Kern-Seaton time constant. The class's default is `2000` h.\n"
+[inputs.time_hours]
+unit = "h"
+description = "the operating time the analytical resistance is asked at. Zero is the initial state.\n"
+[inputs.target_fouling_resistance]
+unit = "dimensionless"
+description = "the target resistance in m**2*K/W whose time is predicted.\n"
+[inputs.threshold_rate]
+unit = "dimensionless"
+description = "the target fouling rate at zero resistance, in m**2*K/(W*s), for the threshold temperature. Polley's typical band is `1e-10` to `1e-9`.\n"
+[inputs.euler_steps]
+unit = "dimensionless"
+optional = true
+description = "the number of Euler steps of the stateful path. Absent is `0`; a non-integral count is refused.\n"
+[inputs.euler_step_hours]
+unit = "h"
+optional = true
+description = "the length of each Euler step. Absent is `0`, which advances the operating time without changing the resistance.\n"
+[outputs]
+[outputs.fouling_resistance_at_time]
+unit = "dimensionless"
+description = "the model's resistance at `time_hours`, in m**2*K/W: the fixed value, the Ebert-Panchal analytical approach, or the Kern-Seaton asymptote.\n"
+[outputs.current_fouling_resistance]
+unit = "dimensionless"
+description = "the resistance after the Euler steps, in m**2*K/W; for Kern-Seaton it is the no-argument getter at the operating time.\n"
+[outputs.asymptotic_fouling_resistance]
+unit = "dimensionless"
+description = "the model's asymptote in m**2*K/W: the fixed value, `Rf_max`, or the deposition over removal; `MAX_VALUE` when there is no removal.\n"
+[outputs.threshold_wall_temperature]
+unit = "K"
+description = "the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.\n"
+[outputs.threshold_velocity]
+unit = "m/s"
+description = "the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.\n"
+[outputs.time_to_target]
+unit = "h"
+description = "the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.\n"
+[outputs.operating_time]
+unit = "h"
+description = "the time advanced by the Euler steps.\n"
+[outputs.fouling_rate]
+unit = "dimensionless"
+description = "the Ebert-Panchal rate at the current resistance, in m**2*K/(W*h), which is zero when the wall temperature or Reynolds number is non-positive.\n"
+[outputs.reynolds_number]
+unit = "dimensionless"
+description = "`rho*v*D/mu` of the stated conditions.\n"
+[outputs.wall_shear_stress]
+unit = "Pa"
+description = "`f/8*rho*v**2` with the class's Darcy friction factor.\n"
+[[valid_range]]
+quantity = "velocity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a flow velocity is positive; the stated conditions are the class's updateConditions entry.\n"
+[[valid_range]]
+quantity = "fluid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Reynolds number and the shear stress multiply by it.\n"
+[[valid_range]]
+quantity = "fluid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Reynolds number divides by it.\n"
+[[valid_range]]
+quantity = "wall_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature is positive; the Arrhenius term divides by it.\n"
+[[valid_range]]
+quantity = "tube_inner_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Reynolds number multiplies by it.\n"
+[[valid_range]]
+quantity = "alpha"
+min = 0
+severity = "error"
+rationale = "a negative deposition constant is unphysical; zero means no deposition.\n"
+[[valid_range]]
+quantity = "activation_energy"
+min = 0
+severity = "error"
+rationale = "an activation energy cannot be negative; zero makes the Arrhenius factor one.\n"
+[[valid_range]]
+quantity = "gamma"
+min = 0
+severity = "error"
+rationale = "a negative removal constant is unphysical; zero means no removal.\n"
+[[valid_range]]
+quantity = "fixed_fouling_resistance"
+min = 0
+severity = "error"
+rationale = "a resistance cannot be negative.\n"
+[[valid_range]]
+quantity = "rf_max"
+min = 0
+severity = "error"
+rationale = "a resistance cannot be negative; zero answers a zero Kern-Seaton resistance.\n"
+[[valid_range]]
+quantity = "time_constant"
+min = 0
+severity = "error"
+rationale = "a time constant cannot be negative; zero answers a zero Kern-Seaton resistance.\n"
+[[valid_range]]
+quantity = "time_hours"
+min = 0
+severity = "error"
+rationale = "an operating time cannot be negative; zero is the initial state.\n"
+[[valid_range]]
+quantity = "target_fouling_resistance"
+min = 0
+severity = "error"
+rationale = "a resistance target cannot be negative.\n"
+[[valid_range]]
+quantity = "threshold_rate"
+min = 0
+severity = "error"
+rationale = "a rate threshold cannot be negative; zero asks for any deposition.\n"
+[worked_example]
+source = "the capture's `ebert_crude` row at NeqSim f0c7436c, the crude-oil factory at stated conditions."
+derivation = "alpha = 0.5, beta = -0.66, E = 48000 J/mol, gamma = 5e-9, R = 8.314, v = 1.5 m/s, rho = 800, mu = 5e-4, Tw = 473.15 K, D = 0.01905 m, t = 1000 h, target = 1e-4, threshold rate = 1e-10, no Euler steps.\n\n  Re = 800*1.5*0.01905/5e-4 = 45720;  f = 0.25/log10(5.74/Re**0.9)**2 = 0.0284\n  tau_w = f/8*800*1.5**2 = 4.76675238185679 Pa\n  deposition = 0.5*45720**-0.66*exp(-48000/(8.314*473.15)) = 2.108735550734699e-9 1/s\n  removalCoeff = 5e-9*4.76675238185679 = 2.383376190928395e-8\n  Rf_inf = deposition/removalCoeff = 0.08847682603403932\n  tau_hours = 1/(removalCoeff*3600) = 11.6517...;  Rf(1000) = Rf_inf*(1 - exp(-1000/tau_hours)) = 0.0072748873640877685\n  rate at zero resistance = deposition*3600 = 7.5914481822639434e-6 m2K/(W*h)\n  time to 1e-4 = -tau_hours*ln(1 - 1e-4/Rf_inf) = 13.18016697054171 h\n  threshold wall = -48000/(8.314*ln(1e-10/(0.5*45720**-0.66))) = 378.5655661038693 K\n"
+tolerance = 1e-9
+[worked_example.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[worked_example.expected]
+fouling_resistance_at_time = 0.0072748873640877685
+current_fouling_resistance = 0.0
+asymptotic_fouling_resistance = 0.08847682603403932
+threshold_wall_temperature = 378.5655661038693
+threshold_velocity = 9.999999999999996
+time_to_target = 13.18016697054171
+operating_time = 0.0
+fouling_rate = 7.5914481822639434e-6
+reynolds_number = 45720.0
+wall_shear_stress = 4.76675238185679
+[implementations]
+python = "azoth.thermal.fouling_model"
+rust = "azoth_thermal::fouling_model"
+[[tests]]
+id = "the_crude_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_fixed_model_is_constant_and_answers_a_zero_time"
+type = "reference"
+status = "active"
+source = "The capture's `fixed_default` and `fixed_custom` rows: the fixed resistance is the same at every time, its asymptote is the same number, and the predicted time is `0` because it does not grow. The custom row's `0.0003` is the resistance at a stated time.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "fixed"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.0003
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 0.0003
+current_fouling_resistance = 0.0003
+asymptotic_fouling_resistance = 0.0003
+time_to_target = 0.0
+[[tests]]
+id = "a_fixed_target_beyond_the_resistance_answers_minus_one"
+type = "reference"
+status = "active"
+source = "The capture's `fixed_predict_beyond` row: a `0.001` target against the `0.0003` fixed resistance answers `-1`, the shared at-or-beyond-the-asymptote guard.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "fixed"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.0003
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 0.001
+threshold_rate = 1e-10
+[tests.expected]
+time_to_target = -1.0
+[[tests]]
+id = "the_kern_seaton_asymptote_at_its_time_constant"
+type = "reference"
+status = "active"
+source = "The capture's `kern_seaton_cooling_water` row: `Rf_max = 0.0002` and `tau = 720` h, so the resistance at one time constant is `Rf_max (1 - exp(-1))` and the time to `1e-4` is `-720 ln(1 - 0.5)`.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "kern_seaton"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0002
+time_constant = 720.0
+time_hours = 720.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 1.2642411176571155e-4
+asymptotic_fouling_resistance = 0.0002
+time_to_target = 499.0659700031606
+[[tests]]
+id = "a_zero_kern_seaton_maximum_answers_zero"
+type = "reference"
+status = "active"
+source = "The capture's `kern_seaton_rfmax_zero` row: a zero maximum answers zero resistance and a zero asymptote, and the target is then at or beyond the asymptote, so the predicted time is `-1`.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "kern_seaton"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0
+time_constant = 720.0
+time_hours = 720.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 0.0
+asymptotic_fouling_resistance = 0.0
+time_to_target = -1.0
+[[tests]]
+id = "a_slower_flow_fouls_faster_and_a_hotter_wall_fouls_faster"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_crude_slow_flow` and `ebert_crude_hot_wall` rows: 0.3 m/s gives Re = 9144, a shear stress of 0.2857 Pa and an asymptote of 4.2697, while a 523.15 K wall keeps Re at 45720 and raises the asymptote to 0.28399 and the rate to 2.4367e-5.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 0.3
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 0.02190425319753133
+asymptotic_fouling_resistance = 4.269720161423755
+threshold_wall_temperature = 353.91499327635694
+time_to_target = 4.553656331986646
+fouling_rate = 2.196063202063429e-5
+reynolds_number = 9144.0
+wall_shear_stress = 0.28574123505336124
+[[tests]]
+id = "no_removal_answers_linear_growth_and_the_asymptote_sentinel"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_no_removal` row: `gamma = 0` removes nothing, so the asymptote is the class's `Double.MAX_VALUE` sentinel, the resistance at 1000 h is the linear `deposition*3600*1000 = 0.007591448182263943`, and the predicted time collapses to `-0.0`.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 0.0
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 0.007591448182263943
+asymptotic_fouling_resistance = 1.7976931348623157e308
+time_to_target = -0.0
+fouling_rate = 7.5914481822639434e-6
+[[tests]]
+id = "a_threshold_rate_above_the_deposition_answers_the_maximum_sentinel"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_threshold_sentinel` row: a `0.01` target rate is above the deposition rate at zero fouling, so the threshold temperature is the class's `Double.MAX_VALUE`.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 0.01
+[tests.expected]
+threshold_wall_temperature = 1.7976931348623157e308
+[[tests]]
+id = "a_mid_threshold_rate_answers_a_finite_temperature"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_threshold_mid` row: `1e-6` is below the deposition rate at zero fouling, so the logarithm is negative and the threshold wall temperature is a finite 955.8012323617426 K.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-6
+[tests.expected]
+threshold_wall_temperature = 955.8012323617426
+[[tests]]
+id = "a_suppressed_flow_has_an_interior_threshold_velocity"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_suppressed_threshold_velocity` row: a tenfold removal constant at 0.3 m/s lets the asymptote cross the fixed resistance inside the bisection bracket, so the threshold velocity is 7.417308945699658 m/s.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 0.3
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-8
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 0.021405435991255224
+asymptotic_fouling_resistance = 0.4269720161423755
+threshold_velocity = 7.417308945699658
+time_to_target = 4.554136333787244
+[[tests]]
+id = "a_target_past_the_asymptote_answers_minus_one"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_predict_beyond_asymptote` row: the crude asymptote plus `1e-6` answers `-1`.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 0.08847782603403932
+threshold_rate = 1e-10
+[tests.expected]
+time_to_target = -1.0
+[[tests]]
+id = "three_euler_steps_leave_the_analytical_resistance_alone"
+type = "reference"
+status = "active"
+source = "The capture's `ebert_advance_three_steps` row: three one-hour Euler steps give a current resistance of 2.2772390528779303e-5 and three operating hours, while the resistance at 1000 h stays the analytical 0.0072748873640877685.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 0.5
+beta = -0.66
+activation_energy = 48000.0
+gamma = 5e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+euler_steps = 3.0
+euler_step_hours = 1.0
+[tests.expected]
+current_fouling_resistance = 2.2772390528779303e-5
+operating_time = 3.0
+fouling_rate = 7.589494276021659e-6
+fouling_resistance_at_time = 0.0072748873640877685
+[[tests]]
+id = "the_heavy_crude_factory_fouls_more_slowly"
+type = "reference"
+status = "active"
+source = "The capture's `heavy_crude` row: alpha = 1.0, E = 68000 J/mol and gamma = 3e-9 give an asymptote of 0.0018267363761974172, a rate of 9.40420797004456e-8, a threshold wall of 512.9859295140155 K and an interior threshold velocity of 3.9072445612518 m/s.\n"
+tolerance = 1e-9
+[tests.inputs]
+model = "ebert_panchal"
+velocity = 1.5
+fluid_density = 800.0
+fluid_viscosity = 5e-4
+wall_temperature = 473.15
+tube_inner_diameter = 0.01905
+alpha = 1.0
+beta = -0.66
+activation_energy = 68000.0
+gamma = 3e-9
+fixed_fouling_resistance = 0.000176
+rf_max = 0.0005
+time_constant = 2000.0
+time_hours = 1000.0
+target_fouling_resistance = 1e-4
+threshold_rate = 1e-10
+[tests.expected]
+fouling_resistance_at_time = 9.166240360227971e-5
+asymptotic_fouling_resistance = 0.0018267363761974172
+threshold_wall_temperature = 512.9859295140155
+threshold_velocity = 3.9072445612518
+time_to_target = 1093.5668661796497
+fouling_rate = 9.40420797004456e-8

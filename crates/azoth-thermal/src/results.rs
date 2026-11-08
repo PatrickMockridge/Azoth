@@ -5,7 +5,9 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{Area, Frequency, HeatTransfer, Length, Pressure, Velocity};
+use azoth_core::units::{
+    Area, Frequency, HeatTransfer, Length, Pressure, ThermodynamicTemperature, Time, Velocity,
+};
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::Power;
 
@@ -288,6 +290,54 @@ impl CalcResult for TwoPhasePressureDropResult {
         "muller_steinhagen_heck_gradient",
         "gravitational_gradient",
         "acceleration_pressure_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `thermal.fouling_model`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FoulingModelResult {
+    /// The resistance at the stated time, m**2*K/W.
+    pub fouling_resistance_at_time: f64,
+    /// The resistance after the Euler steps, m**2*K/W.
+    pub current_fouling_resistance: f64,
+    /// The model's asymptote, m**2*K/W.
+    pub asymptotic_fouling_resistance: f64,
+    /// The threshold wall temperature; `MAX_VALUE` when no wall exceeds the threshold.
+    pub threshold_wall_temperature: ThermodynamicTemperature,
+    /// The velocity at which the asymptote crosses the fixed resistance.
+    pub threshold_velocity: Velocity,
+    /// The predicted time to the target resistance; `-1` past the asymptote.
+    pub time_to_target: Time,
+    /// The time advanced by the Euler steps.
+    pub operating_time: Time,
+    /// The Ebert-Panchal rate at the current resistance, m**2*K/(W*h).
+    pub fouling_rate: f64,
+    /// The Reynolds number of the stated conditions.
+    pub reynolds_number: f64,
+    /// The wall shear stress of the stated conditions.
+    pub wall_shear_stress: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FoulingModelResult {
+    const CALC_ID: &'static str = "thermal.fouling_model";
+    const FIELDS: &'static [&'static str] = &[
+        "fouling_resistance_at_time",
+        "current_fouling_resistance",
+        "asymptotic_fouling_resistance",
+        "threshold_wall_temperature",
+        "threshold_velocity",
+        "time_to_target",
+        "operating_time",
+        "fouling_rate",
+        "reynolds_number",
+        "wall_shear_stress",
         "warnings",
     ];
 

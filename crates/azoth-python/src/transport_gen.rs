@@ -21850,6 +21850,102 @@ impl From<&azoth_thermal::results::ConductionPlaneWallResult> for PyConductionPl
         }
     }
 }
+/// Result of `thermal.fouling_model`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FoulingModelResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFoulingModelResult {
+    /// the model's resistance at `time_hours`, in m**2*K/W: the fixed value, the Ebert-Panchal analytical approach, or the Kern-Seaton asymptote.
+    #[pyo3(get)]
+    pub fouling_resistance_at_time: f64,
+    /// the resistance after the Euler steps, in m**2*K/W; for Kern-Seaton it is the no-argument getter at the operating time.
+    #[pyo3(get)]
+    pub current_fouling_resistance: f64,
+    /// the model's asymptote in m**2*K/W: the fixed value, `Rf_max`, or the deposition over removal; `MAX_VALUE` when there is no removal.
+    #[pyo3(get)]
+    pub asymptotic_fouling_resistance: f64,
+    /// the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
+    #[pyo3(get)]
+    pub threshold_wall_temperature: PyQty,
+    /// the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.
+    #[pyo3(get)]
+    pub threshold_velocity: PyQty,
+    /// the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
+    #[pyo3(get)]
+    pub time_to_target: PyQty,
+    /// the time advanced by the Euler steps.
+    #[pyo3(get)]
+    pub operating_time: PyQty,
+    /// the Ebert-Panchal rate at the current resistance, in m**2*K/(W*h), which is zero when the wall temperature or Reynolds number is non-positive.
+    #[pyo3(get)]
+    pub fouling_rate: f64,
+    /// `rho*v*D/mu` of the stated conditions.
+    #[pyo3(get)]
+    pub reynolds_number: f64,
+    /// `f/8*rho*v**2` with the class's Darcy friction factor.
+    #[pyo3(get)]
+    pub wall_shear_stress: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFoulingModelResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FoulingModelResult(fouling_resistance_at_time={:?}, current_fouling_resistance={:?}, asymptotic_fouling_resistance={:?}, threshold_wall_temperature={:?}, threshold_velocity={:?}, time_to_target={:?}, operating_time={:?}, fouling_rate={:?}, reynolds_number={:?}, wall_shear_stress={:?}, {} warning(s))",
+            self.fouling_resistance_at_time,
+            self.current_fouling_resistance,
+            self.asymptotic_fouling_resistance,
+            self.threshold_wall_temperature,
+            self.threshold_velocity,
+            self.time_to_target,
+            self.operating_time,
+            self.fouling_rate,
+            self.reynolds_number,
+            self.wall_shear_stress,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::FoulingModelResult> for PyFoulingModelResult {
+    fn from(r: &azoth_thermal::results::FoulingModelResult) -> Self {
+        Self {
+            fouling_resistance_at_time: r.fouling_resistance_at_time,
+            current_fouling_resistance: r.current_fouling_resistance,
+            asymptotic_fouling_resistance: r.asymptotic_fouling_resistance,
+            threshold_wall_temperature: PyQty {
+                magnitude_si: r.threshold_wall_temperature.value,
+                unit: "K".to_string(),
+            },
+            threshold_velocity: PyQty {
+                magnitude_si: r.threshold_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            time_to_target: PyQty {
+                magnitude_si: r.time_to_target.value,
+                unit: "h".to_string(),
+            },
+            operating_time: PyQty {
+                magnitude_si: r.operating_time.value,
+                unit: "h".to_string(),
+            },
+            fouling_rate: r.fouling_rate,
+            reynolds_number: r.reynolds_number,
+            wall_shear_stress: PyQty {
+                magnitude_si: r.wall_shear_stress.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.lmtd_correction_factor`, transported.
 #[pyclass(
     frozen,

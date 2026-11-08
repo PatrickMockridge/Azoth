@@ -270,6 +270,7 @@
 //!   - specs/models/standards/iso6976.toml
 //!   - specs/calcs/thermal/boiling_heat_transfer.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
+//!   - specs/calcs/thermal/fouling_model.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
@@ -4685,6 +4686,39 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("thermal.conduction_plane_wall", "L", "length"),
+    ("thermal.fouling_model", "velocity", "velocity"),
+    ("thermal.fouling_model", "fluid_density", "mass_density"),
+    (
+        "thermal.fouling_model",
+        "fluid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.fouling_model",
+        "wall_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("thermal.fouling_model", "tube_inner_diameter", "length"),
+    ("thermal.fouling_model", "alpha", "dimensionless"),
+    ("thermal.fouling_model", "beta", "dimensionless"),
+    ("thermal.fouling_model", "activation_energy", "molar_energy"),
+    ("thermal.fouling_model", "gamma", "dimensionless"),
+    (
+        "thermal.fouling_model",
+        "fixed_fouling_resistance",
+        "dimensionless",
+    ),
+    ("thermal.fouling_model", "rf_max", "dimensionless"),
+    ("thermal.fouling_model", "time_constant", "time"),
+    ("thermal.fouling_model", "time_hours", "time"),
+    (
+        "thermal.fouling_model",
+        "target_fouling_resistance",
+        "dimensionless",
+    ),
+    ("thermal.fouling_model", "threshold_rate", "dimensionless"),
+    ("thermal.fouling_model", "euler_steps", "dimensionless"),
+    ("thermal.fouling_model", "euler_step_hours", "time"),
     (
         "thermal.lmtd_correction_factor",
         "hot_inlet_temperature",

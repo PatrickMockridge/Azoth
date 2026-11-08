@@ -20,6 +20,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     BoilingHeatTransferResult,
     ConductionPlaneWallResult,
+    FoulingModelResult,
     LmtdCorrectionFactorResult,
     ShahCondensationResult,
     ShellAndTubeRatingResult,
@@ -31,6 +32,7 @@ from azoth.core.units import Q
 __all__ = [
     "boiling_heat_transfer",
     "conduction_plane_wall",
+    "fouling_model",
     "lmtd_correction_factor",
     "shah_condensation",
     "shell_and_tube_rating",
@@ -40,6 +42,7 @@ __all__ = [
 
 _BOILING_HEAT_TRANSFER = "thermal.boiling_heat_transfer"
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
+_FOULING_MODEL = "thermal.fouling_model"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
@@ -332,4 +335,58 @@ def two_phase_pressure_drop(
         quality_in=quality_in,
         quality_out=quality_out,
         intervals=intervals,
+    )
+
+
+def fouling_model(
+    model: str,
+    velocity: Q,
+    fluid_density: Q,
+    fluid_viscosity: Q,
+    wall_temperature: Q,
+    tube_inner_diameter: Q,
+    alpha: float,
+    beta: float,
+    activation_energy: Q,
+    gamma: float,
+    fixed_fouling_resistance: float,
+    rf_max: float,
+    time_constant: Q,
+    time_hours: Q,
+    target_fouling_resistance: float,
+    threshold_rate: float,
+    euler_steps: float | None = None,
+    euler_step_hours: Q | None = None,
+) -> FoulingModelResult:
+    """Fixed, Kern-Seaton and Ebert-Panchal heat-exchanger fouling.
+
+    ``alpha``, ``beta``, ``gamma``, the two resistances, the target and the threshold rate
+    are dimensionless: the vocabulary carries no inverse-pressure-time or area-specific
+    resistance unit, and their SI units are in the spec's descriptions.
+
+    Raises:
+        InvalidInputError: for a non-integral or negative Euler step count.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.fouling_model`.
+    """
+    return resolve(_FOULING_MODEL)(  # type: ignore[no-any-return]
+        model=model,
+        velocity=velocity,
+        fluid_density=fluid_density,
+        fluid_viscosity=fluid_viscosity,
+        wall_temperature=wall_temperature,
+        tube_inner_diameter=tube_inner_diameter,
+        alpha=alpha,
+        beta=beta,
+        activation_energy=activation_energy,
+        gamma=gamma,
+        fixed_fouling_resistance=fixed_fouling_resistance,
+        rf_max=rf_max,
+        time_constant=time_constant,
+        time_hours=time_hours,
+        target_fouling_resistance=target_fouling_resistance,
+        threshold_rate=threshold_rate,
+        euler_steps=euler_steps,
+        euler_step_hours=euler_step_hours,
     )

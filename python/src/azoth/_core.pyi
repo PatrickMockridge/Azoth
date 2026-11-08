@@ -3783,6 +3783,20 @@ class ConductionPlaneWallResult:
     warnings: list[Warning]
 
 @final
+class FoulingModelResult:
+    fouling_resistance_at_time: float
+    current_fouling_resistance: float
+    asymptotic_fouling_resistance: float
+    threshold_wall_temperature: Qty
+    threshold_velocity: Qty
+    time_to_target: Qty
+    operating_time: Qty
+    fouling_rate: float
+    reynolds_number: float
+    wall_shear_stress: Qty
+    warnings: list[Warning]
+
+@final
 class LmtdCorrectionFactorResult:
     r: float
     p: float
@@ -6711,6 +6725,26 @@ def boiling_heat_transfer(
     horizontal: bool | None = None,
 ) -> BoilingHeatTransferResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
+def fouling_model(
+    model: str,
+    velocity: float,
+    fluid_density: float,
+    fluid_viscosity: float,
+    wall_temperature: float,
+    tube_inner_diameter: float,
+    alpha: float,
+    beta: float,
+    activation_energy: float,
+    gamma: float,
+    fixed_fouling_resistance: float,
+    rf_max: float,
+    time_constant: float,
+    time_hours: float,
+    target_fouling_resistance: float,
+    threshold_rate: float,
+    euler_steps: float | None = None,
+    euler_step_hours: float | None = None,
+) -> FoulingModelResult: ...
 def lmtd_correction_factor(
     hot_inlet_temperature: float,
     hot_outlet_temperature: float,

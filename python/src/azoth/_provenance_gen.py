@@ -2974,6 +2974,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 5,
         "tests_skipped": 0,
     },
+    'thermal.fouling_model': {
+        "calc_id": 'thermal.fouling_model',
+        "name": 'Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal',
+        "spec": {'path': 'specs/calcs/thermal/fouling_model.toml', 'sha256': '766eafb25d7140bc3f6d019e8e4f3892ea462ab25cb20c0eb707797ceface3d0'},
+        "code": [{'path': 'python/src/azoth/thermal/reference/fouling_model.py', 'sha256': '4dd2f2004b91d582036b41a246b37aa5c653a20722b747311badbf88c6fe8c54'}, {'path': 'crates/azoth-thermal/src/fouling_model.rs', 'sha256': 'beecadea8137243a058efada3892d2c3775087e8f674bc54686c878b00ff12b5'}],
+        "source": 'NeqSim process/mechanicaldesign/heatexchanger/FoulingModel.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 13,
+        "tests_skipped": 0,
+    },
     'thermal.lmtd_correction_factor': {
         "calc_id": 'thermal.lmtd_correction_factor',
         "name": 'The LMTD correction factor for a shell-and-tube exchanger',

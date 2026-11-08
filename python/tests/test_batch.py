@@ -270,6 +270,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         "thermal.shell_and_tube_vibration",
         # The boiling calc's `horizontal` switch is categorical, the same reason.
         "thermal.boiling_heat_transfer",
+        # The fouling calc's `model` picks one of three resistances - a categorical choice
+        # that changes the arithmetic, so a batch has no column to vary it down.
+        "thermal.fouling_model",
     }, sorted(excluded)
 
 

@@ -6887,6 +6887,60 @@ pub fn conduction_plane_wall(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (model, velocity, fluid_density, fluid_viscosity, wall_temperature, tube_inner_diameter, alpha, beta, activation_energy, gamma, fixed_fouling_resistance, rf_max, time_constant, time_hours, target_fouling_resistance, threshold_rate, euler_steps, euler_step_hours))]
+#[pyo3(
+    text_signature = "(model, velocity, fluid_density, fluid_viscosity, wall_temperature, tube_inner_diameter, alpha, beta, activation_energy, gamma, fixed_fouling_resistance, rf_max, time_constant, time_hours, target_fouling_resistance, threshold_rate, euler_steps, euler_step_hours)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn fouling_model(
+    py: Python<'_>,
+    model: &str,
+    velocity: f64,
+    fluid_density: f64,
+    fluid_viscosity: f64,
+    wall_temperature: f64,
+    tube_inner_diameter: f64,
+    alpha: f64,
+    beta: f64,
+    activation_energy: f64,
+    gamma: f64,
+    fixed_fouling_resistance: f64,
+    rf_max: f64,
+    time_constant: f64,
+    time_hours: f64,
+    target_fouling_resistance: f64,
+    threshold_rate: f64,
+    euler_steps: Option<f64>,
+    euler_step_hours: Option<f64>,
+) -> PyResult<crate::transport_gen::PyFoulingModelResult> {
+    azoth_thermal::fouling_model::fouling_model(
+        model,
+        meters_per_second(velocity),
+        kilograms_per_cubic_meter(fluid_density),
+        pascal_seconds(fluid_viscosity),
+        kelvins(wall_temperature),
+        meters(tube_inner_diameter),
+        alpha,
+        beta,
+        joules_per_mole(activation_energy),
+        gamma,
+        fixed_fouling_resistance,
+        rf_max,
+        seconds(time_constant),
+        seconds(time_hours),
+        target_fouling_resistance,
+        threshold_rate,
+        euler_steps,
+        euler_step_hours.map(seconds),
+    )
+    .map(|r| crate::transport_gen::PyFoulingModelResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The LMTD correction factor for a shell-and-tube exchanger.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

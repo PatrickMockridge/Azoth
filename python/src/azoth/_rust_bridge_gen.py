@@ -90,6 +90,7 @@ from azoth.core.result import (
     FlowlineScaleProfileResult,
     FlowlineScaleSegment,
     FlowRegime,
+    FoulingModelResult,
     FreezingPointResult,
     FrictionTheoryConductivityResult,
     FrictionTheoryViscosityResult,
@@ -421,6 +422,7 @@ __all__ = [
     "firozabadi_ramley_interface_tension",
     "flare",
     "flowline_scale_profile",
+    "fouling_model",
     "freezing_point",
     "friction_factor_colebrook",
     "friction_factor_haaland",
@@ -7742,6 +7744,44 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     )
     return ConductionPlaneWallResult(
         q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def fouling_model(model: str, velocity: Q, fluid_density: Q, fluid_viscosity: Q, wall_temperature: Q, tube_inner_diameter: Q, alpha: float, beta: float, activation_energy: Q, gamma: float, fixed_fouling_resistance: float, rf_max: float, time_constant: Q, time_hours: Q, target_fouling_resistance: float, threshold_rate: float, euler_steps: float | None=None, euler_step_hours: Q | None=None) -> FoulingModelResult:
+    """``thermal.fouling_model``, computed in Rust."""
+    spec = _spec_for("thermal.fouling_model")
+    result = _core.fouling_model(
+        model,
+        input_to_si(spec, "velocity", velocity),
+        input_to_si(spec, "fluid_density", fluid_density),
+        input_to_si(spec, "fluid_viscosity", fluid_viscosity),
+        input_to_si(spec, "wall_temperature", wall_temperature),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        alpha,
+        beta,
+        input_to_si(spec, "activation_energy", activation_energy),
+        gamma,
+        fixed_fouling_resistance,
+        rf_max,
+        input_to_si(spec, "time_constant", time_constant),
+        input_to_si(spec, "time_hours", time_hours),
+        target_fouling_resistance,
+        threshold_rate,
+        None if euler_steps is None else euler_steps,
+        None if euler_step_hours is None else input_to_si(spec, "euler_step_hours", euler_step_hours),
+    )
+    return FoulingModelResult(
+        fouling_resistance_at_time=result.fouling_resistance_at_time,
+        current_fouling_resistance=result.current_fouling_resistance,
+        asymptotic_fouling_resistance=result.asymptotic_fouling_resistance,
+        threshold_wall_temperature=from_si(result.threshold_wall_temperature.magnitude_si, result.threshold_wall_temperature.unit),
+        threshold_velocity=from_si(result.threshold_velocity.magnitude_si, result.threshold_velocity.unit),
+        time_to_target=from_si(result.time_to_target.magnitude_si, result.time_to_target.unit),
+        operating_time=from_si(result.operating_time.magnitude_si, result.operating_time.unit),
+        fouling_rate=result.fouling_rate,
+        reynolds_number=result.reynolds_number,
+        wall_shear_stress=from_si(result.wall_shear_stress.magnitude_si, result.wall_shear_stress.unit),
         warnings=_warnings(result.warnings),
     )
 
