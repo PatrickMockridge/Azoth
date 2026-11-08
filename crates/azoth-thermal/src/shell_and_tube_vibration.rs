@@ -100,6 +100,10 @@ pub fn critical_velocity_connors(
     triangular: bool,
 ) -> f64 {
     if natural_frequency <= 0.0 || tube_od <= 0.0 || shell_fluid_density <= 0.0 {
+        // The class's Double.MAX_VALUE sentinel; the spec's bounds make this branch
+        // unreachable (a positive OD and shell density, and a natural frequency the valid
+        // geometry always gives).
+        // numerics-ok: the class's Double.MAX_VALUE sentinel, unreachable on valid ranges.
         return f64::MAX;
     }
     let k = if triangular {
@@ -199,6 +203,7 @@ pub fn rate(request: &VibrationRequest) -> Result<ShellAndTubeVibrationResult> {
         request.shell_fluid_density,
         request.triangular_pitch,
     );
+    // numerics-ok: the same sentinel; an unreachable branch on the spec's valid ranges.
     let velocity_ratio = if vcrit > 0.0 && vcrit < f64::MAX {
         request.crossflow_velocity / (vcrit * FLUID_ELASTIC_SAFETY_FACTOR)
     } else {
