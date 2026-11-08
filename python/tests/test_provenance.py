@@ -146,8 +146,8 @@ def test_the_block_exists_for_every_registered_id() -> None:
     # equilibrium sound speed; 264: the homogeneous-equilibrium release; 265: the
     # vessel blowdown; 266: the separator capacity assessment; 267: the anti-surge
     # recycle calculator; 268: the separator performance calculator; 269: the
-    # shell-and-tube thermal-hydraulic rating.
-    assert len(registered) == 269
+    # shell-and-tube thermal-hydraulic rating; 270: the tube-vibration screen.
+    assert len(registered) == 270
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

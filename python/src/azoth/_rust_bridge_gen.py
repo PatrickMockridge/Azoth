@@ -244,6 +244,7 @@ from azoth.core.result import (
     SeparatorResult,
     SetHeavyTbpToPlusResult,
     ShellAndTubeRatingResult,
+    ShellAndTubeVibrationResult,
     ShortcutDistillationColumnResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
@@ -553,6 +554,7 @@ __all__ = [
     "separator_performance",
     "set_heavy_tbp_to_plus",
     "shell_and_tube_rating",
+    "shell_and_tube_vibration",
     "shortcut_distillation_column",
     "siddiqi_lucas_diffusivity",
     "solid_fugacity",
@@ -7757,5 +7759,39 @@ def shell_and_tube_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tub
         jb=result.jb,
         js=result.js,
         jr=result.jr,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shell_and_tube_vibration(tube_outside_diameter: Q, tube_inside_diameter: Q, unsupported_span: Q, tube_pitch: Q, tube_material_e: Q, tube_density: Q, crossflow_velocity: Q, shell_fluid_density: Q, tube_fluid_density: Q, shell_inside_diameter: Q, sonic_velocity: Q, damping_ratio: float, triangular_pitch: bool) -> ShellAndTubeVibrationResult:
+    """``thermal.shell_and_tube_vibration``, computed in Rust."""
+    spec = _spec_for("thermal.shell_and_tube_vibration")
+    result = _core.shell_and_tube_vibration(
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "unsupported_span", unsupported_span),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        input_to_si(spec, "tube_material_e", tube_material_e),
+        input_to_si(spec, "tube_density", tube_density),
+        input_to_si(spec, "crossflow_velocity", crossflow_velocity),
+        input_to_si(spec, "shell_fluid_density", shell_fluid_density),
+        input_to_si(spec, "tube_fluid_density", tube_fluid_density),
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "sonic_velocity", sonic_velocity),
+        damping_ratio,
+        triangular_pitch,
+    )
+    return ShellAndTubeVibrationResult(
+        natural_frequency=from_si(result.natural_frequency.magnitude_si, result.natural_frequency.unit),
+        vortex_shedding_frequency=from_si(result.vortex_shedding_frequency.magnitude_si, result.vortex_shedding_frequency.unit),
+        vortex_shedding_ratio=result.vortex_shedding_ratio,
+        vortex_shedding_critical=result.vortex_shedding_critical,
+        critical_velocity=from_si(result.critical_velocity.magnitude_si, result.critical_velocity.unit),
+        velocity_ratio=result.velocity_ratio,
+        fluid_elastic_critical=result.fluid_elastic_critical,
+        acoustic_frequency=from_si(result.acoustic_frequency.magnitude_si, result.acoustic_frequency.unit),
+        acoustic_ratio=result.acoustic_ratio,
+        acoustic_critical=result.acoustic_critical,
+        passed=result.passed,
         warnings=_warnings(result.warnings),
     )

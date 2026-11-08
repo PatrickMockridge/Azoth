@@ -3792,6 +3792,21 @@ class ShellAndTubeRatingResult:
     jr: float
     warnings: list[Warning]
 
+@final
+class ShellAndTubeVibrationResult:
+    natural_frequency: Qty
+    vortex_shedding_frequency: Qty
+    vortex_shedding_ratio: float
+    vortex_shedding_critical: bool
+    critical_velocity: Qty
+    velocity_ratio: float
+    fluid_elastic_critical: bool
+    acoustic_frequency: Qty
+    acoustic_ratio: float
+    acoustic_critical: bool
+    passed: bool
+    warnings: list[Warning]
+
 # --- calculations ---------------------------------------------------------
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
@@ -6670,6 +6685,21 @@ def shell_and_tube_rating(
     shell_to_baffle_clearance: float | None = None,
     bypass_area: float | None = None,
 ) -> ShellAndTubeRatingResult: ...
+def shell_and_tube_vibration(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    unsupported_span: float,
+    tube_pitch: float,
+    tube_material_e: float,
+    tube_density: float,
+    crossflow_velocity: float,
+    shell_fluid_density: float,
+    tube_fluid_density: float,
+    shell_inside_diameter: float,
+    sonic_velocity: float,
+    damping_ratio: float,
+    triangular_pitch: bool,
+) -> ShellAndTubeVibrationResult: ...
 
 # --- introspection --------------------------------------------------------
 

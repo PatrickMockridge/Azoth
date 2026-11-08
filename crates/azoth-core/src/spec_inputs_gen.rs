@@ -270,6 +270,7 @@
 //!   - specs/models/standards/iso6976.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
+//!   - specs/calcs/thermal/shell_and_tube_vibration.toml
 //!
 //! Regenerate with `python tools/gen_registry.py`; CI runs `--check` and fails on
 //! any difference.
@@ -4733,6 +4734,62 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "length",
     ),
     ("thermal.shell_and_tube_rating", "bypass_area", "area"),
+    (
+        "thermal.shell_and_tube_vibration",
+        "tube_outside_diameter",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "tube_inside_diameter",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "unsupported_span",
+        "length",
+    ),
+    ("thermal.shell_and_tube_vibration", "tube_pitch", "length"),
+    (
+        "thermal.shell_and_tube_vibration",
+        "tube_material_e",
+        "pressure",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "tube_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "crossflow_velocity",
+        "velocity",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "shell_fluid_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "tube_fluid_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "shell_inside_diameter",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "sonic_velocity",
+        "velocity",
+    ),
+    (
+        "thermal.shell_and_tube_vibration",
+        "damping_ratio",
+        "dimensionless",
+    ),
 ];
 
 /// One input's declared dimension, or `None` where the id is unknown or the input

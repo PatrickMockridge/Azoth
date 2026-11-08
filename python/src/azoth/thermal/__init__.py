@@ -17,16 +17,22 @@ reachable - see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import ConductionPlaneWallResult, ShellAndTubeRatingResult
+from azoth.core.result import (
+    ConductionPlaneWallResult,
+    ShellAndTubeRatingResult,
+    ShellAndTubeVibrationResult,
+)
 from azoth.core.units import Q
 
 __all__ = [
     "conduction_plane_wall",
     "shell_and_tube_rating",
+    "shell_and_tube_vibration",
 ]
 
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
+_SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
 
 
 def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
@@ -123,4 +129,45 @@ def shell_and_tube_rating(
         tube_to_baffle_clearance=tube_to_baffle_clearance,
         shell_to_baffle_clearance=shell_to_baffle_clearance,
         bypass_area=bypass_area,
+    )
+
+
+def shell_and_tube_vibration(
+    tube_outside_diameter: Q,
+    tube_inside_diameter: Q,
+    unsupported_span: Q,
+    tube_pitch: Q,
+    tube_material_e: Q,
+    tube_density: Q,
+    crossflow_velocity: Q,
+    shell_fluid_density: Q,
+    tube_fluid_density: Q,
+    shell_inside_diameter: Q,
+    sonic_velocity: Q,
+    damping_ratio: float,
+    triangular_pitch: bool,
+) -> ShellAndTubeVibrationResult:
+    """A shell-and-tube exchanger's tube-vibration screen.
+
+    Raises:
+        InvalidInputError: for an inside diameter not smaller than the outside one, a
+            negative damping ratio or velocity.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.shell_and_tube_vibration`.
+    """
+    return resolve(_SHELL_AND_TUBE_VIBRATION)(  # type: ignore[no-any-return]
+        tube_outside_diameter=tube_outside_diameter,
+        tube_inside_diameter=tube_inside_diameter,
+        unsupported_span=unsupported_span,
+        tube_pitch=tube_pitch,
+        tube_material_e=tube_material_e,
+        tube_density=tube_density,
+        crossflow_velocity=crossflow_velocity,
+        shell_fluid_density=shell_fluid_density,
+        tube_fluid_density=tube_fluid_density,
+        shell_inside_diameter=shell_inside_diameter,
+        sonic_velocity=sonic_velocity,
+        damping_ratio=damping_ratio,
+        triangular_pitch=triangular_pitch,
     )

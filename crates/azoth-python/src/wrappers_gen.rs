@@ -6917,3 +6917,47 @@ pub fn shell_and_tube_rating(
     .map(|r| crate::transport_gen::PyShellAndTubeRatingResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// A shell-and-tube exchanger's tube-vibration screen.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (tube_outside_diameter, tube_inside_diameter, unsupported_span, tube_pitch, tube_material_e, tube_density, crossflow_velocity, shell_fluid_density, tube_fluid_density, shell_inside_diameter, sonic_velocity, damping_ratio, triangular_pitch))]
+#[pyo3(
+    text_signature = "(tube_outside_diameter, tube_inside_diameter, unsupported_span, tube_pitch, tube_material_e, tube_density, crossflow_velocity, shell_fluid_density, tube_fluid_density, shell_inside_diameter, sonic_velocity, damping_ratio, triangular_pitch)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn shell_and_tube_vibration(
+    py: Python<'_>,
+    tube_outside_diameter: f64,
+    tube_inside_diameter: f64,
+    unsupported_span: f64,
+    tube_pitch: f64,
+    tube_material_e: f64,
+    tube_density: f64,
+    crossflow_velocity: f64,
+    shell_fluid_density: f64,
+    tube_fluid_density: f64,
+    shell_inside_diameter: f64,
+    sonic_velocity: f64,
+    damping_ratio: f64,
+    triangular_pitch: bool,
+) -> PyResult<crate::transport_gen::PyShellAndTubeVibrationResult> {
+    azoth_thermal::shell_and_tube_vibration::shell_and_tube_vibration(
+        meters(tube_outside_diameter),
+        meters(tube_inside_diameter),
+        meters(unsupported_span),
+        meters(tube_pitch),
+        pascals(tube_material_e),
+        kilograms_per_cubic_meter(tube_density),
+        meters_per_second(crossflow_velocity),
+        kilograms_per_cubic_meter(shell_fluid_density),
+        kilograms_per_cubic_meter(tube_fluid_density),
+        meters(shell_inside_diameter),
+        meters_per_second(sonic_velocity),
+        damping_ratio,
+        triangular_pitch,
+    )
+    .map(|r| crate::transport_gen::PyShellAndTubeVibrationResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

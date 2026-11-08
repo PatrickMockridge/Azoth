@@ -298,6 +298,7 @@
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)
+  - [A shell-and-tube exchanger's tube-vibration screen](./thermal/shell_and_tube_vibration.md)
 <!-- END GENERATED: calcs -->
 - [The agentic layer](./agentic/index.md)
   - [Skills](./agentic/skills.md)

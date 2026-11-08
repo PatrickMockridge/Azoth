@@ -21915,3 +21915,101 @@ impl From<&azoth_thermal::results::ShellAndTubeRatingResult> for PyShellAndTubeR
         }
     }
 }
+/// Result of `thermal.shell_and_tube_vibration`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeVibrationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeVibrationResult {
+    /// the first natural frequency of the pinned span, Hz.
+    #[pyo3(get)]
+    pub natural_frequency: PyQty,
+    /// the Strouhal shedding frequency, Hz.
+    #[pyo3(get)]
+    pub vortex_shedding_frequency: PyQty,
+    /// `f_vs / f_n`; critical when strictly between 0.8 and 1.2.
+    #[pyo3(get)]
+    pub vortex_shedding_ratio: f64,
+    /// whether the shedding ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub vortex_shedding_critical: bool,
+    /// Connors' critical crossflow velocity for fluid-elastic instability.
+    #[pyo3(get)]
+    pub critical_velocity: PyQty,
+    /// `V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.
+    #[pyo3(get)]
+    pub velocity_ratio: f64,
+    /// whether the velocity ratio exceeds one.
+    #[pyo3(get)]
+    pub fluid_elastic_critical: bool,
+    /// the first acoustic resonance frequency of the shell cavity, Hz.
+    #[pyo3(get)]
+    pub acoustic_frequency: PyQty,
+    /// `f_vs / f_ac`; critical when strictly between 0.8 and 1.2.
+    #[pyo3(get)]
+    pub acoustic_ratio: f64,
+    /// whether the acoustic ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub acoustic_critical: bool,
+    /// true only when none of the three mechanisms is critical.
+    #[pyo3(get)]
+    pub passed: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeVibrationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeVibrationResult(natural_frequency={:?}, vortex_shedding_frequency={:?}, vortex_shedding_ratio={:?}, vortex_shedding_critical={:?}, critical_velocity={:?}, velocity_ratio={:?}, fluid_elastic_critical={:?}, acoustic_frequency={:?}, acoustic_ratio={:?}, acoustic_critical={:?}, passed={:?}, {} warning(s))",
+            self.natural_frequency,
+            self.vortex_shedding_frequency,
+            self.vortex_shedding_ratio,
+            self.vortex_shedding_critical,
+            self.critical_velocity,
+            self.velocity_ratio,
+            self.fluid_elastic_critical,
+            self.acoustic_frequency,
+            self.acoustic_ratio,
+            self.acoustic_critical,
+            self.passed,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeVibrationResult> for PyShellAndTubeVibrationResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeVibrationResult) -> Self {
+        Self {
+            natural_frequency: PyQty {
+                magnitude_si: r.natural_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            vortex_shedding_frequency: PyQty {
+                magnitude_si: r.vortex_shedding_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            vortex_shedding_ratio: r.vortex_shedding_ratio,
+            vortex_shedding_critical: r.vortex_shedding_critical,
+            critical_velocity: PyQty {
+                magnitude_si: r.critical_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            velocity_ratio: r.velocity_ratio,
+            fluid_elastic_critical: r.fluid_elastic_critical,
+            acoustic_frequency: PyQty {
+                magnitude_si: r.acoustic_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            acoustic_ratio: r.acoustic_ratio,
+            acoustic_critical: r.acoustic_critical,
+            passed: r.passed,
+            warnings: transport(&r.warnings),
+        }
+    }
+}

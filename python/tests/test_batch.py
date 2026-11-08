@@ -265,6 +265,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # method and the sealing flag - and each selects a branch rather than scaling one,
         # so there is no float-array column to vary any of them down.
         "thermal.shell_and_tube_rating",
+        # The vibration screen's `triangular_pitch` is a categorical layout switch, the same
+        # reason: the two Connors constants are different arithmetic, not a scale factor.
+        "thermal.shell_and_tube_vibration",
     }, sorted(excluded)
 
 

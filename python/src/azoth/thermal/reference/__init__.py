@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from azoth.thermal.reference.conduction_plane_wall import conduction_plane_wall
 from azoth.thermal.reference.shell_and_tube_rating import shell_and_tube_rating
+from azoth.thermal.reference.shell_and_tube_vibration import shell_and_tube_vibration
 
 __all__ = [
     "conduction_plane_wall",
     "shell_and_tube_rating",
+    "shell_and_tube_vibration",
 ]

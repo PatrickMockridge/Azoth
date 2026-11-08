@@ -4049,6 +4049,21 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         tests_active: 9,
         tests_skipped: 0,
     },
+    ProvenanceStatic {
+        calc_id: "thermal.shell_and_tube_vibration",
+        name: "A shell-and-tube exchanger's tube-vibration screen",
+        spec_path: "specs/calcs/thermal/shell_and_tube_vibration.toml",
+        spec_sha256: "81ca0866669a7c0f5260b92949cd62224e7f4213799d27dcb7ec6b164b7666fa",
+        python_path: "python/src/azoth/thermal/reference/shell_and_tube_vibration.py",
+        python_sha256: "5522716b475bd629eac37accdb4a194c2e9f5f484d6e2077e3ba4d7043e75b5a",
+        rust_path: "crates/azoth-thermal/src/shell_and_tube_vibration.rs",
+        rust_sha256: "40633eef41d95fe6186cd8acb19560c4b8bbed508bbfaa0e0ee3f5b67437c493",
+        source: "NeqSim process/mechanicaldesign/heatexchanger/VibrationAnalysis.java",
+        verification: VerificationStatus::PartiallyVerified,
+        validation_cases: 0,
+        tests_active: 4,
+        tests_skipped: 0,
+    },
 ];
 
 /// One id's provenance, or `None` where the id is not one this build ships.

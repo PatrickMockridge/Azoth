@@ -205,6 +205,13 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `test_cross_impl` compares them on both results.
         "choked",
         "gas_valve",
+        # `thermal.shell_and_tube_vibration`'s four flags, booleans with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/shell_and_tube_vibration.rs` asserts
+        # them against the capture, and `test_cross_impl` compares them on both results.
+        "vortex_shedding_critical",
+        "fluid_elastic_critical",
+        "acoustic_critical",
+        "passed",
         # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
         # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
         # `test_cross_impl` compares it on both results.

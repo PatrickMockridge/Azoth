@@ -5,7 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{Area, HeatTransfer, Length, Pressure, Velocity};
+use azoth_core::units::{Area, Frequency, HeatTransfer, Length, Pressure, Velocity};
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::Power;
 
@@ -90,6 +90,57 @@ impl CalcResult for ShellAndTubeRatingResult {
         "jb",
         "js",
         "jr",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `thermal.shell_and_tube_vibration`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellAndTubeVibrationResult {
+    /// The first natural frequency of the pinned span, Hz.
+    pub natural_frequency: Frequency,
+    /// The Strouhal shedding frequency, Hz.
+    pub vortex_shedding_frequency: Frequency,
+    /// `f_vs / f_n`.
+    pub vortex_shedding_ratio: f64,
+    /// Whether the shedding ratio is inside 0.8-1.2.
+    pub vortex_shedding_critical: bool,
+    /// Connors' critical velocity.
+    pub critical_velocity: Velocity,
+    /// `V / (0.5 * V_crit)`.
+    pub velocity_ratio: f64,
+    /// Whether the velocity ratio exceeds one.
+    pub fluid_elastic_critical: bool,
+    /// The first acoustic resonance frequency, Hz.
+    pub acoustic_frequency: Frequency,
+    /// `f_vs / f_ac`.
+    pub acoustic_ratio: f64,
+    /// Whether the acoustic ratio is inside 0.8-1.2.
+    pub acoustic_critical: bool,
+    /// True only when none of the three mechanisms is critical.
+    pub passed: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ShellAndTubeVibrationResult {
+    const CALC_ID: &'static str = "thermal.shell_and_tube_vibration";
+    const FIELDS: &'static [&'static str] = &[
+        "natural_frequency",
+        "vortex_shedding_frequency",
+        "vortex_shedding_ratio",
+        "vortex_shedding_critical",
+        "critical_velocity",
+        "velocity_ratio",
+        "fluid_elastic_critical",
+        "acoustic_frequency",
+        "acoustic_ratio",
+        "acoustic_critical",
+        "passed",
         "warnings",
     ];
 

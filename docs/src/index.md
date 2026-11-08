@@ -384,6 +384,7 @@ Five sections, and the difference between them is the point:
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
 - [`thermal.shell_and_tube_rating`](./thermal/shell_and_tube_rating.md)
+- [`thermal.shell_and_tube_vibration`](./thermal/shell_and_tube_vibration.md)
 <!-- END GENERATED: implemented -->
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`

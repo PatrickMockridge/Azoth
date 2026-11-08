@@ -8744,3 +8744,46 @@ class ShellAndTubeRatingResult(_HasWarnings):
 
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeVibrationResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_vibration``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_vibration"
+
+    #: the first natural frequency of the pinned span, Hz.
+    natural_frequency: Q
+
+    #: the Strouhal shedding frequency, Hz.
+    vortex_shedding_frequency: Q
+
+    #: `f_vs / f_n`; critical when strictly between 0.8 and 1.2.
+    vortex_shedding_ratio: float
+
+    #: whether the shedding ratio is inside the 0.8-1.2 band.
+    vortex_shedding_critical: bool
+
+    #: Connors' critical crossflow velocity for fluid-elastic instability.
+    critical_velocity: Q
+
+    #: `V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.
+    velocity_ratio: float
+
+    #: whether the velocity ratio exceeds one.
+    fluid_elastic_critical: bool
+
+    #: the first acoustic resonance frequency of the shell cavity, Hz.
+    acoustic_frequency: Q
+
+    #: `f_vs / f_ac`; critical when strictly between 0.8 and 1.2.
+    acoustic_ratio: float
+
+    #: whether the acoustic ratio is inside the 0.8-1.2 band.
+    acoustic_critical: bool
+
+    #: true only when none of the three mechanisms is critical.
+    passed: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
