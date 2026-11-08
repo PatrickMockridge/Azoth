@@ -849,9 +849,10 @@ a claim nothing holds.
   `thermal.lmtd_correction_factor`, held to `lmtd_correction_probe.tsv`, **and its
   condensation correlation** as `thermal.shah_condensation`, held to
   `shah_condensation_probe.tsv`, **and its boiling correlations** as
-  `thermal.boiling_heat_transfer`, held to `boiling_heat_transfer_probe.tsv`; the port is
-  the single-phase half, with the two-phase pressure-drop model, the zone analysis and the
-  detailed `ShellAndTubeDesignCalculator`'s design loop still owed;
+  `thermal.boiling_heat_transfer`, held to `boiling_heat_transfer_probe.tsv`, **and its
+  two-phase pressure drop** as `thermal.two_phase_pressure_drop`, held to
+  `two_phase_pressure_drop_probe.tsv`; the port is the single-phase half, with the zone
+  analysis and the detailed `ShellAndTubeDesignCalculator`'s design loop still owed;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
   thermal estimate**: the LMTD and approach from the four stream temperatures, the
