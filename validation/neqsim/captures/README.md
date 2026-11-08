@@ -379,6 +379,33 @@ builds `AJW` instead.
   > captures/tema_standard_probe.tsv
 ```
 
+## The exchanger's zone-by-zone rating
+
+`zone_analysis_probe.tsv` drives `ThermalDesignCalculator.calculateZones` on the documented
+desuperheating example, a three-zone desuperheating/condensing/subcooling case, the same case
+under Bell-Delaware with two sealing pairs and with a 1 mm inner deposit, the degenerate zone
+properties the permissive path does not answer, a zero and a negative LMTD, empty and null
+arrays, and the base state before, during and after the loop. **Each zone overrides only the
+eight transport properties** (density, viscosity, cp and conductivity on both sides), runs the
+full permissive `calculate()` and restores them; mass flows, fouling, deposit, method and
+geometry are the base's. The required area is `dutyFraction * totalDuty / (U * lmtd)`, zero
+when either denominator is non-positive.
+
+**The loop restores properties, not results**: after `calculateZones` the result fields still
+hold the last zone's answer, and a fresh `calculate()` on the base reproduces its pre-loop U
+(`340.717857335297` both times) - which is the row that proves the restore. **A zero
+viscosity, conductivity or density is not refused by the permissive path**: the tube-side HTC
+comes back `32.08`, `NaN` and `32.08` respectively while U stays `24.29`, and the zero-density
+row carries an infinite velocity and a `NaN` pressure drop. The port refuses these states;
+the capture marks them as the class's own unanswered answers. The strict entry point throws
+for all eight refusal states, and the messages are in the `strict_refusals.*` keys.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ZoneAnalysisProbe \
+  > captures/zone_analysis_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
