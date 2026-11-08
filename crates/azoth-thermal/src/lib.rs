@@ -20,6 +20,7 @@ pub mod spec_gen;
 pub mod tema_standard;
 pub mod tube_insert_model;
 pub mod two_phase_pressure_drop;
+pub mod zone_rating;
 
 pub use boiling_heat_transfer::{BoilingRequest, boiling_heat_transfer};
 pub use conduction_plane_wall::conduction_plane_wall;
@@ -29,7 +30,7 @@ pub use results::{
     BoilingHeatTransferResult, ConductionPlaneWallResult, FoulingModelResult,
     LmtdCorrectionFactorResult, ShahCondensationResult, ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult, TemaStandardResult, TubeInsertModelResult,
-    TwoPhasePressureDropResult,
+    TwoPhasePressureDropResult, ZoneRatingResult,
 };
 pub use shah_condensation::{ShahRequest, shah_condensation};
 pub use shell_and_tube_rating::{RatingRequest, ShellSideMethod, rate, shell_and_tube_rating};
@@ -41,3 +42,4 @@ pub use tube_insert_model::{InsertType, TubeInsertRequest, tube_insert_model};
 pub use two_phase_pressure_drop::{
     TwoPhasePressureDropRequest, rate as two_phase_pressure_drop_rate, two_phase_pressure_drop,
 };
+pub use zone_rating::{ZoneRatingRequest, rate as zone_rating_rate, zone_rating};

@@ -7273,3 +7273,92 @@ pub fn two_phase_pressure_drop(
     .map(|r| crate::transport_gen::PyTwoPhasePressureDropResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// A shell-and-tube exchanger rated zone by zone.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_mass_flow, shell_mass_flow, fouling_tube, fouling_shell, shell_side_method, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area, zones))]
+#[pyo3(
+    text_signature = "(tube_outside_diameter, tube_inside_diameter, tube_length, tube_count, tube_passes, tube_pitch, triangular_pitch, shell_inside_diameter, baffle_spacing, baffle_count, baffle_cut, tube_wall_conductivity, tube_mass_flow, shell_mass_flow, fouling_tube, fouling_shell, shell_side_method, tube_fouling_layer_thickness, tube_fouling_layer_conductivity, shell_viscosity_wall, has_sealing, sealing_pairs, tube_to_baffle_clearance, shell_to_baffle_clearance, bypass_area, zones)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn zone_rating(
+    py: Python<'_>,
+    tube_outside_diameter: f64,
+    tube_inside_diameter: f64,
+    tube_length: f64,
+    tube_count: f64,
+    tube_passes: f64,
+    tube_pitch: f64,
+    triangular_pitch: bool,
+    shell_inside_diameter: f64,
+    baffle_spacing: f64,
+    baffle_count: f64,
+    baffle_cut: f64,
+    tube_wall_conductivity: f64,
+    tube_mass_flow: f64,
+    shell_mass_flow: f64,
+    fouling_tube: f64,
+    fouling_shell: f64,
+    shell_side_method: &str,
+    tube_fouling_layer_thickness: Option<f64>,
+    tube_fouling_layer_conductivity: Option<f64>,
+    shell_viscosity_wall: Option<f64>,
+    has_sealing: Option<bool>,
+    sealing_pairs: Option<f64>,
+    tube_to_baffle_clearance: Option<f64>,
+    shell_to_baffle_clearance: Option<f64>,
+    bypass_area: Option<f64>,
+    zones: Vec<crate::records_gen::ZoneDefinitionRow>,
+) -> PyResult<crate::transport_gen::PyZoneRatingResult> {
+    let shell_side_method_parsed: azoth_thermal::shell_and_tube_rating::ShellSideMethod =
+        shell_side_method.parse().map_err(|e| to_pyerr(py, e))?;
+    let zones_records: Vec<azoth_thermal::results::ZoneDefinitionRow> = zones
+        .into_iter()
+        .map(|row| azoth_thermal::results::ZoneDefinitionRow {
+            zone_name: row.zone_name,
+            duty_fraction: row.duty_fraction,
+            total_duty: watts(row.total_duty),
+            lmtd: kelvin_intervals(row.lmtd),
+            tube_density: kilograms_per_cubic_meter(row.tube_density),
+            tube_viscosity: pascal_seconds(row.tube_viscosity),
+            tube_cp: joules_per_kilogram_kelvin(row.tube_cp),
+            tube_conductivity: watts_per_meter_kelvin(row.tube_conductivity),
+            shell_density: kilograms_per_cubic_meter(row.shell_density),
+            shell_viscosity: pascal_seconds(row.shell_viscosity),
+            shell_cp: joules_per_kilogram_kelvin(row.shell_cp),
+            shell_conductivity: watts_per_meter_kelvin(row.shell_conductivity),
+        })
+        .collect();
+    azoth_thermal::zone_rating::zone_rating(
+        meters(tube_outside_diameter),
+        meters(tube_inside_diameter),
+        meters(tube_length),
+        tube_count,
+        tube_passes,
+        meters(tube_pitch),
+        triangular_pitch,
+        meters(shell_inside_diameter),
+        meters(baffle_spacing),
+        baffle_count,
+        baffle_cut,
+        watts_per_meter_kelvin(tube_wall_conductivity),
+        kilograms_per_second(tube_mass_flow),
+        kilograms_per_second(shell_mass_flow),
+        fouling_tube,
+        fouling_shell,
+        shell_side_method_parsed,
+        tube_fouling_layer_thickness.map(meters),
+        tube_fouling_layer_conductivity.map(watts_per_meter_kelvin),
+        shell_viscosity_wall.map(pascal_seconds),
+        has_sealing,
+        sealing_pairs,
+        tube_to_baffle_clearance.map(meters),
+        shell_to_baffle_clearance.map(meters),
+        bypass_area.map(square_meters),
+        &zones_records,
+    )
+    .map(|r| crate::transport_gen::PyZoneRatingResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

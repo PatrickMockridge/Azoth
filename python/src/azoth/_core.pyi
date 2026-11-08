@@ -214,6 +214,22 @@ class Stream:
     @staticmethod
     def from_ph(components: list[str], z: list[float], n: float, p: float, h: float) -> Stream: ...
 
+class ZoneDefinitionRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    zone_name: str
+    duty_fraction: float
+    total_duty: float
+    lmtd: float
+    tube_density: float
+    tube_viscosity: float
+    tube_cp: float
+    tube_conductivity: float
+    shell_density: float
+    shell_viscosity: float
+    shell_cp: float
+    shell_conductivity: float
+
 class AssayCut(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -434,6 +450,18 @@ class KComponent:
     fitting_id: str
     n_ld: float
     k: float
+
+@final
+class ZoneRatingRow:
+    """one row per zone, in the input order."""
+
+    zone_name: str
+    duty_fraction: float
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    lmtd: Qty
+    required_area: Qty
 
 @final
 class CharacterizationComponent:
@@ -3895,6 +3923,12 @@ class TwoPhasePressureDropResult:
     acceleration_pressure_drop: Qty
     warnings: list[Warning]
 
+@final
+class ZoneRatingResult:
+    zone_count: float
+    zones: list[ZoneRatingRow]
+    warnings: list[Warning]
+
 # --- calculations ---------------------------------------------------------
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
@@ -6895,6 +6929,34 @@ def two_phase_pressure_drop(
     quality_out: float,
     intervals: float | None = None,
 ) -> TwoPhasePressureDropResult: ...
+def zone_rating(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    baffle_count: float,
+    baffle_cut: float,
+    tube_wall_conductivity: float,
+    tube_mass_flow: float,
+    shell_mass_flow: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    shell_side_method: str,
+    zones: list[ZoneDefinitionRow],
+    tube_fouling_layer_thickness: float | None = None,
+    tube_fouling_layer_conductivity: float | None = None,
+    shell_viscosity_wall: float | None = None,
+    has_sealing: bool | None = None,
+    sealing_pairs: float | None = None,
+    tube_to_baffle_clearance: float | None = None,
+    shell_to_baffle_clearance: float | None = None,
+    bypass_area: float | None = None,
+) -> ZoneRatingResult: ...
 
 # --- introspection --------------------------------------------------------
 

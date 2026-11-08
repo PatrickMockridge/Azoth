@@ -17,6 +17,7 @@ from azoth.thermal.reference.shell_and_tube_vibration import shell_and_tube_vibr
 from azoth.thermal.reference.tema_standard import tema_standard
 from azoth.thermal.reference.tube_insert_model import tube_insert_model
 from azoth.thermal.reference.two_phase_pressure_drop import two_phase_pressure_drop
+from azoth.thermal.reference.zone_rating import zone_rating
 
 __all__ = [
     "boiling_heat_transfer",
@@ -29,4 +30,5 @@ __all__ = [
     "tema_standard",
     "tube_insert_model",
     "two_phase_pressure_drop",
+    "zone_rating",
 ]

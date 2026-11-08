@@ -12,6 +12,7 @@
 //!   - specs/calcs/thermal/tema_standard.toml
 //!   - specs/calcs/thermal/tube_insert_model.toml
 //!   - specs/calcs/thermal/two_phase_pressure_drop.toml
+//!   - specs/calcs/thermal/zone_rating.toml
 //!
 //! Tables for the `thermal` namespace. Every namespace has its own generated
 //! file, because a crate is the unit of compilation and a calculation must be able
@@ -29,7 +30,9 @@
 // `clippy::approx_constant` reads that as a constant written out by hand.
 #![allow(clippy::approx_constant)]
 
-use azoth_core::{Band, CalcSpec, RangeCheck, Severity, SpecCheck, TestCase, WarningCode};
+use azoth_core::{
+    Band, CalcSpec, FieldValue, RangeCheck, RecordField, Severity, SpecCheck, TestCase, WarningCode,
+};
 
 /// Registry entry for `thermal.boiling_heat_transfer`.
 static BOILING_HEAT_TRANSFER_CHECKS: &[SpecCheck] = &[
@@ -5053,6 +5056,1157 @@ pub static TWO_PHASE_PRESSURE_DROP_SPEC: CalcSpec = CalcSpec {
     tests: TWO_PHASE_PRESSURE_DROP_TESTS,
 };
 
+/// Registry entry for `thermal.zone_rating`.
+static ZONE_RATING_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_outside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a diameter is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_inside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a diameter is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_length",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the length divides the friction term.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_pitch",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the pitch drives the shell-side geometry.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "shell_inside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the shell diameter drives the crossflow area.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "baffle_spacing",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the spacing drives the crossflow area.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "baffle_count",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the class's strict validation requires at least one baffle.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "baffle_cut",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(0.5),
+            max_inclusive: false,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the class refuses a cut at or beyond one half.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_wall_conductivity",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the wall's resistance is a logarithm over this conductivity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_mass_flow",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a zero flow has no velocity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "shell_mass_flow",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a zero flow has no crossflow velocity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fouling_tube",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a fouling resistance cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fouling_shell",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a fouling resistance cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_fouling_layer_thickness",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a deposit thickness cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_fouling_layer_conductivity",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the class's setter refuses a non-positive deposit conductivity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sealing_pairs",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a pair count cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_to_baffle_clearance",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a clearance cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "shell_to_baffle_clearance",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a clearance cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bypass_area",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a bypass area cannot be negative; zero selects the class's estimate.",
+        },
+    },
+];
+
+static ZONE_RATING_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_three_zone_case",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_outside_diameter", 0.01905),
+            ("tube_inside_diameter", 0.01483),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("tube_pitch", 0.02381),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("baffle_count", 10.0),
+            ("baffle_cut", 0.25),
+            ("tube_wall_conductivity", 52.0),
+            ("tube_mass_flow", 5.0),
+            ("shell_mass_flow", 3.0),
+            ("fouling_tube", 0.00018),
+            ("fouling_shell", 0.00035),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[("shell_side_method", "kern")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("zone_count", 3.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("desuperheating"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "total_duty",
+                        value: FieldValue::Number(1500000.0),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(60.0),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2200.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "total_duty",
+                        value: FieldValue::Number(1500000.0),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(40.0),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.025),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("subcooling"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "total_duty",
+                        value: FieldValue::Number(1500000.0),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(25.0),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("desuperheating"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(2361.458173973734),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1995.1325318283323),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(597.9867394556986),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(60.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(8.361389425710536),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1860.1368932995065),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1995.1325318283323),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(549.7884147941437),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(40.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(34.1040289236006),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("subcooling"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1273.3367008309092),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1995.1325318283323),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(467.91892112022583),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(25.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(38.46820290341524),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "bell_delaware_lowers_the_zone_coefficient",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_outside_diameter", 0.01905),
+            ("tube_inside_diameter", 0.01483),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("tube_pitch", 0.02381),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("baffle_count", 10.0),
+            ("baffle_cut", 0.25),
+            ("tube_wall_conductivity", 52.0),
+            ("tube_mass_flow", 5.0),
+            ("shell_mass_flow", 3.0),
+            ("fouling_tube", 0.00018),
+            ("fouling_shell", 0.00035),
+            ("sealing_pairs", 2.0),
+        ],
+        flags: &[("triangular_pitch", true), ("has_sealing", true)],
+        lists: &[],
+        strings: &[("shell_side_method", "bell_delaware")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("zone_count", 1.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("condensing"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "total_duty",
+                    value: FieldValue::Number(1500000.0),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(5.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(1.2e-05),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2100.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.025),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(998.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.001),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("condensing"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(1860.1368932995065),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(989.7490855313636),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(429.5497974211911),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(43.650352328335195),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "the_deposit_layer_lowers_the_zone_coefficient",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_outside_diameter", 0.01905),
+            ("tube_inside_diameter", 0.01483),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("tube_pitch", 0.02381),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("baffle_count", 10.0),
+            ("baffle_cut", 0.25),
+            ("tube_wall_conductivity", 52.0),
+            ("tube_mass_flow", 5.0),
+            ("shell_mass_flow", 3.0),
+            ("fouling_tube", 0.00018),
+            ("fouling_shell", 0.00035),
+            ("tube_fouling_layer_thickness", 0.001),
+            ("tube_fouling_layer_conductivity", 0.2),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[("shell_side_method", "kern")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("zone_count", 1.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("condensing"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "total_duty",
+                    value: FieldValue::Number(1500000.0),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(5.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(1.2e-05),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2100.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.025),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(998.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.001),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("condensing"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(2424.562468212269),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(1995.1325318283323),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(115.7413910237891),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(161.99908981693667),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "a_zero_or_negative_lmtd_answers_zero_area",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_outside_diameter", 0.01905),
+            ("tube_inside_diameter", 0.01483),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("tube_pitch", 0.02381),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("baffle_count", 10.0),
+            ("baffle_cut", 0.25),
+            ("tube_wall_conductivity", 52.0),
+            ("tube_mass_flow", 5.0),
+            ("shell_mass_flow", 3.0),
+            ("fouling_tube", 0.00018),
+            ("fouling_shell", 0.00035),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[("shell_side_method", "kern")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("zone_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("zero_lmtd"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "total_duty",
+                        value: FieldValue::Number(1000000.0),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("negative_lmtd"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "total_duty",
+                        value: FieldValue::Number(1000000.0),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(-25.0),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("zero_lmtd"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1273.3367008309092),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1995.1325318283323),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(467.91892112022583),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("negative_lmtd"),
+                    },
+                    RecordField {
+                        name: "duty_fraction",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1273.3367008309092),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(1995.1325318283323),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(467.91892112022583),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(-25.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registered spec for `thermal.zone_rating`.
+///
+/// Public and addressable directly, so a calc can hold `&ZONE_RATING_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static ZONE_RATING_SPEC: CalcSpec = CalcSpec {
+    id: "thermal.zone_rating",
+    checks: ZONE_RATING_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_doc_zone_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_outside_diameter", 0.01905),
+            ("tube_inside_diameter", 0.01483),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("tube_pitch", 0.02381),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("baffle_count", 10.0),
+            ("baffle_cut", 0.25),
+            ("tube_wall_conductivity", 52.0),
+            ("tube_mass_flow", 10.0),
+            ("shell_mass_flow", 5.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[("shell_side_method", "kern")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("zone_count", 1.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("desuperheating"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.15),
+                },
+                RecordField {
+                    name: "total_duty",
+                    value: FieldValue::Number(150000.0),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(5.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(1.2e-05),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2100.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.025),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(998.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.001),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("desuperheating"),
+                },
+                RecordField {
+                    name: "duty_fraction",
+                    value: FieldValue::Number(0.15),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(3313.408891395497),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(2642.339167648388),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(823.6629043830286),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(0.6829250133843835),
+                },
+            ]],
+        )],
+    },
+    tests: ZONE_RATING_TESTS,
+};
+
 /// Every calculation in the registry, sorted by id.
 static ALL_SPECS: &[&CalcSpec] = &[
     &BOILING_HEAT_TRANSFER_SPEC,
@@ -5065,6 +6219,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &TEMA_STANDARD_SPEC,
     &TUBE_INSERT_MODEL_SPEC,
     &TWO_PHASE_PRESSURE_DROP_SPEC,
+    &ZONE_RATING_SPEC,
 ];
 
 /// All specs, in a stable order.

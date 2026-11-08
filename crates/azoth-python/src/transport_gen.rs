@@ -21,6 +21,7 @@ use crate::record_outputs_gen::{
     PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint, PyMineralEquilibriumRow,
     PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
     PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
+    PyZoneRatingRow,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -22613,6 +22614,47 @@ impl From<&azoth_thermal::results::TwoPhasePressureDropResult> for PyTwoPhasePre
                 magnitude_si: r.acceleration_pressure_drop.value,
                 unit: "Pa".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.zone_rating`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ZoneRatingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyZoneRatingResult {
+    /// the number of zones rated, which is the input list's length.
+    #[pyo3(get)]
+    pub zone_count: f64,
+    /// one row per zone, in the input order.
+    #[pyo3(get)]
+    pub zones: Vec<PyZoneRatingRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyZoneRatingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ZoneRatingResult(zone_count={:?}, zones={:?}, {} warning(s))",
+            self.zone_count,
+            self.zones,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ZoneRatingResult> for PyZoneRatingResult {
+    fn from(r: &azoth_thermal::results::ZoneRatingResult) -> Self {
+        Self {
+            zone_count: r.zone_count,
+            zones: r.zones.iter().map(PyZoneRatingRow::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

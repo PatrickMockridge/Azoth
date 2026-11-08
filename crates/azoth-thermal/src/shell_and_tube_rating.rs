@@ -235,6 +235,19 @@ pub fn rate(request: &RatingRequest) -> Result<ShellAndTubeRatingResult> {
 
     validate_strict(request)?;
 
+    evaluate(request)
+}
+
+/// The class's permissive arithmetic, without the input bounds and the strict guards.
+///
+/// `calculateZones` and the design calculator both call the class's `calculate()`, so their
+/// kernels compose this rather than transcribing the rating a second time. `rate` is this
+/// function plus the spec's input bounds, the strict validation and the warnings.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a count that is not a positive whole number.
+#[allow(clippy::too_many_lines)] // one transcription of the class's calculate chain
+pub fn evaluate(request: &RatingRequest) -> Result<ShellAndTubeRatingResult> {
     let tube_count = integral_count(request.tube_count, "tube_count")?;
     let tube_passes = integral_count(request.tube_passes, "tube_passes")?;
     let baffle_count = integral_count(request.baffle_count, "baffle_count")?;
@@ -439,7 +452,7 @@ pub fn rate(request: &RatingRequest) -> Result<ShellAndTubeRatingResult> {
         jb,
         js,
         jr,
-        warnings,
+        warnings: Vec::new(),
     })
 }
 
@@ -523,7 +536,7 @@ pub fn shell_and_tube_rating(
 }
 
 /// The class's `validateStrictInputs`, in its own order.
-fn validate_strict(request: &RatingRequest) -> Result<()> {
+pub(crate) fn validate_strict(request: &RatingRequest) -> Result<()> {
     let positives = [
         request.tube_outside_diameter,
         request.tube_inside_diameter,

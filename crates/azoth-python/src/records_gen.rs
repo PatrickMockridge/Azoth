@@ -362,3 +362,32 @@ pub struct WaterAnalysis {
     #[pyo3(item)]
     pub co2_partial_pressure: f64,
 }
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ZoneDefinitionRow {
+    #[pyo3(item)]
+    pub zone_name: String,
+    #[pyo3(item)]
+    pub duty_fraction: f64,
+    #[pyo3(item)]
+    pub total_duty: f64,
+    #[pyo3(item)]
+    pub lmtd: f64,
+    #[pyo3(item)]
+    pub tube_density: f64,
+    #[pyo3(item)]
+    pub tube_viscosity: f64,
+    #[pyo3(item)]
+    pub tube_cp: f64,
+    #[pyo3(item)]
+    pub tube_conductivity: f64,
+    #[pyo3(item)]
+    pub shell_density: f64,
+    #[pyo3(item)]
+    pub shell_viscosity: f64,
+    #[pyo3(item)]
+    pub shell_cp: f64,
+    #[pyo3(item)]
+    pub shell_conductivity: f64,
+}

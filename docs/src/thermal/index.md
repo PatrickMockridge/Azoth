@@ -16,3 +16,4 @@ Every calculation in this section is generated from its specification. Each page
 | [`thermal.tema_standard`](./tema_standard.md) | $cost = 1 + \sum front + \sum shell + \sum rear, \qquad S_{min} = \max(D/5,\; floor)$ | NeqSim process/mechanicaldesign/heatexchanger/TEMAStandard.java |
 | [`thermal.tube_insert_model`](./tube_insert_model.md) | $\mathrm{PEC} = \frac{h_{enh}/h_{plain}}{\left(f_{enh}/f_{plain}\right)^{1/3}}$ | NeqSim process/mechanicaldesign/heatexchanger/TubeInsertModel.java |
 | [`thermal.two_phase_pressure_drop`](./two_phase_pressure_drop.md) | $\left(\frac{dp}{dz}\right)_{tp} = \phi_{lo}^2 \left(\frac{dp}{dz}\right)_{lo}, \qquad \phi_{lo}^2 = E + \frac{3.24 F H}{Fr^{0.045} We^{0.035}}$ | NeqSim process/mechanicaldesign/heatexchanger/TwoPhasePressureDrop.java |
+| [`thermal.zone_rating`](./zone_rating.md) | $A_i = \frac{f_i Q_i}{U_i \Delta T_{lm,i}}$ | NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java |

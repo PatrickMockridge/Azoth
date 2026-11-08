@@ -278,6 +278,7 @@
 //!   - specs/calcs/thermal/tema_standard.toml
 //!   - specs/calcs/thermal/tube_insert_model.toml
 //!   - specs/calcs/thermal/two_phase_pressure_drop.toml
+//!   - specs/calcs/thermal/zone_rating.toml
 //!
 //! Regenerate with `python tools/gen_registry.py`; CI runs `--check` and fails on
 //! any difference.
@@ -5067,6 +5068,44 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "intervals",
         "dimensionless",
     ),
+    ("thermal.zone_rating", "tube_outside_diameter", "length"),
+    ("thermal.zone_rating", "tube_inside_diameter", "length"),
+    ("thermal.zone_rating", "tube_length", "length"),
+    ("thermal.zone_rating", "tube_count", "dimensionless"),
+    ("thermal.zone_rating", "tube_passes", "dimensionless"),
+    ("thermal.zone_rating", "tube_pitch", "length"),
+    ("thermal.zone_rating", "shell_inside_diameter", "length"),
+    ("thermal.zone_rating", "baffle_spacing", "length"),
+    ("thermal.zone_rating", "baffle_count", "dimensionless"),
+    ("thermal.zone_rating", "baffle_cut", "dimensionless"),
+    (
+        "thermal.zone_rating",
+        "tube_wall_conductivity",
+        "thermal_conductivity",
+    ),
+    ("thermal.zone_rating", "tube_mass_flow", "mass_rate"),
+    ("thermal.zone_rating", "shell_mass_flow", "mass_rate"),
+    ("thermal.zone_rating", "fouling_tube", "dimensionless"),
+    ("thermal.zone_rating", "fouling_shell", "dimensionless"),
+    (
+        "thermal.zone_rating",
+        "tube_fouling_layer_thickness",
+        "length",
+    ),
+    (
+        "thermal.zone_rating",
+        "tube_fouling_layer_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.zone_rating",
+        "shell_viscosity_wall",
+        "dynamic_viscosity",
+    ),
+    ("thermal.zone_rating", "sealing_pairs", "dimensionless"),
+    ("thermal.zone_rating", "tube_to_baffle_clearance", "length"),
+    ("thermal.zone_rating", "shell_to_baffle_clearance", "length"),
+    ("thermal.zone_rating", "bypass_area", "area"),
 ];
 
 /// One input's declared dimension, or `None` where the id is unknown or the input

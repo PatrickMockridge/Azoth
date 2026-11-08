@@ -16,6 +16,8 @@ reachable - see :func:`azoth.backends` and :func:`azoth.use_backend`.
 
 from __future__ import annotations
 
+from typing import Any
+
 from azoth._dispatch import resolve
 from azoth.core.result import (
     BoilingHeatTransferResult,
@@ -28,6 +30,7 @@ from azoth.core.result import (
     TemaStandardResult,
     TubeInsertModelResult,
     TwoPhasePressureDropResult,
+    ZoneRatingResult,
 )
 from azoth.core.units import Q
 
@@ -42,6 +45,7 @@ __all__ = [
     "tema_standard",
     "tube_insert_model",
     "two_phase_pressure_drop",
+    "zone_rating",
 ]
 
 _BOILING_HEAT_TRANSFER = "thermal.boiling_heat_transfer"
@@ -54,6 +58,7 @@ _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
 _TEMA_STANDARD = "thermal.tema_standard"
 _TUBE_INSERT_MODEL = "thermal.tube_insert_model"
 _TWO_PHASE_PRESSURE_DROP = "thermal.two_phase_pressure_drop"
+_ZONE_RATING = "thermal.zone_rating"
 
 
 def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
@@ -484,4 +489,76 @@ def tema_standard(
         high_pressure=high_pressure,
         hazardous=hazardous,
         tube_material=tube_material,
+    )
+
+
+def zone_rating(
+    tube_outside_diameter: Q,
+    tube_inside_diameter: Q,
+    tube_length: Q,
+    tube_count: float,
+    tube_passes: float,
+    tube_pitch: Q,
+    triangular_pitch: bool,
+    shell_inside_diameter: Q,
+    baffle_spacing: Q,
+    baffle_count: float,
+    baffle_cut: float,
+    tube_wall_conductivity: Q,
+    tube_mass_flow: Q,
+    shell_mass_flow: Q,
+    fouling_tube: float,
+    fouling_shell: float,
+    shell_side_method: str,
+    tube_fouling_layer_thickness: Q | None = None,
+    tube_fouling_layer_conductivity: Q | None = None,
+    shell_viscosity_wall: Q | None = None,
+    has_sealing: bool | None = None,
+    sealing_pairs: float | None = None,
+    tube_to_baffle_clearance: Q | None = None,
+    shell_to_baffle_clearance: Q | None = None,
+    bypass_area: Q | None = None,
+    *,
+    zones: list[dict[str, Any]],
+) -> ZoneRatingResult:
+    """The shell-and-tube rating run zone by zone.
+
+    Each zone states its own eight transport properties and its own LMTD; the mass flows,
+    fouling, deposit, method and geometry are the base request's. The zone rows are
+    mappings in the spec's declared units.
+
+    Raises:
+        InvalidInputError: for a base state the strict rating refuses, and for a zone whose
+            transport properties, duty or LMTD are not finite or not positive.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.zone_rating`.
+    """
+    return resolve(_ZONE_RATING)(  # type: ignore[no-any-return]
+        tube_outside_diameter=tube_outside_diameter,
+        tube_inside_diameter=tube_inside_diameter,
+        tube_length=tube_length,
+        tube_count=tube_count,
+        tube_passes=tube_passes,
+        tube_pitch=tube_pitch,
+        triangular_pitch=triangular_pitch,
+        shell_inside_diameter=shell_inside_diameter,
+        baffle_spacing=baffle_spacing,
+        baffle_count=baffle_count,
+        baffle_cut=baffle_cut,
+        tube_wall_conductivity=tube_wall_conductivity,
+        tube_mass_flow=tube_mass_flow,
+        shell_mass_flow=shell_mass_flow,
+        fouling_tube=fouling_tube,
+        fouling_shell=fouling_shell,
+        shell_side_method=shell_side_method,
+        tube_fouling_layer_thickness=tube_fouling_layer_thickness,
+        tube_fouling_layer_conductivity=tube_fouling_layer_conductivity,
+        shell_viscosity_wall=shell_viscosity_wall,
+        has_sealing=has_sealing,
+        sealing_pairs=sealing_pairs,
+        tube_to_baffle_clearance=tube_to_baffle_clearance,
+        shell_to_baffle_clearance=shell_to_baffle_clearance,
+        bypass_area=bypass_area,
+        zones=zones,
     )

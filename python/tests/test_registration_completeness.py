@@ -417,11 +417,11 @@ def test_the_record_row_is_one_shape_in_three_declarations() -> None:
     without it the row's shape is a convention and this test has nothing to look up.
     """
     rows: dict[str, tuple[str, ...]] = {}
-    for model in _models_gen.MODELS:
-        for declared in model["inputs"].values():
+    for spec in [*CALCS, *_models_gen.MODELS]:
+        for declared in spec["inputs"].values():
             if declared.get("type") == "record_list":
                 rows[declared["row_type"]] = tuple(declared["fields"])
-    assert rows, "no model declares a record_list input, so there is no row to hold"
+    assert rows, "no spec declares a record_list input, so there is no row to hold"
 
     stub = ast.parse((REPO_ROOT / "python" / "src" / "azoth" / "_core.pyi").read_text())
     typed: dict[str, tuple[str, ...]] = {}

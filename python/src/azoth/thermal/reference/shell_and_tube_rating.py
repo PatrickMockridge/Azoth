@@ -174,6 +174,40 @@ def shell_and_tube_rating(
 
     _validate_strict(raw, shell_side_method, has_sealing, triangular_pitch)
 
+    values = _evaluate_si(raw, shell_side_method, has_sealing, triangular_pitch)
+    return ShellAndTubeRatingResult(
+        tube_side_heat_transfer_coefficient=from_si(values["tube_htc"], "W/(m**2*K)"),
+        shell_side_heat_transfer_coefficient=from_si(values["shell_htc"], "W/(m**2*K)"),
+        overall_heat_transfer_coefficient=from_si(values["overall_u"], "W/(m**2*K)"),
+        tube_side_pressure_drop=from_si(values["tube_dp"], "Pa"),
+        shell_side_pressure_drop=from_si(values["shell_dp"], "Pa"),
+        tube_side_velocity=from_si(values["tube_velocity"], "m/s"),
+        shell_side_velocity=from_si(values["shell_velocity"], "m/s"),
+        tube_side_reynolds=values["tube_re"],
+        shell_side_reynolds=values["shell_re"],
+        effective_tube_inside_diameter=from_si(values["effective_id"], "m"),
+        outside_heat_transfer_area=from_si(values["outside_area"], "m**2"),
+        tube_fouling_layer_resistance_outside=values["deposit_resistance"],
+        jc=values["jc"],
+        jl=values["jl"],
+        jb=values["jb"],
+        js=values["js"],
+        jr=values["jr"],
+        warnings=tuple(warnings),
+    )
+
+
+def _evaluate_si(
+    raw: dict[str, float | None],
+    shell_side_method: str,
+    has_sealing: bool | None,
+    triangular_pitch: bool,
+) -> dict[str, float]:
+    """The class's permissive arithmetic in SI magnitudes, without the input bounds.
+
+    ``zone_rating`` calls this once per zone with the eight transport properties overridden,
+    so the rating is transcribed once and the two calculations cannot drift.
+    """
     tube_count_i = _whole(_required(raw, "tube_count"), "tube_count")
     tube_passes_i = _whole(_required(raw, "tube_passes"), "tube_passes")
     baffle_count_i = _whole(_required(raw, "baffle_count"), "baffle_count")
@@ -329,26 +363,25 @@ def shell_and_tube_rating(
             wall_viscosity,
         )
 
-    return ShellAndTubeRatingResult(
-        tube_side_heat_transfer_coefficient=from_si(tube_htc, "W/(m**2*K)"),
-        shell_side_heat_transfer_coefficient=from_si(shell_htc, "W/(m**2*K)"),
-        overall_heat_transfer_coefficient=from_si(overall_u, "W/(m**2*K)"),
-        tube_side_pressure_drop=from_si(tube_dp, "Pa"),
-        shell_side_pressure_drop=from_si(shell_dp, "Pa"),
-        tube_side_velocity=from_si(tube_velocity, "m/s"),
-        shell_side_velocity=from_si(shell_velocity, "m/s"),
-        tube_side_reynolds=tube_re,
-        shell_side_reynolds=shell_re,
-        effective_tube_inside_diameter=from_si(effective_id, "m"),
-        outside_heat_transfer_area=from_si(outside_area, "m**2"),
-        tube_fouling_layer_resistance_outside=deposit_resistance,
-        jc=jc,
-        jl=jl,
-        jb=jb,
-        js=js,
-        jr=jr,
-        warnings=tuple(warnings),
-    )
+    return {
+        "tube_htc": tube_htc,
+        "shell_htc": shell_htc,
+        "overall_u": overall_u,
+        "tube_dp": tube_dp,
+        "shell_dp": shell_dp,
+        "tube_velocity": tube_velocity,
+        "shell_velocity": shell_velocity,
+        "tube_re": tube_re,
+        "shell_re": shell_re,
+        "effective_id": effective_id,
+        "outside_area": outside_area,
+        "deposit_resistance": deposit_resistance,
+        "jc": jc,
+        "jl": jl,
+        "jb": jb,
+        "js": js,
+        "jr": jr,
+    }
 
 
 def _validate_strict(

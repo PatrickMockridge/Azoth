@@ -278,6 +278,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The TEMA calc carries eight categorical inputs - the three head letters, the class,
         # the tube size, the pitch pattern, the baffle type - and a boolean recommendation.
         "thermal.tema_standard",
+        # The zone rating's `zones` record list has no float-array column, and the base's
+        # `triangular_pitch` and shell-side method are categorical switches.
+        "thermal.zone_rating",
     }, sorted(excluded)
 
 

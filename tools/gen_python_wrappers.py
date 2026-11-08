@@ -476,6 +476,11 @@ def _struct_fields() -> dict[str, tuple[tuple[str, str], ...]]:
     """
     found: dict[str, tuple[tuple[str, str], ...]] = {}
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
+        if path.parent.parent.name == "azoth-python":
+            # The binding crate's `records_gen` carries the *transport* shape of every row -
+            # dimensioned fields as bare `f64`. The kernel row is the one being built here, and
+            # it is declared in its own crate, so that copy must not win the name.
+            continue
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
         for match in _PUB_STRUCT.finditer(text):
             name = match.group(1)
@@ -532,12 +537,18 @@ def record_rows_argument(
     for field, kernel_type in fields:
         optional = kernel_type.startswith("Option<")
         inner = kernel_type[len("Option<") : -1] if optional else kernel_type
+        field_spec = declared.get(field) or {}
         # A flag and a name cross as themselves, like a magnitude: only a dimensioned field
         # needs a constructor, and a `bool` has no unit to read one from.
-        if inner in ("f64", "String", "bool"):
+        if inner in ("f64", "String", "bool") and not field_spec.get("interval"):
             arms.append(f"{field}: row.{field}")
             continue
-        ctor = base_ctor((declared.get(field) or {}).get("unit"))
+        if field_spec.get("interval"):
+            # A temperature difference is carried as `f64` in the binding row and as the
+            # interval quantity in the kernel row.
+            ctor = INTERVAL_CONSTRUCTORS["TemperatureInterval"]
+        else:
+            ctor = base_ctor(field_spec.get("unit"))
         if ctor is None:
             raise Refusal(
                 f"{row}'s field {field}: {kernel_type} has no constructor for its declared unit"

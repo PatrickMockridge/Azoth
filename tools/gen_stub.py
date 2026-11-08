@@ -516,14 +516,14 @@ def record_rows() -> dict[str, dict[str, Any]]:
     of the declaration would be a second place the row can change.
     """
     rows: dict[str, dict[str, Any]] = {}
-    for model in MODELS:
-        for input_name, declaration in model["inputs"].items():
+    for spec in [*CALCS, *MODELS]:
+        for input_name, declaration in spec["inputs"].items():
             if declaration.get("type") != "record_list":
                 continue
             row = declaration.get("row_type")
             if not row:
                 raise SystemExit(
-                    f"gen_stub: {model['id']}.{input_name} is a record_list and declares "
+                    f"gen_stub: {spec['id']}.{input_name} is a record_list and declares "
                     f"no `row_type`, so its mapping type has no name to be declared under"
                 )
             if row in rows and rows[row] != declaration["fields"]:

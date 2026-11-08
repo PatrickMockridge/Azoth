@@ -297,6 +297,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "thermal.tema_standard" => azoth_thermal::results::TemaStandardResult::FIELDS.to_vec(),
         "thermal.tube_insert_model" => azoth_thermal::results::TubeInsertModelResult::FIELDS.to_vec(),
         "thermal.two_phase_pressure_drop" => azoth_thermal::results::TwoPhasePressureDropResult::FIELDS.to_vec(),
+        "thermal.zone_rating" => azoth_thermal::results::ZoneRatingResult::FIELDS.to_vec(),
         _ => Vec::new(),
     }
     .into_iter()
@@ -404,5 +405,6 @@ pub fn calc_ids() -> Vec<String> {
         "thermal.tema_standard".to_string(),
         "thermal.tube_insert_model".to_string(),
         "thermal.two_phase_pressure_drop".to_string(),
+        "thermal.zone_rating".to_string(),
     ]
 }

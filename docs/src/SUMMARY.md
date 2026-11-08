@@ -306,6 +306,7 @@
   - [TEMA configuration, class limits and layout rules](./thermal/tema_standard.md)
   - [Tube-insert heat-transfer enhancement and pressure-drop penalty](./thermal/tube_insert_model.md)
   - [Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck](./thermal/two_phase_pressure_drop.md)
+  - [A shell-and-tube exchanger rated zone by zone](./thermal/zone_rating.md)
 <!-- END GENERATED: calcs -->
 - [The agentic layer](./agentic/index.md)
   - [Skills](./agentic/skills.md)

@@ -630,3 +630,29 @@ class WaterMixingResult:
 
     #: siderite's index.
     si_feco3: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ZoneRatingRow:
+    """one row per zone, in the input order."""
+
+    #: the zone's name, echoed.
+    zone_name: str
+
+    #: the zone's duty fraction, echoed.
+    duty_fraction: float
+
+    #: the zone's tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the zone's shell-side film coefficient.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the zone's overall coefficient on the outside area.
+    overall_heat_transfer_coefficient: Q
+
+    #: the zone's stated LMTD, echoed.
+    lmtd: Q
+
+    #: `duty_fraction * total_duty / (U * lmtd)`, or zero when either denominator is non-positive.
+    required_area: Q

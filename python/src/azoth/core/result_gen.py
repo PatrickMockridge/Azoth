@@ -47,6 +47,7 @@ from azoth.core.record_outputs_gen import (
     StreamScaleMineralRow,
     SubFraction,
     WaterMixingResult,
+    ZoneRatingRow,
 )
 from azoth.core.result_base import (
     BeggsBrillRegime,
@@ -9034,6 +9035,22 @@ class TwoPhasePressureDropResult(_HasWarnings):
 
     #: the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.
     acceleration_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ZoneRatingResult(_HasWarnings):
+    """Result of ``thermal.zone_rating``."""
+
+    CALC_ID: ClassVar[str] = "thermal.zone_rating"
+
+    #: the number of zones rated, which is the input list's length.
+    zone_count: float
+
+    #: one row per zone, in the input order.
+    zones: tuple[ZoneRatingRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

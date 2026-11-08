@@ -326,6 +326,8 @@ from azoth.core.result import (
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
+    ZoneRatingResult,
+    ZoneRatingRow,
 )
 from azoth.core.result import (
     HenryStatus as _HenryStatus,
@@ -639,6 +641,7 @@ __all__ = [
     "wilke_chang_diffusivity",
     "wilke_viscosity",
     "wilson_activity_coefficients",
+    "zone_rating",
 ]
 
 
@@ -8030,5 +8033,43 @@ def two_phase_pressure_drop(mass_flux: Q, vapor_quality: float, tube_inner_diame
         muller_steinhagen_heck_gradient=from_si(result.muller_steinhagen_heck_gradient.magnitude_si, result.muller_steinhagen_heck_gradient.unit),
         gravitational_gradient=from_si(result.gravitational_gradient.magnitude_si, result.gravitational_gradient.unit),
         acceleration_pressure_drop=from_si(result.acceleration_pressure_drop.magnitude_si, result.acceleration_pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, tube_pitch: Q, triangular_pitch: bool, shell_inside_diameter: Q, baffle_spacing: Q, baffle_count: float, baffle_cut: float, tube_wall_conductivity: Q, tube_mass_flow: Q, shell_mass_flow: Q, fouling_tube: float, fouling_shell: float, shell_side_method: str, tube_fouling_layer_thickness: Q | None=None, tube_fouling_layer_conductivity: Q | None=None, shell_viscosity_wall: Q | None=None, has_sealing: bool | None=None, sealing_pairs: float | None=None, tube_to_baffle_clearance: Q | None=None, shell_to_baffle_clearance: Q | None=None, bypass_area: Q | None=None, *, zones: list[dict[str, Any]]) -> ZoneRatingResult:
+    """``thermal.zone_rating``, computed in Rust."""
+    spec = _spec_for("thermal.zone_rating")
+    result = _core.zone_rating(
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        tube_count,
+        tube_passes,
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        triangular_pitch,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "baffle_spacing", baffle_spacing),
+        baffle_count,
+        baffle_cut,
+        input_to_si(spec, "tube_wall_conductivity", tube_wall_conductivity),
+        input_to_si(spec, "tube_mass_flow", tube_mass_flow),
+        input_to_si(spec, "shell_mass_flow", shell_mass_flow),
+        fouling_tube,
+        fouling_shell,
+        shell_side_method,
+        None if tube_fouling_layer_thickness is None else input_to_si(spec, "tube_fouling_layer_thickness", tube_fouling_layer_thickness),
+        None if tube_fouling_layer_conductivity is None else input_to_si(spec, "tube_fouling_layer_conductivity", tube_fouling_layer_conductivity),
+        None if shell_viscosity_wall is None else input_to_si(spec, "shell_viscosity_wall", shell_viscosity_wall),
+        has_sealing,
+        None if sealing_pairs is None else sealing_pairs,
+        None if tube_to_baffle_clearance is None else input_to_si(spec, "tube_to_baffle_clearance", tube_to_baffle_clearance),
+        None if shell_to_baffle_clearance is None else input_to_si(spec, "shell_to_baffle_clearance", shell_to_baffle_clearance),
+        None if bypass_area is None else input_to_si(spec, "bypass_area", bypass_area),
+        input_records_to_si(spec, "zones", zones),
+    )
+    return ZoneRatingResult(
+        zone_count=result.zone_count,
+        zones=tuple(ZoneRatingRow(zone_name=c.zone_name, duty_fraction=c.duty_fraction, tube_side_heat_transfer_coefficient=from_si(c.tube_side_heat_transfer_coefficient.magnitude_si, c.tube_side_heat_transfer_coefficient.unit), shell_side_heat_transfer_coefficient=from_si(c.shell_side_heat_transfer_coefficient.magnitude_si, c.shell_side_heat_transfer_coefficient.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), lmtd=from_si(c.lmtd.magnitude_si, c.lmtd.unit), required_area=from_si(c.required_area.magnitude_si, c.required_area.unit)) for c in result.zones),
         warnings=_warnings(result.warnings),
     )

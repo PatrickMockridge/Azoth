@@ -171,6 +171,13 @@ pub fn rate(request: &VibrationRequest) -> Result<ShellAndTubeVibrationResult> {
     )?;
     validate(request)?;
 
+    Ok(screen(request))
+}
+
+/// `performScreening` without the input bounds and the guards, for the design calculator
+/// that calls it as one stage of a longer pipeline.
+#[must_use]
+pub fn screen(request: &VibrationRequest) -> ShellAndTubeVibrationResult {
     let fn_value = natural_frequency(
         request.tube_outside_diameter,
         request.tube_inside_diameter,
@@ -216,7 +223,7 @@ pub fn rate(request: &VibrationRequest) -> Result<ShellAndTubeVibrationResult> {
     let acoustic_critical = acoustic_ratio > 0.8 && acoustic_ratio < 1.2;
 
     let passed = !vortex_critical && !fluid_elastic_critical && !acoustic_critical;
-    Ok(ShellAndTubeVibrationResult {
+    ShellAndTubeVibrationResult {
         natural_frequency: per_second(fn_value),
         vortex_shedding_frequency: per_second(fvs),
         vortex_shedding_ratio: vortex_ratio,
@@ -228,8 +235,8 @@ pub fn rate(request: &VibrationRequest) -> Result<ShellAndTubeVibrationResult> {
         acoustic_ratio,
         acoustic_critical,
         passed,
-        warnings,
-    })
+        warnings: Vec::new(),
+    }
 }
 
 /// The layout and damping guards the spec's bounds cannot express.

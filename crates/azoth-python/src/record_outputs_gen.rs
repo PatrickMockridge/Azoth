@@ -1728,3 +1728,80 @@ impl From<&azoth_eos::results::WaterMixingResult> for PyWaterMixingResult {
         }
     }
 }
+
+/// one row per zone, in the input order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ZoneRatingRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyZoneRatingRow {
+    /// the zone's name, echoed.
+    #[pyo3(get)]
+    pub zone_name: String,
+    /// the zone's duty fraction, echoed.
+    #[pyo3(get)]
+    pub duty_fraction: f64,
+    /// the zone's tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the zone's shell-side film coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the zone's overall coefficient on the outside area.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the zone's stated LMTD, echoed.
+    #[pyo3(get)]
+    pub lmtd: PyQty,
+    /// `duty_fraction * total_duty / (U * lmtd)`, or zero when either denominator is non-positive.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+}
+
+#[pymethods]
+impl PyZoneRatingRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ZoneRatingRow(zone_name={}, duty_fraction={}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, lmtd={:?}, required_area={:?})",
+            self.zone_name,
+            self.duty_fraction,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.lmtd,
+            self.required_area
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ZoneRatingRow> for PyZoneRatingRow {
+    fn from(row: &azoth_thermal::results::ZoneRatingRow) -> Self {
+        Self {
+            zone_name: row.zone_name.clone(),
+            duty_fraction: row.duty_fraction,
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            lmtd: PyQty {
+                magnitude_si: row.lmtd.value,
+                unit: "K".to_string(),
+            },
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+        }
+    }
+}

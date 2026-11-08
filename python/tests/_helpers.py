@@ -821,6 +821,10 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
             kwargs[name] = [str(item) for item in value]
         elif kind in ("enum", "string"):
             kwargs[name] = value
+        elif kind == "record_list":
+            # One mapping per record, each field in its own declared unit - the same shape a
+            # model's record input takes, and the conversion `_declared` already owns.
+            kwargs[name] = _declared(declaration, value)
         elif kind == "boolean":
             # A flag, not a number in any unit. `bool(value)` rather than `float(value)`:
             # `reactions.chemical_equilibrium` is the first calc whose spec declares one,

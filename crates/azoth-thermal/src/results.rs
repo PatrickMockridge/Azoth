@@ -6,7 +6,8 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    Area, Frequency, HeatTransfer, Length, Pressure, ThermodynamicTemperature, Time, Velocity,
+    Area, DynamicViscosity, Frequency, HeatTransfer, Length, MassDensity, Pressure,
+    SpecificHeatCapacity, TemperatureInterval, ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::Power;
@@ -451,6 +452,74 @@ impl CalcResult for TemaStandardResult {
         "recommended_designation",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One zone's stated transport properties, for `thermal.zone_rating`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ZoneDefinitionRow {
+    /// The zone's name.
+    pub zone_name: String,
+    /// The zone's fraction of the total duty.
+    pub duty_fraction: f64,
+    /// The exchanger's total duty.
+    pub total_duty: Power,
+    /// The zone's stated log-mean temperature difference.
+    pub lmtd: TemperatureInterval,
+    /// The zone's tube-side density.
+    pub tube_density: MassDensity,
+    /// The zone's tube-side viscosity.
+    pub tube_viscosity: DynamicViscosity,
+    /// The zone's tube-side specific heat capacity.
+    pub tube_cp: SpecificHeatCapacity,
+    /// The zone's tube-side thermal conductivity.
+    pub tube_conductivity: azoth_core::units::ThermalConductivity,
+    /// The zone's shell-side density.
+    pub shell_density: MassDensity,
+    /// The zone's shell-side viscosity.
+    pub shell_viscosity: DynamicViscosity,
+    /// The zone's shell-side specific heat capacity.
+    pub shell_cp: SpecificHeatCapacity,
+    /// The zone's shell-side thermal conductivity.
+    pub shell_conductivity: azoth_core::units::ThermalConductivity,
+}
+
+/// One zone's rating, for `thermal.zone_rating`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ZoneRatingRow {
+    /// The zone's name, echoed.
+    pub zone_name: String,
+    /// The zone's duty fraction, echoed.
+    pub duty_fraction: f64,
+    /// The zone's tube-side film coefficient.
+    pub tube_side_heat_transfer_coefficient: HeatTransfer,
+    /// The zone's shell-side film coefficient.
+    pub shell_side_heat_transfer_coefficient: HeatTransfer,
+    /// The zone's overall coefficient on the outside area.
+    pub overall_heat_transfer_coefficient: HeatTransfer,
+    /// The zone's stated LMTD, echoed.
+    pub lmtd: TemperatureInterval,
+    /// `duty_fraction * total_duty / (U * lmtd)`, zero when either denominator is not positive.
+    pub required_area: Area,
+}
+
+/// Result of `thermal.zone_rating`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ZoneRatingResult {
+    /// The number of zones rated.
+    pub zone_count: f64,
+    /// One row per zone, in the input order.
+    pub zones: Vec<ZoneRatingRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ZoneRatingResult {
+    const CALC_ID: &'static str = "thermal.zone_rating";
+    const FIELDS: &'static [&'static str] = &["zone_count", "zones", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

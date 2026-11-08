@@ -392,6 +392,7 @@ Five sections, and the difference between them is the point:
 - [`thermal.tema_standard`](./thermal/tema_standard.md)
 - [`thermal.tube_insert_model`](./thermal/tube_insert_model.md)
 - [`thermal.two_phase_pressure_drop`](./thermal/two_phase_pressure_drop.md)
+- [`thermal.zone_rating`](./thermal/zone_rating.md)
 <!-- END GENERATED: implemented -->
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`

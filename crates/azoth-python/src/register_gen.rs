@@ -296,6 +296,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTemaStandardResult>()?;
     m.add_class::<crate::transport_gen::PyTubeInsertModelResult>()?;
     m.add_class::<crate::transport_gen::PyTwoPhasePressureDropResult>()?;
+    m.add_class::<crate::transport_gen::PyZoneRatingResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
     m.add_class::<crate::record_outputs_gen::PyCharacterizationComponent>()?;
@@ -321,6 +322,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyStreamScaleMineralRow>()?;
     m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
     m.add_class::<crate::record_outputs_gen::PyWaterMixingResult>()?;
+    m.add_class::<crate::record_outputs_gen::PyZoneRatingRow>()?;
 
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(
@@ -969,5 +971,6 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::two_phase_pressure_drop,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::zone_rating, m)?)?;
     Ok(())
 }
