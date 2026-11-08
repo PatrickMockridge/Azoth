@@ -22225,3 +22225,82 @@ impl From<&azoth_thermal::results::ShellAndTubeVibrationResult> for PyShellAndTu
         }
     }
 }
+/// Result of `thermal.two_phase_pressure_drop`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TwoPhasePressureDropResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTwoPhasePressureDropResult {
+    /// the Friedel frictional gradient at `vapor_quality`.
+    #[pyo3(get)]
+    pub friedel_gradient: PyQty,
+    /// the Friedel gradient times `tube_length` at `vapor_quality`.
+    #[pyo3(get)]
+    pub friedel_pressure_drop: PyQty,
+    /// the Simpson's-rule average of the Friedel gradient over `quality_in` to `quality_out`, times `tube_length`.
+    #[pyo3(get)]
+    pub friedel_average_pressure_drop: PyQty,
+    /// the Muller-Steinhagen-Heck frictional gradient at `vapor_quality`.
+    #[pyo3(get)]
+    pub muller_steinhagen_heck_gradient: PyQty,
+    /// the gravitational gradient of the homogeneous mixture at `vapor_quality`, positive for upflow.
+    #[pyo3(get)]
+    pub gravitational_gradient: PyQty,
+    /// the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.
+    #[pyo3(get)]
+    pub acceleration_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTwoPhasePressureDropResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TwoPhasePressureDropResult(friedel_gradient={:?}, friedel_pressure_drop={:?}, friedel_average_pressure_drop={:?}, muller_steinhagen_heck_gradient={:?}, gravitational_gradient={:?}, acceleration_pressure_drop={:?}, {} warning(s))",
+            self.friedel_gradient,
+            self.friedel_pressure_drop,
+            self.friedel_average_pressure_drop,
+            self.muller_steinhagen_heck_gradient,
+            self.gravitational_gradient,
+            self.acceleration_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TwoPhasePressureDropResult> for PyTwoPhasePressureDropResult {
+    fn from(r: &azoth_thermal::results::TwoPhasePressureDropResult) -> Self {
+        Self {
+            friedel_gradient: PyQty {
+                magnitude_si: r.friedel_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            friedel_pressure_drop: PyQty {
+                magnitude_si: r.friedel_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            friedel_average_pressure_drop: PyQty {
+                magnitude_si: r.friedel_average_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            muller_steinhagen_heck_gradient: PyQty {
+                magnitude_si: r.muller_steinhagen_heck_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            gravitational_gradient: PyQty {
+                magnitude_si: r.gravitational_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            acceleration_pressure_drop: PyQty {
+                magnitude_si: r.acceleration_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}

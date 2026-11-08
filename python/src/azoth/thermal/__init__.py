@@ -24,6 +24,7 @@ from azoth.core.result import (
     ShahCondensationResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
+    TwoPhasePressureDropResult,
 )
 from azoth.core.units import Q
 
@@ -34,6 +35,7 @@ __all__ = [
     "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
+    "two_phase_pressure_drop",
 ]
 
 _BOILING_HEAT_TRANSFER = "thermal.boiling_heat_transfer"
@@ -42,6 +44,7 @@ _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
+_TWO_PHASE_PRESSURE_DROP = "thermal.two_phase_pressure_drop"
 
 
 def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
@@ -291,4 +294,42 @@ def boiling_heat_transfer(
         quality_out=quality_out,
         intervals=intervals,
         horizontal=horizontal,
+    )
+
+
+def two_phase_pressure_drop(
+    mass_flux: Q,
+    vapor_quality: float,
+    tube_inner_diameter: Q,
+    tube_length: Q,
+    liquid_density: Q,
+    vapor_density: Q,
+    liquid_viscosity: Q,
+    vapor_viscosity: Q,
+    surface_tension: Q,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> TwoPhasePressureDropResult:
+    """Friedel and Muller-Steinhagen-Heck two-phase pressure drop.
+
+    Raises:
+        InvalidInputError: for a non-integral interval count.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.two_phase_pressure_drop`.
+    """
+    return resolve(_TWO_PHASE_PRESSURE_DROP)(  # type: ignore[no-any-return]
+        mass_flux=mass_flux,
+        vapor_quality=vapor_quality,
+        tube_inner_diameter=tube_inner_diameter,
+        tube_length=tube_length,
+        liquid_density=liquid_density,
+        vapor_density=vapor_density,
+        liquid_viscosity=liquid_viscosity,
+        vapor_viscosity=vapor_viscosity,
+        surface_tension=surface_tension,
+        quality_in=quality_in,
+        quality_out=quality_out,
+        intervals=intervals,
     )

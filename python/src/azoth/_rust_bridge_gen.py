@@ -292,6 +292,7 @@ from azoth.core.result import (
     TurboExpanderResult,
     TvFlashResult,
     TvFractionFlashResult,
+    TwoPhasePressureDropResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult,
@@ -602,6 +603,7 @@ __all__ = [
     "turbo_expander_compressor",
     "tv_flash",
     "tv_fraction_flash",
+    "two_phase_pressure_drop",
     "twu_kappa",
     "twucoon_alpha",
     "twucoon_param_alpha",
@@ -7883,5 +7885,33 @@ def shell_and_tube_vibration(tube_outside_diameter: Q, tube_inside_diameter: Q, 
         acoustic_ratio=result.acoustic_ratio,
         acoustic_critical=result.acoustic_critical,
         passed=result.passed,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def two_phase_pressure_drop(mass_flux: Q, vapor_quality: float, tube_inner_diameter: Q, tube_length: Q, liquid_density: Q, vapor_density: Q, liquid_viscosity: Q, vapor_viscosity: Q, surface_tension: Q, quality_in: float, quality_out: float, intervals: float | None=None) -> TwoPhasePressureDropResult:
+    """``thermal.two_phase_pressure_drop``, computed in Rust."""
+    spec = _spec_for("thermal.two_phase_pressure_drop")
+    result = _core.two_phase_pressure_drop(
+        input_to_si(spec, "mass_flux", mass_flux),
+        vapor_quality,
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "vapor_viscosity", vapor_viscosity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+    )
+    return TwoPhasePressureDropResult(
+        friedel_gradient=from_si(result.friedel_gradient.magnitude_si, result.friedel_gradient.unit),
+        friedel_pressure_drop=from_si(result.friedel_pressure_drop.magnitude_si, result.friedel_pressure_drop.unit),
+        friedel_average_pressure_drop=from_si(result.friedel_average_pressure_drop.magnitude_si, result.friedel_average_pressure_drop.unit),
+        muller_steinhagen_heck_gradient=from_si(result.muller_steinhagen_heck_gradient.magnitude_si, result.muller_steinhagen_heck_gradient.unit),
+        gravitational_gradient=from_si(result.gravitational_gradient.magnitude_si, result.gravitational_gradient.unit),
+        acceleration_pressure_drop=from_si(result.acceleration_pressure_drop.magnitude_si, result.acceleration_pressure_drop.unit),
         warnings=_warnings(result.warnings),
     )

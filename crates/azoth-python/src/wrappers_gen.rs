@@ -7085,3 +7085,45 @@ pub fn shell_and_tube_vibration(
     .map(|r| crate::transport_gen::PyShellAndTubeVibrationResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mass_flux, vapor_quality, tube_inner_diameter, tube_length, liquid_density, vapor_density, liquid_viscosity, vapor_viscosity, surface_tension, quality_in, quality_out, intervals))]
+#[pyo3(
+    text_signature = "(mass_flux, vapor_quality, tube_inner_diameter, tube_length, liquid_density, vapor_density, liquid_viscosity, vapor_viscosity, surface_tension, quality_in, quality_out, intervals)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn two_phase_pressure_drop(
+    py: Python<'_>,
+    mass_flux: f64,
+    vapor_quality: f64,
+    tube_inner_diameter: f64,
+    tube_length: f64,
+    liquid_density: f64,
+    vapor_density: f64,
+    liquid_viscosity: f64,
+    vapor_viscosity: f64,
+    surface_tension: f64,
+    quality_in: f64,
+    quality_out: f64,
+    intervals: Option<f64>,
+) -> PyResult<crate::transport_gen::PyTwoPhasePressureDropResult> {
+    azoth_thermal::two_phase_pressure_drop::two_phase_pressure_drop(
+        kilograms_per_square_meter_second(mass_flux),
+        vapor_quality,
+        meters(tube_inner_diameter),
+        meters(tube_length),
+        kilograms_per_cubic_meter(liquid_density),
+        kilograms_per_cubic_meter(vapor_density),
+        pascal_seconds(liquid_viscosity),
+        pascal_seconds(vapor_viscosity),
+        newtons_per_meter(surface_tension),
+        quality_in,
+        quality_out,
+        intervals,
+    )
+    .map(|r| crate::transport_gen::PyTwoPhasePressureDropResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

@@ -8874,3 +8874,31 @@ class ShellAndTubeVibrationResult(_HasWarnings):
 
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TwoPhasePressureDropResult(_HasWarnings):
+    """Result of ``thermal.two_phase_pressure_drop``."""
+
+    CALC_ID: ClassVar[str] = "thermal.two_phase_pressure_drop"
+
+    #: the Friedel frictional gradient at `vapor_quality`.
+    friedel_gradient: Q
+
+    #: the Friedel gradient times `tube_length` at `vapor_quality`.
+    friedel_pressure_drop: Q
+
+    #: the Simpson's-rule average of the Friedel gradient over `quality_in` to `quality_out`, times `tube_length`.
+    friedel_average_pressure_drop: Q
+
+    #: the Muller-Steinhagen-Heck frictional gradient at `vapor_quality`.
+    muller_steinhagen_heck_gradient: Q
+
+    #: the gravitational gradient of the homogeneous mixture at `vapor_quality`, positive for upflow.
+    gravitational_gradient: Q
+
+    #: the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.
+    acceleration_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]

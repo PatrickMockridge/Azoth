@@ -3838,6 +3838,16 @@ class ShellAndTubeVibrationResult:
     passed: bool
     warnings: list[Warning]
 
+@final
+class TwoPhasePressureDropResult:
+    friedel_gradient: Qty
+    friedel_pressure_drop: Qty
+    friedel_average_pressure_drop: Qty
+    muller_steinhagen_heck_gradient: Qty
+    gravitational_gradient: Qty
+    acceleration_pressure_drop: Qty
+    warnings: list[Warning]
+
 # --- calculations ---------------------------------------------------------
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
@@ -6772,6 +6782,20 @@ def shell_and_tube_vibration(
     damping_ratio: float,
     triangular_pitch: bool,
 ) -> ShellAndTubeVibrationResult: ...
+def two_phase_pressure_drop(
+    mass_flux: float,
+    vapor_quality: float,
+    tube_inner_diameter: float,
+    tube_length: float,
+    liquid_density: float,
+    vapor_density: float,
+    liquid_viscosity: float,
+    vapor_viscosity: float,
+    surface_tension: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> TwoPhasePressureDropResult: ...
 
 # --- introspection --------------------------------------------------------
 

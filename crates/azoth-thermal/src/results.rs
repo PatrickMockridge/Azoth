@@ -259,3 +259,39 @@ impl CalcResult for ShellAndTubeVibrationResult {
         &self.warnings
     }
 }
+
+/// Result of `thermal.two_phase_pressure_drop`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TwoPhasePressureDropResult {
+    /// The Friedel frictional gradient at the stated quality, Pa/m.
+    pub friedel_gradient: Pressure,
+    /// The Friedel drop over the tube length at the stated quality.
+    pub friedel_pressure_drop: Pressure,
+    /// The Simpson's-rule average over the quality range, times the length.
+    pub friedel_average_pressure_drop: Pressure,
+    /// The Muller-Steinhagen-Heck frictional gradient, Pa/m.
+    pub muller_steinhagen_heck_gradient: Pressure,
+    /// The gravitational gradient of the homogeneous mixture, Pa/m.
+    pub gravitational_gradient: Pressure,
+    /// The momentum-flux change over the quality range.
+    pub acceleration_pressure_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TwoPhasePressureDropResult {
+    const CALC_ID: &'static str = "thermal.two_phase_pressure_drop";
+    const FIELDS: &'static [&'static str] = &[
+        "friedel_gradient",
+        "friedel_pressure_drop",
+        "friedel_average_pressure_drop",
+        "muller_steinhagen_heck_gradient",
+        "gravitational_gradient",
+        "acceleration_pressure_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

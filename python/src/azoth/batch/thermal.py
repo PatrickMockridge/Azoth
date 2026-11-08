@@ -19,14 +19,17 @@ __all__ = [
     "ConductionPlaneWallBatch",
     "LmtdCorrectionFactorBatch",
     "ShahCondensationBatch",
+    "TwoPhasePressureDropBatch",
     "conduction_plane_wall",
     "lmtd_correction_factor",
     "shah_condensation",
+    "two_phase_pressure_drop",
 ]
 
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
+_TWO_PHASE_PRESSURE_DROP = "thermal.two_phase_pressure_drop"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -215,4 +218,82 @@ def shah_condensation(
     if intervals is not None:
         arrays["intervals"] = sequence(intervals, "intervals")
     result: ShahCondensationBatch = run(_SHAH_CONDENSATION, arrays, _build_shah)
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TwoPhasePressureDropBatch(BatchResult):
+    """Result of a batch :func:`azoth.thermal.two_phase_pressure_drop`."""
+
+    #: The Friedel frictional gradient per element, Pa/m.
+    friedel_gradient: array[float]
+    #: The Friedel drop at the stated quality per element, Pa.
+    friedel_pressure_drop: array[float]
+    #: The averaged Friedel drop over the quality range per element, Pa.
+    friedel_average_pressure_drop: array[float]
+    #: The Muller-Steinhagen-Heck frictional gradient per element, Pa/m.
+    muller_steinhagen_heck_gradient: array[float]
+    #: The gravitational gradient per element, Pa/m.
+    gravitational_gradient: array[float]
+    #: The acceleration term per element, Pa; negative when the quality falls.
+    acceleration_pressure_drop: array[float]
+
+
+def _build_two_phase_pressure_drop(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TwoPhasePressureDropBatch:
+    return TwoPhasePressureDropBatch(
+        warnings=warnings,
+        units=units,
+        friedel_gradient=columns["friedel_gradient"],  # type: ignore[arg-type]
+        friedel_pressure_drop=columns["friedel_pressure_drop"],  # type: ignore[arg-type]
+        friedel_average_pressure_drop=columns["friedel_average_pressure_drop"],  # type: ignore[arg-type]
+        muller_steinhagen_heck_gradient=columns["muller_steinhagen_heck_gradient"],  # type: ignore[arg-type]
+        gravitational_gradient=columns["gravitational_gradient"],  # type: ignore[arg-type]
+        acceleration_pressure_drop=columns["acceleration_pressure_drop"],  # type: ignore[arg-type]
+    )
+
+
+def two_phase_pressure_drop(
+    *,
+    mass_flux: Sequence[float],
+    vapor_quality: Sequence[float],
+    tube_inner_diameter: Sequence[float],
+    tube_length: Sequence[float],
+    liquid_density: Sequence[float],
+    vapor_density: Sequence[float],
+    liquid_viscosity: Sequence[float],
+    vapor_viscosity: Sequence[float],
+    surface_tension: Sequence[float],
+    quality_in: Sequence[float],
+    quality_out: Sequence[float],
+    intervals: Sequence[float] | None = None,
+) -> TwoPhasePressureDropBatch:
+    """Friedel and Muller-Steinhagen-Heck two-phase pressure drop, over arrays.
+
+    Inputs in kg/(m**2*s), m, kg/m**3, Pa*s, N/m and the three dimensionless qualities.
+    ``intervals`` is optional per batch.
+
+    See :func:`azoth.thermal.two_phase_pressure_drop` for the calculation itself.
+    """
+    arrays: dict[str, object] = {
+        "mass_flux": sequence(mass_flux, "mass_flux"),
+        "vapor_quality": sequence(vapor_quality, "vapor_quality"),
+        "tube_inner_diameter": sequence(tube_inner_diameter, "tube_inner_diameter"),
+        "tube_length": sequence(tube_length, "tube_length"),
+        "liquid_density": sequence(liquid_density, "liquid_density"),
+        "vapor_density": sequence(vapor_density, "vapor_density"),
+        "liquid_viscosity": sequence(liquid_viscosity, "liquid_viscosity"),
+        "vapor_viscosity": sequence(vapor_viscosity, "vapor_viscosity"),
+        "surface_tension": sequence(surface_tension, "surface_tension"),
+        "quality_in": sequence(quality_in, "quality_in"),
+        "quality_out": sequence(quality_out, "quality_out"),
+    }
+    if intervals is not None:
+        arrays["intervals"] = sequence(intervals, "intervals")
+    result: TwoPhasePressureDropBatch = run(
+        _TWO_PHASE_PRESSURE_DROP, arrays, _build_two_phase_pressure_drop
+    )
     return result

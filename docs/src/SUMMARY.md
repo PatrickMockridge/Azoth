@@ -302,6 +302,7 @@
   - [In-tube condensation heat transfer, Shah's correlation](./thermal/shah_condensation.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)
   - [A shell-and-tube exchanger's tube-vibration screen](./thermal/shell_and_tube_vibration.md)
+  - [Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck](./thermal/two_phase_pressure_drop.md)
 <!-- END GENERATED: calcs -->
 - [The agentic layer](./agentic/index.md)
   - [Skills](./agentic/skills.md)

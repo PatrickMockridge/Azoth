@@ -293,6 +293,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "thermal.shah_condensation" => azoth_thermal::results::ShahCondensationResult::FIELDS.to_vec(),
         "thermal.shell_and_tube_rating" => azoth_thermal::results::ShellAndTubeRatingResult::FIELDS.to_vec(),
         "thermal.shell_and_tube_vibration" => azoth_thermal::results::ShellAndTubeVibrationResult::FIELDS.to_vec(),
+        "thermal.two_phase_pressure_drop" => azoth_thermal::results::TwoPhasePressureDropResult::FIELDS.to_vec(),
         _ => Vec::new(),
     }
     .into_iter()
@@ -396,5 +397,6 @@ pub fn calc_ids() -> Vec<String> {
         "thermal.shah_condensation".to_string(),
         "thermal.shell_and_tube_rating".to_string(),
         "thermal.shell_and_tube_vibration".to_string(),
+        "thermal.two_phase_pressure_drop".to_string(),
     ]
 }

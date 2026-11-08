@@ -28,7 +28,7 @@ use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvin_intervals,
     kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second,
     kilograms_per_square_meter_second, meters, meters_per_second, moles_per_cubic_meter,
-    pascal_seconds, pascals, seconds, square_meters, watts_per_meter_kelvin,
+    newtons_per_meter, pascal_seconds, pascals, seconds, square_meters, watts_per_meter_kelvin,
 };
 use azoth_eos as eos;
 use azoth_hydraulics as hyd;
@@ -544,6 +544,66 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "average_htc", "W/(m**2*K)", average);
             push_values(&mut columns, "vertical_htc", "W/(m**2*K)", vertical);
             push_values(&mut columns, "in_valid_range", "dimensionless", valid);
+        }
+
+        "thermal.two_phase_pressure_drop" => {
+            let mass_flux = take(&inputs, "mass_flux")?;
+            let vapor_quality = take(&inputs, "vapor_quality")?;
+            let diameter = take(&inputs, "tube_inner_diameter")?;
+            let tube_length = take(&inputs, "tube_length")?;
+            let liquid_density = take(&inputs, "liquid_density")?;
+            let vapor_density = take(&inputs, "vapor_density")?;
+            let liquid_viscosity = take(&inputs, "liquid_viscosity")?;
+            let vapor_viscosity = take(&inputs, "vapor_viscosity")?;
+            let surface_tension = take(&inputs, "surface_tension")?;
+            let quality_in = take(&inputs, "quality_in")?;
+            let quality_out = take(&inputs, "quality_out")?;
+            let intervals = take_optional(&inputs, "intervals");
+            let (mut gradient, mut drop, mut average, mut msh, mut gravity, mut acceleration) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::two_phase_pressure_drop(
+                        kilograms_per_square_meter_second(mass_flux[i]),
+                        vapor_quality[i],
+                        meters(diameter[i]),
+                        meters(tube_length[i]),
+                        kilograms_per_cubic_meter(liquid_density[i]),
+                        kilograms_per_cubic_meter(vapor_density[i]),
+                        pascal_seconds(liquid_viscosity[i]),
+                        pascal_seconds(vapor_viscosity[i]),
+                        newtons_per_meter(surface_tension[i]),
+                        quality_in[i],
+                        quality_out[i],
+                        intervals.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                gradient.push(out.friedel_gradient.value);
+                drop.push(out.friedel_pressure_drop.value);
+                average.push(out.friedel_average_pressure_drop.value);
+                msh.push(out.muller_steinhagen_heck_gradient.value);
+                gravity.push(out.gravitational_gradient.value);
+                acceleration.push(out.acceleration_pressure_drop.value);
+            }
+            push_values(&mut columns, "friedel_gradient", "Pa/m", gradient);
+            push_values(&mut columns, "friedel_pressure_drop", "Pa", drop);
+            push_values(&mut columns, "friedel_average_pressure_drop", "Pa", average);
+            push_values(&mut columns, "muller_steinhagen_heck_gradient", "Pa/m", msh);
+            push_values(&mut columns, "gravitational_gradient", "Pa/m", gravity);
+            push_values(
+                &mut columns,
+                "acceleration_pressure_drop",
+                "Pa",
+                acceleration,
+            );
         }
 
         "eos.pr_kappa" => {

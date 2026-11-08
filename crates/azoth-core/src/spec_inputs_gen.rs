@@ -274,6 +274,7 @@
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
+//!   - specs/calcs/thermal/two_phase_pressure_drop.toml
 //!
 //! Regenerate with `python tools/gen_registry.py`; CI runs `--check` and fails on
 //! any difference.
@@ -4933,6 +4934,58 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "thermal.shell_and_tube_vibration",
         "damping_ratio",
+        "dimensionless",
+    ),
+    ("thermal.two_phase_pressure_drop", "mass_flux", "mass_flux"),
+    (
+        "thermal.two_phase_pressure_drop",
+        "vapor_quality",
+        "dimensionless",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "tube_inner_diameter",
+        "length",
+    ),
+    ("thermal.two_phase_pressure_drop", "tube_length", "length"),
+    (
+        "thermal.two_phase_pressure_drop",
+        "liquid_density",
+        "mass_density",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "vapor_density",
+        "mass_density",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "vapor_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "surface_tension",
+        "surface_tension",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "quality_in",
+        "dimensionless",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "quality_out",
+        "dimensionless",
+    ),
+    (
+        "thermal.two_phase_pressure_drop",
+        "intervals",
         "dimensionless",
     ),
 ];
