@@ -275,6 +275,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         "thermal.fouling_model",
         # The insert calc's `insert` picks one of three correlation pairs, the same reason.
         "thermal.tube_insert_model",
+        # The TEMA calc carries eight categorical inputs - the three head letters, the class,
+        # the tube size, the pitch pattern, the baffle type - and a boolean recommendation.
+        "thermal.tema_standard",
     }, sorted(excluded)
 
 

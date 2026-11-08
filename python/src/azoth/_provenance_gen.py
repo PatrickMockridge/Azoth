@@ -3029,6 +3029,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'thermal.tema_standard': {
+        "calc_id": 'thermal.tema_standard',
+        "name": 'TEMA configuration, class limits and layout rules',
+        "spec": {'path': 'specs/calcs/thermal/tema_standard.toml', 'sha256': '0f6003dec0d09639792ae4d8a2f5dea9d4a773e31648105c7ed425f66069e68c'},
+        "code": [{'path': 'python/src/azoth/thermal/reference/tema_standard.py', 'sha256': 'edb318b20057505fd2f1c8f1e446c879e3cec2066f12fd4c294fbd96a5476851'}, {'path': 'crates/azoth-thermal/src/tema_standard.rs', 'sha256': '2bc080677c35700e03d1b7bfef9993ce6e8a0da50f061c6025e7a809cd08631a'}],
+        "source": 'NeqSim process/mechanicaldesign/heatexchanger/TEMAStandard.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 13,
+        "tests_skipped": 0,
+    },
     'thermal.tube_insert_model': {
         "calc_id": 'thermal.tube_insert_model',
         "name": 'Tube-insert heat-transfer enhancement and pressure-drop penalty',

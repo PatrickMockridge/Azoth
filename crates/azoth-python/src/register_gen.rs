@@ -293,6 +293,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeRatingResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeVibrationResult>()?;
+    m.add_class::<crate::transport_gen::PyTemaStandardResult>()?;
     m.add_class::<crate::transport_gen::PyTubeInsertModelResult>()?;
     m.add_class::<crate::transport_gen::PyTwoPhasePressureDropResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
@@ -962,6 +963,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::shell_and_tube_vibration,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::tema_standard, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tube_insert_model, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::two_phase_pressure_drop,

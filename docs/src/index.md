@@ -389,6 +389,7 @@ Five sections, and the difference between them is the point:
 - [`thermal.shah_condensation`](./thermal/shah_condensation.md)
 - [`thermal.shell_and_tube_rating`](./thermal/shell_and_tube_rating.md)
 - [`thermal.shell_and_tube_vibration`](./thermal/shell_and_tube_vibration.md)
+- [`thermal.tema_standard`](./thermal/tema_standard.md)
 - [`thermal.tube_insert_model`](./thermal/tube_insert_model.md)
 - [`thermal.two_phase_pressure_drop`](./thermal/two_phase_pressure_drop.md)
 <!-- END GENERATED: implemented -->

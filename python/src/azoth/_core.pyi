@@ -3853,6 +3853,30 @@ class ShellAndTubeVibrationResult:
     warnings: list[Warning]
 
 @final
+class TemaStandardResult:
+    configuration_cost_factor: float
+    shell_pressure_drop_factor: float
+    bundle_removable: bool
+    good_thermal_expansion: bool
+    class_cost_factor: float
+    min_tube_wall_thickness: Qty
+    min_corrosion_allowance: Qty
+    tube_outer_diameter: Qty
+    tube_outer_diameter_inch: Qty
+    layout_angle: float
+    min_pitch_ratio: float
+    pitch_heat_transfer_factor: float
+    baffle_heat_transfer_factor: float
+    baffle_pressure_drop_factor: float
+    min_tube_pitch: Qty
+    estimated_tube_count: float
+    max_unsupported_span: Qty
+    min_baffle_spacing: Qty
+    max_baffle_spacing: Qty
+    recommended_designation: str
+    warnings: list[Warning]
+
+@final
 class TubeInsertModelResult:
     heat_transfer_enhancement_ratio: float
     pressure_drop_penalty_ratio: float
@@ -6825,6 +6849,23 @@ def shell_and_tube_vibration(
     damping_ratio: float,
     triangular_pitch: bool,
 ) -> ShellAndTubeVibrationResult: ...
+def tema_standard(
+    front_head: str,
+    shell: str,
+    rear_head: str,
+    tema_class: str,
+    tube_size: str,
+    pitch_pattern: str,
+    baffle_type: str,
+    shell_inside_diameter: float,
+    tube_pitch: float,
+    tube_passes: float,
+    needs_cleanable: bool,
+    large_temperature_difference: bool,
+    high_pressure: bool,
+    hazardous: bool,
+    tube_material: str | None = None,
+) -> TemaStandardResult: ...
 def tube_insert_model(
     insert: str,
     reynolds_number: float,

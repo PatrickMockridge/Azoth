@@ -7140,6 +7140,54 @@ pub fn shell_and_tube_vibration(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// TEMA configuration, class limits and layout rules.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (front_head, shell, rear_head, tema_class, tube_size, pitch_pattern, baffle_type, shell_inside_diameter, tube_pitch, tube_passes, needs_cleanable, large_temperature_difference, high_pressure, hazardous, tube_material))]
+#[pyo3(
+    text_signature = "(front_head, shell, rear_head, tema_class, tube_size, pitch_pattern, baffle_type, shell_inside_diameter, tube_pitch, tube_passes, needs_cleanable, large_temperature_difference, high_pressure, hazardous, tube_material)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tema_standard(
+    py: Python<'_>,
+    front_head: &str,
+    shell: &str,
+    rear_head: &str,
+    tema_class: &str,
+    tube_size: &str,
+    pitch_pattern: &str,
+    baffle_type: &str,
+    shell_inside_diameter: f64,
+    tube_pitch: f64,
+    tube_passes: f64,
+    needs_cleanable: bool,
+    large_temperature_difference: bool,
+    high_pressure: bool,
+    hazardous: bool,
+    tube_material: Option<&str>,
+) -> PyResult<crate::transport_gen::PyTemaStandardResult> {
+    azoth_thermal::tema_standard::tema_standard(
+        front_head,
+        shell,
+        rear_head,
+        tema_class,
+        tube_size,
+        pitch_pattern,
+        baffle_type,
+        meters(shell_inside_diameter),
+        meters(tube_pitch),
+        tube_passes,
+        needs_cleanable,
+        large_temperature_difference,
+        high_pressure,
+        hazardous,
+        tube_material,
+    )
+    .map(|r| crate::transport_gen::PyTemaStandardResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Tube-insert heat-transfer enhancement and pressure-drop penalty.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

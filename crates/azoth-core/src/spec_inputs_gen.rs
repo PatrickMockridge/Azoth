@@ -275,6 +275,7 @@
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
+//!   - specs/calcs/thermal/tema_standard.toml
 //!   - specs/calcs/thermal/tube_insert_model.toml
 //!   - specs/calcs/thermal/two_phase_pressure_drop.toml
 //!
@@ -4971,6 +4972,9 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "damping_ratio",
         "dimensionless",
     ),
+    ("thermal.tema_standard", "shell_inside_diameter", "length"),
+    ("thermal.tema_standard", "tube_pitch", "length"),
+    ("thermal.tema_standard", "tube_passes", "dimensionless"),
     (
         "thermal.tube_insert_model",
         "reynolds_number",

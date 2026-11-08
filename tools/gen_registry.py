@@ -215,6 +215,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `thermal.shah_condensation`'s validated-range flag, a boolean with no slot in
         # `TestCase`. `crates/azoth-thermal/tests/shah_condensation.rs` asserts it.
         "in_valid_range",
+        # `thermal.tema_standard`'s two head predicates, booleans with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/tema_standard.rs` asserts them against
+        # the capture, and `test_cross_impl` compares them on both results.
+        "bundle_removable",
+        "good_thermal_expansion",
         # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
         # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
         # `test_cross_impl` compares it on both results.

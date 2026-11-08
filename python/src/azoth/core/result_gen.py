@@ -8917,6 +8917,76 @@ class ShellAndTubeVibrationResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TemaStandardResult(_HasWarnings):
+    """Result of ``thermal.tema_standard``."""
+
+    CALC_ID: ClassVar[str] = "thermal.tema_standard"
+
+    #: the configuration's relative cost factor, one for the plainest head, shell and rear.
+    configuration_cost_factor: float
+
+    #: the shell letter's pressure drop factor relative to an `E` shell.
+    shell_pressure_drop_factor: float
+
+    #: whether the rear head allows the bundle to be removed.
+    bundle_removable: bool
+
+    #: whether the rear head handles thermal expansion, the class's second name for the same predicate.
+    good_thermal_expansion: bool
+
+    #: the construction class's cost factor relative to class `B`.
+    class_cost_factor: float
+
+    #: the class's minimum tube wall.
+    min_tube_wall_thickness: Q
+
+    #: the class's minimum corrosion allowance.
+    min_corrosion_allowance: Q
+
+    #: the standard tube size's outside diameter.
+    tube_outer_diameter: Q
+
+    #: the same diameter in inches, which is how the size is named.
+    tube_outer_diameter_inch: Q
+
+    #: the layout angle in degrees: 30, 60, 90 or 45.
+    layout_angle: float
+
+    #: the pattern's minimum pitch over tube diameter.
+    min_pitch_ratio: float
+
+    #: the pattern's heat-transfer factor relative to square 90.
+    pitch_heat_transfer_factor: float
+
+    #: the baffle type's heat-transfer factor relative to a single segmental.
+    baffle_heat_transfer_factor: float
+
+    #: the baffle type's pressure-drop factor relative to a single segmental.
+    baffle_pressure_drop_factor: float
+
+    #: `tube_outer_diameter * min_pitch_ratio`.
+    min_tube_pitch: Q
+
+    #: the truncated bundle-area estimate at the stated pitch and passes.
+    estimated_tube_count: float
+
+    #: the class's maximum unsupported tube span for the diameter band and material.
+    max_unsupported_span: Q
+
+    #: the greater of one fifth of the shell diameter and the class's floor.
+    min_baffle_spacing: Q
+
+    #: the shell inside diameter.
+    max_baffle_spacing: Q
+
+    #: the designation the class's four-branch recommendation answers.
+    recommended_designation: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TubeInsertModelResult(_HasWarnings):
     """Result of ``thermal.tube_insert_model``."""
 

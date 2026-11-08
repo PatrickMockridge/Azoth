@@ -22321,6 +22321,161 @@ impl From<&azoth_thermal::results::ShellAndTubeVibrationResult> for PyShellAndTu
         }
     }
 }
+/// Result of `thermal.tema_standard`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TemaStandardResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTemaStandardResult {
+    /// the configuration's relative cost factor, one for the plainest head, shell and rear.
+    #[pyo3(get)]
+    pub configuration_cost_factor: f64,
+    /// the shell letter's pressure drop factor relative to an `E` shell.
+    #[pyo3(get)]
+    pub shell_pressure_drop_factor: f64,
+    /// whether the rear head allows the bundle to be removed.
+    #[pyo3(get)]
+    pub bundle_removable: bool,
+    /// whether the rear head handles thermal expansion, the class's second name for the same predicate.
+    #[pyo3(get)]
+    pub good_thermal_expansion: bool,
+    /// the construction class's cost factor relative to class `B`.
+    #[pyo3(get)]
+    pub class_cost_factor: f64,
+    /// the class's minimum tube wall.
+    #[pyo3(get)]
+    pub min_tube_wall_thickness: PyQty,
+    /// the class's minimum corrosion allowance.
+    #[pyo3(get)]
+    pub min_corrosion_allowance: PyQty,
+    /// the standard tube size's outside diameter.
+    #[pyo3(get)]
+    pub tube_outer_diameter: PyQty,
+    /// the same diameter in inches, which is how the size is named.
+    #[pyo3(get)]
+    pub tube_outer_diameter_inch: PyQty,
+    /// the layout angle in degrees: 30, 60, 90 or 45.
+    #[pyo3(get)]
+    pub layout_angle: f64,
+    /// the pattern's minimum pitch over tube diameter.
+    #[pyo3(get)]
+    pub min_pitch_ratio: f64,
+    /// the pattern's heat-transfer factor relative to square 90.
+    #[pyo3(get)]
+    pub pitch_heat_transfer_factor: f64,
+    /// the baffle type's heat-transfer factor relative to a single segmental.
+    #[pyo3(get)]
+    pub baffle_heat_transfer_factor: f64,
+    /// the baffle type's pressure-drop factor relative to a single segmental.
+    #[pyo3(get)]
+    pub baffle_pressure_drop_factor: f64,
+    /// `tube_outer_diameter * min_pitch_ratio`.
+    #[pyo3(get)]
+    pub min_tube_pitch: PyQty,
+    /// the truncated bundle-area estimate at the stated pitch and passes.
+    #[pyo3(get)]
+    pub estimated_tube_count: f64,
+    /// the class's maximum unsupported tube span for the diameter band and material.
+    #[pyo3(get)]
+    pub max_unsupported_span: PyQty,
+    /// the greater of one fifth of the shell diameter and the class's floor.
+    #[pyo3(get)]
+    pub min_baffle_spacing: PyQty,
+    /// the shell inside diameter.
+    #[pyo3(get)]
+    pub max_baffle_spacing: PyQty,
+    /// the designation the class's four-branch recommendation answers.
+    #[pyo3(get)]
+    pub recommended_designation: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTemaStandardResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TemaStandardResult(configuration_cost_factor={:?}, shell_pressure_drop_factor={:?}, bundle_removable={:?}, good_thermal_expansion={:?}, class_cost_factor={:?}, min_tube_wall_thickness={:?}, min_corrosion_allowance={:?}, tube_outer_diameter={:?}, tube_outer_diameter_inch={:?}, layout_angle={:?}, min_pitch_ratio={:?}, pitch_heat_transfer_factor={:?}, baffle_heat_transfer_factor={:?}, baffle_pressure_drop_factor={:?}, min_tube_pitch={:?}, estimated_tube_count={:?}, max_unsupported_span={:?}, min_baffle_spacing={:?}, max_baffle_spacing={:?}, recommended_designation={:?}, {} warning(s))",
+            self.configuration_cost_factor,
+            self.shell_pressure_drop_factor,
+            self.bundle_removable,
+            self.good_thermal_expansion,
+            self.class_cost_factor,
+            self.min_tube_wall_thickness,
+            self.min_corrosion_allowance,
+            self.tube_outer_diameter,
+            self.tube_outer_diameter_inch,
+            self.layout_angle,
+            self.min_pitch_ratio,
+            self.pitch_heat_transfer_factor,
+            self.baffle_heat_transfer_factor,
+            self.baffle_pressure_drop_factor,
+            self.min_tube_pitch,
+            self.estimated_tube_count,
+            self.max_unsupported_span,
+            self.min_baffle_spacing,
+            self.max_baffle_spacing,
+            self.recommended_designation,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TemaStandardResult> for PyTemaStandardResult {
+    fn from(r: &azoth_thermal::results::TemaStandardResult) -> Self {
+        Self {
+            configuration_cost_factor: r.configuration_cost_factor,
+            shell_pressure_drop_factor: r.shell_pressure_drop_factor,
+            bundle_removable: r.bundle_removable,
+            good_thermal_expansion: r.good_thermal_expansion,
+            class_cost_factor: r.class_cost_factor,
+            min_tube_wall_thickness: PyQty {
+                magnitude_si: r.min_tube_wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            min_corrosion_allowance: PyQty {
+                magnitude_si: r.min_corrosion_allowance.value,
+                unit: "m".to_string(),
+            },
+            tube_outer_diameter: PyQty {
+                magnitude_si: r.tube_outer_diameter.value,
+                unit: "m".to_string(),
+            },
+            tube_outer_diameter_inch: PyQty {
+                magnitude_si: r.tube_outer_diameter_inch.value,
+                unit: "in".to_string(),
+            },
+            layout_angle: r.layout_angle,
+            min_pitch_ratio: r.min_pitch_ratio,
+            pitch_heat_transfer_factor: r.pitch_heat_transfer_factor,
+            baffle_heat_transfer_factor: r.baffle_heat_transfer_factor,
+            baffle_pressure_drop_factor: r.baffle_pressure_drop_factor,
+            min_tube_pitch: PyQty {
+                magnitude_si: r.min_tube_pitch.value,
+                unit: "m".to_string(),
+            },
+            estimated_tube_count: r.estimated_tube_count,
+            max_unsupported_span: PyQty {
+                magnitude_si: r.max_unsupported_span.value,
+                unit: "m".to_string(),
+            },
+            min_baffle_spacing: PyQty {
+                magnitude_si: r.min_baffle_spacing.value,
+                unit: "m".to_string(),
+            },
+            max_baffle_spacing: PyQty {
+                magnitude_si: r.max_baffle_spacing.value,
+                unit: "m".to_string(),
+            },
+            recommended_designation: r.recommended_designation.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.tube_insert_model`, transported.
 #[pyclass(
     frozen,

@@ -303,6 +303,7 @@
   - [In-tube condensation heat transfer, Shah's correlation](./thermal/shah_condensation.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)
   - [A shell-and-tube exchanger's tube-vibration screen](./thermal/shell_and_tube_vibration.md)
+  - [TEMA configuration, class limits and layout rules](./thermal/tema_standard.md)
   - [Tube-insert heat-transfer enhancement and pressure-drop penalty](./thermal/tube_insert_model.md)
   - [Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck](./thermal/two_phase_pressure_drop.md)
 <!-- END GENERATED: calcs -->

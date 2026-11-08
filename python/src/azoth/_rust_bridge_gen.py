@@ -278,6 +278,7 @@ from azoth.core.result import (
     TbpFractionComponentResult,
     TbpFractionPropertiesResult,
     TbpGroupingResult,
+    TemaStandardResult,
     ThermalConductivityResult,
     ThFlashResult,
     ThreePhaseSeparatorResult,
@@ -591,6 +592,7 @@ __all__ = [
     "tbp_fraction_component",
     "tbp_fraction_properties",
     "tbp_grouping",
+    "tema_standard",
     "th_flash",
     "thermal_conductivity",
     "three_phase_separator",
@@ -7927,6 +7929,51 @@ def shell_and_tube_vibration(tube_outside_diameter: Q, tube_inside_diameter: Q, 
         acoustic_ratio=result.acoustic_ratio,
         acoustic_critical=result.acoustic_critical,
         passed=result.passed,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tema_standard(front_head: str, shell: str, rear_head: str, tema_class: str, tube_size: str, pitch_pattern: str, baffle_type: str, shell_inside_diameter: Q, tube_pitch: Q, tube_passes: float, needs_cleanable: bool, large_temperature_difference: bool, high_pressure: bool, hazardous: bool, tube_material: str | None=None) -> TemaStandardResult:
+    """``thermal.tema_standard``, computed in Rust."""
+    spec = _spec_for("thermal.tema_standard")
+    result = _core.tema_standard(
+        front_head,
+        shell,
+        rear_head,
+        tema_class,
+        tube_size,
+        pitch_pattern,
+        baffle_type,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        tube_passes,
+        needs_cleanable,
+        large_temperature_difference,
+        high_pressure,
+        hazardous,
+        tube_material,
+    )
+    return TemaStandardResult(
+        configuration_cost_factor=result.configuration_cost_factor,
+        shell_pressure_drop_factor=result.shell_pressure_drop_factor,
+        bundle_removable=result.bundle_removable,
+        good_thermal_expansion=result.good_thermal_expansion,
+        class_cost_factor=result.class_cost_factor,
+        min_tube_wall_thickness=from_si(result.min_tube_wall_thickness.magnitude_si, result.min_tube_wall_thickness.unit),
+        min_corrosion_allowance=from_si(result.min_corrosion_allowance.magnitude_si, result.min_corrosion_allowance.unit),
+        tube_outer_diameter=from_si(result.tube_outer_diameter.magnitude_si, result.tube_outer_diameter.unit),
+        tube_outer_diameter_inch=from_si(result.tube_outer_diameter_inch.magnitude_si, result.tube_outer_diameter_inch.unit),
+        layout_angle=result.layout_angle,
+        min_pitch_ratio=result.min_pitch_ratio,
+        pitch_heat_transfer_factor=result.pitch_heat_transfer_factor,
+        baffle_heat_transfer_factor=result.baffle_heat_transfer_factor,
+        baffle_pressure_drop_factor=result.baffle_pressure_drop_factor,
+        min_tube_pitch=from_si(result.min_tube_pitch.magnitude_si, result.min_tube_pitch.unit),
+        estimated_tube_count=result.estimated_tube_count,
+        max_unsupported_span=from_si(result.max_unsupported_span.magnitude_si, result.max_unsupported_span.unit),
+        min_baffle_spacing=from_si(result.min_baffle_spacing.magnitude_si, result.min_baffle_spacing.unit),
+        max_baffle_spacing=from_si(result.max_baffle_spacing.magnitude_si, result.max_baffle_spacing.unit),
+        recommended_designation=result.recommended_designation,
         warnings=_warnings(result.warnings),
     )
 

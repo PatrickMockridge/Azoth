@@ -378,3 +378,81 @@ impl CalcResult for TubeInsertModelResult {
         &self.warnings
     }
 }
+
+/// Result of `thermal.tema_standard`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TemaStandardResult {
+    /// The configuration's relative cost factor.
+    pub configuration_cost_factor: f64,
+    /// The shell letter's pressure drop factor.
+    pub shell_pressure_drop_factor: f64,
+    /// Whether the bundle is removable.
+    pub bundle_removable: bool,
+    /// Whether the configuration handles thermal expansion.
+    pub good_thermal_expansion: bool,
+    /// The construction class's cost factor.
+    pub class_cost_factor: f64,
+    /// The class's minimum tube wall.
+    pub min_tube_wall_thickness: Length,
+    /// The class's minimum corrosion allowance.
+    pub min_corrosion_allowance: Length,
+    /// The tube size's outside diameter.
+    pub tube_outer_diameter: Length,
+    /// The same diameter, transported in inches.
+    pub tube_outer_diameter_inch: Length,
+    /// The layout angle, in degrees.
+    pub layout_angle: f64,
+    /// The pattern's minimum pitch ratio.
+    pub min_pitch_ratio: f64,
+    /// The pattern's heat-transfer factor.
+    pub pitch_heat_transfer_factor: f64,
+    /// The baffle type's heat-transfer factor.
+    pub baffle_heat_transfer_factor: f64,
+    /// The baffle type's pressure-drop factor.
+    pub baffle_pressure_drop_factor: f64,
+    /// The minimum tube pitch.
+    pub min_tube_pitch: Length,
+    /// The truncated tube-count estimate.
+    pub estimated_tube_count: f64,
+    /// The maximum unsupported tube span.
+    pub max_unsupported_span: Length,
+    /// The minimum baffle spacing.
+    pub min_baffle_spacing: Length,
+    /// The maximum baffle spacing.
+    pub max_baffle_spacing: Length,
+    /// The recommended designation.
+    pub recommended_designation: String,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TemaStandardResult {
+    const CALC_ID: &'static str = "thermal.tema_standard";
+    const FIELDS: &'static [&'static str] = &[
+        "configuration_cost_factor",
+        "shell_pressure_drop_factor",
+        "bundle_removable",
+        "good_thermal_expansion",
+        "class_cost_factor",
+        "min_tube_wall_thickness",
+        "min_corrosion_allowance",
+        "tube_outer_diameter",
+        "tube_outer_diameter_inch",
+        "layout_angle",
+        "min_pitch_ratio",
+        "pitch_heat_transfer_factor",
+        "baffle_heat_transfer_factor",
+        "baffle_pressure_drop_factor",
+        "min_tube_pitch",
+        "estimated_tube_count",
+        "max_unsupported_span",
+        "min_baffle_spacing",
+        "max_baffle_spacing",
+        "recommended_designation",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

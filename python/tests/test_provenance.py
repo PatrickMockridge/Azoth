@@ -149,8 +149,8 @@ def test_the_block_exists_for_every_registered_id() -> None:
     # shell-and-tube thermal-hydraulic rating; 270: the tube-vibration screen; 271: the
     # LMTD correction factor; 272: the Shah condensation correlations; 273: the boiling
     # correlations; 274: the two-phase pressure drop; 275: the fouling model; 276: the tube-insert
-    # enhancement.
-    assert len(registered) == 276
+    # enhancement; 277: the TEMA standard.
+    assert len(registered) == 277
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

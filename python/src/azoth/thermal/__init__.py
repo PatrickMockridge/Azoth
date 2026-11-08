@@ -25,6 +25,7 @@ from azoth.core.result import (
     ShahCondensationResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
+    TemaStandardResult,
     TubeInsertModelResult,
     TwoPhasePressureDropResult,
 )
@@ -38,6 +39,7 @@ __all__ = [
     "shah_condensation",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
+    "tema_standard",
     "tube_insert_model",
     "two_phase_pressure_drop",
 ]
@@ -49,6 +51,7 @@ _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
+_TEMA_STANDARD = "thermal.tema_standard"
 _TUBE_INSERT_MODEL = "thermal.tube_insert_model"
 _TWO_PHASE_PRESSURE_DROP = "thermal.two_phase_pressure_drop"
 
@@ -434,4 +437,51 @@ def tube_insert_model(
         matrix_density=matrix_density,
         roughness_ratio=roughness_ratio,
         helix_angle=helix_angle,
+    )
+
+
+def tema_standard(
+    front_head: str,
+    shell: str,
+    rear_head: str,
+    tema_class: str,
+    tube_size: str,
+    pitch_pattern: str,
+    baffle_type: str,
+    shell_inside_diameter: Q,
+    tube_pitch: Q,
+    tube_passes: float,
+    needs_cleanable: bool,
+    large_temperature_difference: bool,
+    high_pressure: bool,
+    hazardous: bool,
+    tube_material: str | None = None,
+) -> TemaStandardResult:
+    """TEMA configuration, class limits and layout rules.
+
+    The head and class letters are the class's own; ``tube_material`` is matched by
+    upper-cased substring for the unsupported span and is optional.
+
+    Raises:
+        InvalidInputError: for a non-integral pass count or an undeclared enum value.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.tema_standard`.
+    """
+    return resolve(_TEMA_STANDARD)(  # type: ignore[no-any-return]
+        front_head=front_head,
+        shell=shell,
+        rear_head=rear_head,
+        tema_class=tema_class,
+        tube_size=tube_size,
+        pitch_pattern=pitch_pattern,
+        baffle_type=baffle_type,
+        shell_inside_diameter=shell_inside_diameter,
+        tube_pitch=tube_pitch,
+        tube_passes=tube_passes,
+        needs_cleanable=needs_cleanable,
+        large_temperature_difference=large_temperature_difference,
+        high_pressure=high_pressure,
+        hazardous=hazardous,
+        tube_material=tube_material,
     )
