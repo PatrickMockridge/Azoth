@@ -327,6 +327,23 @@ span. A zero flux answers zero for every flow term and leaves the gravitational 
   > captures/two_phase_pressure_drop_probe.tsv
 ```
 
+## The fouling model
+
+`fouling_model_probe.tsv` drives `FoulingModel` on its three model types: the fixed
+resistance, the Kern-Seaton asymptotic approach, and the Ebert-Panchal threshold model with
+its analytical resistance, rate, threshold temperature and threshold velocity. **The
+threshold temperature answers `Double.MAX_VALUE` when the target rate exceeds the deposition
+rate at zero fouling**, and the threshold velocity is the class's 50-step binary search over
+`[0.1, 10]` m/s, stopping at an endpoint when the asymptote never crosses the fixed
+resistance inside the bracket. The three-hour Euler rows pin the stateful `advanceTime` path
+beside the analytical one.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar FoulingModelProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FoulingModelProbe \
+  > captures/fouling_model_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
