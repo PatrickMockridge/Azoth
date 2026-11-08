@@ -293,6 +293,21 @@ to zero and answers the liquid-only coefficient.
   > captures/shah_condensation_probe.tsv
 ```
 
+## The boiling correlations
+
+`boiling_heat_transfer_probe.tsv` drives `BoilingHeatTransfer` on the class's R134a-like
+test fluid: the Chen local coefficient with and without wall superheat, the Gungor-Winterton
+local coefficient across the quality clamp, the horizontal stratified correction, the
+Martinelli parameter and the two Chen factors, the Simpson average, and the composed state
+each case pins. **The boiling quality clamp is `[0.001, 0.999]`**, unlike the condensation
+correlation's `[0, 1]`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar BoilingHeatTransferProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar BoilingHeatTransferProbe \
+  > captures/boiling_heat_transfer_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
