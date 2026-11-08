@@ -511,7 +511,7 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // ten** - the element count, the face velocity, the element area, the nozzle velocity, the
     // two L/D ratios, the pressure multiplier and additive margin, the corrosion allowance and
     // the collapse rating - take it to a hundred and seventy-one.
-    assert_eq!(checked, 171, "the bounds this test walked");
+    assert_eq!(checked, 191, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -709,7 +709,7 @@ fn the_generated_input_table_is_the_models_own() {
     // `cable_length`** - `683 + 1 = 684` - **and its `use_vfd`** - `684 + 1 = 685` - **and the
     // heat exchanger's mechanical design's three** - `mechanical_design`, `mechanical_type` and
     // `mechanical_selection` - `685 + 3 = 688`.
-    assert_eq!(walked, 688, "the inputs this test walked");
+    assert_eq!(walked, 714, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

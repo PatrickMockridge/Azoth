@@ -6580,6 +6580,54 @@ class HeatExchangerResult(_HasWarnings):
     #: `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
     calculated_ua: Q | None
 
+    #: the correlated overall coefficient the rating calculated. Present only with `use_rating_pressure_drop`.
+    rating_u: Q | None
+
+    #: `rating_u * rating_area`, the conductance the effectiveness-NTU rating used. Present only in the rating mode.
+    rating_ua: Q | None
+
+    #: the outside area the rating used; present only in the rating mode.
+    rating_area: Q | None
+
+    #: the tube side's correlated pressure drop, which the outlet pressure is reduced by.
+    tube_side_pressure_drop: Q | None
+
+    #: the shell side's correlated pressure drop.
+    shell_side_pressure_drop: Q | None
+
+    #: the tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q | None
+
+    #: the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    shell_side_heat_transfer_coefficient: Q | None
+
+    #: the tube-side Reynolds number.
+    tube_side_reynolds: float | None
+
+    #: the shell-side Reynolds number.
+    shell_side_reynolds: float | None
+
+    #: the tube-side velocity.
+    tube_side_velocity: Q | None
+
+    #: the shell-side crossflow velocity.
+    shell_side_velocity: Q | None
+
+    #: the baffle-cut correction factor; 1.0 on the Kern path.
+    jc: float | None
+
+    #: the baffle-leakage correction factor; 1.0 on the Kern path.
+    jl: float | None
+
+    #: the bundle-bypass correction factor; 1.0 on the Kern path.
+    jb: float | None
+
+    #: the unequal-spacing correction factor; 1.0 on the Kern path.
+    js: float | None
+
+    #: the adverse-temperature-gradient correction factor; 1.0 on the Kern path.
+    jr: float | None
+
     #: the five candidates in the class's enum order; empty when the design did not run.
     mechanical_types: tuple[HeatExchangerMechanicalType, ...]
 

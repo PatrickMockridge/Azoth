@@ -16362,6 +16362,54 @@ pub struct PyHeatExchangerResult {
     /// `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
     #[pyo3(get)]
     pub calculated_ua: Option<PyQty>,
+    /// the correlated overall coefficient the rating calculated. Present only with `use_rating_pressure_drop`.
+    #[pyo3(get)]
+    pub rating_u: Option<PyQty>,
+    /// `rating_u * rating_area`, the conductance the effectiveness-NTU rating used. Present only in the rating mode.
+    #[pyo3(get)]
+    pub rating_ua: Option<PyQty>,
+    /// the outside area the rating used; present only in the rating mode.
+    #[pyo3(get)]
+    pub rating_area: Option<PyQty>,
+    /// the tube side's correlated pressure drop, which the outlet pressure is reduced by.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: Option<PyQty>,
+    /// the shell side's correlated pressure drop.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: Option<PyQty>,
+    /// the tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the tube-side Reynolds number.
+    #[pyo3(get)]
+    pub tube_side_reynolds: Option<f64>,
+    /// the shell-side Reynolds number.
+    #[pyo3(get)]
+    pub shell_side_reynolds: Option<f64>,
+    /// the tube-side velocity.
+    #[pyo3(get)]
+    pub tube_side_velocity: Option<PyQty>,
+    /// the shell-side crossflow velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: Option<PyQty>,
+    /// the baffle-cut correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jc: Option<f64>,
+    /// the baffle-leakage correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jl: Option<f64>,
+    /// the bundle-bypass correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jb: Option<f64>,
+    /// the unequal-spacing correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub js: Option<f64>,
+    /// the adverse-temperature-gradient correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jr: Option<f64>,
     /// the five candidates in the class's enum order; empty when the design did not run.
     #[pyo3(get)]
     pub mechanical_types: Vec<PyHeatExchangerMechanicalType>,
@@ -16374,7 +16422,7 @@ pub struct PyHeatExchangerResult {
 impl PyHeatExchangerResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
+            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, rating_u={:?}, rating_ua={:?}, rating_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, mechanical_types={:?}, {} warning(s))",
             self.hot_out_n,
             self.hot_out_z,
             self.hot_out_p,
@@ -16399,6 +16447,22 @@ impl PyHeatExchangerResult {
             self.mechanical_approach_temperature,
             self.used_overall_heat_transfer_coefficient,
             self.calculated_ua,
+            self.rating_u,
+            self.rating_ua,
+            self.rating_area,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
             self.mechanical_types,
             self.warnings.len()
         )
@@ -16485,6 +16549,53 @@ impl From<&azoth_process::models::heat_exchanger::HeatExchangerResult> for PyHea
                 magnitude_si: v.value,
                 unit: "W/K".to_string(),
             }),
+            rating_u: r.rating_u.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/(m**2*K)".to_string(),
+            }),
+            rating_ua: r.rating_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            rating_area: r.rating_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            tube_side_pressure_drop: r.tube_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            shell_side_pressure_drop: r.shell_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            tube_side_heat_transfer_coefficient: r.tube_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            shell_side_heat_transfer_coefficient: r.shell_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            tube_side_velocity: r.tube_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            shell_side_velocity: r.shell_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
             mechanical_types: r
                 .mechanical_types
                 .iter()

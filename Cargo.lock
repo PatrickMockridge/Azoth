@@ -124,6 +124,7 @@ dependencies = [
  "azoth-hydraulics",
  "azoth-reactions",
  "azoth-standards",
+ "azoth-thermal",
  "csv",
  "serde",
  "serde_json",

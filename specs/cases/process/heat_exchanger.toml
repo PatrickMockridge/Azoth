@@ -516,3 +516,243 @@ mechanical_types = [
     { mechanical_type = "double_pipe", required_area = 0.44982417125473684, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 350.0, approach_temperature = 8.0, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.863669615096265, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2290935692077012, estimated_weight = 38.842317187846525, module_length = 3.363669615096265, module_width = 0.71, module_height = 0.71 },
     { mechanical_type = "plate_fin", required_area = 0.2623974332319298, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 600.0, approach_temperature = 1.5, inner_diameter = 0.03523190373767395, outer_diameter = 0.03843190373767395, wall_thickness = 0.0016, estimated_length = 0.2113914224260437, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.2623974332319298, estimated_pressure_drop = 0.006341742672781311, estimated_weight = 0.21490349781695053, module_length = 2.211391422426044, module_width = 0.835231903737674, module_height = 0.5352319037376739 },
 ]
+
+
+[[cases]]
+id = "the_rating_mode_on_the_fouling_test"
+tolerance = 5e-04
+source = "The capture's `tube_30_shell_110` row: `HeatExchanger.runThermalHydraulicRating` on the fouling test's geometry, the tube side at 30 C and 8 kg/s, the shell at 110 C and 10 kg/s. The correlated UA, both drops, both film coefficients and the closed outlets are the class's own; `ntu` is the port's derived capacity figure and is not asserted, because the class has no getter for it.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 428.3626191574183
+rating_ua = 13457.408574174277
+rating_area = 31.41592653589793
+tube_side_pressure_drop = 2893.9548107873375
+shell_side_pressure_drop = 1994.6322377452318
+tube_side_heat_transfer_coefficient = 980.974228989477
+shell_side_heat_transfer_coefficient = 993.4561069744582
+tube_side_reynolds = 21858.01740706331
+shell_side_reynolds = 40440.63924047246
+tube_side_velocity = 0.7526673931684609
+shell_side_velocity = 0.745163867444134
+duty = 652595.0077571755
+hot_out_t = 356.718796606001
+cold_out_t = 339.7261515675877
+hot_out_p = 1998005.3677622546
+cold_out_p = 1997106.0451892125
+effectiveness = 0.4364287940197899
+jc = 1.0
+jl = 1.0
+jb = 1.0
+js = 1.0
+jr = 1.0
+
+
+[[cases]]
+id = "the_rating_mode_with_the_sides_swapped"
+tolerance = 5e-04
+source = "The capture's `tube_110_shell_30` row: the same geometry and flows with the tube at 110 C and the shell at 30 C. `rating_tube_side = hot` is the declaration the class's stream 0 has no counterpart for, and the two drops follow the tube and shell, not hot and cold.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 76.61873845331667
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 95.77342306664585
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "hot"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 478.1388134317786
+rating_ua = 15021.173836734164
+tube_side_pressure_drop = 2857.8478174518095
+shell_side_pressure_drop = 2023.8491620360012
+tube_side_heat_transfer_coefficient = 1258.4977563127186
+shell_side_heat_transfer_coefficient = 957.3455923537474
+tube_side_velocity = 0.8301755904204547
+shell_side_velocity = 0.6755926722784618
+duty = 696460.0730158425
+hot_out_t = 347.5523522250111
+cold_out_t = 334.5492271138559
+hot_out_p = 1997142.1521825484
+cold_out_p = 1997976.150837964
+effectiveness = 0.4657639518173235
+
+
+[[cases]]
+id = "the_rating_mode_at_equal_inlets"
+tolerance = 5e-04
+source = "The capture's `equal_inlets_60` row: no driving force, so the class's `abs(dT) > 1e-10` gate leaves the duty and effectiveness at zero while both correlated pressure drops still move the outlets.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 333.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 333.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 447.12100228135114
+rating_ua = 14046.720560327978
+tube_side_pressure_drop = 2865.699046040555
+shell_side_pressure_drop = 2006.3805505563944
+tube_side_heat_transfer_coefficient = 1080.1504855426929
+shell_side_heat_transfer_coefficient = 974.9965981389071
+duty = 0.0
+hot_out_t = 333.15084004539443
+cold_out_t = 333.1511998223249
+hot_out_p = 1997991.9361944945
+cold_out_p = 1997134.3009539595
+effectiveness = 0.0
+
+
+[[cases]]
+id = "the_rating_mode_with_a_deposit_layer"
+tolerance = 5e-04
+source = "The capture's `deposit_layer` row: a 1 mm deposit at 0.2 W/(m K) conductivity. The effective bore and the resistance are the calculator's, and the correlated UA carries the whole effect.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+rating_tube_fouling_layer_thickness = 0.001
+rating_tube_fouling_layer_conductivity = 0.2
+[cases.expected]
+rating_u = 113.55825012997927
+rating_ua = 3567.5376436285505
+tube_side_pressure_drop = 4654.50064285779
+shell_side_pressure_drop = 1994.6322377452318
+tube_side_heat_transfer_coefficient = 1196.4992639075667
+shell_side_heat_transfer_coefficient = 993.4561069744582
+duty = 243538.5658024593
+hot_out_t = 373.4582441474701
+cold_out_t = 317.1307216289101
+hot_out_p = 1998005.3677622546
+cold_out_p = 1995345.4993571423
+effectiveness = 0.1628686111709041
+
+
+[[cases]]
+id = "the_rating_mode_with_bell_delaware"
+tolerance = 5e-04
+source = "The capture's `bell_delaware` row: the same state as the first case with `bell_delaware`. The tube side is bit-identical and the shell drop grows from 1.99 to 3.27 kPa; the four correction factors are the calculator's own.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+rating_shell_side_method = "bell_delaware"
+[cases.expected]
+rating_u = 358.73325476545796
+rating_ua = 11269.937577695184
+tube_side_pressure_drop = 2893.9548107873375
+shell_side_pressure_drop = 3265.630605870124
+tube_side_heat_transfer_coefficient = 980.974228989477
+shell_side_heat_transfer_coefficient = 685.0709516496196
+duty = 583985.1423169624
+hot_out_t = 359.56837074936686
+cold_out_t = 336.00999751213334
+hot_out_p = 1996734.36939413
+cold_out_p = 1997106.0451892125
+effectiveness = 0.39054532804777636
+jc = 1.054
+jl = 0.7123109582535239
+jb = 0.5394836194862993
+js = 1.0
+jr = 1.0

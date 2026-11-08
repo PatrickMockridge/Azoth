@@ -4710,7 +4710,27 @@
       "source": "NeqSim process/equipment/heatexchanger/HeatExchanger.java",
       "unmodelled_ranges": [
         "hot_in_t",
-        "cold_in_t"
+        "cold_in_t",
+        "rating_area",
+        "rating_tube_outside_diameter",
+        "rating_tube_inside_diameter",
+        "rating_tube_length",
+        "rating_tube_count",
+        "rating_tube_passes",
+        "rating_tube_pitch",
+        "rating_shell_inside_diameter",
+        "rating_baffle_spacing",
+        "rating_baffle_count",
+        "rating_baffle_cut",
+        "rating_tube_wall_conductivity",
+        "rating_fouling_tube",
+        "rating_fouling_shell",
+        "rating_tube_fouling_layer_thickness",
+        "rating_tube_fouling_layer_conductivity",
+        "rating_sealing_pairs",
+        "rating_tube_to_baffle_clearance",
+        "rating_shell_to_baffle_clearance",
+        "rating_bypass_area"
       ]
     },
     {

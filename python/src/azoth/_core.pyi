@@ -3046,6 +3046,22 @@ class HeatExchangerResult:
     mechanical_approach_temperature: Qty | None
     used_overall_heat_transfer_coefficient: Qty | None
     calculated_ua: Qty | None
+    rating_u: Qty | None
+    rating_ua: Qty | None
+    rating_area: Qty | None
+    tube_side_pressure_drop: Qty | None
+    shell_side_pressure_drop: Qty | None
+    tube_side_heat_transfer_coefficient: Qty | None
+    shell_side_heat_transfer_coefficient: Qty | None
+    tube_side_reynolds: float | None
+    shell_side_reynolds: float | None
+    tube_side_velocity: Qty | None
+    shell_side_velocity: Qty | None
+    jc: float | None
+    jl: float | None
+    jb: float | None
+    js: float | None
+    jr: float | None
     mechanical_types: list[HeatExchangerMechanicalType]
     warnings: list[Warning]
 
@@ -5993,6 +6009,32 @@ def heat_exchanger(
     mechanical_design: bool | None = None,
     mechanical_type: str | None = None,
     mechanical_selection: str | None = None,
+    use_rating_pressure_drop: bool | None = None,
+    rating_area: float | None = None,
+    rating_tube_side: str | None = None,
+    rating_tube_outside_diameter: float | None = None,
+    rating_tube_inside_diameter: float | None = None,
+    rating_tube_length: float | None = None,
+    rating_tube_count: float | None = None,
+    rating_tube_passes: float | None = None,
+    rating_tube_pitch: float | None = None,
+    rating_triangular_pitch: bool | None = None,
+    rating_shell_inside_diameter: float | None = None,
+    rating_baffle_spacing: float | None = None,
+    rating_baffle_count: float | None = None,
+    rating_baffle_cut: float | None = None,
+    rating_tube_wall_conductivity: float | None = None,
+    rating_fouling_tube: float | None = None,
+    rating_fouling_shell: float | None = None,
+    rating_tube_fouling_layer_thickness: float | None = None,
+    rating_tube_fouling_layer_conductivity: float | None = None,
+    rating_shell_side_method: str | None = None,
+    rating_shell_viscosity_wall: float | None = None,
+    rating_has_sealing: bool | None = None,
+    rating_sealing_pairs: float | None = None,
+    rating_tube_to_baffle_clearance: float | None = None,
+    rating_shell_to_baffle_clearance: float | None = None,
+    rating_bypass_area: float | None = None,
 ) -> HeatExchangerResult: ...
 def heater(
     components: list[str],

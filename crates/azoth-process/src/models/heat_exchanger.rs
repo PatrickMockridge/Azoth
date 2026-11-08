@@ -9,9 +9,10 @@
 //! the boundary derives the two `Stream`s from them separately.
 
 use azoth_core::units::{
-    Area, HeatTransfer, Length, Mass, MolarEnergy, Power, Pressure, ThermalConductance,
-    ThermodynamicTemperature, joules_per_mole, kelvins, kilograms, meters, square_meters,
-    watts_per_kelvin, watts_per_square_meter_kelvin,
+    Area, DynamicViscosity, HeatTransfer, Length, Mass, MolarEnergy, Power, Pressure,
+    ThermalConductance, ThermalConductivity, ThermodynamicTemperature, Velocity, joules_per_mole,
+    kelvins, kilograms, meters, meters_per_second, pascals, square_meters, watts_per_kelvin,
+    watts_per_square_meter_kelvin,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -149,6 +150,47 @@ pub struct HeatExchangerResult {
     /// The calculated UA.
     #[serde(serialize_with = "optional_scalar")]
     pub calculated_ua: Option<ThermalConductance>,
+    /// The rating's correlated overall coefficient.
+    #[serde(serialize_with = "optional_scalar")]
+    pub rating_u: Option<HeatTransfer>,
+    /// `rating_u * rating_area`.
+    #[serde(serialize_with = "optional_scalar")]
+    pub rating_ua: Option<ThermalConductance>,
+    /// The outside area the rating used.
+    #[serde(serialize_with = "optional_scalar")]
+    pub rating_area: Option<Area>,
+    /// The tube side's correlated pressure drop.
+    #[serde(serialize_with = "optional_scalar")]
+    pub tube_side_pressure_drop: Option<Pressure>,
+    /// The shell side's correlated pressure drop.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shell_side_pressure_drop: Option<Pressure>,
+    /// The tube-side film coefficient.
+    #[serde(serialize_with = "optional_scalar")]
+    pub tube_side_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The shell-side film coefficient.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shell_side_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The tube-side Reynolds number.
+    pub tube_side_reynolds: Option<f64>,
+    /// The shell-side Reynolds number.
+    pub shell_side_reynolds: Option<f64>,
+    /// The tube-side velocity.
+    #[serde(serialize_with = "optional_scalar")]
+    pub tube_side_velocity: Option<Velocity>,
+    /// The shell-side crossflow velocity.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shell_side_velocity: Option<Velocity>,
+    /// The baffle-cut correction factor.
+    pub jc: Option<f64>,
+    /// The baffle-leakage correction factor.
+    pub jl: Option<f64>,
+    /// The bundle-bypass correction factor.
+    pub jb: Option<f64>,
+    /// The unequal-spacing correction factor.
+    pub js: Option<f64>,
+    /// The adverse-temperature-gradient correction factor.
+    pub jr: Option<f64>,
     /// The five candidates, in the class's enum order.
     pub mechanical_types: Vec<HeatExchangerMechanicalType>,
     /// Caveats.
@@ -183,6 +225,32 @@ pub fn heat_exchanger(
     mechanical_design: Option<bool>,
     mechanical_type: Option<&str>,
     mechanical_selection: Option<&str>,
+    use_rating_pressure_drop: Option<bool>,
+    rating_area: Option<Area>,
+    rating_tube_side: Option<&str>,
+    rating_tube_outside_diameter: Option<Length>,
+    rating_tube_inside_diameter: Option<Length>,
+    rating_tube_length: Option<Length>,
+    rating_tube_count: Option<f64>,
+    rating_tube_passes: Option<f64>,
+    rating_tube_pitch: Option<Length>,
+    rating_triangular_pitch: Option<bool>,
+    rating_shell_inside_diameter: Option<Length>,
+    rating_baffle_spacing: Option<Length>,
+    rating_baffle_count: Option<f64>,
+    rating_baffle_cut: Option<f64>,
+    rating_tube_wall_conductivity: Option<ThermalConductivity>,
+    rating_fouling_tube: Option<f64>,
+    rating_fouling_shell: Option<f64>,
+    rating_tube_fouling_layer_thickness: Option<Length>,
+    rating_tube_fouling_layer_conductivity: Option<ThermalConductivity>,
+    rating_shell_side_method: Option<&str>,
+    rating_shell_viscosity_wall: Option<DynamicViscosity>,
+    rating_has_sealing: Option<bool>,
+    rating_sealing_pairs: Option<f64>,
+    rating_tube_to_baffle_clearance: Option<Length>,
+    rating_shell_to_baffle_clearance: Option<Length>,
+    rating_bypass_area: Option<Area>,
 ) -> Result<HeatExchangerResult> {
     let spec = &model_gen::HEAT_EXCHANGER_SPEC;
     let mut warnings = Vec::new();
@@ -195,6 +263,36 @@ pub fn heat_exchanger(
             "ua" => ua.map(|value| value.value),
             "hot_in_t" => Some(hot_in_t.value),
             "cold_in_t" => Some(cold_in_t.value),
+            "rating_area" => rating_area.map(|value| value.value),
+            "rating_tube_outside_diameter" => rating_tube_outside_diameter.map(|value| value.value),
+            "rating_tube_inside_diameter" => rating_tube_inside_diameter.map(|value| value.value),
+            "rating_tube_length" => rating_tube_length.map(|value| value.value),
+            "rating_tube_count" => rating_tube_count,
+            "rating_tube_passes" => rating_tube_passes,
+            "rating_tube_pitch" => rating_tube_pitch.map(|value| value.value),
+            "rating_shell_inside_diameter" => rating_shell_inside_diameter.map(|value| value.value),
+            "rating_baffle_spacing" => rating_baffle_spacing.map(|value| value.value),
+            "rating_baffle_count" => rating_baffle_count,
+            "rating_baffle_cut" => rating_baffle_cut,
+            "rating_tube_wall_conductivity" => {
+                rating_tube_wall_conductivity.map(|value| value.value)
+            }
+            "rating_fouling_tube" => rating_fouling_tube,
+            "rating_fouling_shell" => rating_fouling_shell,
+            "rating_tube_fouling_layer_thickness" => {
+                rating_tube_fouling_layer_thickness.map(|value| value.value)
+            }
+            "rating_tube_fouling_layer_conductivity" => {
+                rating_tube_fouling_layer_conductivity.map(|value| value.value)
+            }
+            "rating_sealing_pairs" => rating_sealing_pairs,
+            "rating_tube_to_baffle_clearance" => {
+                rating_tube_to_baffle_clearance.map(|value| value.value)
+            }
+            "rating_shell_to_baffle_clearance" => {
+                rating_shell_to_baffle_clearance.map(|value| value.value)
+            }
+            "rating_bypass_area" => rating_bypass_area.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -281,16 +379,87 @@ pub fn heat_exchanger(
     // rather than `run` writes - so a pinned run that states none leaves 500 here.
     let class_ua = ua.map_or(500.0, |value| value.value);
     let pinned = hot_outlet_temperature.is_some() || cold_outlet_temperature.is_some();
-    let outcome = kernel(
-        &hot,
-        &cold,
-        ua,
-        flow_arrangement,
-        hot_outlet_temperature,
-        cold_outlet_temperature,
-        use_delta_t.unwrap_or(false),
-        delta_t.unwrap_or_else(|| azoth_core::units::kelvins(1.0)),
-    )?;
+    let outcome = if use_rating_pressure_drop.unwrap_or(false) {
+        if pinned || use_delta_t.unwrap_or(false) {
+            return Err(AzothError::invalid_input(
+                "use_rating_pressure_drop",
+                "the thermal-hydraulic rating requires a UA specification without a pinned \
+                 outlet or delta-T",
+            ));
+        }
+        let area = rating_area.ok_or_else(|| {
+            AzothError::invalid_input(
+                "rating_area",
+                "the thermal-hydraulic rating needs a positive outside area",
+            )
+        })?;
+        let tube_is_hot = match rating_tube_side {
+            Some("hot") => true,
+            Some("cold") => false,
+            Some(other) => {
+                return Err(AzothError::invalid_input(
+                    "rating_tube_side",
+                    format!("{other} is not one of hot or cold"),
+                ));
+            }
+            None => {
+                return Err(AzothError::invalid_input(
+                    "rating_tube_side",
+                    "the thermal-hydraulic rating needs the side that is the tube",
+                ));
+            }
+        };
+        let shell_side_method = match rating_shell_side_method {
+            Some(spelling) => Some(spelling.parse::<azoth_thermal::ShellSideMethod>()?),
+            None => None,
+        };
+        let geometry = kernel::RatingGeometry {
+            tube_outside_diameter: rating_tube_outside_diameter.map(|value| value.value),
+            tube_inside_diameter: rating_tube_inside_diameter.map(|value| value.value),
+            tube_length: rating_tube_length.map(|value| value.value),
+            tube_count: rating_tube_count,
+            tube_passes: rating_tube_passes,
+            tube_pitch: rating_tube_pitch.map(|value| value.value),
+            triangular_pitch: rating_triangular_pitch,
+            shell_inside_diameter: rating_shell_inside_diameter.map(|value| value.value),
+            baffle_spacing: rating_baffle_spacing.map(|value| value.value),
+            baffle_count: rating_baffle_count,
+            baffle_cut: rating_baffle_cut,
+            tube_wall_conductivity: rating_tube_wall_conductivity.map(|value| value.value),
+            fouling_tube: rating_fouling_tube,
+            fouling_shell: rating_fouling_shell,
+            tube_fouling_layer_thickness: rating_tube_fouling_layer_thickness
+                .map(|value| value.value),
+            tube_fouling_layer_conductivity: rating_tube_fouling_layer_conductivity
+                .map(|value| value.value),
+            shell_side_method,
+            shell_viscosity_wall: rating_shell_viscosity_wall.map(|value| value.value),
+            has_sealing: rating_has_sealing,
+            sealing_pairs: rating_sealing_pairs,
+            tube_to_baffle_clearance: rating_tube_to_baffle_clearance.map(|value| value.value),
+            shell_to_baffle_clearance: rating_shell_to_baffle_clearance.map(|value| value.value),
+            bypass_area: rating_bypass_area.map(|value| value.value),
+        };
+        kernel::heat_exchanger_rating(
+            &hot,
+            &cold,
+            tube_is_hot,
+            area.value,
+            &geometry,
+            flow_arrangement,
+        )?
+    } else {
+        kernel(
+            &hot,
+            &cold,
+            ua,
+            flow_arrangement,
+            hot_outlet_temperature,
+            cold_outlet_temperature,
+            use_delta_t.unwrap_or(false),
+            delta_t.unwrap_or_else(|| azoth_core::units::kelvins(1.0)),
+        )?
+    };
     let mechanical = if mechanical_requested {
         // **The class's `getDuty()` basis, not this result's `duty`**: the pinned branch
         // writes neither, so `determineDuty` sees zero there.
@@ -309,7 +478,15 @@ pub fn heat_exchanger(
             cold_in_t.value,
             outcome.cold_out.t.value,
             duty_basis,
-            outcome.ua_value.unwrap_or(class_ua),
+            outcome
+                .ua_value
+                .or_else(|| {
+                    outcome
+                        .rating_diagnostics
+                        .as_ref()
+                        .map(|value| value.rating_ua)
+                })
+                .unwrap_or(class_ua),
             effectiveness,
             &mechanical_request,
         ))
@@ -368,6 +545,53 @@ impl HeatExchangerResult {
                 watts_per_square_meter_kelvin(value.used_overall_heat_transfer_coefficient)
             }),
             calculated_ua: mechanical.map(|value| watts_per_kelvin(value.calculated_ua)),
+            rating_u: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| watts_per_square_meter_kelvin(value.rating_u)),
+            rating_ua: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| watts_per_kelvin(value.rating_ua)),
+            rating_area: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| square_meters(value.rating_area)),
+            tube_side_pressure_drop: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| pascals(value.tube_side_pressure_drop)),
+            shell_side_pressure_drop: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| pascals(value.shell_side_pressure_drop)),
+            tube_side_heat_transfer_coefficient: outcome.rating_diagnostics.as_ref().map(|value| {
+                watts_per_square_meter_kelvin(value.tube_side_heat_transfer_coefficient)
+            }),
+            shell_side_heat_transfer_coefficient: outcome.rating_diagnostics.as_ref().map(
+                |value| watts_per_square_meter_kelvin(value.shell_side_heat_transfer_coefficient),
+            ),
+            tube_side_reynolds: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| value.tube_side_reynolds),
+            shell_side_reynolds: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| value.shell_side_reynolds),
+            tube_side_velocity: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| meters_per_second(value.tube_side_velocity)),
+            shell_side_velocity: outcome
+                .rating_diagnostics
+                .as_ref()
+                .map(|value| meters_per_second(value.shell_side_velocity)),
+            jc: outcome.rating_diagnostics.as_ref().map(|value| value.jc),
+            jl: outcome.rating_diagnostics.as_ref().map(|value| value.jl),
+            jb: outcome.rating_diagnostics.as_ref().map(|value| value.jb),
+            js: outcome.rating_diagnostics.as_ref().map(|value| value.js),
+            jr: outcome.rating_diagnostics.as_ref().map(|value| value.jr),
             mechanical_types: mechanical
                 .map(|value| {
                     value

@@ -68,6 +68,23 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
     phase_view_of(stream, pick, false)
 }
 
+/// The one phase of a single-phase stream, refusing a two-phase one.
+///
+/// The shell-and-tube rating's correlations are single-phase: the class's
+/// `requireSinglePhaseRatingState` refuses a two-phase inlet, and a port that picked one
+/// phase of a two-phase stream would be answering a question the class does not.
+pub fn single_phase_view(stream: &Stream) -> Result<PhaseView> {
+    let (mixture, _) = stream.mixture()?;
+    let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
+    if flash.phase == Phase::TwoPhase {
+        return Err(AzothError::invalid_input(
+            "stream",
+            "the thermal-hydraulic rating requires single-phase streams",
+        ));
+    }
+    phase_view_of(stream, Pick::Gas, false)
+}
+
 /// [`phase_view`] with a **single phase's root taken from the feed**.
 ///
 /// The flash's negative-flash branch reports the *trial* composition's root for a single

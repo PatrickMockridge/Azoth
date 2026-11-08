@@ -8,7 +8,13 @@ assumptions = [
     "**`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.",
     "**an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.",
     "**the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.",
-    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a UA from correlations and a mechanical design. **The mechanical design's thermal estimate is here**; the rating, the correlation-based UA and the detailed `ShellAndTubeDesignCalculator` are outside.",
+    "**`use_rating_pressure_drop` replaces the ordinary rating with `runThermalHydraulicRating`.** It requires `rating_area` and a tube side, refuses a pinned outlet or `use_delta_t`, and does not read `ua`: the correlated `U * rating_area` is the conductance.",
+    "**the tube is `rating_tube_side`'s stream.** The class's `inStream[0]` is the tube and this declaration orders hot and cold by meaning, so the caller names which one the tube is.",
+    "**the capacities are estimated against the other inlet temperature**, as `run` does, and both must stay in one phase kind; a clone that crosses a phase transition is refused.",
+    "**the effectiveness uses the class's Cr≈1 counterflow special case** and the same arrangement relation as the ordinary rating.",
+    "**the outlet pressure is the inlet less the correlated drop**, and a drop that exhausts the inlet is refused rather than clamped.",
+    "**the PH-flash energy closure is 1e-5 relative**, which is the class's own check.",
+    "**the detailed `ShellAndTubeDesignCalculator` and the two-phase models remain outside.** The rating calculator itself is `thermal.shell_and_tube_rating`.",
     "**the mechanical design is its thermal estimate only.** The four stream temperatures give an LMTD and an approach, the starting UA is `getUAvalue()`, and five candidate types give their areas and geometry.",
     "**the two-stream branch's sizing coefficient is the type's own typical U**, not the larger of it and a used coefficient as the heater branch takes. The used coefficient is the class's 500: the branch never reads the exchanger's `UAvalue` for it.",
     "**a pinned outlet feeds the estimate a zero duty.** `runSpecifiedStream` writes neither the `duty` field nor the effectiveness, so `determineDuty` sees zero and the effectiveness arm is skipped; the UA still comes from `getUAvalue()`.",
@@ -24,7 +30,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
-edition = "Its steady-state `run` - the rating, the `outTemperature` pin and `runDeltaT`'s closure - **and the mechanical design's two-stream estimate**. The detailed calculator and the thermal-hydraulic rating are outside; the `out_temperature_*` capture rows are not used."
+edition = "Its steady-state `run` - the rating, the `outTemperature` pin, `runDeltaT`'s closure and `runThermalHydraulicRating` - **and the mechanical design's two-stream estimate**. The detailed `ShellAndTubeDesignCalculator` and the two-phase models are outside."
 [inputs]
 [inputs.hot_components]
 type = "components"
@@ -102,6 +108,112 @@ type = "enum"
 values = ["min_area", "min_weight", "min_pressure_drop"]
 optional = true
 description = "the automatic ranking's metric. Absent is the class's `MIN_AREA`. Ignored with a stated `mechanical_type`.\n"
+[inputs.use_rating_pressure_drop]
+type = "boolean"
+optional = true
+description = "run `HeatExchanger.runThermalHydraulicRating`. Absent is false. It replaces the ordinary rating, requires `rating_area` and `rating_tube_side`, and refuses a pinned outlet or `use_delta_t`.\n"
+[inputs.rating_area]
+unit = "m**2"
+optional = true
+description = "the nominal outside heat-transfer area the correlated UA multiplies. **Required when `use_rating_pressure_drop` is on**; the class has no default for it.\n"
+[inputs.rating_tube_side]
+type = "enum"
+values = ["hot", "cold"]
+optional = true
+description = "which declared side is the tube. **Required when the mode is on**, because the class's stream 0 is the tube and this declaration has no constructor order.\n"
+[inputs.rating_tube_outside_diameter]
+unit = "m"
+optional = true
+description = "the tube outside diameter. Absent is the calculator's `0.01905`.\n"
+[inputs.rating_tube_inside_diameter]
+unit = "m"
+optional = true
+description = "the nominal tube inside diameter. Absent is `0.01483`.\n"
+[inputs.rating_tube_length]
+unit = "m"
+optional = true
+description = "the tube length. Absent is `6.096`.\n"
+[inputs.rating_tube_count]
+unit = "dimensionless"
+optional = true
+description = "the nominal tube count, which must divide evenly by the passes. Absent is `100`.\n"
+[inputs.rating_tube_passes]
+unit = "dimensionless"
+optional = true
+description = "the tube passes. Absent is `2`.\n"
+[inputs.rating_tube_pitch]
+unit = "m"
+optional = true
+description = "the tube pitch. Absent is `0.02381`.\n"
+[inputs.rating_triangular_pitch]
+type = "boolean"
+optional = true
+description = "the tube layout: true triangular, false square. Absent is true.\n"
+[inputs.rating_shell_inside_diameter]
+unit = "m"
+optional = true
+description = "the shell inside diameter. Absent is `0.5`.\n"
+[inputs.rating_baffle_spacing]
+unit = "m"
+optional = true
+description = "the central baffle spacing. Absent is `0.2`.\n"
+[inputs.rating_baffle_count]
+unit = "dimensionless"
+optional = true
+description = "the baffle count. Absent is `10`.\n"
+[inputs.rating_baffle_cut]
+unit = "dimensionless"
+optional = true
+description = "the fractional baffle cut, between zero and one half. Absent is `0.25`.\n"
+[inputs.rating_tube_wall_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the tube-wall conductivity. Absent is `52`.\n"
+[inputs.rating_fouling_tube]
+unit = "dimensionless"
+optional = true
+description = "the tube-side fouling resistance in m**2*K/W. Absent is `0.000176`.\n"
+[inputs.rating_fouling_shell]
+unit = "dimensionless"
+optional = true
+description = "the shell-side fouling resistance in m**2*K/W. Absent is `0.000176`.\n"
+[inputs.rating_tube_fouling_layer_thickness]
+unit = "m"
+optional = true
+description = "a uniform deposit thickness. Absent is zero, which disables the layer.\n"
+[inputs.rating_tube_fouling_layer_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the deposit conductivity. Absent is `1.0`; ignored at zero thickness but a non-positive value is refused.\n"
+[inputs.rating_shell_side_method]
+type = "enum"
+values = ["kern", "bell_delaware"]
+optional = true
+description = "the shell-side method. Absent is `kern`.\n"
+[inputs.rating_shell_viscosity_wall]
+unit = "Pa*s"
+optional = true
+description = "the shell-side wall viscosity. Absent or negative selects the bulk viscosity; zero is refused.\n"
+[inputs.rating_has_sealing]
+type = "boolean"
+optional = true
+description = "whether sealing strips are installed. Absent is false.\n"
+[inputs.rating_sealing_pairs]
+unit = "dimensionless"
+optional = true
+description = "the sealing-strip pairs. Absent is zero; a stated seal with no pair is refused.\n"
+[inputs.rating_tube_to_baffle_clearance]
+unit = "m"
+optional = true
+description = "the tube-to-baffle clearance. Absent is `0.0004`.\n"
+[inputs.rating_shell_to_baffle_clearance]
+unit = "m"
+optional = true
+description = "the shell-to-baffle clearance. Absent is `0.003`.\n"
+[inputs.rating_bypass_area]
+unit = "m**2"
+optional = true
+description = "the bundle bypass area. Absent or zero estimates it as the calculator does.\n"
 [outputs]
 [outputs.hot_out_n]
 unit = "mol/s"
@@ -187,6 +299,70 @@ description = "the coefficient the estimate used: the class's 500. This branch n
 unit = "W/K"
 optional = true
 description = "`getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.\n"
+[outputs.rating_u]
+unit = "W/(m**2*K)"
+optional = true
+description = "the correlated overall coefficient the rating calculated. Present only with `use_rating_pressure_drop`.\n"
+[outputs.rating_ua]
+unit = "W/K"
+optional = true
+description = "`rating_u * rating_area`, the conductance the effectiveness-NTU rating used. Present only in the rating mode.\n"
+[outputs.rating_area]
+unit = "m**2"
+optional = true
+description = "the outside area the rating used; present only in the rating mode.\n"
+[outputs.tube_side_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the tube side's correlated pressure drop, which the outlet pressure is reduced by.\n"
+[outputs.shell_side_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the shell side's correlated pressure drop.\n"
+[outputs.tube_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the tube-side film coefficient.\n"
+[outputs.shell_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.\n"
+[outputs.tube_side_reynolds]
+unit = "dimensionless"
+optional = true
+description = "the tube-side Reynolds number.\n"
+[outputs.shell_side_reynolds]
+unit = "dimensionless"
+optional = true
+description = "the shell-side Reynolds number.\n"
+[outputs.tube_side_velocity]
+unit = "m/s"
+optional = true
+description = "the tube-side velocity.\n"
+[outputs.shell_side_velocity]
+unit = "m/s"
+optional = true
+description = "the shell-side crossflow velocity.\n"
+[outputs.jc]
+unit = "dimensionless"
+optional = true
+description = "the baffle-cut correction factor; 1.0 on the Kern path.\n"
+[outputs.jl]
+unit = "dimensionless"
+optional = true
+description = "the baffle-leakage correction factor; 1.0 on the Kern path.\n"
+[outputs.jb]
+unit = "dimensionless"
+optional = true
+description = "the bundle-bypass correction factor; 1.0 on the Kern path.\n"
+[outputs.js]
+unit = "dimensionless"
+optional = true
+description = "the unequal-spacing correction factor; 1.0 on the Kern path.\n"
+[outputs.jr]
+unit = "dimensionless"
+optional = true
+description = "the adverse-temperature-gradient correction factor; 1.0 on the Kern path.\n"
 [outputs.mechanical_types]
 type = "record_list"
 description = "the five candidates in the class's enum order; empty when the design did not run.\n"
@@ -260,6 +436,118 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "rating_area"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a heat-transfer area is positive, and the correlated UA multiplies it.\n"
+[[valid_range]]
+quantity = "rating_tube_outside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is positive.\n"
+[[valid_range]]
+quantity = "rating_tube_inside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is positive; a negative flow diameter has no meaning.\n"
+[[valid_range]]
+quantity = "rating_tube_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the length multiplies the area and divides the friction term.\n"
+[[valid_range]]
+quantity = "rating_tube_count"
+min = 1
+severity = "error"
+rationale = "the class refuses a zero tube count.\n"
+[[valid_range]]
+quantity = "rating_tube_passes"
+min = 1
+severity = "error"
+rationale = "the class refuses a zero pass count.\n"
+[[valid_range]]
+quantity = "rating_tube_pitch"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the pitch drives the shell-side geometry.\n"
+[[valid_range]]
+quantity = "rating_shell_inside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the shell diameter drives the crossflow area.\n"
+[[valid_range]]
+quantity = "rating_baffle_spacing"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spacing drives the crossflow and window areas.\n"
+[[valid_range]]
+quantity = "rating_baffle_count"
+min = 1
+severity = "error"
+rationale = "the class requires at least one baffle.\n"
+[[valid_range]]
+quantity = "rating_baffle_cut"
+min = 0
+min_inclusive = false
+max = 0.5
+max_inclusive = false
+severity = "error"
+rationale = "the class refuses a cut at or beyond one half.\n"
+[[valid_range]]
+quantity = "rating_tube_wall_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the wall resistance is a logarithm over this conductivity.\n"
+[[valid_range]]
+quantity = "rating_fouling_tube"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_fouling_shell"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_tube_fouling_layer_thickness"
+min = 0
+severity = "error"
+rationale = "a deposit thickness cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_tube_fouling_layer_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class refuses a non-positive deposit conductivity.\n"
+[[valid_range]]
+quantity = "rating_sealing_pairs"
+min = 0
+severity = "error"
+rationale = "a pair count cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_tube_to_baffle_clearance"
+min = 0
+severity = "error"
+rationale = "a clearance cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_shell_to_baffle_clearance"
+min = 0
+severity = "error"
+rationale = "a clearance cannot be negative.\n"
+[[valid_range]]
+quantity = "rating_bypass_area"
+min = 0
+severity = "error"
+rationale = "a bypass area cannot be negative.\n"
 [implementations]
 python = "azoth.process.heat_exchanger"
 rust = "azoth_process::heat_exchanger"

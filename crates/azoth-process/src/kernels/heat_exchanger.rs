@@ -2,10 +2,12 @@
 
 use azoth_core::units::{
     MolarEnergy, Power, ThermalConductance, ThermodynamicTemperature, joules_per_mole, kelvins,
-    watts, watts_per_kelvin,
+    pascals, watts, watts_per_kelvin,
 };
 use azoth_core::{AzothError, Result};
+use azoth_thermal::{RatingRequest, ShellSideMethod, rate as thermal_rate};
 
+use crate::segment::phase::single_phase_view;
 use crate::stream::Stream;
 
 /// The flow arrangements `HeatExchanger` names, in azoth's own spelling.
@@ -68,6 +70,58 @@ pub struct HeatExchangerOutcome {
     pub ua_value: Option<f64>,
     /// Which side `runDeltaT` set, `"hot"` or `"cold"`; present only in that mode.
     pub delta_t_side: Option<&'static str>,
+    /// The thermal-hydraulic rating's calculator quantities; present only in that mode.
+    pub rating_diagnostics: Option<RatingDiagnostics>,
+}
+
+/// The rating calculator's geometry, in SI. Every field is `None` until the caller states it,
+/// and `None` leaves the class's constructor default in [`RatingRequest`].
+#[derive(Debug, Clone, Default)]
+pub struct RatingGeometry {
+    pub tube_outside_diameter: Option<f64>,
+    pub tube_inside_diameter: Option<f64>,
+    pub tube_length: Option<f64>,
+    pub tube_count: Option<f64>,
+    pub tube_passes: Option<f64>,
+    pub tube_pitch: Option<f64>,
+    pub triangular_pitch: Option<bool>,
+    pub shell_inside_diameter: Option<f64>,
+    pub baffle_spacing: Option<f64>,
+    pub baffle_count: Option<f64>,
+    pub baffle_cut: Option<f64>,
+    pub tube_wall_conductivity: Option<f64>,
+    pub fouling_tube: Option<f64>,
+    pub fouling_shell: Option<f64>,
+    pub tube_fouling_layer_thickness: Option<f64>,
+    pub tube_fouling_layer_conductivity: Option<f64>,
+    pub shell_side_method: Option<ShellSideMethod>,
+    pub shell_viscosity_wall: Option<f64>,
+    pub has_sealing: Option<bool>,
+    pub sealing_pairs: Option<f64>,
+    pub tube_to_baffle_clearance: Option<f64>,
+    pub shell_to_baffle_clearance: Option<f64>,
+    pub bypass_area: Option<f64>,
+}
+
+/// What the rating calculator answered, as the equipment result publishes it.
+#[derive(Debug, Clone)]
+pub struct RatingDiagnostics {
+    pub rating_u: f64,
+    pub rating_ua: f64,
+    pub rating_area: f64,
+    pub tube_side_pressure_drop: f64,
+    pub shell_side_pressure_drop: f64,
+    pub tube_side_heat_transfer_coefficient: f64,
+    pub shell_side_heat_transfer_coefficient: f64,
+    pub tube_side_reynolds: f64,
+    pub shell_side_reynolds: f64,
+    pub tube_side_velocity: f64,
+    pub shell_side_velocity: f64,
+    pub jc: f64,
+    pub jl: f64,
+    pub jb: f64,
+    pub js: f64,
+    pub jr: f64,
 }
 
 impl HeatExchangerOutcome {
@@ -87,6 +141,7 @@ impl HeatExchangerOutcome {
             rating,
             ua_value: None,
             delta_t_side: None,
+            rating_diagnostics: None,
         }
     }
 }
@@ -267,6 +322,258 @@ pub fn heat_exchanger(
         cold_out,
         Some(rating),
     ))
+}
+
+/// `HeatExchanger.runThermalHydraulicRating`: a fixed geometry, correlated UA and pressure
+/// drops, and the effectiveness-NTU duty the class closes both outlets at.
+///
+/// `tube_is_hot` names which declaration the class's stream 0 is, because this port's
+/// `hot`/`cold` carry meaning rather than constructor order.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a two-phase inlet or a capacity clone that crosses a
+/// phase transition, a pressure drop that exhausts an inlet, a non-positive conductance, or
+/// an energy closure the PH flash misses. Whatever `thermal.shell_and_tube_rating` refuses
+/// propagates too.
+#[allow(clippy::too_many_lines)]
+pub fn heat_exchanger_rating(
+    hot: &Stream,
+    cold: &Stream,
+    tube_is_hot: bool,
+    area: f64,
+    geometry: &RatingGeometry,
+    flow_arrangement: &str,
+) -> Result<HeatExchangerOutcome> {
+    if !area.is_finite() || area <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "rating_area",
+            "the thermal-hydraulic rating needs a positive outside area",
+        ));
+    }
+    let (tube, shell) = if tube_is_hot {
+        (hot, cold)
+    } else {
+        (cold, hot)
+    };
+    let tube_view = single_phase_view(tube)?;
+    let shell_view = single_phase_view(shell)?;
+
+    let mut request = RatingRequest::default();
+    apply_geometry(&mut request, geometry);
+    request.tube_density = tube_view.density;
+    request.tube_cp = tube_view.cp_mass;
+    request.tube_viscosity = tube_view.transport.mu.value;
+    request.tube_conductivity = tube_view.transport.k.value;
+    request.tube_mass_flow = tube.mass_flow()?;
+    request.shell_density = shell_view.density;
+    request.shell_cp = shell_view.cp_mass;
+    request.shell_viscosity = shell_view.transport.mu.value;
+    request.shell_conductivity = shell_view.transport.k.value;
+    request.shell_mass_flow = shell.mass_flow()?;
+
+    let calculator = thermal_rate(&request)?;
+    let ua = calculator.overall_heat_transfer_coefficient.value * area;
+    if !ua.is_finite() || ua <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "rating_u",
+            "the thermal-hydraulic rating produced an invalid conductance",
+        ));
+    }
+    let tube_p_out = tube.p.value - calculator.tube_side_pressure_drop.value;
+    let shell_p_out = shell.p.value - calculator.shell_side_pressure_drop.value;
+    for (field, pressure) in [("tube", tube_p_out), ("shell", shell_p_out)] {
+        if !pressure.is_finite() || pressure <= 0.0 {
+            return Err(AzothError::invalid_input(
+                field,
+                "the correlated pressure drop exhausts the inlet pressure",
+            ));
+        }
+    }
+
+    // The capacities are the class's own: each side flashed at the *other* inlet
+    // temperature, over the tube-minus-shell span, and the same phase kind required.
+    let span = tube.t.value - shell.t.value;
+    let (ntu, effectiveness_value, c_min, c_max, capacity_ratio, heat) = if span.abs() <= 1e-10 {
+        // The class's own `Math.abs(temperatureDifference) > 1e-10` gate: with no
+        // driving force it leaves every rating quantity at zero and still drops the
+        // pressures, which is the equal-inlet row of the capture.
+        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    } else {
+        let limit_tube = Stream::from_pt(
+            tube.components.clone(),
+            tube.z.clone(),
+            tube.n,
+            tube.p,
+            shell.t,
+        )?;
+        let limit_shell = Stream::from_pt(
+            shell.components.clone(),
+            shell.z.clone(),
+            shell.n,
+            shell.p,
+            tube.t,
+        )?;
+        let limit_tube_view = single_phase_view(&limit_tube)?;
+        let limit_shell_view = single_phase_view(&limit_shell)?;
+        for (side, limit, original) in [
+            ("tube", &limit_tube_view, &tube_view),
+            ("shell", &limit_shell_view, &shell_view),
+        ] {
+            if limit.kind != original.kind {
+                return Err(AzothError::invalid_input(
+                    side,
+                    "the rating temperature interval crosses a phase transition",
+                ));
+            }
+        }
+        let tube_capacity =
+            (((limit_tube.n * limit_tube.h.value) - (tube.n * tube.h.value)) / span).abs();
+        let shell_capacity =
+            (((limit_shell.n * limit_shell.h.value) - (shell.n * shell.h.value)) / span).abs();
+        for (field, capacity) in [("tube", tube_capacity), ("shell", shell_capacity)] {
+            if !capacity.is_finite() || capacity <= 0.0 {
+                return Err(AzothError::invalid_input(
+                    field,
+                    "the thermal-hydraulic rating requires positive finite heat capacity rates",
+                ));
+            }
+        }
+        let c_min = tube_capacity.min(shell_capacity);
+        let c_max = tube_capacity.max(shell_capacity);
+        let capacity_ratio = c_min / c_max;
+        let ntu = ua / c_min;
+        // The class's own special case: the counterflow limit also removes the 0/0
+        // singularity of the legacy shell-and-tube alias at Cr = 1.
+        let effectiveness_value =
+            if (capacity_ratio - 1.0).abs() < 1e-10 && flow_arrangement != "parallelflow" {
+                ntu / (1.0 + ntu)
+            } else {
+                effectiveness(ntu, capacity_ratio, flow_arrangement)
+            };
+        let heat = effectiveness_value * c_min * span;
+        if !heat.is_finite() || !effectiveness_value.is_finite() {
+            return Err(AzothError::invalid_input(
+                "rating",
+                "the thermal-hydraulic rating produced an invalid effectiveness or duty",
+            ));
+        }
+        (ntu, effectiveness_value, c_min, c_max, capacity_ratio, heat)
+    };
+
+    let tube_target = tube.h.value - heat / tube.n;
+    let shell_target = shell.h.value + heat / shell.n;
+    let tube_out = Stream::from_ph(
+        tube.components.clone(),
+        tube.z.clone(),
+        tube.n,
+        pascals(tube_p_out),
+        joules_per_mole(tube_target),
+    )?;
+    let shell_out = Stream::from_ph(
+        shell.components.clone(),
+        shell.z.clone(),
+        shell.n,
+        pascals(shell_p_out),
+        joules_per_mole(shell_target),
+    )?;
+    for (side, outlet, inlet_view, target) in [
+        ("tube", &tube_out, &tube_view, tube_target),
+        ("shell", &shell_out, &shell_view, shell_target),
+    ] {
+        let view = single_phase_view(outlet)?;
+        if view.kind != inlet_view.kind {
+            return Err(AzothError::invalid_input(
+                side,
+                "the rating outlet changed phase",
+            ));
+        }
+        if !outlet.h.value.is_finite()
+            || (outlet.h.value - target).abs() > 1e-5 * target.abs().max(1.0)
+        {
+            return Err(AzothError::invalid_input(
+                side,
+                "the rating outlet PH flash missed its energy closure",
+            ));
+        }
+    }
+
+    let (hot_out, cold_out) = if tube_is_hot {
+        (tube_out, shell_out)
+    } else {
+        (shell_out, tube_out)
+    };
+    let diagnostics = RatingDiagnostics {
+        rating_u: calculator.overall_heat_transfer_coefficient.value,
+        rating_ua: ua,
+        rating_area: area,
+        tube_side_pressure_drop: calculator.tube_side_pressure_drop.value,
+        shell_side_pressure_drop: calculator.shell_side_pressure_drop.value,
+        tube_side_heat_transfer_coefficient: calculator.tube_side_heat_transfer_coefficient.value,
+        shell_side_heat_transfer_coefficient: calculator.shell_side_heat_transfer_coefficient.value,
+        tube_side_reynolds: calculator.tube_side_reynolds,
+        shell_side_reynolds: calculator.shell_side_reynolds,
+        tube_side_velocity: calculator.tube_side_velocity.value,
+        shell_side_velocity: calculator.shell_side_velocity.value,
+        jc: calculator.jc,
+        jl: calculator.jl,
+        jb: calculator.jb,
+        js: calculator.js,
+        jr: calculator.jr,
+    };
+    Ok(HeatExchangerOutcome {
+        hot_out,
+        cold_out,
+        duty: watts(heat.abs()),
+        rating: Some(Rating {
+            ntu,
+            effectiveness: effectiveness_value,
+            c_min: watts_per_kelvin(c_min),
+            c_max: watts_per_kelvin(c_max),
+            capacity_ratio,
+        }),
+        ua_value: None,
+        delta_t_side: None,
+        rating_diagnostics: Some(diagnostics),
+    })
+}
+
+/// Copy the stated geometry into the calculator request, leaving the class's defaults where
+/// the caller stated nothing.
+fn apply_geometry(request: &mut RatingRequest, geometry: &RatingGeometry) {
+    macro_rules! set {
+        ($field:ident) => {
+            if let Some(value) = geometry.$field {
+                request.$field = value;
+            }
+        };
+    }
+    set!(tube_outside_diameter);
+    set!(tube_inside_diameter);
+    set!(tube_length);
+    set!(tube_count);
+    set!(tube_passes);
+    set!(tube_pitch);
+    if let Some(value) = geometry.triangular_pitch {
+        request.triangular_pitch = value;
+    }
+    set!(shell_inside_diameter);
+    set!(baffle_spacing);
+    set!(baffle_count);
+    set!(baffle_cut);
+    set!(tube_wall_conductivity);
+    set!(fouling_tube);
+    set!(fouling_shell);
+    request.tube_fouling_layer_thickness = geometry.tube_fouling_layer_thickness;
+    request.tube_fouling_layer_conductivity = geometry.tube_fouling_layer_conductivity;
+    if let Some(value) = geometry.shell_side_method {
+        request.shell_side_method = value;
+    }
+    request.shell_viscosity_wall = geometry.shell_viscosity_wall;
+    request.has_sealing = geometry.has_sealing;
+    request.sealing_pairs = geometry.sealing_pairs;
+    request.tube_to_baffle_clearance = geometry.tube_to_baffle_clearance;
+    request.shell_to_baffle_clearance = geometry.shell_to_baffle_clearance;
+    request.bypass_area = geometry.bypass_area;
 }
 
 /// The `outTemperature` specification: pin one outlet, energy-balance the other.

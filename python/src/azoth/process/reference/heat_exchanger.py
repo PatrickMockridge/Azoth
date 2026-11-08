@@ -44,18 +44,28 @@ from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.numerics import divide
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.record_outputs_gen import HeaterMechanicalType, HeatExchangerMechanicalType
-from azoth.core.result import HeatExchangerResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.result import HeatExchangerResult, Phase
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos import components as _components
+from azoth.eos.reference._mixture_state import reduced_parameters
+from azoth.eos.reference.hydrate_inhibitor_wt import phase_label
+from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
+from azoth.eos.reference.phase_transport import phase_transport
+from azoth.eos.reference.pr_mass_density import pr_mass_density
+from azoth.eos.reference.pr_molar_volume import pr_molar_volume
+from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.process.reference.heater import (
     MECHANICAL_CRITERIA,
     MECHANICAL_NAMES,
     MECHANICAL_TYPES,
     _geometry,
     _lmtd,
+)
+from azoth.thermal.reference.shell_and_tube_rating import (
+    shell_and_tube_rating as _rating_calculator,
 )
 
 #: The arrangements ``calcThermalEffectivenes`` names, in azoth's own spelling.
@@ -83,6 +93,32 @@ def heat_exchanger(
     mechanical_design: bool | None = None,
     mechanical_type: str | None = None,
     mechanical_selection: str | None = None,
+    use_rating_pressure_drop: bool | None = None,
+    rating_area: Q | None = None,
+    rating_tube_side: str | None = None,
+    rating_tube_outside_diameter: Q | None = None,
+    rating_tube_inside_diameter: Q | None = None,
+    rating_tube_length: Q | None = None,
+    rating_tube_count: float | None = None,
+    rating_tube_passes: float | None = None,
+    rating_tube_pitch: Q | None = None,
+    rating_triangular_pitch: bool | None = None,
+    rating_shell_inside_diameter: Q | None = None,
+    rating_baffle_spacing: Q | None = None,
+    rating_baffle_count: float | None = None,
+    rating_baffle_cut: float | None = None,
+    rating_tube_wall_conductivity: Q | None = None,
+    rating_fouling_tube: float | None = None,
+    rating_fouling_shell: float | None = None,
+    rating_tube_fouling_layer_thickness: Q | None = None,
+    rating_tube_fouling_layer_conductivity: Q | None = None,
+    rating_shell_side_method: str | None = None,
+    rating_shell_viscosity_wall: Q | None = None,
+    rating_has_sealing: bool | None = None,
+    rating_sealing_pairs: float | None = None,
+    rating_tube_to_baffle_clearance: Q | None = None,
+    rating_shell_to_baffle_clearance: Q | None = None,
+    rating_bypass_area: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -159,7 +195,51 @@ def heat_exchanger(
     # the rest emits a `RANGE_CHECK_SKIPPED` warning for a check that could have run.
     apply_checks(
         checks.on_input,
-        {"ua": ua_si, "hot_in_t": hot_t_si, "cold_in_t": cold_t_si}.get,
+        {
+            "ua": ua_si,
+            "hot_in_t": hot_t_si,
+            "cold_in_t": cold_t_si,
+            "rating_area": _optional_si(spec, "rating_area", rating_area),
+            "rating_tube_outside_diameter": _optional_si(
+                spec, "rating_tube_outside_diameter", rating_tube_outside_diameter
+            ),
+            "rating_tube_inside_diameter": _optional_si(
+                spec, "rating_tube_inside_diameter", rating_tube_inside_diameter
+            ),
+            "rating_tube_length": _optional_si(spec, "rating_tube_length", rating_tube_length),
+            "rating_tube_count": rating_tube_count,
+            "rating_tube_passes": rating_tube_passes,
+            "rating_tube_pitch": _optional_si(spec, "rating_tube_pitch", rating_tube_pitch),
+            "rating_shell_inside_diameter": _optional_si(
+                spec, "rating_shell_inside_diameter", rating_shell_inside_diameter
+            ),
+            "rating_baffle_spacing": _optional_si(
+                spec, "rating_baffle_spacing", rating_baffle_spacing
+            ),
+            "rating_baffle_count": rating_baffle_count,
+            "rating_baffle_cut": rating_baffle_cut,
+            "rating_tube_wall_conductivity": _optional_si(
+                spec, "rating_tube_wall_conductivity", rating_tube_wall_conductivity
+            ),
+            "rating_fouling_tube": rating_fouling_tube,
+            "rating_fouling_shell": rating_fouling_shell,
+            "rating_tube_fouling_layer_thickness": _optional_si(
+                spec, "rating_tube_fouling_layer_thickness", rating_tube_fouling_layer_thickness
+            ),
+            "rating_tube_fouling_layer_conductivity": _optional_si(
+                spec,
+                "rating_tube_fouling_layer_conductivity",
+                rating_tube_fouling_layer_conductivity,
+            ),
+            "rating_sealing_pairs": rating_sealing_pairs,
+            "rating_tube_to_baffle_clearance": _optional_si(
+                spec, "rating_tube_to_baffle_clearance", rating_tube_to_baffle_clearance
+            ),
+            "rating_shell_to_baffle_clearance": _optional_si(
+                spec, "rating_shell_to_baffle_clearance", rating_shell_to_baffle_clearance
+            ),
+            "rating_bypass_area": _optional_si(spec, "rating_bypass_area", rating_bypass_area),
+        }.get,
         warnings,
     )
     if use_delta_t and (hot_out_t_si is not None or cold_out_t_si is not None):
@@ -200,24 +280,103 @@ def heat_exchanger(
         if flow <= 0.0:
             raise OutOfRangeError(field, flow, "an exchanger side needs a positive molar flow")
 
-    states = _states(
-        hot_components,
-        hot_n,
-        hot_in_z,
-        input_to_si(spec, "hot_in_p", hot_in_p),
-        hot_t_si,
-        cold_components,
-        cold_n,
-        cold_in_z,
-        input_to_si(spec, "cold_in_p", cold_in_p),
-        cold_t_si,
-        ua_si,
-        flow_arrangement,
-        hot_out_t_si,
-        cold_out_t_si,
-        bool(use_delta_t),
-        delta_t_si,
-    )
+    diagnostics: RatingDiagnostics | None = None
+    if use_rating_pressure_drop:
+        if hot_out_t_si is not None or cold_out_t_si is not None or use_delta_t:
+            raise InvalidInputError(
+                "use_rating_pressure_drop",
+                "the thermal-hydraulic rating requires a UA specification without a pinned "
+                "outlet or delta-T",
+            )
+        if rating_area is None:
+            raise InvalidInputError(
+                "rating_area", "the thermal-hydraulic rating needs a positive outside area"
+            )
+        if rating_tube_side not in ("hot", "cold"):
+            raise InvalidInputError(
+                "rating_tube_side",
+                "the thermal-hydraulic rating needs the side that is the tube",
+            )
+        geometry = {
+            "tube_outside_diameter": _optional_si(
+                spec, "rating_tube_outside_diameter", rating_tube_outside_diameter
+            ),
+            "tube_inside_diameter": _optional_si(
+                spec, "rating_tube_inside_diameter", rating_tube_inside_diameter
+            ),
+            "tube_length": _optional_si(spec, "rating_tube_length", rating_tube_length),
+            "tube_count": rating_tube_count,
+            "tube_passes": rating_tube_passes,
+            "tube_pitch": _optional_si(spec, "rating_tube_pitch", rating_tube_pitch),
+            "triangular_pitch": rating_triangular_pitch,
+            "shell_inside_diameter": _optional_si(
+                spec, "rating_shell_inside_diameter", rating_shell_inside_diameter
+            ),
+            "baffle_spacing": _optional_si(spec, "rating_baffle_spacing", rating_baffle_spacing),
+            "baffle_count": rating_baffle_count,
+            "baffle_cut": rating_baffle_cut,
+            "tube_wall_conductivity": _optional_si(
+                spec, "rating_tube_wall_conductivity", rating_tube_wall_conductivity
+            ),
+            "fouling_tube": rating_fouling_tube,
+            "fouling_shell": rating_fouling_shell,
+            "tube_fouling_layer_thickness": _optional_si(
+                spec, "rating_tube_fouling_layer_thickness", rating_tube_fouling_layer_thickness
+            ),
+            "tube_fouling_layer_conductivity": _optional_si(
+                spec,
+                "rating_tube_fouling_layer_conductivity",
+                rating_tube_fouling_layer_conductivity,
+            ),
+            "shell_side_method": rating_shell_side_method,
+            "shell_viscosity_wall": _optional_si(
+                spec, "rating_shell_viscosity_wall", rating_shell_viscosity_wall
+            ),
+            "has_sealing": rating_has_sealing,
+            "sealing_pairs": rating_sealing_pairs,
+            "tube_to_baffle_clearance": _optional_si(
+                spec, "rating_tube_to_baffle_clearance", rating_tube_to_baffle_clearance
+            ),
+            "shell_to_baffle_clearance": _optional_si(
+                spec, "rating_shell_to_baffle_clearance", rating_shell_to_baffle_clearance
+            ),
+            "bypass_area": _optional_si(spec, "rating_bypass_area", rating_bypass_area),
+        }
+        states, diagnostics = _rating_states(
+            hot_components,
+            hot_n,
+            hot_in_z,
+            input_to_si(spec, "hot_in_p", hot_in_p),
+            hot_t_si,
+            cold_components,
+            cold_n,
+            cold_in_z,
+            input_to_si(spec, "cold_in_p", cold_in_p),
+            cold_t_si,
+            rating_tube_side == "hot",
+            input_to_si(spec, "rating_area", rating_area),
+            geometry,
+            flow_arrangement,
+        )
+    else:
+        states = _states(
+            hot_components,
+            hot_n,
+            hot_in_z,
+            input_to_si(spec, "hot_in_p", hot_in_p),
+            hot_t_si,
+            cold_components,
+            cold_n,
+            cold_in_z,
+            input_to_si(spec, "cold_in_p", cold_in_p),
+            cold_t_si,
+            ua_si,
+            flow_arrangement,
+            hot_out_t_si,
+            cold_out_t_si,
+            bool(use_delta_t),
+            delta_t_si,
+        )
 
     mechanical = None
     if mechanical_requested:
@@ -228,7 +387,11 @@ def heat_exchanger(
         ua_basis = (
             states.ua_value
             if states.ua_value is not None
-            else (ua_si if ua_si is not None else 500.0)
+            else (
+                diagnostics.rating_ua
+                if diagnostics is not None
+                else (ua_si if ua_si is not None else 500.0)
+            )
         )
         effectiveness = 0.0 if states.rating is None else states.rating.effectiveness
         mechanical = _two_stream_mechanical(
@@ -246,12 +409,12 @@ def heat_exchanger(
     return HeatExchangerResult(
         hot_out_n=from_si(hot_n, "mol/s"),
         hot_out_z=tuple(hot_in_z),
-        hot_out_p=hot_in_p,
+        hot_out_p=from_si(states.hot_out_p, "Pa"),
         hot_out_t=states.hot_out_t,
         hot_out_h=from_si(states.hot_out_h, "J/mol"),
         cold_out_n=from_si(cold_n, "mol/s"),
         cold_out_z=tuple(cold_in_z),
-        cold_out_p=cold_in_p,
+        cold_out_p=from_si(states.cold_out_p, "Pa"),
         cold_out_t=states.cold_out_t,
         cold_out_h=from_si(states.cold_out_h, "J/mol"),
         # **The hot side's release, and not `states.duty`.** That one is the *kept* side's own
@@ -281,6 +444,38 @@ def heat_exchanger(
             None if mechanical is None else from_si(mechanical.used_u, "W/(m**2*K)")
         ),
         calculated_ua=None if mechanical is None else from_si(mechanical.ua, "W/K"),
+        rating_u=None if diagnostics is None else from_si(diagnostics.rating_u, "W/(m**2*K)"),
+        rating_ua=None if diagnostics is None else from_si(diagnostics.rating_ua, "W/K"),
+        rating_area=None if diagnostics is None else from_si(diagnostics.rating_area, "m**2"),
+        tube_side_pressure_drop=(
+            None if diagnostics is None else from_si(diagnostics.tube_side_pressure_drop, "Pa")
+        ),
+        shell_side_pressure_drop=(
+            None if diagnostics is None else from_si(diagnostics.shell_side_pressure_drop, "Pa")
+        ),
+        tube_side_heat_transfer_coefficient=(
+            None
+            if diagnostics is None
+            else from_si(diagnostics.tube_side_heat_transfer_coefficient, "W/(m**2*K)")
+        ),
+        shell_side_heat_transfer_coefficient=(
+            None
+            if diagnostics is None
+            else from_si(diagnostics.shell_side_heat_transfer_coefficient, "W/(m**2*K)")
+        ),
+        tube_side_reynolds=None if diagnostics is None else diagnostics.tube_side_reynolds,
+        shell_side_reynolds=None if diagnostics is None else diagnostics.shell_side_reynolds,
+        tube_side_velocity=(
+            None if diagnostics is None else from_si(diagnostics.tube_side_velocity, "m/s")
+        ),
+        shell_side_velocity=(
+            None if diagnostics is None else from_si(diagnostics.shell_side_velocity, "m/s")
+        ),
+        jc=None if diagnostics is None else diagnostics.jc,
+        jl=None if diagnostics is None else diagnostics.jl,
+        jb=None if diagnostics is None else diagnostics.jb,
+        js=None if diagnostics is None else diagnostics.js,
+        jr=None if diagnostics is None else diagnostics.jr,
         mechanical_types=() if mechanical is None else mechanical.types,
         warnings=tuple(warnings),
     )
@@ -317,6 +512,10 @@ class ExchangerStates:
     cold_out_h: float
     hot_out_t: Q
     cold_out_t: Q
+    #: Each outlet's pressure, Pa. The ordinary and pinned modes keep the inlet's; the
+    #: thermal-hydraulic rating reduces it by the correlated drop.
+    hot_out_p: float
+    cold_out_p: float
     #: The kept side's own total enthalpy change, W - negative when that side cools. It is
     #: what ``run`` publishes as ``getDuty``, and the pinned branch reports the pinned
     #: side's change the same way.
@@ -484,11 +683,369 @@ def _states(
         cold_out_h=cold_out_h,
         hot_out_t=_temperature(hot_mixture, hot_gas, hot_in_p, hot_out_h, hot_in_z),
         cold_out_t=_temperature(cold_mixture, cold_gas, cold_in_p, cold_out_h, cold_in_z),
+        hot_out_p=hot_in_p,
+        cold_out_p=cold_in_p,
         duty=duty,
         rating=rating,
         ua_value=ua_value,
         delta_t_side=delta_t_side,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class RatingDiagnostics:
+    """The rating calculator's quantities, in SI, as the equipment result publishes them."""
+
+    rating_u: float
+    rating_ua: float
+    rating_area: float
+    tube_side_pressure_drop: float
+    shell_side_pressure_drop: float
+    tube_side_heat_transfer_coefficient: float
+    shell_side_heat_transfer_coefficient: float
+    tube_side_reynolds: float
+    shell_side_reynolds: float
+    tube_side_velocity: float
+    shell_side_velocity: float
+    jc: float
+    jl: float
+    jb: float
+    js: float
+    jr: float
+
+
+def _phase_properties(
+    components: list[str],
+    n: float,
+    z: list[float],
+    pressure: float,
+    temperature: float,
+) -> dict[str, float | str]:
+    """The five properties and the label a single-phase state answers.
+
+    The class's `requireSinglePhaseRatingState` refuses a two-phase inlet, so this does too;
+    the phase's composition is the feed's for a single phase, which is what the Rust
+    `phase_view` reads.
+    """
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    flash = pt_flash_solve(mixture, quantity(temperature, "K"), quantity(pressure, "Pa"), z)
+    if flash.phase == Phase.TWO_PHASE:
+        raise InvalidInputError(
+            "stream", "the thermal-hydraulic rating requires single-phase streams"
+        )
+    root = flash.z_vapour if flash.phase == Phase.ALL_VAPOUR else flash.z_liquid
+    composition = list(z)
+    reduced = reduced_parameters(mixture, temperature, pressure)
+    label = phase_label(mixture, reduced, composition, root)
+    molar_mass = sum(
+        (
+            component.molar_mass.to("kg/mol").magnitude
+            if component.molar_mass
+            else 0.0
+        )
+        * fraction
+        for component, fraction in zip(mixture.components, composition, strict=True)
+    )
+    volume = (
+        pr_molar_volume(root, quantity(temperature, "K"), quantity(pressure, "Pa"))
+        .v.to("m**3/mol")
+        .magnitude
+    )
+    density = (
+        pr_mass_density(
+            quantity(molar_mass, "kg/mol"),
+            quantity(volume - mixture.volume_shift(composition), "m**3/mol"),
+        )
+        .rho.to("kg/m**3")
+        .magnitude
+    )
+    cp_mass = (
+        molar_enthalpy_entropy(
+            mixture,
+            ideal_gas,
+            quantity(temperature, "K"),
+            quantity(pressure, "Pa"),
+            composition,
+            root,
+        )
+        .cp.to("J/(mol*K)")
+        .magnitude
+        / molar_mass
+    )
+    transport = phase_transport(
+        components, label, quantity(temperature, "K"), quantity(pressure, "Pa"), composition
+    )
+    return {
+        "density": density,
+        "cp_mass": cp_mass,
+        "mu": transport.mu.to("Pa*s").magnitude,
+        "k": transport.k.to("W/(m*K)").magnitude,
+        "molar_mass": molar_mass,
+        "mass_flow": n * molar_mass,
+        "kind": label,
+    }
+
+
+def _rating_states(
+    hot_components: list[str],
+    hot_in_n: float,
+    hot_in_z: list[float],
+    hot_in_p: float,
+    hot_in_t: float,
+    cold_components: list[str],
+    cold_in_n: float,
+    cold_in_z: list[float],
+    cold_in_p: float,
+    cold_in_t: float,
+    tube_is_hot: bool,
+    area: float,
+    geometry: dict[str, float | bool | str | None],
+    flow_arrangement: str,
+) -> tuple[ExchangerStates, RatingDiagnostics]:
+    """`runThermalHydraulicRating`: the correlated UA, both drops and the closed outlets."""
+    if area <= 0.0 or not math.isfinite(area):
+        raise InvalidInputError(
+            "rating_area", "the thermal-hydraulic rating needs a positive outside area"
+        )
+    if tube_is_hot:
+        tube_components, tube_n, tube_z, tube_p, tube_t = (
+            hot_components,
+            hot_in_n,
+            hot_in_z,
+            hot_in_p,
+            hot_in_t,
+        )
+        shell_components, shell_n, shell_z, shell_p, shell_t = (
+            cold_components,
+            cold_in_n,
+            cold_in_z,
+            cold_in_p,
+            cold_in_t,
+        )
+        tube_mixture, tube_gas = _components.mixture_of(hot_components, eos="pr")
+        shell_mixture, shell_gas = _components.mixture_of(cold_components, eos="pr")
+    else:
+        tube_components, tube_n, tube_z, tube_p, tube_t = (
+            cold_components,
+            cold_in_n,
+            cold_in_z,
+            cold_in_p,
+            cold_in_t,
+        )
+        shell_components, shell_n, shell_z, shell_p, shell_t = (
+            hot_components,
+            hot_in_n,
+            hot_in_z,
+            hot_in_p,
+            hot_in_t,
+        )
+        tube_mixture, tube_gas = _components.mixture_of(cold_components, eos="pr")
+        shell_mixture, shell_gas = _components.mixture_of(hot_components, eos="pr")
+
+    hot_mixture, hot_gas = (tube_mixture, tube_gas) if tube_is_hot else (shell_mixture, shell_gas)
+    cold_mixture, cold_gas = (shell_mixture, shell_gas) if tube_is_hot else (tube_mixture, tube_gas)
+    hot_in_h, _ = enthalpy_at(hot_mixture, hot_gas, hot_in_t, hot_in_p, hot_in_z)
+    cold_in_h, _ = enthalpy_at(cold_mixture, cold_gas, cold_in_t, cold_in_p, cold_in_z)
+    tube_h, _ = enthalpy_at(tube_mixture, tube_gas, tube_t, tube_p, tube_z)
+    shell_h, _ = enthalpy_at(shell_mixture, shell_gas, shell_t, shell_p, shell_z)
+
+    tube = _phase_properties(tube_components, tube_n, tube_z, tube_p, tube_t)
+    shell = _phase_properties(shell_components, shell_n, shell_z, shell_p, shell_t)
+
+    method = "kern" if geometry["shell_side_method"] is None else str(geometry["shell_side_method"])
+    calculator = _rating_calculator(
+        _length(geometry, "tube_outside_diameter", 0.01905),
+        _length(geometry, "tube_inside_diameter", 0.01483),
+        _length(geometry, "tube_length", 6.096),
+        100.0 if geometry["tube_count"] is None else float(geometry["tube_count"]),
+        2.0 if geometry["tube_passes"] is None else float(geometry["tube_passes"]),
+        _length(geometry, "tube_pitch", 0.02381),
+        True if geometry["triangular_pitch"] is None else bool(geometry["triangular_pitch"]),
+        _length(geometry, "shell_inside_diameter", 0.5),
+        _length(geometry, "baffle_spacing", 0.2),
+        10.0 if geometry["baffle_count"] is None else float(geometry["baffle_count"]),
+        0.25 if geometry["baffle_cut"] is None else float(geometry["baffle_cut"]),
+        from_si(
+            52.0
+            if geometry["tube_wall_conductivity"] is None
+            else float(geometry["tube_wall_conductivity"]),
+            "W/(m*K)",
+        ),
+        from_si(float(tube["density"]), "kg/m**3"),
+        from_si(float(tube["mu"]), "Pa*s"),
+        from_si(float(tube["cp_mass"]), "J/(kg*K)"),
+        from_si(float(tube["k"]), "W/(m*K)"),
+        from_si(float(tube["mass_flow"]), "kg/s"),
+        from_si(float(shell["density"]), "kg/m**3"),
+        from_si(float(shell["mu"]), "Pa*s"),
+        from_si(float(shell["cp_mass"]), "J/(kg*K)"),
+        from_si(float(shell["k"]), "W/(m*K)"),
+        from_si(float(shell["mass_flow"]), "kg/s"),
+        0.000176 if geometry["fouling_tube"] is None else float(geometry["fouling_tube"]),
+        0.000176 if geometry["fouling_shell"] is None else float(geometry["fouling_shell"]),
+        method,
+        None
+        if geometry["tube_fouling_layer_thickness"] is None
+        else from_si(float(geometry["tube_fouling_layer_thickness"]), "m"),
+        None
+        if geometry["tube_fouling_layer_conductivity"] is None
+        else from_si(float(geometry["tube_fouling_layer_conductivity"]), "W/(m*K)"),
+        None
+        if geometry["shell_viscosity_wall"] is None
+        else from_si(float(geometry["shell_viscosity_wall"]), "Pa*s"),
+        None if geometry["has_sealing"] is None else bool(geometry["has_sealing"]),
+        None if geometry["sealing_pairs"] is None else float(geometry["sealing_pairs"]),
+        None
+        if geometry["tube_to_baffle_clearance"] is None
+        else from_si(float(geometry["tube_to_baffle_clearance"]), "m"),
+        None
+        if geometry["shell_to_baffle_clearance"] is None
+        else from_si(float(geometry["shell_to_baffle_clearance"]), "m"),
+        None
+        if geometry["bypass_area"] is None
+        else from_si(float(geometry["bypass_area"]), "m**2"),
+    )
+    rating_u = calculator.overall_heat_transfer_coefficient.to("W/(m**2*K)").magnitude
+    ua = rating_u * area
+    tube_dp = calculator.tube_side_pressure_drop.to("Pa").magnitude
+    shell_dp = calculator.shell_side_pressure_drop.to("Pa").magnitude
+    tube_p_out = tube_p - tube_dp
+    shell_p_out = shell_p - shell_dp
+    for field, pressure in (("tube", tube_p_out), ("shell", shell_p_out)):
+        if not math.isfinite(pressure) or pressure <= 0.0:
+            raise InvalidInputError(
+                field, "the correlated pressure drop exhausts the inlet pressure"
+            )
+
+    span = tube_t - shell_t
+    tube_capacity = shell_capacity = 0.0
+    if abs(span) <= 1e-10:
+        ntu = effectiveness_value = 0.0
+        c_min = c_max = capacity_ratio = heat = 0.0
+    else:
+        tube_limit = _phase_properties(tube_components, tube_n, tube_z, tube_p, shell_t)
+        shell_limit = _phase_properties(shell_components, shell_n, shell_z, shell_p, tube_t)
+        for side, limit, original in (
+            ("tube", tube_limit, tube),
+            ("shell", shell_limit, shell),
+        ):
+            if limit["kind"] != original["kind"]:
+                raise InvalidInputError(
+                    side, "the rating temperature interval crosses a phase transition"
+                )
+        tube_limit_h, _ = enthalpy_at(tube_mixture, tube_gas, shell_t, tube_p, tube_z)
+        shell_limit_h, _ = enthalpy_at(shell_mixture, shell_gas, tube_t, shell_p, shell_z)
+        tube_capacity = divide(abs(tube_n * (tube_limit_h - tube_h)), abs(span))
+        shell_capacity = divide(abs(shell_n * (shell_limit_h - shell_h)), abs(span))
+        for field, capacity in (("tube", tube_capacity), ("shell", shell_capacity)):
+            if not math.isfinite(capacity) or capacity <= 0.0:
+                raise InvalidInputError(
+                    field,
+                    "the thermal-hydraulic rating requires positive finite heat capacity rates",
+                )
+        c_min = min(tube_capacity, shell_capacity)
+        c_max = max(tube_capacity, shell_capacity)
+        capacity_ratio = divide(c_min, c_max)
+        ntu = divide(ua, c_min)
+        effectiveness_value = (
+            ntu / (1.0 + ntu)
+            if abs(capacity_ratio - 1.0) < 1e-10 and flow_arrangement != "parallelflow"
+            else _effectiveness(ntu, capacity_ratio, flow_arrangement)
+        )
+        heat = effectiveness_value * c_min * span
+        if not math.isfinite(heat) or not math.isfinite(effectiveness_value):
+            raise InvalidInputError(
+                "rating", "the thermal-hydraulic rating produced an invalid effectiveness or duty"
+            )
+
+    if abs(span) <= 1e-10:
+        tube_target, shell_target = tube_h, shell_h
+    else:
+        tube_target = tube_h - divide(heat, tube_n)
+        shell_target = shell_h + divide(heat, shell_n)
+    tube_solved = ph_flash_solve(
+        tube_mixture, tube_gas, from_si(tube_p_out, "Pa"), from_si(tube_target, "J/mol"), tube_z
+    )
+    shell_solved = ph_flash_solve(
+        shell_mixture,
+        shell_gas,
+        from_si(shell_p_out, "Pa"),
+        from_si(shell_target, "J/mol"),
+        shell_z,
+    )
+    for side, solved, mixture, gas, pressure, z, target in (
+        ("tube", tube_solved, tube_mixture, tube_gas, tube_p_out, tube_z, tube_target),
+        ("shell", shell_solved, shell_mixture, shell_gas, shell_p_out, shell_z, shell_target),
+    ):
+        reached, _ = enthalpy_at(mixture, gas, solved.T.to("K").magnitude, pressure, z)
+        if abs(reached - target) > 1e-5 * max(1.0, abs(target)):
+            raise InvalidInputError(side, "the rating outlet PH flash missed its energy closure")
+
+    if tube_is_hot:
+        hot_out_h, cold_out_h = tube_target, shell_target
+        hot_out_t, cold_out_t = tube_solved.T, shell_solved.T
+    else:
+        hot_out_h, cold_out_h = shell_target, tube_target
+        hot_out_t, cold_out_t = shell_solved.T, tube_solved.T
+
+    diagnostics = RatingDiagnostics(
+        rating_u=rating_u,
+        rating_ua=ua,
+        rating_area=area,
+        tube_side_pressure_drop=tube_dp,
+        shell_side_pressure_drop=shell_dp,
+        tube_side_heat_transfer_coefficient=calculator.tube_side_heat_transfer_coefficient.to(
+            "W/(m**2*K)"
+        ).magnitude,
+        shell_side_heat_transfer_coefficient=calculator.shell_side_heat_transfer_coefficient.to(
+            "W/(m**2*K)"
+        ).magnitude,
+        tube_side_reynolds=calculator.tube_side_reynolds,
+        shell_side_reynolds=calculator.shell_side_reynolds,
+        tube_side_velocity=calculator.tube_side_velocity.to("m/s").magnitude,
+        shell_side_velocity=calculator.shell_side_velocity.to("m/s").magnitude,
+        jc=calculator.jc,
+        jl=calculator.jl,
+        jb=calculator.jb,
+        js=calculator.js,
+        jr=calculator.jr,
+    )
+    return (
+        ExchangerStates(
+            hot_in_h=hot_in_h,
+            cold_in_h=cold_in_h,
+            hot_out_h=hot_out_h,
+            cold_out_h=cold_out_h,
+            hot_out_t=hot_out_t,
+            cold_out_t=cold_out_t,
+            hot_out_p=tube_p_out if tube_is_hot else shell_p_out,
+            cold_out_p=shell_p_out if tube_is_hot else tube_p_out,
+            duty=heat,
+            rating=Rating(
+                hot_capacity=tube_capacity if tube_is_hot else shell_capacity,
+                cold_capacity=shell_capacity if tube_is_hot else tube_capacity,
+                c_min=c_min,
+                c_max=c_max,
+                capacity_ratio=capacity_ratio,
+                ntu=ntu,
+                effectiveness=effectiveness_value,
+            ),
+            ua_value=None,
+            delta_t_side=None,
+        ),
+        diagnostics,
+    )
+
+
+def _length(geometry: dict[str, float | bool | str | None], name: str, default: float) -> Q:
+    """One geometry length, as a quantity, with the calculator's own default."""
+    value = geometry[name]
+    return from_si(default if value is None else float(value), "m")
+
+
+def _optional_si(spec: dict[str, object], name: str, value: Q | None) -> float | None:
+    """An optional declared input in its SI magnitude, or ``None`` when it was not stated."""
+    return None if value is None else input_to_si(spec, name, value)
 
 
 @dataclass(frozen=True, slots=True)

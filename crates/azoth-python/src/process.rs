@@ -11,7 +11,7 @@ use azoth_core::units::{
     cubic_meters, cubic_meters_per_second, hours, joules_per_mole, kelvin_intervals, kelvins,
     kilograms, kilograms_per_cubic_meter, kilograms_per_second, meters, meters_per_second,
     pascal_seconds, pascals, seconds, square_meters, square_meters_per_second, watts,
-    watts_per_cubic_meter, watts_per_kelvin, watts_per_square_meter_kelvin,
+    watts_per_cubic_meter, watts_per_kelvin, watts_per_meter_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -1029,9 +1029,9 @@ pub fn stripping_column(
 // **The two component lists lead, and the rest follow in the spec's order**, which is
 // what `tools/gen_stub.py` emits: it writes every fluid the model names before the
 // declared inputs, so a signature that interleaved them would be a stub that lies.
-#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None, use_delta_t = None, delta_t = None, guess_out_temperature = None, mechanical_design = None, mechanical_type = None, mechanical_selection = None))]
+#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None, use_delta_t = None, delta_t = None, guess_out_temperature = None, mechanical_design = None, mechanical_type = None, mechanical_selection = None, use_rating_pressure_drop = None, rating_area = None, rating_tube_side = None, rating_tube_outside_diameter = None, rating_tube_inside_diameter = None, rating_tube_length = None, rating_tube_count = None, rating_tube_passes = None, rating_tube_pitch = None, rating_triangular_pitch = None, rating_shell_inside_diameter = None, rating_baffle_spacing = None, rating_baffle_count = None, rating_baffle_cut = None, rating_tube_wall_conductivity = None, rating_fouling_tube = None, rating_fouling_shell = None, rating_tube_fouling_layer_thickness = None, rating_tube_fouling_layer_conductivity = None, rating_shell_side_method = None, rating_shell_viscosity_wall = None, rating_has_sealing = None, rating_sealing_pairs = None, rating_tube_to_baffle_clearance = None, rating_shell_to_baffle_clearance = None, rating_bypass_area = None))]
 #[pyo3(
-    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None, use_delta_t=None, delta_t=None, guess_out_temperature=None, mechanical_design=None, mechanical_type=None, mechanical_selection=None)"
+    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None, use_delta_t=None, delta_t=None, guess_out_temperature=None, mechanical_design=None, mechanical_type=None, mechanical_selection=None, use_rating_pressure_drop=None, rating_area=None, rating_tube_side=None, rating_tube_outside_diameter=None, rating_tube_inside_diameter=None, rating_tube_length=None, rating_tube_count=None, rating_tube_passes=None, rating_tube_pitch=None, rating_triangular_pitch=None, rating_shell_inside_diameter=None, rating_baffle_spacing=None, rating_baffle_count=None, rating_baffle_cut=None, rating_tube_wall_conductivity=None, rating_fouling_tube=None, rating_fouling_shell=None, rating_tube_fouling_layer_thickness=None, rating_tube_fouling_layer_conductivity=None, rating_shell_side_method=None, rating_shell_viscosity_wall=None, rating_has_sealing=None, rating_sealing_pairs=None, rating_tube_to_baffle_clearance=None, rating_shell_to_baffle_clearance=None, rating_bypass_area=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seventeen
@@ -1057,6 +1057,32 @@ pub fn heat_exchanger(
     mechanical_design: Option<bool>,
     mechanical_type: Option<&str>,
     mechanical_selection: Option<&str>,
+    use_rating_pressure_drop: Option<bool>,
+    rating_area: Option<f64>,
+    rating_tube_side: Option<&str>,
+    rating_tube_outside_diameter: Option<f64>,
+    rating_tube_inside_diameter: Option<f64>,
+    rating_tube_length: Option<f64>,
+    rating_tube_count: Option<f64>,
+    rating_tube_passes: Option<f64>,
+    rating_tube_pitch: Option<f64>,
+    rating_triangular_pitch: Option<bool>,
+    rating_shell_inside_diameter: Option<f64>,
+    rating_baffle_spacing: Option<f64>,
+    rating_baffle_count: Option<f64>,
+    rating_baffle_cut: Option<f64>,
+    rating_tube_wall_conductivity: Option<f64>,
+    rating_fouling_tube: Option<f64>,
+    rating_fouling_shell: Option<f64>,
+    rating_tube_fouling_layer_thickness: Option<f64>,
+    rating_tube_fouling_layer_conductivity: Option<f64>,
+    rating_shell_side_method: Option<&str>,
+    rating_shell_viscosity_wall: Option<f64>,
+    rating_has_sealing: Option<bool>,
+    rating_sealing_pairs: Option<f64>,
+    rating_tube_to_baffle_clearance: Option<f64>,
+    rating_shell_to_baffle_clearance: Option<f64>,
+    rating_bypass_area: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyHeatExchangerResult> {
     azoth_process::heat_exchanger(
         &hot_components,
@@ -1079,6 +1105,32 @@ pub fn heat_exchanger(
         mechanical_design,
         mechanical_type,
         mechanical_selection,
+        use_rating_pressure_drop,
+        rating_area.map(square_meters),
+        rating_tube_side,
+        rating_tube_outside_diameter.map(meters),
+        rating_tube_inside_diameter.map(meters),
+        rating_tube_length.map(meters),
+        rating_tube_count,
+        rating_tube_passes,
+        rating_tube_pitch.map(meters),
+        rating_triangular_pitch,
+        rating_shell_inside_diameter.map(meters),
+        rating_baffle_spacing.map(meters),
+        rating_baffle_count,
+        rating_baffle_cut,
+        rating_tube_wall_conductivity.map(watts_per_meter_kelvin),
+        rating_fouling_tube,
+        rating_fouling_shell,
+        rating_tube_fouling_layer_thickness.map(meters),
+        rating_tube_fouling_layer_conductivity.map(watts_per_meter_kelvin),
+        rating_shell_side_method,
+        rating_shell_viscosity_wall.map(pascal_seconds),
+        rating_has_sealing,
+        rating_sealing_pairs,
+        rating_tube_to_baffle_clearance.map(meters),
+        rating_shell_to_baffle_clearance.map(meters),
+        rating_bypass_area.map(square_meters),
     )
     .map(|r| crate::transport_gen::PyHeatExchangerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

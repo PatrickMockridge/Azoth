@@ -4,6 +4,7 @@ use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_eos::RootSide;
 use azoth_process::Stream;
 use azoth_process::kernels::ejector::EjectorSetup;
+use azoth_process::kernels::heat_exchanger::{RatingGeometry, heat_exchanger_rating};
 use azoth_process::kernels::stirred_tank_reactor::ReactorSetup;
 use azoth_process::kernels::three_phase_separator::Entrainment;
 use azoth_process::kernels::{
@@ -1343,4 +1344,85 @@ fn a_stirred_tank_reactor_reacts_and_flashes() {
     )
     .expect("the same reaction");
     close(pressed.p.value, 3.0e5);
+}
+
+#[test]
+fn a_thermal_hydraulic_rating_closes_both_outlets() {
+    let tube = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        76.618_738_453_316_67,
+        pascals(2.0e6),
+        kelvins(303.15),
+    )
+    .expect("the tube feed resolves");
+    let shell = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        95.773_423_066_645_85,
+        pascals(2.0e6),
+        kelvins(383.15),
+    )
+    .expect("the shell feed resolves");
+    let geometry = RatingGeometry {
+        tube_outside_diameter: Some(0.025),
+        tube_inside_diameter: Some(0.020),
+        tube_length: Some(4.0),
+        tube_count: Some(100.0),
+        tube_passes: Some(2.0),
+        tube_pitch: Some(0.032),
+        triangular_pitch: Some(true),
+        fouling_tube: Some(0.0),
+        fouling_shell: Some(0.0),
+        ..Default::default()
+    };
+    let area = std::f64::consts::PI * 0.025 * 4.0 * 100.0;
+    let outcome = heat_exchanger_rating(&shell, &tube, false, area, &geometry, "counterflow")
+        .expect("the rating closes");
+    let d = outcome.rating_diagnostics.as_ref().expect("diagnostics");
+    close(d.rating_u, 428.359_535_752_190_1);
+    close(d.tube_side_pressure_drop, 2_893.954_991_137_198);
+    close(d.shell_side_pressure_drop, 1_994.632_362_049_744_2);
+    close(outcome.duty.value, 652_587.842_283_532_8);
+    close(outcome.hot_out.t.value, 356.718_560_924_026);
+    close(outcome.cold_out.t.value, 339.726_268_305_800_03);
+    close(outcome.hot_out.p.value, 1_998_005.367_637_950_2);
+    close(outcome.cold_out.p.value, 1_997_106.045_008_862_9);
+}
+
+#[test]
+fn a_thermal_hydraulic_rating_refuses_two_phases_and_an_exhausted_inlet() {
+    let wet = binary(0.5, 1.0, 2.0e6, 300.0);
+    let dry = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        1.0,
+        pascals(2.0e6),
+        kelvins(383.15),
+    )
+    .expect("the shell feed resolves");
+    let geometry = RatingGeometry {
+        tube_outside_diameter: Some(0.025),
+        tube_inside_diameter: Some(0.020),
+        tube_length: Some(4.0),
+        tube_count: Some(100.0),
+        tube_passes: Some(2.0),
+        tube_pitch: Some(0.032),
+        ..Default::default()
+    };
+    assert!(heat_exchanger_rating(&dry, &wet, false, 1.0, &geometry, "counterflow").is_err());
+
+    let cold_dry = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        1.0,
+        pascals(2.0e6),
+        kelvins(303.15),
+    )
+    .expect("the tube feed resolves");
+    let exhausted = RatingGeometry {
+        tube_length: Some(1.0e7),
+        ..geometry
+    };
+    assert!(heat_exchanger_rating(&dry, &cold_dry, false, 1.0, &exhausted, "counterflow").is_err());
 }

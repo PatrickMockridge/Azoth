@@ -841,7 +841,11 @@ a claim nothing holds.
   `outlet_temperature` is the inherited secant (the expander's `run` never reads
   `useOutTemperature`, so it is a method rather than a mode). What remains owed there is the
   dynamic nozzle and the transient;
-  `HeatExchanger`'s thermal-hydraulic rating and correlation-based UA -
+  **`HeatExchanger`'s thermal-hydraulic rating and correlation-based UA landed** as
+  `thermal.shell_and_tube_rating` and `process.heat_exchanger`'s `use_rating_pressure_drop`,
+  held to `thermal_rating_probe.tsv` and `process_heat_exchanger_rating.tsv`; the port is
+  the single-phase half, with the two-phase models, `IncrementalZoneAnalysis`, the
+  vibration screen and the detailed `ShellAndTubeDesignCalculator`'s design loop still owed;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
   thermal estimate**: the LMTD and approach from the four stream temperatures, the

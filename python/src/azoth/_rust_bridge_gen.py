@@ -6154,7 +6154,7 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
     )
 
 
-def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None) -> HeatExchangerResult:
+def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None, use_rating_pressure_drop: bool | None=None, rating_area: Q | None=None, rating_tube_side: str | None=None, rating_tube_outside_diameter: Q | None=None, rating_tube_inside_diameter: Q | None=None, rating_tube_length: Q | None=None, rating_tube_count: float | None=None, rating_tube_passes: float | None=None, rating_tube_pitch: Q | None=None, rating_triangular_pitch: bool | None=None, rating_shell_inside_diameter: Q | None=None, rating_baffle_spacing: Q | None=None, rating_baffle_count: float | None=None, rating_baffle_cut: float | None=None, rating_tube_wall_conductivity: Q | None=None, rating_fouling_tube: float | None=None, rating_fouling_shell: float | None=None, rating_tube_fouling_layer_thickness: Q | None=None, rating_tube_fouling_layer_conductivity: Q | None=None, rating_shell_side_method: str | None=None, rating_shell_viscosity_wall: Q | None=None, rating_has_sealing: bool | None=None, rating_sealing_pairs: float | None=None, rating_tube_to_baffle_clearance: Q | None=None, rating_shell_to_baffle_clearance: Q | None=None, rating_bypass_area: Q | None=None) -> HeatExchangerResult:
     """``process.heat_exchanger``, computed in Rust."""
     spec = _models_gen.model("process.heat_exchanger")
     result = _core.heat_exchanger(
@@ -6178,6 +6178,32 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         mechanical_design,
         mechanical_type,
         mechanical_selection,
+        use_rating_pressure_drop,
+        None if rating_area is None else input_to_si(spec, "rating_area", rating_area),
+        rating_tube_side,
+        None if rating_tube_outside_diameter is None else input_to_si(spec, "rating_tube_outside_diameter", rating_tube_outside_diameter),
+        None if rating_tube_inside_diameter is None else input_to_si(spec, "rating_tube_inside_diameter", rating_tube_inside_diameter),
+        None if rating_tube_length is None else input_to_si(spec, "rating_tube_length", rating_tube_length),
+        None if rating_tube_count is None else rating_tube_count,
+        None if rating_tube_passes is None else rating_tube_passes,
+        None if rating_tube_pitch is None else input_to_si(spec, "rating_tube_pitch", rating_tube_pitch),
+        rating_triangular_pitch,
+        None if rating_shell_inside_diameter is None else input_to_si(spec, "rating_shell_inside_diameter", rating_shell_inside_diameter),
+        None if rating_baffle_spacing is None else input_to_si(spec, "rating_baffle_spacing", rating_baffle_spacing),
+        None if rating_baffle_count is None else rating_baffle_count,
+        None if rating_baffle_cut is None else rating_baffle_cut,
+        None if rating_tube_wall_conductivity is None else input_to_si(spec, "rating_tube_wall_conductivity", rating_tube_wall_conductivity),
+        None if rating_fouling_tube is None else rating_fouling_tube,
+        None if rating_fouling_shell is None else rating_fouling_shell,
+        None if rating_tube_fouling_layer_thickness is None else input_to_si(spec, "rating_tube_fouling_layer_thickness", rating_tube_fouling_layer_thickness),
+        None if rating_tube_fouling_layer_conductivity is None else input_to_si(spec, "rating_tube_fouling_layer_conductivity", rating_tube_fouling_layer_conductivity),
+        rating_shell_side_method,
+        None if rating_shell_viscosity_wall is None else input_to_si(spec, "rating_shell_viscosity_wall", rating_shell_viscosity_wall),
+        rating_has_sealing,
+        None if rating_sealing_pairs is None else rating_sealing_pairs,
+        None if rating_tube_to_baffle_clearance is None else input_to_si(spec, "rating_tube_to_baffle_clearance", rating_tube_to_baffle_clearance),
+        None if rating_shell_to_baffle_clearance is None else input_to_si(spec, "rating_shell_to_baffle_clearance", rating_shell_to_baffle_clearance),
+        None if rating_bypass_area is None else input_to_si(spec, "rating_bypass_area", rating_bypass_area),
     )
     return HeatExchangerResult(
         hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
@@ -6204,6 +6230,22 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         mechanical_approach_temperature=None if result.mechanical_approach_temperature is None else from_si(result.mechanical_approach_temperature.magnitude_si, result.mechanical_approach_temperature.unit),
         used_overall_heat_transfer_coefficient=None if result.used_overall_heat_transfer_coefficient is None else from_si(result.used_overall_heat_transfer_coefficient.magnitude_si, result.used_overall_heat_transfer_coefficient.unit),
         calculated_ua=None if result.calculated_ua is None else from_si(result.calculated_ua.magnitude_si, result.calculated_ua.unit),
+        rating_u=None if result.rating_u is None else from_si(result.rating_u.magnitude_si, result.rating_u.unit),
+        rating_ua=None if result.rating_ua is None else from_si(result.rating_ua.magnitude_si, result.rating_ua.unit),
+        rating_area=None if result.rating_area is None else from_si(result.rating_area.magnitude_si, result.rating_area.unit),
+        tube_side_pressure_drop=None if result.tube_side_pressure_drop is None else from_si(result.tube_side_pressure_drop.magnitude_si, result.tube_side_pressure_drop.unit),
+        shell_side_pressure_drop=None if result.shell_side_pressure_drop is None else from_si(result.shell_side_pressure_drop.magnitude_si, result.shell_side_pressure_drop.unit),
+        tube_side_heat_transfer_coefficient=None if result.tube_side_heat_transfer_coefficient is None else from_si(result.tube_side_heat_transfer_coefficient.magnitude_si, result.tube_side_heat_transfer_coefficient.unit),
+        shell_side_heat_transfer_coefficient=None if result.shell_side_heat_transfer_coefficient is None else from_si(result.shell_side_heat_transfer_coefficient.magnitude_si, result.shell_side_heat_transfer_coefficient.unit),
+        tube_side_reynolds=result.tube_side_reynolds,
+        shell_side_reynolds=result.shell_side_reynolds,
+        tube_side_velocity=None if result.tube_side_velocity is None else from_si(result.tube_side_velocity.magnitude_si, result.tube_side_velocity.unit),
+        shell_side_velocity=None if result.shell_side_velocity is None else from_si(result.shell_side_velocity.magnitude_si, result.shell_side_velocity.unit),
+        jc=result.jc,
+        jl=result.jl,
+        jb=result.jb,
+        js=result.js,
+        jr=result.jr,
         mechanical_types=tuple(HeatExchangerMechanicalType(mechanical_type=c.mechanical_type, required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), required_ua=from_si(c.required_ua.magnitude_si, c.required_ua.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), approach_temperature=from_si(c.approach_temperature.magnitude_si, c.approach_temperature.unit), estimated_length=from_si(c.estimated_length.magnitude_si, c.estimated_length.unit), inner_diameter=from_si(c.inner_diameter.magnitude_si, c.inner_diameter.unit), outer_diameter=from_si(c.outer_diameter.magnitude_si, c.outer_diameter.unit), wall_thickness=from_si(c.wall_thickness.magnitude_si, c.wall_thickness.unit), tube_count=c.tube_count, tube_passes=c.tube_passes, fin_surface_area=from_si(c.fin_surface_area.magnitude_si, c.fin_surface_area.unit), estimated_pressure_drop=c.estimated_pressure_drop, estimated_weight=from_si(c.estimated_weight.magnitude_si, c.estimated_weight.unit), module_length=from_si(c.module_length.magnitude_si, c.module_length.unit), module_width=from_si(c.module_width.magnitude_si, c.module_width.unit), module_height=from_si(c.module_height.magnitude_si, c.module_height.unit)) for c in result.mechanical_types),
         warnings=_warnings(result.warnings),
     )

@@ -2581,12 +2581,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heat_exchanger': {
         "calc_id": 'process.heat_exchanger',
         "name": 'Heat exchanger',
-        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': 'e5385c826ea8ac7778c0e78af0079865064e26fe4131355c59bda8f88ce3f7b9'},
-        "code": [{'path': 'python/src/azoth/process/reference/heat_exchanger.py', 'sha256': '01ccbd51f620b086775fa60643bdfa293a51d6b7985c598613f3294283f94436'}, {'path': 'crates/azoth-process/src/models/heat_exchanger.rs', 'sha256': '1e2dd53b2e1983f7b90d95f4466b631ef13cb8115584073ac48b004138627764'}],
+        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': '65430f9acd8e2cc32f10bc53b93fd5d88dd2b1bc955b53e862543b1d285cd1f6'},
+        "code": [{'path': 'python/src/azoth/process/reference/heat_exchanger.py', 'sha256': 'e7ae5c89d63b082e2ebf47010065328d23b1f006f3308b608017990a83a37bd8'}, {'path': 'crates/azoth-process/src/models/heat_exchanger.rs', 'sha256': '63eb7b64340b8029bfb978f041e8656612cda1af06f12fa96ddac5e8c2d7f455'}],
         "source": 'NeqSim process/equipment/heatexchanger/HeatExchanger.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 17,
+        "tests_active": 22,
         "tests_skipped": 0,
     },
     'process.heater': {
