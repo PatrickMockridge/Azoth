@@ -308,6 +308,23 @@ correlation's `[0, 1]`.
   > captures/boiling_heat_transfer_probe.tsv
 ```
 
+## The two-phase pressure drop
+
+`two_phase_pressure_drop_probe.tsv` drives `TwoPhasePressureDrop` on the same R134a-like
+test fluid: the Friedel gradient across quality, with no surface tension and with no flux;
+the total drop and the Simpson average over a quality range in both directions, with odd
+and below-minimum interval counts; the Muller-Steinhagen-Heck gradient; and the
+gravitational and acceleration terms. **At quality zero the Friedel and M-S-H gradients
+both reduce to the liquid-only Fanning term**, the gravitational endpoints are exactly
+`rho * 9.81`, and the average is direction-symmetric because the class takes the absolute
+value of the Simpson sum over the span.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TwoPhasePressureDropProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TwoPhasePressureDropProbe \
+  > captures/two_phase_pressure_drop_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
