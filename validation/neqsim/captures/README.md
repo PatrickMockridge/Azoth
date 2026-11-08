@@ -278,6 +278,21 @@ the cross row reads 1.0 at two passes.
   > captures/lmtd_correction_probe.tsv
 ```
 
+## The condensation correlations
+
+`shah_condensation_probe.tsv` drives `ShahCondensation` directly on the class's R134a-like
+test fluid: the liquid-only coefficient, the local coefficient at mid, zero and high
+quality with its clamps, the average over a quality range, the vertical-tube coefficient in
+both regimes, and the validity predicate. **At a quality of one the local coefficient is
+zero** — the clamp sends `x` to one and both terms vanish — and a quality below zero clamps
+to zero and answers the liquid-only coefficient.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShahCondensationProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShahCondensationProbe \
+  > captures/shah_condensation_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
