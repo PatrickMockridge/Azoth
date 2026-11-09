@@ -5,6 +5,7 @@ use azoth_core::units::{
     pascals, watts, watts_per_kelvin,
 };
 use azoth_core::{AzothError, Result};
+use azoth_eos::{Phase, pt_flash};
 use azoth_thermal::{RatingRequest, ShellSideMethod, rate as thermal_rate};
 
 use crate::segment::phase::single_phase_view;
@@ -72,6 +73,53 @@ pub struct HeatExchangerOutcome {
     pub delta_t_side: Option<&'static str>,
     /// The thermal-hydraulic rating's calculator quantities; present only in that mode.
     pub rating_diagnostics: Option<RatingDiagnostics>,
+    /// The carried state after a `runTransient` step; absent on every steady branch.
+    pub transient: Option<TransientState>,
+}
+
+/// The wall and holdup temperatures a dynamic step hands to the next one.
+#[derive(Debug, Clone, Copy)]
+pub struct TransientState {
+    /// The post-step metal-wall temperature, K.
+    pub wall_temperature: ThermodynamicTemperature,
+    /// The post-step shell-side CSTR temperature; absent without a shell holdup.
+    pub shell_fluid_temperature: Option<ThermodynamicTemperature>,
+    /// The post-step tube-side CSTR temperature; absent without a tube holdup.
+    pub tube_fluid_temperature: Option<ThermodynamicTemperature>,
+}
+
+/// One `HeatExchanger.runTransient` step's settings, in SI.
+///
+/// The class keeps these as fields and the one-step id carries them as inputs; the three
+/// temperatures in [`TransientState`] are the ones the next call feeds back. The gate that
+/// selects the dynamic branch (`dynamicModelEnabled`, `wallMass > 0`, `heatTransferArea > 0`)
+/// is the model layer's, so this struct always describes the **active** branch.
+#[derive(Debug, Clone, Copy)]
+pub struct TransientSettings {
+    /// The forward-Euler interval, s.
+    pub time_step_s: f64,
+    /// The metal wall's mass, kg.
+    pub wall_mass_kg: f64,
+    /// The metal wall's specific heat, J/(kg·K).
+    pub wall_cp_j_per_kg_k: f64,
+    /// The carried wall temperature; absent or NaN seeds from the two inlet temperatures.
+    pub wall_temperature_k: Option<f64>,
+    /// The shell-side fluid holdup, m³; zero leaves the side at its inlet temperature.
+    pub shell_holdup_volume_m3: f64,
+    /// The tube-side fluid holdup, m³.
+    pub tube_holdup_volume_m3: f64,
+    /// The shell-side film coefficient, W/(m²·K).
+    pub shell_side_htc_w_per_m2_k: f64,
+    /// The tube-side film coefficient, W/(m²·K).
+    pub tube_side_htc_w_per_m2_k: f64,
+    /// The wall's heat-transfer area, m².
+    pub heat_transfer_area_m2: f64,
+    /// The carried shell CSTR temperature; absent or NaN seeds from the shell inlet.
+    pub shell_fluid_temperature_k: Option<f64>,
+    /// The carried tube CSTR temperature; absent or NaN seeds from the tube inlet.
+    pub tube_fluid_temperature_k: Option<f64>,
+    /// `true` when the **tube** is the hot declaration.
+    pub tube_is_hot: bool,
 }
 
 /// The rating calculator's geometry, in SI. Every field is `None` until the caller states it,
@@ -142,6 +190,7 @@ impl HeatExchangerOutcome {
             ua_value: None,
             delta_t_side: None,
             rating_diagnostics: None,
+            transient: None,
         }
     }
 }
@@ -322,6 +371,183 @@ pub fn heat_exchanger(
         cold_out,
         Some(rating),
     ))
+}
+
+/// `HeatExchanger.runTransient`'s enabled branch, one step.
+///
+/// The class's stream 0 is the **shell** and stream 1 the **tube**, the reverse of
+/// [`heat_exchanger_rating`]'s convention; `settings.tube_is_hot` states the mapping. The wall
+/// and the two optional CSTR holdups are integrated with forward Euler, and the two side
+/// duties are then applied to the **total** inlet enthalpy as though a watt were a joule -
+/// `h_out = h_in - q`, not `q * dt` - while the temperatures integrate by `dt`. That is
+/// reproduced rather than corrected: it is the class's answer, and the capture's `dt_quirk_*`
+/// rows pin it.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a non-positive side flow, a non-positive wall mass, wall
+/// heat capacity or area, a negative film coefficient or holdup, a non-finite parameter, a
+/// two-phase side, or whatever either PH flash refuses.
+pub fn heat_exchanger_transient(
+    hot: &Stream,
+    cold: &Stream,
+    settings: &TransientSettings,
+) -> Result<HeatExchangerOutcome> {
+    for (field, flow) in [("hot_in_n", hot.n), ("cold_in_n", cold.n)] {
+        if !flow.is_finite() || flow <= 0.0 {
+            return Err(AzothError::invalid_input(
+                field,
+                format!("a unit operation needs a positive molar flow, and {flow} mol/s is not"),
+            ));
+        }
+    }
+    let dt = settings.time_step_s;
+    if !dt.is_finite() || dt < 0.0 {
+        return Err(AzothError::invalid_input(
+            "time_step",
+            format!("a forward-Euler interval is finite and non-negative, and {dt} s is not"),
+        ));
+    }
+    for (field, value) in [
+        ("wall_mass", settings.wall_mass_kg),
+        ("wall_cp", settings.wall_cp_j_per_kg_k),
+        ("heat_transfer_area", settings.heat_transfer_area_m2),
+    ] {
+        if !value.is_finite() || value <= 0.0 {
+            return Err(AzothError::invalid_input(
+                field,
+                format!("the dynamic branch divides by this, and {value} is not positive"),
+            ));
+        }
+    }
+    for (field, value) in [
+        ("shell_holdup_volume", settings.shell_holdup_volume_m3),
+        ("tube_holdup_volume", settings.tube_holdup_volume_m3),
+        ("shell_side_htc", settings.shell_side_htc_w_per_m2_k),
+        ("tube_side_htc", settings.tube_side_htc_w_per_m2_k),
+    ] {
+        if !value.is_finite() || value < 0.0 {
+            return Err(AzothError::invalid_input(
+                field,
+                format!("a non-negative finite quantity is required, and {value} is not"),
+            ));
+        }
+    }
+    for (field, value) in [
+        ("wall_temperature", settings.wall_temperature_k),
+        (
+            "shell_fluid_temperature",
+            settings.shell_fluid_temperature_k,
+        ),
+        ("tube_fluid_temperature", settings.tube_fluid_temperature_k),
+    ] {
+        if let Some(value) = value {
+            // **NaN is the class's first-step sentinel**, so it is admitted; an infinity is a
+            // state the ODEs cannot carry and is refused.
+            if !value.is_finite() && !value.is_nan() {
+                return Err(AzothError::invalid_input(
+                    field,
+                    format!("a carried temperature is finite or NaN, and {value} is neither"),
+                ));
+            }
+        }
+    }
+
+    let (shell, tube) = if settings.tube_is_hot {
+        (cold, hot)
+    } else {
+        (hot, cold)
+    };
+    for stream in [shell, tube] {
+        let (mixture, _) = stream.mixture()?;
+        if pt_flash(&mixture, stream.t, stream.p, &stream.z)?.phase == Phase::TwoPhase {
+            return Err(AzothError::invalid_input(
+                "stream",
+                "the exchanger's transient step requires single-phase streams",
+            ));
+        }
+    }
+
+    let t_shell_in = shell.t.value;
+    let t_tube_in = tube.t.value;
+    let area = settings.heat_transfer_area_m2;
+    let h_shell = settings.shell_side_htc_w_per_m2_k;
+    let h_tube = settings.tube_side_htc_w_per_m2_k;
+    let mut wall = settings
+        .wall_temperature_k
+        .filter(|value| !value.is_nan())
+        .unwrap_or(0.5 * (t_shell_in + t_tube_in));
+
+    // **The shell CSTR uses the pre-step wall.** The class updates both holdups before the
+    // wall, and each update reads the wall as it arrived.
+    let (t_shell_for_wall, shell_fluid) = if settings.shell_holdup_volume_m3 > 0.0 {
+        let mut state = settings
+            .shell_fluid_temperature_k
+            .filter(|value| !value.is_nan())
+            .unwrap_or(t_shell_in);
+        let fluid_mass = shell.corrected_density()? * settings.shell_holdup_volume_m3;
+        let cp = shell.molar_heat_capacity()? / shell.molar_mass()?.value;
+        if fluid_mass > 0.0 && cp > 0.0 {
+            let mass_flow = shell.mass_flow()?;
+            let mixing = mass_flow * cp * (t_shell_in - state);
+            let to_wall = h_shell * area * (state - wall);
+            state += (mixing - to_wall) / (fluid_mass * cp) * dt;
+        }
+        (state, Some(state))
+    } else {
+        (t_shell_in, None)
+    };
+
+    let (t_tube_for_wall, tube_fluid) = if settings.tube_holdup_volume_m3 > 0.0 {
+        let mut state = settings
+            .tube_fluid_temperature_k
+            .filter(|value| !value.is_nan())
+            .unwrap_or(t_tube_in);
+        let fluid_mass = tube.corrected_density()? * settings.tube_holdup_volume_m3;
+        let cp = tube.molar_heat_capacity()? / tube.molar_mass()?.value;
+        if fluid_mass > 0.0 && cp > 0.0 {
+            let mass_flow = tube.mass_flow()?;
+            let mixing = mass_flow * cp * (t_tube_in - state);
+            let wall_to_fluid = h_tube * area * (wall - state);
+            state += (mixing + wall_to_fluid) / (fluid_mass * cp) * dt;
+        }
+        (state, Some(state))
+    } else {
+        (t_tube_in, None)
+    };
+
+    let q_shell_to_wall = h_shell * area * (t_shell_for_wall - wall);
+    let q_wall_to_tube = h_tube * area * (wall - t_tube_for_wall);
+    wall += (q_shell_to_wall - q_wall_to_tube)
+        / (settings.wall_mass_kg * settings.wall_cp_j_per_kg_k)
+        * dt;
+
+    let shell_out = Stream::from_ph(
+        shell.components.clone(),
+        shell.z.clone(),
+        shell.n,
+        shell.p,
+        moles_with(shell, -q_shell_to_wall),
+    )?;
+    let tube_out = Stream::from_ph(
+        tube.components.clone(),
+        tube.z.clone(),
+        tube.n,
+        tube.p,
+        moles_with(tube, q_wall_to_tube),
+    )?;
+
+    let (hot_out, cold_out) = if settings.tube_is_hot {
+        (tube_out, shell_out)
+    } else {
+        (shell_out, tube_out)
+    };
+    let mut outcome = HeatExchangerOutcome::of(hot, hot_out, cold_out, None);
+    outcome.transient = Some(TransientState {
+        wall_temperature: kelvins(wall),
+        shell_fluid_temperature: shell_fluid.map(kelvins),
+        tube_fluid_temperature: tube_fluid.map(kelvins),
+    });
+    Ok(outcome)
 }
 
 /// `HeatExchanger.runThermalHydraulicRating`: a fixed geometry, correlated UA and pressure
@@ -534,6 +760,7 @@ pub fn heat_exchanger_rating(
         ua_value: None,
         delta_t_side: None,
         rating_diagnostics: Some(diagnostics),
+        transient: None,
     })
 }
 
