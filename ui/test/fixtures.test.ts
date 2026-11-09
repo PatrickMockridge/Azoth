@@ -149,13 +149,13 @@ describe("the catalogue", () => {
     // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds
     // every one of them to `pint`. A unit the catalogue omits would be one a display could not
     // convert, so the count is asserted rather than a sample.
-    // **Seventy-nine, and two of them a spec may not declare.** Seventy-seven are the
+    // **Eighty-four, and two of them a spec may not declare.** Eighty-two are the
     // vocabulary's units; a degree Celsius and a degree Fahrenheit are *display* units, kept in
     // their own table so that `unit.schema.json` - the enum a spec's `unit:` is checked against -
     // does not offer them, and merged into this map because a display looks a unit up by name and
     // does not care which table it came from.
     const units = catalogue.units ?? {};
-    expect(Object.keys(units)).toHaveLength(79);
+    expect(Object.keys(units)).toHaveLength(84);
     expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1, offset: 0 });
     expect(units["psi"]?.dimension).toBe("pressure");
     expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);
