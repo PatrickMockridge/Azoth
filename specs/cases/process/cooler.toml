@@ -111,3 +111,186 @@ outlet_p = 2800000.0
 outlet_t = 320.0
 outlet_h = 1285.3807981097964
 outlet_duty = 49.6228317156872
+[[cases]]
+id = "the_dynamic_gate_falls_back_to_the_steady_run"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_gate_disabled`: no dynamic configuration, so `runTransient` delegates to `Heater.runTransient`, the steady run. The dynamic outputs are absent.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+outlet_temperature = 308.15
+time_step = 2.0
+dynamic_temperature_control_enabled = false
+[cases.expected]
+outlet_t = 308.15
+outlet_duty = -323067.28168942
+[[cases]]
+id = "the_design_point_is_the_equilibrium"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_configured_no_controller`: the design point is `80 -> 35 C` against a `20 C` medium at `50%` opening, so the equilibrium is the design outlet and the lag moves nothing. With no controller the requested opening is the step-initial one.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+[cases.expected]
+outlet_t = 308.15
+outlet_duty = -323067.28168942
+cooling_valve_opening = 50.0
+[[cases]]
+id = "the_hotter_inlet_moves_the_outlet"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_configured_hotter_inlet`: the inlet is raised to 100 C after the design run, so the equilibrium moves to `40 C` and the thermal lag moves the outlet one `2/12` of the way in one step.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 373.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+[cases.expected]
+outlet_t = 308.9833333333333
+outlet_duty = -462538.50654017075
+cooling_valve_opening = 50.0
+[[cases]]
+id = "the_manual_controller_opens_the_valve"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_manual_100`: the controller's requested 100% moves the valve by `2/(5+2)` of the way from the design's 50%, and the outlet follows the new equilibrium by the thermal lag.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+requested_valve_opening = 100.0
+[cases.expected]
+outlet_t = 307.33237524079044
+outlet_duty = -328929.8734058788
+cooling_valve_opening = 64.28571428571428
+[[cases]]
+id = "the_closed_valve_moves_the_outlet_to_the_inlet"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_manual_0`: the requested 0% moves the valve below the design opening, and the outlet moves toward the inlet the closed valve reaches.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+requested_valve_opening = 0.0
+[cases.expected]
+outlet_t = 309.36498572284233
+outlet_duty = -314357.67138525937
+cooling_valve_opening = 35.714285714285715
+[[cases]]
+id = "a_cold_feed_receives_no_heating"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_cold_feed_zero_taus`: a 10 C feed against a 20 C medium has the inlet as its equilibrium, and zero time constants reach it in one step. The model never heats.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 283.15
+time_step = 1.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 0.0
+thermal_time_constant = 0.0
+[cases.expected]
+outlet_t = 283.15
+outlet_duty = 0.0
+cooling_valve_opening = 50.0
+[[cases]]
+id = "the_second_step_carries_the_opening"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_manual_100_step_2`: the previous step's opening and outlet are this step's inputs, which is the carried-state contract the two outputs exist for.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+cooling_valve_opening = 64.28571428571428
+dynamic_outlet_temperature = 307.33237524079044
+requested_valve_opening = 100.0
+[cases.expected]
+outlet_t = 306.2364540177012
+outlet_duty = -336789.9670992062
+cooling_valve_opening = 74.48979591836734
+[[cases]]
+id = "the_ntu_clamp_floors_the_equilibrium"
+tolerance = 3e-04
+source = "`process_cooler_transient.tsv`'s `cooler_ntu_clamp_low_flow`: a 100 kg/hr feed at the open valve drives the NTU past the class's 20 cap, so the equilibrium is the medium and the outlet reaches 32.5 C in one thermal step.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 1.7314578182246327
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 353.15
+time_step = 2.0
+dynamic_temperature_control_enabled = true
+design_mass_flow = 10000.0
+design_inlet_temperature = 353.15
+design_outlet_temperature = 308.15
+cooling_medium_temperature = 293.15
+design_valve_opening = 50.0
+actuator_time_constant = 5.0
+thermal_time_constant = 10.0
+cooling_valve_opening = 100.0
+[cases.expected]
+outlet_t = 305.6500000206115
+outlet_duty = -3409.971305187907
+cooling_valve_opening = 100.0

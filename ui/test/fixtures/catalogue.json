@@ -7422,7 +7422,18 @@
       "runnable": true,
       "source": "NeqSim process/equipment/heatexchanger/Cooler.java",
       "unmodelled_ranges": [
-        "inlet_t"
+        "inlet_t",
+        "time_step",
+        "design_mass_flow",
+        "design_inlet_temperature",
+        "design_outlet_temperature",
+        "cooling_medium_temperature",
+        "design_valve_opening",
+        "actuator_time_constant",
+        "thermal_time_constant",
+        "cooling_valve_opening",
+        "requested_valve_opening",
+        "dynamic_outlet_temperature"
       ]
     },
     {

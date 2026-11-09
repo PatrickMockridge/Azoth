@@ -5784,6 +5784,12 @@ class CoolerResult(_HasWarnings):
     #: the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.
     outlet_duty: Q
 
+    #: the post-step valve opening, in percent. Present only on the dynamic branch.
+    cooling_valve_opening: float | None
+
+    #: the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence.
+    equilibrium_outlet_temperature: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -1439,6 +1439,18 @@ def cooler(
     outlet_temperature: Q | None = None,
     duty: Q | None = None,
     pressure_drop: Q | None = None,
+    time_step: Q | None = None,
+    dynamic_temperature_control_enabled: bool | None = None,
+    design_mass_flow: Q | None = None,
+    design_inlet_temperature: Q | None = None,
+    design_outlet_temperature: Q | None = None,
+    cooling_medium_temperature: Q | None = None,
+    design_valve_opening: float | None = None,
+    actuator_time_constant: Q | None = None,
+    thermal_time_constant: Q | None = None,
+    cooling_valve_opening: float | None = None,
+    requested_valve_opening: float | None = None,
+    dynamic_outlet_temperature: Q | None = None,
 ) -> CoolerResult:
     """Cool a stream to a stated temperature, or by a stated duty.
 
@@ -1463,6 +1475,18 @@ def cooler(
         outlet_temperature=outlet_temperature,
         duty=duty,
         pressure_drop=pressure_drop,
+        time_step=time_step,
+        dynamic_temperature_control_enabled=dynamic_temperature_control_enabled,
+        design_mass_flow=design_mass_flow,
+        design_inlet_temperature=design_inlet_temperature,
+        design_outlet_temperature=design_outlet_temperature,
+        cooling_medium_temperature=cooling_medium_temperature,
+        design_valve_opening=design_valve_opening,
+        actuator_time_constant=actuator_time_constant,
+        thermal_time_constant=thermal_time_constant,
+        cooling_valve_opening=cooling_valve_opening,
+        requested_valve_opening=requested_valve_opening,
+        dynamic_outlet_temperature=dynamic_outlet_temperature,
     )
 
 

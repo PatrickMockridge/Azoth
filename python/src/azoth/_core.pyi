@@ -2868,6 +2868,8 @@ class CoolerResult:
     outlet_t: Qty
     outlet_h: Qty
     outlet_duty: Qty
+    cooling_valve_opening: float | None
+    equilibrium_outlet_temperature: Qty | None
     warnings: list[Warning]
 
 @final
@@ -6077,6 +6079,18 @@ def cooler(
     outlet_temperature: float | None = None,
     duty: float | None = None,
     pressure_drop: float | None = None,
+    time_step: float | None = None,
+    dynamic_temperature_control_enabled: bool | None = None,
+    design_mass_flow: float | None = None,
+    design_inlet_temperature: float | None = None,
+    design_outlet_temperature: float | None = None,
+    cooling_medium_temperature: float | None = None,
+    design_valve_opening: float | None = None,
+    actuator_time_constant: float | None = None,
+    thermal_time_constant: float | None = None,
+    cooling_valve_opening: float | None = None,
+    requested_valve_opening: float | None = None,
+    dynamic_outlet_temperature: float | None = None,
 ) -> CoolerResult: ...
 def distillation_column(
     components: list[str],

@@ -2493,12 +2493,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.cooler': {
         "calc_id": 'process.cooler',
         "name": 'Cooler',
-        "spec": {'path': 'specs/models/process/cooler.toml', 'sha256': '8536351e1a08db934a7777eee2bed026ca740a00a1b875525e9bbf7eafa1e692'},
-        "code": [{'path': 'python/src/azoth/process/reference/cooler.py', 'sha256': '1d76bf2c4dce7eafbd2bedeedbb93066ca4147d2cecc3304ca6a1e404a74f31c'}, {'path': 'crates/azoth-process/src/models/cooler.rs', 'sha256': '262600ace4fcf517b2da93ca788de5bcb4f19670423ef1ec179927039a576ba7'}],
+        "spec": {'path': 'specs/models/process/cooler.toml', 'sha256': 'bc05944feb7eb620e3c59658ac8aecd84ef003fab55b87ae069f3e12623c54da'},
+        "code": [{'path': 'python/src/azoth/process/reference/cooler.py', 'sha256': '9b75aede76edc36bb2d79d0b578cfba46922c7e8dc8496066614f0f13ca5347c'}, {'path': 'crates/azoth-process/src/models/cooler.rs', 'sha256': 'f8d29cf1184f40ecb884810d403fd57c46ff3560a5377fb1770d5fca87622b29'}],
         "source": 'NeqSim process/equipment/heatexchanger/Cooler.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 6,
+        "tests_active": 14,
         "tests_skipped": 0,
     },
     'process.distillation_column': {

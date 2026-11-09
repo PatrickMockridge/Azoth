@@ -14428,6 +14428,12 @@ pub struct PyCoolerResult {
     /// the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.
     #[pyo3(get)]
     pub outlet_duty: PyQty,
+    /// the post-step valve opening, in percent. Present only on the dynamic branch.
+    #[pyo3(get)]
+    pub cooling_valve_opening: Option<f64>,
+    /// the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence.
+    #[pyo3(get)]
+    pub equilibrium_outlet_temperature: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14437,13 +14443,15 @@ pub struct PyCoolerResult {
 impl PyCoolerResult {
     fn __repr__(&self) -> String {
         format!(
-            "CoolerResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, {} warning(s))",
+            "CoolerResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, cooling_valve_opening={:?}, equilibrium_outlet_temperature={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
             self.outlet_duty,
+            self.cooling_valve_opening,
+            self.equilibrium_outlet_temperature,
             self.warnings.len()
         )
     }
@@ -14473,6 +14481,11 @@ impl From<&azoth_process::models::cooler::CoolerResult> for PyCoolerResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            cooling_valve_opening: r.cooling_valve_opening,
+            equilibrium_outlet_temperature: r.equilibrium_outlet_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

@@ -182,6 +182,8 @@ impl CalcResult for CoolerResult {
         "outlet_t",
         "outlet_h",
         "outlet_duty",
+        "cooling_valve_opening",
+        "equilibrium_outlet_temperature",
         "warnings",
     ];
 

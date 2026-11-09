@@ -513,7 +513,10 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
     // the collapse rating - take it to a hundred and seventy-one.
     // **And the exchanger's transient eight** - the time step, the wall mass and specific
     // heat, the two holdup volumes, the two film coefficients and the area - 191 + 8 = 199.
-    assert_eq!(checked, 199, "the bounds this test walked");
+    // **And the cooler's transient eleven** - the time step, the design mass flow and three
+    // design temperatures, the design and carried openings, the two time constants and the
+    // carried outlet - 199 + 11 = 210.
+    assert_eq!(checked, 210, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -713,8 +716,11 @@ fn the_generated_input_table_is_the_models_own() {
     // `mechanical_selection` - `685 + 3 = 688`.
     // **And the exchanger's transient thirteen** - the time step, the gate, the tube side, the
     // wall mass and specific heat, the wall and two fluid temperatures, the two holdup volumes,
-    // the two film coefficients and the area - 714 + 13 = 727.
-    assert_eq!(walked, 727, "the inputs this test walked");
+    // the two film coefficients and the area - 714 + 13 = 727. **And the cooler's twelve** -
+    // the time step, the gate, the design mass flow and three temperatures, the design and
+    // carried openings, the requested opening, the two time constants and the carried outlet -
+    // 727 + 12 = 739.
+    assert_eq!(walked, 739, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

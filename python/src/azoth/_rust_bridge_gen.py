@@ -5671,7 +5671,7 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
     )
 
 
-def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None) -> CoolerResult:
+def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, time_step: Q | None=None, dynamic_temperature_control_enabled: bool | None=None, design_mass_flow: Q | None=None, design_inlet_temperature: Q | None=None, design_outlet_temperature: Q | None=None, cooling_medium_temperature: Q | None=None, design_valve_opening: float | None=None, actuator_time_constant: Q | None=None, thermal_time_constant: Q | None=None, cooling_valve_opening: float | None=None, requested_valve_opening: float | None=None, dynamic_outlet_temperature: Q | None=None) -> CoolerResult:
     """``process.cooler``, computed in Rust."""
     spec = _models_gen.model("process.cooler")
     result = _core.cooler(
@@ -5683,6 +5683,18 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
         None if duty is None else input_to_si(spec, "duty", duty),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        dynamic_temperature_control_enabled,
+        None if design_mass_flow is None else input_to_si(spec, "design_mass_flow", design_mass_flow),
+        None if design_inlet_temperature is None else input_to_si(spec, "design_inlet_temperature", design_inlet_temperature),
+        None if design_outlet_temperature is None else input_to_si(spec, "design_outlet_temperature", design_outlet_temperature),
+        None if cooling_medium_temperature is None else input_to_si(spec, "cooling_medium_temperature", cooling_medium_temperature),
+        None if design_valve_opening is None else design_valve_opening,
+        None if actuator_time_constant is None else input_to_si(spec, "actuator_time_constant", actuator_time_constant),
+        None if thermal_time_constant is None else input_to_si(spec, "thermal_time_constant", thermal_time_constant),
+        None if cooling_valve_opening is None else cooling_valve_opening,
+        None if requested_valve_opening is None else requested_valve_opening,
+        None if dynamic_outlet_temperature is None else input_to_si(spec, "dynamic_outlet_temperature", dynamic_outlet_temperature),
     )
     return CoolerResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5691,6 +5703,8 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        cooling_valve_opening=result.cooling_valve_opening,
+        equilibrium_outlet_temperature=None if result.equilibrium_outlet_temperature is None else from_si(result.equilibrium_outlet_temperature.magnitude_si, result.equilibrium_outlet_temperature.unit),
         warnings=_warnings(result.warnings),
     )
 
