@@ -434,6 +434,37 @@ and to the arithmetic mean when the two differ by less than 0.01 K.
   > captures/incremental_zone_analysis_probe.tsv
 ```
 
+## The shell-and-tube design calculator
+
+`shell_and_tube_design_probe.tsv` drives `ShellAndTubeDesignCalculator` on its defaults, every
+rear-head clearance branch, the standard-size table's ends, all five tube sizes, the three
+pressure levels, the allowable-stress derating boundaries, five material pairs, the NACE
+threshold and both compliance flags, joint efficiencies and nozzle sizes, and the optional
+thermal and vibration block on both shell-side methods and with one side only. It also pins
+two calls on one instance and the four refusals.
+
+**The material table is the H2 design database**, and a failed lookup is silent: the class
+leaves `shell.material` at `Carbon Steel SA-516-70`. Every row here printed an `ASME-II-A`
+specification, so the database initialized; a row printing a `Carbon Steel ...` string is a
+failed lookup and is not usable as a case. The warning in that case is that the jar's CSV
+load did not run; a Maven classpath build is the fallback.
+
+**Two upstream defects are pinned.** The NACE test is `"Yes".equalsIgnoreCase(csv)` against a
+column that holds `true`/`false`, so **every grade reads not compliant** - the stainless row's
+two issue strings fire as readily as the carbon row's. And the price test is
+`contains("STAINLESS")` against `"ASME-II-A SA-..."`, so **every grade prices as carbon steel**
+at 1.5 USD/kg; `carbon_carbon` and `carbon_ss` therefore have identical costs, and the
+5 USD/kg branch is unreachable. The calculator's other quirks are in the capture too: the
+shell minimum wall is the TEMA *tube*-wall minimum, the weight uses a separate tubesheet
+estimate rather than the reported UHX thickness, and `calculate()` twice duplicates
+`appliedStandards`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShellAndTubeDesignProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShellAndTubeDesignProbe \
+  > captures/shell_and_tube_design_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
