@@ -502,6 +502,22 @@ side answers, a two-phase side answers, and `calculateSteadyState=false` throws 
   > captures/process_heat_exchanger_transient.tsv
 ```
 
+## The cooler's dynamic temperature control
+
+`process_cooler_transient.tsv` is `Cooler.runTransient`'s configured branch: a manual
+controller's requested opening moves the valve by a first-order actuator, an NTU scaled by
+opening and inverse mass flow gives the equilibrium outlet, and a second first-order lag moves
+the outlet. The first rows pin the gate (no configuration is the steady run) and the design
+point's equilibrium; the manual rows pin the actuator and the thermal lag, the two carried
+steps pin the state contract, and the same-UUID row is evidence of the class's per-step cache,
+which a one-step id keeps outside. `cooler_invalid_design` is the class's own refusal.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe cooler_transient \
+  > captures/process_cooler_transient.tsv
+```
+
 ## The compressor's no-chart modes
 
 Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the

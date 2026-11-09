@@ -189,6 +189,9 @@ public class ProcessProbe {
       case "heat_exchanger_transient":
         heatExchangerTransientRows();
         break;
+      case "cooler_transient":
+        coolerTransientRows();
+        break;
       case "heater":
         heatRows("Heater");
         break;
@@ -8629,6 +8632,169 @@ public class ProcessProbe {
     } catch (ReflectiveOperationException failure) {
       throw new IllegalStateException("no private double " + name, failure);
     }
+  }
+
+  // === process.cooler, runTransient ============================================
+
+  /// `Cooler.runTransient`'s dynamic temperature-control branch, one step at a time.
+  ///
+  /// The enabled branch is a first-order valve model: the requested opening moves the valve
+  /// by `dt / (tau_actuator + dt)`, an NTU scaled by opening and inverse mass flow gives the
+  /// equilibrium outlet, and a second first-order lag moves the outlet toward it. Without a
+  /// controller the requested opening is the step-initial one, so the valve does not move and
+  /// only the thermal lag acts; the manual-controller rows supply the requested opening.
+  static void coolerTransientRows() {
+    // 1. The gate: no dynamic configuration -> Heater.runTransient, the steady run.
+    neqsim.process.equipment.heatexchanger.Cooler steady =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_gate_disabled",
+            coolerFeed("cooler_gate_disabled", 353.15));
+    steady.setOutTemperature(35.0, "C");
+    steady.run();
+    steady.setCalculateSteadyState(false);
+    coolerStep("cooler_gate_disabled", steady, 2.0);
+
+    // 2. Configured, no controller: the requested opening is the step-initial one.
+    neqsim.process.equipment.heatexchanger.Cooler configured =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_configured",
+            coolerFeed("cooler_configured", 353.15));
+    configured.setOutTemperature(35.0, "C");
+    configured.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    configured.setDynamicTimeConstants(5.0, 10.0);
+    configured.run();
+    configured.setCalculateSteadyState(false);
+    coolerStep("cooler_configured_no_controller", configured, 2.0);
+
+    // 2b. A hotter inlet: the design point no longer matches, and the thermal lag moves the
+    //     outlet toward the equilibrium the current opening reaches.
+    neqsim.process.equipment.heatexchanger.Cooler hotter =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_hotter_inlet",
+            coolerFeed("cooler_hotter_inlet", 353.15));
+    hotter.setOutTemperature(35.0, "C");
+    hotter.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    hotter.setDynamicTimeConstants(5.0, 10.0);
+    hotter.run();
+    hotter.setCalculateSteadyState(false);
+    hotter.getInletStream().setTemperature(100.0, "C");
+    hotter.getInletStream().run();
+    coolerStep("cooler_configured_hotter_inlet", hotter, 2.0);
+
+    // 2c. Two steps: the second call's inputs are the first call's outputs.
+    neqsim.process.equipment.heatexchanger.Cooler twoSteps =
+        coolerController("cooler_two_steps", 353.15, 100.0);
+    coolerStep("cooler_manual_100_step_1", twoSteps, 2.0);
+    coolerStep("cooler_manual_100_step_2", twoSteps, 2.0);
+
+    // 3. A manual controller at 100%: the actuator moves the valve before the thermal lag.
+    coolerStep("cooler_manual_100", coolerController("cooler_manual_100", 353.15, 100.0), 2.0);
+
+    // 4. Manual at 0%: the valve closes and the equilibrium is the inlet.
+    coolerStep("cooler_manual_0", coolerController("cooler_manual_0", 353.15, 0.0), 2.0);
+
+    // 5. Zero time constants and a feed colder than the medium: the outlet is the inlet.
+    neqsim.process.equipment.heatexchanger.Cooler cold =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_cold",
+            coolerFeed("cooler_cold", 283.15));
+    cold.setOutTemperature(35.0, "C");
+    cold.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    cold.setDynamicTimeConstants(0.0, 0.0);
+    cold.run();
+    cold.setCalculateSteadyState(false);
+    cold.getInletStream().setTemperature(10.0, "C");
+    cold.getInletStream().run();
+    coolerStep("cooler_cold_feed_zero_taus", cold, 1.0);
+
+    // 6. The opening clamp: a requested 150 or -10 is clamped to [0, 100].
+    coolerStep(
+        "cooler_manual_150_clamped", coolerController("cooler_manual_150", 353.15, 150.0), 2.0);
+    coolerStep(
+        "cooler_manual_negative_clamped", coolerController("cooler_manual_neg", 353.15, -10.0), 2.0);
+
+    // 7. The NTU clamp: a low flow with the valve open reaches the 20 cap.
+    neqsim.process.equipment.heatexchanger.Cooler lowFlow =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_low_flow",
+            coolerFeed("cooler_low_flow", 353.15, 100.0));
+    lowFlow.setOutTemperature(35.0, "C");
+    lowFlow.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    lowFlow.setDynamicTimeConstants(5.0, 10.0);
+    lowFlow.run();
+    lowFlow.setCalculateSteadyState(false);
+    lowFlow.setCoolingValveOpening(100.0);
+    coolerStep("cooler_ntu_clamp_low_flow", lowFlow, 2.0);
+
+    // 8. Evidence: the same UUID does not advance the state twice. That cache is session
+    //    state, and this one-step id has no step identity; the capture records it uncased.
+    neqsim.process.equipment.heatexchanger.Cooler cached =
+        coolerController("cooler_cached", 353.15, 100.0);
+    java.util.UUID shared = java.util.UUID.randomUUID();
+    System.out.println("cooler_same_uuid_first");
+    cached.runTransient(2.0, shared);
+    System.out.println("out_cooling_valve_opening_percent=" + cached.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cached.getOutletStream().getTemperature("K"));
+    System.out.println("cooler_same_uuid_second");
+    cached.runTransient(2.0, shared);
+    System.out.println("out_cooling_valve_opening_percent=" + cached.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cached.getOutletStream().getTemperature("K"));
+    System.out.println();
+
+    // 9. An invalid design point is the class's own IllegalArgumentException.
+    try {
+      neqsim.process.equipment.heatexchanger.Cooler invalid =
+          new neqsim.process.equipment.heatexchanger.Cooler("cooler_invalid",
+              coolerFeed("cooler_invalid", 353.15));
+      invalid.configureDynamicTemperatureControl(10000.0, 80.0, 15.0, 20.0, "C");
+      System.out.println("cooler_invalid_design=answered");
+    } catch (RuntimeException failure) {
+      System.out.println("cooler_invalid_design=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+  }
+
+  static Stream coolerFeed(String name, double kelvin) {
+    return coolerFeed(name, kelvin, 10000.0);
+  }
+
+  static Stream coolerFeed(String name, double kelvin, double kgPerHour) {
+    return feedMass(name, new String[] {"methane"}, new double[] {1.0}, kelvin, 50.0, kgPerHour);
+  }
+
+  /// A configured cooler with a manual controller, which is how a requested opening differs
+  /// from the step-initial one.
+  static neqsim.process.equipment.heatexchanger.Cooler coolerController(
+      String name, double kelvin, double manualOutput) {
+    neqsim.process.equipment.heatexchanger.Cooler cooler =
+        new neqsim.process.equipment.heatexchanger.Cooler(name, coolerFeed(name, kelvin));
+    cooler.setOutTemperature(35.0, "C");
+    cooler.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    cooler.setDynamicTimeConstants(5.0, 10.0);
+    neqsim.process.controllerdevice.ControllerDeviceBaseClass controller =
+        new neqsim.process.controllerdevice.ControllerDeviceBaseClass(name + " controller");
+    controller.setTransmitter(
+        new neqsim.process.measurementdevice.TemperatureTransmitter(name + " outlet",
+            cooler.getOutletStream()));
+    controller.setMode(
+        neqsim.process.controllerdevice.ControllerDeviceInterface.ControllerMode.MANUAL);
+    // The limits are wider than the class's own, so the clamp rows exercise the class's.
+    controller.setOutputLimits(-20.0, 200.0);
+    controller.setManualOutput(manualOutput);
+    cooler.setController(controller);
+    cooler.run();
+    cooler.setCalculateSteadyState(false);
+    return cooler;
+  }
+
+  /// One dynamic-cooler step, with the carried opening and outlet printed before and after it.
+  static void coolerStep(String label, neqsim.process.equipment.heatexchanger.Cooler cooler,
+      double dt) {
+    System.out.println(label);
+    System.out.println("time_step_s=" + dt);
+    System.out.println("in_cooling_valve_opening_percent=" + cooler.getCoolingValveOpening());
+    System.out.println("in_outlet_temperature_K=" + cooler.getOutletStream().getTemperature("K"));
+    cooler.runTransient(dt, java.util.UUID.randomUUID());
+    System.out.println("out_cooling_valve_opening_percent=" + cooler.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cooler.getOutletStream().getTemperature("K"));
+    System.out.println("out_duty_W_java=" + cooler.getDuty());
+    print("outlet", cooler.getOutletStream());
+    System.out.println();
   }
 
   static void stream() {
