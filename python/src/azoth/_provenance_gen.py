@@ -2735,7 +2735,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator_performance': {
         "calc_id": 'process.separator_performance',
         "name": 'Separator performance calculator',
-        "spec": {'path': 'specs/models/process/separator_performance.toml', 'sha256': '0ae56eabd472390b9605e2877fb94b35f1f52fe5950028336abcb16aeeee874b'},
+        "spec": {'path': 'specs/models/process/separator_performance.toml', 'sha256': 'aa2e0ecb2841245a41ddd8e922cebb8b4c07a0b242ab1c1b46ea879642571aae'},
         "code": [{'path': 'python/src/azoth/process/reference/separator_performance.py', 'sha256': 'a2430b5f1a49080f23588dc90c0691fb192361509815ac8e964c150850fda4a2'}, {'path': 'crates/azoth-process/src/models/separator_performance.rs', 'sha256': '6211935c008dc9a9f693b6b67ae830d724bc1df05e98c227c6839dad463d6f7a'}],
         "source": 'NeqSim process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java',
         "verification": 'partially_verified',

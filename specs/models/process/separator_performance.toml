@@ -190,7 +190,7 @@ description = "the multiplier on `oil_in_water` and `water_in_oil`; absent is 1.
 [inputs.enhanced]
 type = "boolean"
 optional = true
-description = "run `calculateEnhanced` instead of the standard path: the flow regime, inlet device, vessel geometry and API 12J chain. **Absent is false**; the group below is refused without it. **The enhanced chain needs a liquid**: with both liquid densities zero the standard path answers, whose every fraction is zero.\n"
+description = "run `calculateEnhanced` instead of the standard path: the flow regime, inlet device, vessel geometry and API 12J chain. **Absent is false**; the group below is refused without it. **A liquid is required**: with both liquid densities zero the standard path answers zero fractions.\n"
 [inputs.inlet_pipe_diameter]
 unit = "m"
 optional = true
