@@ -42,28 +42,28 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them whose columns are enumerated — 34 files, 1,539 columns — is listed with what was
-done with it and a reason; the other four are vendored whole, three of them because
+them whose columns are enumerated — 35 files, 1,554 columns — is listed with what was
+done with it and a reason; the other five are vendored whole, three of them because
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (39 vendored file(s), 1539 column(s), 1513 carried of which 1206 read, 0 not-vendored entr(ies))
-  307  carried, nothing reads it yet
+check_manifest: OK (40 vendored file(s), 1554 column(s), 1520 carried of which 1212 read, 0 not-vendored entr(ies))
+  308  carried, nothing reads it yet
   1095  carried with no unit NeqSim states (neqsim-internal)
   266  not-ported
-   19  not-a-value
+   20  not-a-value
    10  empty-upstream
     1  superseded-by
     7  unreachable-upstream
    14  uncalled-upstream
-   13  unread-upstream
+   21  unread-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 307 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 308 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
 `not-ported` reason names the class that would close it — **266 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, thirteen
+and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, twenty-one
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
 The check refuses a `not-ported` reason with no NeqSim name in it, so the list cannot drift
