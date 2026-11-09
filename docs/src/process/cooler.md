@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/Cooler.java**
 
-No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares.
+No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares, **and `runTransient`'s configured dynamic branch as one step**.
 
 
 ## What this model is

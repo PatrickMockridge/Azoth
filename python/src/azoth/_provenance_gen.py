@@ -2493,7 +2493,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.cooler': {
         "calc_id": 'process.cooler',
         "name": 'Cooler',
-        "spec": {'path': 'specs/models/process/cooler.toml', 'sha256': 'bc05944feb7eb620e3c59658ac8aecd84ef003fab55b87ae069f3e12623c54da'},
+        "spec": {'path': 'specs/models/process/cooler.toml', 'sha256': 'da37eb6177e342390cba0dd9c07525be8d4f9113791b691208b8af9a965d0dfb'},
         "code": [{'path': 'python/src/azoth/process/reference/cooler.py', 'sha256': '9b75aede76edc36bb2d79d0b578cfba46922c7e8dc8496066614f0f13ca5347c'}, {'path': 'crates/azoth-process/src/models/cooler.rs', 'sha256': 'f8d29cf1184f40ecb884810d403fd57c46ff3560a5377fb1770d5fca87622b29'}],
         "source": 'NeqSim process/equipment/heatexchanger/Cooler.java',
         "verification": 'partially_verified',
@@ -2592,7 +2592,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heater': {
         "calc_id": 'process.heater',
         "name": 'Heater',
-        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': 'e87591867dfe5ca6882283553a95a137e33ec2cf27f4b28e38ee7e17fa2c33bb'},
+        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': 'fbc0797dd99ac9d0eb51d99a73bb3af89ab2374e73e33d5a643576b17f3843b2'},
         "code": [{'path': 'python/src/azoth/process/reference/heater.py', 'sha256': '28a38d57d33d0bf1dc1431dc8267a156a8091cb1a3590b8d7f63fb75ade9fa6c'}, {'path': 'crates/azoth-process/src/models/heater.rs', 'sha256': '294fc32ec8c6294566b35efebd82a73f2ad8b04397cee41a611fb24303678de8'}],
         "source": 'NeqSim process/equipment/heatexchanger/Heater.java',
         "verification": 'partially_verified',

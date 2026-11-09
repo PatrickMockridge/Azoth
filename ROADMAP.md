@@ -825,7 +825,8 @@ a claim nothing holds.
   ampacity derating, the voltage-drop upsizing, the starter, breaker and fuse ratings and the
   short-circuit rating and weight; **and its VFD**: the topology, pulse, harmonic, cooling,
   weight and enclosure tables and the input losses the drive adds. The detailed
-  `ShellAndTubeDesignCalculator` and `runTransient` remain owed - the two-stream
+  `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`, and `runTransient` is
+  the steady re-run plus the clock, recorded as a measured non-port - the two-stream
   `HeatExchanger` branch's thermal estimate is `process.heat_exchanger`'s and has landed -
   and the transformer and hazardous-area classification are the class's carried fields that
   `calcDesign` never reads;
@@ -859,7 +860,9 @@ a claim nothing holds.
   incremental zone analysis** as `thermal.incremental_zone_analysis`, held to
   `incremental_zone_analysis_probe.tsv`, **and the detailed design loop** as
   `thermal.shell_and_tube_design`, held to `shell_and_tube_design_probe.tsv`, with the
-  material table vendored; the exchanger package is closed, with `runTransient` still owed;
+  material table vendored; the exchanger package is closed, and `runTransient`'s enabled
+  branch is `process.heat_exchanger`'s one-step surface, held to
+  `process_heat_exchanger_transient.tsv`;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
   thermal estimate**: the LMTD and approach from the four stream temperatures, the

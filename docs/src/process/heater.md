@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/Heater.java**
 
-Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable, switchgear and VFD, the utility-specification predicates and the mechanical thermal estimate.
+Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable, switchgear and VFD, the utility-specification predicates and the mechanical thermal estimate. `runTransient` is the steady re-run plus the clock, recorded rather than ported.
 
 
 ## What this model is
@@ -162,7 +162,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **The cable sizes on the tray ampacity and then upsizes for voltage drop, but its reported ampacity stays the base-selected section's**: the class computes the derated rating before the drop loop.
 - **The VFD sizes on the motor's rating, and its rated current is computed at the motor's own 400 V default** because `calcDesign` copies the design's tap to the motor after sizing it.
 - **The transformer and hazardous-area classification are constructed and settable but never sized or read by `calcDesign`**; this surface stops at the drive.
-- **The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator, the two-stream branch and `runTransient` are outside.
+- **The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator is `thermal.shell_and_tube_design`, and the two-stream branch is `process.heat_exchanger`'s.
+- **`Heater.runTransient` is the steady re-run plus the clock, not a dynamic model.** It has no difference equation; the `calculateSteadyState = false` branch only copies the outlet pressure to the inlet and re-runs the inlet, a mutation of the caller's stream. Measured non-port.
+
 
 ## Cases
 
