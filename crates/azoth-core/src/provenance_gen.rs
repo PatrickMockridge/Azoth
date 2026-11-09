@@ -4145,7 +4145,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         spec_path: "specs/calcs/thermal/shell_and_tube_vibration.toml",
         spec_sha256: "db6dadae15f6f68260b540fddefd6c74dc1edd0d5c343c064035e454cc573244",
         python_path: "python/src/azoth/thermal/reference/shell_and_tube_vibration.py",
-        python_sha256: "2dfafe0e7bc3c323e06907682552e7b90b79b21f78b1260956fa1d843c91ff66",
+        python_sha256: "92770f1afbb0d5db1cbc27f46abb49370765d90cdd932dad5ef2097d302b1f11",
         rust_path: "crates/azoth-thermal/src/shell_and_tube_vibration.rs",
         rust_sha256: "20313c3807dd31741986da60ca25adcf03194fe5ef1d866f31117370b7eba6d2",
         source: "NeqSim process/mechanicaldesign/heatexchanger/VibrationAnalysis.java",

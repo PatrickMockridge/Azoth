@@ -1237,7 +1237,10 @@ def main(argv: list[str] | None = None) -> int:
         (STANDARDS_DIR / ISO6976_CONSTANTS[1], *iso6976),
         (REACTORS_DIR / GIBBS_REACTOR[1], *reactor),
         (REACTORS_DIR / GIBBS_COEFFS[1], *coeffs),
-        (HEAT_EXCHANGER_DIR / TUBE_MATERIALS[1], *build_tube_materials(SOURCES / TUBE_MATERIALS[0])),
+        (
+            HEAT_EXCHANGER_DIR / TUBE_MATERIALS[1],
+            *build_tube_materials(SOURCES / TUBE_MATERIALS[0]),
+        ),
     ]
 
     if args.check:
@@ -1255,7 +1258,8 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(phreeqc[1])} PHREEQC Pitzer row(s), {len(furst[1])} Furst "
             f"constant(s), {len(reactor[1])} Gibbs reactor species, "
             f"{len(coeffs[1])} coefficient row(s) and "
-            f"{len(build_tube_materials(SOURCES / TUBE_MATERIALS[0])[1])} material row(s) up to date"
+            f"{len(build_tube_materials(SOURCES / TUBE_MATERIALS[0])[1])} material "
+            f"row(s) up to date"
         )
         return 0
 

@@ -14,9 +14,8 @@ calls "~23 Hz". The three critical bands are strict ``0.8 < ratio < 1.2``.
 
 from __future__ import annotations
 
-from typing import Any
-
 import math
+from typing import Any
 
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.errors import InvalidInputError
