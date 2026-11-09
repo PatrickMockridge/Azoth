@@ -186,6 +186,9 @@ public class ProcessProbe {
       case "heat_exchanger_mechanical":
         heatExchangerMechanicalRows();
         break;
+      case "heat_exchanger_transient":
+        heatExchangerTransientRows();
+        break;
       case "heater":
         heatRows("Heater");
         break;
@@ -8383,6 +8386,249 @@ public class ProcessProbe {
     double in = a.getEnthalpy() / a.getTotalNumberOfMoles() * inlet.getFlowRate("mol/sec");
     double out = b.getEnthalpy() / b.getTotalNumberOfMoles() * outlet.getFlowRate("mol/sec");
     return out - in;
+  }
+
+  // === process.heat_exchanger, runTransient =====================================
+
+  /// `HeatExchanger.runTransient`'s enabled branch, one step at a time.
+  ///
+  /// **The wall ODE is flow-independent** while no holdup is stated - it reads only the two
+  /// inlet temperatures - so the wall trajectory is the same at every flow. The flow moves only
+  /// the outlet enthalpy shift, and the class applies that shift as a **power where a joule
+  /// belongs**: `outH = inH - q`, not `q * dt`, despite the comment in the source. The upstream
+  /// `1000 kg/hr` rows are therefore printed as evidence, and the cased wall rows use
+  /// `100 000 kg/hr` so the PH flash stays in the range both libraries can evaluate.
+  ///
+  /// **The two CSTR temperatures have no getters**, so they are read by reflection; the capture
+  /// prints them before and after every step, which is what lets a stateless one-step port
+  /// replay the trajectory. The class's stream 0 is the **shell** and stream 1 the **tube** -
+  /// the reverse of the thermal-hydraulic rating's stream-0-is-tube convention.
+  static void heatExchangerTransientRows() {
+    String[] methane = new String[] {"methane"};
+    double[] pure = new double[] {1.0};
+
+    // 1. The gate: a disabled dynamic model delegates to Heater.runTransient, the steady run.
+    Stream steadyHot = feedMass("steady_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream steadyCold = feedMass("steady_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger steady = dynamicExchanger(
+        "gate_disabled", steadyHot, steadyCold, 200.0, 20.0, 500.0, 800.0);
+    steady.setDynamicModelEnabled(false);
+    transientStep("gate_disabled_default", steady, steadyHot, steadyCold, 1.0);
+
+    // The class's other two gates.
+    Stream massZeroHot = feedMass("mass_zero_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream massZeroCold = feedMass("mass_zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger massZero = dynamicExchanger(
+        "gate_wall_mass_zero", massZeroHot, massZeroCold, 0.0, 20.0, 500.0, 800.0);
+    transientStep("gate_wall_mass_zero", massZero, massZeroHot, massZeroCold, 1.0);
+
+    Stream areaZeroHot = feedMass("area_zero_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream areaZeroCold = feedMass("area_zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger areaZero = dynamicExchanger(
+        "gate_area_zero", areaZeroHot, areaZeroCold, 200.0, 0.0, 500.0, 800.0);
+    transientStep("gate_area_zero", areaZero, areaZeroHot, areaZeroCold, 1.0);
+
+    // 2. The first-step seed and ten steps of the wall-only ODE, at the cased flow.
+    Stream wallHot = feedMass("wall_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream wallCold = feedMass("wall_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger wall = dynamicExchanger(
+        "wall_ten_steps", wallHot, wallCold, 200.0, 20.0, 500.0, 800.0);
+    java.util.UUID wallId = java.util.UUID.randomUUID();
+    for (int step = 1; step <= 10; step++) {
+      transientStep("wall_only_step_" + step, wall, wallHot, wallCold, 1.0, wallId);
+    }
+
+    // 3. The same trajectory at the upstream test's flow. Evidence only: the rate-as-joules
+    //    shift is about -17 kJ/mol here, which neither cubic's PH flash is meaningful over.
+    Stream upstreamHot = feedMass("upstream_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream upstreamCold = feedMass("upstream_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger upstream = dynamicExchanger(
+        "wall_upstream", upstreamHot, upstreamCold, 200.0, 20.0, 500.0, 800.0);
+    for (int step = 1; step <= 10; step++) {
+      try {
+        transientStep("wall_upstream_1000kg_step_" + step, upstream, upstreamHot, upstreamCold, 1.0,
+            wallId);
+      } catch (RuntimeException failure) {
+        System.out.println("wall_upstream_1000kg_step_" + step + "_outcome=threw:"
+            + failure.getClass().getSimpleName());
+        System.out.println();
+        break;
+      }
+    }
+
+    // 4. A stated wall is carried, not seeded.
+    Stream statedHot = feedMass("stated_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream statedCold = feedMass("stated_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger stated = dynamicExchanger(
+        "stated_wall", statedHot, statedCold, 200.0, 20.0, 500.0, 800.0);
+    stated.setWallTemperature(323.15);
+    transientStep("first_step_stated_wall", stated, statedHot, statedCold, 1.0);
+
+    // 5. The outlet shift does not scale with dt; the wall does.
+    for (double dt : new double[] {0.0, 0.5, 1.0}) {
+      Stream quirkHot = feedMass("quirk_hot_" + dt, methane, pure, 353.15, 10.0, 100000.0);
+      Stream quirkCold = feedMass("quirk_cold_" + dt, methane, pure, 293.15, 10.0, 100000.0);
+      neqsim.process.equipment.heatexchanger.HeatExchanger quirk = dynamicExchanger(
+          "dt_quirk_" + dt, quirkHot, quirkCold, 200.0, 20.0, 500.0, 800.0);
+      quirk.setWallTemperature(323.15);
+      transientStep("dt_quirk_" + dt, quirk, quirkHot, quirkCold, dt);
+    }
+
+    // 6. The two CSTR states, and the zero-holdup control.
+    for (boolean holdup : new boolean[] {true, false}) {
+      String label = holdup ? "holdup" : "holdup_zero";
+      Stream cstrHot = feedMass(label + "_hot", methane, pure, 423.15, 30.0, 100000.0);
+      Stream cstrCold = feedMass(label + "_cold", methane, pure, 303.15, 30.0, 100000.0);
+      neqsim.process.equipment.heatexchanger.HeatExchanger cstr = dynamicExchanger(
+          label, cstrHot, cstrCold, 400.0, 2.0, 500.0, 800.0);
+      if (holdup) {
+        cstr.setShellHoldupVolume(40.0);
+        cstr.setTubeHoldupVolume(30.0);
+      }
+      java.util.UUID cstrId = java.util.UUID.randomUUID();
+      for (int step = 1; step <= 5; step++) {
+        transientStep(label + "_step_" + step, cstr, cstrHot, cstrCold, 1.0, cstrId);
+      }
+    }
+
+    // 7. The setters' clamps.
+    Stream clampHot = feedMass("clamp_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream clampCold = feedMass("clamp_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger clamp = dynamicExchanger(
+        "clamp", clampHot, clampCold, 200.0, 20.0, 500.0, 800.0);
+    clamp.setWallMass(-10.0);
+    clamp.setShellHoldupVolume(-1.0);
+    clamp.setTubeHoldupVolume(-1.0);
+    clamp.setHeatTransferArea(-5.0);
+    System.out.println("clamp_getters");
+    System.out.println("wall_mass_kg=" + clamp.getWallMass());
+    System.out.println("shell_holdup_volume_m3=" + clamp.getShellHoldupVolume());
+    System.out.println("tube_holdup_volume_m3=" + clamp.getTubeHoldupVolume());
+    System.out.println("heat_transfer_area_m2=" + clamp.getHeatTransferArea());
+    System.out.println();
+
+    // 8. The side mapping: the class's stream 0 is the shell, so constructing it with the cold
+    //    stream first reverses the two sides and the class's duty sign follows.
+    Stream mappingCold = feedMass("mapping_cold", methane, pure, 293.15, 10.0, 100000.0);
+    Stream mappingHot = feedMass("mapping_hot", methane, pure, 353.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger mapping = dynamicExchanger(
+        "tube_hot", mappingCold, mappingHot, 200.0, 20.0, 500.0, 800.0);
+    transientStep("tube_hot_mapping", mapping, mappingCold, mappingHot, 1.0);
+
+    // 9. Evidence that is not cased.
+    Stream zeroHot = feedMass("zero_hot", methane, pure, 353.15, 10.0, 0.0);
+    Stream zeroCold = feedMass("zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger zero = dynamicExchanger(
+        "zero_flow", zeroHot, zeroCold, 200.0, 20.0, 500.0, 800.0);
+    try {
+      zero.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("zero_flow_uncased=answered");
+      System.out.println("wall_temperature_K=" + zero.getWallTemperature());
+    } catch (RuntimeException failure) {
+      System.out.println("zero_flow_uncased=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    String[] mix = new String[] {"methane", "n-butane"};
+    double[] half = new double[] {0.5, 0.5};
+    Stream twoPhaseHot = feedMass("two_phase_hot", mix, half, 250.0, 5.0, 1000.0);
+    Stream twoPhaseCold = feedMass("two_phase_cold", methane, pure, 293.15, 5.0, 1000.0);
+    System.out.println("two_phase_uncased");
+    System.out.println("shell_phases=" + twoPhaseHot.getThermoSystem().getNumberOfPhases());
+    neqsim.process.equipment.heatexchanger.HeatExchanger twoPhase = dynamicExchanger(
+        "two_phase", twoPhaseHot, twoPhaseCold, 200.0, 20.0, 500.0, 800.0);
+    try {
+      twoPhase.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("two_phase_outcome=answered");
+      System.out.println("wall_temperature_K=" + twoPhase.getWallTemperature());
+      print("shell_out", twoPhase.getOutStream(0));
+    } catch (RuntimeException failure) {
+      System.out.println("two_phase_outcome=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    // 10. calculateSteadyState=false: Heater.runTransient copies the outlet pressure to the
+    //     inlet before re-running. On the ordinary (pressure-drop-free) rating this is a no-op;
+    //     it is printed so the non-port has its evidence.
+    Stream cssHot = feedMass("css_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream cssCold = feedMass("css_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger css = dynamicExchanger(
+        "steady_state_false", cssHot, cssCold, 200.0, 20.0, 500.0, 800.0);
+    css.setDynamicModelEnabled(false);
+    css.run();
+    System.out.println("calculate_steady_state_false_uncased");
+    System.out.println("shell_in_pressure_bara_before=" + cssHot.getPressure("bara"));
+    System.out.println("shell_out_pressure_bara_before=" + css.getOutStream(0).getPressure("bara"));
+    css.setCalculateSteadyState(false);
+    try {
+      css.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("calculate_steady_state_false_outcome=answered");
+    } catch (RuntimeException failure) {
+      System.out.println("calculate_steady_state_false_outcome=threw:"
+          + failure.getClass().getSimpleName());
+    }
+    System.out.println("shell_in_pressure_bara_after=" + cssHot.getPressure("bara"));
+    System.out.println();
+  }
+
+  /// One step of the dynamic exchanger, with the carried state printed before and after it.
+  static void transientStep(String label,
+      neqsim.process.equipment.heatexchanger.HeatExchanger hx, StreamInterface shellIn,
+      StreamInterface tubeIn, double dt) {
+    transientStep(label, hx, shellIn, tubeIn, dt, java.util.UUID.randomUUID());
+  }
+
+  static void transientStep(String label,
+      neqsim.process.equipment.heatexchanger.HeatExchanger hx, StreamInterface shellIn,
+      StreamInterface tubeIn, double dt, java.util.UUID id) {
+    System.out.println(label);
+    System.out.println("time_step_s=" + dt);
+    System.out.println("in_wall_temperature_K=" + hx.getWallTemperature());
+    System.out.println(
+        "in_shell_fluid_temperature_K=" + privateDouble(hx, "shellFluidTemperature"));
+    System.out.println(
+        "in_tube_fluid_temperature_K=" + privateDouble(hx, "tubeFluidTemperature"));
+    hx.runTransient(dt, id);
+    System.out.println("out_wall_temperature_K=" + hx.getWallTemperature());
+    System.out.println(
+        "out_shell_fluid_temperature_K=" + privateDouble(hx, "shellFluidTemperature"));
+    System.out.println(
+        "out_tube_fluid_temperature_K=" + privateDouble(hx, "tubeFluidTemperature"));
+    print("shell_in", shellIn);
+    print("tube_in", tubeIn);
+    print("shell_out", hx.getOutStream(0));
+    print("tube_out", hx.getOutStream(1));
+    System.out.println("shell_duty_W=" + duty(shellIn, hx.getOutStream(0)));
+    System.out.println("tube_duty_W=" + duty(tubeIn, hx.getOutStream(1)));
+    System.out.println("duty_W_java=" + hx.getDuty());
+    System.out.println();
+  }
+
+  /// A dynamic exchanger with the class's own defaults for the fields the capture varies.
+  static neqsim.process.equipment.heatexchanger.HeatExchanger dynamicExchanger(String name,
+      StreamInterface shellIn, StreamInterface tubeIn, double wallMass, double area,
+      double shellHtc, double tubeHtc) {
+    neqsim.process.equipment.heatexchanger.HeatExchanger hx =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger(name, shellIn, tubeIn);
+    hx.setUAvalue(100.0);
+    hx.setWallMass(wallMass);
+    hx.setWallCp(500.0);
+    hx.setHeatTransferArea(area);
+    hx.setShellSideHtc(shellHtc);
+    hx.setTubeSideHtc(tubeHtc);
+    hx.setDynamicModelEnabled(true);
+    return hx;
+  }
+
+  /// A private field with no getter, which is how the two CSTR temperatures are reached.
+  static double privateDouble(Object target, String name) {
+    try {
+      java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
+      field.setAccessible(true);
+      return field.getDouble(target);
+    } catch (ReflectiveOperationException failure) {
+      throw new IllegalStateException("no private double " + name, failure);
+    }
   }
 
   static void stream() {

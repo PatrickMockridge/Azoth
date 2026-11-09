@@ -481,6 +481,27 @@ which is what the estimate reads.
   > captures/process_heat_exchanger_mechanical_design.tsv
 ```
 
+## The heat exchanger's transient step
+
+`process_heat_exchanger_transient.tsv` is `HeatExchanger.runTransient`'s enabled branch, one
+step at a time: a forward-Euler wall energy balance, optional per-side CSTR holdup
+temperatures, and a `PHflash` of each side. The class reads `inStream[0]` as the **shell** and
+`inStream[1]` as the **tube** - the reverse of the rating's stream 0 - and the capture prints
+the private CSTR temperatures by reflection because they have no getters. **The outlet enthalpy
+shift is applied as a power where a joule belongs** (`h_out = h_in - q`, not `q*dt`), so the
+`dt_quirk_*` rows print identical outlets at `dt = 0`, `0.5` and `1` while the wall moves by
+`dt`; the `wall_upstream_1000kg_*` rows are the upstream test's own flow, where that shift is
+about `-17` kJ/mol and is evidence rather than a case. The three gate rows pin the fallback to
+`Heater.runTransient` (the steady run), and the last rows are uncased evidence: a zero-flow
+side answers, a two-phase side answers, and `calculateSteadyState=false` throws a
+`NullPointerException` because `Heater.runTransient` reads its single-stream `outStream`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_transient \
+  > captures/process_heat_exchanger_transient.tsv
+```
+
 ## The compressor's no-chart modes
 
 Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the
