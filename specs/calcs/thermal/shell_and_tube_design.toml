@@ -1,0 +1,856 @@
+id = "thermal.shell_and_tube_design"
+name = "A shell-and-tube exchanger's detailed TEMA design"
+equation = "N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head clearance, snapped to a standard size; t_shell = P*R/(S*E - 0.6*P); t_UHX = G*sqrt(F*P/S); MAWP = S*E*t/(R + 0.6*t); hydro = 1.3*MAWP*S(20)/S(T)"
+latex = '''t = \frac{P R}{S E - 0.6 P}, \qquad t_{UHX} = G \sqrt{\frac{F P}{S}}, \qquad MAWP = \frac{S E t}{R + 0.6 t}'''
+assumptions = [
+    "**the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.\n",
+    "**the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.\n",
+    "**the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.\n",
+    "**the material table is NeqSim's 22-row design table, looked up by exact grade.** A grade that is not in it leaves the class's defaults (138/117 MPa, 52 W/(m K)) and the `Carbon Steel ...` strings.\n",
+    "**NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.\n",
+    "**the price test is `contains(\"STAINLESS\")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.\n",
+    "**the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.\n",
+    "**weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.\n",
+    "**the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.\n",
+    "**the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.\n",
+    "**the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.\n",
+    "**a zero or negative flow, or a thermal side with any property missing, is refused.** The class answers the all-or-none breach with a zero coefficient and a `NaN` drop.\n",
+]
+references = [
+    "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th ed. The configuration classes and the minimum wall and spacing tables.",
+    "ASME Boiler and Pressure Vessel Code, Section VIII Division 1 (2019). UHX-13 tubesheets, UG-37 reinforcement, UG-27 shell thicknesses and UG-99 hydrostatic test.",
+    "NACE MR0175/ISO 15156 (2015). The sour-service threshold and the material compliance flags.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/ShellAndTubeDesignCalculator.java` is the port source, over `TEMAStandard`, `ThermalDesignCalculator` and `VibrationAnalysis`.",
+    "`validation/neqsim/captures/shell_and_tube_design_probe.tsv` - the class driven on its defaults, every rear-head branch, the size table ends, all tube sizes, the derating boundaries, five material pairs, the NACE threshold, joint efficiencies, nozzles and the thermal block.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/ShellAndTubeDesignCalculator.java"
+edition = "`calculate()` single pass: tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the NACE assessment, the thermal and vibration block, weights and costs; the lookup is `loadMaterialFromDB`."
+[inputs]
+[inputs.tema_designation]
+type = "string"
+description = "the three-letter TEMA designation, e.g. `AES`. NeqSim's default is `AES`.\n"
+[inputs.tema_class]
+type = "enum"
+values = ["R", "C", "B"]
+description = "the construction class: severe, moderate or light service. NeqSim's default is `R`.\n"
+[inputs.required_area]
+unit = "m**2"
+description = "the required heat-transfer area, which the tube count divides. NeqSim's default is `100` m**2.\n"
+[inputs.shell_side_pressure]
+unit = "bar"
+description = "the shell-side design pressure. NeqSim's default is `10` bar.\n"
+[inputs.tube_side_pressure]
+unit = "bar"
+description = "the tube-side design pressure. NeqSim's default is `10` bar.\n"
+[inputs.design_temperature]
+unit = "K"
+description = "the design temperature; the class derates the allowable stress at 200/300/400 C. NeqSim's default is 150 C.\n"
+[inputs.shell_material_grade]
+type = "string"
+description = "the shell material grade, looked up in the vendored table by exact equality. NeqSim's default is `SA-516-70`.\n"
+[inputs.tube_material_grade]
+type = "string"
+description = "the tube material grade, likewise. NeqSim's default is `SA-179`.\n"
+[inputs.tube_size]
+type = "enum"
+values = ["tube_3_8_inch", "tube_1_2_inch", "tube_5_8_inch", "tube_3_4_inch", "tube_1_inch"]
+description = "the standard tube size. NeqSim's default is `tube_3_4_inch`.\n"
+[inputs.tube_length]
+unit = "mm"
+description = "the tube length. NeqSim's default is `6096` mm.\n"
+[inputs.tube_passes]
+unit = "dimensionless"
+description = "the tube passes. NeqSim's default is `2`.\n"
+[inputs.shell_joint_efficiency]
+unit = "dimensionless"
+description = "the shell joint efficiency, used by UG-37 and UG-27 and not the shell-wall formula. NeqSim's default is `0.85`.\n"
+[inputs.nozzle_diameter]
+unit = "mm"
+description = "the nozzle finished inside diameter. NeqSim's default is `150` mm.\n"
+[inputs.nozzle_wall_thickness]
+unit = "mm"
+description = "the nozzle wall thickness. NeqSim's default is `7.11` mm.\n"
+[inputs.sour_service_assessment]
+type = "boolean"
+description = "whether the NACE assessment runs. NeqSim's default is false.\n"
+[inputs.h2s_partial_pressure]
+unit = "bar"
+optional = true
+description = "the H2S partial pressure, read only when the assessment runs. Absent is `0`; the sour threshold is 0.003 bar.\n"
+[inputs.fouling_tube]
+unit = "dimensionless"
+optional = true
+description = "the tube-side fouling resistance in m**2*K/W for the thermal block. Absent is `0.000176`.\n"
+[inputs.fouling_shell]
+unit = "dimensionless"
+optional = true
+description = "the shell-side fouling resistance in m**2*K/W, likewise. Absent is `0.000176`.\n"
+[inputs.shell_side_method]
+type = "enum"
+values = ["kern", "bell_delaware"]
+optional = true
+description = "the shell-side method of the thermal block. Absent is `kern`.\n"
+[inputs.tube_side_density]
+unit = "kg/m**3"
+optional = true
+description = "the tube-side density; the five tube properties are all-or-none, and their presence turns the thermal block on.\n"
+[inputs.tube_side_viscosity]
+unit = "Pa*s"
+optional = true
+description = "the tube-side viscosity.\n"
+[inputs.tube_side_cp]
+unit = "J/(kg*K)"
+optional = true
+description = "the tube-side specific heat capacity.\n"
+[inputs.tube_side_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the tube-side thermal conductivity.\n"
+[inputs.tube_side_mass_flow]
+unit = "kg/s"
+optional = true
+description = "the tube-side mass flow.\n"
+[inputs.shell_side_density]
+unit = "kg/m**3"
+optional = true
+description = "the shell-side density; the five shell properties are all-or-none, and a positive density turns the vibration screen on.\n"
+[inputs.shell_side_viscosity]
+unit = "Pa*s"
+optional = true
+description = "the shell-side viscosity.\n"
+[inputs.shell_side_cp]
+unit = "J/(kg*K)"
+optional = true
+description = "the shell-side specific heat capacity.\n"
+[inputs.shell_side_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the shell-side thermal conductivity.\n"
+[inputs.shell_side_mass_flow]
+unit = "kg/s"
+optional = true
+description = "the shell-side mass flow.\n"
+[outputs]
+[outputs.tema_designation]
+type = "string"
+description = "the designation, echoed.\n"
+[outputs.tema_class]
+type = "string"
+description = "the class's own name.\n"
+[outputs.shell_inside_diameter]
+unit = "mm"
+description = "the bundle diameter plus the rear-head clearance, snapped to a standard shell size.\n"
+[outputs.shell_outside_diameter]
+unit = "mm"
+description = "the inside diameter plus twice the wall.\n"
+[outputs.shell_wall_thickness]
+unit = "mm"
+description = "the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.\n"
+[outputs.shell_material]
+type = "string"
+description = "the specification and grade, e.g. `ASME-II-A SA-516-70`.\n"
+[outputs.shell_material_grade]
+type = "string"
+description = "the grade, echoed.\n"
+[outputs.shell_allowable_stress]
+unit = "MPa"
+description = "the shell allowable stress after the temperature derating.\n"
+[outputs.shell_smys]
+unit = "MPa"
+description = "the shell minimum yield strength from the table.\n"
+[outputs.shell_joint_efficiency]
+unit = "dimensionless"
+description = "the joint efficiency, echoed.\n"
+[outputs.tube_count]
+unit = "dimensionless"
+description = "the area-derived tube count, rounded up to a multiple of the passes.\n"
+[outputs.tube_outer_diameter]
+unit = "mm"
+description = "the standard tube outside diameter.\n"
+[outputs.tube_wall_thickness]
+unit = "mm"
+description = "the class's fixed `2.108` mm.\n"
+[outputs.tube_length]
+unit = "mm"
+description = "the tube length, echoed.\n"
+[outputs.tube_passes]
+unit = "dimensionless"
+description = "the passes, echoed.\n"
+[outputs.tube_pitch]
+unit = "mm"
+description = "`tube_outer_diameter * 1.25`.\n"
+[outputs.tube_pitch_pattern]
+type = "string"
+description = "the class's pattern description, `Triangular 30°`.\n"
+[outputs.tube_material]
+type = "string"
+description = "the specification and grade of the tube material.\n"
+[outputs.tube_material_grade]
+type = "string"
+description = "the tube grade, echoed.\n"
+[outputs.tube_allowable_stress]
+unit = "MPa"
+description = "the tube allowable stress after the temperature derating.\n"
+[outputs.tube_thermal_conductivity]
+unit = "W/(m*K)"
+description = "the tube material's conductivity from the table.\n"
+[outputs.baffle_type]
+type = "string"
+description = "the class's fixed `Single Segmental`.\n"
+[outputs.baffle_count]
+unit = "dimensionless"
+description = "`(tube_length - 2*spacing)/spacing` floored, at least one.\n"
+[outputs.baffle_spacing]
+unit = "mm"
+description = "0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.\n"
+[outputs.baffle_cut]
+unit = "dimensionless"
+description = "the class's fixed `0.25`.\n"
+[outputs.required_area]
+unit = "m**2"
+description = "the required area, echoed.\n"
+[outputs.actual_area]
+unit = "m**2"
+description = "`tube_count * pi * d_o * L`.\n"
+[outputs.area_margin]
+unit = "dimensionless"
+description = "`(actual - required)/required`.\n"
+[outputs.tubesheet_thickness_uhx]
+unit = "mm"
+description = "the UHX-13 thickness, floored at the class minimum.\n"
+[outputs.mawp_shell_side]
+unit = "bar"
+description = "the shell MAWP per UG-27.\n"
+[outputs.mawp_tube_side]
+unit = "bar"
+description = "the tube MAWP per UG-27.\n"
+[outputs.hydro_test_pressure_shell]
+unit = "bar"
+description = "`1.3 * MAWP * S(20 C)/S(design)`.\n"
+[outputs.hydro_test_pressure_tube]
+unit = "bar"
+description = "the same on the tube side.\n"
+[outputs.nozzle_reinforcement_area]
+unit = "m**2"
+description = "the available reinforcement area per UG-37, the class mm**2 divided by 1e6.\n"
+[outputs.nozzle_reinforcement_adequate]
+type = "boolean"
+description = "whether the available area meets the required one.\n"
+[outputs.sour_service_required]
+type = "boolean"
+description = "whether the H2S partial pressure exceeds the 0.003 bar threshold.\n"
+[outputs.h2s_partial_pressure]
+unit = "bar"
+optional = true
+description = "the stated partial pressure, echoed when the assessment runs.\n"
+[outputs.shell_nace_compliant]
+type = "boolean"
+description = "the shell material's compliance flag; false for every grade, as the class reads it.\n"
+[outputs.tube_nace_compliant]
+type = "boolean"
+description = "the tube material's compliance flag, likewise.\n"
+[outputs.shell_max_hardness]
+unit = "dimensionless"
+description = "the shell hardness in HV, the class's fixed 248.\n"
+[outputs.tube_max_hardness]
+unit = "dimensionless"
+description = "the tube hardness in HV, likewise.\n"
+[outputs.nace_issues]
+type = "record_list"
+description = "the assessment's issue strings, in the class's order.\n"
+[outputs.nace_issues.fields]
+[outputs.nace_issues.fields.message]
+type = "string"
+description = "one issue.\n"
+[outputs.applied_standards]
+type = "record_list"
+description = "the standards the pipeline applied, in the class's order.\n"
+[outputs.applied_standards.fields]
+[outputs.applied_standards.fields.name]
+type = "string"
+description = "one standard.\n"
+[outputs.tube_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the thermal block's tube-side coefficient.\n"
+[outputs.shell_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the thermal block's shell-side coefficient.\n"
+[outputs.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the thermal block's overall coefficient.\n"
+[outputs.tube_side_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the thermal block's tube-side drop.\n"
+[outputs.shell_side_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the thermal block's shell-side drop.\n"
+[outputs.tube_side_velocity]
+unit = "m/s"
+optional = true
+description = "the thermal block's tube-side velocity.\n"
+[outputs.shell_side_velocity]
+unit = "m/s"
+optional = true
+description = "the thermal block's shell-side velocity.\n"
+[outputs.tube_side_reynolds]
+unit = "dimensionless"
+optional = true
+description = "the thermal block's tube-side Reynolds number.\n"
+[outputs.shell_side_reynolds]
+unit = "dimensionless"
+optional = true
+description = "the thermal block's shell-side Reynolds number.\n"
+[outputs.effective_tube_inside_diameter]
+unit = "m"
+optional = true
+description = "the tube flow diameter the thermal block read.\n"
+[outputs.outside_heat_transfer_area]
+unit = "m**2"
+optional = true
+description = "the outside area the thermal block read.\n"
+[outputs.tube_fouling_layer_resistance_outside]
+unit = "dimensionless"
+optional = true
+description = "the deposit resistance on the outside area; zero without a deposit.\n"
+[outputs.jc]
+unit = "dimensionless"
+optional = true
+description = "the Bell-Delaware baffle-cut factor.\n"
+[outputs.jl]
+unit = "dimensionless"
+optional = true
+description = "the Bell-Delaware leakage factor.\n"
+[outputs.jb]
+unit = "dimensionless"
+optional = true
+description = "the Bell-Delaware bypass factor.\n"
+[outputs.js]
+unit = "dimensionless"
+optional = true
+description = "the Bell-Delaware spacing factor, 1.0.\n"
+[outputs.jr]
+unit = "dimensionless"
+optional = true
+description = "the Bell-Delaware adverse-gradient factor.\n"
+[outputs.passed]
+type = "boolean"
+optional = true
+description = "whether the vibration screen passed.\n"
+[outputs.natural_frequency]
+unit = "1/s"
+optional = true
+description = "the first natural frequency.\n"
+[outputs.vortex_shedding_frequency]
+unit = "1/s"
+optional = true
+description = "the Strouhal shedding frequency.\n"
+[outputs.vortex_shedding_ratio]
+unit = "dimensionless"
+optional = true
+description = "`f_vs/f_n`.\n"
+[outputs.vortex_shedding_critical]
+type = "boolean"
+optional = true
+description = "whether the shedding ratio is inside the 0.8-1.2 band.\n"
+[outputs.critical_velocity]
+unit = "m/s"
+optional = true
+description = "Connors' critical crossflow velocity.\n"
+[outputs.velocity_ratio]
+unit = "dimensionless"
+optional = true
+description = "the crossflow velocity over the safety-factored critical one.\n"
+[outputs.fluid_elastic_critical]
+type = "boolean"
+optional = true
+description = "whether the velocity ratio exceeds one.\n"
+[outputs.acoustic_frequency]
+unit = "1/s"
+optional = true
+description = "the shell acoustic frequency.\n"
+[outputs.acoustic_ratio]
+unit = "dimensionless"
+optional = true
+description = "`f_vs/f_ac`.\n"
+[outputs.acoustic_critical]
+type = "boolean"
+optional = true
+description = "whether the acoustic ratio is inside the 0.8-1.2 band.\n"
+[outputs.shell_weight]
+unit = "kg"
+description = "the shell metal mass.\n"
+[outputs.tube_weight]
+unit = "kg"
+description = "the tube metal mass.\n"
+[outputs.tubesheet_weight]
+unit = "kg"
+description = "the tubesheet mass, one sheet for a U-tube and two otherwise.\n"
+[outputs.head_weight]
+unit = "kg"
+description = "the two heads' mass as hemispheres.\n"
+[outputs.baffle_weight]
+unit = "kg"
+description = "the baffle mass at 6.35 mm.\n"
+[outputs.total_dry_weight]
+unit = "kg"
+description = "the five component masses.\n"
+[outputs.operating_weight]
+unit = "kg"
+description = "the dry mass plus the shell and tube volumes of water.\n"
+[outputs.material_cost]
+unit = "dimensionless"
+description = "the material cost in USD, declared dimensionless because the vocabulary has no currency.\n"
+[outputs.fabrication_cost]
+unit = "dimensionless"
+description = "the fabrication cost in USD.\n"
+[outputs.total_cost]
+unit = "dimensionless"
+description = "material plus fabrication, in USD.\n"
+[[valid_range]]
+quantity = "required_area"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the tube count divides the required area."
+[[valid_range]]
+quantity = "shell_side_pressure"
+min = 0
+severity = "error"
+rationale = "a design pressure cannot be negative."
+[[valid_range]]
+quantity = "tube_side_pressure"
+min = 0
+severity = "error"
+rationale = "a design pressure cannot be negative."
+[[valid_range]]
+quantity = "design_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the design temperature enters Kelvin and derates in Celsius."
+[[valid_range]]
+quantity = "tube_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the length divides the per-tube area and the weights."
+[[valid_range]]
+quantity = "tube_passes"
+min = 1
+severity = "error"
+rationale = "the passes divide the tube count."
+[[valid_range]]
+quantity = "shell_joint_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a joint efficiency is a fraction of one."
+[[valid_range]]
+quantity = "nozzle_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the nozzle diameter divides the reinforcement area."
+[[valid_range]]
+quantity = "nozzle_wall_thickness"
+min = 0
+severity = "error"
+rationale = "a nozzle wall cannot be negative."
+[[valid_range]]
+quantity = "h2s_partial_pressure"
+min = 0
+severity = "error"
+rationale = "a partial pressure cannot be negative."
+[[valid_range]]
+quantity = "fouling_tube"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative."
+[[valid_range]]
+quantity = "fouling_shell"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative."
+[worked_example]
+source = "the capture's `defaults` row at NeqSim f0c7436c: the design calculator's own constructor defaults."
+derivation = "The tube bundle answers 276 tubes (100 m2 over pi*0.01905*6.096) and a 508.0 mm shell at the S-head's 35 mm clearance. The shell wall is 12.7 mm, the baffles 203.2 mm apart and 28 of them, the UHX thickness 79.80326511472613 mm, the shell MAWP 43.019559902200484 bar and the tube MAWP 223.38224792093808 bar. The five weights sum to 2936.980449631322 kg dry, and the material cost is 4405.470674446983 USD at 1.5 USD/kg.\n"
+tolerance = 1e-9
+[worked_example.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+[worked_example.expected]
+tema_designation = "AES"
+tema_class = "R"
+shell_inside_diameter = 508.0
+shell_outside_diameter = 533.4
+shell_wall_thickness = 12.7
+shell_material = "ASME-II-A SA-516-70"
+shell_material_grade = "SA-516-70"
+shell_allowable_stress = 138.0
+shell_smys = 260.0
+shell_joint_efficiency = 0.85
+tube_count = 276
+tube_outer_diameter = 19.05
+tube_wall_thickness = 2.108
+tube_length = 6096.0
+tube_passes = 2
+tube_pitch = 23.8125
+tube_pitch_pattern = "Triangular 30°"
+tube_material = "ASME-II-A SA-179"
+tube_material_grade = "SA-179"
+tube_allowable_stress = 92.0
+tube_thermal_conductivity = 54.0
+baffle_type = "Single Segmental"
+baffle_count = 28
+baffle_spacing = 203.20000000000002
+baffle_cut = 0.25
+required_area = 100.0
+actual_area = 100.69291024625475
+area_margin = 0.0069291024625475475
+tubesheet_thickness_uhx = 79.80326511472613
+mawp_shell_side = 43.019559902200484
+mawp_tube_side = 223.38224792093808
+hydro_test_pressure_shell = 55.92542787286063
+hydro_test_pressure_tube = 290.39692229721953
+nozzle_reinforcement_area = 0.0025125501253213365
+nozzle_reinforcement_adequate = true
+shell_weight = 994.1588578913401
+tube_weight = 1481.8657273916294
+tubesheet_weight = 203.16326551895742
+head_weight = 45.62454988916998
+baffle_weight = 212.16804894022516
+total_dry_weight = 2936.980449631322
+operating_weight = 3983.7632625363376
+material_cost = 4405.470674446983
+fabrication_cost = 14868.463526258565
+total_cost = 19273.93420070555
+applied_standards = [
+  { name = "ASME VIII Div.1 UHX-13 (Tubesheet)" },
+  { name = "ASME VIII Div.1 UG-37 (Nozzle Reinforcement)" },
+  { name = "ASME VIII Div.1 UG-27 (MAWP)" },
+  { name = "ASME VIII Div.1 UG-99 (Hydrostatic Test)" },
+]
+[implementations]
+python = "azoth.thermal.shell_and_tube_design"
+rust = "azoth_thermal::shell_and_tube_design"
+[[tests]]
+id = "the_defaults_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_pull_through_head_moves_the_shell"
+type = "reference"
+status = "active"
+source = "The capture's `tema.AET` row against `defaults`: the pull-through head's 90 mm clearance takes the shell from 508.0 to 558.8 mm, the baffles from 28 to 25, the UHX thickness from 79.80 to 87.47 mm and the dry weight from 2937 to 3124 kg. The tube side is untouched.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AET"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+[tests.expected]
+shell_inside_diameter = 558.8
+shell_outside_diameter = 584.1999999999999
+baffle_count = 25
+baffle_spacing = 223.51999999999998
+tubesheet_thickness_uhx = 87.46609162619873
+mawp_shell_side = 39.187082405345215
+total_dry_weight = 3123.587400046432
+total_cost = 21084.214950313417
+[[tests]]
+id = "a_stainless_tube_moves_the_pressure_design_and_not_the_cost"
+type = "reference"
+status = "active"
+source = "The capture's `carbon_ss` row against `defaults`: the stainless tube's 115 MPa allowable raises the tube MAWP from 223.38 to 279.23 bar and its conductivity falls 54 to 16.2 W/(m K), while the weights and every cost stay bit-identical because the price test never sees the word STAINLESS.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-213-TP316"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+[tests.expected]
+tube_material = "ASME-II-A SA-213-TP316"
+tube_allowable_stress = 115.0
+tube_thermal_conductivity = 16.2
+mawp_tube_side = 279.2278099011726
+hydro_test_pressure_tube = 362.9961528715244
+material_cost = 4405.470674446983
+total_dry_weight = 2936.980449631322
+[[tests]]
+id = "an_unknown_grade_falls_back_to_the_class_defaults"
+type = "reference"
+status = "active"
+source = "The capture's `unknown_grade` row: a grade the table does not carry leaves the class's `Carbon Steel ...` strings, the 138/117 MPa allowable stresses and the 52 W/(m K) tube conductivity, with the SMYS default of 260/228 MPa.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-999"
+tube_material_grade = "SA-999"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+[tests.expected]
+shell_material = "Carbon Steel SA-516-70"
+tube_material = "Carbon Steel SA-179"
+shell_allowable_stress = 138.0
+tube_allowable_stress = 117.0
+tube_thermal_conductivity = 52.0
+mawp_tube_side = 284.08394572554084
+[[tests]]
+id = "the_nace_assessment_reads_every_grade_as_not_compliant"
+type = "reference"
+status = "active"
+source = "The capture's `nace_above_threshold_carbon` row: 0.0031 bar is above the threshold, so the assessment runs, and both flags are false because the class tests the table's true/false text against Yes. Both material issues fire and the NORSOK standards row is added.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = true
+h2s_partial_pressure = 0.0031
+[tests.expected]
+sour_service_required = true
+h2s_partial_pressure = 0.0031
+shell_nace_compliant = false
+tube_nace_compliant = false
+shell_max_hardness = 248.0
+tube_max_hardness = 248.0
+nace_issues = [
+  { message = "Shell material SA-516-70 is not NACE MR0175 compliant for sour service" },
+  { message = "Tube material SA-179 is not NACE MR0175 compliant for sour service" },
+]
+applied_standards = [
+  { name = "ASME VIII Div.1 UHX-13 (Tubesheet)" },
+  { name = "ASME VIII Div.1 UG-37 (Nozzle Reinforcement)" },
+  { name = "ASME VIII Div.1 UG-27 (MAWP)" },
+  { name = "ASME VIII Div.1 UG-99 (Hydrostatic Test)" },
+  { name = "NACE MR0175/ISO 15156 (Sour Service Assessment)" },
+  { name = "NORSOK M-001 Rev.6 (Material Hardness Limits)" },
+]
+[[tests]]
+id = "the_nace_threshold_is_exclusive"
+type = "reference"
+status = "active"
+source = "The capture's `nace_at_threshold_carbon` row: exactly 0.003 bar is not above 0.003, so the assessment answers not required and adds the not-required standards row.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = true
+h2s_partial_pressure = 0.003
+[tests.expected]
+sour_service_required = false
+[[tests]]
+id = "the_thermal_block_composes_the_rating"
+type = "reference"
+status = "active"
+source = "The capture's `thermal_kern` row: the design's geometry and both fluids through the rating core. The tube coefficient is 935.48 W/(m2 K), the Kern shell coefficient 533.46, U 258.22, and the vibration screen passes with the critical velocity at 127.25 m/s.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+fouling_tube = 0.00018
+fouling_shell = 0.00035
+tube_side_density = 998.0
+tube_side_viscosity = 0.001
+tube_side_cp = 4180.0
+tube_side_conductivity = 0.6
+tube_side_mass_flow = 5.0
+shell_side_density = 50.0
+shell_side_viscosity = 1.5e-5
+shell_side_cp = 2200.0
+shell_side_conductivity = 0.03
+shell_side_mass_flow = 3.0
+[tests.expected]
+tube_side_heat_transfer_coefficient = 935.4835640922925
+shell_side_heat_transfer_coefficient = 533.4571493033994
+overall_heat_transfer_coefficient = 258.22281225730046
+tube_side_pressure_drop = 905.798664116431
+shell_side_pressure_drop = 8037.571511244353
+tube_side_velocity = 0.2100651197201151
+shell_side_velocity = 2.906255812511625
+tube_side_reynolds = 3109.8737739563308
+shell_side_reynolds = 133409.71915473058
+effective_tube_inside_diameter = 0.014834
+outside_heat_transfer_area = 100.69291024625474
+tube_fouling_layer_resistance_outside = 0.0
+jc = 1.0
+jl = 1.0
+jb = 1.0
+js = 1.0
+jr = 1.0
+passed = true
+natural_frequency = 1052.8640101156923
+vortex_shedding_frequency = 48.47997447525954
+vortex_shedding_ratio = 0.04604580839450709
+vortex_shedding_critical = false
+critical_velocity = 127.25416569659929
+velocity_ratio = 0.04567639568579233
+fluid_elastic_critical = false
+acoustic_frequency = 341.53636225510354
+acoustic_ratio = 0.14194674369415583
+acoustic_critical = false
+[[tests]]
+id = "the_bell_delaware_block_moves_the_shell_side"
+type = "reference"
+status = "active"
+source = "The capture's `thermal_bell_delaware` row: the same state with Bell-Delaware. The tube side is bit-identical while the shell coefficient falls 533.46 to 297.78 and U 258.22 to 186.70, with Jc 1.054, Jl 0.6068, Jb 0.5092, Js 1.0 and Jr 1.0.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 100.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+fouling_tube = 0.00018
+fouling_shell = 0.00035
+shell_side_method = "bell_delaware"
+tube_side_density = 998.0
+tube_side_viscosity = 0.001
+tube_side_cp = 4180.0
+tube_side_conductivity = 0.6
+tube_side_mass_flow = 5.0
+shell_side_density = 50.0
+shell_side_viscosity = 1.5e-5
+shell_side_cp = 2200.0
+shell_side_conductivity = 0.03
+shell_side_mass_flow = 3.0
+[tests.expected]
+tube_side_heat_transfer_coefficient = 935.4835640922925
+shell_side_heat_transfer_coefficient = 297.78026138646624
+overall_heat_transfer_coefficient = 186.69810790373734
+shell_side_pressure_drop = 8557.681259944584
+jc = 1.054
+jl = 0.6068270060925375
+jb = 0.509156420607549
+js = 1.0
+jr = 1.0
+[[tests]]
+id = "a_large_area_hits_the_shell_size_cap"
+type = "reference"
+status = "active"
+source = "The capture's `area.5000.0` row: 5000 m2 gives 13706 tubes, a 2032 mm shell at the table's last size, a 15.875 mm wall, 5 baffles at 812.8 mm and a 309.69 mm UHX thickness. The dry weight is 91.6 t.\n"
+tolerance = 1e-9
+[tests.inputs]
+tema_designation = "AES"
+tema_class = "R"
+required_area = 5000.0
+shell_side_pressure = 10.0
+tube_side_pressure = 10.0
+design_temperature = 423.15
+shell_material_grade = "SA-516-70"
+tube_material_grade = "SA-179"
+tube_size = "tube_3_4_inch"
+tube_length = 6096.0
+tube_passes = 2
+shell_joint_efficiency = 0.85
+nozzle_diameter = 150.0
+nozzle_wall_thickness = 7.11
+sour_service_assessment = false
+[tests.expected]
+tube_count = 13706
+shell_inside_diameter = 2032.0
+shell_wall_thickness = 15.875
+baffle_count = 5
+baffle_spacing = 812.8000000000001
+tubesheet_thickness_uhx = 309.68806045890454
+total_dry_weight = 91587.17941907838
+total_cost = 601040.8649377018

@@ -309,6 +309,11 @@ pub fn data_files() -> Vec<PyDataFile> {
             text: databank::embedded_components().to_string(),
         },
         PyDataFile {
+            name: "tube_materials".to_string(),
+            path: azoth_thermal::tube_materials::embedded_path().to_string(),
+            text: azoth_thermal::tube_materials::embedded_csv().to_string(),
+        },
+        PyDataFile {
             name: "kij".to_string(),
             path: databank::KIJ_PATH.to_string(),
             text: databank::embedded_kij().to_string(),

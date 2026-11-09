@@ -284,6 +284,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The incremental analysis carries a zones record list, per-row regime strings and the
         # categorical layout switch, so it has no float-array columns either.
         "thermal.incremental_zone_analysis",
+        # The design calculator carries designation, class and material-grade strings, the tube
+        # size and shell-side method enums, and two boolean switches.
+        "thermal.shell_and_tube_design",
     }, sorted(excluded)
 
 

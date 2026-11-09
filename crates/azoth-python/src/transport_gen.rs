@@ -14,14 +14,14 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyBrineMixingPointRow, PyCharacterizationComponent,
-    PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
-    PyFlowlineScaleSegment, PyHeatExchangerMechanicalType, PyHeaterInstrument,
-    PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
-    PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint,
-    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
-    PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction,
-    PyWaterMixingResult, PyZoneRatingRow,
+    PyActivityCoefficientRow, PyAppliedStandardRow, PyBrineMixingPointRow,
+    PyCharacterizationComponent, PyChemicalWarningRow, PyDepositionSegmentRow,
+    PyEquilibriumSoundSpeedSample, PyFlowlineScaleSegment, PyHeatExchangerMechanicalType,
+    PyHeaterInstrument, PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation,
+    PyHydrateRiskPoint, PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic,
+    PyLeakBlowdownPoint, PyMineralEquilibriumRow, PyNaceIssueRow, PyRemediationOptionRow,
+    PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow,
+    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult, PyZoneRatingRow,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -22168,6 +22168,573 @@ impl From<&azoth_thermal::results::ShahCondensationResult> for PyShahCondensatio
                 unit: "W/(m**2*K)".to_string(),
             },
             in_valid_range: r.in_valid_range,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.shell_and_tube_design`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeDesignResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeDesignResult {
+    /// the designation, echoed.
+    #[pyo3(get)]
+    pub tema_designation: String,
+    /// the class's own name.
+    #[pyo3(get)]
+    pub tema_class: String,
+    /// the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
+    #[pyo3(get)]
+    pub shell_inside_diameter: PyQty,
+    /// the inside diameter plus twice the wall.
+    #[pyo3(get)]
+    pub shell_outside_diameter: PyQty,
+    /// the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.
+    #[pyo3(get)]
+    pub shell_wall_thickness: PyQty,
+    /// the specification and grade, e.g. `ASME-II-A SA-516-70`.
+    #[pyo3(get)]
+    pub shell_material: String,
+    /// the grade, echoed.
+    #[pyo3(get)]
+    pub shell_material_grade: String,
+    /// the shell allowable stress after the temperature derating.
+    #[pyo3(get)]
+    pub shell_allowable_stress: PyQty,
+    /// the shell minimum yield strength from the table.
+    #[pyo3(get)]
+    pub shell_smys: PyQty,
+    /// the joint efficiency, echoed.
+    #[pyo3(get)]
+    pub shell_joint_efficiency: f64,
+    /// the area-derived tube count, rounded up to a multiple of the passes.
+    #[pyo3(get)]
+    pub tube_count: f64,
+    /// the standard tube outside diameter.
+    #[pyo3(get)]
+    pub tube_outer_diameter: PyQty,
+    /// the class's fixed `2.108` mm.
+    #[pyo3(get)]
+    pub tube_wall_thickness: PyQty,
+    /// the tube length, echoed.
+    #[pyo3(get)]
+    pub tube_length: PyQty,
+    /// the passes, echoed.
+    #[pyo3(get)]
+    pub tube_passes: f64,
+    /// `tube_outer_diameter * 1.25`.
+    #[pyo3(get)]
+    pub tube_pitch: PyQty,
+    /// the class's pattern description, `Triangular 30°`.
+    #[pyo3(get)]
+    pub tube_pitch_pattern: String,
+    /// the specification and grade of the tube material.
+    #[pyo3(get)]
+    pub tube_material: String,
+    /// the tube grade, echoed.
+    #[pyo3(get)]
+    pub tube_material_grade: String,
+    /// the tube allowable stress after the temperature derating.
+    #[pyo3(get)]
+    pub tube_allowable_stress: PyQty,
+    /// the tube material's conductivity from the table.
+    #[pyo3(get)]
+    pub tube_thermal_conductivity: PyQty,
+    /// the class's fixed `Single Segmental`.
+    #[pyo3(get)]
+    pub baffle_type: String,
+    /// `(tube_length - 2*spacing)/spacing` floored, at least one.
+    #[pyo3(get)]
+    pub baffle_count: f64,
+    /// 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
+    #[pyo3(get)]
+    pub baffle_spacing: PyQty,
+    /// the class's fixed `0.25`.
+    #[pyo3(get)]
+    pub baffle_cut: f64,
+    /// the required area, echoed.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// `tube_count * pi * d_o * L`.
+    #[pyo3(get)]
+    pub actual_area: PyQty,
+    /// `(actual - required)/required`.
+    #[pyo3(get)]
+    pub area_margin: f64,
+    /// the UHX-13 thickness, floored at the class minimum.
+    #[pyo3(get)]
+    pub tubesheet_thickness_uhx: PyQty,
+    /// the shell MAWP per UG-27.
+    #[pyo3(get)]
+    pub mawp_shell_side: PyQty,
+    /// the tube MAWP per UG-27.
+    #[pyo3(get)]
+    pub mawp_tube_side: PyQty,
+    /// `1.3 * MAWP * S(20 C)/S(design)`.
+    #[pyo3(get)]
+    pub hydro_test_pressure_shell: PyQty,
+    /// the same on the tube side.
+    #[pyo3(get)]
+    pub hydro_test_pressure_tube: PyQty,
+    /// the available reinforcement area per UG-37, the class mm**2 divided by 1e6.
+    #[pyo3(get)]
+    pub nozzle_reinforcement_area: PyQty,
+    /// whether the available area meets the required one.
+    #[pyo3(get)]
+    pub nozzle_reinforcement_adequate: bool,
+    /// whether the H2S partial pressure exceeds the 0.003 bar threshold.
+    #[pyo3(get)]
+    pub sour_service_required: bool,
+    /// the stated partial pressure, echoed when the assessment runs.
+    #[pyo3(get)]
+    pub h2s_partial_pressure: Option<PyQty>,
+    /// the shell material's compliance flag; false for every grade, as the class reads it.
+    #[pyo3(get)]
+    pub shell_nace_compliant: bool,
+    /// the tube material's compliance flag, likewise.
+    #[pyo3(get)]
+    pub tube_nace_compliant: bool,
+    /// the shell hardness in HV, the class's fixed 248.
+    #[pyo3(get)]
+    pub shell_max_hardness: f64,
+    /// the tube hardness in HV, likewise.
+    #[pyo3(get)]
+    pub tube_max_hardness: f64,
+    /// the assessment's issue strings, in the class's order.
+    #[pyo3(get)]
+    pub nace_issues: Vec<PyNaceIssueRow>,
+    /// the standards the pipeline applied, in the class's order.
+    #[pyo3(get)]
+    pub applied_standards: Vec<PyAppliedStandardRow>,
+    /// the thermal block's tube-side coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's shell-side coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's overall coefficient.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's tube-side drop.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: Option<PyQty>,
+    /// the thermal block's shell-side drop.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: Option<PyQty>,
+    /// the thermal block's tube-side velocity.
+    #[pyo3(get)]
+    pub tube_side_velocity: Option<PyQty>,
+    /// the thermal block's shell-side velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: Option<PyQty>,
+    /// the thermal block's tube-side Reynolds number.
+    #[pyo3(get)]
+    pub tube_side_reynolds: Option<f64>,
+    /// the thermal block's shell-side Reynolds number.
+    #[pyo3(get)]
+    pub shell_side_reynolds: Option<f64>,
+    /// the tube flow diameter the thermal block read.
+    #[pyo3(get)]
+    pub effective_tube_inside_diameter: Option<PyQty>,
+    /// the outside area the thermal block read.
+    #[pyo3(get)]
+    pub outside_heat_transfer_area: Option<PyQty>,
+    /// the deposit resistance on the outside area; zero without a deposit.
+    #[pyo3(get)]
+    pub tube_fouling_layer_resistance_outside: Option<f64>,
+    /// the Bell-Delaware baffle-cut factor.
+    #[pyo3(get)]
+    pub jc: Option<f64>,
+    /// the Bell-Delaware leakage factor.
+    #[pyo3(get)]
+    pub jl: Option<f64>,
+    /// the Bell-Delaware bypass factor.
+    #[pyo3(get)]
+    pub jb: Option<f64>,
+    /// the Bell-Delaware spacing factor, 1.0.
+    #[pyo3(get)]
+    pub js: Option<f64>,
+    /// the Bell-Delaware adverse-gradient factor.
+    #[pyo3(get)]
+    pub jr: Option<f64>,
+    /// whether the vibration screen passed.
+    #[pyo3(get)]
+    pub passed: Option<bool>,
+    /// the first natural frequency.
+    #[pyo3(get)]
+    pub natural_frequency: Option<PyQty>,
+    /// the Strouhal shedding frequency.
+    #[pyo3(get)]
+    pub vortex_shedding_frequency: Option<PyQty>,
+    /// `f_vs/f_n`.
+    #[pyo3(get)]
+    pub vortex_shedding_ratio: Option<f64>,
+    /// whether the shedding ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub vortex_shedding_critical: Option<bool>,
+    /// Connors' critical crossflow velocity.
+    #[pyo3(get)]
+    pub critical_velocity: Option<PyQty>,
+    /// the crossflow velocity over the safety-factored critical one.
+    #[pyo3(get)]
+    pub velocity_ratio: Option<f64>,
+    /// whether the velocity ratio exceeds one.
+    #[pyo3(get)]
+    pub fluid_elastic_critical: Option<bool>,
+    /// the shell acoustic frequency.
+    #[pyo3(get)]
+    pub acoustic_frequency: Option<PyQty>,
+    /// `f_vs/f_ac`.
+    #[pyo3(get)]
+    pub acoustic_ratio: Option<f64>,
+    /// whether the acoustic ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub acoustic_critical: Option<bool>,
+    /// the shell metal mass.
+    #[pyo3(get)]
+    pub shell_weight: PyQty,
+    /// the tube metal mass.
+    #[pyo3(get)]
+    pub tube_weight: PyQty,
+    /// the tubesheet mass, one sheet for a U-tube and two otherwise.
+    #[pyo3(get)]
+    pub tubesheet_weight: PyQty,
+    /// the two heads' mass as hemispheres.
+    #[pyo3(get)]
+    pub head_weight: PyQty,
+    /// the baffle mass at 6.35 mm.
+    #[pyo3(get)]
+    pub baffle_weight: PyQty,
+    /// the five component masses.
+    #[pyo3(get)]
+    pub total_dry_weight: PyQty,
+    /// the dry mass plus the shell and tube volumes of water.
+    #[pyo3(get)]
+    pub operating_weight: PyQty,
+    /// the material cost in USD, declared dimensionless because the vocabulary has no currency.
+    #[pyo3(get)]
+    pub material_cost: f64,
+    /// the fabrication cost in USD.
+    #[pyo3(get)]
+    pub fabrication_cost: f64,
+    /// material plus fabrication, in USD.
+    #[pyo3(get)]
+    pub total_cost: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeDesignResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeDesignResult(tema_designation={:?}, tema_class={:?}, shell_inside_diameter={:?}, shell_outside_diameter={:?}, shell_wall_thickness={:?}, shell_material={:?}, shell_material_grade={:?}, shell_allowable_stress={:?}, shell_smys={:?}, shell_joint_efficiency={:?}, tube_count={:?}, tube_outer_diameter={:?}, tube_wall_thickness={:?}, tube_length={:?}, tube_passes={:?}, tube_pitch={:?}, tube_pitch_pattern={:?}, tube_material={:?}, tube_material_grade={:?}, tube_allowable_stress={:?}, tube_thermal_conductivity={:?}, baffle_type={:?}, baffle_count={:?}, baffle_spacing={:?}, baffle_cut={:?}, required_area={:?}, actual_area={:?}, area_margin={:?}, tubesheet_thickness_uhx={:?}, mawp_shell_side={:?}, mawp_tube_side={:?}, hydro_test_pressure_shell={:?}, hydro_test_pressure_tube={:?}, nozzle_reinforcement_area={:?}, nozzle_reinforcement_adequate={:?}, sour_service_required={:?}, h2s_partial_pressure={:?}, shell_nace_compliant={:?}, tube_nace_compliant={:?}, shell_max_hardness={:?}, tube_max_hardness={:?}, nace_issues={:?}, applied_standards={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, effective_tube_inside_diameter={:?}, outside_heat_transfer_area={:?}, tube_fouling_layer_resistance_outside={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, passed={:?}, natural_frequency={:?}, vortex_shedding_frequency={:?}, vortex_shedding_ratio={:?}, vortex_shedding_critical={:?}, critical_velocity={:?}, velocity_ratio={:?}, fluid_elastic_critical={:?}, acoustic_frequency={:?}, acoustic_ratio={:?}, acoustic_critical={:?}, shell_weight={:?}, tube_weight={:?}, tubesheet_weight={:?}, head_weight={:?}, baffle_weight={:?}, total_dry_weight={:?}, operating_weight={:?}, material_cost={:?}, fabrication_cost={:?}, total_cost={:?}, {} warning(s))",
+            self.tema_designation,
+            self.tema_class,
+            self.shell_inside_diameter,
+            self.shell_outside_diameter,
+            self.shell_wall_thickness,
+            self.shell_material,
+            self.shell_material_grade,
+            self.shell_allowable_stress,
+            self.shell_smys,
+            self.shell_joint_efficiency,
+            self.tube_count,
+            self.tube_outer_diameter,
+            self.tube_wall_thickness,
+            self.tube_length,
+            self.tube_passes,
+            self.tube_pitch,
+            self.tube_pitch_pattern,
+            self.tube_material,
+            self.tube_material_grade,
+            self.tube_allowable_stress,
+            self.tube_thermal_conductivity,
+            self.baffle_type,
+            self.baffle_count,
+            self.baffle_spacing,
+            self.baffle_cut,
+            self.required_area,
+            self.actual_area,
+            self.area_margin,
+            self.tubesheet_thickness_uhx,
+            self.mawp_shell_side,
+            self.mawp_tube_side,
+            self.hydro_test_pressure_shell,
+            self.hydro_test_pressure_tube,
+            self.nozzle_reinforcement_area,
+            self.nozzle_reinforcement_adequate,
+            self.sour_service_required,
+            self.h2s_partial_pressure,
+            self.shell_nace_compliant,
+            self.tube_nace_compliant,
+            self.shell_max_hardness,
+            self.tube_max_hardness,
+            self.nace_issues,
+            self.applied_standards,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.effective_tube_inside_diameter,
+            self.outside_heat_transfer_area,
+            self.tube_fouling_layer_resistance_outside,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
+            self.passed,
+            self.natural_frequency,
+            self.vortex_shedding_frequency,
+            self.vortex_shedding_ratio,
+            self.vortex_shedding_critical,
+            self.critical_velocity,
+            self.velocity_ratio,
+            self.fluid_elastic_critical,
+            self.acoustic_frequency,
+            self.acoustic_ratio,
+            self.acoustic_critical,
+            self.shell_weight,
+            self.tube_weight,
+            self.tubesheet_weight,
+            self.head_weight,
+            self.baffle_weight,
+            self.total_dry_weight,
+            self.operating_weight,
+            self.material_cost,
+            self.fabrication_cost,
+            self.total_cost,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeDesignResult> for PyShellAndTubeDesignResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeDesignResult) -> Self {
+        Self {
+            tema_designation: r.tema_designation.clone(),
+            tema_class: r.tema_class.clone(),
+            shell_inside_diameter: PyQty {
+                magnitude_si: r.shell_inside_diameter.value,
+                unit: "mm".to_string(),
+            },
+            shell_outside_diameter: PyQty {
+                magnitude_si: r.shell_outside_diameter.value,
+                unit: "mm".to_string(),
+            },
+            shell_wall_thickness: PyQty {
+                magnitude_si: r.shell_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            shell_material: r.shell_material.clone(),
+            shell_material_grade: r.shell_material_grade.clone(),
+            shell_allowable_stress: PyQty {
+                magnitude_si: r.shell_allowable_stress.value,
+                unit: "MPa".to_string(),
+            },
+            shell_smys: PyQty {
+                magnitude_si: r.shell_smys.value,
+                unit: "MPa".to_string(),
+            },
+            shell_joint_efficiency: r.shell_joint_efficiency,
+            tube_count: r.tube_count,
+            tube_outer_diameter: PyQty {
+                magnitude_si: r.tube_outer_diameter.value,
+                unit: "mm".to_string(),
+            },
+            tube_wall_thickness: PyQty {
+                magnitude_si: r.tube_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            tube_length: PyQty {
+                magnitude_si: r.tube_length.value,
+                unit: "mm".to_string(),
+            },
+            tube_passes: r.tube_passes,
+            tube_pitch: PyQty {
+                magnitude_si: r.tube_pitch.value,
+                unit: "mm".to_string(),
+            },
+            tube_pitch_pattern: r.tube_pitch_pattern.clone(),
+            tube_material: r.tube_material.clone(),
+            tube_material_grade: r.tube_material_grade.clone(),
+            tube_allowable_stress: PyQty {
+                magnitude_si: r.tube_allowable_stress.value,
+                unit: "MPa".to_string(),
+            },
+            tube_thermal_conductivity: PyQty {
+                magnitude_si: r.tube_thermal_conductivity.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            baffle_type: r.baffle_type.clone(),
+            baffle_count: r.baffle_count,
+            baffle_spacing: PyQty {
+                magnitude_si: r.baffle_spacing.value,
+                unit: "mm".to_string(),
+            },
+            baffle_cut: r.baffle_cut,
+            required_area: PyQty {
+                magnitude_si: r.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            actual_area: PyQty {
+                magnitude_si: r.actual_area.value,
+                unit: "m**2".to_string(),
+            },
+            area_margin: r.area_margin,
+            tubesheet_thickness_uhx: PyQty {
+                magnitude_si: r.tubesheet_thickness_uhx.value,
+                unit: "mm".to_string(),
+            },
+            mawp_shell_side: PyQty {
+                magnitude_si: r.mawp_shell_side.value,
+                unit: "bar".to_string(),
+            },
+            mawp_tube_side: PyQty {
+                magnitude_si: r.mawp_tube_side.value,
+                unit: "bar".to_string(),
+            },
+            hydro_test_pressure_shell: PyQty {
+                magnitude_si: r.hydro_test_pressure_shell.value,
+                unit: "bar".to_string(),
+            },
+            hydro_test_pressure_tube: PyQty {
+                magnitude_si: r.hydro_test_pressure_tube.value,
+                unit: "bar".to_string(),
+            },
+            nozzle_reinforcement_area: PyQty {
+                magnitude_si: r.nozzle_reinforcement_area.value,
+                unit: "m**2".to_string(),
+            },
+            nozzle_reinforcement_adequate: r.nozzle_reinforcement_adequate,
+            sour_service_required: r.sour_service_required,
+            h2s_partial_pressure: r.h2s_partial_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "bar".to_string(),
+            }),
+            shell_nace_compliant: r.shell_nace_compliant,
+            tube_nace_compliant: r.tube_nace_compliant,
+            shell_max_hardness: r.shell_max_hardness,
+            tube_max_hardness: r.tube_max_hardness,
+            nace_issues: r.nace_issues.iter().map(PyNaceIssueRow::from).collect(),
+            applied_standards: r
+                .applied_standards
+                .iter()
+                .map(PyAppliedStandardRow::from)
+                .collect(),
+            tube_side_heat_transfer_coefficient: r.tube_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            shell_side_heat_transfer_coefficient: r.shell_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            overall_heat_transfer_coefficient: r.overall_heat_transfer_coefficient.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/(m**2*K)".to_string(),
+            }),
+            tube_side_pressure_drop: r.tube_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            shell_side_pressure_drop: r.shell_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            tube_side_velocity: r.tube_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            shell_side_velocity: r.shell_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            effective_tube_inside_diameter: r.effective_tube_inside_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            outside_heat_transfer_area: r.outside_heat_transfer_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            tube_fouling_layer_resistance_outside: r.tube_fouling_layer_resistance_outside,
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
+            passed: r.passed,
+            natural_frequency: r.natural_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            vortex_shedding_frequency: r.vortex_shedding_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            vortex_shedding_ratio: r.vortex_shedding_ratio,
+            vortex_shedding_critical: r.vortex_shedding_critical,
+            critical_velocity: r.critical_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_ratio: r.velocity_ratio,
+            fluid_elastic_critical: r.fluid_elastic_critical,
+            acoustic_frequency: r.acoustic_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            acoustic_ratio: r.acoustic_ratio,
+            acoustic_critical: r.acoustic_critical,
+            shell_weight: PyQty {
+                magnitude_si: r.shell_weight,
+                unit: "kg".to_string(),
+            },
+            tube_weight: PyQty {
+                magnitude_si: r.tube_weight,
+                unit: "kg".to_string(),
+            },
+            tubesheet_weight: PyQty {
+                magnitude_si: r.tubesheet_weight,
+                unit: "kg".to_string(),
+            },
+            head_weight: PyQty {
+                magnitude_si: r.head_weight,
+                unit: "kg".to_string(),
+            },
+            baffle_weight: PyQty {
+                magnitude_si: r.baffle_weight,
+                unit: "kg".to_string(),
+            },
+            total_dry_weight: PyQty {
+                magnitude_si: r.total_dry_weight,
+                unit: "kg".to_string(),
+            },
+            operating_weight: PyQty {
+                magnitude_si: r.operating_weight,
+                unit: "kg".to_string(),
+            },
+            material_cost: r.material_cost,
+            fabrication_cost: r.fabrication_cost,
+            total_cost: r.total_cost,
             warnings: transport(&r.warnings),
         }
     }

@@ -292,6 +292,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIncrementalZoneAnalysisResult>()?;
     m.add_class::<crate::transport_gen::PyLmtdCorrectionFactorResult>()?;
     m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
+    m.add_class::<crate::transport_gen::PyShellAndTubeDesignResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeRatingResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeVibrationResult>()?;
     m.add_class::<crate::transport_gen::PyTemaStandardResult>()?;
@@ -299,6 +300,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTwoPhasePressureDropResult>()?;
     m.add_class::<crate::transport_gen::PyZoneRatingResult>()?;
     m.add_class::<crate::record_outputs_gen::PyActivityCoefficientRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyAppliedStandardRow>()?;
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
     m.add_class::<crate::record_outputs_gen::PyCharacterizationComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
@@ -316,6 +318,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyLeakBlowdownDiagnostic>()?;
     m.add_class::<crate::record_outputs_gen::PyLeakBlowdownPoint>()?;
     m.add_class::<crate::record_outputs_gen::PyMineralEquilibriumRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyNaceIssueRow>()?;
     m.add_class::<crate::record_outputs_gen::PyRemediationOptionRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRiskRow>()?;
     m.add_class::<crate::record_outputs_gen::PyScaleControlRow>()?;
@@ -963,6 +966,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::shah_condensation, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::shell_and_tube_design,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::shell_and_tube_rating,
         m

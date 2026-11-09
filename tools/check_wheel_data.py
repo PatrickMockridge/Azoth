@@ -86,6 +86,7 @@ REQUIRED_IN_WHEEL: tuple[str, ...] = (
     "azoth/_core",
     "data/components/",
     "data/packing/",
+    "data/heat_exchanger/",
     "data/reactions/",
     "data/reactors/",
     "data/fittings/",

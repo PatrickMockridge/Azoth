@@ -2569,6 +2569,93 @@ unit = "neqsim-internal"
 reason = "unread-upstream: `PackingSpecificationLibrary.parseCsvLine` reads no such field, and the value it carries on 21 of the 28 rows is the same zero"
 
 [[upstreams.files]]
+id = "neqsim/HeatExchangerTubeMaterials.csv"
+compiled_to = "data/heat_exchanger/tube_materials.csv"
+upstream_path = "src/main/resources/designdata/HeatExchangerTubeMaterials.csv"
+commit = "f0c7436c6923766b1e22957b7075f650600457a7"
+retrieved = "2026-11-09"
+vendored_source = "databank/sources/neqsim/HeatExchangerTubeMaterials.csv"
+source_rows = 22
+compiled_rows = 22
+[[upstreams.files.columns]]
+name = "ID"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "not-a-value: the file own row number; the compiled table is read by grade, so nothing keys on it"
+[[upstreams.files.columns]]
+name = "MaterialGrade"
+disposition = "used"
+as = "material_grade"
+unit = "text"
+[[upstreams.files.columns]]
+name = "Specification"
+disposition = "used"
+as = "specification"
+unit = "text"
+[[upstreams.files.columns]]
+name = "MaterialType"
+disposition = "vendored"
+as = "material_type"
+unit = "text"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.loadMaterialFromDB` reads the grade, specification, allowable stress, SMYS, conductivity and the NACE text, and not this column. The price test reads the `Specification` string, not this one."
+[[upstreams.files.columns]]
+name = "SMYS_MPa"
+disposition = "used"
+as = "smys_mpa"
+unit = "MPa"
+[[upstreams.files.columns]]
+name = "SMTS_MPa"
+disposition = "dropped"
+unit = "MPa"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the tensile strength; the allowable stress is its own column."
+[[upstreams.files.columns]]
+name = "AllowableStress_MPa"
+disposition = "used"
+as = "allowable_stress_mpa"
+unit = "MPa"
+[[upstreams.files.columns]]
+name = "MaxTempC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.getAllowableStress` applies a fixed 200/300/400 C ladder to the allowable stress, and never reads this column."
+[[upstreams.files.columns]]
+name = "MinTempC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads a minimum temperature."
+[[upstreams.files.columns]]
+name = "Density_kg_m3"
+disposition = "dropped"
+unit = "kg/m**3"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.calculateWeights` hard-codes 7850 kg/m3 for every grade."
+[[upstreams.files.columns]]
+name = "ThermalConductivity_WpmK"
+disposition = "used"
+as = "thermal_conductivity_wpm_k"
+unit = "W/(m*K)"
+[[upstreams.files.columns]]
+name = "ThermalExpansion_perC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the expansion coefficient."
+[[upstreams.files.columns]]
+name = "NACECompliant"
+disposition = "used"
+as = "nace_compliant"
+unit = "text"
+reason = "carried as the file text, not a boolean: the class tests it against `Yes`, which no row holds, and the port reproduces that."
+[[upstreams.files.columns]]
+name = "TypicalService"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the service description."
+[[upstreams.files.columns]]
+name = "Description"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the description."
+
+[[upstreams.files]]
 id = "neqsim/PitzerParameters.csv"
 compiled_to = "data/components/PitzerParameters.csv"
 upstream_path = "src/main/resources/data/PitzerParameters.csv"

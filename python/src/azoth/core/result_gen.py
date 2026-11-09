@@ -23,6 +23,7 @@ from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
+    AppliedStandardRow,
     BrineMixingPointRow,
     CharacterizationComponent,
     ChemicalWarningRow,
@@ -40,6 +41,7 @@ from azoth.core.record_outputs_gen import (
     LeakBlowdownDiagnostic,
     LeakBlowdownPoint,
     MineralEquilibriumRow,
+    NaceIssueRow,
     RemediationOptionRow,
     ScaleControlRiskRow,
     ScaleControlRow,
@@ -8843,6 +8845,259 @@ class ShahCondensationResult(_HasWarnings):
 
     #: whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.
     in_valid_range: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeDesignResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_design``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_design"
+
+    #: the designation, echoed.
+    tema_designation: str
+
+    #: the class's own name.
+    tema_class: str
+
+    #: the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
+    shell_inside_diameter: Q
+
+    #: the inside diameter plus twice the wall.
+    shell_outside_diameter: Q
+
+    #: the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.
+    shell_wall_thickness: Q
+
+    #: the specification and grade, e.g. `ASME-II-A SA-516-70`.
+    shell_material: str
+
+    #: the grade, echoed.
+    shell_material_grade: str
+
+    #: the shell allowable stress after the temperature derating.
+    shell_allowable_stress: Q
+
+    #: the shell minimum yield strength from the table.
+    shell_smys: Q
+
+    #: the joint efficiency, echoed.
+    shell_joint_efficiency: float
+
+    #: the area-derived tube count, rounded up to a multiple of the passes.
+    tube_count: float
+
+    #: the standard tube outside diameter.
+    tube_outer_diameter: Q
+
+    #: the class's fixed `2.108` mm.
+    tube_wall_thickness: Q
+
+    #: the tube length, echoed.
+    tube_length: Q
+
+    #: the passes, echoed.
+    tube_passes: float
+
+    #: `tube_outer_diameter * 1.25`.
+    tube_pitch: Q
+
+    #: the class's pattern description, `Triangular 30°`.
+    tube_pitch_pattern: str
+
+    #: the specification and grade of the tube material.
+    tube_material: str
+
+    #: the tube grade, echoed.
+    tube_material_grade: str
+
+    #: the tube allowable stress after the temperature derating.
+    tube_allowable_stress: Q
+
+    #: the tube material's conductivity from the table.
+    tube_thermal_conductivity: Q
+
+    #: the class's fixed `Single Segmental`.
+    baffle_type: str
+
+    #: `(tube_length - 2*spacing)/spacing` floored, at least one.
+    baffle_count: float
+
+    #: 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
+    baffle_spacing: Q
+
+    #: the class's fixed `0.25`.
+    baffle_cut: float
+
+    #: the required area, echoed.
+    required_area: Q
+
+    #: `tube_count * pi * d_o * L`.
+    actual_area: Q
+
+    #: `(actual - required)/required`.
+    area_margin: float
+
+    #: the UHX-13 thickness, floored at the class minimum.
+    tubesheet_thickness_uhx: Q
+
+    #: the shell MAWP per UG-27.
+    mawp_shell_side: Q
+
+    #: the tube MAWP per UG-27.
+    mawp_tube_side: Q
+
+    #: `1.3 * MAWP * S(20 C)/S(design)`.
+    hydro_test_pressure_shell: Q
+
+    #: the same on the tube side.
+    hydro_test_pressure_tube: Q
+
+    #: the available reinforcement area per UG-37, the class mm**2 divided by 1e6.
+    nozzle_reinforcement_area: Q
+
+    #: whether the available area meets the required one.
+    nozzle_reinforcement_adequate: bool
+
+    #: whether the H2S partial pressure exceeds the 0.003 bar threshold.
+    sour_service_required: bool
+
+    #: the stated partial pressure, echoed when the assessment runs.
+    h2s_partial_pressure: Q | None
+
+    #: the shell material's compliance flag; false for every grade, as the class reads it.
+    shell_nace_compliant: bool
+
+    #: the tube material's compliance flag, likewise.
+    tube_nace_compliant: bool
+
+    #: the shell hardness in HV, the class's fixed 248.
+    shell_max_hardness: float
+
+    #: the tube hardness in HV, likewise.
+    tube_max_hardness: float
+
+    #: the assessment's issue strings, in the class's order.
+    nace_issues: tuple[NaceIssueRow, ...]
+
+    #: the standards the pipeline applied, in the class's order.
+    applied_standards: tuple[AppliedStandardRow, ...]
+
+    #: the thermal block's tube-side coefficient.
+    tube_side_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's shell-side coefficient.
+    shell_side_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's overall coefficient.
+    overall_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's tube-side drop.
+    tube_side_pressure_drop: Q | None
+
+    #: the thermal block's shell-side drop.
+    shell_side_pressure_drop: Q | None
+
+    #: the thermal block's tube-side velocity.
+    tube_side_velocity: Q | None
+
+    #: the thermal block's shell-side velocity.
+    shell_side_velocity: Q | None
+
+    #: the thermal block's tube-side Reynolds number.
+    tube_side_reynolds: float | None
+
+    #: the thermal block's shell-side Reynolds number.
+    shell_side_reynolds: float | None
+
+    #: the tube flow diameter the thermal block read.
+    effective_tube_inside_diameter: Q | None
+
+    #: the outside area the thermal block read.
+    outside_heat_transfer_area: Q | None
+
+    #: the deposit resistance on the outside area; zero without a deposit.
+    tube_fouling_layer_resistance_outside: float | None
+
+    #: the Bell-Delaware baffle-cut factor.
+    jc: float | None
+
+    #: the Bell-Delaware leakage factor.
+    jl: float | None
+
+    #: the Bell-Delaware bypass factor.
+    jb: float | None
+
+    #: the Bell-Delaware spacing factor, 1.0.
+    js: float | None
+
+    #: the Bell-Delaware adverse-gradient factor.
+    jr: float | None
+
+    #: whether the vibration screen passed.
+    passed: bool | None
+
+    #: the first natural frequency.
+    natural_frequency: Q | None
+
+    #: the Strouhal shedding frequency.
+    vortex_shedding_frequency: Q | None
+
+    #: `f_vs/f_n`.
+    vortex_shedding_ratio: float | None
+
+    #: whether the shedding ratio is inside the 0.8-1.2 band.
+    vortex_shedding_critical: bool | None
+
+    #: Connors' critical crossflow velocity.
+    critical_velocity: Q | None
+
+    #: the crossflow velocity over the safety-factored critical one.
+    velocity_ratio: float | None
+
+    #: whether the velocity ratio exceeds one.
+    fluid_elastic_critical: bool | None
+
+    #: the shell acoustic frequency.
+    acoustic_frequency: Q | None
+
+    #: `f_vs/f_ac`.
+    acoustic_ratio: float | None
+
+    #: whether the acoustic ratio is inside the 0.8-1.2 band.
+    acoustic_critical: bool | None
+
+    #: the shell metal mass.
+    shell_weight: Q
+
+    #: the tube metal mass.
+    tube_weight: Q
+
+    #: the tubesheet mass, one sheet for a U-tube and two otherwise.
+    tubesheet_weight: Q
+
+    #: the two heads' mass as hemispheres.
+    head_weight: Q
+
+    #: the baffle mass at 6.35 mm.
+    baffle_weight: Q
+
+    #: the five component masses.
+    total_dry_weight: Q
+
+    #: the dry mass plus the shell and tube volumes of water.
+    operating_weight: Q
+
+    #: the material cost in USD, declared dimensionless because the vocabulary has no currency.
+    material_cost: float
+
+    #: the fabrication cost in USD.
+    fabrication_cost: float
+
+    #: material plus fabrication, in USD.
+    total_cost: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

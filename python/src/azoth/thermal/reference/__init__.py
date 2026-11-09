@@ -13,6 +13,7 @@ from azoth.thermal.reference.fouling_model import fouling_model
 from azoth.thermal.reference.incremental_zone_analysis import incremental_zone_analysis
 from azoth.thermal.reference.lmtd_correction_factor import lmtd_correction_factor
 from azoth.thermal.reference.shah_condensation import shah_condensation
+from azoth.thermal.reference.shell_and_tube_design import shell_and_tube_design
 from azoth.thermal.reference.shell_and_tube_rating import shell_and_tube_rating
 from azoth.thermal.reference.shell_and_tube_vibration import shell_and_tube_vibration
 from azoth.thermal.reference.tema_standard import tema_standard
@@ -27,6 +28,7 @@ __all__ = [
     "incremental_zone_analysis",
     "lmtd_correction_factor",
     "shah_condensation",
+    "shell_and_tube_design",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
     "tema_standard",

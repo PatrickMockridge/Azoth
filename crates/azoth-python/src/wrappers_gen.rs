@@ -7088,6 +7088,82 @@ pub fn shah_condensation(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A shell-and-tube exchanger's detailed TEMA design.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (tema_designation, tema_class, required_area, shell_side_pressure, tube_side_pressure, design_temperature, shell_material_grade, tube_material_grade, tube_size, tube_length, tube_passes, shell_joint_efficiency, nozzle_diameter, nozzle_wall_thickness, sour_service_assessment, h2s_partial_pressure, fouling_tube, fouling_shell, shell_side_method, tube_side_density, tube_side_viscosity, tube_side_cp, tube_side_conductivity, tube_side_mass_flow, shell_side_density, shell_side_viscosity, shell_side_cp, shell_side_conductivity, shell_side_mass_flow))]
+#[pyo3(
+    text_signature = "(tema_designation, tema_class, required_area, shell_side_pressure, tube_side_pressure, design_temperature, shell_material_grade, tube_material_grade, tube_size, tube_length, tube_passes, shell_joint_efficiency, nozzle_diameter, nozzle_wall_thickness, sour_service_assessment, h2s_partial_pressure, fouling_tube, fouling_shell, shell_side_method, tube_side_density, tube_side_viscosity, tube_side_cp, tube_side_conductivity, tube_side_mass_flow, shell_side_density, shell_side_viscosity, shell_side_cp, shell_side_conductivity, shell_side_mass_flow)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn shell_and_tube_design(
+    py: Python<'_>,
+    tema_designation: &str,
+    tema_class: &str,
+    required_area: f64,
+    shell_side_pressure: f64,
+    tube_side_pressure: f64,
+    design_temperature: f64,
+    shell_material_grade: &str,
+    tube_material_grade: &str,
+    tube_size: &str,
+    tube_length: f64,
+    tube_passes: f64,
+    shell_joint_efficiency: f64,
+    nozzle_diameter: f64,
+    nozzle_wall_thickness: f64,
+    sour_service_assessment: bool,
+    h2s_partial_pressure: Option<f64>,
+    fouling_tube: Option<f64>,
+    fouling_shell: Option<f64>,
+    shell_side_method: Option<&str>,
+    tube_side_density: Option<f64>,
+    tube_side_viscosity: Option<f64>,
+    tube_side_cp: Option<f64>,
+    tube_side_conductivity: Option<f64>,
+    tube_side_mass_flow: Option<f64>,
+    shell_side_density: Option<f64>,
+    shell_side_viscosity: Option<f64>,
+    shell_side_cp: Option<f64>,
+    shell_side_conductivity: Option<f64>,
+    shell_side_mass_flow: Option<f64>,
+) -> PyResult<crate::transport_gen::PyShellAndTubeDesignResult> {
+    azoth_thermal::shell_and_tube_design::shell_and_tube_design(
+        tema_designation,
+        tema_class,
+        required_area,
+        shell_side_pressure,
+        tube_side_pressure,
+        kelvins(design_temperature),
+        shell_material_grade,
+        tube_material_grade,
+        tube_size,
+        meters(tube_length),
+        tube_passes,
+        shell_joint_efficiency,
+        meters(nozzle_diameter),
+        meters(nozzle_wall_thickness),
+        sour_service_assessment,
+        h2s_partial_pressure.map(pascals),
+        fouling_tube,
+        fouling_shell,
+        shell_side_method,
+        tube_side_density.map(kilograms_per_cubic_meter),
+        tube_side_viscosity.map(pascal_seconds),
+        tube_side_cp.map(joules_per_kilogram_kelvin),
+        tube_side_conductivity.map(watts_per_meter_kelvin),
+        tube_side_mass_flow.map(kilograms_per_second),
+        shell_side_density.map(kilograms_per_cubic_meter),
+        shell_side_viscosity.map(pascal_seconds),
+        shell_side_cp.map(joules_per_kilogram_kelvin),
+        shell_side_conductivity.map(watts_per_meter_kelvin),
+        shell_side_mass_flow.map(kilograms_per_second),
+    )
+    .map(|r| crate::transport_gen::PyShellAndTubeDesignResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A shell-and-tube exchanger's thermal-hydraulic rating.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

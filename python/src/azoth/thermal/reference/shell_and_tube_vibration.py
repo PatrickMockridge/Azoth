@@ -14,6 +14,8 @@ calls "~23 Hz". The three critical bands are strict ``0.8 < ratio < 1.2``.
 
 from __future__ import annotations
 
+from typing import Any
+
 import math
 
 from azoth._registry_gen import spec as _spec_for
@@ -171,61 +173,106 @@ def shell_and_tube_vibration(
     if values["crossflow_velocity"] < 0.0:
         raise InvalidInputError("crossflow_velocity", "a velocity cannot be negative")
 
-    fn_value = natural_frequency(
+    screened = screen(
         values["tube_outside_diameter"],
         values["tube_inside_diameter"],
         values["unsupported_span"],
+        values["tube_pitch"],
         values["tube_material_e"],
         values["tube_density"],
-        values["tube_fluid_density"],
+        values["crossflow_velocity"],
         values["shell_fluid_density"],
+        values["tube_fluid_density"],
+        values["shell_inside_diameter"],
+        values["sonic_velocity"],
+        damping_ratio,
+        triangular_pitch,
+    )
+    return ShellAndTubeVibrationResult(
+        natural_frequency=from_si(screened["fn"], "1/s"),
+        vortex_shedding_frequency=from_si(screened["fvs"], "1/s"),
+        vortex_shedding_ratio=screened["vortex_ratio"],
+        vortex_shedding_critical=screened["vortex_critical"],
+        critical_velocity=from_si(screened["vcrit"], "m/s"),
+        velocity_ratio=screened["velocity_ratio"],
+        fluid_elastic_critical=screened["fluid_elastic_critical"],
+        acoustic_frequency=from_si(screened["fac"], "1/s"),
+        acoustic_ratio=screened["acoustic_ratio"],
+        acoustic_critical=screened["acoustic_critical"],
+        passed=screened["passed"],
+        warnings=tuple(warnings),
+    )
+
+
+def screen(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    unsupported_span: float,
+    tube_pitch: float,
+    tube_material_e: float,
+    tube_density: float,
+    crossflow_velocity: float,
+    shell_fluid_density: float,
+    tube_fluid_density: float,
+    shell_inside_diameter: float,
+    sonic_velocity: float,
+    damping_ratio: float,
+    triangular_pitch: bool,
+) -> dict[str, Any]:
+    """`performScreening` without the input bounds, in SI magnitudes."""
+    fn_value = natural_frequency(
+        tube_outside_diameter,
+        tube_inside_diameter,
+        unsupported_span,
+        tube_material_e,
+        tube_density,
+        tube_fluid_density,
+        shell_fluid_density,
     )
     fvs = vortex_shedding_frequency(
-        values["crossflow_velocity"],
-        values["tube_outside_diameter"],
-        values["tube_pitch"],
+        crossflow_velocity,
+        tube_outside_diameter,
+        tube_pitch,
     )
     vortex_ratio = fvs / fn_value if fn_value > 0.0 else 0.0
     vortex_critical = 0.8 < vortex_ratio < 1.2
 
     mass = _effective_mass(
-        values["tube_outside_diameter"],
-        values["tube_inside_diameter"],
-        values["tube_density"],
-        values["tube_fluid_density"],
-        values["shell_fluid_density"],
+        tube_outside_diameter,
+        tube_inside_diameter,
+        tube_density,
+        tube_fluid_density,
+        shell_fluid_density,
     )
     vcrit = critical_velocity_connors(
         fn_value,
-        values["tube_outside_diameter"],
+        tube_outside_diameter,
         damping_ratio,
         mass,
-        values["shell_fluid_density"],
+        shell_fluid_density,
         triangular_pitch,
     )
     velocity_ratio = (
-        values["crossflow_velocity"] / (vcrit * FLUID_ELASTIC_SAFETY_FACTOR)
+        crossflow_velocity / (vcrit * FLUID_ELASTIC_SAFETY_FACTOR)
         if 0.0 < vcrit < math.inf
         else 0.0
     )
     fluid_elastic_critical = velocity_ratio > 1.0
 
-    fac = acoustic_frequency(values["shell_inside_diameter"], values["sonic_velocity"], 1)
+    fac = acoustic_frequency(shell_inside_diameter, sonic_velocity, 1)
     acoustic_ratio = fvs / fac if fac > 0.0 else 0.0
     acoustic_critical = 0.8 < acoustic_ratio < 1.2
 
-    passed = not vortex_critical and not fluid_elastic_critical and not acoustic_critical
-    return ShellAndTubeVibrationResult(
-        natural_frequency=from_si(fn_value, "1/s"),
-        vortex_shedding_frequency=from_si(fvs, "1/s"),
-        vortex_shedding_ratio=vortex_ratio,
-        vortex_shedding_critical=vortex_critical,
-        critical_velocity=from_si(vcrit, "m/s"),
-        velocity_ratio=velocity_ratio,
-        fluid_elastic_critical=fluid_elastic_critical,
-        acoustic_frequency=from_si(fac, "1/s"),
-        acoustic_ratio=acoustic_ratio,
-        acoustic_critical=acoustic_critical,
-        passed=passed,
-        warnings=tuple(warnings),
-    )
+    return {
+        "fn": fn_value,
+        "fvs": fvs,
+        "vortex_ratio": vortex_ratio,
+        "vortex_critical": vortex_critical,
+        "vcrit": vcrit,
+        "velocity_ratio": velocity_ratio,
+        "fluid_elastic_critical": fluid_elastic_critical,
+        "fac": fac,
+        "acoustic_ratio": acoustic_ratio,
+        "acoustic_critical": acoustic_critical,
+        "passed": not vortex_critical and not fluid_elastic_critical and not acoustic_critical,
+    }

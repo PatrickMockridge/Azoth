@@ -857,8 +857,9 @@ a claim nothing holds.
   TEMA standard** as `thermal.tema_standard`, held to `tema_standard_probe.tsv`, **and its
   zone-by-zone rating** as `thermal.zone_rating`, held to `zone_analysis_probe.tsv`, **and its
   incremental zone analysis** as `thermal.incremental_zone_analysis`, held to
-  `incremental_zone_analysis_probe.tsv`; the port is the single-phase half, with the detailed
-  `ShellAndTubeDesignCalculator`'s design loop still owed;
+  `incremental_zone_analysis_probe.tsv`, **and the detailed design loop** as
+  `thermal.shell_and_tube_design`, held to `shell_and_tube_design_probe.tsv`, with the
+  material table vendored; the exchanger package is closed, with `runTransient` still owed;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
   thermal estimate**: the LMTD and approach from the four stream temperatures, the

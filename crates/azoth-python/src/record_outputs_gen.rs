@@ -46,6 +46,35 @@ impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficient
     }
 }
 
+/// the standards the pipeline applied, in the class's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AppliedStandardRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAppliedStandardRow {
+    /// one standard.
+    #[pyo3(get)]
+    pub name: String,
+}
+
+#[pymethods]
+impl PyAppliedStandardRow {
+    fn __repr__(&self) -> String {
+        format!("AppliedStandardRow(name={})", self.name)
+    }
+}
+
+impl From<&azoth_thermal::results::AppliedStandardRow> for PyAppliedStandardRow {
+    fn from(row: &azoth_thermal::results::AppliedStandardRow) -> Self {
+        Self {
+            name: row.name.clone(),
+        }
+    }
+}
+
 /// One row per mixing fraction, from all brine A to all brine B.
 #[pyclass(
     frozen,
@@ -1470,6 +1499,35 @@ impl From<&azoth_eos::results::MineralEquilibriumRow> for PyMineralEquilibriumRo
                 unit: "kg".to_string(),
             },
             limiting_ion_exhausted: row.limiting_ion_exhausted,
+        }
+    }
+}
+
+/// the assessment's issue strings, in the class's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "NaceIssueRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyNaceIssueRow {
+    /// one issue.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyNaceIssueRow {
+    fn __repr__(&self) -> String {
+        format!("NaceIssueRow(message={})", self.message)
+    }
+}
+
+impl From<&azoth_thermal::results::NaceIssueRow> for PyNaceIssueRow {
+    fn from(row: &azoth_thermal::results::NaceIssueRow) -> Self {
+        Self {
+            message: row.message.clone(),
         }
     }
 }

@@ -7,7 +7,8 @@
 
 use azoth_core::units::{
     Area, DynamicViscosity, Frequency, HeatTransfer, Length, MassDensity, Pressure,
-    SpecificHeatCapacity, TemperatureInterval, ThermodynamicTemperature, Time, Velocity,
+    SpecificHeatCapacity, TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Time,
+    Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::Power;
@@ -660,6 +661,281 @@ impl CalcResult for IncrementalZoneAnalysisResult {
         "total_shell_side_pressure_drop",
         "minimum_approach_temperature",
         "zones",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One applied standard, for `thermal.shell_and_tube_design`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AppliedStandardRow {
+    /// The standard's name.
+    pub name: String,
+}
+
+/// One NACE issue, for `thermal.shell_and_tube_design`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NaceIssueRow {
+    /// The issue's message.
+    pub message: String,
+}
+
+/// Result of `thermal.shell_and_tube_design`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellAndTubeDesignResult {
+    /// The designation, echoed.
+    pub tema_designation: String,
+    /// The class's name.
+    pub tema_class: String,
+    /// The shell inside diameter.
+    pub shell_inside_diameter: Length,
+    /// The shell outside diameter.
+    pub shell_outside_diameter: Length,
+    /// The shell wall thickness.
+    pub shell_wall_thickness: Length,
+    /// The shell material specification and grade.
+    pub shell_material: String,
+    /// The shell grade, echoed.
+    pub shell_material_grade: String,
+    /// The shell allowable stress after derating.
+    pub shell_allowable_stress: Pressure,
+    /// The shell minimum yield strength.
+    pub shell_smys: Pressure,
+    /// The joint efficiency, echoed.
+    pub shell_joint_efficiency: f64,
+    /// The area-derived tube count.
+    pub tube_count: f64,
+    /// The standard tube outside diameter.
+    pub tube_outer_diameter: Length,
+    /// The fixed tube wall thickness.
+    pub tube_wall_thickness: Length,
+    /// The tube length, echoed.
+    pub tube_length: Length,
+    /// The passes, echoed.
+    pub tube_passes: f64,
+    /// The tube pitch.
+    pub tube_pitch: Length,
+    /// The pattern description.
+    pub tube_pitch_pattern: String,
+    /// The tube material specification and grade.
+    pub tube_material: String,
+    /// The tube grade, echoed.
+    pub tube_material_grade: String,
+    /// The tube allowable stress after derating.
+    pub tube_allowable_stress: Pressure,
+    /// The tube material's conductivity.
+    pub tube_thermal_conductivity: ThermalConductivity,
+    /// The baffle description.
+    pub baffle_type: String,
+    /// The baffle count.
+    pub baffle_count: f64,
+    /// The baffle spacing.
+    pub baffle_spacing: Length,
+    /// The baffle cut.
+    pub baffle_cut: f64,
+    /// The required area, echoed.
+    pub required_area: Area,
+    /// The actual outside area.
+    pub actual_area: Area,
+    /// `(actual - required)/required`.
+    pub area_margin: f64,
+    /// The UHX-13 tubesheet thickness.
+    pub tubesheet_thickness_uhx: Length,
+    /// The shell MAWP.
+    pub mawp_shell_side: Pressure,
+    /// The tube MAWP.
+    pub mawp_tube_side: Pressure,
+    /// The shell hydrotest pressure.
+    pub hydro_test_pressure_shell: Pressure,
+    /// The tube hydrotest pressure.
+    pub hydro_test_pressure_tube: Pressure,
+    /// The available nozzle reinforcement area.
+    pub nozzle_reinforcement_area: Area,
+    /// Whether the reinforcement is adequate.
+    pub nozzle_reinforcement_adequate: bool,
+    /// Whether the H2S partial pressure exceeds the threshold.
+    pub sour_service_required: bool,
+    /// The stated H2S partial pressure, when the assessment runs.
+    pub h2s_partial_pressure: Option<Pressure>,
+    /// The shell compliance flag.
+    pub shell_nace_compliant: bool,
+    /// The tube compliance flag.
+    pub tube_nace_compliant: bool,
+    /// The shell hardness in HV.
+    pub shell_max_hardness: f64,
+    /// The tube hardness in HV.
+    pub tube_max_hardness: f64,
+    /// The assessment's issues.
+    pub nace_issues: Vec<NaceIssueRow>,
+    /// The standards the pipeline applied.
+    pub applied_standards: Vec<AppliedStandardRow>,
+    /// The thermal block's tube-side coefficient.
+    pub tube_side_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The thermal block's shell-side coefficient.
+    pub shell_side_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The thermal block's overall coefficient.
+    pub overall_heat_transfer_coefficient: Option<HeatTransfer>,
+    /// The thermal block's tube-side drop.
+    pub tube_side_pressure_drop: Option<Pressure>,
+    /// The thermal block's shell-side drop.
+    pub shell_side_pressure_drop: Option<Pressure>,
+    /// The thermal block's tube-side velocity.
+    pub tube_side_velocity: Option<Velocity>,
+    /// The thermal block's shell-side velocity.
+    pub shell_side_velocity: Option<Velocity>,
+    /// The thermal block's tube-side Reynolds number.
+    pub tube_side_reynolds: Option<f64>,
+    /// The thermal block's shell-side Reynolds number.
+    pub shell_side_reynolds: Option<f64>,
+    /// The tube flow diameter the thermal block read.
+    pub effective_tube_inside_diameter: Option<Length>,
+    /// The outside area the thermal block read.
+    pub outside_heat_transfer_area: Option<Area>,
+    /// The deposit resistance on the outside area.
+    pub tube_fouling_layer_resistance_outside: Option<f64>,
+    /// The Bell-Delaware baffle-cut factor.
+    pub jc: Option<f64>,
+    /// The Bell-Delaware leakage factor.
+    pub jl: Option<f64>,
+    /// The Bell-Delaware bypass factor.
+    pub jb: Option<f64>,
+    /// The Bell-Delaware spacing factor.
+    pub js: Option<f64>,
+    /// The Bell-Delaware adverse-gradient factor.
+    pub jr: Option<f64>,
+    /// Whether the vibration screen passed.
+    pub passed: Option<bool>,
+    /// The first natural frequency.
+    pub natural_frequency: Option<Frequency>,
+    /// The shedding frequency.
+    pub vortex_shedding_frequency: Option<Frequency>,
+    /// `f_vs/f_n`.
+    pub vortex_shedding_ratio: Option<f64>,
+    /// Whether the shedding ratio is in its band.
+    pub vortex_shedding_critical: Option<bool>,
+    /// Connors' critical velocity.
+    pub critical_velocity: Option<Velocity>,
+    /// The velocity ratio.
+    pub velocity_ratio: Option<f64>,
+    /// Whether the velocity ratio exceeds one.
+    pub fluid_elastic_critical: Option<bool>,
+    /// The acoustic frequency.
+    pub acoustic_frequency: Option<Frequency>,
+    /// `f_vs/f_ac`.
+    pub acoustic_ratio: Option<f64>,
+    /// Whether the acoustic ratio is in its band.
+    pub acoustic_critical: Option<bool>,
+    /// The shell metal mass.
+    pub shell_weight: f64,
+    /// The tube metal mass.
+    pub tube_weight: f64,
+    /// The tubesheet mass.
+    pub tubesheet_weight: f64,
+    /// The heads' mass.
+    pub head_weight: f64,
+    /// The baffles' mass.
+    pub baffle_weight: f64,
+    /// The dry mass.
+    pub total_dry_weight: f64,
+    /// The operating mass.
+    pub operating_weight: f64,
+    /// The material cost in USD.
+    pub material_cost: f64,
+    /// The fabrication cost in USD.
+    pub fabrication_cost: f64,
+    /// The total cost in USD.
+    pub total_cost: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ShellAndTubeDesignResult {
+    const CALC_ID: &'static str = "thermal.shell_and_tube_design";
+    const FIELDS: &'static [&'static str] = &[
+        "tema_designation",
+        "tema_class",
+        "shell_inside_diameter",
+        "shell_outside_diameter",
+        "shell_wall_thickness",
+        "shell_material",
+        "shell_material_grade",
+        "shell_allowable_stress",
+        "shell_smys",
+        "shell_joint_efficiency",
+        "tube_count",
+        "tube_outer_diameter",
+        "tube_wall_thickness",
+        "tube_length",
+        "tube_passes",
+        "tube_pitch",
+        "tube_pitch_pattern",
+        "tube_material",
+        "tube_material_grade",
+        "tube_allowable_stress",
+        "tube_thermal_conductivity",
+        "baffle_type",
+        "baffle_count",
+        "baffle_spacing",
+        "baffle_cut",
+        "required_area",
+        "actual_area",
+        "area_margin",
+        "tubesheet_thickness_uhx",
+        "mawp_shell_side",
+        "mawp_tube_side",
+        "hydro_test_pressure_shell",
+        "hydro_test_pressure_tube",
+        "nozzle_reinforcement_area",
+        "nozzle_reinforcement_adequate",
+        "sour_service_required",
+        "h2s_partial_pressure",
+        "shell_nace_compliant",
+        "tube_nace_compliant",
+        "shell_max_hardness",
+        "tube_max_hardness",
+        "nace_issues",
+        "applied_standards",
+        "tube_side_heat_transfer_coefficient",
+        "shell_side_heat_transfer_coefficient",
+        "overall_heat_transfer_coefficient",
+        "tube_side_pressure_drop",
+        "shell_side_pressure_drop",
+        "tube_side_velocity",
+        "shell_side_velocity",
+        "tube_side_reynolds",
+        "shell_side_reynolds",
+        "effective_tube_inside_diameter",
+        "outside_heat_transfer_area",
+        "tube_fouling_layer_resistance_outside",
+        "jc",
+        "jl",
+        "jb",
+        "js",
+        "jr",
+        "passed",
+        "natural_frequency",
+        "vortex_shedding_frequency",
+        "vortex_shedding_ratio",
+        "vortex_shedding_critical",
+        "critical_velocity",
+        "velocity_ratio",
+        "fluid_elastic_critical",
+        "acoustic_frequency",
+        "acoustic_ratio",
+        "acoustic_critical",
+        "shell_weight",
+        "tube_weight",
+        "tubesheet_weight",
+        "head_weight",
+        "baffle_weight",
+        "total_dry_weight",
+        "operating_weight",
+        "material_cost",
+        "fabrication_cost",
+        "total_cost",
         "warnings",
     ];
 

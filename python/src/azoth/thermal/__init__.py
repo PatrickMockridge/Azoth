@@ -26,6 +26,7 @@ from azoth.core.result import (
     IncrementalZoneAnalysisResult,
     LmtdCorrectionFactorResult,
     ShahCondensationResult,
+    ShellAndTubeDesignResult,
     ShellAndTubeRatingResult,
     ShellAndTubeVibrationResult,
     TemaStandardResult,
@@ -42,6 +43,7 @@ __all__ = [
     "incremental_zone_analysis",
     "lmtd_correction_factor",
     "shah_condensation",
+    "shell_and_tube_design",
     "shell_and_tube_rating",
     "shell_and_tube_vibration",
     "tema_standard",
@@ -56,6 +58,7 @@ _FOULING_MODEL = "thermal.fouling_model"
 _INCREMENTAL_ZONE_ANALYSIS = "thermal.incremental_zone_analysis"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
+_SHELL_AND_TUBE_DESIGN = "thermal.shell_and_tube_design"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
 _SHELL_AND_TUBE_VIBRATION = "thermal.shell_and_tube_vibration"
 _TEMA_STANDARD = "thermal.tema_standard"
@@ -609,4 +612,81 @@ def incremental_zone_analysis(
         fouling_tube=fouling_tube,
         fouling_shell=fouling_shell,
         zones=zones,
+    )
+
+
+def shell_and_tube_design(
+    tema_designation: str,
+    tema_class: str,
+    required_area: Q,
+    shell_side_pressure: Q,
+    tube_side_pressure: Q,
+    design_temperature: Q,
+    shell_material_grade: str,
+    tube_material_grade: str,
+    tube_size: str,
+    tube_length: Q,
+    tube_passes: float,
+    shell_joint_efficiency: float,
+    nozzle_diameter: Q,
+    nozzle_wall_thickness: Q,
+    sour_service_assessment: bool,
+    h2s_partial_pressure: Q | None = None,
+    fouling_tube: float | None = None,
+    fouling_shell: float | None = None,
+    shell_side_method: str | None = None,
+    tube_side_density: Q | None = None,
+    tube_side_viscosity: Q | None = None,
+    tube_side_cp: Q | None = None,
+    tube_side_conductivity: Q | None = None,
+    tube_side_mass_flow: Q | None = None,
+    shell_side_density: Q | None = None,
+    shell_side_viscosity: Q | None = None,
+    shell_side_cp: Q | None = None,
+    shell_side_conductivity: Q | None = None,
+    shell_side_mass_flow: Q | None = None,
+) -> ShellAndTubeDesignResult:
+    """The detailed TEMA/ASME VIII/NACE shell-and-tube design loop.
+
+    The five tube-side and five shell-side properties are all-or-none; stating either side
+    turns the thermal and vibration block on. ``fouling_tube`` and ``fouling_shell`` are in
+    m**2*K/W and declared dimensionless.
+
+    Raises:
+        InvalidInputError: for a designation that is not three declared letters, a
+            non-integral pass count, or a partial thermal side.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.shell_and_tube_design`.
+    """
+    return resolve(_SHELL_AND_TUBE_DESIGN)(  # type: ignore[no-any-return]
+        tema_designation=tema_designation,
+        tema_class=tema_class,
+        required_area=required_area,
+        shell_side_pressure=shell_side_pressure,
+        tube_side_pressure=tube_side_pressure,
+        design_temperature=design_temperature,
+        shell_material_grade=shell_material_grade,
+        tube_material_grade=tube_material_grade,
+        tube_size=tube_size,
+        tube_length=tube_length,
+        tube_passes=tube_passes,
+        shell_joint_efficiency=shell_joint_efficiency,
+        nozzle_diameter=nozzle_diameter,
+        nozzle_wall_thickness=nozzle_wall_thickness,
+        sour_service_assessment=sour_service_assessment,
+        h2s_partial_pressure=h2s_partial_pressure,
+        fouling_tube=fouling_tube,
+        fouling_shell=fouling_shell,
+        shell_side_method=shell_side_method,
+        tube_side_density=tube_side_density,
+        tube_side_viscosity=tube_side_viscosity,
+        tube_side_cp=tube_side_cp,
+        tube_side_conductivity=tube_side_conductivity,
+        tube_side_mass_flow=tube_side_mass_flow,
+        shell_side_density=shell_side_density,
+        shell_side_viscosity=shell_side_viscosity,
+        shell_side_cp=shell_side_cp,
+        shell_side_conductivity=shell_side_conductivity,
+        shell_side_mass_flow=shell_side_mass_flow,
     )

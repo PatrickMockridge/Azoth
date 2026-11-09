@@ -388,6 +388,7 @@ Five sections, and the difference between them is the point:
 - [`thermal.incremental_zone_analysis`](./thermal/incremental_zone_analysis.md)
 - [`thermal.lmtd_correction_factor`](./thermal/lmtd_correction_factor.md)
 - [`thermal.shah_condensation`](./thermal/shah_condensation.md)
+- [`thermal.shell_and_tube_design`](./thermal/shell_and_tube_design.md)
 - [`thermal.shell_and_tube_rating`](./thermal/shell_and_tube_rating.md)
 - [`thermal.shell_and_tube_vibration`](./thermal/shell_and_tube_vibration.md)
 - [`thermal.tema_standard`](./thermal/tema_standard.md)

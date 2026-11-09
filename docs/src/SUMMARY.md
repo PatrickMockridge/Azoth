@@ -302,6 +302,7 @@
   - [A shell-and-tube exchanger's incremental zone analysis](./thermal/incremental_zone_analysis.md)
   - [The LMTD correction factor for a shell-and-tube exchanger](./thermal/lmtd_correction_factor.md)
   - [In-tube condensation heat transfer, Shah's correlation](./thermal/shah_condensation.md)
+  - [A shell-and-tube exchanger's detailed TEMA design](./thermal/shell_and_tube_design.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)
   - [A shell-and-tube exchanger's tube-vibration screen](./thermal/shell_and_tube_vibration.md)
   - [TEMA configuration, class limits and layout rules](./thermal/tema_standard.md)

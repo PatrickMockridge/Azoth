@@ -506,6 +506,18 @@ class IncrementalZoneRow:
     cold_outlet_temp: Qty
 
 @final
+class NaceIssueRow:
+    """the assessment's issue strings, in the class's order."""
+
+    message: str
+
+@final
+class AppliedStandardRow:
+    """the standards the pipeline applied, in the class's order."""
+
+    name: str
+
+@final
 class ZoneRatingRow:
     """one row per zone, in the input order."""
 
@@ -3911,6 +3923,91 @@ class ShahCondensationResult:
     warnings: list[Warning]
 
 @final
+class ShellAndTubeDesignResult:
+    tema_designation: str
+    tema_class: str
+    shell_inside_diameter: Qty
+    shell_outside_diameter: Qty
+    shell_wall_thickness: Qty
+    shell_material: str
+    shell_material_grade: str
+    shell_allowable_stress: Qty
+    shell_smys: Qty
+    shell_joint_efficiency: float
+    tube_count: float
+    tube_outer_diameter: Qty
+    tube_wall_thickness: Qty
+    tube_length: Qty
+    tube_passes: float
+    tube_pitch: Qty
+    tube_pitch_pattern: str
+    tube_material: str
+    tube_material_grade: str
+    tube_allowable_stress: Qty
+    tube_thermal_conductivity: Qty
+    baffle_type: str
+    baffle_count: float
+    baffle_spacing: Qty
+    baffle_cut: float
+    required_area: Qty
+    actual_area: Qty
+    area_margin: float
+    tubesheet_thickness_uhx: Qty
+    mawp_shell_side: Qty
+    mawp_tube_side: Qty
+    hydro_test_pressure_shell: Qty
+    hydro_test_pressure_tube: Qty
+    nozzle_reinforcement_area: Qty
+    nozzle_reinforcement_adequate: bool
+    sour_service_required: bool
+    h2s_partial_pressure: Qty | None
+    shell_nace_compliant: bool
+    tube_nace_compliant: bool
+    shell_max_hardness: float
+    tube_max_hardness: float
+    nace_issues: list[NaceIssueRow]
+    applied_standards: list[AppliedStandardRow]
+    tube_side_heat_transfer_coefficient: Qty | None
+    shell_side_heat_transfer_coefficient: Qty | None
+    overall_heat_transfer_coefficient: Qty | None
+    tube_side_pressure_drop: Qty | None
+    shell_side_pressure_drop: Qty | None
+    tube_side_velocity: Qty | None
+    shell_side_velocity: Qty | None
+    tube_side_reynolds: float | None
+    shell_side_reynolds: float | None
+    effective_tube_inside_diameter: Qty | None
+    outside_heat_transfer_area: Qty | None
+    tube_fouling_layer_resistance_outside: float | None
+    jc: float | None
+    jl: float | None
+    jb: float | None
+    js: float | None
+    jr: float | None
+    passed: bool | None
+    natural_frequency: Qty | None
+    vortex_shedding_frequency: Qty | None
+    vortex_shedding_ratio: float | None
+    vortex_shedding_critical: bool | None
+    critical_velocity: Qty | None
+    velocity_ratio: float | None
+    fluid_elastic_critical: bool | None
+    acoustic_frequency: Qty | None
+    acoustic_ratio: float | None
+    acoustic_critical: bool | None
+    shell_weight: Qty
+    tube_weight: Qty
+    tubesheet_weight: Qty
+    head_weight: Qty
+    baffle_weight: Qty
+    total_dry_weight: Qty
+    operating_weight: Qty
+    material_cost: float
+    fabrication_cost: float
+    total_cost: float
+    warnings: list[Warning]
+
+@final
 class ShellAndTubeRatingResult:
     tube_side_heat_transfer_coefficient: Qty
     shell_side_heat_transfer_coefficient: Qty
@@ -6914,6 +7011,37 @@ def shah_condensation(
     quality_out: float,
     intervals: float | None = None,
 ) -> ShahCondensationResult: ...
+def shell_and_tube_design(
+    tema_designation: str,
+    tema_class: str,
+    required_area: float,
+    shell_side_pressure: float,
+    tube_side_pressure: float,
+    design_temperature: float,
+    shell_material_grade: str,
+    tube_material_grade: str,
+    tube_size: str,
+    tube_length: float,
+    tube_passes: float,
+    shell_joint_efficiency: float,
+    nozzle_diameter: float,
+    nozzle_wall_thickness: float,
+    sour_service_assessment: bool,
+    h2s_partial_pressure: float | None = None,
+    fouling_tube: float | None = None,
+    fouling_shell: float | None = None,
+    shell_side_method: str | None = None,
+    tube_side_density: float | None = None,
+    tube_side_viscosity: float | None = None,
+    tube_side_cp: float | None = None,
+    tube_side_conductivity: float | None = None,
+    tube_side_mass_flow: float | None = None,
+    shell_side_density: float | None = None,
+    shell_side_viscosity: float | None = None,
+    shell_side_cp: float | None = None,
+    shell_side_conductivity: float | None = None,
+    shell_side_mass_flow: float | None = None,
+) -> ShellAndTubeDesignResult: ...
 def shell_and_tube_rating(
     tube_outside_diameter: float,
     tube_inside_diameter: float,

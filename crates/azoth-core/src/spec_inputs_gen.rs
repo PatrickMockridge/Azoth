@@ -274,6 +274,7 @@
 //!   - specs/calcs/thermal/incremental_zone_analysis.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shah_condensation.toml
+//!   - specs/calcs/thermal/shell_and_tube_design.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
 //!   - specs/calcs/thermal/shell_and_tube_vibration.toml
 //!   - specs/calcs/thermal/tema_standard.toml
@@ -4831,6 +4832,104 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("thermal.shah_condensation", "quality_in", "dimensionless"),
     ("thermal.shah_condensation", "quality_out", "dimensionless"),
     ("thermal.shah_condensation", "intervals", "dimensionless"),
+    ("thermal.shell_and_tube_design", "required_area", "area"),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_pressure",
+        "pressure",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_pressure",
+        "pressure",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "design_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("thermal.shell_and_tube_design", "tube_length", "length"),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_passes",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_joint_efficiency",
+        "dimensionless",
+    ),
+    ("thermal.shell_and_tube_design", "nozzle_diameter", "length"),
+    (
+        "thermal.shell_and_tube_design",
+        "nozzle_wall_thickness",
+        "length",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "h2s_partial_pressure",
+        "pressure",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "fouling_tube",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "fouling_shell",
+        "dimensionless",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "tube_side_mass_flow",
+        "mass_rate",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_density",
+        "mass_density",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_cp",
+        "specific_heat_capacity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.shell_and_tube_design",
+        "shell_side_mass_flow",
+        "mass_rate",
+    ),
     (
         "thermal.shell_and_tube_rating",
         "tube_outside_diameter",

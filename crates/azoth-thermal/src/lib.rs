@@ -15,11 +15,13 @@ pub mod incremental_zone_analysis;
 pub mod lmtd_correction_factor;
 pub mod results;
 pub mod shah_condensation;
+pub mod shell_and_tube_design;
 pub mod shell_and_tube_rating;
 pub mod shell_and_tube_vibration;
 pub mod spec_gen;
 pub mod tema_standard;
 pub mod tube_insert_model;
+pub mod tube_materials;
 pub mod two_phase_pressure_drop;
 pub mod zone_rating;
 
@@ -34,10 +36,13 @@ pub use lmtd_correction_factor::{LmtdRequest, lmtd_correction_factor, rate as lm
 pub use results::{
     BoilingHeatTransferResult, ConductionPlaneWallResult, FoulingModelResult,
     IncrementalZoneAnalysisResult, LmtdCorrectionFactorResult, ShahCondensationResult,
-    ShellAndTubeRatingResult, ShellAndTubeVibrationResult, TemaStandardResult,
-    TubeInsertModelResult, TwoPhasePressureDropResult, ZoneRatingResult,
+    ShellAndTubeDesignResult, ShellAndTubeRatingResult, ShellAndTubeVibrationResult,
+    TemaStandardResult, TubeInsertModelResult, TwoPhasePressureDropResult, ZoneRatingResult,
 };
 pub use shah_condensation::{ShahRequest, shah_condensation};
+pub use shell_and_tube_design::{
+    ShellAndTubeDesignRequest, rate as shell_and_tube_design_rate, shell_and_tube_design,
+};
 pub use shell_and_tube_rating::{RatingRequest, ShellSideMethod, rate, shell_and_tube_rating};
 pub use shell_and_tube_vibration::{
     VibrationRequest, rate as vibration_rate, shell_and_tube_vibration,

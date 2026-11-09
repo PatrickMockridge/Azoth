@@ -24,6 +24,14 @@ class ActivityCoefficientRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AppliedStandardRow:
+    """the standards the pipeline applied, in the class's order."""
+
+    #: one standard.
+    name: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class BrineMixingPointRow:
     """One row per mixing fraction, from all brine A to all brine B."""
 
@@ -541,6 +549,14 @@ class MineralEquilibriumRow:
 
     #: Whether a limiting ion was exhausted while solid was present.
     limiting_ion_exhausted: bool
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class NaceIssueRow:
+    """the assessment's issue strings, in the class's order."""
+
+    #: one issue.
+    message: str
 
 
 @dataclass(frozen=True, slots=True, eq=False)
