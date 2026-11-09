@@ -179,7 +179,10 @@ pub fn cooler(
             "actuator_time_constant",
             actuator_time_constant.map(|v| v.value),
         ),
-        ("thermal_time_constant", thermal_time_constant.map(|v| v.value)),
+        (
+            "thermal_time_constant",
+            thermal_time_constant.map(|v| v.value),
+        ),
         ("cooling_valve_opening", cooling_valve_opening),
         ("requested_valve_opening", requested_valve_opening),
     ] {

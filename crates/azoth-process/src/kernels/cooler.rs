@@ -1,8 +1,8 @@
 //! `unit_ops.cooler` - `unit_ops.heater`'s arithmetic, with the sign a cooler implies.
 
+use azoth_core::AzothError;
 use azoth_core::Result;
 use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, kelvins, pascals};
-use azoth_core::AzothError;
 
 use crate::kernels::heater::{HeaterOutcome, heater};
 use crate::stream::Stream;
@@ -52,7 +52,7 @@ pub struct CoolerTransientSettings {
     pub cooling_valve_opening_percent: f64,
     /// The controller's response for this step; absent is the step-initial opening.
     pub requested_valve_opening_percent: Option<f64>,
-    /// The carried outlet temperature; absent or NaN seeds to the equilibrium.
+    /// The carried outlet temperature; absent or NaN seeds to the design outlet.
     pub dynamic_outlet_temperature_k: Option<f64>,
     /// The pressure loss across the cooler, Pa.
     pub pressure_drop_pa: Option<f64>,
@@ -89,7 +89,10 @@ pub fn cooler_transient(
     if !feed.n.is_finite() || feed.n <= 0.0 {
         return Err(AzothError::invalid_input(
             "inlet_n",
-            format!("a unit operation needs a positive molar flow, and {} mol/s is not", feed.n),
+            format!(
+                "a unit operation needs a positive molar flow, and {} mol/s is not",
+                feed.n
+            ),
         ));
     }
     let dt = settings.time_step_s;
@@ -197,7 +200,8 @@ pub fn cooler_transient(
     } else {
         1.0
     };
-    let outlet_t = (previous + thermal * (equilibrium - previous)).clamp(medium.min(inlet_t), inlet_t);
+    let outlet_t =
+        (previous + thermal * (equilibrium - previous)).clamp(medium.min(inlet_t), inlet_t);
 
     let outcome = heater(
         feed,
