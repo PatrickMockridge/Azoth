@@ -54,3 +54,42 @@ fn a_configured_mesh_pad_turns_its_flag_on() {
     let error = (diameter - 0.603_241_350_383_609_7).abs() / 0.603_241_350_383_609_7;
     assert!(error <= 2.0e-4, "sizeFromFlow: {diameter} ({error:.3e})");
 }
+
+/// A unit operation needs a flow: the mechanical design divides by it.
+#[test]
+fn a_non_positive_feed_flow_is_refused() {
+    use azoth_core::AzothError;
+
+    for feed_n in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        let error = gas_scrubber(
+            &names(),
+            feed_n,
+            &[0.7, 0.1, 0.1, 0.1],
+            pascals(2_000_000.0),
+            kelvins(298.15),
+            pascals(0.0),
+            0.0,
+            Some(meters(0.515_375_309_329_634_3)),
+            Some(meters_per_second(0.11)),
+            None,
+            Some(true),
+            Some("vertical"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(1.5),
+            Some(0.208_610_948_791_937),
+            Some(0.15),
+            Some(meters(0.75)),
+        )
+        .expect_err("a non-positive feed flow is refused");
+        assert!(
+            matches!(error, AzothError::OutOfRange { .. }),
+            "feed_n={feed_n}: {error:?}"
+        );
+        assert_eq!(error.field(), Some("feed_n"), "feed_n={feed_n}");
+    }
+}

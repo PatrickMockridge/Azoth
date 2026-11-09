@@ -108,7 +108,8 @@ def gas_scrubber(
         InvalidInputError: where the pressure drop takes the outlet below zero, the
             entrainment fraction is outside ``[0, 1]``, only one of the two mechanical
             inputs is stated, or the state makes the capacity metric undefined.
-        OutOfRangeError: for a pressure drop or a fraction the spec bounds.
+        OutOfRangeError: for a non-positive feed flow, or a pressure drop or fraction the
+            spec bounds.
 
     Example:
         >>> import azoth
@@ -237,6 +238,8 @@ def gas_scrubber(
             f"a pressure drop of {drop} Pa takes a {p} Pa inlet to {p_out} Pa, which is "
             f"not a pressure",
         )
+    if not math.isfinite(n) or not n > 0.0:
+        raise OutOfRangeError("feed_n", n, "a unit operation needs a positive molar flow")
 
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
 

@@ -228,8 +228,8 @@ pub fn compressor_polytropic(
 /// efficiency instead. The outlet pressure still comes from the caller.
 ///
 /// # Errors
-/// [`azoth_core::AzothError::InvalidInput`] for a non-positive power or a non-increasing
-/// pressure; whatever the flashes refuse.
+/// [`azoth_core::AzothError::InvalidInput`] for a non-positive power, a non-positive inlet
+/// flow, or a non-increasing pressure; whatever the flashes refuse.
 pub fn compressor_with_power(
     feed: &Stream,
     outlet_pressure: Pressure,
@@ -251,6 +251,16 @@ pub fn compressor_with_power(
             format!(
                 "the power branch compresses, and it is given {} Pa against the inlet's {} Pa",
                 outlet_pressure.value, feed.p.value
+            ),
+        ));
+    }
+    if !feed.n.is_finite() || feed.n <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "inlet_n",
+            format!(
+                "the power branch divides the shaft work by the flow, and {} mol/s is not a \
+                 positive flow",
+                feed.n
             ),
         ));
     }

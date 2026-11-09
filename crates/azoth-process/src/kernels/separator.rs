@@ -86,6 +86,16 @@ pub fn separator(
         ));
     }
 
+    // **A zero flow is not a state**, and the heat-per-mole divides by it. The Python
+    // arithmetic refuses `feed_n <= 0` the same way; a NaN is left to the flash.
+    if feed.n <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "feed_n",
+            feed.n,
+            "a unit operation needs a positive molar flow",
+        ));
+    }
+
     let (mixture, ideal_gas) = feed.mixture()?;
 
     let (temperature, x, y, beta) = match heat_input.filter(|power| power.value != 0.0) {

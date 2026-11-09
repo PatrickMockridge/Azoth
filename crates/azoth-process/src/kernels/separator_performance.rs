@@ -714,7 +714,10 @@ impl Default for PerformanceOutcome {
 /// on a type that does not read one. The declared bounds keep the class's degenerate cut
 /// (`f64::MAX`) unreachable.
 pub fn separator_performance(settings: &PerformanceSettings) -> Result<PerformanceOutcome> {
-    if settings.enhanced {
+    // **The enhanced chain needs a liquid**: it divides by the liquid viscosity and takes the
+    // logarithm of a diameter that comes from it. With both liquid densities zero the spec's
+    // answer is the standard path's, where every fraction is zero.
+    if settings.enhanced && (settings.oil_density > 0.0 || settings.water_density > 0.0) {
         calculate_enhanced(settings)
     } else {
         calculate_standard(settings)

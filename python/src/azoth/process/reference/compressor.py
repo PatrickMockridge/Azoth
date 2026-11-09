@@ -971,13 +971,22 @@ def _power_states(
     n: float,
     polytropic_efficiency: float | None,
 ) -> tuple[float, Q, float]:
-    """``setPower``'s fixed-shaft-work branch: ``h_out = h_in + power / n``."""
+    """``setPower``'s fixed-shaft-work branch: ``h_out = h_in + power / n``.
+
+    The step is per mole, so a non-positive flow has no step and is refused on `inlet_n`.
+    """
     if not (math.isfinite(power) and power > 0.0):
         raise InvalidInputError("power", f"a fixed shaft power is positive, and {power} W is not")
     if p_out <= p:
         raise InvalidInputError(
             "outlet_pressure",
             f"the power branch compresses, and it is given {p_out} Pa against the inlet's {p} Pa",
+        )
+    if not math.isfinite(n) or not n > 0.0:
+        raise InvalidInputError(
+            "inlet_n",
+            f"the power branch divides the shaft work by the flow, and {n} mol/s is not a "
+            "positive flow",
         )
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)

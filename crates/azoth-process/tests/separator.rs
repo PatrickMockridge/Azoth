@@ -501,3 +501,23 @@ fn the_vertical_and_dry_gas_edges() {
         "the dry-gas diameter",
     );
 }
+
+/// The kernel's own flow refusal, which the model's guard would hide from the sweep.
+#[test]
+fn a_zero_feed_flow_is_refused_by_the_kernel() {
+    use azoth_core::AzothError;
+    use azoth_process::Stream;
+
+    let feed = Stream::from_pt(
+        names(),
+        vec![0.9, 0.1],
+        0.0,
+        pascals(2_000_000.0),
+        kelvins(300.0),
+    )
+    .expect("the feed's state flashes");
+    let error = azoth_process::kernels::separator::separator(&feed, pascals(0.0), 0.0, None)
+        .expect_err("a unit operation needs a positive molar flow");
+    assert!(matches!(error, AzothError::OutOfRange { .. }), "{error:?}");
+    assert_eq!(error.field(), Some("feed_n"));
+}

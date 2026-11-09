@@ -1260,7 +1260,10 @@ def separator_performance(
         None if coalescer is None else _Curve.resolve("oil_water_coalescer", coalescer)
     )
 
-    if enhanced:
+    # **The enhanced chain needs a liquid**: it divides by the liquid viscosity and takes the
+    # logarithm of a diameter that comes from it. With both liquid densities zero the spec's
+    # answer is the standard path's, where every fraction is zero.
+    if enhanced and (oil_rho > 0.0 or water_rho > 0.0):
         return _enhanced_result(
             warnings,
             gas_rho,

@@ -236,6 +236,14 @@ pub fn gas_scrubber(
         ));
     }
 
+    if !feed_n.is_finite() || feed_n <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "feed_n",
+            feed_n,
+            "a unit operation needs a positive molar flow",
+        ));
+    }
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let (vapour, liquid) = kernel(&feed, pressure_drop, gas_in_liquid, heat_input)?;
 

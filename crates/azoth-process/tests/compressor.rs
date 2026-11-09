@@ -786,3 +786,50 @@ fn a_negative_flash_vapour_stream_reports_its_own_density() {
     let error = (density - 14.627168353749346).abs() / 14.627168353749346;
     assert!(error <= 1.0e-6, "density: {density} ({error:.3e})");
 }
+
+/// The fixed-power branch's step is per mole, so a zero or non-finite flow has no step.
+#[test]
+fn the_power_branch_needs_a_positive_flow() {
+    use azoth_core::AzothError;
+    use azoth_core::units::watts;
+
+    for inlet_n in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        let error = compressor(
+            &["methane".to_string(), "n-butane".to_string()],
+            inlet_n,
+            &[0.9, 0.1],
+            pascals(3_000_000.0),
+            kelvins(320.0),
+            Some(pascals(6_000_000.0)),
+            0.75,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(watts(3_000_000.0)),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .expect_err("a fixed power over a non-positive flow is refused");
+        assert!(
+            matches!(error, AzothError::InvalidInput { .. }),
+            "inlet_n={inlet_n}: {error:?}"
+        );
+        assert_eq!(error.field(), Some("inlet_n"), "inlet_n={inlet_n}");
+    }
+}

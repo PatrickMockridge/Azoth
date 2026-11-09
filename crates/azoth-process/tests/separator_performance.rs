@@ -132,3 +132,46 @@ fn the_three_phase_entrainment_is_written_to_both_liquids() {
     assert_eq!(outcome.oil_in_gas, outcome.water_in_gas);
     assert!(outcome.oil_in_gas > 0.0);
 }
+
+/// Both liquid densities zero is the declared absent-phase state: the standard path's zeros.
+#[test]
+fn enhanced_without_a_liquid_answers_the_standard_zeros() {
+    let mut settings = base();
+    settings.oil_density = 0.0;
+    settings.water_density = 0.0;
+    settings.enhanced = true;
+    settings.gas_bubble = Some(distribution(500.0e-6));
+    settings.oil_in_water = Some(distribution(200.0e-6));
+    settings.water_in_oil = Some(distribution(200.0e-6));
+
+    let outcome =
+        separator_performance(&settings).expect("no liquid is the documented zero answer");
+    for (name, value) in [
+        ("oil_in_gas", outcome.oil_in_gas),
+        ("water_in_gas", outcome.water_in_gas),
+        ("gas_in_oil", outcome.gas_in_oil),
+        ("gas_in_water", outcome.gas_in_water),
+        ("oil_in_water", outcome.oil_in_water),
+        ("water_in_oil", outcome.water_in_oil),
+        (
+            "gravity_section_efficiency",
+            outcome.gravity_section_efficiency,
+        ),
+        (
+            "mist_eliminator_efficiency",
+            outcome.mist_eliminator_efficiency,
+        ),
+        (
+            "overall_gas_liquid_efficiency",
+            outcome.overall_gas_liquid_efficiency,
+        ),
+        (
+            "liquid_liquid_gravity_efficiency",
+            outcome.liquid_liquid_gravity_efficiency,
+        ),
+    ] {
+        assert_eq!(value, 0.0, "{name}");
+    }
+    assert!(outcome.geometry.is_none());
+    assert!(outcome.inlet_flow_regime.is_empty());
+}
