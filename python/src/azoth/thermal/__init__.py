@@ -23,6 +23,7 @@ from azoth.core.result import (
     BoilingHeatTransferResult,
     ConductionPlaneWallResult,
     FoulingModelResult,
+    IncrementalZoneAnalysisResult,
     LmtdCorrectionFactorResult,
     ShahCondensationResult,
     ShellAndTubeRatingResult,
@@ -38,6 +39,7 @@ __all__ = [
     "boiling_heat_transfer",
     "conduction_plane_wall",
     "fouling_model",
+    "incremental_zone_analysis",
     "lmtd_correction_factor",
     "shah_condensation",
     "shell_and_tube_rating",
@@ -51,6 +53,7 @@ __all__ = [
 _BOILING_HEAT_TRANSFER = "thermal.boiling_heat_transfer"
 _CONDUCTION_PLANE_WALL = "thermal.conduction_plane_wall"
 _FOULING_MODEL = "thermal.fouling_model"
+_INCREMENTAL_ZONE_ANALYSIS = "thermal.incremental_zone_analysis"
 _LMTD_CORRECTION_FACTOR = "thermal.lmtd_correction_factor"
 _SHAH_CONDENSATION = "thermal.shah_condensation"
 _SHELL_AND_TUBE_RATING = "thermal.shell_and_tube_rating"
@@ -559,5 +562,51 @@ def zone_rating(
         tube_to_baffle_clearance=tube_to_baffle_clearance,
         shell_to_baffle_clearance=shell_to_baffle_clearance,
         bypass_area=bypass_area,
+        zones=zones,
+    )
+
+
+def incremental_zone_analysis(
+    tube_inside_diameter: Q,
+    tube_outside_diameter: Q,
+    tube_length: Q,
+    tube_count: float,
+    tube_passes: float,
+    shell_inside_diameter: Q,
+    baffle_spacing: Q,
+    tube_pitch: Q,
+    triangular_pitch: bool,
+    tube_wall_conductivity: Q,
+    fouling_tube: float,
+    fouling_shell: float,
+    zones: list[dict[str, Any]],
+) -> IncrementalZoneAnalysisResult:
+    """The HTRI-style incremental zone rating.
+
+    The tube side dispatches on each zone's regime - Shah for ``condensing``,
+    Gungor-Winterton for ``evaporating``, the single-phase path for everything else, including
+    ``two_phase`` - and the shell side is always Kern. The zone rows are mappings in the
+    spec's declared units; the optional two-phase fields take the class's defaults.
+
+    Raises:
+        InvalidInputError: for a non-positive geometry or a zone whose regime-read properties
+            are not positive finite.
+        OutOfRangeError: for an input outside the spec's declared bounds.
+
+    See :func:`azoth.thermal.reference.incremental_zone_analysis`.
+    """
+    return resolve(_INCREMENTAL_ZONE_ANALYSIS)(  # type: ignore[no-any-return]
+        tube_inside_diameter=tube_inside_diameter,
+        tube_outside_diameter=tube_outside_diameter,
+        tube_length=tube_length,
+        tube_count=tube_count,
+        tube_passes=tube_passes,
+        shell_inside_diameter=shell_inside_diameter,
+        baffle_spacing=baffle_spacing,
+        tube_pitch=tube_pitch,
+        triangular_pitch=triangular_pitch,
+        tube_wall_conductivity=tube_wall_conductivity,
+        fouling_tube=fouling_tube,
+        fouling_shell=fouling_shell,
         zones=zones,
     )

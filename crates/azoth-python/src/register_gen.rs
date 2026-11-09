@@ -289,6 +289,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyBoilingHeatTransferResult>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::transport_gen::PyFoulingModelResult>()?;
+    m.add_class::<crate::transport_gen::PyIncrementalZoneAnalysisResult>()?;
     m.add_class::<crate::transport_gen::PyLmtdCorrectionFactorResult>()?;
     m.add_class::<crate::transport_gen::PyShahCondensationResult>()?;
     m.add_class::<crate::transport_gen::PyShellAndTubeRatingResult>()?;
@@ -310,6 +311,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyHemReleaseDiagnostic>()?;
     m.add_class::<crate::record_outputs_gen::PyHemReleaseStation>()?;
     m.add_class::<crate::record_outputs_gen::PyHydrateRiskPoint>()?;
+    m.add_class::<crate::record_outputs_gen::PyIncrementalZoneRow>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyLeakBlowdownDiagnostic>()?;
     m.add_class::<crate::record_outputs_gen::PyLeakBlowdownPoint>()?;
@@ -952,6 +954,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::fouling_model, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::incremental_zone_analysis,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::lmtd_correction_factor,
         m

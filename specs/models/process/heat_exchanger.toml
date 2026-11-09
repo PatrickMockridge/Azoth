@@ -14,7 +14,7 @@ assumptions = [
     "**the effectiveness uses the class's Cr≈1 counterflow special case** and the same arrangement relation as the ordinary rating.",
     "**the outlet pressure is the inlet less the correlated drop**, and a drop that exhausts the inlet is refused rather than clamped.",
     "**the PH-flash energy closure is 1e-5 relative**, which is the class's own check.",
-    "**the detailed `ShellAndTubeDesignCalculator` remains outside.** The rating calculator is `thermal.shell_and_tube_rating`, and the zone-by-zone rating `ThermalDesignCalculator.calculateZones` is `thermal.zone_rating`; `IncrementalZoneAnalysis` is still owed.",
+    "**the detailed `ShellAndTubeDesignCalculator` remains outside.** The rating calculator is `thermal.shell_and_tube_rating`, the zone-by-zone rating is `thermal.zone_rating`, and the incremental analysis is `thermal.incremental_zone_analysis`.",
     "**the mechanical design is its thermal estimate only.** The four stream temperatures give an LMTD and an approach, the starting UA is `getUAvalue()`, and five candidate types give their areas and geometry.",
     "**the two-stream branch's sizing coefficient is the type's own typical U**, not the larger of it and a used coefficient as the heater branch takes. The used coefficient is the class's 500: the branch never reads the exchanger's `UAvalue` for it.",
     "**a pinned outlet feeds the estimate a zero duty.** `runSpecifiedStream` writes neither the `duty` field nor the effectiveness, so `determineDuty` sees zero and the effectiveness arm is skipped; the UA still comes from `getUAvalue()`.",

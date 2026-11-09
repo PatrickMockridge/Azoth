@@ -299,6 +299,7 @@
   - [Flow boiling heat transfer, Chen and Gungor-Winterton](./thermal/boiling_heat_transfer.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
   - [Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal](./thermal/fouling_model.md)
+  - [A shell-and-tube exchanger's incremental zone analysis](./thermal/incremental_zone_analysis.md)
   - [The LMTD correction factor for a shell-and-tube exchanger](./thermal/lmtd_correction_factor.md)
   - [In-tube condensation heat transfer, Shah's correlation](./thermal/shah_condensation.md)
   - [A shell-and-tube exchanger's thermal-hydraulic rating](./thermal/shell_and_tube_rating.md)

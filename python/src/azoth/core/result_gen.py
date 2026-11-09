@@ -35,6 +35,7 @@ from azoth.core.record_outputs_gen import (
     HemReleaseDiagnostic,
     HemReleaseStation,
     HydrateRiskPoint,
+    IncrementalZoneRow,
     KComponent,
     LeakBlowdownDiagnostic,
     LeakBlowdownPoint,
@@ -8752,6 +8753,40 @@ class FoulingModelResult(_HasWarnings):
 
     #: `f/8*rho*v**2` with the class's Darcy friction factor.
     wall_shear_stress: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class IncrementalZoneAnalysisResult(_HasWarnings):
+    """Result of ``thermal.incremental_zone_analysis``."""
+
+    CALC_ID: ClassVar[str] = "thermal.incremental_zone_analysis"
+
+    #: the number of zones rated.
+    number_of_zones: float
+
+    #: the sum of the zone areas `duty/(U*LMTD)`.
+    total_required_area: Q
+
+    #: the sum of the zone duties.
+    total_duty: Q
+
+    #: `sum(U*A)/sum(A)`, or zero with no area.
+    weighted_average_u: Q
+
+    #: the sum of the zone tube-side drops.
+    total_tube_side_pressure_drop: Q
+
+    #: the sum of the zone shell-side drops.
+    total_shell_side_pressure_drop: Q
+
+    #: the smallest absolute hot-cold endpoint difference in any zone; `f64::MAX` with no zones.
+    minimum_approach_temperature: Q
+
+    #: one row per zone, in the input order.
+    zones: tuple[IncrementalZoneRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

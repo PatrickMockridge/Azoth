@@ -11,6 +11,7 @@ pub mod bell_delaware;
 pub mod boiling_heat_transfer;
 pub mod conduction_plane_wall;
 pub mod fouling_model;
+pub mod incremental_zone_analysis;
 pub mod lmtd_correction_factor;
 pub mod results;
 pub mod shah_condensation;
@@ -25,12 +26,16 @@ pub mod zone_rating;
 pub use boiling_heat_transfer::{BoilingRequest, boiling_heat_transfer};
 pub use conduction_plane_wall::conduction_plane_wall;
 pub use fouling_model::{FoulingModelType, FoulingRequest, fouling_model};
+pub use incremental_zone_analysis::{
+    IncrementalZoneAnalysisRequest, incremental_zone_analysis,
+    rate as incremental_zone_analysis_rate,
+};
 pub use lmtd_correction_factor::{LmtdRequest, lmtd_correction_factor, rate as lmtd_rate};
 pub use results::{
     BoilingHeatTransferResult, ConductionPlaneWallResult, FoulingModelResult,
-    LmtdCorrectionFactorResult, ShahCondensationResult, ShellAndTubeRatingResult,
-    ShellAndTubeVibrationResult, TemaStandardResult, TubeInsertModelResult,
-    TwoPhasePressureDropResult, ZoneRatingResult,
+    IncrementalZoneAnalysisResult, LmtdCorrectionFactorResult, ShahCondensationResult,
+    ShellAndTubeRatingResult, ShellAndTubeVibrationResult, TemaStandardResult,
+    TubeInsertModelResult, TwoPhasePressureDropResult, ZoneRatingResult,
 };
 pub use shah_condensation::{ShahRequest, shah_condensation};
 pub use shell_and_tube_rating::{RatingRequest, ShellSideMethod, rate, shell_and_tube_rating};

@@ -18,10 +18,10 @@ use crate::record_outputs_gen::{
     PyChemicalWarningRow, PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample,
     PyFlowlineScaleSegment, PyHeatExchangerMechanicalType, PyHeaterInstrument,
     PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
-    PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint, PyMineralEquilibriumRow,
-    PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow,
-    PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult,
-    PyZoneRatingRow,
+    PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint,
+    PyMineralEquilibriumRow, PyRemediationOptionRow, PyScaleControlRiskRow, PyScaleControlRow,
+    PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow, PySubFraction,
+    PyWaterMixingResult, PyZoneRatingRow,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -21943,6 +21943,97 @@ impl From<&azoth_thermal::results::FoulingModelResult> for PyFoulingModelResult 
                 magnitude_si: r.wall_shear_stress.value,
                 unit: "Pa".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.incremental_zone_analysis`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IncrementalZoneAnalysisResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIncrementalZoneAnalysisResult {
+    /// the number of zones rated.
+    #[pyo3(get)]
+    pub number_of_zones: f64,
+    /// the sum of the zone areas `duty/(U*LMTD)`.
+    #[pyo3(get)]
+    pub total_required_area: PyQty,
+    /// the sum of the zone duties.
+    #[pyo3(get)]
+    pub total_duty: PyQty,
+    /// `sum(U*A)/sum(A)`, or zero with no area.
+    #[pyo3(get)]
+    pub weighted_average_u: PyQty,
+    /// the sum of the zone tube-side drops.
+    #[pyo3(get)]
+    pub total_tube_side_pressure_drop: PyQty,
+    /// the sum of the zone shell-side drops.
+    #[pyo3(get)]
+    pub total_shell_side_pressure_drop: PyQty,
+    /// the smallest absolute hot-cold endpoint difference in any zone; `f64::MAX` with no zones.
+    #[pyo3(get)]
+    pub minimum_approach_temperature: PyQty,
+    /// one row per zone, in the input order.
+    #[pyo3(get)]
+    pub zones: Vec<PyIncrementalZoneRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIncrementalZoneAnalysisResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IncrementalZoneAnalysisResult(number_of_zones={:?}, total_required_area={:?}, total_duty={:?}, weighted_average_u={:?}, total_tube_side_pressure_drop={:?}, total_shell_side_pressure_drop={:?}, minimum_approach_temperature={:?}, zones={:?}, {} warning(s))",
+            self.number_of_zones,
+            self.total_required_area,
+            self.total_duty,
+            self.weighted_average_u,
+            self.total_tube_side_pressure_drop,
+            self.total_shell_side_pressure_drop,
+            self.minimum_approach_temperature,
+            self.zones,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::IncrementalZoneAnalysisResult>
+    for PyIncrementalZoneAnalysisResult
+{
+    fn from(r: &azoth_thermal::results::IncrementalZoneAnalysisResult) -> Self {
+        Self {
+            number_of_zones: r.number_of_zones,
+            total_required_area: PyQty {
+                magnitude_si: r.total_required_area.value,
+                unit: "m**2".to_string(),
+            },
+            total_duty: PyQty {
+                magnitude_si: r.total_duty.value,
+                unit: "W".to_string(),
+            },
+            weighted_average_u: PyQty {
+                magnitude_si: r.weighted_average_u.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            total_tube_side_pressure_drop: PyQty {
+                magnitude_si: r.total_tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            total_shell_side_pressure_drop: PyQty {
+                magnitude_si: r.total_shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            minimum_approach_temperature: PyQty {
+                magnitude_si: r.minimum_approach_temperature.value,
+                unit: "K".to_string(),
+            },
+            zones: r.zones.iter().map(PyIncrementalZoneRow::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

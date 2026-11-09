@@ -525,3 +525,145 @@ impl CalcResult for ZoneRatingResult {
         &self.warnings
     }
 }
+
+/// One zone's stated state, for `thermal.incremental_zone_analysis`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IncrementalZoneInput {
+    /// The zone's name.
+    pub zone_name: String,
+    /// The zone's duty.
+    pub duty: Power,
+    /// The hot-side inlet temperature.
+    pub hot_inlet_temp: ThermodynamicTemperature,
+    /// The hot-side outlet temperature.
+    pub hot_outlet_temp: ThermodynamicTemperature,
+    /// The cold-side inlet temperature.
+    pub cold_inlet_temp: ThermodynamicTemperature,
+    /// The cold-side outlet temperature.
+    pub cold_outlet_temp: ThermodynamicTemperature,
+    /// The tube regime's spec spelling.
+    pub tube_phase_regime: String,
+    /// The tube-side bulk density.
+    pub tube_density: MassDensity,
+    /// The tube-side bulk viscosity.
+    pub tube_viscosity: DynamicViscosity,
+    /// The tube-side specific heat capacity.
+    pub tube_cp: SpecificHeatCapacity,
+    /// The tube-side thermal conductivity.
+    pub tube_conductivity: azoth_core::units::ThermalConductivity,
+    /// The tube-side mass flow.
+    pub tube_mass_flow: azoth_core::units::MassRate,
+    /// The shell regime's spec spelling.
+    pub shell_phase_regime: String,
+    /// The shell-side density.
+    pub shell_density: MassDensity,
+    /// The shell-side viscosity.
+    pub shell_viscosity: DynamicViscosity,
+    /// The shell-side specific heat capacity.
+    pub shell_cp: SpecificHeatCapacity,
+    /// The shell-side thermal conductivity.
+    pub shell_conductivity: azoth_core::units::ThermalConductivity,
+    /// The shell-side mass flow.
+    pub shell_mass_flow: azoth_core::units::MassRate,
+    /// The tube-side liquid density for Shah and Gungor-Winterton.
+    pub tube_liquid_density: Option<MassDensity>,
+    /// The tube-side vapour density for Friedel and Gungor-Winterton.
+    pub tube_vapor_density: Option<MassDensity>,
+    /// The tube-side liquid viscosity.
+    pub tube_liquid_viscosity: Option<DynamicViscosity>,
+    /// The tube-side vapour viscosity.
+    pub tube_vapor_viscosity: Option<DynamicViscosity>,
+    /// The tube-side liquid specific heat capacity.
+    pub tube_liquid_cp: Option<SpecificHeatCapacity>,
+    /// The tube-side liquid thermal conductivity.
+    pub tube_liquid_conductivity: Option<azoth_core::units::ThermalConductivity>,
+    /// The inlet vapour quality.
+    pub tube_quality_in: Option<f64>,
+    /// The outlet vapour quality.
+    pub tube_quality_out: Option<f64>,
+    /// The reduced pressure.
+    pub tube_reduced_pressure: Option<f64>,
+    /// The surface tension.
+    pub tube_surface_tension: Option<azoth_core::units::SurfaceTension>,
+    /// The latent heat in J/kg.
+    pub tube_heat_of_vaporization: Option<f64>,
+}
+
+/// One zone's result, for `thermal.incremental_zone_analysis`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IncrementalZoneRow {
+    /// The one-based position in the caller's list.
+    pub zone_index: f64,
+    /// The zone's name.
+    pub zone_name: String,
+    /// The tube regime's class spelling.
+    pub tube_phase_regime: String,
+    /// The shell regime's class spelling.
+    pub shell_phase_regime: String,
+    /// The tube-side coefficient.
+    pub tube_side_heat_transfer_coefficient: HeatTransfer,
+    /// The Kern shell-side coefficient.
+    pub shell_side_heat_transfer_coefficient: HeatTransfer,
+    /// The overall coefficient on the outside area.
+    pub overall_heat_transfer_coefficient: HeatTransfer,
+    /// The zone's LMTD.
+    pub lmtd: TemperatureInterval,
+    /// The zone's duty, echoed.
+    pub duty: Power,
+    /// `duty/(U*LMTD)`.
+    pub required_area: Area,
+    /// The zone's tube-side drop.
+    pub tube_side_pressure_drop: Pressure,
+    /// The zone's shell-side drop.
+    pub shell_side_pressure_drop: Pressure,
+    /// The hot-side inlet temperature, echoed.
+    pub hot_inlet_temp: ThermodynamicTemperature,
+    /// The hot-side outlet temperature, echoed.
+    pub hot_outlet_temp: ThermodynamicTemperature,
+    /// The cold-side inlet temperature, echoed.
+    pub cold_inlet_temp: ThermodynamicTemperature,
+    /// The cold-side outlet temperature, echoed.
+    pub cold_outlet_temp: ThermodynamicTemperature,
+}
+
+/// Result of `thermal.incremental_zone_analysis`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IncrementalZoneAnalysisResult {
+    /// The number of zones rated.
+    pub number_of_zones: f64,
+    /// The sum of the zone areas.
+    pub total_required_area: Area,
+    /// The sum of the zone duties.
+    pub total_duty: Power,
+    /// `sum(U*A)/sum(A)`, or zero with no area.
+    pub weighted_average_u: HeatTransfer,
+    /// The sum of the zone tube-side drops.
+    pub total_tube_side_pressure_drop: Pressure,
+    /// The sum of the zone shell-side drops.
+    pub total_shell_side_pressure_drop: Pressure,
+    /// The smallest absolute endpoint difference; `f64::MAX` with no zones.
+    pub minimum_approach_temperature: TemperatureInterval,
+    /// One row per zone, in the input order.
+    pub zones: Vec<IncrementalZoneRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for IncrementalZoneAnalysisResult {
+    const CALC_ID: &'static str = "thermal.incremental_zone_analysis";
+    const FIELDS: &'static [&'static str] = &[
+        "number_of_zones",
+        "total_required_area",
+        "total_duty",
+        "weighted_average_u",
+        "total_tube_side_pressure_drop",
+        "total_shell_side_pressure_drop",
+        "minimum_approach_temperature",
+        "zones",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

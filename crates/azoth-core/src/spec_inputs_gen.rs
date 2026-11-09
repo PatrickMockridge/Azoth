@@ -271,6 +271,7 @@
 //!   - specs/calcs/thermal/boiling_heat_transfer.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
 //!   - specs/calcs/thermal/fouling_model.toml
+//!   - specs/calcs/thermal/incremental_zone_analysis.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
@@ -4722,6 +4723,53 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("thermal.fouling_model", "threshold_rate", "dimensionless"),
     ("thermal.fouling_model", "euler_steps", "dimensionless"),
     ("thermal.fouling_model", "euler_step_hours", "time"),
+    (
+        "thermal.incremental_zone_analysis",
+        "tube_inside_diameter",
+        "length",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "tube_outside_diameter",
+        "length",
+    ),
+    ("thermal.incremental_zone_analysis", "tube_length", "length"),
+    (
+        "thermal.incremental_zone_analysis",
+        "tube_count",
+        "dimensionless",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "tube_passes",
+        "dimensionless",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "shell_inside_diameter",
+        "length",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "baffle_spacing",
+        "length",
+    ),
+    ("thermal.incremental_zone_analysis", "tube_pitch", "length"),
+    (
+        "thermal.incremental_zone_analysis",
+        "tube_wall_conductivity",
+        "thermal_conductivity",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "fouling_tube",
+        "dimensionless",
+    ),
+    (
+        "thermal.incremental_zone_analysis",
+        "fouling_shell",
+        "dimensionless",
+    ),
     (
         "thermal.lmtd_correction_factor",
         "hot_inlet_temperature",

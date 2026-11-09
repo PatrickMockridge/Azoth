@@ -2581,7 +2581,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heat_exchanger': {
         "calc_id": 'process.heat_exchanger',
         "name": 'Heat exchanger',
-        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': '377b434a770c2093b62f106a0512fbdae3a3ea2ad32a42f21a7c7428d4ba1b47'},
+        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': '79ca0f6cfe6daf3ab49c60471c2a85cf6120dbf3aa22ab7cf49c63d43333b001'},
         "code": [{'path': 'python/src/azoth/process/reference/heat_exchanger.py', 'sha256': 'ad80a458d634a52afff9dbcb4c457aa273c9dcf7444bba02f8fa1598aa52df85'}, {'path': 'crates/azoth-process/src/models/heat_exchanger.rs', 'sha256': '63eb7b64340b8029bfb978f041e8656612cda1af06f12fa96ddac5e8c2d7f455'}],
         "source": 'NeqSim process/equipment/heatexchanger/HeatExchanger.java',
         "verification": 'partially_verified',
@@ -2983,6 +2983,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "verification": 'partially_verified',
         "validation_cases": 0,
         "tests_active": 13,
+        "tests_skipped": 0,
+    },
+    'thermal.incremental_zone_analysis': {
+        "calc_id": 'thermal.incremental_zone_analysis',
+        "name": "A shell-and-tube exchanger's incremental zone analysis",
+        "spec": {'path': 'specs/calcs/thermal/incremental_zone_analysis.toml', 'sha256': '2d3008f298e64289db1cda58063e10a7460bc3e5c044463449b63176bd5524d1'},
+        "code": [{'path': 'python/src/azoth/thermal/reference/incremental_zone_analysis.py', 'sha256': '569615cc5aa9a1e86c381e2015e4b7825ca37a54ff9e99ce6de29fb6b2f71e85'}, {'path': 'crates/azoth-thermal/src/incremental_zone_analysis.rs', 'sha256': 'd3d21d3b89420a0251f2f0adbe1bb97d27807690c5a9070fdca99e8a46015d88'}],
+        "source": 'NeqSim process/mechanicaldesign/heatexchanger/IncrementalZoneAnalysis.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
         "tests_skipped": 0,
     },
     'thermal.lmtd_correction_factor': {

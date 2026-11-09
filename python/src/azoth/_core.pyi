@@ -214,6 +214,39 @@ class Stream:
     @staticmethod
     def from_ph(components: list[str], z: list[float], n: float, p: float, h: float) -> Stream: ...
 
+class IncrementalZoneInput(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    zone_name: str
+    duty: float
+    hot_inlet_temp: float
+    hot_outlet_temp: float
+    cold_inlet_temp: float
+    cold_outlet_temp: float
+    tube_phase_regime: str
+    tube_density: float
+    tube_viscosity: float
+    tube_cp: float
+    tube_conductivity: float
+    tube_mass_flow: float
+    shell_phase_regime: str
+    shell_density: float
+    shell_viscosity: float
+    shell_cp: float
+    shell_conductivity: float
+    shell_mass_flow: float
+    tube_liquid_density: float | None
+    tube_vapor_density: float | None
+    tube_liquid_viscosity: float | None
+    tube_vapor_viscosity: float | None
+    tube_liquid_cp: float | None
+    tube_liquid_conductivity: float | None
+    tube_quality_in: float | None
+    tube_quality_out: float | None
+    tube_reduced_pressure: float | None
+    tube_surface_tension: float | None
+    tube_heat_of_vaporization: float | None
+
 class ZoneDefinitionRow(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -450,6 +483,27 @@ class KComponent:
     fitting_id: str
     n_ld: float
     k: float
+
+@final
+class IncrementalZoneRow:
+    """one row per zone, in the input order."""
+
+    zone_index: float
+    zone_name: str
+    tube_phase_regime: str
+    shell_phase_regime: str
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    lmtd: Qty
+    duty: Qty
+    required_area: Qty
+    tube_side_pressure_drop: Qty
+    shell_side_pressure_drop: Qty
+    hot_inlet_temp: Qty
+    hot_outlet_temp: Qty
+    cold_inlet_temp: Qty
+    cold_outlet_temp: Qty
 
 @final
 class ZoneRatingRow:
@@ -3825,6 +3879,18 @@ class FoulingModelResult:
     warnings: list[Warning]
 
 @final
+class IncrementalZoneAnalysisResult:
+    number_of_zones: float
+    total_required_area: Qty
+    total_duty: Qty
+    weighted_average_u: Qty
+    total_tube_side_pressure_drop: Qty
+    total_shell_side_pressure_drop: Qty
+    minimum_approach_temperature: Qty
+    zones: list[IncrementalZoneRow]
+    warnings: list[Warning]
+
+@final
 class LmtdCorrectionFactorResult:
     r: float
     p: float
@@ -6812,6 +6878,21 @@ def fouling_model(
     euler_steps: float | None = None,
     euler_step_hours: float | None = None,
 ) -> FoulingModelResult: ...
+def incremental_zone_analysis(
+    tube_inside_diameter: float,
+    tube_outside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    tube_wall_conductivity: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    zones: list[IncrementalZoneInput],
+) -> IncrementalZoneAnalysisResult: ...
 def lmtd_correction_factor(
     hot_inlet_temperature: float,
     hot_outlet_temperature: float,

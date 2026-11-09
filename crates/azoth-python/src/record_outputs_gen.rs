@@ -1084,6 +1084,149 @@ impl From<&azoth_eos::results::HydrateRiskPoint> for PyHydrateRiskPoint {
     }
 }
 
+/// one row per zone, in the input order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IncrementalZoneRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIncrementalZoneRow {
+    /// the one-based position in the caller's list.
+    #[pyo3(get)]
+    pub zone_index: f64,
+    /// the zone's name, echoed.
+    #[pyo3(get)]
+    pub zone_name: String,
+    /// the tube regime's class spelling.
+    #[pyo3(get)]
+    pub tube_phase_regime: String,
+    /// the shell regime's class spelling, carried and unread.
+    #[pyo3(get)]
+    pub shell_phase_regime: String,
+    /// the zone's tube-side coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the zone's Kern shell-side coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the zone's overall coefficient on the outside area.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the zone's LMTD, from the class's three branches.
+    #[pyo3(get)]
+    pub lmtd: PyQty,
+    /// the zone's duty, echoed.
+    #[pyo3(get)]
+    pub duty: PyQty,
+    /// `duty/(U*LMTD)`, zero when either denominator is not positive.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// the zone's tube-side drop: Friedel for the two-phase regimes, Darcy friction otherwise.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: PyQty,
+    /// the zone's Kern shell-side drop with the scaled baffle count.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: PyQty,
+    /// the zone's hot-side inlet temperature, echoed.
+    #[pyo3(get)]
+    pub hot_inlet_temp: PyQty,
+    /// the zone's hot-side outlet temperature, echoed.
+    #[pyo3(get)]
+    pub hot_outlet_temp: PyQty,
+    /// the zone's cold-side inlet temperature, echoed.
+    #[pyo3(get)]
+    pub cold_inlet_temp: PyQty,
+    /// the zone's cold-side outlet temperature, echoed.
+    #[pyo3(get)]
+    pub cold_outlet_temp: PyQty,
+}
+
+#[pymethods]
+impl PyIncrementalZoneRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "IncrementalZoneRow(zone_index={}, zone_name={}, tube_phase_regime={}, shell_phase_regime={}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, lmtd={:?}, duty={:?}, required_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, hot_inlet_temp={:?}, hot_outlet_temp={:?}, cold_inlet_temp={:?}, cold_outlet_temp={:?})",
+            self.zone_index,
+            self.zone_name,
+            self.tube_phase_regime,
+            self.shell_phase_regime,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.lmtd,
+            self.duty,
+            self.required_area,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.hot_inlet_temp,
+            self.hot_outlet_temp,
+            self.cold_inlet_temp,
+            self.cold_outlet_temp
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::IncrementalZoneRow> for PyIncrementalZoneRow {
+    fn from(row: &azoth_thermal::results::IncrementalZoneRow) -> Self {
+        Self {
+            zone_index: row.zone_index,
+            zone_name: row.zone_name.clone(),
+            tube_phase_regime: row.tube_phase_regime.clone(),
+            shell_phase_regime: row.shell_phase_regime.clone(),
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            lmtd: PyQty {
+                magnitude_si: row.lmtd.value,
+                unit: "K".to_string(),
+            },
+            duty: PyQty {
+                magnitude_si: row.duty.value,
+                unit: "W".to_string(),
+            },
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            tube_side_pressure_drop: PyQty {
+                magnitude_si: row.tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            shell_side_pressure_drop: PyQty {
+                magnitude_si: row.shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            hot_inlet_temp: PyQty {
+                magnitude_si: row.hot_inlet_temp.value,
+                unit: "K".to_string(),
+            },
+            hot_outlet_temp: PyQty {
+                magnitude_si: row.hot_outlet_temp.value,
+                unit: "K".to_string(),
+            },
+            cold_inlet_temp: PyQty {
+                magnitude_si: row.cold_inlet_temp.value,
+                unit: "K".to_string(),
+            },
+            cold_outlet_temp: PyQty {
+                magnitude_si: row.cold_outlet_temp.value,
+                unit: "K".to_string(),
+            },
+        }
+    }
+}
+
 /// one row per fitting supplied, in the order they were listed
 #[pyclass(
     frozen,

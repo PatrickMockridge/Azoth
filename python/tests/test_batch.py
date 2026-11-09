@@ -281,6 +281,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The zone rating's `zones` record list has no float-array column, and the base's
         # `triangular_pitch` and shell-side method are categorical switches.
         "thermal.zone_rating",
+        # The incremental analysis carries a zones record list, per-row regime strings and the
+        # categorical layout switch, so it has no float-array columns either.
+        "thermal.incremental_zone_analysis",
     }, sorted(excluded)
 
 

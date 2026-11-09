@@ -405,6 +405,59 @@ class HydrateRiskPoint:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class IncrementalZoneRow:
+    """one row per zone, in the input order."""
+
+    #: the one-based position in the caller's list.
+    zone_index: float
+
+    #: the zone's name, echoed.
+    zone_name: str
+
+    #: the tube regime's class spelling.
+    tube_phase_regime: str
+
+    #: the shell regime's class spelling, carried and unread.
+    shell_phase_regime: str
+
+    #: the zone's tube-side coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the zone's Kern shell-side coefficient.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the zone's overall coefficient on the outside area.
+    overall_heat_transfer_coefficient: Q
+
+    #: the zone's LMTD, from the class's three branches.
+    lmtd: Q
+
+    #: the zone's duty, echoed.
+    duty: Q
+
+    #: `duty/(U*LMTD)`, zero when either denominator is not positive.
+    required_area: Q
+
+    #: the zone's tube-side drop: Friedel for the two-phase regimes, Darcy friction otherwise.
+    tube_side_pressure_drop: Q
+
+    #: the zone's Kern shell-side drop with the scaled baffle count.
+    shell_side_pressure_drop: Q
+
+    #: the zone's hot-side inlet temperature, echoed.
+    hot_inlet_temp: Q
+
+    #: the zone's hot-side outlet temperature, echoed.
+    hot_outlet_temp: Q
+
+    #: the zone's cold-side inlet temperature, echoed.
+    cold_inlet_temp: Q
+
+    #: the zone's cold-side outlet temperature, echoed.
+    cold_outlet_temp: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
 

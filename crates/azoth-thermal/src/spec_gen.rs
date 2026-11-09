@@ -5,6 +5,7 @@
 //!   - specs/calcs/thermal/boiling_heat_transfer.toml
 //!   - specs/calcs/thermal/conduction_plane_wall.toml
 //!   - specs/calcs/thermal/fouling_model.toml
+//!   - specs/calcs/thermal/incremental_zone_analysis.toml
 //!   - specs/calcs/thermal/lmtd_correction_factor.toml
 //!   - specs/calcs/thermal/shah_condensation.toml
 //!   - specs/calcs/thermal/shell_and_tube_rating.toml
@@ -1477,6 +1478,1853 @@ pub static FOULING_MODEL_SPEC: CalcSpec = CalcSpec {
         expected_records: &[],
     },
     tests: FOULING_MODEL_TESTS,
+};
+
+/// Registry entry for `thermal.incremental_zone_analysis`.
+static INCREMENTAL_ZONE_ANALYSIS_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_inside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the bore divides the mass flux and the coefficient.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_outside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the outside diameter sets the resistance ratio and the shell geometry.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_length",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the length divides the per-zone drop.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_count",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a tube count is a positive whole number.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_passes",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the passes divide the tube count for the flow area.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "shell_inside_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the shell diameter drives the crossflow area.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "baffle_spacing",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the spacing divides the per-zone baffle count.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_pitch",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the pitch drives the shell geometry.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tube_wall_conductivity",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the wall resistance is a logarithm over this conductivity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fouling_tube",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a fouling resistance cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fouling_shell",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a fouling resistance cannot be negative.",
+        },
+    },
+];
+
+static INCREMENTAL_ZONE_ANALYSIS_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_condensing_evaporating_vapour_cycle",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 3.0),
+            ("total_required_area", 9.038255527499562),
+            ("total_duty", 570000.0),
+            ("weighted_average_u", 1260.1280018176026),
+            ("total_tube_side_pressure_drop", 436015.496731375),
+            ("total_shell_side_pressure_drop", 30577.112836692046),
+            ("minimum_approach_temperature", 30.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(200000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(340.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_in",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_out",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_reduced_pressure",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "tube_surface_tension",
+                        value: FieldValue::Number(0.01),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("evaporating"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(250000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(330.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(320.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("evaporating"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_in",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_out",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_reduced_pressure",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "tube_surface_tension",
+                        value: FieldValue::Number(0.01),
+                    },
+                    RecordField {
+                        name: "tube_heat_of_vaporization",
+                        value: FieldValue::Number(250000.0),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("vapor"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(120000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(380.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(360.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(315.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("vapor"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.025),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("CONDENSING"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(7667.176474980685),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1262.5531791999872),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(64.8715919463088),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(200000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(2.441888110011104),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(120487.74273072323),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(340.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("evaporating"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("EVAPORATING"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(12013.89906020952),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(1367.1874774982432),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(39.15230377942435),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(250000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(4.67040577987088),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(120487.74273072323),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(330.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(320.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("vapor"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("VAPOR"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(3397.728059324884),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(997.436785159017),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(62.46665243251254),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(120000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.9259616376175779),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(195040.01126992857),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(380.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(360.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(315.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "two_phase_falls_through_to_single_phase",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 1.0),
+            ("total_required_area", 2.9881239326977265),
+            ("weighted_average_u", 860.5495050893168),
+            ("minimum_approach_temperature", 70.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("two_phase"),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(180000.0),
+                },
+                RecordField {
+                    name: "hot_inlet_temp",
+                    value: FieldValue::Number(400.0),
+                },
+                RecordField {
+                    name: "hot_outlet_temp",
+                    value: FieldValue::Number(370.0),
+                },
+                RecordField {
+                    name: "cold_inlet_temp",
+                    value: FieldValue::Number(300.0),
+                },
+                RecordField {
+                    name: "cold_outlet_temp",
+                    value: FieldValue::Number(330.0),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("two_phase"),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(800.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(0.0005),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2500.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.13),
+                },
+                RecordField {
+                    name: "tube_mass_flow",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("evaporating"),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(1000.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.0008),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+                RecordField {
+                    name: "shell_mass_flow",
+                    value: FieldValue::Number(20.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_index",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("two_phase"),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("TWO_PHASE"),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("EVAPORATING"),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(2353.2086219276475),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(5944.546479939829),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(860.5495050893168),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(70.0),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(180000.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(2.9881239326977265),
+                },
+                RecordField {
+                    name: "tube_side_pressure_drop",
+                    value: FieldValue::Number(7796.3518705404385),
+                },
+                RecordField {
+                    name: "shell_side_pressure_drop",
+                    value: FieldValue::Number(27677.135191175083),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "the_lmtd_falls_back_on_a_cross_and_a_tie",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 3.0),
+            ("total_required_area", 15.878184993718001),
+            ("total_duty", 300000.0),
+            ("weighted_average_u", 854.4225155154655),
+            ("minimum_approach_temperature", 10.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("temperature_cross"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(340.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(350.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(390.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("near_equal"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(450.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(450.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("log_mean"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(500.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(450.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(420.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(0.0005),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2500.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.13),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("temperature_cross"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(2353.2086219276475),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(854.4225155154656),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(11.70381142632587),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(2598.7839568468125),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("near_equal"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(2353.2086219276475),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(854.4225155154656),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(50.0),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(2.340762285265174),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(2598.7839568468125),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_index",
+                        value: FieldValue::Number(3.0),
+                    },
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("log_mean"),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("LIQUID"),
+                    },
+                    RecordField {
+                        name: "tube_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(2353.2086219276475),
+                    },
+                    RecordField {
+                        name: "shell_side_heat_transfer_coefficient",
+                        value: FieldValue::Number(5663.977997811559),
+                    },
+                    RecordField {
+                        name: "overall_heat_transfer_coefficient",
+                        value: FieldValue::Number(854.4225155154656),
+                    },
+                    RecordField {
+                        name: "lmtd",
+                        value: FieldValue::Number(63.82929435703329),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(100000.0),
+                    },
+                    RecordField {
+                        name: "required_area",
+                        value: FieldValue::Number(1.8336112821269561),
+                    },
+                    RecordField {
+                        name: "tube_side_pressure_drop",
+                        value: FieldValue::Number(2598.7839568468125),
+                    },
+                    RecordField {
+                        name: "shell_side_pressure_drop",
+                        value: FieldValue::Number(10192.370945564015),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_single_point_quality_range_answers_the_local_coefficient",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 1.0),
+            ("total_required_area", 1.2493500499422663),
+            ("weighted_average_u", 1372.1420304621056),
+            ("minimum_approach_temperature", 70.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("single_point"),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(120000.0),
+                },
+                RecordField {
+                    name: "hot_inlet_temp",
+                    value: FieldValue::Number(400.0),
+                },
+                RecordField {
+                    name: "hot_outlet_temp",
+                    value: FieldValue::Number(370.0),
+                },
+                RecordField {
+                    name: "cold_inlet_temp",
+                    value: FieldValue::Number(300.0),
+                },
+                RecordField {
+                    name: "cold_outlet_temp",
+                    value: FieldValue::Number(330.0),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("condensing"),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(20.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(1.2e-05),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2100.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.05),
+                },
+                RecordField {
+                    name: "tube_mass_flow",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "tube_quality_in",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "tube_quality_out",
+                    value: FieldValue::Number(0.5),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("liquid"),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(998.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.001),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+                RecordField {
+                    name: "shell_mass_flow",
+                    value: FieldValue::Number(20.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_index",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("single_point"),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("CONDENSING"),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("LIQUID"),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(12318.165117511255),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(5663.977997811559),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(1372.1420304621056),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(70.0),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(120000.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(1.2493500499422663),
+                },
+                RecordField {
+                    name: "tube_side_pressure_drop",
+                    value: FieldValue::Number(361463.2281921697),
+                },
+                RecordField {
+                    name: "shell_side_pressure_drop",
+                    value: FieldValue::Number(28723.954482953133),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "the_shell_drop_scales_with_the_zone_count",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 2.0),
+            ("total_required_area", 4.883776220022208),
+            ("total_duty", 400000.0),
+            ("weighted_average_u", 1262.5531791999872),
+            ("total_tube_side_pressure_drop", 361463.2281921697),
+            ("total_shell_side_pressure_drop", 29650.533659822588),
+            ("minimum_approach_temperature", 60.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(200000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(340.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_in",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_out",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_reduced_pressure",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "tube_surface_tension",
+                        value: FieldValue::Number(0.01),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "zone_name",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "duty",
+                        value: FieldValue::Number(200000.0),
+                    },
+                    RecordField {
+                        name: "hot_inlet_temp",
+                        value: FieldValue::Number(400.0),
+                    },
+                    RecordField {
+                        name: "hot_outlet_temp",
+                        value: FieldValue::Number(370.0),
+                    },
+                    RecordField {
+                        name: "cold_inlet_temp",
+                        value: FieldValue::Number(300.0),
+                    },
+                    RecordField {
+                        name: "cold_outlet_temp",
+                        value: FieldValue::Number(340.0),
+                    },
+                    RecordField {
+                        name: "tube_phase_regime",
+                        value: FieldValue::Name("condensing"),
+                    },
+                    RecordField {
+                        name: "tube_density",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "tube_viscosity",
+                        value: FieldValue::Number(1.2e-05),
+                    },
+                    RecordField {
+                        name: "tube_cp",
+                        value: FieldValue::Number(2100.0),
+                    },
+                    RecordField {
+                        name: "tube_conductivity",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "tube_mass_flow",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_in",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "tube_quality_out",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "tube_reduced_pressure",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "tube_surface_tension",
+                        value: FieldValue::Number(0.01),
+                    },
+                    RecordField {
+                        name: "shell_phase_regime",
+                        value: FieldValue::Name("liquid"),
+                    },
+                    RecordField {
+                        name: "shell_density",
+                        value: FieldValue::Number(998.0),
+                    },
+                    RecordField {
+                        name: "shell_viscosity",
+                        value: FieldValue::Number(0.001),
+                    },
+                    RecordField {
+                        name: "shell_cp",
+                        value: FieldValue::Number(4180.0),
+                    },
+                    RecordField {
+                        name: "shell_conductivity",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "shell_mass_flow",
+                        value: FieldValue::Number(20.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[],
+    },
+];
+
+/// Registered spec for `thermal.incremental_zone_analysis`.
+///
+/// Public and addressable directly, so a calc can hold `&INCREMENTAL_ZONE_ANALYSIS_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static INCREMENTAL_ZONE_ANALYSIS_SPEC: CalcSpec = CalcSpec {
+    id: "thermal.incremental_zone_analysis",
+    checks: INCREMENTAL_ZONE_ANALYSIS_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_single_liquid_zone_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("tube_inside_diameter", 0.01483),
+            ("tube_outside_diameter", 0.01905),
+            ("tube_length", 6.096),
+            ("tube_count", 100.0),
+            ("tube_passes", 2.0),
+            ("shell_inside_diameter", 0.5),
+            ("baffle_spacing", 0.2),
+            ("tube_pitch", 0.02381),
+            ("tube_wall_conductivity", 52.0),
+            ("fouling_tube", 0.000176),
+            ("fouling_shell", 0.000176),
+        ],
+        flags: &[("triangular_pitch", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("number_of_zones", 1.0),
+            ("total_required_area", 2.1944646424361007),
+            ("total_duty", 150000.0),
+            ("weighted_average_u", 854.4225155154656),
+            ("total_tube_side_pressure_drop", 7796.3518705404385),
+            ("total_shell_side_pressure_drop", 28723.954482953133),
+            ("minimum_approach_temperature", 80.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("liquid"),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(150000.0),
+                },
+                RecordField {
+                    name: "hot_inlet_temp",
+                    value: FieldValue::Number(400.0),
+                },
+                RecordField {
+                    name: "hot_outlet_temp",
+                    value: FieldValue::Number(380.0),
+                },
+                RecordField {
+                    name: "cold_inlet_temp",
+                    value: FieldValue::Number(300.0),
+                },
+                RecordField {
+                    name: "cold_outlet_temp",
+                    value: FieldValue::Number(320.0),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("liquid"),
+                },
+                RecordField {
+                    name: "tube_density",
+                    value: FieldValue::Number(800.0),
+                },
+                RecordField {
+                    name: "tube_viscosity",
+                    value: FieldValue::Number(0.0005),
+                },
+                RecordField {
+                    name: "tube_cp",
+                    value: FieldValue::Number(2500.0),
+                },
+                RecordField {
+                    name: "tube_conductivity",
+                    value: FieldValue::Number(0.13),
+                },
+                RecordField {
+                    name: "tube_mass_flow",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("liquid"),
+                },
+                RecordField {
+                    name: "shell_density",
+                    value: FieldValue::Number(998.0),
+                },
+                RecordField {
+                    name: "shell_viscosity",
+                    value: FieldValue::Number(0.001),
+                },
+                RecordField {
+                    name: "shell_cp",
+                    value: FieldValue::Number(4180.0),
+                },
+                RecordField {
+                    name: "shell_conductivity",
+                    value: FieldValue::Number(0.6),
+                },
+                RecordField {
+                    name: "shell_mass_flow",
+                    value: FieldValue::Number(20.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "zones",
+            &[&[
+                RecordField {
+                    name: "zone_index",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "zone_name",
+                    value: FieldValue::Name("liquid"),
+                },
+                RecordField {
+                    name: "tube_phase_regime",
+                    value: FieldValue::Name("LIQUID"),
+                },
+                RecordField {
+                    name: "shell_phase_regime",
+                    value: FieldValue::Name("LIQUID"),
+                },
+                RecordField {
+                    name: "tube_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(2353.2086219276475),
+                },
+                RecordField {
+                    name: "shell_side_heat_transfer_coefficient",
+                    value: FieldValue::Number(5663.977997811559),
+                },
+                RecordField {
+                    name: "overall_heat_transfer_coefficient",
+                    value: FieldValue::Number(854.4225155154656),
+                },
+                RecordField {
+                    name: "lmtd",
+                    value: FieldValue::Number(80.0),
+                },
+                RecordField {
+                    name: "duty",
+                    value: FieldValue::Number(150000.0),
+                },
+                RecordField {
+                    name: "required_area",
+                    value: FieldValue::Number(2.1944646424361007),
+                },
+                RecordField {
+                    name: "tube_side_pressure_drop",
+                    value: FieldValue::Number(7796.3518705404385),
+                },
+                RecordField {
+                    name: "shell_side_pressure_drop",
+                    value: FieldValue::Number(28723.954482953133),
+                },
+                RecordField {
+                    name: "hot_inlet_temp",
+                    value: FieldValue::Number(400.0),
+                },
+                RecordField {
+                    name: "hot_outlet_temp",
+                    value: FieldValue::Number(380.0),
+                },
+                RecordField {
+                    name: "cold_inlet_temp",
+                    value: FieldValue::Number(300.0),
+                },
+                RecordField {
+                    name: "cold_outlet_temp",
+                    value: FieldValue::Number(320.0),
+                },
+            ]],
+        )],
+    },
+    tests: INCREMENTAL_ZONE_ANALYSIS_TESTS,
 };
 
 /// Registry entry for `thermal.lmtd_correction_factor`.
@@ -6212,6 +8060,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &BOILING_HEAT_TRANSFER_SPEC,
     &CONDUCTION_PLANE_WALL_SPEC,
     &FOULING_MODEL_SPEC,
+    &INCREMENTAL_ZONE_ANALYSIS_SPEC,
     &LMTD_CORRECTION_FACTOR_SPEC,
     &SHAH_CONDENSATION_SPEC,
     &SHELL_AND_TUBE_RATING_SPEC,

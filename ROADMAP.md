@@ -855,8 +855,9 @@ a claim nothing holds.
   `thermal.fouling_model`, held to `fouling_model_probe.tsv`, **and its tube-insert
   enhancement** as `thermal.tube_insert_model`, held to `tube_insert_probe.tsv`, **and its
   TEMA standard** as `thermal.tema_standard`, held to `tema_standard_probe.tsv`, **and its
-  zone-by-zone rating** as `thermal.zone_rating`, held to `zone_analysis_probe.tsv`; the port
-  is the single-phase half, with `IncrementalZoneAnalysis` and the detailed
+  zone-by-zone rating** as `thermal.zone_rating`, held to `zone_analysis_probe.tsv`, **and its
+  incremental zone analysis** as `thermal.incremental_zone_analysis`, held to
+  `incremental_zone_analysis_probe.tsv`; the port is the single-phase half, with the detailed
   `ShellAndTubeDesignCalculator`'s design loop still owed;
   **its `useDeltaT` closure landed as `use_delta_t`**, held to
   `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream

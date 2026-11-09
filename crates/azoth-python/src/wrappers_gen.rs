@@ -6941,6 +6941,84 @@ pub fn fouling_model(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A shell-and-tube exchanger's incremental zone analysis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (tube_inside_diameter, tube_outside_diameter, tube_length, tube_count, tube_passes, shell_inside_diameter, baffle_spacing, tube_pitch, triangular_pitch, tube_wall_conductivity, fouling_tube, fouling_shell, zones))]
+#[pyo3(
+    text_signature = "(tube_inside_diameter, tube_outside_diameter, tube_length, tube_count, tube_passes, shell_inside_diameter, baffle_spacing, tube_pitch, triangular_pitch, tube_wall_conductivity, fouling_tube, fouling_shell, zones)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn incremental_zone_analysis(
+    py: Python<'_>,
+    tube_inside_diameter: f64,
+    tube_outside_diameter: f64,
+    tube_length: f64,
+    tube_count: f64,
+    tube_passes: f64,
+    shell_inside_diameter: f64,
+    baffle_spacing: f64,
+    tube_pitch: f64,
+    triangular_pitch: bool,
+    tube_wall_conductivity: f64,
+    fouling_tube: f64,
+    fouling_shell: f64,
+    zones: Vec<crate::records_gen::IncrementalZoneInput>,
+) -> PyResult<crate::transport_gen::PyIncrementalZoneAnalysisResult> {
+    let zones_records: Vec<azoth_thermal::results::IncrementalZoneInput> = zones
+        .into_iter()
+        .map(|row| azoth_thermal::results::IncrementalZoneInput {
+            zone_name: row.zone_name,
+            duty: watts(row.duty),
+            hot_inlet_temp: kelvins(row.hot_inlet_temp),
+            hot_outlet_temp: kelvins(row.hot_outlet_temp),
+            cold_inlet_temp: kelvins(row.cold_inlet_temp),
+            cold_outlet_temp: kelvins(row.cold_outlet_temp),
+            tube_phase_regime: row.tube_phase_regime,
+            tube_density: kilograms_per_cubic_meter(row.tube_density),
+            tube_viscosity: pascal_seconds(row.tube_viscosity),
+            tube_cp: joules_per_kilogram_kelvin(row.tube_cp),
+            tube_conductivity: watts_per_meter_kelvin(row.tube_conductivity),
+            tube_mass_flow: kilograms_per_second(row.tube_mass_flow),
+            shell_phase_regime: row.shell_phase_regime,
+            shell_density: kilograms_per_cubic_meter(row.shell_density),
+            shell_viscosity: pascal_seconds(row.shell_viscosity),
+            shell_cp: joules_per_kilogram_kelvin(row.shell_cp),
+            shell_conductivity: watts_per_meter_kelvin(row.shell_conductivity),
+            shell_mass_flow: kilograms_per_second(row.shell_mass_flow),
+            tube_liquid_density: row.tube_liquid_density.map(kilograms_per_cubic_meter),
+            tube_vapor_density: row.tube_vapor_density.map(kilograms_per_cubic_meter),
+            tube_liquid_viscosity: row.tube_liquid_viscosity.map(pascal_seconds),
+            tube_vapor_viscosity: row.tube_vapor_viscosity.map(pascal_seconds),
+            tube_liquid_cp: row.tube_liquid_cp.map(joules_per_kilogram_kelvin),
+            tube_liquid_conductivity: row.tube_liquid_conductivity.map(watts_per_meter_kelvin),
+            tube_quality_in: row.tube_quality_in,
+            tube_quality_out: row.tube_quality_out,
+            tube_reduced_pressure: row.tube_reduced_pressure,
+            tube_surface_tension: row.tube_surface_tension.map(newtons_per_meter),
+            tube_heat_of_vaporization: row.tube_heat_of_vaporization,
+        })
+        .collect();
+    azoth_thermal::incremental_zone_analysis::incremental_zone_analysis(
+        meters(tube_inside_diameter),
+        meters(tube_outside_diameter),
+        meters(tube_length),
+        tube_count,
+        tube_passes,
+        meters(shell_inside_diameter),
+        meters(baffle_spacing),
+        meters(tube_pitch),
+        triangular_pitch,
+        watts_per_meter_kelvin(tube_wall_conductivity),
+        fouling_tube,
+        fouling_shell,
+        &zones_records,
+    )
+    .map(|r| crate::transport_gen::PyIncrementalZoneAnalysisResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The LMTD correction factor for a shell-and-tube exchanger.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

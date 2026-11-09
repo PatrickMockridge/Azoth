@@ -135,6 +135,8 @@ from azoth.core.result import (
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
     IdealGasCpResult,
+    IncrementalZoneAnalysisResult,
+    IncrementalZoneRow,
     InterfacePropertiesResult,
     Iso6976Result,
     KComponent,
@@ -465,6 +467,7 @@ __all__ = [
     "iapws_henry_law",
     "iapws_saturation_pressure",
     "ideal_gas_cp",
+    "incremental_zone_analysis",
     "interface_properties",
     "iso6976",
     "kent_eisenberg_phase",
@@ -7789,6 +7792,37 @@ def fouling_model(model: str, velocity: Q, fluid_density: Q, fluid_viscosity: Q,
         fouling_rate=result.fouling_rate,
         reynolds_number=result.reynolds_number,
         wall_shear_stress=from_si(result.wall_shear_stress.magnitude_si, result.wall_shear_stress.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def incremental_zone_analysis(tube_inside_diameter: Q, tube_outside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, shell_inside_diameter: Q, baffle_spacing: Q, tube_pitch: Q, triangular_pitch: bool, tube_wall_conductivity: Q, fouling_tube: float, fouling_shell: float, zones: list[dict[str, Any]]) -> IncrementalZoneAnalysisResult:
+    """``thermal.incremental_zone_analysis``, computed in Rust."""
+    spec = _spec_for("thermal.incremental_zone_analysis")
+    result = _core.incremental_zone_analysis(
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        tube_count,
+        tube_passes,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "baffle_spacing", baffle_spacing),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        triangular_pitch,
+        input_to_si(spec, "tube_wall_conductivity", tube_wall_conductivity),
+        fouling_tube,
+        fouling_shell,
+        input_records_to_si(spec, "zones", zones),
+    )
+    return IncrementalZoneAnalysisResult(
+        number_of_zones=result.number_of_zones,
+        total_required_area=from_si(result.total_required_area.magnitude_si, result.total_required_area.unit),
+        total_duty=from_si(result.total_duty.magnitude_si, result.total_duty.unit),
+        weighted_average_u=from_si(result.weighted_average_u.magnitude_si, result.weighted_average_u.unit),
+        total_tube_side_pressure_drop=from_si(result.total_tube_side_pressure_drop.magnitude_si, result.total_tube_side_pressure_drop.unit),
+        total_shell_side_pressure_drop=from_si(result.total_shell_side_pressure_drop.magnitude_si, result.total_shell_side_pressure_drop.unit),
+        minimum_approach_temperature=from_si(result.minimum_approach_temperature.magnitude_si, result.minimum_approach_temperature.unit),
+        zones=tuple(IncrementalZoneRow(zone_index=c.zone_index, zone_name=c.zone_name, tube_phase_regime=c.tube_phase_regime, shell_phase_regime=c.shell_phase_regime, tube_side_heat_transfer_coefficient=from_si(c.tube_side_heat_transfer_coefficient.magnitude_si, c.tube_side_heat_transfer_coefficient.unit), shell_side_heat_transfer_coefficient=from_si(c.shell_side_heat_transfer_coefficient.magnitude_si, c.shell_side_heat_transfer_coefficient.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), lmtd=from_si(c.lmtd.magnitude_si, c.lmtd.unit), duty=from_si(c.duty.magnitude_si, c.duty.unit), required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), tube_side_pressure_drop=from_si(c.tube_side_pressure_drop.magnitude_si, c.tube_side_pressure_drop.unit), shell_side_pressure_drop=from_si(c.shell_side_pressure_drop.magnitude_si, c.shell_side_pressure_drop.unit), hot_inlet_temp=from_si(c.hot_inlet_temp.magnitude_si, c.hot_inlet_temp.unit), hot_outlet_temp=from_si(c.hot_outlet_temp.magnitude_si, c.hot_outlet_temp.unit), cold_inlet_temp=from_si(c.cold_inlet_temp.magnitude_si, c.cold_inlet_temp.unit), cold_outlet_temp=from_si(c.cold_outlet_temp.magnitude_si, c.cold_outlet_temp.unit)) for c in result.zones),
         warnings=_warnings(result.warnings),
     )
 

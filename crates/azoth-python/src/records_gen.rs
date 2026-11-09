@@ -184,6 +184,69 @@ pub struct FluidComponent {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct IncrementalZoneInput {
+    #[pyo3(item)]
+    pub zone_name: String,
+    #[pyo3(item)]
+    pub duty: f64,
+    #[pyo3(item)]
+    pub hot_inlet_temp: f64,
+    #[pyo3(item)]
+    pub hot_outlet_temp: f64,
+    #[pyo3(item)]
+    pub cold_inlet_temp: f64,
+    #[pyo3(item)]
+    pub cold_outlet_temp: f64,
+    #[pyo3(item)]
+    pub tube_phase_regime: String,
+    #[pyo3(item)]
+    pub tube_density: f64,
+    #[pyo3(item)]
+    pub tube_viscosity: f64,
+    #[pyo3(item)]
+    pub tube_cp: f64,
+    #[pyo3(item)]
+    pub tube_conductivity: f64,
+    #[pyo3(item)]
+    pub tube_mass_flow: f64,
+    #[pyo3(item)]
+    pub shell_phase_regime: String,
+    #[pyo3(item)]
+    pub shell_density: f64,
+    #[pyo3(item)]
+    pub shell_viscosity: f64,
+    #[pyo3(item)]
+    pub shell_cp: f64,
+    #[pyo3(item)]
+    pub shell_conductivity: f64,
+    #[pyo3(item)]
+    pub shell_mass_flow: f64,
+    #[pyo3(item)]
+    pub tube_liquid_density: Option<f64>,
+    #[pyo3(item)]
+    pub tube_vapor_density: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_vapor_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_cp: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_conductivity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_quality_in: Option<f64>,
+    #[pyo3(item)]
+    pub tube_quality_out: Option<f64>,
+    #[pyo3(item)]
+    pub tube_reduced_pressure: Option<f64>,
+    #[pyo3(item)]
+    pub tube_surface_tension: Option<f64>,
+    #[pyo3(item)]
+    pub tube_heat_of_vaporization: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct InteractionComponent {
     #[pyo3(item)]
     pub name: String,
