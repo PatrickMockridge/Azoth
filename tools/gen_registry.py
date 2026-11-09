@@ -219,10 +219,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `TestCase`. `crates/azoth-thermal/tests/tema_standard.rs` asserts them against
         # the capture, and `test_cross_impl` compares them on both results.
         "bundle_removable",
-    "nozzle_reinforcement_adequate",
-    "sour_service_required",
-    "shell_nace_compliant",
-    "tube_nace_compliant",
+        "nozzle_reinforcement_adequate",
+        "sour_service_required",
+        "shell_nace_compliant",
+        "tube_nace_compliant",
         "good_thermal_expansion",
         # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
         # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
