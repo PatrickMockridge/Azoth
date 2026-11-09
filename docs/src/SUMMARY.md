@@ -7,6 +7,7 @@
   - [Spec files](./architecture/spec-files.md)
   - [The process schema](./architecture/process-schema.md)
   - [The middleware](./architecture/middleware.md)
+  - [The r-gen bridge](./architecture/rgen.md)
   - [What a claim is worth](./architecture/claims.md)
 - [The calculus of thermodynamic dimensionality](./calculus/index.md)
   - [Dimensions](./calculus/dimensions.md)

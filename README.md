@@ -59,7 +59,9 @@ them different.
   failure" reads the other way round, and that reading cost a session: a probe that
   subtracted the wrong quantity reported a NeqSim defect that was azoth's own.
 - **An agentic layer.** Ninety skills under `skills/` teach an agent to call the library,
-  and a four-role HAZOP team chains them.
+  and a four-role HAZOP team chains them. A calculation run can also be emitted as an
+  r-gen claim bundle — the spec, result, both implementations' agreement and the external
+  cases as anchored evidence — with `python -m azoth.rgen`.
 
 ## Inherent safety
 

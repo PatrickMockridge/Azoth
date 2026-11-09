@@ -458,6 +458,9 @@ NAMESPACE_TESTS: dict[str, tuple[str, ...]] = {
     # machinery that every other namespace imports. The tests that name it are the unit,
     # dispatch, solver and record suites; the namespaces are covered by the smoke ids.
     "core": CORE_TESTS,
+    # The r-gen bridge is a consumer of the public result surface, not a calculation: it has
+    # no spec id and no kernels, so its tests are the only thing a change to it reaches.
+    "rgen": (f"{TESTS}/rgen",),
 }
 
 #: module directly under `python/src/azoth/` (not a namespace) -> the tests that name it.
