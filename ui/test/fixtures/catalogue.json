@@ -4730,7 +4730,15 @@
         "rating_sealing_pairs",
         "rating_tube_to_baffle_clearance",
         "rating_shell_to_baffle_clearance",
-        "rating_bypass_area"
+        "rating_bypass_area",
+        "time_step",
+        "wall_mass",
+        "wall_cp",
+        "shell_holdup_volume",
+        "tube_holdup_volume",
+        "shell_side_htc",
+        "tube_side_htc",
+        "heat_transfer_area"
       ]
     },
     {

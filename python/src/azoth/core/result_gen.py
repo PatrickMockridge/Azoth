@@ -6566,6 +6566,15 @@ class HeatExchangerResult(_HasWarnings):
     #: which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
     delta_t_side: str | None
 
+    #: the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN.
+    wall_temperature: Q | None
+
+    #: the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN.
+    shell_fluid_temperature: Q | None
+
+    #: the post-step tube-side CSTR temperature, on the same terms.
+    tube_fluid_temperature: Q | None
+
     #: the selected configuration's spelling; present only with `mechanical_design`.
     mechanical_selected_type: str | None
 

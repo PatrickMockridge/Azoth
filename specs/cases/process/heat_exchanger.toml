@@ -756,3 +756,215 @@ jl = 0.7123109582535239
 jb = 0.5394836194862993
 js = 1.0
 jr = 1.0
+[[cases]]
+id = "the_dynamic_gate_falls_back_to_the_rating"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `gate_disabled_default`: the dynamic model is disabled, so `runTransient` delegates to `Heater.runTransient`, which re-runs the steady rating. The wall and holdup outputs are absent because the class's fields stay NaN.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = false
+transient_tube_side = "cold"
+[cases.expected]
+hot_out_t = 353.06105521851066
+cold_out_t = 293.24444470482376
+duty = 5990.821688483828
+[[cases]]
+id = "the_first_dynamic_step_seeds_the_wall"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `wall_only_step_1`: the enabled branch seeds the wall to the mean of the two inlet temperatures, `(353.15 + 293.15)/2 = 323.15`, and the outlet shift is the heat rate applied as though it were a joule.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 321.35
+hot_out_t = 348.6848889155141
+cold_out_t = 300.6934680836265
+duty = 300000.0
+[[cases]]
+id = "the_tenth_dynamic_step_is_carried"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `wall_only_step_10`, restated as its own initial state: the wall is step 9's output, so this is the carried-state contract the outputs exist for.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+wall_temperature = 316.68758745921207
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 316.5678147198169
+hot_out_t = 347.72009257003145
+cold_out_t = 299.0726092499483
+duty = 364624.1246219836
+[[cases]]
+id = "the_zero_step_still_shifts_the_outlets"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `dt_quirk_0.0`: at `dt = 0` the wall does not move, but the outlet shift is not multiplied by `dt` and still applies, so the outlets equal the `dt = 1` step's.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 0.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+wall_temperature = 323.15
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 323.15
+hot_out_t = 348.6848889155141
+cold_out_t = 300.6934680836265
+duty = 300000.0
+[[cases]]
+id = "the_holdup_step_carries_three_temperatures"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `holdup_step_1`: both CSTR holdups are seeded from their inlets and advance one second against the pre-step wall.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 3000000.0
+hot_in_t = 423.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 3000000.0
+cold_in_t = 303.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 400.0
+wall_cp = 500.0
+shell_holdup_volume = 40.0
+tube_holdup_volume = 30.0
+heat_transfer_area = 2.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 362.9703196616055
+shell_fluid_temperature = 423.10975376724326
+tube_fluid_temperature = 303.2151115961644
+hot_out_t = 422.34923711614977
+cold_out_t = 304.5666193182062
+duty = 59959.752259057015
+[[cases]]
+id = "the_zero_holdup_control_is_the_wall_only"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `holdup_zero_step_1`: the same state with both holdup volumes zero, so the wall sees the inlet temperatures and the two CSTR outputs stay absent.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 3000000.0
+hot_in_t = 423.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 3000000.0
+cold_in_t = 303.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 400.0
+wall_cp = 500.0
+shell_holdup_volume = 0.0
+tube_holdup_volume = 0.0
+heat_transfer_area = 2.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 362.97
+hot_out_t = 422.34869938459036
+cold_out_t = 304.56815792845026
+duty = 59999.99849079922
+[[cases]]
+id = "the_hot_tube_mapping_reverses_the_class_duty"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `tube_hot_mapping`: the constructor's stream 0 is the cold side, so the shell is cold and the tube is hot. The class's duty is the shell's `qShellToWall = -300 000`; this id's duty is the hot side's release, `480 000`.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "hot"
+wall_mass = 200.0
+wall_cp = 500.0
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 324.95
+hot_out_t = 345.9950115183969
+cold_out_t = 297.8703489580375
+duty = 479999.9989547981

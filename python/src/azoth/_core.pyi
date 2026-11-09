@@ -3134,6 +3134,9 @@ class HeatExchangerResult:
     capacity_ratio: float | None
     ua_value: Qty | None
     delta_t_side: str | None
+    wall_temperature: Qty | None
+    shell_fluid_temperature: Qty | None
+    tube_fluid_temperature: Qty | None
     mechanical_selected_type: str | None
     mechanical_selected_area: Qty | None
     log_mean_temperature_difference: Qty | None
@@ -6335,6 +6338,19 @@ def heat_exchanger(
     rating_tube_to_baffle_clearance: float | None = None,
     rating_shell_to_baffle_clearance: float | None = None,
     rating_bypass_area: float | None = None,
+    time_step: float | None = None,
+    dynamic_model_enabled: bool | None = None,
+    transient_tube_side: str | None = None,
+    wall_mass: float | None = None,
+    wall_cp: float | None = None,
+    wall_temperature: float | None = None,
+    shell_holdup_volume: float | None = None,
+    tube_holdup_volume: float | None = None,
+    shell_side_htc: float | None = None,
+    tube_side_htc: float | None = None,
+    heat_transfer_area: float | None = None,
+    shell_fluid_temperature: float | None = None,
+    tube_fluid_temperature: float | None = None,
 ) -> HeatExchangerResult: ...
 def heater(
     components: list[str],

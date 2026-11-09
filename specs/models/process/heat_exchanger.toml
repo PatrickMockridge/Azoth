@@ -14,7 +14,7 @@ assumptions = [
     "**the effectiveness uses the class's Cr≈1 counterflow special case** and the same arrangement relation as the ordinary rating.",
     "**the outlet pressure is the inlet less the correlated drop**, and a drop that exhausts the inlet is refused rather than clamped.",
     "**the PH-flash energy closure is 1e-5 relative**, which is the class's own check.",
-    "**the detailed `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`.** Beside it the rating is `thermal.shell_and_tube_rating`, the zone-by-zone rating `thermal.zone_rating` and the incremental analysis `thermal.incremental_zone_analysis`. The dynamic model remains owed.",
+    "**the detailed `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`**; the rating, zone rating and incremental analysis sit beside it. **`runTransient` is the one-step surface below.**",
     "**the mechanical design is its thermal estimate only.** The four stream temperatures give an LMTD and an approach, the starting UA is `getUAvalue()`, and five candidate types give their areas and geometry.",
     "**the two-stream branch's sizing coefficient is the type's own typical U**, not the larger of it and a used coefficient as the heater branch takes. The used coefficient is the class's 500: the branch never reads the exchanger's `UAvalue` for it.",
     "**a pinned outlet feeds the estimate a zero duty.** `runSpecifiedStream` writes neither the `duty` field nor the effectiveness, so `determineDuty` sees zero and the effectiveness arm is skipped; the UA still comes from `getUAvalue()`.",
@@ -24,13 +24,27 @@ assumptions = [
     "**`runDeltaT`'s first pass is not modelled.** It seeds `outStream[0]` at `guessOutTemperature` and recurses; the branch that answers then re-clones both inlets, so the seed cannot reach `UAvalue` - the class's own test agrees to `1e-3` with and without a prior rating.",
     "**the two dead tests are carried as the class has them**: `thermalEffectiveness` is compared with `1.0` and is the class's field, and `hotColdDutyBalance` is hard-set to `1.0`. On a fresh exchanger the field is `0.0`, so the second `PHflash` runs and is a no-op at the enthalpy it was given.",
     "**a pinned outlet wins over `use_delta_t`**: `runDeltaT` delegates to `runSpecifiedStream`, so the pin runs and the delta-T branch is unreachable. The result carries a `FALLBACK_TO_INPUT` warning naming it.",
+    "**`runTransient`'s enabled branch is one step here.** Absent `time_step` is the steady `run`; a stated one is a call, **including zero**, because the class applies its outlet enthalpy shifts at `dt = 0` too. The session loop and the clock are outside the id.\n",
+    "**the enabled branch needs the class's three gates.** `dynamic_model_enabled`, a positive `wall_mass` and a positive `heat_transfer_area`; otherwise `runTransient` delegates to `Heater.runTransient`, the steady `run`. The fallback keeps every steady mode.\n",
+    "**the shell is `inStream[0]` and the tube `inStream[1]`, the reverse of the thermal-hydraulic rating.** `transient_tube_side` states the mapping; `rating_tube_side` does not apply, because the rating's stream 0 is the tube and the transient's is the shell.\n",
+    "**the wall is forward Euler.** `T_wall += (h_shell*A*(T_shell - T_wall) - h_tube*A*(T_wall - T_tube))/(m_wall*cp_wall) * dt`, where `T_shell`/`T_tube` are the CSTR temperatures with a positive holdup and the inlet temperatures otherwise. The wall update reads the pre-step wall.\n",
+    "**the two CSTR holdups are the class's ODEs.** `dT_shell/dt = (mdot*cp*(T_in - T_shell) - h_shell*A*(T_shell - T_wall))/(rho*V*cp)`, and the tube's `+ h_tube*A*(T_wall - T_tube)`. Density and mass Cp are the inlet's; a non-positive fluid mass or Cp skips the ODE and keeps the seeded state.\n",
+    "**the outlet enthalpy shift is a measured quirk.** The class applies the two duties (W) to the **total** inlet enthalpy as if they were J: `h_out = h_in - q`, each PH-flashed at the inlet pressure; the source's `* dt_effective` comment is not the code. The temperatures do integrate by `dt`.\n",
+    "**`duty` remains this id's hot-side release.** The class's `getDuty()` is `q_shell_to_wall`; this result publishes `n_hot*(h_hot_in - h_hot_out)`, as every other branch does. They agree when the shell is hot and differ otherwise, because the class applies the two side shifts independently.\n",
+    "**first-step seeding is the class's NaN sentinel.** An absent or NaN `wall_temperature` seeds to the mean of the two inlets; an absent or NaN holdup temperature seeds to its side's inlet. The post-step states are outputs, which is how a stateless id carries state.\n",
+    "**a two-phase side is refused.** The class's `getDensity` and `getCp` average the phases; this port's property surface is single-phase, so it refuses rather than pick one. The capture records the class's two-phase answer as evidence, uncased.\n",
+    "**a non-positive molar flow is refused**, because the outlet shift divides by the side's moles; the existing `hot_in_n`/`cold_in_n` check keeps that division out of the arithmetic.\n",
+    "**negative wall mass, area and holdup clamp; non-finite ones, a non-positive `wall_cp` and negative HTCs refuse.** The class's setters clamp the first three; `Math.max(0, NaN)` is NaN in Java, so this refuses non-finite parameters instead of carrying NaN.\n",
+    "**`calculateSteadyState = false` is not modelled.** It copies the outlet pressure to the inlet and re-runs the inlet, a mutation of the caller's stream; a one-step id has no inlet to mutate. The capture records the class's `NullPointerException` on its single-stream `outStream`.\n",
+    "**the mechanical estimate runs on the step too.** `runTransient` never calls `calcDesign`; the flag is the caller's, computed from the step's outlets with zero effectiveness and the stated `ua` (or the class's 500) as the UA basis.\n",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run` and `runTransient`.",
+    "`validation/neqsim/captures/process_heat_exchanger_transient.tsv` - the gate's fallback, the first-step seed, the ten-step wall trajectory, the holdup CSTRs against the zero-holdup control, the `dt` quirk, the hot-tube mapping and the degenerate evidence rows.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
-edition = "Its steady-state `run` - the rating, the `outTemperature` pin, `runDeltaT`'s closure and `runThermalHydraulicRating` - **and the mechanical design's two-stream estimate**. The detailed `ShellAndTubeDesignCalculator` and the two-phase models are outside."
+edition = "Its steady-state `run` - the rating, the `outTemperature` pin, `runDeltaT`'s closure and `runThermalHydraulicRating` - **the mechanical design's two-stream estimate, and `runTransient`'s enabled branch, one step**. The detailed `ShellAndTubeDesignCalculator` and the two-phase models are outside."
 [inputs]
 [inputs.hot_components]
 type = "components"
@@ -214,6 +228,59 @@ description = "the shell-to-baffle clearance. Absent is `0.003`.\n"
 unit = "m**2"
 optional = true
 description = "the bundle bypass area. Absent or zero estimates it as the calculator does.\n"
+[inputs.time_step]
+unit = "s"
+optional = true
+description = "one `runTransient(dt, id)` step. Absent is the steady `run`; **stated is a step, including zero**, because the class applies its outlet enthalpy shifts at `dt=0` and they are not multiplied by `dt`. The clock is the session's.\n"
+[inputs.dynamic_model_enabled]
+type = "boolean"
+optional = true
+description = "the class's `setDynamicModelEnabled`. Absent is false, so a stated `time_step` takes `Heater.runTransient`'s steady fallback. With a positive `wall_mass` and `heat_transfer_area` the wall and holdup ODEs run instead.\n"
+[inputs.transient_tube_side]
+type = "enum"
+values = ["hot", "cold"]
+optional = true
+description = "which declared side is the tube for `runTransient`. **Required when `time_step` is stated.** The class reads `inStream[0]` as the shell and `inStream[1]` as the tube, the reverse of `rating_tube_side`.\n"
+[inputs.wall_mass]
+unit = "kg"
+optional = true
+description = "the metal wall's mass. Absent is 0; a negative value is clamped, as `setWallMass` does, and a zero or absent one takes the steady fallback.\n"
+[inputs.wall_cp]
+unit = "J/(kg*K)"
+optional = true
+description = "the metal wall's specific heat. Absent is the class's `500`; it must be positive on the active branch, because the wall ODE divides by `wall_mass * wall_cp`.\n"
+[inputs.wall_temperature]
+unit = "K"
+optional = true
+description = "the carried metal-wall temperature. **Absent or NaN seeds to the mean of the two inlet temperatures on this step**, as `runTransient` does when the field is NaN; the result carries the post-step value for the next call.\n"
+[inputs.shell_holdup_volume]
+unit = "m**3"
+optional = true
+description = "the shell-side fluid holdup. Absent is 0; a negative value is clamped. A positive value turns `shell_fluid_temperature` into a carried CSTR state.\n"
+[inputs.tube_holdup_volume]
+unit = "m**3"
+optional = true
+description = "the tube-side fluid holdup, on the same terms as `shell_holdup_volume`.\n"
+[inputs.shell_side_htc]
+unit = "W/(m**2*K)"
+optional = true
+description = "the shell-side film coefficient. Absent is the class's `500`. It is a conductance, so a negative value is refused rather than reversing the transfer.\n"
+[inputs.tube_side_htc]
+unit = "W/(m**2*K)"
+optional = true
+description = "the tube-side film coefficient. Absent is the class's `1000`, on the same terms as `shell_side_htc`.\n"
+[inputs.heat_transfer_area]
+unit = "m**2"
+optional = true
+description = "the wall's heat-transfer area. Absent is 0; a negative value is clamped, and a zero or absent one takes the steady fallback.\n"
+[inputs.shell_fluid_temperature]
+unit = "K"
+optional = true
+description = "the carried shell-side CSTR temperature. **Absent or NaN seeds to the shell inlet when `shell_holdup_volume > 0`.** The class keeps it private with no getter; the result publishes it for the next call. Ignored at zero holdup.\n"
+[inputs.tube_fluid_temperature]
+unit = "K"
+optional = true
+description = "the carried tube-side CSTR temperature, on the same terms as `shell_fluid_temperature`.\n"
 [outputs]
 [outputs.hot_out_n]
 unit = "mol/s"
@@ -417,6 +484,18 @@ description = "the module width.\n"
 [outputs.mechanical_types.fields.module_height]
 unit = "m"
 description = "the module height.\n"
+[outputs.wall_temperature]
+unit = "K"
+optional = true
+description = "the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN.\n"
+[outputs.shell_fluid_temperature]
+unit = "K"
+optional = true
+description = "the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN.\n"
+[outputs.tube_fluid_temperature]
+unit = "K"
+optional = true
+description = "the post-step tube-side CSTR temperature, on the same terms.\n"
 
 [[valid_range]]
 quantity = "ua"
@@ -548,6 +627,54 @@ quantity = "rating_bypass_area"
 min = 0
 severity = "error"
 rationale = "a bypass area cannot be negative.\n"
+[[valid_range]]
+quantity = "time_step"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a forward-Euler interval; a negative one integrates the wall and holdups backwards.\n"
+[[valid_range]]
+quantity = "wall_mass"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setWallMass` clamps a negative mass to zero; zero takes the steady fallback.\n"
+[[valid_range]]
+quantity = "wall_cp"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the wall ODE divides by `wall_mass * wall_cp`; the class's setter accepts zero, but zero is singular.\n"
+[[valid_range]]
+quantity = "shell_holdup_volume"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setShellHoldupVolume` clamps a negative volume to zero.\n"
+[[valid_range]]
+quantity = "tube_holdup_volume"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setTubeHoldupVolume` clamps a negative volume to zero.\n"
+[[valid_range]]
+quantity = "shell_side_htc"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a film coefficient is a conductance; a negative one reverses the transfer the equation models.\n"
+[[valid_range]]
+quantity = "tube_side_htc"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a film coefficient is a conductance; a negative one reverses the transfer the equation models.\n"
+[[valid_range]]
+quantity = "heat_transfer_area"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "`setHeatTransferArea` clamps a negative area to zero; zero takes the steady fallback.\n"
 [implementations]
 python = "azoth.process.heat_exchanger"
 rust = "azoth_process::heat_exchanger"

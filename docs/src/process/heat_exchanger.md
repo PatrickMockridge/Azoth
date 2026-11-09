@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/HeatExchanger.java**
 
-Its steady-state `run` - the rating, the `outTemperature` pin, `runDeltaT`'s closure and `runThermalHydraulicRating` - **and the mechanical design's two-stream estimate**. The detailed `ShellAndTubeDesignCalculator` and the two-phase models are outside.
+Its steady-state `run` - the rating, the `outTemperature` pin, `runDeltaT`'s closure and `runThermalHydraulicRating` - **the mechanical design's two-stream estimate, and `runTransient`'s enabled branch, one step**. The detailed `ShellAndTubeDesignCalculator` and the two-phase models are outside.
 
 
 ## What this model is
@@ -65,6 +65,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `rating_tube_to_baffle_clearance` | m | *Optional.* the tube-to-baffle clearance. Absent is `0.0004`. |
 | `rating_shell_to_baffle_clearance` | m | *Optional.* the shell-to-baffle clearance. Absent is `0.003`. |
 | `rating_bypass_area` | m**2 | *Optional.* the bundle bypass area. Absent or zero estimates it as the calculator does. |
+| `time_step` | s | *Optional.* one `runTransient(dt, id)` step. Absent is the steady `run`; **stated is a step, including zero**, because the class applies its outlet enthalpy shifts at `dt=0` and they are not multiplied by `dt`. The clock is the session's. |
+| `dynamic_model_enabled` | - | *Optional.* the class's `setDynamicModelEnabled`. Absent is false, so a stated `time_step` takes `Heater.runTransient`'s steady fallback. With a positive `wall_mass` and `heat_transfer_area` the wall and holdup ODEs run instead. |
+| `transient_tube_side` | hot / cold | *Optional.* which declared side is the tube for `runTransient`. **Required when `time_step` is stated.** The class reads `inStream[0]` as the shell and `inStream[1]` as the tube, the reverse of `rating_tube_side`. |
+| `wall_mass` | kg | *Optional.* the metal wall's mass. Absent is 0; a negative value is clamped, as `setWallMass` does, and a zero or absent one takes the steady fallback. |
+| `wall_cp` | J/(kg*K) | *Optional.* the metal wall's specific heat. Absent is the class's `500`; it must be positive on the active branch, because the wall ODE divides by `wall_mass * wall_cp`. |
+| `wall_temperature` | K | *Optional.* the carried metal-wall temperature. **Absent or NaN seeds to the mean of the two inlet temperatures on this step**, as `runTransient` does when the field is NaN; the result carries the post-step value for the next call. |
+| `shell_holdup_volume` | m**3 | *Optional.* the shell-side fluid holdup. Absent is 0; a negative value is clamped. A positive value turns `shell_fluid_temperature` into a carried CSTR state. |
+| `tube_holdup_volume` | m**3 | *Optional.* the tube-side fluid holdup, on the same terms as `shell_holdup_volume`. |
+| `shell_side_htc` | W/(m**2*K) | *Optional.* the shell-side film coefficient. Absent is the class's `500`. It is a conductance, so a negative value is refused rather than reversing the transfer. |
+| `tube_side_htc` | W/(m**2*K) | *Optional.* the tube-side film coefficient. Absent is the class's `1000`, on the same terms as `shell_side_htc`. |
+| `heat_transfer_area` | m**2 | *Optional.* the wall's heat-transfer area. Absent is 0; a negative value is clamped, and a zero or absent one takes the steady fallback. |
+| `shell_fluid_temperature` | K | *Optional.* the carried shell-side CSTR temperature. **Absent or NaN seeds to the shell inlet when `shell_holdup_volume > 0`.** The class keeps it private with no getter; the result publishes it for the next call. Ignored at zero holdup. |
+| `tube_fluid_temperature` | K | *Optional.* the carried tube-side CSTR temperature, on the same terms as `shell_fluid_temperature`. |
 
 
 ## Outputs
@@ -112,6 +125,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `js` | dimensionless | *Optional.* the unequal-spacing correction factor; 1.0 on the Kern path. |
 | `jr` | dimensionless | *Optional.* the adverse-temperature-gradient correction factor; 1.0 on the Kern path. |
 | `mechanical_types` | - | the five candidates in the class's enum order; empty when the design did not run. |
+| `wall_temperature` | K | *Optional.* the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN. |
+| `shell_fluid_temperature` | K | *Optional.* the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN. |
+| `tube_fluid_temperature` | K | *Optional.* the post-step tube-side CSTR temperature, on the same terms. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -138,6 +154,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `rating_tube_to_baffle_clearance >= 0` | raises | a clearance cannot be negative. |
 | `rating_shell_to_baffle_clearance >= 0` | raises | a clearance cannot be negative. |
 | `rating_bypass_area >= 0` | raises | a bypass area cannot be negative. |
+| `time_step >= 0` | raises | a forward-Euler interval; a negative one integrates the wall and holdups backwards. |
+| `wall_mass >= 0` | warns `OUT_OF_VALID_RANGE` | `setWallMass` clamps a negative mass to zero; zero takes the steady fallback. |
+| `wall_cp > 0` | raises | the wall ODE divides by `wall_mass * wall_cp`; the class's setter accepts zero, but zero is singular. |
+| `shell_holdup_volume >= 0` | warns `OUT_OF_VALID_RANGE` | `setShellHoldupVolume` clamps a negative volume to zero. |
+| `tube_holdup_volume >= 0` | warns `OUT_OF_VALID_RANGE` | `setTubeHoldupVolume` clamps a negative volume to zero. |
+| `shell_side_htc >= 0` | raises | a film coefficient is a conductance; a negative one reverses the transfer the equation models. |
+| `tube_side_htc >= 0` | raises | a film coefficient is a conductance; a negative one reverses the transfer the equation models. |
+| `heat_transfer_area >= 0` | warns `OUT_OF_VALID_RANGE` | `setHeatTransferArea` clamps a negative area to zero; zero takes the steady fallback. |
 
 ## Assumptions
 
@@ -153,7 +177,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the effectiveness uses the class's Cr≈1 counterflow special case** and the same arrangement relation as the ordinary rating.
 - **the outlet pressure is the inlet less the correlated drop**, and a drop that exhausts the inlet is refused rather than clamped.
 - **the PH-flash energy closure is 1e-5 relative**, which is the class's own check.
-- **the detailed `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`.** Beside it the rating is `thermal.shell_and_tube_rating`, the zone-by-zone rating `thermal.zone_rating` and the incremental analysis `thermal.incremental_zone_analysis`. The dynamic model remains owed.
+- **the detailed `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`**; the rating, zone rating and incremental analysis sit beside it. **`runTransient` is the one-step surface below.**
 - **the mechanical design is its thermal estimate only.** The four stream temperatures give an LMTD and an approach, the starting UA is `getUAvalue()`, and five candidate types give their areas and geometry.
 - **the two-stream branch's sizing coefficient is the type's own typical U**, not the larger of it and a used coefficient as the heater branch takes. The used coefficient is the class's 500: the branch never reads the exchanger's `UAvalue` for it.
 - **a pinned outlet feeds the estimate a zero duty.** `runSpecifiedStream` writes neither the `duty` field nor the effectiveness, so `determineDuty` sees zero and the effectiveness arm is skipped; the UA still comes from `getUAvalue()`.
@@ -163,6 +187,32 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **`runDeltaT`'s first pass is not modelled.** It seeds `outStream[0]` at `guessOutTemperature` and recurses; the branch that answers then re-clones both inlets, so the seed cannot reach `UAvalue` - the class's own test agrees to `1e-3` with and without a prior rating.
 - **the two dead tests are carried as the class has them**: `thermalEffectiveness` is compared with `1.0` and is the class's field, and `hotColdDutyBalance` is hard-set to `1.0`. On a fresh exchanger the field is `0.0`, so the second `PHflash` runs and is a no-op at the enthalpy it was given.
 - **a pinned outlet wins over `use_delta_t`**: `runDeltaT` delegates to `runSpecifiedStream`, so the pin runs and the delta-T branch is unreachable. The result carries a `FALLBACK_TO_INPUT` warning naming it.
+- **`runTransient`'s enabled branch is one step here.** Absent `time_step` is the steady `run`; a stated one is a call, **including zero**, because the class applies its outlet enthalpy shifts at `dt = 0` too. The session loop and the clock are outside the id.
+
+- **the enabled branch needs the class's three gates.** `dynamic_model_enabled`, a positive `wall_mass` and a positive `heat_transfer_area`; otherwise `runTransient` delegates to `Heater.runTransient`, the steady `run`. The fallback keeps every steady mode.
+
+- **the shell is `inStream[0]` and the tube `inStream[1]`, the reverse of the thermal-hydraulic rating.** `transient_tube_side` states the mapping; `rating_tube_side` does not apply, because the rating's stream 0 is the tube and the transient's is the shell.
+
+- **the wall is forward Euler.** `T_wall += (h_shell*A*(T_shell - T_wall) - h_tube*A*(T_wall - T_tube))/(m_wall*cp_wall) * dt`, where `T_shell`/`T_tube` are the CSTR temperatures with a positive holdup and the inlet temperatures otherwise. The wall update reads the pre-step wall.
+
+- **the two CSTR holdups are the class's ODEs.** `dT_shell/dt = (mdot*cp*(T_in - T_shell) - h_shell*A*(T_shell - T_wall))/(rho*V*cp)`, and the tube's `+ h_tube*A*(T_wall - T_tube)`. Density and mass Cp are the inlet's; a non-positive fluid mass or Cp skips the ODE and keeps the seeded state.
+
+- **the outlet enthalpy shift is a measured quirk.** The class applies the two duties (W) to the **total** inlet enthalpy as if they were J: `h_out = h_in - q`, each PH-flashed at the inlet pressure; the source's `* dt_effective` comment is not the code. The temperatures do integrate by `dt`.
+
+- **`duty` remains this id's hot-side release.** The class's `getDuty()` is `q_shell_to_wall`; this result publishes `n_hot*(h_hot_in - h_hot_out)`, as every other branch does. They agree when the shell is hot and differ otherwise, because the class applies the two side shifts independently.
+
+- **first-step seeding is the class's NaN sentinel.** An absent or NaN `wall_temperature` seeds to the mean of the two inlets; an absent or NaN holdup temperature seeds to its side's inlet. The post-step states are outputs, which is how a stateless id carries state.
+
+- **a two-phase side is refused.** The class's `getDensity` and `getCp` average the phases; this port's property surface is single-phase, so it refuses rather than pick one. The capture records the class's two-phase answer as evidence, uncased.
+
+- **a non-positive molar flow is refused**, because the outlet shift divides by the side's moles; the existing `hot_in_n`/`cold_in_n` check keeps that division out of the arithmetic.
+
+- **negative wall mass, area and holdup clamp; non-finite ones, a non-positive `wall_cp` and negative HTCs refuse.** The class's setters clamp the first three; `Math.max(0, NaN)` is NaN in Java, so this refuses non-finite parameters instead of carrying NaN.
+
+- **`calculateSteadyState = false` is not modelled.** It copies the outlet pressure to the inlet and re-runs the inlet, a mutation of the caller's stream; a one-step id has no inlet to mutate. The capture records the class's `NullPointerException` on its single-stream `outStream`.
+
+- **the mechanical estimate runs on the step too.** `runTransient` never calls `calcDesign`; the flag is the caller's, computed from the step's outlets with zero effectiveness and the stated `ua` (or the class's 500) as the UA basis.
+
 
 ## Cases
 
@@ -190,11 +240,18 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_rating_mode_at_equal_inlets` | hot_components = ['n-heptane', 'n-octane'], hot_in_n = 95.77342306664585, hot_in_z = [0.7, 0.3], hot_in_p = 2000000.0, hot_in_t = 333.15, cold_components = ['n-heptane', 'n-octane'], cold_in_n = 76.61873845331667, cold_in_z = [0.7, 0.3], cold_in_p = 2000000.0, cold_in_t = 333.15, flow_arrangement = counterflow, use_rating_pressure_drop = True, rating_area = 31.41592653589793, rating_tube_side = cold, rating_tube_outside_diameter = 0.025, rating_tube_inside_diameter = 0.02, rating_tube_length = 4.0, rating_tube_count = 100.0, rating_tube_passes = 2.0, rating_tube_pitch = 0.032, rating_triangular_pitch = True, rating_fouling_tube = 0.0, rating_fouling_shell = 0.0 | rating_u = 447.12100228135114, rating_ua = 14046.720560327978, tube_side_pressure_drop = 2865.699046040555, shell_side_pressure_drop = 2006.3805505563944, tube_side_heat_transfer_coefficient = 1080.1504855426929, shell_side_heat_transfer_coefficient = 974.9965981389071, duty = 0.0, hot_out_t = 333.15084004539443, cold_out_t = 333.1511998223249, hot_out_p = 1997991.9361944946, cold_out_p = 1997134.3009539596, effectiveness = 0.0 |
 | `the_rating_mode_with_a_deposit_layer` | hot_components = ['n-heptane', 'n-octane'], hot_in_n = 95.77342306664585, hot_in_z = [0.7, 0.3], hot_in_p = 2000000.0, hot_in_t = 383.15, cold_components = ['n-heptane', 'n-octane'], cold_in_n = 76.61873845331667, cold_in_z = [0.7, 0.3], cold_in_p = 2000000.0, cold_in_t = 303.15, flow_arrangement = counterflow, use_rating_pressure_drop = True, rating_area = 31.41592653589793, rating_tube_side = cold, rating_tube_outside_diameter = 0.025, rating_tube_inside_diameter = 0.02, rating_tube_length = 4.0, rating_tube_count = 100.0, rating_tube_passes = 2.0, rating_tube_pitch = 0.032, rating_triangular_pitch = True, rating_fouling_tube = 0.0, rating_fouling_shell = 0.0, rating_tube_fouling_layer_thickness = 0.001, rating_tube_fouling_layer_conductivity = 0.2 | rating_u = 113.55825012997927, rating_ua = 3567.5376436285505, tube_side_pressure_drop = 4654.50064285779, shell_side_pressure_drop = 1994.6322377452318, tube_side_heat_transfer_coefficient = 1196.4992639075667, shell_side_heat_transfer_coefficient = 993.4561069744582, duty = 243538.5658024593, hot_out_t = 373.4582441474701, cold_out_t = 317.1307216289101, hot_out_p = 1998005.3677622546, cold_out_p = 1995345.4993571423, effectiveness = 0.1628686111709041 |
 | `the_rating_mode_with_bell_delaware` | hot_components = ['n-heptane', 'n-octane'], hot_in_n = 95.77342306664585, hot_in_z = [0.7, 0.3], hot_in_p = 2000000.0, hot_in_t = 383.15, cold_components = ['n-heptane', 'n-octane'], cold_in_n = 76.61873845331667, cold_in_z = [0.7, 0.3], cold_in_p = 2000000.0, cold_in_t = 303.15, flow_arrangement = counterflow, use_rating_pressure_drop = True, rating_area = 31.41592653589793, rating_tube_side = cold, rating_tube_outside_diameter = 0.025, rating_tube_inside_diameter = 0.02, rating_tube_length = 4.0, rating_tube_count = 100.0, rating_tube_passes = 2.0, rating_tube_pitch = 0.032, rating_triangular_pitch = True, rating_fouling_tube = 0.0, rating_fouling_shell = 0.0, rating_shell_side_method = bell_delaware | rating_u = 358.73325476545796, rating_ua = 11269.937577695184, tube_side_pressure_drop = 2893.9548107873375, shell_side_pressure_drop = 3265.630605870124, tube_side_heat_transfer_coefficient = 980.974228989477, shell_side_heat_transfer_coefficient = 685.0709516496196, duty = 583985.1423169624, hot_out_t = 359.56837074936686, cold_out_t = 336.00999751213334, hot_out_p = 1996734.36939413, cold_out_p = 1997106.0451892125, effectiveness = 0.39054532804777636, jc = 1.054, jl = 0.7123109582535239, jb = 0.5394836194862993, js = 1.0, jr = 1.0 |
+| `the_dynamic_gate_falls_back_to_the_rating` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 1000000.0, hot_in_t = 353.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 1000000.0, cold_in_t = 293.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = False, transient_tube_side = cold | hot_out_t = 353.06105521851066, cold_out_t = 293.24444470482376, duty = 5990.821688483828 |
+| `the_first_dynamic_step_seeds_the_wall` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 1000000.0, hot_in_t = 353.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 1000000.0, cold_in_t = 293.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = True, transient_tube_side = cold, wall_mass = 200.0, wall_cp = 500.0, heat_transfer_area = 20.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 321.35, hot_out_t = 348.6848889155141, cold_out_t = 300.6934680836265, duty = 300000.0 |
+| `the_tenth_dynamic_step_is_carried` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 1000000.0, hot_in_t = 353.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 1000000.0, cold_in_t = 293.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = True, transient_tube_side = cold, wall_mass = 200.0, wall_cp = 500.0, wall_temperature = 316.68758745921207, heat_transfer_area = 20.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 316.5678147198169, hot_out_t = 347.72009257003145, cold_out_t = 299.0726092499483, duty = 364624.1246219836 |
+| `the_zero_step_still_shifts_the_outlets` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 1000000.0, hot_in_t = 353.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 1000000.0, cold_in_t = 293.15, ua = 100.0, flow_arrangement = counterflow, time_step = 0.0, dynamic_model_enabled = True, transient_tube_side = cold, wall_mass = 200.0, wall_cp = 500.0, wall_temperature = 323.15, heat_transfer_area = 20.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 323.15, hot_out_t = 348.6848889155141, cold_out_t = 300.6934680836265, duty = 300000.0 |
+| `the_holdup_step_carries_three_temperatures` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 3000000.0, hot_in_t = 423.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 3000000.0, cold_in_t = 303.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = True, transient_tube_side = cold, wall_mass = 400.0, wall_cp = 500.0, shell_holdup_volume = 40.0, tube_holdup_volume = 30.0, heat_transfer_area = 2.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 362.9703196616055, shell_fluid_temperature = 423.10975376724326, tube_fluid_temperature = 303.2151115961644, hot_out_t = 422.34923711614977, cold_out_t = 304.5666193182062, duty = 59959.752259057015 |
+| `the_zero_holdup_control_is_the_wall_only` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 3000000.0, hot_in_t = 423.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 3000000.0, cold_in_t = 303.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = True, transient_tube_side = cold, wall_mass = 400.0, wall_cp = 500.0, shell_holdup_volume = 0.0, tube_holdup_volume = 0.0, heat_transfer_area = 2.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 362.97, hot_out_t = 422.34869938459036, cold_out_t = 304.56815792845026, duty = 59999.99849079922 |
+| `the_hot_tube_mapping_reverses_the_class_duty` | hot_components = ['methane'], hot_in_n = 1731.4578182246325, hot_in_z = [1.0], hot_in_p = 1000000.0, hot_in_t = 353.15, cold_components = ['methane'], cold_in_n = 1731.4578182246325, cold_in_z = [1.0], cold_in_p = 1000000.0, cold_in_t = 293.15, ua = 100.0, flow_arrangement = counterflow, time_step = 1.0, dynamic_model_enabled = True, transient_tube_side = hot, wall_mass = 200.0, wall_cp = 500.0, heat_transfer_area = 20.0, shell_side_htc = 500.0, tube_side_htc = 800.0 | wall_temperature = 324.95, hot_out_t = 345.9950115183969, cold_out_t = 297.8703489580375, duty = 479999.9989547981 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 22 declared, every one run
+- Tests: 29 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -203,4 +260,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run` and `runTransient`.
+- `validation/neqsim/captures/process_heat_exchanger_transient.tsv` - the gate's fallback, the first-step seed, the ten-step wall trajectory, the holdup CSTRs against the zero-holdup control, the `dt` quirk, the hot-tube mapping and the degenerate evidence rows.

@@ -134,3 +134,51 @@ def test_an_unknown_selection_criterion_is_refused() -> None:
     base = h.model_kwargs(SPEC, _case("the_effectiveness_ntu_rating")["inputs"])
     with pytest.raises(InvalidInputError, match="mechanical_selection"):
         resolve(MODEL_ID)(**base, mechanical_design=True, mechanical_selection="cheapest")
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_dynamic_state_is_carried_by_the_outputs(backend: str) -> None:
+    result = _run(_case("the_first_dynamic_step_seeds_the_wall"), backend)
+    assert result.wall_temperature is not None
+    assert result.wall_temperature.to("K").magnitude == pytest.approx(321.35, rel=1e-9)
+    # A holdup was not stated, so the two CSTR temperatures stay absent.
+    assert result.shell_fluid_temperature is None
+    assert result.tube_fluid_temperature is None
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_holdup_outputs_are_present_only_with_a_holdup(backend: str) -> None:
+    holdup = _run(_case("the_holdup_step_carries_three_temperatures"), backend)
+    assert holdup.shell_fluid_temperature is not None
+    assert holdup.tube_fluid_temperature is not None
+    control = _run(_case("the_zero_holdup_control_is_the_wall_only"), backend)
+    assert control.shell_fluid_temperature is None
+    assert control.tube_fluid_temperature is None
+
+
+def test_a_transient_input_without_time_step_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("the_first_dynamic_step_seeds_the_wall")["inputs"])
+    base.pop("time_step")
+    with pytest.raises(InvalidInputError, match="a transient input is stated without"):
+        resolve(MODEL_ID)(**base)
+
+
+@pytest.mark.parametrize("backend", sorted(available()))
+def test_the_fallback_echoes_a_stated_state(backend: Any) -> None:
+    base = h.model_kwargs(SPEC, _case("the_dynamic_gate_falls_back_to_the_rating")["inputs"])
+    with use_backend(backend):
+        result = resolve(MODEL_ID)(**base, wall_temperature=Q(330.0, "K"))
+    assert result.wall_temperature.to("K").magnitude == pytest.approx(330.0)
+    assert result.shell_fluid_temperature is None
+
+
+def test_a_two_phase_side_is_refused() -> None:
+    base = h.model_kwargs(SPEC, _case("the_first_dynamic_step_seeds_the_wall")["inputs"])
+    # The hot side is the shell here; a 50/50 methane/n-butane at 250 K and 5 bar is two
+    # phases, and the transient step needs one density and one Cp.
+    base["hot_components"] = ["methane", "n-butane"]
+    base["hot_in_z"] = [0.5, 0.5]
+    base["hot_in_p"] = Q(5.0, "bar")
+    base["hot_in_t"] = Q(250.0, "K")
+    with pytest.raises(InvalidInputError, match="stream"):
+        resolve(MODEL_ID)(**base)

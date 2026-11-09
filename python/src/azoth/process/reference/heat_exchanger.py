@@ -119,6 +119,19 @@ def heat_exchanger(
     rating_tube_to_baffle_clearance: Q | None = None,
     rating_shell_to_baffle_clearance: Q | None = None,
     rating_bypass_area: Q | None = None,
+    time_step: Q | None = None,
+    dynamic_model_enabled: bool | None = None,
+    transient_tube_side: str | None = None,
+    wall_mass: Q | None = None,
+    wall_cp: Q | None = None,
+    wall_temperature: Q | None = None,
+    shell_holdup_volume: Q | None = None,
+    tube_holdup_volume: Q | None = None,
+    shell_side_htc: Q | None = None,
+    tube_side_htc: Q | None = None,
+    heat_transfer_area: Q | None = None,
+    shell_fluid_temperature: Q | None = None,
+    tube_fluid_temperature: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -191,6 +204,45 @@ def heat_exchanger(
         if guess_out_temperature is None
         else input_to_si(spec, "guess_out_temperature", guess_out_temperature)
     )
+    time_step_si = None if time_step is None else input_to_si(spec, "time_step", time_step)
+    wall_mass_si = None if wall_mass is None else input_to_si(spec, "wall_mass", wall_mass)
+    wall_cp_si = None if wall_cp is None else input_to_si(spec, "wall_cp", wall_cp)
+    wall_temperature_si = (
+        None
+        if wall_temperature is None
+        else input_to_si(spec, "wall_temperature", wall_temperature)
+    )
+    shell_holdup_si = (
+        None
+        if shell_holdup_volume is None
+        else input_to_si(spec, "shell_holdup_volume", shell_holdup_volume)
+    )
+    tube_holdup_si = (
+        None
+        if tube_holdup_volume is None
+        else input_to_si(spec, "tube_holdup_volume", tube_holdup_volume)
+    )
+    shell_side_htc_si = (
+        None if shell_side_htc is None else input_to_si(spec, "shell_side_htc", shell_side_htc)
+    )
+    tube_side_htc_si = (
+        None if tube_side_htc is None else input_to_si(spec, "tube_side_htc", tube_side_htc)
+    )
+    area_si = (
+        None
+        if heat_transfer_area is None
+        else input_to_si(spec, "heat_transfer_area", heat_transfer_area)
+    )
+    shell_fluid_temperature_si = (
+        None
+        if shell_fluid_temperature is None
+        else input_to_si(spec, "shell_fluid_temperature", shell_fluid_temperature)
+    )
+    tube_fluid_temperature_si = (
+        None
+        if tube_fluid_temperature is None
+        else input_to_si(spec, "tube_fluid_temperature", tube_fluid_temperature)
+    )
     # Every declared bound's quantity is fed here: a closure that supplies some and not
     # the rest emits a `RANGE_CHECK_SKIPPED` warning for a check that could have run.
     apply_checks(
@@ -239,6 +291,14 @@ def heat_exchanger(
                 spec, "rating_shell_to_baffle_clearance", rating_shell_to_baffle_clearance
             ),
             "rating_bypass_area": _optional_si(spec, "rating_bypass_area", rating_bypass_area),
+            "time_step": time_step_si,
+            "wall_mass": wall_mass_si,
+            "wall_cp": wall_cp_si,
+            "shell_holdup_volume": shell_holdup_si,
+            "tube_holdup_volume": tube_holdup_si,
+            "shell_side_htc": shell_side_htc_si,
+            "tube_side_htc": tube_side_htc_si,
+            "heat_transfer_area": area_si,
         }.get,
         warnings,
     )
@@ -280,8 +340,109 @@ def heat_exchanger(
         if flow <= 0.0:
             raise OutOfRangeError(field, flow, "an exchanger side needs a positive molar flow")
 
+    # **The transient gate.** `time_step`'s presence is the caller's statement that this is
+    # one `runTransient` step; the class's `dynamicModelEnabled`, `wallMass > 0` and
+    # `heatTransferArea > 0` then choose between the enabled branch and the steady fallback.
+    transient_requested = time_step_si is not None
+    if not transient_requested:
+        for name, stated in (
+            ("dynamic_model_enabled", dynamic_model_enabled is not None),
+            ("transient_tube_side", transient_tube_side is not None),
+            ("wall_mass", wall_mass_si is not None),
+            ("wall_cp", wall_cp_si is not None),
+            ("wall_temperature", wall_temperature_si is not None),
+            ("shell_holdup_volume", shell_holdup_si is not None),
+            ("tube_holdup_volume", tube_holdup_si is not None),
+            ("shell_side_htc", shell_side_htc_si is not None),
+            ("tube_side_htc", tube_side_htc_si is not None),
+            ("heat_transfer_area", area_si is not None),
+            ("shell_fluid_temperature", shell_fluid_temperature_si is not None),
+            ("tube_fluid_temperature", tube_fluid_temperature_si is not None),
+        ):
+            if stated:
+                raise InvalidInputError(name, "a transient input is stated without `time_step`")
+    if transient_tube_side not in (None, "hot", "cold"):
+        raise InvalidInputError(
+            "transient_tube_side",
+            f"{transient_tube_side} is not one of hot or cold",
+        )
+    if transient_requested and transient_tube_side is None:
+        raise InvalidInputError(
+            "transient_tube_side",
+            "a stated `time_step` needs the side that is the tube",
+        )
+    for name, value in (
+        ("time_step", time_step_si),
+        ("wall_mass", wall_mass_si),
+        ("wall_cp", wall_cp_si),
+        ("shell_holdup_volume", shell_holdup_si),
+        ("tube_holdup_volume", tube_holdup_si),
+        ("shell_side_htc", shell_side_htc_si),
+        ("tube_side_htc", tube_side_htc_si),
+        ("heat_transfer_area", area_si),
+    ):
+        if value is not None and not math.isfinite(value):
+            raise InvalidInputError(name, f"a finite value is required, and {value} is not")
+    for name, value in (
+        ("wall_temperature", wall_temperature_si),
+        ("shell_fluid_temperature", shell_fluid_temperature_si),
+        ("tube_fluid_temperature", tube_fluid_temperature_si),
+    ):
+        if value is not None and math.isinf(value):
+            raise InvalidInputError(
+                name,
+                f"a carried temperature is finite or NaN, and {value} is neither",
+            )
+    wall_mass_kg = 0.0 if wall_mass_si is None else max(0.0, wall_mass_si)
+    holdup_shell = 0.0 if shell_holdup_si is None else max(0.0, shell_holdup_si)
+    holdup_tube = 0.0 if tube_holdup_si is None else max(0.0, tube_holdup_si)
+    area_m2 = 0.0 if area_si is None else max(0.0, area_si)
+    active_transient = (
+        transient_requested and bool(dynamic_model_enabled) and wall_mass_kg > 0.0 and area_m2 > 0.0
+    )
+
     diagnostics: RatingDiagnostics | None = None
-    if use_rating_pressure_drop:
+    transient_state: TransientState | None = None
+    hot_p_si = input_to_si(spec, "hot_in_p", hot_in_p)
+    cold_p_si = input_to_si(spec, "cold_in_p", cold_in_p)
+    if active_transient:
+        for name, stated in (
+            ("hot_outlet_temperature", hot_out_t_si is not None),
+            ("cold_outlet_temperature", cold_out_t_si is not None),
+            ("use_delta_t", bool(use_delta_t)),
+            ("use_rating_pressure_drop", bool(use_rating_pressure_drop)),
+        ):
+            if stated:
+                raise InvalidInputError(
+                    name, "the dynamic branch has no steady outlet to pin or rate"
+                )
+        time_step_value = 0.0 if time_step_si is None else time_step_si
+        states = _transient_states(
+            hot_components,
+            hot_n,
+            hot_in_z,
+            hot_p_si,
+            hot_t_si,
+            cold_components,
+            cold_n,
+            cold_in_z,
+            cold_p_si,
+            cold_t_si,
+            time_step_value,
+            wall_mass_kg,
+            500.0 if wall_cp_si is None else wall_cp_si,
+            wall_temperature_si,
+            holdup_shell,
+            holdup_tube,
+            500.0 if shell_side_htc_si is None else shell_side_htc_si,
+            1000.0 if tube_side_htc_si is None else tube_side_htc_si,
+            area_m2,
+            shell_fluid_temperature_si,
+            tube_fluid_temperature_si,
+            tube_is_hot=transient_tube_side == "hot",
+        )
+        transient_state = states.transient
+    elif use_rating_pressure_drop:
         if hot_out_t_si is not None or cold_out_t_si is not None or use_delta_t:
             raise InvalidInputError(
                 "use_rating_pressure_drop",
@@ -377,6 +538,14 @@ def heat_exchanger(
             bool(use_delta_t),
             delta_t_si,
         )
+    if transient_requested and not active_transient:
+        # **The class's fields survive `run`**, so a steady fallback echoes what the caller
+        # stated rather than inventing a state the step did not advance.
+        transient_state = TransientState(
+            wall_temperature=wall_temperature_si,
+            shell_fluid_temperature=shell_fluid_temperature_si,
+            tube_fluid_temperature=tube_fluid_temperature_si,
+        )
 
     mechanical = None
     if mechanical_requested:
@@ -430,6 +599,27 @@ def heat_exchanger(
         capacity_ratio=None if states.rating is None else states.rating.capacity_ratio,
         ua_value=None if states.ua_value is None else from_si(states.ua_value, "W/K"),
         delta_t_side=states.delta_t_side,
+        wall_temperature=(
+            None
+            if transient_state is None
+            or transient_state.wall_temperature is None
+            or math.isnan(transient_state.wall_temperature)
+            else from_si(transient_state.wall_temperature, "K")
+        ),
+        shell_fluid_temperature=(
+            None
+            if transient_state is None
+            or transient_state.shell_fluid_temperature is None
+            or math.isnan(transient_state.shell_fluid_temperature)
+            else from_si(transient_state.shell_fluid_temperature, "K")
+        ),
+        tube_fluid_temperature=(
+            None
+            if transient_state is None
+            or transient_state.tube_fluid_temperature is None
+            or math.isnan(transient_state.tube_fluid_temperature)
+            else from_si(transient_state.tube_fluid_temperature, "K")
+        ),
         mechanical_selected_type=(
             None if mechanical is None else mechanical.selected.mechanical_type
         ),
@@ -503,6 +693,19 @@ class Rating:
 
 
 @dataclass(frozen=True, slots=True)
+class TransientState:
+    """The three temperatures one dynamic step hands to the next, in K.
+
+    ``None`` means the class's field is NaN, which is its first-step sentinel and not a
+    temperature; a fallback echoes what the caller stated.
+    """
+
+    wall_temperature: float | None
+    shell_fluid_temperature: float | None
+    tube_fluid_temperature: float | None
+
+
+@dataclass(frozen=True, slots=True)
 class ExchangerStates:
     """Both sides' states on the way through, and the rating's interior, in SI."""
 
@@ -526,6 +729,8 @@ class ExchangerStates:
     ua_value: float | None
     #: Which side ``runDeltaT`` set; ``None`` outside that mode.
     delta_t_side: str | None
+    #: The carried state after a ``runTransient`` step; ``None`` on every steady branch.
+    transient: TransientState | None = None
 
 
 def _states(
@@ -689,6 +894,192 @@ def _states(
         rating=rating,
         ua_value=ua_value,
         delta_t_side=delta_t_side,
+    )
+
+
+def _transient_phase(
+    components: list[str],
+    n: float,
+    z: list[float],
+    pressure: float,
+    temperature: float,
+) -> tuple[float, float, float]:
+    """A single-phase state's density, mass Cp and mass flow, without transport.
+
+    **There is no transport here on purpose**: the wall and CSTR ODEs read only the inlet's
+    density and mass heat capacity, and `_phase_properties`' transport step refuses a pure
+    component the way NeqSim's effective-diffusivity denominator does.
+    """
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    flash = pt_flash_solve(mixture, quantity(temperature, "K"), quantity(pressure, "Pa"), z)
+    if flash.phase == Phase.TWO_PHASE:
+        raise InvalidInputError(
+            "stream", "the exchanger's transient step requires single-phase streams"
+        )
+    root = flash.z_vapour if flash.phase == Phase.ALL_VAPOUR else flash.z_liquid
+    composition = list(z)
+    molar_mass = sum(
+        (component.molar_mass.to("kg/mol").magnitude if component.molar_mass else 0.0) * fraction
+        for component, fraction in zip(mixture.components, composition, strict=True)
+    )
+    volume = (
+        pr_molar_volume(root, quantity(temperature, "K"), quantity(pressure, "Pa"))
+        .v.to("m**3/mol")
+        .magnitude
+    )
+    density = (
+        pr_mass_density(
+            quantity(molar_mass, "kg/mol"),
+            quantity(volume - mixture.volume_shift(composition), "m**3/mol"),
+        )
+        .rho.to("kg/m**3")
+        .magnitude
+    )
+    cp_mass = (
+        molar_enthalpy_entropy(
+            mixture,
+            ideal_gas,
+            quantity(temperature, "K"),
+            quantity(pressure, "Pa"),
+            composition,
+            root,
+        )
+        .cp.to("J/(mol*K)")
+        .magnitude
+        / molar_mass
+    )
+    return density, cp_mass, n * molar_mass
+
+
+def _transient_states(
+    hot_components: list[str],
+    hot_in_n: float,
+    hot_in_z: list[float],
+    hot_in_p: float,
+    hot_in_t: float,
+    cold_components: list[str],
+    cold_in_n: float,
+    cold_in_z: list[float],
+    cold_in_p: float,
+    cold_in_t: float,
+    time_step: float,
+    wall_mass: float,
+    wall_cp: float,
+    wall_temperature: float | None,
+    shell_holdup: float,
+    tube_holdup: float,
+    shell_side_htc: float,
+    tube_side_htc: float,
+    area: float,
+    shell_fluid_temperature: float | None,
+    tube_fluid_temperature: float | None,
+    *,
+    tube_is_hot: bool,
+) -> ExchangerStates:
+    """One `HeatExchanger.runTransient` step of the enabled branch.
+
+    The class's stream 0 is the shell and stream 1 the tube, the reverse of the rating; the
+    outlet shift applies the heat **rate** as though it were a joule while the temperatures
+    integrate by `time_step`.
+    """
+    hot_mixture, hot_gas = _components.mixture_of(hot_components, eos="pr")
+    cold_mixture, cold_gas = _components.mixture_of(cold_components, eos="pr")
+    hot_h, _ = enthalpy_at(hot_mixture, hot_gas, hot_in_t, hot_in_p, hot_in_z)
+    cold_h, _ = enthalpy_at(cold_mixture, cold_gas, cold_in_t, cold_in_p, cold_in_z)
+    hot = (hot_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, hot_mixture, hot_gas, hot_h)
+    cold = (
+        cold_components,
+        cold_in_n,
+        cold_in_z,
+        cold_in_p,
+        cold_in_t,
+        cold_mixture,
+        cold_gas,
+        cold_h,
+    )
+    shell, tube = (cold, hot) if tube_is_hot else (hot, cold)
+    shell_names, shell_n, shell_z, shell_p, shell_t, _shell_mix, _shell_gas, shell_h = shell
+    tube_names, tube_n, tube_z, tube_p, tube_t, _tube_mix, _tube_gas, tube_h = tube
+
+    # The refusal is independent of the holdup: a two-phase side has no one density or Cp.
+    _transient_phase(shell_names, shell_n, shell_z, shell_p, shell_t)
+    _transient_phase(tube_names, tube_n, tube_z, tube_p, tube_t)
+
+    wall = (
+        0.5 * (shell_t + tube_t)
+        if wall_temperature is None or math.isnan(wall_temperature)
+        else wall_temperature
+    )
+
+    if shell_holdup > 0.0:
+        shell_state = (
+            shell_t
+            if shell_fluid_temperature is None or math.isnan(shell_fluid_temperature)
+            else shell_fluid_temperature
+        )
+        shell_density, shell_cp, shell_mass_flow = _transient_phase(
+            shell_names, shell_n, shell_z, shell_p, shell_t
+        )
+        fluid_mass = shell_density * shell_holdup
+        if fluid_mass > 0.0 and shell_cp > 0.0:
+            mixing = shell_mass_flow * shell_cp * (shell_t - shell_state)
+            to_wall = shell_side_htc * area * (shell_state - wall)
+            shell_state += (mixing - to_wall) / (fluid_mass * shell_cp) * time_step
+        shell_for_wall = shell_state
+        shell_out_state = shell_state
+    else:
+        shell_for_wall = shell_t
+        shell_out_state = None
+
+    if tube_holdup > 0.0:
+        tube_state = (
+            tube_t
+            if tube_fluid_temperature is None or math.isnan(tube_fluid_temperature)
+            else tube_fluid_temperature
+        )
+        tube_density, tube_cp, tube_mass_flow = _transient_phase(
+            tube_names, tube_n, tube_z, tube_p, tube_t
+        )
+        fluid_mass = tube_density * tube_holdup
+        if fluid_mass > 0.0 and tube_cp > 0.0:
+            mixing = tube_mass_flow * tube_cp * (tube_t - tube_state)
+            wall_to_fluid = tube_side_htc * area * (wall - tube_state)
+            tube_state += (mixing + wall_to_fluid) / (fluid_mass * tube_cp) * time_step
+        tube_for_wall = tube_state
+        tube_out_state = tube_state
+    else:
+        tube_for_wall = tube_t
+        tube_out_state = None
+
+    q_shell_to_wall = shell_side_htc * area * (shell_for_wall - wall)
+    q_wall_to_tube = tube_side_htc * area * (wall - tube_for_wall)
+    wall += (q_shell_to_wall - q_wall_to_tube) / (wall_mass * wall_cp) * time_step
+
+    shell_out_h = shell_h - divide(q_shell_to_wall, shell_n)
+    tube_out_h = tube_h + divide(q_wall_to_tube, tube_n)
+    if tube_is_hot:
+        hot_out_h, cold_out_h = tube_out_h, shell_out_h
+    else:
+        hot_out_h, cold_out_h = shell_out_h, tube_out_h
+
+    return ExchangerStates(
+        hot_in_h=hot_h,
+        cold_in_h=cold_h,
+        hot_out_h=hot_out_h,
+        cold_out_h=cold_out_h,
+        hot_out_t=_temperature(hot_mixture, hot_gas, hot_in_p, hot_out_h, hot_in_z),
+        cold_out_t=_temperature(cold_mixture, cold_gas, cold_in_p, cold_out_h, cold_in_z),
+        hot_out_p=hot_in_p,
+        cold_out_p=cold_in_p,
+        duty=q_shell_to_wall,
+        rating=None,
+        ua_value=None,
+        delta_t_side=None,
+        transient=TransientState(
+            wall_temperature=wall,
+            shell_fluid_temperature=shell_out_state,
+            tube_fluid_temperature=tube_out_state,
+        ),
     )
 
 

@@ -2576,6 +2576,19 @@ def heat_exchanger(
     rating_tube_to_baffle_clearance: Q | None = None,
     rating_shell_to_baffle_clearance: Q | None = None,
     rating_bypass_area: Q | None = None,
+    time_step: Q | None = None,
+    dynamic_model_enabled: bool | None = None,
+    transient_tube_side: str | None = None,
+    wall_mass: Q | None = None,
+    wall_cp: Q | None = None,
+    wall_temperature: Q | None = None,
+    shell_holdup_volume: Q | None = None,
+    tube_holdup_volume: Q | None = None,
+    shell_side_htc: Q | None = None,
+    tube_side_htc: Q | None = None,
+    heat_transfer_area: Q | None = None,
+    shell_fluid_temperature: Q | None = None,
+    tube_fluid_temperature: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -2587,7 +2600,9 @@ def heat_exchanger(
 
     The default mode is the **effectiveness-NTU rating** its NeqSim class runs: ``ua`` and
     ``flow_arrangement`` size the exchanger and the duty is what comes out. Pinning one
-    outlet temperature is the other mode, and it energy-balances the opposite side.
+    outlet temperature is the other mode, and it energy-balances the opposite side. A stated
+    ``time_step`` is one ``runTransient`` step; the wall and holdup temperatures are carried
+    back in as inputs.
 
     Raises:
         InvalidInputError: where neither or both outlet temperatures are given, where the
@@ -2643,6 +2658,19 @@ def heat_exchanger(
         rating_tube_to_baffle_clearance=rating_tube_to_baffle_clearance,
         rating_shell_to_baffle_clearance=rating_shell_to_baffle_clearance,
         rating_bypass_area=rating_bypass_area,
+        time_step=time_step,
+        dynamic_model_enabled=dynamic_model_enabled,
+        transient_tube_side=transient_tube_side,
+        wall_mass=wall_mass,
+        wall_cp=wall_cp,
+        wall_temperature=wall_temperature,
+        shell_holdup_volume=shell_holdup_volume,
+        tube_holdup_volume=tube_holdup_volume,
+        shell_side_htc=shell_side_htc,
+        tube_side_htc=tube_side_htc,
+        heat_transfer_area=heat_transfer_area,
+        shell_fluid_temperature=shell_fluid_temperature,
+        tube_fluid_temperature=tube_fluid_temperature,
     )
 
 

@@ -10,9 +10,9 @@
 
 use azoth_core::units::{
     Area, DynamicViscosity, HeatTransfer, Length, Mass, MolarEnergy, Power, Pressure,
-    ThermalConductance, ThermalConductivity, ThermodynamicTemperature, Velocity, joules_per_mole,
-    kelvins, kilograms, meters, meters_per_second, pascals, square_meters, watts_per_kelvin,
-    watts_per_square_meter_kelvin,
+    SpecificHeatCapacity, ThermalConductance, ThermalConductivity, ThermodynamicTemperature, Time,
+    Velocity, Volume, joules_per_mole, kelvins, kilograms, meters, meters_per_second, pascals,
+    square_meters, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -133,6 +133,15 @@ pub struct HeatExchangerResult {
     pub ua_value: Option<f64>,
     /// Which side `runDeltaT` set, `"hot"` or `"cold"`; present only in that mode.
     pub delta_t_side: Option<String>,
+    /// The post-step wall temperature; present only on a transient step.
+    #[serde(serialize_with = "optional_scalar")]
+    pub wall_temperature: Option<ThermodynamicTemperature>,
+    /// The post-step shell CSTR temperature; present only with a shell holdup.
+    #[serde(serialize_with = "optional_scalar")]
+    pub shell_fluid_temperature: Option<ThermodynamicTemperature>,
+    /// The post-step tube CSTR temperature; present only with a tube holdup.
+    #[serde(serialize_with = "optional_scalar")]
+    pub tube_fluid_temperature: Option<ThermodynamicTemperature>,
     /// The selected mechanical configuration.
     pub mechanical_selected_type: Option<String>,
     /// The selected configuration's required area.
@@ -251,6 +260,19 @@ pub fn heat_exchanger(
     rating_tube_to_baffle_clearance: Option<Length>,
     rating_shell_to_baffle_clearance: Option<Length>,
     rating_bypass_area: Option<Area>,
+    time_step: Option<Time>,
+    dynamic_model_enabled: Option<bool>,
+    transient_tube_side: Option<&str>,
+    wall_mass: Option<Mass>,
+    wall_cp: Option<SpecificHeatCapacity>,
+    wall_temperature: Option<ThermodynamicTemperature>,
+    shell_holdup_volume: Option<Volume>,
+    tube_holdup_volume: Option<Volume>,
+    shell_side_htc: Option<HeatTransfer>,
+    tube_side_htc: Option<HeatTransfer>,
+    heat_transfer_area: Option<Area>,
+    shell_fluid_temperature: Option<ThermodynamicTemperature>,
+    tube_fluid_temperature: Option<ThermodynamicTemperature>,
 ) -> Result<HeatExchangerResult> {
     let spec = &model_gen::HEAT_EXCHANGER_SPEC;
     let mut warnings = Vec::new();
@@ -293,6 +315,14 @@ pub fn heat_exchanger(
                 rating_shell_to_baffle_clearance.map(|value| value.value)
             }
             "rating_bypass_area" => rating_bypass_area.map(|value| value.value),
+            "time_step" => time_step.map(|value| value.value),
+            "wall_mass" => wall_mass.map(|value| value.value),
+            "wall_cp" => wall_cp.map(|value| value.value),
+            "shell_holdup_volume" => shell_holdup_volume.map(|value| value.value),
+            "tube_holdup_volume" => tube_holdup_volume.map(|value| value.value),
+            "shell_side_htc" => shell_side_htc.map(|value| value.value),
+            "tube_side_htc" => tube_side_htc.map(|value| value.value),
+            "heat_transfer_area" => heat_transfer_area.map(|value| value.value),
             _ => None,
         },
         &mut warnings,
@@ -362,6 +392,112 @@ pub fn heat_exchanger(
         cold_in_p,
         cold_in_t,
     )?;
+    // **The transient gate.** `time_step`'s presence is the caller's statement that this is
+    // one `runTransient` step; the class's `dynamicModelEnabled`, `wallMass > 0` and
+    // `heatTransferArea > 0` then choose between the enabled branch and the steady fallback.
+    let transient_requested = time_step.is_some();
+    if !transient_requested {
+        for (name, stated) in [
+            ("dynamic_model_enabled", dynamic_model_enabled.is_some()),
+            ("transient_tube_side", transient_tube_side.is_some()),
+            ("wall_mass", wall_mass.is_some()),
+            ("wall_cp", wall_cp.is_some()),
+            ("wall_temperature", wall_temperature.is_some()),
+            ("shell_holdup_volume", shell_holdup_volume.is_some()),
+            ("tube_holdup_volume", tube_holdup_volume.is_some()),
+            ("shell_side_htc", shell_side_htc.is_some()),
+            ("tube_side_htc", tube_side_htc.is_some()),
+            ("heat_transfer_area", heat_transfer_area.is_some()),
+            ("shell_fluid_temperature", shell_fluid_temperature.is_some()),
+            ("tube_fluid_temperature", tube_fluid_temperature.is_some()),
+        ] {
+            if stated {
+                return Err(AzothError::invalid_input(
+                    name,
+                    "a transient input is stated without `time_step`",
+                ));
+            }
+        }
+    }
+    let transient_tube_is_hot = match transient_tube_side {
+        Some("hot") => Some(true),
+        Some("cold") => Some(false),
+        Some(other) => {
+            return Err(AzothError::invalid_input(
+                "transient_tube_side",
+                format!("{other} is not one of hot or cold"),
+            ));
+        }
+        None => None,
+    };
+    if transient_requested && transient_tube_is_hot.is_none() {
+        return Err(AzothError::invalid_input(
+            "transient_tube_side",
+            "a stated `time_step` needs the side that is the tube",
+        ));
+    }
+    for (name, value) in [
+        ("time_step", time_step.map(|value| value.value)),
+        ("wall_mass", wall_mass.map(|value| value.value)),
+        ("wall_cp", wall_cp.map(|value| value.value)),
+        (
+            "shell_holdup_volume",
+            shell_holdup_volume.map(|value| value.value),
+        ),
+        (
+            "tube_holdup_volume",
+            tube_holdup_volume.map(|value| value.value),
+        ),
+        ("shell_side_htc", shell_side_htc.map(|value| value.value)),
+        ("tube_side_htc", tube_side_htc.map(|value| value.value)),
+        (
+            "heat_transfer_area",
+            heat_transfer_area.map(|value| value.value),
+        ),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("a finite value is required, and {value} is not"),
+                ));
+            }
+        }
+    }
+    for (name, value) in [
+        (
+            "wall_temperature",
+            wall_temperature.map(|value| value.value),
+        ),
+        (
+            "shell_fluid_temperature",
+            shell_fluid_temperature.map(|value| value.value),
+        ),
+        (
+            "tube_fluid_temperature",
+            tube_fluid_temperature.map(|value| value.value),
+        ),
+    ] {
+        if let Some(value) = value {
+            // **NaN is the class's first-step sentinel**, so it is admitted; an infinity is a
+            // state the ODEs cannot carry.
+            if value.is_infinite() {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("a carried temperature is finite or NaN, and {value} is neither"),
+                ));
+            }
+        }
+    }
+    let wall_mass_kg = wall_mass.map_or(0.0, |value| value.value.max(0.0));
+    let holdup_shell = shell_holdup_volume.map_or(0.0, |value| value.value.max(0.0));
+    let holdup_tube = tube_holdup_volume.map_or(0.0, |value| value.value.max(0.0));
+    let area_m2 = heat_transfer_area.map_or(0.0, |value| value.value.max(0.0));
+    let active_transient = transient_requested
+        && dynamic_model_enabled.unwrap_or(false)
+        && wall_mass_kg > 0.0
+        && area_m2 > 0.0;
+
     // `runDeltaT`'s `guessOutTemperature` only seeds the pass the `else` branch then
     // overwrites, so it is carried and unused. The declaration keeps the surface whole.
     let _ = guess_out_temperature;
@@ -379,7 +515,39 @@ pub fn heat_exchanger(
     // rather than `run` writes - so a pinned run that states none leaves 500 here.
     let class_ua = ua.map_or(500.0, |value| value.value);
     let pinned = hot_outlet_temperature.is_some() || cold_outlet_temperature.is_some();
-    let outcome = if use_rating_pressure_drop.unwrap_or(false) {
+    let outcome = if active_transient {
+        for (name, stated) in [
+            ("hot_outlet_temperature", hot_outlet_temperature.is_some()),
+            ("cold_outlet_temperature", cold_outlet_temperature.is_some()),
+            ("use_delta_t", use_delta_t.unwrap_or(false)),
+            (
+                "use_rating_pressure_drop",
+                use_rating_pressure_drop.unwrap_or(false),
+            ),
+        ] {
+            if stated {
+                return Err(AzothError::invalid_input(
+                    name,
+                    "the dynamic branch has no steady outlet to pin or rate",
+                ));
+            }
+        }
+        let settings = kernel::TransientSettings {
+            time_step_s: time_step.map_or(0.0, |value| value.value),
+            wall_mass_kg,
+            wall_cp_j_per_kg_k: wall_cp.map_or(500.0, |value| value.value),
+            wall_temperature_k: wall_temperature.map(|value| value.value),
+            shell_holdup_volume_m3: holdup_shell,
+            tube_holdup_volume_m3: holdup_tube,
+            shell_side_htc_w_per_m2_k: shell_side_htc.map_or(500.0, |value| value.value),
+            tube_side_htc_w_per_m2_k: tube_side_htc.map_or(1000.0, |value| value.value),
+            heat_transfer_area_m2: area_m2,
+            shell_fluid_temperature_k: shell_fluid_temperature.map(|value| value.value),
+            tube_fluid_temperature_k: tube_fluid_temperature.map(|value| value.value),
+            tube_is_hot: transient_tube_is_hot.unwrap_or(false),
+        };
+        kernel::heat_exchanger_transient(&hot, &cold, &settings)?
+    } else if use_rating_pressure_drop.unwrap_or(false) {
         if pinned || use_delta_t.unwrap_or(false) {
             return Err(AzothError::invalid_input(
                 "use_rating_pressure_drop",
@@ -460,6 +628,16 @@ pub fn heat_exchanger(
             delta_t.unwrap_or_else(|| azoth_core::units::kelvins(1.0)),
         )?
     };
+    let mut outcome = outcome;
+    if transient_requested && !active_transient {
+        // **The class's fields survive `run`**, so a steady fallback echoes what the caller
+        // stated rather than inventing a state the step did not advance.
+        outcome.transient = Some(kernel::TransientState {
+            wall_temperature: wall_temperature.unwrap_or_else(|| kelvins(f64::NAN)),
+            shell_fluid_temperature,
+            tube_fluid_temperature,
+        });
+    }
     let mechanical = if mechanical_requested {
         // **The class's `getDuty()` basis, not this result's `duty`**: the pinned branch
         // writes neither, so `determineDuty` sees zero there.
@@ -533,6 +711,21 @@ impl HeatExchangerResult {
             capacity_ratio: outcome.rating.as_ref().map(|rating| rating.capacity_ratio),
             ua_value: outcome.ua_value,
             delta_t_side: outcome.delta_t_side.map(str::to_string),
+            wall_temperature: outcome
+                .transient
+                .as_ref()
+                .map(|state| state.wall_temperature)
+                .filter(|value| !value.value.is_nan()),
+            shell_fluid_temperature: outcome
+                .transient
+                .as_ref()
+                .and_then(|state| state.shell_fluid_temperature)
+                .filter(|value| !value.value.is_nan()),
+            tube_fluid_temperature: outcome
+                .transient
+                .as_ref()
+                .and_then(|state| state.tube_fluid_temperature)
+                .filter(|value| !value.value.is_nan()),
             mechanical_selected_type: mechanical
                 .map(|value| value.selected.kind.spelling().to_string()),
             mechanical_selected_area: mechanical

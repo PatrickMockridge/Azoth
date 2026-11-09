@@ -16345,6 +16345,15 @@ pub struct PyHeatExchangerResult {
     /// which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
     #[pyo3(get)]
     pub delta_t_side: Option<String>,
+    /// the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN.
+    #[pyo3(get)]
+    pub wall_temperature: Option<PyQty>,
+    /// the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN.
+    #[pyo3(get)]
+    pub shell_fluid_temperature: Option<PyQty>,
+    /// the post-step tube-side CSTR temperature, on the same terms.
+    #[pyo3(get)]
+    pub tube_fluid_temperature: Option<PyQty>,
     /// the selected configuration's spelling; present only with `mechanical_design`.
     #[pyo3(get)]
     pub mechanical_selected_type: Option<String>,
@@ -16423,7 +16432,7 @@ pub struct PyHeatExchangerResult {
 impl PyHeatExchangerResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, rating_u={:?}, rating_ua={:?}, rating_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, mechanical_types={:?}, {} warning(s))",
+            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, wall_temperature={:?}, shell_fluid_temperature={:?}, tube_fluid_temperature={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, rating_u={:?}, rating_ua={:?}, rating_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, mechanical_types={:?}, {} warning(s))",
             self.hot_out_n,
             self.hot_out_z,
             self.hot_out_p,
@@ -16442,6 +16451,9 @@ impl PyHeatExchangerResult {
             self.capacity_ratio,
             self.ua_value,
             self.delta_t_side,
+            self.wall_temperature,
+            self.shell_fluid_temperature,
+            self.tube_fluid_temperature,
             self.mechanical_selected_type,
             self.mechanical_selected_area,
             self.log_mean_temperature_difference,
@@ -16527,6 +16539,18 @@ impl From<&azoth_process::models::heat_exchanger::HeatExchangerResult> for PyHea
                 unit: "W/K".to_string(),
             }),
             delta_t_side: r.delta_t_side.clone(),
+            wall_temperature: r.wall_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            shell_fluid_temperature: r.shell_fluid_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            tube_fluid_temperature: r.tube_fluid_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
             mechanical_selected_type: r.mechanical_selected_type.clone(),
             mechanical_selected_area: r.mechanical_selected_area.map(|v| PyQty {
                 magnitude_si: v.value,
