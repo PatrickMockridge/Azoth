@@ -406,6 +406,34 @@ for all eight refusal states, and the messages are in the `strict_refusals.*` ke
   > captures/zone_analysis_probe.tsv
 ```
 
+## The exchanger's incremental zone analysis
+
+`incremental_zone_analysis_probe.tsv` drives `IncrementalZoneAnalysis` - the HTRI-style
+incremental rating, not `calculateZones` - on one liquid zone, a liquid/vapour pair, the
+condensing/evaporating/vapour cycle, a `TWO_PHASE` tube regime, the three LMTD branches, a
+single-point quality range, zero flow, no zones, the constructor's target counts and the
+zone-count baffle scaling. **The tube side dispatches on the regime**: `CONDENSING` uses
+Shah's liquid-only coefficient and its average, `EVAPORATING` uses Gungor-Winterton with a
+heat flux of `duty/(tube_count*pi*tube_id*tube_length/zones)`, and every other regime -
+**including `TWO_PHASE`** - falls through to the single-phase Gnielinski/laminar path. The
+shell side is always Kern and ignores its phase regime. The tube drop is Friedel for the two
+two-phase regimes and Fanning otherwise; the shell drop's baffle count is
+`max(1, round(L/S/N))`, which is why it rises with the zone count while the summed tube drop
+does not.
+
+**The class never subdivides.** The constructor clamps `targetZoneCount` to at least three and
+stores it, but `calculate()` reads `zones.size()`; the probe pins identical results at 3, 20
+and 100. A zero tube flow is not refused: the laminar branch answers `32.08` W/(m**2 K) and
+U `24.59`. With no zones the minimum approach is `Double.MAX_VALUE` and every total is zero.
+The LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is non-positive,
+and to the arithmetic mean when the two differ by less than 0.01 K.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar IncrementalZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar IncrementalZoneAnalysisProbe \
+  > captures/incremental_zone_analysis_probe.tsv
+```
+
 ## The heat exchanger's mechanical design
 
 `process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
