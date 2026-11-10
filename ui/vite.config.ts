@@ -16,6 +16,11 @@ const repositoryRoot = resolve(packageRoot, "..");
 
 export default defineConfig({
   plugins: [react()],
+  // **Relative, because the built editor is a static artifact rather than a site root.** Pages
+  // serves it under `/Azoth/`, a local `dist/` is served under `/`, and the wasm glue resolves
+  // its module beside the emitted chunk - so a relative base is the one spelling that works in
+  // all three without a build-time setting.
+  base: "./",
   // The wasm module is built by wasm-pack into `src/wasm/pkg`, and `vite` bundles the glue's
   // `new URL("azoth_wasm_bg.wasm", import.meta.url)` as an asset - which is why the target is
   // `web` and not `bundler`: one file to serve, no plugin, and no second loader.
