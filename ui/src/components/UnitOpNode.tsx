@@ -7,9 +7,9 @@
  * needs no lookup.
  *
  * A `many` outlet draws one handle per stream it returns — three for a splitter with three
- * factors — and a `many` inlet draws one however many edges reach it, which is what makes a
- * recycle wireable to a mixer. **They are spread along the side rather than stacked**, so a mixer
- * with three feeds shows three places to connect rather than one that three edges leave from.
+ * factors — and a `many` inlet draws one handle per incoming line plus a spare, so a mixer with
+ * three feeds has three distinct places to connect and a fourth free. **They are spread along the
+ * side rather than stacked**, so no two lines share one point.
  *
  * **Which side is `state/glyphs.ts`'s answer and not the direction's.** An inlet is on the left and
  * an outlet on the right for most machinery, but a column's distillate leaves the top and its
@@ -175,7 +175,7 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
           type={leaving ? "source" : "target"}
           position={leaving ? Position.Right : Position.Left}
           id={graph.data.name}
-          aria-label={leaving ? "outlet feed" : "inlet product"}
+          aria-label={`${leaving ? "outlet feed" : "inlet product"}, ${connected.has(graph.data.name) ? "connected" : "open"}`}
           className={`handle${connected.has(graph.data.name) ? " connected" : " unconnected"}`}
         />
         <span
@@ -204,7 +204,7 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
           position={POSITION[slot.side]}
           id={slot.handle}
           title={slot.port}
-          aria-label={`${slot.direction === "in" ? "inlet" : "outlet"} ${slot.port}`}
+          aria-label={`${slot.direction === "in" ? "inlet" : "outlet"} ${slot.port}, ${connected.has(slot.handle) ? "connected" : "open"}`}
           className={`handle${connected.has(slot.handle) ? " connected" : " unconnected"}`}
           style={offset(slot)}
         />

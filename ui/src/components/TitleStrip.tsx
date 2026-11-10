@@ -74,7 +74,7 @@ export function TitleStrip({
             }}
           />
           {unsaved ? (
-            <span className="unsaved" title="the document has edits that are not saved">
+            <span role="status" aria-live="polite" className="unsaved" title="the document has edits that are not saved">
               unsaved
             </span>
           ) : null}
@@ -84,7 +84,7 @@ export function TitleStrip({
       {envelope === null ? null : (
         <>
           <span className="pill">{envelope.flowsheet.id}</span>
-          <span className={`pill ${statusClass(envelope)}`}>{status(envelope)}</span>
+          <span role="status" aria-live="polite" className={`pill ${statusClass(envelope)}`}>{status(envelope)}</span>
         </>
       )}
       {envelope === null ? null : (

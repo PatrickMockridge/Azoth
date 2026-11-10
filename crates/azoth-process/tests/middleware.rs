@@ -1038,7 +1038,7 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
             (
                 "e0".into(),
                 "input:feed_1#feed_1".into(),
-                "instance:mix1#mix1.feed".into(),
+                "instance:mix1#mix1.feed[0]".into(),
                 "feed_1".into(),
                 "connection",
                 "feed_1"
@@ -1079,7 +1079,7 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
             (
                 "e5".into(),
                 "instance:sep1#sep1.liquid".into(),
-                "instance:mix1#mix1.feed".into(),
+                "instance:mix1#mix1.feed[1]".into(),
                 "recycle_1".into(),
                 "recycle",
                 "sep1.liquid"
@@ -1087,8 +1087,8 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
         ]
     );
 
-    // A mixer's inlet is one handle however many streams reach it, which is what makes the loop
-    // wireable at all.
+    // A mixer's inlet is a row of points: the feed and the recycle get their own, and one spare
+    // slot is drawn so another feed can be added.
     let mixer = document
         .nodes
         .iter()
@@ -1098,7 +1098,10 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
     assert_eq!(ports.inlets.len(), 1);
     assert_eq!(ports.inlets[0].name, "feed");
     assert_eq!(ports.inlets[0].multiplicity, "many");
-    assert_eq!(ports.inlets[0].handles, ["mix1.feed"]);
+    assert_eq!(
+        ports.inlets[0].handles,
+        ["mix1.feed[0]", "mix1.feed[1]", "mix1.feed[2]"]
+    );
     assert_eq!(ports.outlets[0].handles, ["mix1.product"]);
 
     // A separator's two outlets are two handles on two ports.

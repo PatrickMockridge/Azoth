@@ -40,7 +40,7 @@ use azoth_core::{AzothError, Result};
 
 use crate::channel::{Direction, Multiplicity};
 use crate::executor::dispatch::{Parameters, dispatch};
-use crate::flowsheet::{Flowsheet, stream_path};
+use crate::flowsheet::{Flowsheet, split_endpoint, stream_path};
 use crate::order::{ExecutionOrder, execution_order};
 use crate::recycle::{
     Acceleration, BroydenAccelerator, RecycleSettings, Residuals, WEGSTEIN_DELAY_ITERATIONS,
@@ -427,21 +427,27 @@ fn inlets_of(
         .filter(|port| port.direction == Direction::In)
     {
         let endpoint = format!("{}.{}", instance.id, port.name);
-        let mut gathered = Vec::new();
+        let mut gathered: Vec<(usize, Stream)> = Vec::new();
         for connection in &flowsheet.connections {
-            if connection.to != endpoint {
+            let Some((fed_instance, fed_port, slot)) = split_endpoint(&connection.to) else {
+                continue;
+            };
+            if fed_instance != instance.id || fed_port != port.name {
                 continue;
             }
-            gathered.push(streams.get(&connection.from).cloned().ok_or_else(|| {
-                AzothError::invalid_input(
-                    "connections",
-                    format!(
-                        "`{endpoint}` is fed by `{}`, which no unit has produced - a connection \
-                         from a stream nothing writes is a wiring error",
-                        connection.from
-                    ),
-                )
-            })?);
+            gathered.push((
+                slot.unwrap_or(usize::MAX),
+                streams.get(&connection.from).cloned().ok_or_else(|| {
+                    AzothError::invalid_input(
+                        "connections",
+                        format!(
+                            "`{endpoint}` is fed by `{}`, which no unit has produced - a \
+                             connection from a stream nothing writes is a wiring error",
+                            connection.from
+                        ),
+                    )
+                })?,
+            ));
         }
         // **A `[[recycles]]` entry is an edge, and it is the *only* edge a tear has.** The
         // shipped flowsheet declares `sep1.liquid -> mix1.feed` as a recycle and writes no
@@ -451,11 +457,14 @@ fn inlets_of(
         // has not produced,
         // so it contributes nothing then and the loop closes on the second.
         for recycle in &flowsheet.recycles {
-            if recycle.to != endpoint {
+            let Some((fed_instance, fed_port, slot)) = split_endpoint(&recycle.to) else {
+                continue;
+            };
+            if fed_instance != instance.id || fed_port != port.name {
                 continue;
             }
             if let Some(stream) = tears.get(&recycle.stream) {
-                gathered.push(stream.clone());
+                gathered.push((slot.unwrap_or(usize::MAX), stream.clone()));
             }
         }
         if port.multiplicity == Multiplicity::One && gathered.len() > 1 {
@@ -467,7 +476,8 @@ fn inlets_of(
                 ),
             ));
         }
-        inlets.extend(gathered);
+        gathered.sort_by_key(|(slot, _)| *slot);
+        inlets.extend(gathered.into_iter().map(|(_, stream)| stream));
     }
     if inlets.is_empty() {
         return Err(AzothError::invalid_input(

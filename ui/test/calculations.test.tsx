@@ -58,6 +58,10 @@ describe("the calculations workspace", () => {
     await open();
 
     const sheet = screen.getByRole("tabpanel");
+    // **The sheet has a height to scroll within.** Its panel is the flex child that constrains
+    // it; without that the content grew past the clipped main column.
+    expect(sheet.className).toBe("calc-sheet-panel");
+    expect(sheet.querySelector(".calc-sheet")).not.toBeNull();
     // **The explanation is on the sheet before the run.** A reader meets what the calculation is
     // for, what each field means, what the output will be, and when the answer applies.
     expect(

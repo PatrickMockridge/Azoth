@@ -13,7 +13,8 @@ calculation is for, so the list can be read rather than guessed at. A calculatio
 outputs are tables is listed but cannot be added yet; its row says so rather than disappearing.
 
 Adding a calculation creates a sheet and selects it. A book can hold as many sheets as the case
-needs, and the tabs above the sheet move between them.
+needs, and the tabs above the sheet move between them. The sheet scrolls independently of the
+page, so a long form reaches its bottom without moving the picker or the tabs.
 
 ## Read the sheet
 

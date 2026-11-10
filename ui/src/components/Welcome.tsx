@@ -30,9 +30,10 @@ export function Welcome({ examples, onDemo, onBlank, onExample, onHelp, onDismis
       </button>
       <h2 id="welcome-title">A flowsheet in the browser</h2>
       <p>
-        The demo behind this card is a feed, a pump, a heater, a separator and a liquid recycle.
-        Press <strong>Solve</strong> to run it, then click a unit operation or a stream to read
-        its values.
+        The demo behind this card has two feeds meeting at a mixer, then a pump, a heater, a
+        separator and a live liquid recycle. Each mixer inlet has its own connection point. Press{" "}
+        <strong>Solve</strong> to run it, then click a unit operation or a stream to read its
+        values.
       </p>
       <div className="welcome-actions">
         <button type="button" className="primary" onClick={onDemo}>

@@ -19,6 +19,7 @@ h = { dimension = "molar_energy" }
 name = "products"
 direction = "out"
 multiplicity = "many"
+min_streams = 2
 [ports.fields]
 n = { dimension = "molar_flow" }
 z = { dimension = "dimensionless", shape = "vector" }

@@ -35,11 +35,11 @@ export function Help() {
       <h2>The drawing</h2>
       <dl>
         <dt>Select</dt>
-        <dd>Click a unit operation, a feed, a product or a stream. The navigator on the left does the same.</dd>
+        <dd>Click a unit operation, a feed, a product or a stream. The navigator on the left does the same. Double-click a node for a read-only overview of what it is, what it is wired to and what it reached.</dd>
         <dt>Move</dt>
         <dd>Drag a unit operation. Nothing is recomputed by moving it.</dd>
         <dt>Connect</dt>
-        <dd>Drag from an outlet handle to an inlet handle. A stream is named by the outlet that produces it. Every connection point is labelled <strong>IN</strong> or <strong>OUT</strong>; a two-stream exchanger labels <strong>hot</strong> and <strong>cold</strong> on each side.</dd>
+        <dd>Drag from an outlet handle to an inlet handle. A stream is named by the outlet that produces it. Every connection point is labelled <strong>IN</strong> or <strong>OUT</strong>; a two-stream exchanger labels <strong>hot</strong> and <strong>cold</strong> on each side. <strong>One line uses one point</strong>: a mixer has a separate inlet for every feed, and a splitter a separate outlet for every product. Connectors are drawn as right-angle routes.</dd>
         <dt>Remove</dt>
         <dd>Select and press Delete or Backspace, or use Remove in the object&apos;s window. A removed feed takes its connections with it. Undo restores it.</dd>
         <dt>Tear</dt>

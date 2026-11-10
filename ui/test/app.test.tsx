@@ -4,7 +4,8 @@
  *
  * **Nothing here is mocked.** `fetch` is stubbed to the *real* wasm bytes this repo just built, so
  * the real glue instantiates the real module, the real `Editor` opens the real
- * `specs/flowsheets/demo.toml`, and the assertions are about the DOM the real components render.
+ * `specs/flowsheets/examples/two_feed_mixer.toml`, and the assertions are about the DOM the real
+ * components render.
  * What that buys is the layer neither of the other two suites can reach: `crates/azoth-wasm/test/
  * smoke.mjs` proves the JS boundary and the three `test/*.test.ts` files prove pure functions over
  * JSON, and neither can tell whether a *gesture* emits the command the UI claims.
@@ -16,8 +17,10 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
+import { PFD_EDGE, connectable } from "../src/components/Flowsheet";
 
 import { only, stubDownload, textOf, unstubDownload } from "./download";
 import { drag, drawnPosition } from "./drag";
@@ -79,6 +82,7 @@ describe("the editor", () => {
     // And the document, with the ids the projection gives it.
     expect(nodeIds(container).sort()).toEqual([
       "input:feed_1",
+      "input:feed_2",
       "instance:hx1",
       "instance:mix1",
       "instance:p1",
@@ -110,6 +114,53 @@ describe("the editor", () => {
     });
   });
 
+  it("refuses a second line into an occupied connection point", () => {
+    const occupied = new Set(["mix1.feed[0]"]);
+    expect(connectable(occupied, "feed_1", "mix1.feed[0]")).toBe(false);
+    expect(connectable(occupied, "feed_1", "mix1.feed[1]")).toBe(true);
+    expect(connectable(occupied, null, "mix1.feed[1]")).toBe(false);
+    expect(connectable(occupied, "feed_1", undefined)).toBe(false);
+  });
+
+  it("uses the HYSYS connector shape", () => {
+    // **The canvas cannot draw a path in jsdom** (it measures handle rectangles), so this is the
+    // configuration the real canvas consumes: a smoothstep route, not the default bezier, with a
+    // 4 px corner. The visual check is the drawing itself.
+    expect(PFD_EDGE).toEqual({ type: "smoothstep", borderRadius: 4 });
+  });
+
+  it("opens a node overview on double-click and hands it back to the bar", async () => {
+    stubFetch();
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+
+    const heater = container.querySelector<HTMLElement>('[data-id="instance:hx1"]');
+    fireEvent.doubleClick(heater as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: "Heater" })).toBeDefined();
+    expect(within(dialog).getByText(/streams/i)).toBeDefined();
+    expect(within(dialog).getByText("hx1.outlet")).toBeDefined();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.doubleClick(heater as HTMLElement);
+    const again = await screen.findByRole("dialog");
+    fireEvent.click(within(again).getByRole("button", { name: /edit in the property bar/i }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(container.querySelector(".prop-header")?.textContent).toContain("hx1");
+  });
+
+  it("uses a distinct inlet point for every mixer feed", async () => {
+    stubFetch();
+    const { container } = await open();
+    const labels = [...container.querySelectorAll('[data-id="instance:mix1"] .port-label')].map(
+      (label) => label.textContent ?? "",
+    );
+    expect(labels).toEqual(expect.arrayContaining(["IN feed 1", "IN feed 2", "IN feed 3"]));
+  });
+
   it("starts stale, and Solve makes it solved", async () => {
     stubFetch();
     const { container } = await open();
@@ -127,7 +178,7 @@ describe("the editor", () => {
   it("opens a blank document rather than a fault", async () => {
     stubFetch();
     const { container } = await open();
-    expect(idPill(container)).toBe("flowsheets.demo");
+    expect(idPill(container)).toBe("flowsheets.two_feed_mixer");
 
     fireEvent.click(screen.getByRole("button", { name: "New" }));
 
@@ -155,7 +206,7 @@ describe("the editor", () => {
     await waitFor(() => expect(screen.getAllByText("outlet_temperature").length).toBeGreaterThan(0));
 
     // A field commits when the typing stops; the value goes out as one `set_parameter`.
-    const field = screen.getByDisplayValue("320");
+    const field = screen.getByDisplayValue("300");
     fireEvent.change(field, { target: { value: "340" } });
     fireEvent.blur(field);
 
@@ -189,7 +240,7 @@ describe("the editor", () => {
     fireEvent.click(heater as HTMLElement);
     fireEvent.keyDown(document, { key: "Backspace" });
 
-    await waitFor(() => expect(nodeIds(container)).toHaveLength(5));
+    await waitFor(() => expect(nodeIds(container)).toHaveLength(6));
     expect(nodeIds(container)).not.toContain("instance:hx1");
     // The two ports the heater was wired between, named by the checker's own record.
     fireEvent.click(screen.getByRole("tab", { name: "Messages" }));
@@ -302,7 +353,7 @@ describe("the editor", () => {
     // library holds, and it has to be the numbers the canvas is drawing.
     const download = stubDownload();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(download.names).toEqual(["Feed_pump_heat_separate_recycle.toml"]));
+    await waitFor(() => expect(download.names).toEqual(["Two_feeds_mix_heat_separate_recycle.toml"]));
     expect(await textOf(only(download.blobs))).toContain(`hx1 = [${after[0]}.0, ${after[1]}.0]`);
   });
 
@@ -382,15 +433,18 @@ describe("the editor", () => {
     // **The rows are the *producing* endpoints**, so no stream is listed twice: `mix1.product` and
     // `p1.inlet` are one stream, and only the producer carries its value.
     const before = rowIds();
-    expect(before).toEqual([
-      "mix1.product",
-      "p1.outlet",
-      "hx1.outlet",
-      "sep1.vapour",
-      "sep1.liquid",
-      "feed_1",
-      "vapour_product",
-    ]);
+    expect([...before].sort()).toEqual(
+      [
+        "feed_1",
+        "feed_2",
+        "hx1.outlet",
+        "mix1.product",
+        "p1.outlet",
+        "sep1.liquid",
+        "sep1.vapour",
+        "vapour_product",
+      ].sort(),
+    );
 
     // And a run fills the cells rather than adding rows, which is what makes it a worksheet.
     fireEvent.click(screen.getByRole("button", { name: "Solve" }));
@@ -453,8 +507,8 @@ describe("the editor", () => {
     // declares `outlet_temperature` in K and a field set reads a temperature in °F.
     const head = screen.getByText("outlet_temperature").parentElement;
     expect(head?.textContent).toContain("°F");
-    // The document's 320 K, shown as a reader would say it: 116.33 °F.
-    const field = screen.getByDisplayValue("116.33");
+    // The document's 300 K, shown as a reader would say it: 80.33 °F.
+    const field = screen.getByDisplayValue("80.33");
 
     fireEvent.change(field, { target: { value: "200" } });
     fireEvent.blur(field);
@@ -498,7 +552,7 @@ describe("the editor", () => {
 
     // One row per object: the four unit operations, the six streams the edges carry, and the two
     // boundary names — with the recycle among the streams, said as a tear.
-    expect(rows()).toHaveLength(12);
+    expect(rows()).toHaveLength(14);
     expect(rowFor("recycle_1")?.querySelector(".tag")?.textContent).toBe("recycle");
     expect(rowFor("mix1.product")?.querySelector(".tag")).toBeNull();
 
@@ -555,7 +609,7 @@ describe("the editor", () => {
       "h J/mol",
       "VF",
     ]);
-    const pascals = cell("mix1.product", 3);
+    const pascals = cell("feed_1", 3);
 
     fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "field" } });
     await waitFor(() => expect(headers()[3]).toBe("P psi"));
@@ -574,7 +628,7 @@ describe("the editor", () => {
     ]);
     // And the number is the library's, in the unit the header names: one psi is 6894.757… Pa, so
     // the same pressure read twice agrees to the four significant figures the column shows.
-    const pounds = cell("mix1.product", 3);
+    const pounds = cell("feed_1", 3);
     expect(pounds * 6894.757293168361).toBeGreaterThan(pascals * 0.99);
     expect(pounds * 6894.757293168361).toBeLessThan(pascals * 1.01);
 
@@ -582,7 +636,7 @@ describe("the editor", () => {
     // at 300 K, which is 80.33 °F - so the affine inverse is `si / factor - offset` and not a
     // division, and a front end that dropped the offset would show 540 here. This is the one cell
     // in the document that can tell the two apart.
-    const temperature = cell("mix1.product", 4);
+    const temperature = cell("feed_1", 4);
     expect(temperature).toBeCloseTo(80.33, 1);
     // And the definition inverts it: `si = (value + offset) * factor`, which is uom's own form -
     // `(80.33 + 459.67) * 5/9` is the 300 K the record holds.
@@ -592,7 +646,7 @@ describe("the editor", () => {
     // a fact about the document.
     expect(window.localStorage.getItem("azoth.units")).toBe("field");
     // The run did not change: only what is drawn did. The workbook's rows are the same rows.
-    expect(container.querySelectorAll(".dock .grid tbody tr")).toHaveLength(7);
+    expect(container.querySelectorAll(".dock .grid tbody tr")).toHaveLength(8);
   });
 
   it("selects a feed instead of deleting it, and edits it through the feed form", async () => {
@@ -639,14 +693,14 @@ describe("the editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Solve" }));
     await waitFor(() => expect(pill(container)).toBe("solved"));
     fireEvent.click(container.querySelector<HTMLElement>('[data-id="instance:hx1"]') as HTMLElement);
-    const field = await screen.findByDisplayValue("320");
+    const field = await screen.findByDisplayValue("300");
     fireEvent.change(field, { target: { value: "330" } });
     fireEvent.blur(field);
     await waitFor(() => expect(screen.getByText("unsaved")).toBeDefined());
 
     Object.defineProperty(window, "confirm", { value: () => false, configurable: true });
     fireEvent.click(screen.getByRole("button", { name: "New" }));
-    expect(idPill(container)).toBe("flowsheets.demo");
+    expect(idPill(container)).toBe("flowsheets.two_feed_mixer");
   });
 
   it("prints a solved case and exports the workbook", async () => {

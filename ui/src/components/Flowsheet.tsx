@@ -14,10 +14,13 @@
 import {
   Background,
   BackgroundVariant,
+  ConnectionLineType,
   Controls,
+  MarkerType,
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type BuiltInEdge,
   type Connection,
   type Edge,
   type Node,
@@ -32,6 +35,27 @@ import { asEdgeData } from "../wire/decode";
 import type { Catalogue, Envelope, GraphNode } from "../wire/types";
 import { STREAM_NODE, UNIT_NODE, nodeTypes, type NodePayload } from "./UnitOpNode";
 
+/** The connector shape: a right-angle route with a 4 px corner radius. */
+export const PFD_EDGE = { type: "smoothstep" as const, borderRadius: 4 };
+
+/**
+ * **One line per point.** A handle already carrying an edge is full; a connection needs a free
+ * source and a free target. The projection draws a spare point on every `many` inlet, so a mixer
+ * can always take another feed.
+ */
+export function connectable(
+  occupied: ReadonlySet<string>,
+  source: string | null | undefined,
+  target: string | null | undefined,
+): boolean {
+  return (
+    typeof source === "string" &&
+    typeof target === "string" &&
+    !occupied.has(source) &&
+    !occupied.has(target)
+  );
+}
+
 export interface FlowsheetProps {
   catalogue: Catalogue | null;
   envelope: Envelope;
@@ -45,6 +69,8 @@ export interface FlowsheetProps {
   units: Units;
   onSelect: (id: string | null) => void;
   onCommand: (command: EditorCommand) => void;
+  /** A double-click opens the node's read-only overview. */
+  onOverview: (id: string) => void;
 }
 
 export function Flowsheet({
@@ -54,6 +80,7 @@ export function Flowsheet({
   units,
   onSelect,
   onCommand,
+  onOverview,
 }: FlowsheetProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -72,6 +99,25 @@ export function Flowsheet({
     setEdges(derived.edges);
   }, [derived, setNodes, setEdges]);
 
+  /**
+   * **One line per connection point.** A handle already carrying an edge is full: the next line
+   * must find its own point, and the projection draws a spare on every `many` inlet so it can.
+   * This is also the front-end half of the boundary rule - a feed with two consumers or a product
+   * with two producers would be a hidden split or merge.
+   */
+  const occupied = useMemo(() => {
+    const handles = new Set<string>();
+    for (const edge of edges) {
+      if (typeof edge.sourceHandle === "string") {
+        handles.add(edge.sourceHandle);
+      }
+      if (typeof edge.targetHandle === "string") {
+        handles.add(edge.targetHandle);
+      }
+    }
+    return handles;
+  }, [edges]);
+
   const connect = useCallback(
     (connection: Connection) => {
       // A handle's id *is* the endpoint the document writes, so a gesture needs no translation.
@@ -89,12 +135,21 @@ export function Flowsheet({
 
   return (
     <ReactFlow
+      key={envelope.flowsheet.id}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={connect}
+      defaultEdgeOptions={{ type: PFD_EDGE.type }}
+      connectionLineType={ConnectionLineType.SmoothStep}
+      isValidConnection={(connection) =>
+        connectable(occupied, connection.sourceHandle, connection.targetHandle)
+      }
+      snapToGrid
+      snapGrid={[20, 20]}
+      onNodeDoubleClick={(_event, node) => onOverview(node.id)}
       onNodeDragStop={(_event, node) =>
         onCommand({
           command: "set_position",
@@ -216,14 +271,22 @@ function derive(
     };
   });
 
-  const edges: Edge[] = envelope.flowsheet.graph.edges.map((edge) => {
+  const edges: BuiltInEdge[] = envelope.flowsheet.graph.edges.map((edge) => {
     const stream = streams[edge.data.path];
     return {
       id: edge.id,
+      type: PFD_EDGE.type,
+      pathOptions: { borderRadius: PFD_EDGE.borderRadius },
       source: edge.source,
       sourceHandle: edge.sourceHandle,
       target: edge.target,
       targetHandle: edge.targetHandle,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 14,
+        height: 14,
+        color: edge.data.kind === "recycle" ? "var(--edge-recycle)" : "var(--edge)",
+      },
       // A recycle is drawn moving, which is what a loop is: the tear's value is the previous
       // pass's, and the animation is the honest picture of that.
       animated: edge.data.kind === "recycle",

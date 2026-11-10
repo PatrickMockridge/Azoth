@@ -88,9 +88,9 @@ pub struct Ports {
 
 /// One port, and the handle ids a stream on it is addressed by.
 ///
-/// A `one` port has exactly one handle, named by the port; a `many` **outlet** has one per
-/// stream it returns, named by the port and the position; a `many` **inlet** has one, however
-/// many connections reach it - which is how a mixer is wired.
+/// A `one` port has exactly one handle, named by the port. A `many` **outlet** has one per stream
+/// it returns; a `many` **inlet** has one per connection plus one spare, each named by the port and
+/// its slot. No two lines share a handle: a mixer's feeds are `mix1.feed[0]`, `mix1.feed[1]`, ...
 #[derive(Debug, Clone, Serialize)]
 pub struct Handle {
     pub name: String,
@@ -195,7 +195,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
         .iter()
         .map(|spec| (spec.id.as_str(), spec))
         .collect();
-    let wired = highest_wired_position(flowsheet);
+    let wiring = Wiring::build(flowsheet, &specs);
     let positions = positions(flowsheet);
 
     let mut nodes = Vec::with_capacity(
@@ -212,7 +212,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
                 .get(&instance.id)
                 .copied()
                 .unwrap_or(Position { x: 0.0, y: 0.0 }),
-            data: instance_data(instance, spec, &wired)?,
+            data: instance_data(instance, spec, &wiring)?,
         });
     }
     for input in &flowsheet.inputs {
@@ -270,6 +270,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
             None,
             &connection.from,
             &connection.to,
+            &wiring,
         ));
     }
     for (index, recycle) in flowsheet.recycles.iter().enumerate() {
@@ -279,6 +280,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
             Some(recycle),
             &recycle.from,
             &recycle.to,
+            &wiring,
         ));
     }
 
@@ -292,10 +294,17 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
 
 /// One edge, from the two endpoints as the document wrote them.
 ///
-/// The handle ids are the stream paths the endpoints name: the producer's path at the source, and
-/// the port's path at the target - an index belongs to the producing side only, because a `many`
-/// inlet is one name however many streams reach it.
-fn edge(id: String, kind: &'static str, tear: Option<&Recycle>, from: &str, to: &str) -> Edge {
+/// The handle ids are the stream paths the endpoints name. A consumer endpoint may name a slot on
+/// a `many` inlet; an older one that names only the port gets the slot the wiring pass assigned
+/// it, so the edge attaches to the point the canvas draws rather than the port's first point.
+fn edge(
+    id: String,
+    kind: &'static str,
+    tear: Option<&Recycle>,
+    from: &str,
+    to: &str,
+    wiring: &Wiring,
+) -> Edge {
     // A bare name is a boundary: a feed where the stream is produced, a product where it is
     // consumed. An endpoint with a dot is an instance's port, whatever the role of the side.
     let source_handle = match split_endpoint(from) {
@@ -303,7 +312,15 @@ fn edge(id: String, kind: &'static str, tear: Option<&Recycle>, from: &str, to: 
         None => from.to_string(),
     };
     let target_handle = match split_endpoint(to) {
-        Some((instance, port, _)) => stream_path(instance, port, None),
+        Some((instance, port, index)) => {
+            let index = index.or_else(|| {
+                wiring
+                    .target_slots
+                    .get(&(from.to_string(), to.to_string()))
+                    .copied()
+            });
+            stream_path(instance, port, index)
+        }
         None => to.to_string(),
     };
     let (source_role, source_name) = match split_endpoint(from) {
@@ -333,7 +350,7 @@ fn edge(id: String, kind: &'static str, tear: Option<&Recycle>, from: &str, to: 
 fn instance_data(
     instance: &Instance,
     spec: Option<&UnitOpSpec>,
-    wired: &HashMap<(String, String), usize>,
+    wiring: &Wiring,
 ) -> Result<NodeData> {
     let parameters = serde_json::to_value(&instance.parameters).map_err(|error| {
         AzothError::invalid_input(
@@ -365,7 +382,8 @@ fn instance_data(
         };
         let handles = match (port.direction, port.multiplicity) {
             (Direction::Out, Multiplicity::Many) => {
-                let wired = wired
+                let wired = wiring
+                    .outlets
                     .get(&(instance.id.clone(), port.name.clone()))
                     .copied()
                     .unwrap_or(0);
@@ -382,8 +400,21 @@ fn instance_data(
             (Direction::Out, Multiplicity::One) => {
                 vec![stream_path(&instance.id, &port.name, None)]
             }
-            // A `many` inlet is one name, however many connections reach it.
-            (Direction::In, _) => vec![stream_path(&instance.id, &port.name, None)],
+            // **A `many` inlet is a row of points, one per line.** The wiring pass assigns each
+            // incoming connection a slot; one spare is drawn so a writer can always add another.
+            // `min_streams` is what makes a mixer open with room for its two feeds.
+            (Direction::In, Multiplicity::Many) => {
+                let used = wiring
+                    .inlets
+                    .get(&(instance.id.clone(), port.name.clone()))
+                    .copied()
+                    .unwrap_or(0);
+                let count = (used + 1).max(port.min_streams);
+                (0..count)
+                    .map(|index| stream_path(&instance.id, &port.name, Some(index)))
+                    .collect()
+            }
+            (Direction::In, Multiplicity::One) => vec![stream_path(&instance.id, &port.name, None)],
         };
         Handle {
             name: port.name.clone(),
@@ -440,30 +471,85 @@ fn declared_positions(spec: &UnitOpSpec, instance: &Instance) -> Option<usize> {
         .map(Vec::len)
 }
 
-/// The highest position a connection names out of each `many` outlet, plus one.
-fn highest_wired_position(flowsheet: &Flowsheet) -> HashMap<(String, String), usize> {
-    let mut wired: HashMap<(String, String), usize> = HashMap::new();
-    let endpoints = flowsheet
-        .connections
-        .iter()
-        .map(|connection| (connection.from.as_str(), connection.to.as_str()))
-        .chain(
-            flowsheet
-                .recycles
-                .iter()
-                .map(|recycle| (recycle.from.as_str(), recycle.to.as_str())),
-        );
-    for (from, to) in endpoints {
-        for text in [from, to] {
-            if let Some((instance, port, Some(index))) = split_endpoint(text) {
-                let entry = wired
+/// How many handles each `many` port needs, and which slot each consumer endpoint occupies.
+///
+/// **A `many` inlet is a row of connection points, not one point several wires meet at.** A
+/// document may write the slot explicitly (`mix1.feed[1]`) or not (`mix1.feed`); an unindexed
+/// endpoint is given the next free slot in document order, so an older flowsheet still draws one
+/// point per line. The projection is where that assignment has to happen: the checker and executor
+/// read the port, not the slot, and must not care which spelling a document used.
+#[derive(Debug, Default)]
+struct Wiring {
+    /// Highest outlet index named, plus one, per `(instance, port)`.
+    outlets: HashMap<(String, String), usize>,
+    /// Highest inlet slot used, plus one, per `(instance, port)`.
+    inlets: HashMap<(String, String), usize>,
+    /// The slot an unindexed (or explicitly indexed) consumer endpoint was given.
+    target_slots: HashMap<(String, String), usize>,
+}
+
+impl Wiring {
+    fn build(flowsheet: &Flowsheet, specs: &HashMap<&str, &UnitOpSpec>) -> Self {
+        let mut wiring = Self::default();
+        // A `many` outlet's count is what the document names and what the instance's own vector
+        // says; only the producing side can carry an index there.
+        let endpoints = flowsheet
+            .connections
+            .iter()
+            .map(|connection| (connection.from.as_str(), connection.to.as_str()))
+            .chain(
+                flowsheet
+                    .recycles
+                    .iter()
+                    .map(|recycle| (recycle.from.as_str(), recycle.to.as_str())),
+            );
+        let endpoints: Vec<(&str, &str)> = endpoints.collect();
+        for (from, _) in &endpoints {
+            if let Some((instance, port, Some(index))) = split_endpoint(from) {
+                let entry = wiring
+                    .outlets
                     .entry((instance.to_string(), port.to_string()))
                     .or_insert(0);
                 *entry = (*entry).max(index + 1);
             }
         }
+
+        let mut next: HashMap<(String, String), usize> = HashMap::new();
+        for (from, to) in endpoints {
+            let Some((instance, port, explicit)) = split_endpoint(to) else {
+                continue;
+            };
+            let Some(spec) = flowsheet
+                .instances
+                .iter()
+                .find(|candidate| candidate.id == instance)
+                .and_then(|candidate| specs.get(candidate.unit.as_str()))
+            else {
+                continue;
+            };
+            let is_many_inlet = spec.ports.iter().any(|candidate| {
+                candidate.name == port
+                    && candidate.direction == Direction::In
+                    && candidate.multiplicity == Multiplicity::Many
+            });
+            if !is_many_inlet {
+                continue;
+            }
+            let key = (instance.to_string(), port.to_string());
+            let slot = match explicit {
+                Some(index) => index,
+                None => *next.get(&key).unwrap_or(&0),
+            };
+            let previous = *next.get(&key).unwrap_or(&0);
+            next.insert(key.clone(), previous.max(slot + 1));
+            let used = wiring.inlets.entry(key).or_insert(0);
+            *used = (*used).max(slot + 1);
+            wiring
+                .target_slots
+                .insert((from.to_string(), to.to_string()), slot);
+        }
+        wiring
     }
-    wired
 }
 
 /// Where every node goes: the document's own layout, else a deterministic layering.

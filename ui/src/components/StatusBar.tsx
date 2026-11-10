@@ -28,7 +28,7 @@ export function StatusBar({ envelope, units }: { envelope: Envelope | null; unit
         <span>no document</span>
       ) : (
         <>
-          <span className={`chip ${statusClass(envelope)}`}>{status(envelope)}</span>
+          <span role="status" aria-live="polite" className={`chip ${statusClass(envelope)}`}>{status(envelope)}</span>
           <span>
             passes <span className="value">{envelope.session?.iterations ?? 0}</span>
           </span>

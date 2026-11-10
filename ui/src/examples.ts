@@ -31,6 +31,11 @@ const META: Record<string, { title: string; description: string }> = {
     title: "Heat a gas",
     description: "One feed, one heater and one product: the smallest complete case.",
   },
+  "two_feed_mixer.toml": {
+    title: "Two feeds, mix and recycle",
+    description:
+      "Two distinct feeds meet at a mixer with a separate inlet for each, then a pump, heater, separator and live liquid recycle.",
+  },
   "compress_and_cool.toml": {
     title: "Compress, cool and separate",
     description: "A rich gas is compressed, cooled and split into sales gas and condensate.",

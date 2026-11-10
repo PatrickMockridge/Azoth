@@ -9,6 +9,7 @@ description = "a specified outlet pressure; when omitted, the mixer joins at its
 name = "feed"
 direction = "in"
 multiplicity = "many"
+min_streams = 2
 [ports.fields]
 n = { dimension = "molar_flow" }
 z = { dimension = "dimensionless", shape = "vector" }

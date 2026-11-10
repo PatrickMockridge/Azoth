@@ -220,13 +220,11 @@ fn a_tear_that_carries_material_converges() {
         "the residual moved, so the loop is not the fixed cycle the growth describes"
     );
 
-    // **The purge that would give it one is not expressible today, and that is a gap rather than
-    // a decision.** A product connection *reports* a stream and does not consume it - every
-    // connection naming a stream reads it - so adding one changes nothing (measured: the residual
-    // is unchanged to fifteen digits). What the loop needs is a **split**, and `unit_ops.splitter`
-    // declares its outlets as one `many` port named `products`, which a connection cannot address
-    // one of. `ExecutionOrder` and this loop are both wired for `many` *inlets* and not for `many`
-    // outlets, and closing it means giving a connection a way to name the index.
+    // **The purge that would give it one is a split, not a product.** A product connection
+    // *reports* a stream and does not consume it, so adding one changes nothing (measured: the
+    // residual is unchanged to fifteen digits). A splitter's `products[0]`/`[1]` can be addressed
+    // by position, which is what the purge_and_recycle example uses; this test's point is that the
+    // unsplit loop has no steady state, not that the split is unexpressible.
 }
 
 /// The shipped flowsheet as written, with no condensing and therefore no liquid in the loop - the

@@ -16,13 +16,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
 import blankDocument from "../../specs/flowsheets/blank.toml?raw";
-import demoDocument from "../../specs/flowsheets/demo.toml?raw";
+import demoDocument from "../../specs/flowsheets/examples/two_feed_mixer.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
 import { CalculationsApp } from "./components/calculations/CalculationsApp";
 import type { Workspace } from "./components/calculations/WorkspaceSwitch";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
+import { NodeOverview } from "./components/NodeOverview";
 import { Help } from "./components/Help";
 import { Navigation } from "./components/Navigation";
 import { Palette } from "./components/Palette";
@@ -70,6 +71,7 @@ export function App() {
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [overview, setOverview] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
@@ -93,6 +95,7 @@ export function App() {
    * person most needs told about and the dock is where the telling happens.
    */
   const [docked, setDocked] = useState<"workbook" | "messages" | "help">("workbook");
+  const dockTouched = useRef(false);
   const [dockSize, setDockSize] = useState(200);
 
   /**
@@ -133,6 +136,15 @@ export function App() {
   const canSolve = session !== null && envelope !== null && envelope.ok;
   const canUndo = openable && history.length > 0;
   const canRedo = openable && future.length > 0;
+
+  // **A finding opens the dock that says what it is.** A newcomer's first edit can leave the
+  // document incomplete; opening on Workbook hides the sentences that explain why. Once the
+  // reader has chosen a tab, their choice wins.
+  useEffect(() => {
+    if (!dockTouched.current && envelope !== null && envelope.diagnostics.length > 0) {
+      setDocked("messages");
+    }
+  }, [envelope]);
 
   const middleware = useRef<Door | null>(null);
 
@@ -508,6 +520,7 @@ export function App() {
 
   const node = envelope === null ? null : selectedNode(envelope, selected);
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
+  const overviewNode = envelope === null ? null : selectedNode(envelope, overview);
 
   return (
     <>
@@ -681,6 +694,7 @@ export function App() {
               units={units}
               onSelect={setSelected}
               onCommand={send}
+              onOverview={setOverview}
             />
           )}
           {/* **Over the drawing, not instead of it.** The demo is already loaded behind the
@@ -727,9 +741,10 @@ export function App() {
           { id: "help", label: "Help" },
         ]}
         active={docked}
-        onTab={(id) =>
-          setDocked(id === "workbook" ? "workbook" : id === "help" ? "help" : "messages")
-        }
+        onTab={(id) => {
+          dockTouched.current = true;
+          setDocked(id === "workbook" ? "workbook" : id === "help" ? "help" : "messages");
+        }}
         size={dockSize}
         onSize={setDockSize}
       >
@@ -756,6 +771,20 @@ export function App() {
       </Dock>
 
       <StatusBar envelope={envelope} units={units} />
+
+      {overviewNode !== null && envelope !== null ? (
+        <NodeOverview
+          envelope={envelope}
+          catalogue={catalogue}
+          units={units}
+          node={overviewNode}
+          onClose={() => setOverview(null)}
+          onEdit={() => {
+            setSelected(overviewNode.id);
+            setOverview(null);
+          }}
+        />
+      ) : null}
 
       {reporting && envelope !== null ? (
         <ReportView

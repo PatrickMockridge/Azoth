@@ -37,7 +37,7 @@ gas_in_liquid = 0.0
 
 [[connections]]
 from = "feed_1"
-to = "mix1.feed"
+to = "mix1.feed[0]"
 
 [[connections]]
 from = "mix1.product"
@@ -58,7 +58,7 @@ to = "vapour_product"
 [[recycles]]
 stream = "recycle_1"
 from = "sep1.liquid"
-to = "mix1.feed"
+to = "mix1.feed[1]"
 
 # Where an editor draws each node. Nothing in the run reads it - the checker ignores it and the
 # executor never sees it - and its position here, after the arrays of tables, is the only order

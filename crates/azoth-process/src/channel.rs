@@ -61,6 +61,17 @@ pub struct Port {
     pub direction: Direction,
     #[serde(default)]
     pub multiplicity: Multiplicity,
+    /// The least number of connected streams a `many` port needs.
+    ///
+    /// **A count, not a multiplicity.** `many` says a port can take several streams; this says how
+    /// few still describe the unit it declares. A mixer with one feed is a no-op, while a tank or a
+    /// column feed is complete with one. `one` ports are exactly one and declare no minimum.
+    #[serde(default = "one_stream")]
+    pub min_streams: usize,
     /// The field record a stream on this port carries.
     pub fields: ChannelType,
+}
+
+const fn one_stream() -> usize {
+    1
 }

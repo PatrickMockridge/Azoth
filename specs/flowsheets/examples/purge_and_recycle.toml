@@ -24,7 +24,7 @@ split_factors = [0.5, 0.5]
 
 [[connections]]
 from = "feed_1"
-to = "mix1.feed"
+to = "mix1.feed[0]"
 
 [[connections]]
 from = "mix1.product"
@@ -37,7 +37,7 @@ to = "purge"
 [[recycles]]
 stream = "recycle_1"
 from = "split1.products[1]"
-to = "mix1.feed"
+to = "mix1.feed[1]"
 
 [layout.inputs]
 feed_1 = [0.0, 60.0]

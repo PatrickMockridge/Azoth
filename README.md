@@ -16,7 +16,7 @@ Rust and once in Python**, with an agentic layer on top. The algorithms are port
 Nothing to install. The editor and the calculation engine are compiled to WebAssembly and run in
 your browser; no case is uploaded and no server is behind the page.
 
-1. The demo flowsheet — a feed, pump, heater, separator and a recycle — opens on its own.
+1. The demo flowsheet — two feeds meeting at a mixer, then a pump, heater, separator and live recycle — opens on its own.
 2. Press **Solve** to run it. Temperatures, pressures and flows appear on the drawing, and the
    Workbook lists every stream.
 3. Click a unit operation or a stream to read its inputs, its results and where the model came

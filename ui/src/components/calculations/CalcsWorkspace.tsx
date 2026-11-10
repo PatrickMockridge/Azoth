@@ -68,7 +68,11 @@ export function CalcsWorkspace({
               onTab={onSelect}
               label="Calculation sheets"
             />
-            <div role="tabpanel" id={`sheet-${current.id}`}>
+            <div
+              className="calc-sheet-panel"
+              role="tabpanel"
+              id={`sheet-${current.id}`}
+            >
               <CalcSheet
                 form={form}
                 sheet={current}

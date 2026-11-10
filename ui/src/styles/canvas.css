@@ -17,10 +17,25 @@
   position: relative;
   /* A 72px glyph plus a label on each side; the label never has to sit on the drawing. */
   min-width: 190px;
+  /*
+   * **A fixed plate, so the nozzles do not move when a readout appears.** Handles are placed at
+   * percentages of the node's measured height; a node that grew with its result rows moved every
+   * edge endpoint under the reader. The readout is clipped here and shown in full in the overview.
+   */
+  height: 168px;
+  overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--r4);
   background: var(--bg-panel);
   box-shadow: var(--e-node);
+}
+
+.unit header,
+.unit .id,
+.unit .readout {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /*
@@ -184,34 +199,48 @@
   fill: var(--error);
 }
 
+/*
+ * **A 14 px hit target around a 7 px dot.** Wiring is a precision gesture with a high error cost;
+ * the visible dot stays small, while the transparent element around it is easier to hit.
+ */
 .react-flow__handle {
-  width: 7px;
-  height: 7px;
-  background: var(--text-dim);
+  width: 14px;
+  height: 14px;
+  background: transparent;
   border: 0;
   pointer-events: auto;
 }
 
+.react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: 3.5px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
 /*
- * **A port says whether it is wired.** The unfilled amber handle is the one still to connect;
- * the accent handle is carrying a stream. Without this a fresh unit looked wired simply because
+ * **A port says whether it is wired.** The unfilled amber dot is the one still to connect;
+ * the accent dot is carrying a stream. Without this a fresh unit looked wired simply because
  * its handles were drawn.
  */
-.react-flow__handle.connected {
+.react-flow__handle.connected::after {
   background: var(--accent);
 }
 
-.react-flow__handle.unconnected {
+.react-flow__handle.unconnected::after {
   background: var(--warn);
   box-shadow: 0 0 0 1px var(--bg-canvas);
 }
 
 .react-flow__edge.bad .react-flow__edge-path {
   stroke: var(--error);
+  stroke-dasharray: 3 2;
 }
 
 .react-flow__edge.warn .react-flow__edge-path {
   stroke: var(--warn);
+  stroke-dasharray: 1 2;
 }
 
 .react-flow__edge-text {
