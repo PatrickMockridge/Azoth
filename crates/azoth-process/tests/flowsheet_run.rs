@@ -18,6 +18,57 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+/// Every flowsheet document, including the worked examples under `examples/`.
+///
+/// **Recursive so a shipped example is executed rather than merely stored.** The editor opens
+/// every document here, and a document no solver test reaches is an example that can rot.
+fn flowsheet_paths(directory: &Path, into: &mut Vec<PathBuf>) {
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(directory)
+        .unwrap_or_else(|error| panic!("{}: {error}", directory.display()))
+        .map(|entry| entry.expect("readable entry").path())
+        .collect();
+    entries.sort();
+    for path in entries {
+        if path.is_dir() {
+            flowsheet_paths(&path, into);
+        } else if path.extension().and_then(|e| e.to_str()) == Some("toml") {
+            into.push(path);
+        }
+    }
+}
+
+fn flowsheets() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    flowsheet_paths(&root().join("specs/flowsheets"), &mut paths);
+    paths
+}
+
+/// **The worked examples solve, and the editor's menu is not a set of broken invitations.**
+#[test]
+fn every_example_solves() {
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let feeds = BTreeMap::new();
+    let mut checked = 0;
+    for path in flowsheets() {
+        if !path.to_string_lossy().contains("/examples/") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).expect("readable");
+        let flowsheet = Flowsheet::from_toml(&text)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let report = run(&flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        assert!(report.converged, "{} did not converge", path.display());
+        assert!(
+            !report.streams.is_empty(),
+            "{} ran and bound no stream",
+            path.display()
+        );
+        checked += 1;
+    }
+    assert!(checked >= 4, "only {checked} example(s) were found");
+}
+
 /// **The shipped flowsheet, run.** Feed, pump, heat, separate, and the liquid recycled back to
 /// the mixer - so the second pass's mixer has two inlets and the tear closes.
 #[test]
@@ -419,13 +470,8 @@ fn composition(field: &str) -> Vec<f64> {
 /// both change. What is claimed is the value.
 #[test]
 fn every_shipped_flowsheet_round_trips() {
-    let directory = root().join("specs/flowsheets");
     let mut checked = 0;
-    for entry in std::fs::read_dir(&directory).expect("the flowsheets are there") {
-        let path = entry.expect("readable").path();
-        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
-            continue;
-        }
+    for path in flowsheets() {
         let text = std::fs::read_to_string(&path).expect("readable");
         let original = Flowsheet::from_toml(&text)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));

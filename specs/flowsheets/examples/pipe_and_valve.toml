@@ -1,0 +1,77 @@
+# A pipeline, a pressure let-down and a cold separator.
+id = "flowsheets.example_pipe_and_valve"
+name = "Pipe, valve and cold separation"
+
+products = ["gas", "liquid"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "ethane"]
+n = 10.0
+z = [0.5, 0.5]
+P = 20.0e5
+T = 300.0
+
+[[instances]]
+id = "pipe1"
+unit = "unit_ops.pipe"
+[instances.parameters]
+length = 100.0
+diameter = 0.1
+roughness = 4.6e-5
+
+[[instances]]
+id = "valve1"
+unit = "unit_ops.throttling_valve"
+[instances.parameters]
+outlet_pressure = 10.0e5
+
+[[instances]]
+id = "cool1"
+unit = "unit_ops.cooler"
+[instances.parameters]
+outlet_temperature = 200.0
+
+[[instances]]
+id = "sep1"
+unit = "unit_ops.separator"
+[instances.parameters]
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+
+[[connections]]
+from = "feed_1"
+to = "pipe1.inlet"
+
+[[connections]]
+from = "pipe1.outlet"
+to = "valve1.inlet"
+
+[[connections]]
+from = "valve1.outlet"
+to = "cool1.inlet"
+
+[[connections]]
+from = "cool1.outlet"
+to = "sep1.feed"
+
+[[connections]]
+from = "sep1.vapour"
+to = "gas"
+
+[[connections]]
+from = "sep1.liquid"
+to = "liquid"
+
+[layout.inputs]
+feed_1 = [0.0, 60.0]
+
+[layout.instances]
+pipe1 = [260.0, 60.0]
+valve1 = [520.0, 60.0]
+cool1 = [780.0, 60.0]
+sep1 = [1040.0, 60.0]
+
+[layout.products]
+gas = [1320.0, 0.0]
+liquid = [1320.0, 140.0]

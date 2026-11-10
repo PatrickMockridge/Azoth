@@ -1,7 +1,7 @@
 //! The shipped flowsheets, loaded from `specs/flowsheets/`, must validate against
 //! the shipped palette.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use azoth_process::{Flowsheet, UnitOpSpec, validate};
 
@@ -31,14 +31,30 @@ fn load_palette() -> Vec<UnitOpSpec> {
     specs
 }
 
+/// Every flowsheet document under `specs/flowsheets/`, including the worked examples in its
+/// subdirectory. **Recursive because a shipped document is shipped wherever it sits**: a
+/// subdirectory that nothing walked would be a set of examples no test ever ran.
+fn flowsheet_paths(directory: &Path, into: &mut Vec<PathBuf>) {
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(directory)
+        .unwrap_or_else(|e| panic!("{}: {e}", directory.display()))
+        .map(|entry| entry.expect("readable entry").path())
+        .collect();
+    entries.sort();
+    for path in entries {
+        if path.is_dir() {
+            flowsheet_paths(&path, into);
+        } else if path.extension().and_then(|e| e.to_str()) == Some("toml") {
+            into.push(path);
+        }
+    }
+}
+
 fn load_flowsheets() -> Vec<Flowsheet> {
     let root = repo_root().join("specs/flowsheets");
+    let mut paths = Vec::new();
+    flowsheet_paths(&root, &mut paths);
     let mut sheets = Vec::new();
-    for entry in std::fs::read_dir(&root).expect("specs/flowsheets must exist") {
-        let path = entry.expect("readable entry").path();
-        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
-            continue;
-        }
+    for path in paths {
         let text = std::fs::read_to_string(&path).unwrap();
         sheets.push(toml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
     }

@@ -529,6 +529,11 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
     (
         "specs/flowsheets/",
         Claim(
+            # **The examples are documents the solver runs and the editor opens.** A flowsheet
+            # change that only checked the fixture would leave every new example unexecuted and
+            # the editor's own loader untested.
+            crates=("azoth-process",),
+            jobs=("ui",),
             commands=(
                 Command(
                     "the fixture a flowsheet produces, which only the CLI can make",

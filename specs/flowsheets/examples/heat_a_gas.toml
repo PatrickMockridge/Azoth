@@ -1,0 +1,36 @@
+# The smallest complete case: one feed, one unit operation, one product.
+id = "flowsheets.example_heat_a_gas"
+name = "Heat a gas stream"
+
+products = ["heated_gas"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane"]
+n = 1.0
+z = [1.0]
+P = 5.0e5
+T = 300.0
+
+[[instances]]
+id = "h1"
+unit = "unit_ops.heater"
+[instances.parameters]
+outlet_temperature = 340.0
+
+[[connections]]
+from = "feed_1"
+to = "h1.inlet"
+
+[[connections]]
+from = "h1.outlet"
+to = "heated_gas"
+
+[layout.inputs]
+feed_1 = [0.0, 60.0]
+
+[layout.instances]
+h1 = [320.0, 60.0]
+
+[layout.products]
+heated_gas = [640.0, 60.0]
