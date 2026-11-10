@@ -6,6 +6,25 @@ Rust and once in Python**, with an agentic layer on top. The algorithms are port
 [NeqSim](https://github.com/equinor/neqsim) under Apache-2.0 and credited in
 [`NOTICE`](NOTICE).
 
+## Try the editor
+
+**[Open the flowsheet editor →](https://patrickmockridge.github.io/Azoth/)**
+
+![The editor showing the demo flowsheet](docs/src/images/editor.png)
+
+Nothing to install. The editor and the calculation engine are compiled to WebAssembly and run in
+your browser; no case is uploaded and no server is behind the page.
+
+1. The demo flowsheet — a feed, pump, heater, separator and a recycle — opens on its own.
+2. Press **Solve** to run it. Temperatures, pressures and flows appear on the drawing, and the
+   Workbook lists every stream.
+3. Click a unit operation or a stream to read its inputs, its results and where the model came
+   from. Case → Examples opens other worked cases.
+
+The port is incomplete and every shipped model is marked `unverified` or `partially_verified`, so
+these are **screening values, not design deliverables** — [the book says why and what is
+missing](docs/src/index.md#not-for-design-work-yet).
+
 ## Every number says what it rests on
 
 The hazard this library is organised against is not a crash. It is a number that looks
