@@ -1,0 +1,201 @@
+/*
+ * The printable case and its drawing.
+ *
+ * **A report is a page, not a panel.** It covers the editor while it is open and becomes the
+ * only thing on the page when printed; the chrome, the palette and the canvas are removed rather
+ * than shrunk. The PFD is an inline SVG so the same bytes print and download.
+ */
+
+.workbook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-inline-end: var(--s4);
+}
+
+.workbook-head .export {
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.workbook-head .export:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.report {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  padding: var(--s6);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s6);
+  border-bottom: 1px solid var(--line);
+  padding-block-end: var(--s4);
+}
+
+.report-head h2 {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.report-actions button,
+.report-head button {
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.report-actions button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.report-pfd {
+  margin-block: var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.pfd {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 20rem;
+}
+
+.pfd .machine {
+  fill: var(--bg-raised);
+  stroke: var(--line-strong);
+}
+
+.pfd .machine.input,
+.pfd .machine.product {
+  stroke: var(--accent);
+}
+
+.pfd .connection {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+
+.pfd .connection.recycle {
+  stroke: var(--edge-recycle);
+  stroke-dasharray: 6 3;
+}
+
+.pfd .arrow {
+  fill: var(--edge);
+}
+
+.pfd text {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.pfd .kind {
+  fill: var(--text-dim);
+  font-size: var(--fs-2xs);
+}
+
+.report-table {
+  margin-block: var(--s5);
+}
+
+.report-table h3 {
+  margin-block-end: var(--s2);
+  color: var(--text-strong);
+}
+
+.report-table table {
+  width: 100%;
+}
+
+.report .report-summary {
+  color: var(--text-dim);
+}
+
+.report-statement {
+  margin-block: var(--s6);
+  padding-block-start: var(--s4);
+  border-top: 1px solid var(--line);
+  color: var(--text-dim);
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  :root {
+    --bg: #fff;
+    --bg-panel: #fff;
+    --bg-raised: #fff;
+    --text: #111;
+    --text-strong: #000;
+    --text-dim: #333;
+    --line: #ccc;
+    --line-strong: #888;
+    --accent: #000;
+    --accent-ink: #fff;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /* The editor is not the report. */
+  .app > :not(.report) {
+    display: none;
+  }
+
+  .report {
+    position: static;
+    overflow: visible;
+    padding: 0;
+    background: #fff;
+    color: #111;
+  }
+
+  .report-actions,
+  .report-screen-note {
+    display: none;
+  }
+
+  .report-table table {
+    page-break-inside: auto;
+  }
+
+  .report-table tr {
+    page-break-inside: avoid;
+  }
+}

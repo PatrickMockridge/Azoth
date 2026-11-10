@@ -25,6 +25,7 @@ import { Help } from "./components/Help";
 import { Navigation } from "./components/Navigation";
 import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
+import { ReportView } from "./components/report/ReportView";
 import { RibbonGroup } from "./components/RibbonGroup";
 import { StarterHints } from "./components/StarterHints";
 import { StatusBar } from "./components/StatusBar";
@@ -82,6 +83,15 @@ export function App() {
    * anything, and the card is one click from gone.
    */
   const [welcome, setWelcome] = useState(readWelcome);
+
+  /** The printable report, a view over the last run and not a second call. */
+  const [reporting, setReporting] = useState(false);
+  const canReport =
+    envelope !== null &&
+    envelope.ok &&
+    envelope.run_error === null &&
+    !envelope.dirty &&
+    envelope.session !== null;
 
   const middleware = useRef<Door | null>(null);
 
@@ -296,6 +306,18 @@ export function App() {
           >
             Solve
           </button>
+          <button
+            type="button"
+            onClick={() => setReporting(true)}
+            disabled={!canReport}
+            title={
+              canReport
+                ? "print or save the case: the drawing, the streams, the results and their source"
+                : "solve the document first; a stale case is not a report"
+            }
+          >
+            Report
+          </button>
         </RibbonGroup>
         <RibbonGroup label="Case">
           <button
@@ -483,6 +505,15 @@ export function App() {
       </Dock>
 
       <StatusBar envelope={envelope} units={units} />
+
+      {reporting && envelope !== null ? (
+        <ReportView
+          envelope={envelope}
+          catalogue={catalogue}
+          units={units}
+          onClose={() => setReporting(false)}
+        />
+      ) : null}
     </div>
   );
 }

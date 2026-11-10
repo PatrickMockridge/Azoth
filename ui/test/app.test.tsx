@@ -519,4 +519,26 @@ describe("the editor", () => {
     await waitFor(() => expect(pill(container)).toBe("stale"));
     expect(nodeIds(container)).toContain("input:feed_1");
   });
+
+  it("prints a solved case and exports the workbook", async () => {
+    stubFetch();
+    const download = stubDownload();
+    // A previous case may have left the field set remembered; this export is read in SI.
+    window.localStorage.removeItem("azoth.units");
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Report" }));
+    expect(screen.getByRole("dialog", { name: "Case report" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Workbook" }));
+    fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+    await waitFor(() => expect(download.names).toHaveLength(1));
+    expect(download.names[0]).toContain(".csv");
+    const text = await textOf(only(download.blobs));
+    expect(text).toContain("feed_1");
+    expect(text).toContain("T [K]");
+  });
 });
