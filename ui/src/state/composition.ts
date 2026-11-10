@@ -52,14 +52,16 @@ export function draftFromInput(name: string, record: InputRecord, units: Units):
 }
 
 /** A draft with one row, which is the smallest feed the checker accepts. */
-export function emptyDraft(name: string): FeedDraft {
+export function emptyDraft(name: string, units: Units): FeedDraft {
   return {
     name,
     components: [],
     mode: "mole",
-    n: "1",
-    P: "5e5",
-    T: "300",
+    // **The defaults are physical, and the boxes are in the set in force.** These used to be SI
+    // literals labelled as the display unit, so a Field-set feed silently opened at 500000 psi.
+    n: numberText(inDisplayUnit(units, 1, "mol/s")),
+    P: numberText(inDisplayUnit(units, 5e5, "Pa")),
+    T: numberText(inDisplayUnit(units, 300, "K")),
   };
 }
 

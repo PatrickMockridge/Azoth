@@ -33,7 +33,7 @@ describe("the feed editor", () => {
       <FeedEditor
         catalogue={catalogue}
         units={units}
-        initial={emptyDraft("feed_1")}
+        initial={emptyDraft("feed_1", units)}
         editing={false}
         onApply={onApply}
         onCancel={() => {}}
@@ -60,7 +60,7 @@ describe("the feed editor", () => {
       <FeedEditor
         catalogue={catalogue}
         units={units}
-        initial={emptyDraft("feed_1")}
+        initial={emptyDraft("feed_1", units)}
         editing={false}
         onApply={onApply}
         onCancel={() => {}}
@@ -86,7 +86,7 @@ describe("the feed editor", () => {
       <FeedEditor
         catalogue={catalogue}
         units={units}
-        initial={emptyDraft("feed_1")}
+        initial={emptyDraft("feed_1", units)}
         editing={false}
         onApply={onApply}
         onCancel={() => {}}
@@ -111,7 +111,7 @@ describe("the feed editor", () => {
       <FeedEditor
         catalogue={catalogue}
         units={units}
-        initial={emptyDraft("feed_1")}
+        initial={emptyDraft("feed_1", units)}
         editing={false}
         onApply={() => {}}
         onCancel={() => {}}

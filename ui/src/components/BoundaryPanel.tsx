@@ -115,7 +115,7 @@ function NewFeed({
     <FeedEditor
       catalogue={catalogue}
       units={units}
-      initial={newFeedDraft(taken)}
+      initial={newFeedDraft(taken, units)}
       editing={false}
       onApply={(record) => {
         onCommand({ command: "add_input", ...record });

@@ -231,12 +231,12 @@ export function FeedEditor({
 }
 
 /** A new feed with no row and a name the document does not already hold. */
-export function newFeedDraft(taken: string[]): FeedDraft {
+export function newFeedDraft(taken: string[], units: Units): FeedDraft {
   for (let index = 1; index < 100; index += 1) {
     const candidate = `feed_${String(index)}`;
     if (!taken.includes(candidate)) {
-      return emptyDraft(candidate);
+      return emptyDraft(candidate, units);
     }
   }
-  return emptyDraft("feed_x");
+  return emptyDraft("feed_x", units);
 }

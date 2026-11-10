@@ -93,6 +93,12 @@ export function App() {
     !envelope.dirty &&
     envelope.session !== null;
 
+  /**
+   * **A refused document is not run.** The button used to attempt the physics and return the
+   * executor's own sentence beside the checker's list; the Messages panel is where a fix starts.
+   */
+  const canSolve = session !== null && envelope !== null && envelope.ok;
+
   const middleware = useRef<Door | null>(null);
 
   /**
@@ -323,8 +329,12 @@ export function App() {
             type="button"
             className="primary"
             onClick={run}
-            disabled={session === null}
-            title="run the physics; a check happens on every edit and a run is when you ask"
+            disabled={!canSolve}
+            title={
+              canSolve
+                ? "run the physics; a check happens on every edit and a run is when you ask"
+                : "fix the messages first; a refused document cannot run"
+            }
           >
             Solve
           </button>

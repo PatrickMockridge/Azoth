@@ -29,7 +29,7 @@ const field = unitsOf(catalogue, "field");
 
 function draft(components: [string, string][]): FeedDraft {
   return {
-    ...emptyDraft("feed_1"),
+    ...emptyDraft("feed_1", si),
     components: components.map(([name, fraction]) => ({ name, fraction })),
   };
 }
@@ -82,6 +82,20 @@ describe("a feed draft", () => {
     // a reader's display precision, not a conversion error.
     expect(prepared?.P).toBeCloseTo(500000, 0);
     expect(prepared?.z).toEqual([1]);
+  });
+
+  it("opens a new feed at the physical defaults in the set in force", () => {
+    const fresh = {
+      ...emptyDraft("feed_1", field),
+      components: [{ name: "methane", fraction: "1" }],
+    };
+    // 5e5 Pa is 72.52 psi and 300 K is 80.33 °F; the boxes say so.
+    expect(Number(fresh.P)).toBeCloseTo(72.52, 1);
+    expect(Number(fresh.T)).toBeCloseTo(80.33, 1);
+    const prepared = recordOf(fresh, catalogue, field);
+    expect(prepared).not.toBeNull();
+    expect(prepared?.P).toBeCloseTo(500000, 0);
+    expect(prepared?.T).toBeCloseTo(300, 2);
   });
 
   it("returns the draft in SI when the unit set is SI", () => {

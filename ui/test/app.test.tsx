@@ -188,9 +188,12 @@ describe("the editor", () => {
     await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
     // The new machine is selected, so its window is open and the reader can see what happened.
     expect(screen.getByRole("button", { name: "Remove" })).toBeDefined();
+    // It has no connections, so the document is incomplete and cannot be run.
+    expect(screen.getByRole("button", { name: "Solve" })).toHaveProperty("disabled", true);
 
     fireEvent.keyDown(document, { key: "Delete" });
     await waitFor(() => expect(nodeIds(container)).not.toContain("instance:heater_1"));
+    expect(screen.getByRole("button", { name: "Solve" })).toHaveProperty("disabled", false);
 
     fireEvent.click(heaterEntry as HTMLElement);
     await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
