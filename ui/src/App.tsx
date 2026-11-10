@@ -256,6 +256,28 @@ export function App() {
     }
   }, [session, answer]);
 
+  /** Run, and let the first-run card get out of the way; it told the reader to press this. */
+  const run = useCallback(() => {
+    dismissWelcome();
+    solve();
+  }, [dismissWelcome, solve]);
+
+  /**
+   * Add a palette entry, select it and dismiss the card.
+   *
+   * **A new node has to be visibly the thing that just happened.** It used to arrive unselected,
+   * often under the welcome card, so a click on the palette could look like nothing.
+   */
+  const addUnit = useCallback(
+    (unit: string) => {
+      const id = nextId(unit, envelope);
+      setSelected(`instance:${id}`);
+      dismissWelcome();
+      send({ command: "add_instance", id, unit, parameters: {} });
+    },
+    [envelope, dismissWelcome, send],
+  );
+
   const setOrder = useCallback(
     (order: ExecutionOrder) => {
       if (session !== null) {
@@ -300,7 +322,7 @@ export function App() {
           <button
             type="button"
             className="primary"
-            onClick={solve}
+            onClick={run}
             disabled={session === null}
             title="run the physics; a check happens on every edit and a run is when you ask"
           >
@@ -399,14 +421,7 @@ export function App() {
           )}
           <Palette
             forms={catalogue?.unit_ops ?? []}
-            onAdd={(unit) =>
-              send({
-                command: "add_instance",
-                id: nextId(unit, envelope),
-                unit,
-                parameters: {},
-              })
-            }
+            onAdd={addUnit}
           />
           {envelope === null ? null : (
             <BoundaryPanel

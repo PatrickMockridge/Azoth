@@ -381,8 +381,27 @@
 /* --- the property view ----------------------------------------------------- */
 
 .prop-header {
+  position: relative;
   border-bottom: 1px solid var(--line);
   background: var(--bg-panel-2);
+}
+
+.prop-header .remove {
+  position: absolute;
+  inset-block-start: var(--s4);
+  inset-inline-end: var(--s4);
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.prop-header .remove:hover {
+  border-color: var(--error);
+  color: var(--error);
 }
 
 .prop-header h2 {

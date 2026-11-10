@@ -103,6 +103,9 @@ export function Flowsheet({
           y: Math.round(node.position.y),
         })
       }
+      // **Both keys, not xyflow's Backspace alone.** On a Windows/Linux keyboard the key a
+      // reader reaches for is Delete; the default binding silently ignored it.
+      deleteKeyCode={["Backspace", "Delete"]}
       onNodeClick={(_event, node) => onSelect(node.id)}
       onEdgeClick={(_event, edge) => onSelect(edge.id)}
       onPaneClick={() => onSelect(null)}

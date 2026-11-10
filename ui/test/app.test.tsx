@@ -175,6 +175,29 @@ describe("the editor", () => {
     });
   });
 
+  it("adds a palette entry selected, and deletes it with Delete or the Remove button", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const heaterEntry = [...container.querySelectorAll<HTMLElement>("aside.side .entry")].find(
+      (entry) => entry.textContent?.includes("Heater"),
+    );
+    expect(heaterEntry).toBeDefined();
+    fireEvent.click(heaterEntry as HTMLElement);
+
+    await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
+    // The new machine is selected, so its window is open and the reader can see what happened.
+    expect(screen.getByRole("button", { name: "Remove" })).toBeDefined();
+
+    fireEvent.keyDown(document, { key: "Delete" });
+    await waitFor(() => expect(nodeIds(container)).not.toContain("instance:heater_1"));
+
+    fireEvent.click(heaterEntry as HTMLElement);
+    await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(nodeIds(container)).not.toContain("instance:heater_1"));
+  });
+
   /**
    * **The one wire command no other gesture test reaches.** `set_position` goes out of
    * `onNodeDragStop`, and a drag is the one gesture a synthetic event cannot produce cheaply:
