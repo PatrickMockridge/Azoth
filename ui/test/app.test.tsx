@@ -198,6 +198,29 @@ describe("the editor", () => {
     await waitFor(() => expect(nodeIds(container)).not.toContain("instance:heater_1"));
   });
 
+  it("turns a connection into one tear, not a tear plus a connection", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const pump = container.querySelector<HTMLElement>('[data-id="instance:p1"]');
+    expect(pump).not.toBeNull();
+    fireEvent.click(pump as HTMLElement);
+    fireEvent.click(screen.getByRole("tab", { name: "Connections" }));
+    const outlet = screen
+      .getAllByRole("button", { name: "p1.outlet" })
+      .find((button) => button.closest(".side.right") !== null);
+    expect(outlet).toBeDefined();
+    fireEvent.click(outlet as HTMLElement);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Make it a tear" })).toBeDefined());
+
+    fireEvent.click(screen.getByRole("button", { name: "Make it a tear" }));
+    // **The connection is gone rather than left beside the recycle.** A one inlet would be
+    // overfed, and the Messages panel would say so; the conversion leaves it clean.
+    fireEvent.click(screen.getByRole("tab", { name: "Messages" }));
+    await waitFor(() => expect(screen.getByText("No problems found.")).toBeDefined());
+    expect(screen.queryByText(/connections; it takes one/)).toBeNull();
+  });
+
   /**
    * **The one wire command no other gesture test reaches.** `set_position` goes out of
    * `onNodeDragStop`, and a drag is the one gesture a synthetic event cannot produce cheaply:

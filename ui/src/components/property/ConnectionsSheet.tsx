@@ -79,13 +79,25 @@ export function ConnectionsSheet({
       {edge === null ? null : (
         <div className="field">
           {edge.data.kind === "recycle" ? (
-            <button
-              type="button"
-              className="entry"
-              onClick={() => onCommand({ command: "remove_recycle", stream: edge.data.path })}
-            >
-              Remove the tear
-            </button>
+            <>
+              <button
+                type="button"
+                className="entry"
+                onClick={() => onCommand({ command: "remove_recycle", stream: edge.data.path })}
+              >
+                Remove the tear
+              </button>
+              <button
+                type="button"
+                className="entry"
+                onClick={() => {
+                  onCommand({ command: "remove_recycle", stream: edge.data.path });
+                  onCommand({ command: "connect", from: edge.data.from, to: edge.data.to });
+                }}
+              >
+                Make it a connection
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -104,14 +116,19 @@ export function ConnectionsSheet({
               <button
                 type="button"
                 className="entry"
-                onClick={() =>
+                onClick={() => {
+                  // **A conversion, not an addition.** `add_recycle` alone leaves the connection
+                  // in place, so a one port becomes overfed and a many inlet gets the stream
+                  // twice. The wasm door applies the two calls in order; the served door sends
+                  // them one after the other.
+                  onCommand({ command: "disconnect", from: edge.data.from, to: edge.data.to });
                   onCommand({
                     command: "add_recycle",
                     stream: nextTear(envelope),
                     from: edge.data.from,
                     to: edge.data.to,
-                  })
-                }
+                  });
+                }}
               >
                 Make it a tear
               </button>
