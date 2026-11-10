@@ -98,11 +98,13 @@ fn every_variant() -> Vec<Diagnostic> {
             instance: "sep1".into(),
             port: "feed".into(),
             count: 2,
+            incoming: true,
         },
         Diagnostic::UnderfedPort {
             instance: "mix1".into(),
             port: "feed".into(),
             count: 0,
+            incoming: true,
         },
         Diagnostic::UnusedFeed {
             name: "feed_1".into(),
@@ -266,6 +268,7 @@ fn a_record_is_the_documented_shape() {
         instance: "m1".into(),
         port: "feed".into(),
         count: 2,
+        incoming: true,
     });
     let document = serde_json::to_value(&record).expect("a record serialises");
     assert_eq!(
@@ -277,8 +280,8 @@ fn a_record_is_the_documented_shape() {
             "path": "m1.ports.feed",
             "target": { "kind": "handle", "role": "instance", "node": "m1",
                         "port": "feed", "index": null },
-            "message": "`feed` takes one stream and 2 are connected",
-            "detail": { "count": 2 },
+            "message": "the inlet `feed` of `m1` takes one stream and 2 are connected",
+            "detail": { "count": 2, "incoming": true },
         })
     );
 }
@@ -310,7 +313,7 @@ fn a_type_mismatch_reaches_the_wire_as_its_field_and_dimensions() {
     // And the human line is still the sentence the CLI prints, rendered from the structure.
     assert_eq!(
         record.message,
-        "field \"h\" differs: molar_energy (scalar) vs molar_flow (scalar)"
+        "the field `h` differs: the producer has molar_energy (scalar); the consumer has molar_flow (scalar)"
     );
 }
 

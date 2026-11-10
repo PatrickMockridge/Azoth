@@ -198,8 +198,8 @@ fn a_substance_the_databank_lacks_is_refused_by_name() {
         .as_str()
         .expect("a reason");
     assert!(message.contains("unobtainium"), "{message}");
-    // The refusal names where a name comes from, so it is actionable.
-    assert!(message.contains("COMP.csv"), "{message}");
+    // The refusal says what to do about it, so it is actionable.
+    assert!(message.contains("component databank"), "{message}");
 }
 
 #[test]

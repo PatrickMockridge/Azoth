@@ -2069,8 +2069,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
         (None, None) => Err(AzothError::property_unavailable(
             key,
             "critical constants".to_string(),
-            "neither the databank nor the keycard has it. Names come from NeqSim's COMP.csv, \
-             carried in data/components/components.csv; a keycard adds one by name"
+            "it is not a substance in the component databank; check the spelling, or choose a \
+             name from the component list"
                 .to_string(),
         )),
         (Some(base), None) => Ok(base),

@@ -44,7 +44,7 @@ describe("the case report", () => {
 
   it("reports a refused document's diagnostics and no results", () => {
     const report = buildCaseReport(refused, catalogue, units, "now");
-    expect(report.status).toBe("refused");
+    expect(report.status).toBe("incomplete");
     expect(report.diagnostics.rows.length).toBeGreaterThan(0);
     expect(report.summary.errors).toBeGreaterThan(0);
     expect(table(report, "Results and caveats")?.rows ?? []).toEqual([]);

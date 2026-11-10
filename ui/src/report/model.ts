@@ -23,6 +23,7 @@ import { provenanceOf, shortHash } from "../state/provenance";
 import { fieldTextIn } from "../wire/field";
 import type { Catalogue, Envelope } from "../wire/types";
 import { streamCellText } from "./csv";
+import { statusWord } from "../state/status";
 
 /** One table the report prints. */
 export interface ReportTable {
@@ -48,17 +49,6 @@ export interface CaseReport {
     warnings: number;
     errors: number;
   };
-}
-
-/** The status word, from the same facts the title strip reads. */
-function statusWord(envelope: Envelope): string {
-  if (!envelope.ok) {
-    return "refused";
-  }
-  if (envelope.run_error !== null) {
-    return "failed";
-  }
-  return envelope.dirty ? "stale" : "solved";
 }
 
 /**

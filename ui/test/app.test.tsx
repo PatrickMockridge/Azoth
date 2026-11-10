@@ -168,10 +168,10 @@ describe("the editor", () => {
     expect(nodeIds(container)).not.toContain("instance:hx1");
     // The two ports the heater was wired between, named by the checker's own record.
     await waitFor(() => {
-      const codes = [...container.querySelectorAll(".diagnostic .code")].map(
-        (node) => node.textContent,
+      const codes = [...container.querySelectorAll(".message code")].map(
+        (node) => node.textContent ?? "",
       );
-      expect(codes).toContain("underfed_port");
+      expect(codes.join(" ")).toContain("underfed_port");
     });
   });
 

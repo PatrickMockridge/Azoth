@@ -92,6 +92,9 @@ impl Workspace {
     pub fn apply(&mut self, command: &Command) -> Result<()> {
         command::apply(&mut self.flowsheet, &self.palette, command)?;
         self.recheck();
+        // **A failed run does not outlive the document it failed on.** The failure described the
+        // state before this edit; keeping it would show a fault about a document nobody has.
+        self.run_error = None;
         self.dirty = true;
         Ok(())
     }

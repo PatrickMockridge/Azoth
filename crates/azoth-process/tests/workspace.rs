@@ -110,6 +110,14 @@ fn a_run_that_fails_takes_the_values_with_it() {
     assert!(workspace.dirty());
     assert!(workspace.paths().is_empty());
 
+    // An edit clears the failure: it described the document before the edit.
+    workspace
+        .apply(&Command::AddProduct {
+            name: "spare".into(),
+        })
+        .expect("the edit lands");
+    assert!(workspace.run_error().is_none(), "the old fault is gone");
+
     // And a successful run clears it.
     workspace = opened();
     workspace.run().expect("it runs");

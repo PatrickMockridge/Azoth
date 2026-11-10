@@ -214,6 +214,12 @@
   border-color: var(--warn-tint);
 }
 
+.pill.warn,
+.chip.warn {
+  color: var(--warn);
+  border-color: var(--warn-tint);
+}
+
 .pill.bad,
 .chip.bad {
   color: var(--error);
@@ -575,6 +581,82 @@
 
 .diagnostic p {
   margin: var(--s2) 0 0;
+}
+
+/* A message group is one object: a heading, its facts, and the technical detail folded away. */
+.message {
+  border-bottom: 1px solid var(--line);
+  padding-block: var(--s2);
+}
+
+.message-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+div.message-head {
+  cursor: default;
+}
+
+.message-head:hover {
+  background: var(--bg-hover);
+}
+
+.message .title {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.message.error .title {
+  color: var(--error);
+}
+
+.message.warning .title {
+  color: var(--warn);
+}
+
+.message .summary {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  white-space: nowrap;
+}
+
+.message-list {
+  margin: 0;
+  padding: 0 var(--s5) var(--s3) var(--s8);
+  color: var(--text);
+}
+
+.message-list li {
+  margin-block: var(--s1);
+}
+
+.message-list summary {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.message-list code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--text-dim);
+}
+
+.message.run .fault {
+  margin: var(--s3) var(--s5);
 }
 
 .fault {

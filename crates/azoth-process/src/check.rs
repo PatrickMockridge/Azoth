@@ -125,11 +125,15 @@ pub enum Diagnostic {
         instance: String,
         port: String,
         count: usize,
+        /// Whether the port consumes (`true`) or produces (`false`), which decides the sentence.
+        incoming: bool,
     },
     UnderfedPort {
         instance: String,
         port: String,
         count: usize,
+        /// Whether the port consumes (`true`) or produces (`false`), which decides the sentence.
+        incoming: bool,
     },
     UnusedFeed {
         name: String,
@@ -651,11 +655,33 @@ impl Diagnostic {
                 format!("`{port}` consumes, and is not an inlet")
             }
             Self::TypeMismatch { mismatch, .. } => mismatch.message(),
-            Self::OverfedPort { port, count, .. } => {
-                format!("`{port}` takes one stream and {count} are connected")
+            Self::OverfedPort {
+                instance,
+                port,
+                count,
+                incoming,
+            } => {
+                if *incoming {
+                    format!(
+                        "the inlet `{port}` of `{instance}` takes one stream and {count} are connected"
+                    )
+                } else {
+                    format!(
+                        "the outlet `{port}` of `{instance}` produces one stream and {count} are connected"
+                    )
+                }
             }
-            Self::UnderfedPort { port, count, .. } => {
-                format!("`{port}` takes at least one stream and {count} are connected")
+            Self::UnderfedPort {
+                instance,
+                port,
+                count: _,
+                incoming,
+            } => {
+                if *incoming {
+                    format!("the inlet `{port}` of `{instance}` is not connected")
+                } else {
+                    format!("the outlet `{port}` of `{instance}` is not connected to anything")
+                }
             }
             Self::UnusedFeed { name } => format!("feed `{name}` is declared and never consumed"),
             Self::UnusedProduct { name } => {
@@ -1018,17 +1044,20 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 Multiplicity::Many => count >= 1,
             };
             if !ok {
+                let incoming = port.direction == Direction::In;
                 diags.push(if count == 0 {
                     Diagnostic::UnderfedPort {
                         instance: instance.id.clone(),
                         port: port.name.clone(),
                         count,
+                        incoming,
                     }
                 } else {
                     Diagnostic::OverfedPort {
                         instance: instance.id.clone(),
                         port: port.name.clone(),
                         count,
+                        incoming,
                     }
                 });
             }
@@ -1255,15 +1284,21 @@ impl Mismatch {
     #[must_use]
     pub fn message(&self) -> String {
         match self {
-            Self::DifferentFields { producer, consumer } => {
-                format!("field sets differ: {producer:?} vs {consumer:?}")
+            Self::DifferentFields { producer, consumer } => format!(
+                "the producer carries the fields {}; the consumer carries {}",
+                producer.join(", "),
+                consumer.join(", ")
+            ),
+            Self::MissingField { field } => {
+                format!("the consumer does not carry the producer's field `{field}`")
             }
-            Self::MissingField { field } => format!("field {field:?} present on only one side"),
             Self::DifferentField {
                 field,
                 producer,
                 consumer,
-            } => format!("field {field:?} differs: {producer} vs {consumer}"),
+            } => format!(
+                "the field `{field}` differs: the producer has {producer}; the consumer has {consumer}"
+            ),
         }
     }
 }
@@ -1808,7 +1843,8 @@ mod tests {
             Diagnostic::OverfedPort {
                 instance: "p1".into(),
                 port: "feed".into(),
-                count: 2
+                count: 2,
+                incoming: true,
             }
         ));
     }
@@ -2025,7 +2061,7 @@ mod tests {
         );
         assert_eq!(
             red.to_string(),
-            "instances/m1.ports.feed: `feed` takes at least one stream and 0 are connected"
+            "instances/m1.ports.feed: the inlet `feed` of `m1` is not connected"
         );
     }
 

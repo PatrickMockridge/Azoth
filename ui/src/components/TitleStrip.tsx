@@ -1,4 +1,5 @@
 import { asExecutionOrder } from "../wire/decode";
+import { statusClass as classOf, statusWord } from "../state/status";
 import type { Envelope, ExecutionOrder } from "../wire/types";
 import type { Theme } from "../state/theme";
 import type { Units } from "../state/units";
@@ -108,20 +109,12 @@ export function TitleStrip({
   );
 }
 
-/** The word a status pill shows. */
+/** The word a status pill shows; the rule itself is `state/status.ts`. */
 export function status(envelope: Envelope): string {
-  if (!envelope.ok) {
-    return "refused";
-  }
-  if (envelope.run_error !== null) {
-    return "failed";
-  }
-  return envelope.dirty ? "stale" : "solved";
+  return statusWord(envelope);
 }
 
+/** The colour class for the word. */
 export function statusClass(envelope: Envelope): string {
-  if (!envelope.ok || envelope.run_error !== null) {
-    return "bad";
-  }
-  return envelope.dirty ? "stale" : "ok";
+  return classOf(envelope);
 }

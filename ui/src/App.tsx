@@ -34,7 +34,7 @@ import { Welcome } from "./components/Welcome";
 import { Workbook } from "./components/workbook/Workbook";
 import { EXAMPLES } from "./examples";
 import { saveDocument } from "./save";
-import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
+import { selectedEdge, selectedNode } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
 import { readWelcome, rememberWelcome } from "./state/welcome";
@@ -488,7 +488,7 @@ export function App() {
           {
             id: "messages",
             label: "Messages",
-            count: envelope?.diagnostics.length ?? 0,
+            count: (envelope?.diagnostics.length ?? 0) + (envelope?.run_error === null || envelope?.run_error === undefined ? 0 : 1),
           },
           { id: "help", label: "Help" },
         ]}
@@ -512,9 +512,9 @@ export function App() {
           />
         ) : (
           <DiagnosticsPanel
-            diagnostics={envelope.diagnostics}
+            envelope={envelope}
             runError={envelope.run_error}
-            onSelect={(target) => setSelected(targetNodeId(target, envelope))}
+            onSelect={setSelected}
           />
         )}
       </Dock>
