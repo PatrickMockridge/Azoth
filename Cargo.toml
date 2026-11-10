@@ -9,6 +9,7 @@ members = [
   "crates/azoth-reactions",
   "crates/azoth-standards",
   "crates/azoth-characterization",
+  "crates/azoth-sheets",
   "crates/azoth-process",
   "crates/azoth-python",
   "crates/azoth-wasm",
@@ -33,6 +34,7 @@ azoth-eos = { path = "crates/azoth-eos" }
 azoth-reactions = { path = "crates/azoth-reactions" }
 azoth-standards = { path = "crates/azoth-standards" }
 azoth-characterization = { path = "crates/azoth-characterization" }
+azoth-sheets = { path = "crates/azoth-sheets" }
 azoth-process = { path = "crates/azoth-process" }
 azoth-python = { path = "crates/azoth-python" }
 azoth-cli = { path = "crates/azoth-cli" }

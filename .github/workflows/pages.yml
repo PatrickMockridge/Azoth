@@ -21,8 +21,11 @@ on:
       - "crates/azoth-reactions/**"
       - "crates/azoth-standards/**"
       - "crates/azoth-process/**"
+      - "crates/azoth-sheets/**"
       - "specs/unit_ops/**"
       - "specs/flowsheets/**"
+      - "specs/calcs/**"
+      - "specs/calcbooks/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

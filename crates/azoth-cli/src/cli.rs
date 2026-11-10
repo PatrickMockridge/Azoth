@@ -46,6 +46,9 @@ pub enum Command {
     /// editor's calls at `POST /rpc`, and the MCP tools at `POST /mcp` over the same document.
     Serve(ServeArgs),
 
+    /// Apply one command to a calculation book, calculate, and print the sheet envelope.
+    Sheets(SheetsArgs),
+
     /// Cross-check a NeqSim flash request: one `runFlash` document per line in, one verdict per
     /// line out.
     Crosscheck(CrosscheckArgs),
@@ -73,6 +76,10 @@ pub struct ServeArgs {
     /// The palette directory. Defaults to the shipped `specs/unit_ops`.
     #[arg(long, default_value = "specs/unit_ops")]
     pub palette: std::path::PathBuf,
+
+    /// The calculation book to serve at `/sheets`. A blank book when absent.
+    #[arg(long)]
+    pub calc_book: Option<std::path::PathBuf>,
 
     /// The port to listen on, on 127.0.0.1. `0` asks the operating system for a free one, which is
     /// printed either way.
@@ -141,6 +148,21 @@ pub struct EditArgs {
     /// Print the whole envelope as JSON rather than as a report.
     #[arg(long)]
     pub json: bool,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct SheetsArgs {
+    /// The calculation book to open.
+    #[arg(long)]
+    pub book: std::path::PathBuf,
+
+    /// One command, as the JSON object the sheet command model reads.
+    #[arg(long)]
+    pub command: Option<String>,
+
+    /// Calculate one sheet, or `all` for every ready stale sheet.
+    #[arg(long)]
+    pub calculate: Option<String>,
 }
 
 #[derive(Debug, clap::Args)]

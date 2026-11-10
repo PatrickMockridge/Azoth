@@ -16,7 +16,14 @@
  * envelope, which is why a save needs no call of its own.
  */
 
-import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
+import type { SheetCommand } from "./sheetCommands";
+import type {
+  Catalogue,
+  Command,
+  Envelope,
+  ExecutionOrder,
+  SheetEnvelope,
+} from "./types";
 
 /** A live document, as the editor holds it. */
 export interface Session {
@@ -69,3 +76,34 @@ export type HostedDoor = AnyDoor & {
  * only on the openable arm.
  */
 export type Door = OpenableDoor | HostedDoor;
+
+/** A live calculation book. */
+export interface SheetSession {
+  /** Apply one edit, and answer with the sheet envelope. */
+  apply(command: SheetCommand): Promise<SheetEnvelope>;
+  /** Calculate one sheet, or every stale sheet when `sheet` is `null`. */
+  calculate(sheet: string | null): Promise<SheetEnvelope>;
+}
+
+/** A sheet session, and the envelope it was opened with. */
+export interface SheetOpened {
+  session: SheetSession;
+  envelope: SheetEnvelope;
+}
+
+/** The sheet half of a door: the module can open a book, a server hosts one. */
+export type SheetDoor =
+  | {
+      readonly kind: "openable";
+      open(document: string): Promise<SheetOpened>;
+    }
+  | {
+      readonly kind: "hosted";
+      attach(): Promise<SheetOpened>;
+    };
+
+/** Both documents a page talks to: the flowsheet and the calculation book. */
+export interface Doors {
+  flowsheet: Door;
+  sheets: SheetDoor;
+}

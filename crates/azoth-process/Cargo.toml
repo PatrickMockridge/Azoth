@@ -14,6 +14,7 @@ azoth-hydraulics.workspace = true
 azoth-thermal.workspace = true
 azoth-reactions.workspace = true
 azoth-standards.workspace = true
+azoth-sheets.workspace = true
 csv.workspace = true
 serde.workspace = true
 serde_json.workspace = true

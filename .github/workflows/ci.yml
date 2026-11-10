@@ -212,6 +212,9 @@ jobs:
           # has to be in the clone; the default fetch-depth of one has only the tip.
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # `gen_sheets.py --check` formats its generated Rust through rustfmt.
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       # **pyo3 links `libpython`.** `cargo test -p azoth-python --all-targets` builds a test
       # binary against the interpreter, and a runner whose system Python has no shared library
@@ -240,6 +243,10 @@ jobs:
       # `test/currency.test.ts`, which asks the module that job builds for the same three
       # documents - a stale fixture fails there whether or not this ran.
       - run: python tools/gen_ui_fixtures.py --check
+      # **The calculation catalogue and dispatcher, held to the specs.** It shells out to
+      # `rustfmt` so the generated files are what `cargo fmt --check` wants; this job has the
+      # toolchain, and `spec-validate` does not.
+      - run: python tools/gen_sheets.py --check
 
   rust-lint:
     name: rust-lint
@@ -487,6 +494,9 @@ jobs:
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # `gen_sheets.py` formats its generated Rust through rustfmt.
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
       # The generators import the runtime to render bounds, so the full dev set
@@ -521,6 +531,7 @@ jobs:
           .venv/bin/python tools/gen_python_result.py
           .venv/bin/python tools/gen_rust_model_records.py
           .venv/bin/python tools/gen_parameter_bounds.py
+          .venv/bin/python tools/gen_sheets.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -533,6 +544,7 @@ jobs:
             echo "::error::  python tools/gen_python_register.py"
             echo "::error::  python tools/gen_guard_theorems.py"
             echo "::error::  python tools/gen_dispatch.py"
+            echo "::error::  python tools/gen_sheets.py"
             echo "::error::  python tools/gen_python_records.py"
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"

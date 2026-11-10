@@ -398,6 +398,7 @@ SPEC_GENERATORS = frozenset(
         "gen_python_wrappers",
         "gen_reaction_data",
         "gen_registry",
+        "gen_sheets",
         "gen_rust_model_records",
         "gen_stub",
         "gen_vocabulary",
@@ -507,6 +508,32 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
                 f"{TESTS}/test_gen_vocabulary.py",
             ),
             generated=True,
+        ),
+    ),
+    (
+        "specs/calcs/",
+        Claim(
+            # **A calc spec moves the sheet catalogue and the dispatcher it generates**, and
+            # both are the UI's input. The crate test is the one that runs every worked example
+            # through the generated arm.
+            crates=("azoth-sheets",),
+            jobs=("ui",),
+            commands=(
+                Command(
+                    "the catalogue and dispatch the specs generate",
+                    SCRIPT,
+                    "python tools/gen_sheets.py --check",
+                ),
+            ),
+            generated=True,
+        ),
+    ),
+    (
+        "specs/calcbooks/",
+        Claim(
+            crates=("azoth-sheets",),
+            jobs=("ui",),
+            files=(f"{TESTS}/test_gen_ui_fixtures.py",),
         ),
     ),
     (
@@ -650,7 +677,14 @@ def crate_namespaces() -> dict[str, str]:
 #: The members that name no namespace, kept as a tuple so [`table_problems`] can refuse a new
 #: crate that is in neither this list nor the namespace map. A crate that reaches nothing has to
 #: say so, rather than reach nothing in silence.
-NAMELESS_CRATES = ("azoth-cli", "azoth-core", "azoth-python", "azoth-test-support", "azoth-wasm")
+NAMELESS_CRATES = (
+    "azoth-cli",
+    "azoth-core",
+    "azoth-python",
+    "azoth-sheets",
+    "azoth-test-support",
+    "azoth-wasm",
+)
 
 
 def crate_claim(crate: str) -> Claim:
@@ -679,6 +713,10 @@ def crate_claim(crate: str) -> Claim:
         return Claim(files=EXTENSION_TESTS, ids=SMOKE_IDS)
     if crate == "azoth-cli":
         return Claim(files=(f"{TESTS}/validation/test_mcp_conformance.py",))
+    if crate == "azoth-sheets":
+        # The calculation catalogue and the sheet book are the UI's second document; its own
+        # Rust tests cover the worked examples, and the UI job covers the wire and the screen.
+        return Claim(jobs=("ui",))
     if crate == "azoth-wasm":
         return Claim(jobs=("ui",))
     if crate == "azoth-test-support":

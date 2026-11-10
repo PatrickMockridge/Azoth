@@ -3,6 +3,7 @@
 - [azoth](./index.md)
 - [Inherent safety](./safety.md)
 - [The editor](./using/editor.md)
+- [Calculation sheets](./using/calculations.md)
 - [Architecture](./architecture/index.md)
   - [The specification](./architecture/specification.md)
   - [Spec files](./architecture/spec-files.md)

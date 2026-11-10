@@ -59,3 +59,6 @@ book. **These are screening values, not design deliverables.**
 case-name field sets that name. The workbook exports to CSV,
 and **Report** prints or saves a case file with the drawing, the streams, the results, the
 caveats and the source record.
+
+The **Calculations** switch opens a separate workspace for the library's standalone calculations.
+See [calculation sheets](./calculations.md).

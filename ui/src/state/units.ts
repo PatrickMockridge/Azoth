@@ -161,6 +161,22 @@ export function toDisplayUnit(units: Units, value: number, unit: string): number
   return (value + shown.offset) * shown.factor;
 }
 
+/**
+ * The SI magnitude a value the spec wrote in its own declared unit stands for.
+ *
+ * **Not `toDisplayUnit`, because the declared unit is not the display unit.** A spec may declare
+ * `mm` while the set in force reads lengths in `m`; a worked example is the spec's own number and
+ * has to become the SI magnitude a sheet stores before the catalogue's display conversion applies.
+ */
+export function declaredToSI(units: Units, value: number, declared: string): number {
+  const declaration = units.declared[declared];
+  const factor = declaration?.factor;
+  if (factor === undefined || factor === null || !(factor > 0)) {
+    return value;
+  }
+  return (value + (declaration?.offset ?? 0)) * factor;
+}
+
 /** The unit a value declared in `unit` is shown and typed in. */
 export function displayUnitOf(units: Units | null, unit: string | null): string | null {
   if (unit === null || units === null) {

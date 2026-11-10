@@ -67,6 +67,34 @@ describe("the catalogue", () => {
     expect(catalogue.tools).toHaveLength(16);
   });
 
+  it("carries the standalone calculations, with the table-shaped four refused", () => {
+    // **The registry's 98, and the 94 a sheet can draw.** The four with table-shaped inputs or
+    // outputs are listed and refused rather than omitted, so a picker can say why they are not
+    // available instead of pretending they do not exist.
+    const calcs = catalogue.calcs ?? [];
+    expect(calcs).toHaveLength(98);
+    expect(calcs.filter((entry) => entry.available)).toHaveLength(94);
+    expect(
+      calcs.filter((entry) => !entry.available).map((entry) => entry.id),
+    ).toEqual([
+      "hydraulics.crane_k_factors",
+      "thermal.incremental_zone_analysis",
+      "thermal.shell_and_tube_design",
+      "thermal.zone_rating",
+    ]);
+    for (const entry of calcs) {
+      expect(entry.provenance.verification).not.toBe("");
+      expect(entry.worked_example, `${entry.id} has no worked example`).toBeTypeOf("object");
+    }
+    const pump = calcs.find((entry) => entry.id === "hydraulics.pump_power");
+    expect(pump?.inputs.map((input) => input.name)).toEqual(["rho", "q", "H", "eta"]);
+    expect(pump?.outputs.map((output) => output.name)).toEqual(["power"]);
+    expect(pump?.worked_example.rho).toBe(998);
+    // **The UI projection, not the library record.** No visible string may name the upstream
+    // implementation; the model id, verification and hashes are the citation the UI keeps.
+    expect(JSON.stringify(calcs).toLowerCase()).not.toContain("neqsim");
+  });
+
   it("carries the kind a field needs, which is nowhere in the palette", () => {
     const pump = catalogue.unit_ops.find((entry) => entry.id === "unit_ops.pump");
     expect(pump).toBeDefined();

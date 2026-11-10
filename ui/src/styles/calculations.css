@@ -1,0 +1,295 @@
+/*
+ * The Calculations workspace and a sheet.
+ *
+ * **The same chrome, a second document.** The picker is the palette's counterpart and the sheet
+ * is the property window's; the layout names the two columns rather than inventing a third
+ * windowing system.
+ */
+
+.app.off,
+.app[hidden] {
+  display: none;
+}
+
+.app.calculations {
+  grid-template-rows: auto auto 1fr;
+}
+
+.workspace-switch {
+  display: inline-flex;
+  gap: var(--s1);
+  padding: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.workspace-switch button {
+  padding: var(--s1) var(--s4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.workspace-switch button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.calc-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.calc-workspace {
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.calc-side {
+  overflow-y: auto;
+  padding: var(--s4);
+  border-inline-end: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.calc-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.calc-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.calc-search {
+  width: 100%;
+}
+
+.calc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.calc-list h3 {
+  margin: var(--s3) 0 var(--s1);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.calc-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.calc-entry button {
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.calc-entry button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.calc-entry button:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.calc-entry .refusal {
+  margin: 0;
+  padding-inline: var(--s2);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.calc-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--s5) var(--s6);
+}
+
+.calc-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-block-end: var(--s3);
+  border-bottom: 1px solid var(--line);
+}
+
+.calc-sheet-name {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+.calc-sheet-name input {
+  min-width: 18rem;
+  color: var(--text-strong);
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.calc-sheet-name .calculation {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.calc-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.calc-sheet-actions button,
+.calc-input .clear {
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.calc-sheet-actions button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.calc-sheet-actions button:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.calc-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--s3);
+}
+
+.calc-input {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+
+.calc-input > .field {
+  flex: 1;
+}
+
+.calc-input .clear {
+  color: var(--text-dim);
+}
+
+.calc-diagnostics {
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r3);
+  background: var(--bg-panel);
+  color: var(--text-dim);
+}
+
+.calc-diagnostics p {
+  margin: var(--s1) 0;
+}
+
+.calc-results,
+.calc-warnings {
+  max-width: 52rem;
+}
+
+.calc-warnings h3 {
+  color: var(--text-strong);
+}
+
+.calc-warnings p {
+  color: var(--text-dim);
+}
+
+.calc-details {
+  max-width: 52rem;
+  color: var(--text-dim);
+}
+
+.calc-details summary {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.calc-details pre {
+  overflow-x: auto;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r3);
+  background: var(--bg-panel);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.calc-details dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s2) var(--s4);
+}
+
+.calc-details dt {
+  color: var(--text-strong);
+}
+
+.calc-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.calc-starter {
+  max-width: 44rem;
+  margin: var(--s8) auto;
+  padding: var(--s6);
+  overflow-y: auto;
+}
+
+.calc-starter h2 {
+  color: var(--text-strong);
+}
+
+.calc-report-sheet {
+  margin-block: var(--s6);
+  padding-block-start: var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+@media print {
+  .calc-report-sheet {
+    break-before: page;
+  }
+}

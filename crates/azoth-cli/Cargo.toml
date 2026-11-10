@@ -23,6 +23,7 @@ azoth-core.workspace = true
 azoth-eos.workspace = true
 azoth-hydraulics.workspace = true
 azoth-process.workspace = true
+azoth-sheets.workspace = true
 toml.workspace = true
 uom.workspace = true
 clap.workspace = true

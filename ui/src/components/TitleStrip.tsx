@@ -1,5 +1,6 @@
 import { asExecutionOrder } from "../wire/decode";
 import { DraftField } from "./DraftField";
+import { WorkspaceSwitch, type Workspace } from "./calculations/WorkspaceSwitch";
 import { statusClass as classOf, statusWord } from "../state/status";
 import type { Envelope, ExecutionOrder } from "../wire/types";
 import type { Theme } from "../state/theme";
@@ -19,6 +20,8 @@ export function TitleStrip({
   theme,
   units,
   unsaved,
+  workspace,
+  onWorkspace,
   onName,
   onOrder,
   onTheme,
@@ -31,6 +34,8 @@ export function TitleStrip({
   units: Units;
   /** The document differs from the one last opened or saved. */
   unsaved: boolean;
+  workspace: Workspace;
+  onWorkspace: (workspace: Workspace) => void;
   onName: (name: string) => void;
   onOrder: (order: ExecutionOrder) => void;
   onTheme: () => void;
@@ -54,6 +59,7 @@ export function TitleStrip({
       >
         not for design work yet
       </a>
+      <WorkspaceSwitch workspace={workspace} onWorkspace={onWorkspace} />
       {envelope === null ? null : (
         <div className="case-name">
           <DraftField

@@ -18,6 +18,8 @@ import "@xyflow/react/dist/style.css";
 import blankDocument from "../../specs/flowsheets/blank.toml?raw";
 import demoDocument from "../../specs/flowsheets/demo.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
+import { CalculationsApp } from "./components/calculations/CalculationsApp";
+import type { Workspace } from "./components/calculations/WorkspaceSwitch";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
@@ -39,7 +41,7 @@ import { applyTheme, readTheme, type Theme } from "./state/theme";
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
 import { readWelcome, rememberWelcome } from "./state/welcome";
 import { door } from "./wire/door";
-import type { Door, Opened, Session } from "./wire/session";
+import type { Door, Opened, Session, SheetDoor } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
 
 /**
@@ -71,6 +73,11 @@ export function App() {
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
+  /** Which of the two documents is in front; both stay mounted. */
+  const [workspace, setWorkspace] = useState<Workspace>("flowsheet");
+  /** The calculation book is loaded on first visit and then kept, so switching back keeps it. */
+  const [calculationsSeen, setCalculationsSeen] = useState(false);
+  const [sheetDoor, setSheetDoor] = useState<SheetDoor | null>(null);
 
   /**
    * The unit set a reader wants values in, which is remembered like the theme and for the same
@@ -334,6 +341,14 @@ export function App() {
     [land, unsaved],
   );
 
+  /** Move between the flowsheet and the calculation book, loading the book on first visit. */
+  const chooseWorkspace = useCallback((next: Workspace) => {
+    setWorkspace(next);
+    if (next === "calculations") {
+      setCalculationsSeen(true);
+    }
+  }, []);
+
   /** The card has been dealt with: gone for this visit, and not shown again here. */
   const dismissWelcome = useCallback(() => {
     setWelcome(false);
@@ -370,9 +385,10 @@ export function App() {
         if (!live) {
           return;
         }
-        middleware.current = loaded;
-        setOpenable(loaded.kind === "openable");
-        void loaded.catalogue(true).then(
+        middleware.current = loaded.flowsheet;
+        setSheetDoor(loaded.sheets);
+        setOpenable(loaded.flowsheet.kind === "openable");
+        void loaded.flowsheet.catalogue(true).then(
           (palette) => {
             if (live) {
               setCatalogue(palette);
@@ -387,7 +403,11 @@ export function App() {
         // **The door says how to open on it.** A served one already holds a document and has no
         // call that would replace it, so asking it to open the demo would be a call it does not
         // have — the kind of thing that reads as a bug in the editor rather than in the request.
-        land(loaded.kind === "openable" ? loaded.open(demoDocument) : loaded.attach());
+        land(
+          loaded.flowsheet.kind === "openable"
+            ? loaded.flowsheet.open(demoDocument)
+            : loaded.flowsheet.attach(),
+        );
       })
       .catch((error: unknown) => {
         if (live) {
@@ -490,13 +510,19 @@ export function App() {
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
 
   return (
-    <div className="app">
+    <>
+    <div
+      className={`app${workspace === "calculations" ? " off" : ""}`}
+      hidden={workspace === "calculations"}
+    >
       <TitleStrip
         envelope={envelope}
         session={session !== null}
         theme={theme}
         units={units}
         unsaved={unsaved}
+        workspace={workspace}
+        onWorkspace={chooseWorkspace}
         onName={setCaseName}
         onOrder={setOrder}
         onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -740,6 +766,21 @@ export function App() {
         />
       ) : null}
     </div>
+    {calculationsSeen ? (
+      <CalculationsApp
+        door={sheetDoor}
+        catalogue={catalogue}
+        units={units}
+        theme={theme}
+        version={envelope?.provenance.version ?? "—"}
+        workspace={workspace}
+        hidden={workspace !== "calculations"}
+        onWorkspace={chooseWorkspace}
+        onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+        onUnits={chooseUnits}
+      />
+    ) : null}
+    </>
   );
 }
 

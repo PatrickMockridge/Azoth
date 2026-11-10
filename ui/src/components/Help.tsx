@@ -60,6 +60,15 @@ export function Help() {
         verified.
       </p>
 
+      <h2>Calculation sheets</h2>
+      <p>
+        The <strong>Calculations</strong> switch opens a calculation book beside the flowsheet.
+        Pick a calculation from the list, fill its inputs and press <strong>Calculate</strong>;
+        <strong>Load worked example</strong> fills the calculation&apos;s own published example.
+        A book holds several sheets, is saved in TOML, and can be printed as a report. The four
+        calculations whose inputs or outputs are tables are listed and not yet available.
+      </p>
+
       <h2>What this is not</h2>
       <p>
         The port is incomplete and every shipped model is marked unverified or partially
