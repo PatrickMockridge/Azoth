@@ -32,7 +32,7 @@ export function Help() {
         <dt>Connect</dt>
         <dd>Drag from an outlet handle to an inlet handle. A stream is named by the outlet that produces it.</dd>
         <dt>Remove</dt>
-        <dd>Select and press Backspace. A removed feed takes its connections with it.</dd>
+        <dd>Select and press Delete or Backspace, or use Remove in the object&apos;s window. A removed feed takes its connections with it. Undo restores it.</dd>
         <dt>Tear</dt>
         <dd>A connection can be turned into a recycle from its Connections sheet. A tear is drawn moving and is iterated until its residual is small.</dd>
       </dl>

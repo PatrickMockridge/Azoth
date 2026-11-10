@@ -20,6 +20,24 @@ const units = unitsOf(catalogue, "si");
 afterEach(cleanup);
 
 describe("the report drawing", () => {
+  it("keeps a node dragged left of the origin in the viewBox", () => {
+    const left = {
+      ...envelope,
+      flowsheet: {
+        ...envelope.flowsheet,
+        graph: {
+          ...envelope.flowsheet.graph,
+          nodes: envelope.flowsheet.graph.nodes.map((node, index) =>
+            index === 0 ? { ...node, position: { x: -200, y: 0 } } : node,
+          ),
+        },
+      },
+    };
+    const { container } = render(<Pfd envelope={left} />);
+    const viewBox = container.querySelector("svg")?.getAttribute("viewBox") ?? "";
+    expect(Number(viewBox.split(" ")[0])).toBeLessThan(0);
+  });
+
   it("draws every object and names every connection", () => {
     const { container } = render(<Pfd envelope={envelope} />);
     for (const name of ["feed_1", "mix1", "p1", "hx1", "sep1", "vapour_product"]) {
@@ -34,6 +52,23 @@ describe("the report drawing", () => {
 });
 
 describe("the report view", () => {
+  it("takes focus, closes on Escape and returns focus", () => {
+    const onClose = vi.fn();
+    const trigger = document.createElement("button");
+    document.body.append(trigger);
+    trigger.focus();
+    const view = render(
+      <ReportView envelope={envelope} catalogue={catalogue} units={units} onClose={onClose} />,
+    );
+    expect(document.activeElement?.textContent).toBe("Print / PDF");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+    view.unmount();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
+  });
+
   it("renders the tables and prints through the browser", () => {
     const print = vi.fn();
     Object.defineProperty(window, "print", { value: print, configurable: true });

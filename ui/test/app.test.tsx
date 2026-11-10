@@ -401,6 +401,8 @@ describe("the editor", () => {
     // And every entry is in one of them, so a group cannot be a heading with nothing under it.
     const grouped = container.querySelectorAll("aside.side .group .entry");
     expect(grouped.length).toBeGreaterThanOrEqual(29);
+    // A refused entry says why in the page, not only in a disabled button's title.
+    expect(screen.getByText(/fixed-point loop over MDEA/)).toBeDefined();
   });
 
   /**

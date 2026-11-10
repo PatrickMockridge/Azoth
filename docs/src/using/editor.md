@@ -27,7 +27,8 @@ uploaded.
 
 - Drag from an outlet handle to an inlet handle to connect two objects.
 - Click an object to select it; drag a unit operation to move it.
-- Backspace removes the selected object. A removed feed takes its connections with it.
+- Delete or Backspace, or **Remove** in the object's window, removes the selected object. A removed
+  feed takes its connections with it; **Undo** restores it.
 - A connection can be turned into a **tear** — a recycle — from its Connections sheet. A tear is
   drawn as a moving line and is iterated until its residual is small.
 
@@ -54,6 +55,7 @@ book. **These are screening values, not design deliverables.**
 
 ## Saving and printing
 
-**Save** writes the case as a TOML document; **Open** reads one back. The workbook exports to CSV,
+**Save** writes the case under its name as a TOML document; **Open** reads one back. The header's
+case-name field sets that name. The workbook exports to CSV,
 and **Report** prints or saves a case file with the drawing, the streams, the results, the
 caveats and the source record.
