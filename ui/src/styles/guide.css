@@ -1,0 +1,129 @@
+/*
+ * The first-run card, the empty-flow sheet hints and the guide in the dock.
+ *
+ * **Overlays rather than routes.** A newcomer lands on a working flowsheet; the card explains it
+ * and then gets out of the way. None of these is a second document or a wizard with state, so
+ * they are styled like the panels they sit beside.
+ */
+
+.welcome {
+  position: absolute;
+  inset-block-start: var(--s6);
+  inset-inline-start: var(--s6);
+  z-index: 5;
+  width: min(30rem, calc(100% - var(--s6) * 2));
+  padding: var(--s6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r4);
+  background: var(--bg-panel);
+  box-shadow: var(--e-node);
+}
+
+.welcome h2 {
+  margin-block-start: 0;
+  color: var(--text-strong);
+  font-size: var(--fs-md);
+}
+
+.welcome p {
+  color: var(--text);
+}
+
+.welcome .welcome-close {
+  position: absolute;
+  inset-block-start: var(--s4);
+  inset-inline-end: var(--s4);
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+
+.welcome .welcome-actions,
+.welcome .welcome-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-block: var(--s4);
+}
+
+.welcome .welcome-actions button,
+.welcome .welcome-examples button {
+  padding: var(--s2) var(--s5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.welcome .welcome-actions button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.welcome .welcome-actions button:hover,
+.welcome .welcome-examples button:hover {
+  border-color: var(--accent);
+}
+
+.welcome h3 {
+  margin-block-end: var(--s2);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.starter-hints {
+  max-width: 44rem;
+  margin: var(--s8) auto;
+  padding: var(--s6);
+  color: var(--text);
+}
+
+.starter-hints h2 {
+  color: var(--text-strong);
+}
+
+.starter-hints ol {
+  padding-inline-start: var(--s6);
+}
+
+.starter-hints li {
+  margin-block: var(--s3);
+}
+
+.help {
+  max-width: 52rem;
+  padding: var(--s6);
+  overflow: auto;
+  color: var(--text);
+}
+
+.help h2 {
+  margin-block-start: var(--s6);
+  color: var(--text-strong);
+  font-size: var(--fs-md);
+}
+
+.help h2:first-child {
+  margin-block-start: 0;
+}
+
+.help dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s3) var(--s6);
+}
+
+.help dt {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.help dd {
+  margin: 0;
+}

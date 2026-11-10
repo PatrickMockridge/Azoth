@@ -171,7 +171,8 @@
   border-color: var(--accent-hi);
 }
 
-.bar select {
+.bar select,
+.ribbon select {
   height: var(--ctl-h);
   padding: 0 var(--s3);
   border: 1px solid var(--line-strong);

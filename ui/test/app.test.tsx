@@ -43,6 +43,8 @@ function stubFetch(): void {
 
 /** The app, with the module loaded and the shipped document open. */
 async function open() {
+  // The first-run card is another test's subject; these tests are about the editor behind it.
+  window.localStorage.setItem("azoth.welcome", "seen");
   const { App } = await import("../src/App");
   const rendered = render(<App />);
   // The demo's first node only exists once the module has loaded and the document was opened.

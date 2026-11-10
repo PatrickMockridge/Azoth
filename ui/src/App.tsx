@@ -21,17 +21,22 @@ import { BoundaryPanel } from "./components/BoundaryPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
+import { Help } from "./components/Help";
 import { Navigation } from "./components/Navigation";
 import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
 import { RibbonGroup } from "./components/RibbonGroup";
+import { StarterHints } from "./components/StarterHints";
 import { StatusBar } from "./components/StatusBar";
 import { TitleStrip } from "./components/TitleStrip";
+import { Welcome } from "./components/Welcome";
 import { Workbook } from "./components/workbook/Workbook";
+import { EXAMPLES } from "./examples";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
+import { readWelcome, rememberWelcome } from "./state/welcome";
 import { door } from "./wire/door";
 import type { Door, Opened, Session } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
@@ -67,8 +72,16 @@ export function App() {
    * **Messages is the tab it opens on**, because a document that does not check is the state a
    * person most needs told about and the dock is where the telling happens.
    */
-  const [docked, setDocked] = useState<"workbook" | "messages">("messages");
+  const [docked, setDocked] = useState<"workbook" | "messages" | "help">("messages");
   const [dockSize, setDockSize] = useState(200);
+
+  /**
+   * The first-run card, remembered like the theme and the unit set.
+   *
+   * **Shown over the demo, not instead of it.** A newcomer can press Solve without reading
+   * anything, and the card is one click from gone.
+   */
+  const [welcome, setWelcome] = useState(readWelcome);
 
   const middleware = useRef<Door | null>(null);
 
@@ -151,6 +164,35 @@ export function App() {
     },
     [land],
   );
+
+  /** The card has been dealt with: gone for this visit, and not shown again here. */
+  const dismissWelcome = useCallback(() => {
+    setWelcome(false);
+    rememberWelcome();
+  }, []);
+
+  const openDemo = useCallback(() => {
+    open(demoDocument);
+    dismissWelcome();
+  }, [open, dismissWelcome]);
+
+  const openBlank = useCallback(() => {
+    open(blankDocument);
+    dismissWelcome();
+  }, [open, dismissWelcome]);
+
+  const openExample = useCallback(
+    (document: string) => {
+      open(document);
+      dismissWelcome();
+    },
+    [open, dismissWelcome],
+  );
+
+  const showHelp = useCallback(() => {
+    setDocked("help");
+    dismissWelcome();
+  }, [dismissWelcome]);
 
   useEffect(() => {
     let live = true;
@@ -258,7 +300,7 @@ export function App() {
         <RibbonGroup label="Case">
           <button
             type="button"
-            onClick={() => open(blankDocument)}
+            onClick={openBlank}
             disabled={!openable}
             title={openable ? "a document with nothing in it" : HOSTED}
           >
@@ -283,12 +325,32 @@ export function App() {
           </label>
           <button
             type="button"
-            onClick={() => open(demoDocument)}
+            onClick={openDemo}
             disabled={!openable}
             title={openable ? "the shipped demo flowsheet" : HOSTED}
           >
             Demo
           </button>
+          <select
+            className="examples"
+            value=""
+            disabled={!openable}
+            title={openable ? "a worked case to open" : HOSTED}
+            aria-label="Load a worked example"
+            onChange={(event) => {
+              const chosen = EXAMPLES.find((example) => example.file === event.target.value);
+              if (chosen !== undefined) {
+                openExample(chosen.document);
+              }
+            }}
+          >
+            <option value="">Examples…</option>
+            {EXAMPLES.map((example) => (
+              <option key={example.file} value={example.file}>
+                {example.title}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={save}
@@ -331,7 +393,9 @@ export function App() {
 
         <div className="canvas">
           {envelope === null ? (
-            <p className="note">{fault ?? "loading the middleware…"}</p>
+            <p className="note">{fault ?? "loading the engine…"}</p>
+          ) : envelope.flowsheet.graph.nodes.length === 0 ? (
+            <StarterHints />
           ) : (
             <Flowsheet
               catalogue={catalogue}
@@ -342,6 +406,19 @@ export function App() {
               onCommand={send}
             />
           )}
+          {/* **Over the drawing, not instead of it.** The demo is already loaded behind the
+              card, so the first action can be Solve whether or not the card is read. A served
+              door holds one document and cannot open another, so it offers no card. */}
+          {welcome && openable && envelope !== null ? (
+            <Welcome
+              examples={EXAMPLES}
+              onDemo={openDemo}
+              onBlank={openBlank}
+              onExample={openExample}
+              onHelp={showHelp}
+              onDismiss={dismissWelcome}
+            />
+          ) : null}
         </div>
 
         <aside className="side right">
@@ -370,13 +447,18 @@ export function App() {
             label: "Messages",
             count: envelope?.diagnostics.length ?? 0,
           },
+          { id: "help", label: "Help" },
         ]}
         active={docked}
-        onTab={(id) => setDocked(id === "workbook" ? "workbook" : "messages")}
+        onTab={(id) =>
+          setDocked(id === "workbook" ? "workbook" : id === "help" ? "help" : "messages")
+        }
         size={dockSize}
         onSize={setDockSize}
       >
-        {envelope === null ? (
+        {docked === "help" ? (
+          <Help />
+        ) : envelope === null ? (
           <p className="note">no document</p>
         ) : docked === "workbook" ? (
           <Workbook
