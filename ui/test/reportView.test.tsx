@@ -45,7 +45,7 @@ describe("the report view", () => {
     expect(screen.getAllByText("hx1.outlet").length).toBeGreaterThan(0);
     expect(screen.getByText(/not design deliverables/)).toBeDefined();
 
-    fireEvent.click(screen.getByRole("button", { name: "Print / Save as PDF" }));
+    fireEvent.click(screen.getByRole("button", { name: "Print / PDF" }));
     expect(print).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
