@@ -28,16 +28,22 @@ export function Pfd({
 }) {
   const nodes = envelope.flowsheet.graph.nodes;
   const positions = new Map(nodes.map((node) => [node.id, node.position]));
+  const minX = nodes.reduce((min, node) => Math.min(min, node.position.x), 0);
+  const minY = nodes.reduce((min, node) => Math.min(min, node.position.y), 0);
   const maxX = nodes.reduce((max, node) => Math.max(max, node.position.x), 0);
   const maxY = nodes.reduce((max, node) => Math.max(max, node.position.y), 0);
-  const width = Math.max(maxX + UNIT_WIDTH + PAD, UNIT_WIDTH + PAD * 2);
-  const height = Math.max(maxY + UNIT_HEIGHT + PAD, UNIT_HEIGHT + PAD * 2);
+  // **Negative positions are part of the drawing.** The canvas lets a node be dragged left of
+  // the origin; a viewBox starting at zero clipped it out of the download.
+  const originX = minX - PAD;
+  const originY = minY - PAD;
+  const width = Math.max(maxX - minX + UNIT_WIDTH + PAD * 2, UNIT_WIDTH + PAD * 2);
+  const height = Math.max(maxY - minY + UNIT_HEIGHT + PAD * 2, UNIT_HEIGHT + PAD * 2);
 
   return (
     <svg
       ref={svgRef}
       className="pfd"
-      viewBox={`0 0 ${String(width)} ${String(height)}`}
+      viewBox={`${String(originX)} ${String(originY)} ${String(width)} ${String(height)}`}
       role="img"
       aria-label="Process flow diagram"
       xmlns={SVG_NAMESPACE}

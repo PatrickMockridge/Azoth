@@ -167,6 +167,8 @@
     --line-strong: #888;
     --accent: #000;
     --accent-ink: #fff;
+    --edge: #333;
+    --edge-recycle: #333;
   }
 
   body {

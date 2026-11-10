@@ -86,6 +86,7 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
       {control === "select" ? (
         <select
           value={text}
+          aria-label={parameter.name}
           onChange={(event) => write(event.target.value)}
         >
           <option value="">—</option>
@@ -98,6 +99,7 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
       ) : control === "switch" ? (
         <select
           value={text}
+          aria-label={parameter.name}
           onChange={(event) => write(event.target.value)}
         >
           <option value="">—</option>
@@ -111,6 +113,7 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
       ) : (
         <input
           className={outside ? "violating" : ""}
+          aria-label={parameter.name}
           value={shownText}
           inputMode={control === "number" ? "decimal" : "text"}
           placeholder={control === "list" ? "0.5, 0.3, 0.2" : ""}

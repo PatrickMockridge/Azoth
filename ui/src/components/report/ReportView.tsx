@@ -6,7 +6,7 @@
  * is the browser's PDF path and needs no library. Nothing here reaches the engine.
  */
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { Pfd } from "../../report/pfd";
 import { buildCaseReport } from "../../report/model";
@@ -24,6 +24,29 @@ export interface ReportViewProps {
 export function ReportView({ envelope, catalogue, units, onClose }: ReportViewProps) {
   const report = buildCaseReport(envelope, catalogue, units, new Date().toLocaleString());
   const svg = useRef<SVGSVGElement>(null);
+  const dialog = useRef<HTMLElement>(null);
+
+  // **A dialog moves focus in and gives it back.** The overlay covered the editor, but the
+  // keyboard stayed behind it; Escape and Tab were the editor's.
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialog.current?.querySelector<HTMLElement>("button")?.focus();
+    return () => {
+      if (previous instanceof HTMLElement) {
+        previous.focus();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const downloadSvg = () => {
     const drawing = svg.current?.outerHTML;
@@ -35,7 +58,31 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
   };
 
   return (
-    <section className="report" role="dialog" aria-label="Case report">
+    <section
+      ref={dialog}
+      className="report"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Case report"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") {
+          return;
+        }
+        const buttons = [...(dialog.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        if (first === undefined || last === undefined) {
+          return;
+        }
+        if (event.shiftKey && document.activeElement === first) {
+          last.focus();
+          event.preventDefault();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          first.focus();
+          event.preventDefault();
+        }
+      }}
+    >
       <header className="report-head">
         <div>
           <h2>{report.title}</h2>

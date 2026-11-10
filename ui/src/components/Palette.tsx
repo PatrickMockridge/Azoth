@@ -41,20 +41,24 @@ export function Palette({ forms, onAdd }: PaletteProps) {
         <div className="group" key={name}>
           <div className="label">{familyLabel(name)}</div>
           {entries.map((form) => (
-            <button
-              key={form.id}
-              type="button"
-              className={`entry${form.runnable ? "" : " refused"}`}
-              title={
-                form.runnable
-                  ? `add ${form.name} to the flowsheet`
-                  : (form.refusal ?? "the executor refuses this entry")
-              }
-              disabled={!form.runnable}
-              onClick={() => onAdd(form.id)}
-            >
-              <span className="name">{form.name}</span>
-            </button>
+            <div key={form.id} className="palette-row">
+              <button
+                type="button"
+                className={`entry${form.runnable ? "" : " refused"}`}
+                title={
+                  form.runnable
+                    ? `add ${form.name} to the flowsheet`
+                    : (form.refusal ?? "the executor refuses this entry")
+                }
+                disabled={!form.runnable}
+                onClick={() => onAdd(form.id)}
+              >
+                <span className="name">{form.name}</span>
+              </button>
+              {form.runnable ? null : (
+                <p className="refusal">{form.refusal ?? "the executor refuses this entry"}</p>
+              )}
+            </div>
           ))}
         </div>
       ))}

@@ -169,6 +169,7 @@ describe("the editor", () => {
     await waitFor(() => expect(nodeIds(container)).toHaveLength(5));
     expect(nodeIds(container)).not.toContain("instance:hx1");
     // The two ports the heater was wired between, named by the checker's own record.
+    fireEvent.click(screen.getByRole("tab", { name: "Messages" }));
     await waitFor(() => {
       const codes = [...container.querySelectorAll(".message code")].map(
         (node) => node.textContent ?? "",
@@ -362,6 +363,9 @@ describe("the editor", () => {
     // The fault was here and the missing fact was in the wire: every id is `unit_ops.<leaf>`, so a
     // split on `.` took the leaf for a family.
     expect(headings).toEqual([
+      // The boundary is first now: a blank case starts with a feed, and it was below the whole
+      // palette before.
+      "Boundary",
       "column",
       "heat exchanger",
       "machine",
@@ -370,9 +374,6 @@ describe("the editor", () => {
       "separator",
       "two port",
       "utility",
-      // And the boundary, which is a group of the same column and not a family: feeds and products
-      // are what a flowsheet is *between*, so they sit under the palette rather than in one.
-      "Boundary",
     ]);
     // And every entry is in one of them, so a group cannot be a heading with nothing under it.
     const grouped = container.querySelectorAll("aside.side .group .entry");

@@ -8,10 +8,12 @@
 
 .welcome {
   position: absolute;
-  inset-block-start: var(--s6);
-  inset-inline-start: var(--s6);
+  inset-block-end: var(--s6);
+  inset-inline-end: var(--s6);
   z-index: 5;
   width: min(30rem, calc(100% - var(--s6) * 2));
+  max-height: calc(100% - var(--s6) * 2);
+  overflow-y: auto;
   padding: var(--s6);
   border: 1px solid var(--line-strong);
   border-radius: var(--r4);

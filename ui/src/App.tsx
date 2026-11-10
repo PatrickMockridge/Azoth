@@ -79,7 +79,7 @@ export function App() {
    * **Messages is the tab it opens on**, because a document that does not check is the state a
    * person most needs told about and the dock is where the telling happens.
    */
-  const [docked, setDocked] = useState<"workbook" | "messages" | "help">("messages");
+  const [docked, setDocked] = useState<"workbook" | "messages" | "help">("workbook");
   const [dockSize, setDockSize] = useState(200);
 
   /**
@@ -483,10 +483,8 @@ export function App() {
               onSelect={setSelected}
             />
           )}
-          <Palette
-            forms={catalogue?.unit_ops ?? []}
-            onAdd={addUnit}
-          />
+          {/* **The first step is the first panel.** A blank case starts with a feed, and the
+              Boundary used to sit below the whole palette, off the bottom of the column. */}
           {envelope === null ? null : (
             <BoundaryPanel
               catalogue={catalogue}
@@ -496,6 +494,10 @@ export function App() {
               onSelect={setSelected}
             />
           )}
+          <Palette
+            forms={catalogue?.unit_ops ?? []}
+            onAdd={addUnit}
+          />
         </aside>
 
         <div className="canvas">
@@ -563,6 +565,7 @@ export function App() {
         size={dockSize}
         onSize={setDockSize}
       >
+        <div role="tabpanel" id={`sheet-${docked}`}>
         {docked === "help" ? (
           <Help />
         ) : envelope === null ? (
@@ -581,6 +584,7 @@ export function App() {
             onSelect={setSelected}
           />
         )}
+        </div>
       </Dock>
 
       <StatusBar envelope={envelope} units={units} />

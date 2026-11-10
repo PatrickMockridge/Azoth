@@ -335,6 +335,14 @@
   text-decoration: line-through;
 }
 
+/* **Why a palette entry is refused is a fact, not a disabled tooltip.** */
+.palette-row .refusal {
+  margin: 0;
+  padding: 0 var(--s5) var(--s2);
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+}
+
 /* --- the navigator --------------------------------------------------------- */
 
 /*

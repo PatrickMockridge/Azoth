@@ -134,8 +134,8 @@ function NewProduct({
   envelope: Envelope;
   onCommand: (command: EditorCommand) => void;
 }) {
-  const [name, setName] = useState("");
   const suggested = nextName(envelope, "product");
+  const [name, setName] = useState(suggested);
   return (
     <div className="field">
       <div className="head">
@@ -143,6 +143,7 @@ function NewProduct({
       </div>
       <input
         value={name}
+        aria-label="product name"
         onChange={(event) => setName(event.target.value)}
         placeholder={suggested}
       />

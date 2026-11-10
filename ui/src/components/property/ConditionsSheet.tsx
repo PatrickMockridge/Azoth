@@ -198,6 +198,7 @@ function DraftNumber({
       </div>
       <input
         value={shown}
+        aria-label={label}
         inputMode="decimal"
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}

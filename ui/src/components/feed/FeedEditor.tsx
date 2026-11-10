@@ -66,6 +66,7 @@ export function FeedEditor({
         </div>
         <input
           value={draft.name}
+          aria-label="feed name"
           readOnly={editing}
           onChange={(event) => (editing ? undefined : change({ name: event.target.value }))}
         />
