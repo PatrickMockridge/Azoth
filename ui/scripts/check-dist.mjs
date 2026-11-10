@@ -3,7 +3,7 @@
  * The built editor, served under the path Pages uses, and asked for its own files.
  *
  * **Why this is a server and not a file listing.** A relative build can be right on disk and
- * wrong when served under `/Azoth/`: a stray root-absolute `src`, a hashed asset the HTML does
+ * wrong when served under `/azoth/`: a stray root-absolute `src`, a hashed asset the HTML does
  * not name, or a wasm served as `application/octet-stream`, which a browser refuses to
  * instantiate. The only checks that see those are a request for each URL the page will make.
  *
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const DIST = resolve(process.argv[2] ?? join(ROOT, "dist"));
-const PREFIX = "/Azoth/";
+const PREFIX = "/azoth/";
 
 const TYPES = new Map([
   [".html", "text/html; charset=utf-8"],

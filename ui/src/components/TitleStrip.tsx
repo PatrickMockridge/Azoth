@@ -40,7 +40,7 @@ export function TitleStrip({
           fact here rather than in a footnote. The link is the book's own front-door statement. */}
       <a
         className="screening"
-        href="https://github.com/PatrickMockridge/Azoth/blob/main/docs/src/index.md#not-for-design-work-yet"
+        href="https://github.com/PatrickMockridge/azoth/blob/main/docs/src/index.md#not-for-design-work-yet"
         target="_blank"
         rel="noreferrer"
         title="the port is incomplete, so these are screening values and not design deliverables"

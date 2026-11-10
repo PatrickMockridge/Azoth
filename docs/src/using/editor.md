@@ -5,7 +5,7 @@ drawing, a window for the selected object, and a workbook of every stream. The c
 in the page — the engine is compiled to WebAssembly — so nothing is installed and no case is
 uploaded.
 
-**[Open the editor →](https://patrickmockridge.github.io/Azoth/)**
+**[Open the editor →](https://patrickmockridge.github.io/azoth/)**
 
 ![The editor showing the demo flowsheet](../images/editor.png)
 

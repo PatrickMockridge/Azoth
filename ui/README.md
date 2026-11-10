@@ -30,7 +30,7 @@ disabled there; Save still works because every envelope carries the document.
 npm run typecheck
 npm test
 npm run build
-npm run check:dist   # serves dist/ under /Azoth/ and asks for the page's own assets
+npm run check:dist   # serves dist/ under /azoth/ and asks for the page's own assets
 python tools/check_ui.py
 ```
 
@@ -48,5 +48,5 @@ and fails when they are stale.
 
 `.github/workflows/pages.yml` builds the wasm and `dist/` on every push to `main` that reaches
 the editor or the engine, runs the tests and `check:dist`, and deploys to GitHub Pages. The build
-uses a relative `base`, so `dist/` is servable under `/Azoth/` or at a site root. Pages must be
+uses a relative `base`, so `dist/` is servable under `/azoth/` or at a site root. Pages must be
 enabled for the repository with **Source: GitHub Actions**.

@@ -83,7 +83,7 @@ U  ≅  f(x₁, …, xₘ)
 ```
 
 *Status: **proved**, as `Azoth.Process.unit_op_is_extensional` in
-[`Azoth/Process.lean`](https://github.com/PatrickMockridge/Azoth/blob/main/lean/Azoth/Process.lean).
+[`Azoth/Process.lean`](https://github.com/PatrickMockridge/azoth/blob/main/lean/Azoth/Process.lean).
 A port declaration encodes to a process, so the claim relates two such processes rather than a
 process and a value, and the three hypotheses land as three predicates: **`Declares P C`** is
 "only its declared channels", **`Inert P`** is "total, and no other interaction", and the

@@ -8,7 +8,7 @@ Rust and once in Python**, with an agentic layer on top. The algorithms are port
 
 ## Try the editor
 
-**[Open the flowsheet editor →](https://patrickmockridge.github.io/Azoth/)**
+**[Open the flowsheet editor →](https://patrickmockridge.github.io/azoth/)**
 
 ![The editor showing the demo flowsheet](docs/src/images/editor.png)
 

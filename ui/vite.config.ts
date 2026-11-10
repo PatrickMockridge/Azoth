@@ -17,7 +17,7 @@ const repositoryRoot = resolve(packageRoot, "..");
 export default defineConfig({
   plugins: [react()],
   // **Relative, because the built editor is a static artifact rather than a site root.** Pages
-  // serves it under `/Azoth/`, a local `dist/` is served under `/`, and the wasm glue resolves
+  // serves it under `/azoth/`, a local `dist/` is served under `/`, and the wasm glue resolves
   // its module beside the emitted chunk - so a relative base is the one spelling that works in
   // all three without a build-time setting.
   base: "./",

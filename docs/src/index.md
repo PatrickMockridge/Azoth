@@ -5,7 +5,7 @@ read its page, and call it. The **agentic entry point** is
 [the agentic section](./agentic/index.md) and, at the repository root, `CLAUDE.md` and
 `AGENTS.md`.
 
-Start here: [install it](https://github.com/PatrickMockridge/Azoth#install) - `azoth-engine`
+Start here: [install it](https://github.com/PatrickMockridge/azoth#install) - `azoth-engine`
 is not on PyPI yet, so a checkout is where 0.1 is built from - pick a calculation from
 [What is implemented](#what-is-implemented), read its page for the equation, range and
 worked example, then call it as the page shows or over arrays with
