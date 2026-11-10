@@ -4,6 +4,8 @@
 
 `eos.electrolyte_scale_calculator`
 
+Mineral-scale saturation indices from a brine analysis, with activity coefficients. Use it to screen a produced-water or injection-water stream for scaling.
+
 ## Equation
 
 $$
@@ -32,6 +34,28 @@ with the class's four temperature Ksp correlations and the Van't Hoff brucite fo
 **NeqSim master `ElectrolyteScaleCalculator`**
 
 `calculate`, `daviesLogGamma`, `saturationIndex`, `applyPressureCorrection`, `pKsp`, the five Ksp correlations and `pKw`, ported. The setters' storage, the eleven-name activity map and the Gson report are not.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class's inputs are mg/L, degrees Celsius and bara; this calc takes kg/m3, kelvin and pascal. Its molar masses are the class's own (Ca 40.08 ... CO3 60.01 g/mol), not modern atomic weights.
+
+- `I = 0.5 sum(m_i z_i^2)` is a charge sum over the eleven ions on the class's 1 kg/L assumption, so a mol/L concentration is also its molality and the result is reported in mol/kg.
+
+- the Debye-Huckel A is the class's linear form `0.5092 + 8.5e-4 (T_C - 25)`, floored at 0.5 and with no upper bound, in the Davies equation with its `0.3 I` term.
+
+- pH enters twice: carbonate is `HCO3 * 10^(pH - pK2)` with `pK2 = 10.329 + 0.013 (T_K - 298.15)/25`, and the hydroxide activity is `10^(pH - pKw)` with `pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K`.
+
+- the four Ksp correlations are the class's (Plummer-Busenberg calcite, Templeton barite, gypsum and celestite); brucite is its Van't Hoff form on `log10 Ksp(25 C) = -11.16` and `dH = -113.4 kJ/mol`.
+
+- the pressure correction `exp(-dV (P - 1.01325)/(83.1446 T_K))` runs only above 1.013 bara, with the class's cm3/mol `dV`; `pKsp` is `-log10` of the corrected Ksp, so `SI = log10(IAP) + pKsp`.
+
+- **the `-10` sentinel in `saturationIndex` is dead.** Every activity is floored at `1e-15` before the call, so the branch cannot see a non-positive argument; it is ported as written and stays unreachable.
+
+- **the CO2 partial-pressure setter is stored and never read**, so it is not an input. The class's eleven-name activity map holds two values (`gamma_1`, `gamma_2`) and is reported as the two.
+
 
 ## Inputs
 
@@ -89,29 +113,13 @@ with the class's four temperature Ksp correlations and the Van't Hoff brucite fo
 | `ph >= 0 and ph <= 14` | warns `OUT_OF_VALID_RANGE` | A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class's inputs are mg/L, degrees Celsius and bara; this calc takes kg/m3, kelvin and pascal. Its molar masses are the class's own (Ca 40.08 ... CO3 60.01 g/mol), not modern atomic weights.
-
-- `I = 0.5 sum(m_i z_i^2)` is a charge sum over the eleven ions on the class's 1 kg/L assumption, so a mol/L concentration is also its molality and the result is reported in mol/kg.
-
-- the Debye-Huckel A is the class's linear form `0.5092 + 8.5e-4 (T_C - 25)`, floored at 0.5 and with no upper bound, in the Davies equation with its `0.3 I` term.
-
-- pH enters twice: carbonate is `HCO3 * 10^(pH - pK2)` with `pK2 = 10.329 + 0.013 (T_K - 298.15)/25`, and the hydroxide activity is `10^(pH - pKw)` with `pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K`.
-
-- the four Ksp correlations are the class's (Plummer-Busenberg calcite, Templeton barite, gypsum and celestite); brucite is its Van't Hoff form on `log10 Ksp(25 C) = -11.16` and `dH = -113.4 kJ/mol`.
-
-- the pressure correction `exp(-dV (P - 1.01325)/(83.1446 T_K))` runs only above 1.013 bara, with the class's cm3/mol `dV`; `pKsp` is `-log10` of the corrected Ksp, so `SI = log10(IAP) + pKsp`.
-
-- **the `-10` sentinel in `saturationIndex` is dead.** Every activity is floored at `1e-15` before the call, so the branch cannot see a non-positive argument; it is ported as written and stays unreachable.
-
-- **the CO2 partial-pressure setter is stored and never read**, so it is not an input. The class's eleven-name activity map holds two values (`gamma_1`, `gamma_2`) and is reported as the two.
-
-- the class does not validate pH or the ions; the port refuses a negative concentration and a non-positive temperature or pressure, and warns outside `0 <= pH <= 14`.
+- the model does not validate pH or the ions: a negative concentration, or a non-positive temperature or pressure, is refused, and a pH outside `0 <= pH <= 14` is warned about.
 
 
 

@@ -4,6 +4,8 @@
 
 `eos.rk_alpha_ab`
 
+Redlich-Kwong alpha function and reduced attraction parameters. Use it to evaluate the RK attraction term at a reduced temperature and pressure.
+
 ## Equation
 
 $$
@@ -26,6 +28,14 @@ b_reduced = 0.08664034996495773*Pr/Tr
 On the Thermodynamics of Solutions. V. Chemical Reviews, 44(1), 233-244
 
 DOI: [10.1021/cr60137a013](https://doi.org/10.1021/cr60137a013)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, the same pair Soave's correlation is built on.
+
 
 ## Inputs
 
@@ -52,7 +62,7 @@ DOI: [10.1021/cr60137a013](https://doi.org/10.1021/cr60137a013)
 | `Pr > 0` | raises | Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -65,8 +75,6 @@ satisfy for the result to mean what it says.
 - the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.
 
 - A and B are the reduced parameters of the Redlich-Kwong cubic and go with that cubic's mixing rules.
-
-- **`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, the same pair Soave's correlation is built on.
 
 
 

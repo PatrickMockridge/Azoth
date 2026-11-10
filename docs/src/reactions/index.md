@@ -2,11 +2,11 @@
 
 # Reactions
 
-Every calculation in this section is generated from its specification. Each page shows the equation, where it came from, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it.
+Every calculation in this section is generated from its specification. Each page states what the calculation is for, the equation and where it came from, the range in which it is validated, the conditions it does not check, a worked example, and the tests that exercise it.
 
-| Calculation | Equation | Source |
+| Calculation | What it is for | Source |
 |---|---|---|
-| [`reactions.equilibrium_constant`](./equilibrium_constant.md) | $\ln K = K_{1} + \frac{K_{2}}{T} + K_{3}\ln T + K_{4}T, \qquad \frac{d\ln K}{dT} = -\frac{K_{1}}{T^{2}} + \frac{K_{2}}{T} + K_{3}, \qquad \Delta H = \frac{d\ln K}{dT}RT^{2}$ | NeqSim master `ChemicalReaction` |
+| [`reactions.equilibrium_constant`](./equilibrium_constant.md) | Equilibrium constant of one reaction from its fitted coefficients at a temperature. Use it to check reaction direction and extent before a reactive flash. | NeqSim master `ChemicalReaction` |
 
 ## Models
 

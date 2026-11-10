@@ -4,6 +4,8 @@
 
 `eos.chung_viscosity`
 
+Gas viscosity from the Chung correlation. Use it for gas pressure-drop and heat-transfer screening when no measured viscosity is available.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ mu_r = 131.3*dipole/sqrt(Vc_cm3*Tc),  Fc = 1 - 0.2756*omega + 0.059035*mu_r**4 +
 Generalized multiparameter correlation for nonpolar and polar fluid transport properties. Ind. Eng. Chem. Res. 27(4), 671-679
 
 DOI: [10.1021/ie00076a024](https://doi.org/10.1021/ie00076a024)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the dipole moment is in debye and the viscosity correction factor dimensionless, matching how `data/components/components.csv` stores them.
+
 
 ## Inputs
 
@@ -55,15 +65,13 @@ DOI: [10.1021/ie00076a024](https://doi.org/10.1021/ie00076a024)
 | `V > 0` | raises | `V` is the divisor in `y = Vc/(6*V)`; a molar volume must be positive. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - the pure-component constants and the fluid molar volume are those of the gas whose viscosity is wanted. NOT CHECKED - they come from the caller.
-
-- the dipole moment is in debye and the viscosity correction factor dimensionless, matching how `data/components/components.csv` stores them.
 
 - the molar volume is the *molar* volume (m**3/mol), not the mass density; the dense-gas correction `y = Vc/(6*V)` needs it.
 

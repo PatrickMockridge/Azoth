@@ -1,19 +1,10 @@
 id = "thermal.tema_standard"
 name = "TEMA configuration, class limits and layout rules"
+summary = "TEMA construction class, configuration limits, recommended designation and a relative cost factor. Use it to select a shell-and-tube configuration and check its layout rules."
 equation = "cost = 1 + front + shell + rear; N = int(A_eff / a_tube); L_max = L_band * material_factor; S_min = max(D/5, floor); S_max = D"
 latex = '''cost = 1 + \sum front + \sum shell + \sum rear, \qquad S_{min} = \max(D/5,\; floor)'''
-assumptions = [
-    "**every length is SI metres**; the class's millimetre constants (wall 12.7, 9.5, 6.35 mm; corrosion 4.76, 3.18, 2.11 mm; spans 660, 889, 1067, 1321 mm; floors 50.8 and 38.1 mm) are converted at the table boundary, and only the inch echo is declared in inches.\n",
-    "**the configuration is built from its three letters**, so a designation outside the class's ten-common table is accepted as a custom configuration rather than a null lookup - the table is a lookup of the same triple, not a different set of rules.\n",
-    "**the configuration cost factor starts at one and adds the class's steps in its order**: front `D` 0.4, `A` 0.15, `C` or `N` 0.1; shell `K` 0.3, `F` 0.2; rear `T` 0.25, `S` 0.2, `P` or `W` 0.15.\n",
-    "**a bundle is removable, and handles thermal expansion, when the rear head is floating (`P`, `S`, `T` or `W`) or is the `U`-tube**, which is the class's own predicate.\n",
-    "**the tube count truncates to an integer**: the bundle clearance removes one tube diameter on each side, the pass lanes scale the area by `1 - 0.05 (passes - 1)`, and a tube occupies `pitch**2 sqrt(3)/2` (triangular) or `pitch**2` (square).\n",
-    "**the unsupported span is the diameter band (12.7, 19.05 or 25.4 mm, else 1321 mm) times a material factor**, matched by upper-cased substring: `STAINLESS`/`SS` 0.95, `COPPER`/`CU` 0.75, `TITANIUM`/`TI` 0.90, else one.\n",
-    "**the tube-size enum stops at 25.4 mm, so the 1321 mm band is unreachable through this calculation**; the capture's 28 mm row pins the class's own method.\n",
-    "**the minimum baffle spacing is `max(shell/5, 50.8 mm)`**, with `38.1 mm` as the floor for class `B`, and the maximum is the shell diameter.\n",
-    "**the recommended designation is the class's four-branch string tree, published verbatim**, and it is not required to be a designation in the common table - `AEW` is a recommendation the table does not hold.\n",
-    "**the tube size's available wall-thickness rows are carried by the enum and read by no formula here**, so only the outside diameter and its inch echo are published.\n",
-]
+assumptions = ["The configuration is one of the TEMA designations. The limits and the relative cost factor come from the TEMA tables this calculation carries, not from a vendor quotation.\n"]
+notes = ["**every length is SI metres**; the class's millimetre constants (wall 12.7, 9.5, 6.35 mm; corrosion 4.76, 3.18, 2.11 mm; spans 660, 889, 1067, 1321 mm; floors 50.8 and 38.1 mm) are converted at the table boundary, and only the inch echo is declared in inches.\n", "**the configuration is built from its three letters**, so a designation outside the class's ten-common table is accepted as a custom configuration rather than a null lookup - the table is a lookup of the same triple, not a different set of rules.\n", "**the configuration cost factor starts at one and adds the class's steps in its order**: front `D` 0.4, `A` 0.15, `C` or `N` 0.1; shell `K` 0.3, `F` 0.2; rear `T` 0.25, `S` 0.2, `P` or `W` 0.15.\n", "**a bundle is removable, and handles thermal expansion, when the rear head is floating (`P`, `S`, `T` or `W`) or is the `U`-tube**, which is the class's own predicate.\n", "**the tube count truncates to an integer**: the bundle clearance removes one tube diameter on each side, the pass lanes scale the area by `1 - 0.05 (passes - 1)`, and a tube occupies `pitch**2 sqrt(3)/2` (triangular) or `pitch**2` (square).\n", "**the unsupported span is the diameter band (12.7, 19.05 or 25.4 mm, else 1321 mm) times a material factor**, matched by upper-cased substring: `STAINLESS`/`SS` 0.95, `COPPER`/`CU` 0.75, `TITANIUM`/`TI` 0.90, else one.\n", "**the tube-size enum stops at 25.4 mm, so the 1321 mm band is unreachable through this calculation**; the capture's 28 mm row pins the class's own method.\n", "**the minimum baffle spacing is `max(shell/5, 50.8 mm)`**, with `38.1 mm` as the floor for class `B`, and the maximum is the shell diameter.\n", "**the recommended designation is the class's four-branch string tree, published verbatim**, and it is not required to be a designation in the common table - `AEW` is a recommendation the table does not hold.\n", "**the tube size's available wall-thickness rows are carried by the enum and read by no formula here**, so only the outside diameter and its inch echo are published.\n"]
 references = [
     "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th edition. The head, shell and rear-head letters, the construction classes and their limits, the tube pitches, the baffle types and the unsupported-span table.",
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/TEMAStandard.java` is the port source.",
@@ -75,7 +66,7 @@ description = "whether the service is hazardous, in the recommendation.\n"
 [inputs.tube_material]
 type = "string"
 optional = true
-description = "the tube material name, matched by upper-cased substring for the span factor. Absent is no factor, as the class's null.\n"
+description = "The tube material name, matched by upper-cased substring for the span factor. Absent means no factor.\n"
 [outputs]
 [outputs.configuration_cost_factor]
 unit = "dimensionless"
@@ -88,16 +79,16 @@ type = "boolean"
 description = "whether the rear head allows the bundle to be removed.\n"
 [outputs.good_thermal_expansion]
 type = "boolean"
-description = "whether the rear head handles thermal expansion, the class's second name for the same predicate.\n"
+description = "Whether the rear head handles thermal expansion.\n"
 [outputs.class_cost_factor]
 unit = "dimensionless"
-description = "the construction class's cost factor relative to class `B`.\n"
+description = "The construction class's cost factor relative to class `B`.\n"
 [outputs.min_tube_wall_thickness]
 unit = "m"
-description = "the class's minimum tube wall.\n"
+description = "The minimum tube wall thickness for the class.\n"
 [outputs.min_corrosion_allowance]
 unit = "m"
-description = "the class's minimum corrosion allowance.\n"
+description = "The minimum corrosion allowance for the class.\n"
 [outputs.tube_outer_diameter]
 unit = "m"
 description = "the standard tube size's outside diameter.\n"
@@ -127,16 +118,16 @@ unit = "dimensionless"
 description = "the truncated bundle-area estimate at the stated pitch and passes.\n"
 [outputs.max_unsupported_span]
 unit = "m"
-description = "the class's maximum unsupported tube span for the diameter band and material.\n"
+description = "The maximum unsupported tube span for the diameter band and material.\n"
 [outputs.min_baffle_spacing]
 unit = "m"
-description = "the greater of one fifth of the shell diameter and the class's floor.\n"
+description = "The greater of one fifth of the shell diameter and the minimum baffle spacing.\n"
 [outputs.max_baffle_spacing]
 unit = "m"
 description = "the shell inside diameter.\n"
 [outputs.recommended_designation]
 type = "string"
-description = "the designation the class's four-branch recommendation answers.\n"
+description = "The recommended TEMA designation.\n"
 [[valid_range]]
 quantity = "shell_inside_diameter"
 min = 0

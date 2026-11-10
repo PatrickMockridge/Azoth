@@ -17,15 +17,12 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "characterization.tbp_cut_properties",
         name: "Tbp cut properties",
+        summary: "TBP cut properties by one of ten characterisation models. Use it to compare or build pseudo-component properties from a boiling cut.",
         namespace: "characterization",
         available: true,
         refusal: None,
         equation: None,
         assumptions: &[
-            "**this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.",
-            "**the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.",
-            "**`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.",
-            "**`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.",
             "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.\n",
         ],
         references: &[
@@ -55,7 +52,7 @@ pub static CALCS: &[CalcForm] = &[
                     "cavett",
                     "standing",
                 ],
-                description: "which of the ten models evaluates the cut. Absent takes the class's own default, `PedersenSRK` - `Characterise.TBPFractionModelName`, which is what `addTBPfraction` runs when nothing sets it.\n",
+                description: "Which of the ten characterisation models evaluates the cut. Optional; absent uses the Pedersen SRK model.\n",
                 range: &[],
                 default: None,
             },
@@ -66,7 +63,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/mol"),
                 dimension: Some("molar_mass"),
                 values: &[],
-                description: "",
+                description: "The cut's molar mass. A pseudo-component has no databank row, so this stands in for its identity.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -220,6 +217,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.antoine_vapor_pressure",
         name: "Antoine vapor pressure",
+        summary: "Saturation pressure of a pure component from an Antoine-type correlation. Use it for boiling, flash and relief screening when a fitted vapour-pressure curve is available.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -227,10 +225,7 @@ pub static CALCS: &[CalcForm] = &[
             "p_sat = { dippr101: exp(A + B/T + C*ln(T) + D*T**E); pow10: 1e5*10**(A - B/(T + C - 273.15)); pow10kpa: 10**(A - B/(T + C)); exp: 1e5*exp(A - B/(T + C)); wagner: exp((1-x)**-1*(A*x + B*x**1.5 + C*x**3 + D*x**6))*Pc, x = 1 - T/Tc }",
         ),
         assumptions: &[
-            "`none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.\n",
-            "`Tc` and `Pc` are used only by the Wagner form; the other three ignore them.\n",
-            "the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.\n",
-            "**the evaluated pressure must be finite, positive and at or below `Pc`** (upstream PR #4106, `b7ee7300`): an extrapolation past the critical pressure is unavailable rather than clipped, and this port refuses it where the class returns `NaN`.\n",
+            "The evaluated pressure must be finite, positive and at or below `Pc`. An extrapolation past the critical pressure is refused rather than clipped.",
         ],
         references: &[
             "Antoine, C. (1888). \\\"Tensions des vapeurs; nouvelle relation entre les tensions et les températures.\\\" Comptes Rendus des Séances de l'Académie des Sciences 107, 681-684.",
@@ -244,7 +239,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The first Antoine coefficient, in the correlation's internal scale.\n",
                 range: &[],
                 default: None,
             },
@@ -299,7 +294,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["dippr101", "pow10", "pow10kpa", "exp", "wagner"],
-                description: "",
+                description: "The correlation form. `dippr101` is selected by a non-zero `E` rather than by the label; see the assumptions.\n",
                 range: &[],
                 default: None,
             },
@@ -423,6 +418,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.beggs_brill_segment",
         name: "Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment",
+        summary: "Liquid holdup and pressure gradient for one pipe segment from the Beggs-and-Brill correlation. Use it for multiphase line pressure-drop screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -430,13 +426,7 @@ pub static CALCS: &[CalcForm] = &[
             "v_sl = q_l / A,  v_sg = q_g / A,  v_m = v_sl + v_sg,  lambda_l = v_sl / v_m\n\nFr = v_m^2 / (g_c D),  with the class's 32.174 ft/s2\n\nregime from L1 = 316 lambda^0.302, L2 = 0.0009252 lambda^-2.4684, L3 = 0.1 lambda^-1.4516, L4 = 0.5 lambda^-6.738\n\nE_l = C_regime(lambda, Fr) (1 + beta (sin 1.8 theta - sin^3(1.8 theta)/3)),  bounded to [lambda, 1]\n\ndp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y - 1.2) or the Beggs-Brill fit",
         ),
         assumptions: &[
-            "**the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.\n",
-            "**the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.\n",
-            "**the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.\n",
-            "**the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.\n",
-            "**the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.\n",
-            "the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.\n",
-            "the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values, which is how the class combines its two liquid phases.\n",
+            "the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values.\n",
         ],
         references: &["Beggs, H. D.; Brill, J. P. (1973). J. Pet. Technol. 25(5), 607-617."],
         inputs: &[
@@ -759,7 +749,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the no-slip Reynolds number, with the class's field-unit factor.\n",
+                description: "The no-slip Reynolds number.\n",
                 optional: false,
             },
             CalcOutput {
@@ -901,6 +891,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.chapman_enskog_diffusivity",
         name: "Gas binary diffusivity from the Chapman-Enskog theory",
+        summary: "Gas binary diffusivity from the Chapman-Enskog kinetic theory. Use it for gas mixing and mass-transfer estimates when no measured diffusivity is available.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -908,8 +899,7 @@ pub static CALCS: &[CalcForm] = &[
             "D = 0.00266 * T**1.5 / (P * sqrt(MAB) * sigmaAB**2 * OmegaD(T/epsAB))   [cm**2/s], with MAB in g/mol, sigmaAB in angstrom, epsAB in K, P in bar and T in K, and OmegaD the Neufeld collision integral; D*1e-4 recovers m**2/s.",
         ),
         assumptions: &[
-            "**this is a gas phase's default diffusivity, not Fuller's.** `GasPhysicalProperties` assigns the base `Diffusivity` class to a gas, and the Fuller class is reached only by `setDiffusionCoefficientModel`. `RateBasedPackedColumn` selects nothing, so this is what its segment fluxes use.\n",
-            "the pair parameters are inputs; `azoth_eos::databank::lennard_jones_pair` combines two components' values the way `GasPhysicalPropertyMethod` does: `sigma = (sigma_i + sigma_j)/2`, `eps = sqrt(eps_i eps_j)`, `MAB = 2/(1/M_i + 1/M_j)` in **g/mol**.\n",
+            "outside the validated temperature band the calculation warns rather than refuses.\n",
         ],
         references: &[
             "Chapman, S.; Enskog, D. (1917). \\\"The kinetic theory of gases.\\\" Cambridge University Press. The first-approximation pair diffusivity of a dilute gas.",
@@ -946,7 +936,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The pair's Lennard-Jones collision diameter, in metres.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -967,7 +957,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("K"),
                 dimension: Some("thermodynamic_temperature"),
                 values: &[],
-                description: "",
+                description: "The pair's Lennard-Jones energy parameter over Boltzmann's constant, in kelvin.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -1071,6 +1061,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.chung_conductivity",
         name: "Gas thermal conductivity from the Chung correlation",
+        summary: "Gas thermal conductivity from the Chung correlation. Use it for gas heat-transfer and insulation screening when composition and properties are known.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -1080,7 +1071,6 @@ pub static CALCS: &[CalcForm] = &[
         assumptions: &[
             "the ideal-gas constant-volume heat capacity, molar mass, critical constants and correction factors are those of the gas whose conductivity is wanted. NOT CHECKED - they come from the caller.\n",
             "`Cv0` is the ideal-gas heat capacity at constant volume at `T`, i.e. `Cp0 - R`; the caller gets `Cp0` from `eos.ideal_gas_cp`.\n",
-            "the viscosity inside the correlation is the *dilute-gas* Chung viscosity (the `40.785` form), not the dense-gas `eos.chung_viscosity`.\n",
         ],
         references: &[
             "Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). \\\"Generalized multiparameter correlation for nonpolar and polar fluid transport properties.\\\" Ind. Eng. Chem. Res. 27(4), 671-679. DOI 10.1021/ie00076a024.",
@@ -1257,6 +1247,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.chung_viscosity",
         name: "Gas viscosity from the Chung correlation",
+        summary: "Gas viscosity from the Chung correlation. Use it for gas pressure-drop and heat-transfer screening when no measured viscosity is available.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -1265,7 +1256,6 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "the pure-component constants and the fluid molar volume are those of the gas whose viscosity is wanted. NOT CHECKED - they come from the caller.\n",
-            "the dipole moment is in debye and the viscosity correction factor dimensionless, matching how `data/components/components.csv` stores them.\n",
             "the molar volume is the *molar* volume (m**3/mol), not the mass density; the dense-gas correction `y = Vc/(6*V)` needs it.\n",
             "the correlation is a *gas* correlation; the dense-gas term keeps it usable into the compressed region but not for a liquid.\n",
         ],
@@ -1454,13 +1444,16 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.co2_water_diffusivity",
         name: "CO2-in-water binary diffusivity from the Tammi correlation",
+        summary: "Diffusivity of carbon dioxide in water from the Tammi correlation. Use it for CO2 absorption and stripping mass-transfer screening.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: Some(
             "d = 0.03389 * exp(-2213.7/T) * 1e-4,  with T in K; the 1e-4 recovers m**2/s from cm**2/s.",
         ),
-        assumptions: &[],
+        assumptions: &[
+            "the correlation is for CO2 diffusing in water; it takes no other solute or solvent.\n",
+        ],
         references: &[
             "Versteeg, G. F.; van Swaaij, W. P. M. (1988). \\\"Solubility and diffusivity of acid gases (CO2, N2O) in aqueous alkanolamine solutions.\\\" J. Chem. Eng. Data 33(1), 29-34. DOI 10.1021/je00051a011.",
         ],
@@ -1507,6 +1500,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.costald_molar_volume",
         name: "Saturated liquid molar volume from the COSTALD equation",
+        summary: "Saturated liquid molar volume from the COSTALD equation. Use it for liquid density and volumetric-flow estimates when critical properties and an acentric factor are known.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -1663,6 +1657,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.de_waard_milliams_corrosion",
         name: "De Waard-Milliams CO2, H2S and elemental-sulfur corrosion rate",
+        summary: "CO2, H2S and elemental-sulfur corrosion rate from the De Waard-Milliams correlation. Use it to screen a wet-gas or multiphase line for corrosion allowance.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -1670,14 +1665,7 @@ pub static CALCS: &[CalcForm] = &[
             "log10(V_cor) = 5.8 - 1710/T + 0.67 log10(pCO2)\n\nV = V_cor f_pH f_scale f_glycol f_flow (1 - IE) + V_sulfur\n\nf_pH = 10^(0.32(pH_sat - pH)) above pH_sat, else 1\npH_sat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C\nf_scale = 1 below 60 C; above 80 C with pH > 5, max(0.1, 1 - min(0.7, (T_C - 80) 0.01 (pH - 4)))\nf_glycol = 1 at zero, 0.05 above 0.8, else 1 - x\nf_flow = min(v^0.8, 5) above 1 m/s, else 1\nV_sulfur = S8 rate 1.74 / 7850\nV_FeS = min(exp(7.96 - 2320/T + 0.67 ln pH2S), 100) mm/yr",
         ),
         assumptions: &[
-            "the class takes C, bar, kg/(m2 yr) and mm/yr; this calc takes kelvin, pascal, kg/(m2 s) and returns m/s over the class's 365.25-day year.\n",
-            "**the baseline is de Waard-Milliams 1991**, `log10(V) = 5.8 - 1710/T_K + 0.67 log10(pCO2)` mm/yr, zero at or below a zero pCO2.\n",
-            "**the pH correction is de Waard-Lotz**, `10^(0.32(pHsat - pH))` at or above the saturation pH and one below it; `pHsat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C`.\n",
-            "**the scale correction** is one below 60 C; above 80 C and pH 5 it is `max(0.1, 1 - min(0.7, (T_C-80)*0.01*(pH-4)))`, whose 0.1 floor the 0.7 cap keeps out of reach.\n",
-            "the glycol factor is one at zero, 0.05 above 0.8 and `1-x` between; the flow factor is one to 1 m/s and `min(v^0.8, 5)` above; the inhibitor factor is one minus the efficiency clamped to `[0, 1]`.\n",
-            "**sulfur and H2S add to the CO2 rate**: sulfur as 1.74 kg Fe per kg S8 over steel's 7850 kg/m3, FeS as `min(exp(7.96 - 2320/T_K + 0.67 ln pH2S), 100)` mm/yr.\n",
-            "the severity bands are NORSOK M-001 on the corrected CO2-plus-sulfur rate; the FeCO3 index and the morphology are the class's estimates; sour service is H2S above 0.003 bar.\n",
-            "the class's total-pressure and pipe-diameter setters reach only its JSON and no arithmetic, and the three correction flags have no setters, so neither becomes an input.\n",
+            "The line carries wet CO2, H2S or elemental sulfur, and the surface is carbon steel. The correlation is a screening rate for that service, not a prediction for a protected or non-ferrous surface.\n",
         ],
         references: &["NORSOK M-506 and NACE MR0175 / ISO 15156."],
         inputs: &[
@@ -2099,6 +2087,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.electrolyte_scale_calculator",
         name: "Activity-corrected mineral-scale saturation indices from a brine analysis",
+        summary: "Mineral-scale saturation indices from a brine analysis, with activity coefficients. Use it to screen a produced-water or injection-water stream for scaling.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -2106,15 +2095,7 @@ pub static CALCS: &[CalcForm] = &[
             "I = 0.5 sum(m_i z_i^2)\n\nlog10(gamma_z) = -A z^2 (sqrt(I)/(1 + sqrt(I)) - 0.3 I),  A = 0.5092 + 8.5e-4 (T_C - 25), floor 0.5\n\n[CO3--] = [HCO3-] 10^(pH - pK2),  pK2 = 10.329 + 0.013 (T_K - 298.15)/25\n\na(OH-) = 10^(pH - pKw),  pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K\n\nSI_j = log10(IAP_j) - log10(Ksp_j),  IAP_j = (gamma_M m_M)(gamma_X m_X)\n\nwith the class's four temperature Ksp correlations and the Van't Hoff brucite form, each after the pressure correction exp(-dV (P - 1.01325)/(83.1446 T)).",
         ),
         assumptions: &[
-            "the class's inputs are mg/L, degrees Celsius and bara; this calc takes kg/m3, kelvin and pascal. Its molar masses are the class's own (Ca 40.08 ... CO3 60.01 g/mol), not modern atomic weights.\n",
-            "`I = 0.5 sum(m_i z_i^2)` is a charge sum over the eleven ions on the class's 1 kg/L assumption, so a mol/L concentration is also its molality and the result is reported in mol/kg.\n",
-            "the Debye-Huckel A is the class's linear form `0.5092 + 8.5e-4 (T_C - 25)`, floored at 0.5 and with no upper bound, in the Davies equation with its `0.3 I` term.\n",
-            "pH enters twice: carbonate is `HCO3 * 10^(pH - pK2)` with `pK2 = 10.329 + 0.013 (T_K - 298.15)/25`, and the hydroxide activity is `10^(pH - pKw)` with `pKw = 4470.99/T_K - 6.0875 + 0.01706 T_K`.\n",
-            "the four Ksp correlations are the class's (Plummer-Busenberg calcite, Templeton barite, gypsum and celestite); brucite is its Van't Hoff form on `log10 Ksp(25 C) = -11.16` and `dH = -113.4 kJ/mol`.\n",
-            "the pressure correction `exp(-dV (P - 1.01325)/(83.1446 T_K))` runs only above 1.013 bara, with the class's cm3/mol `dV`; `pKsp` is `-log10` of the corrected Ksp, so `SI = log10(IAP) + pKsp`.\n",
-            "**the `-10` sentinel in `saturationIndex` is dead.** Every activity is floored at `1e-15` before the call, so the branch cannot see a non-positive argument; it is ported as written and stays unreachable.\n",
-            "**the CO2 partial-pressure setter is stored and never read**, so it is not an input. The class's eleven-name activity map holds two values (`gamma_1`, `gamma_2`) and is reported as the two.\n",
-            "the class does not validate pH or the ions; the port refuses a negative concentration and a non-positive temperature or pressure, and warns outside `0 <= pH <= 14`.\n",
+            "the model does not validate pH or the ions: a negative concentration, or a non-positive temperature or pressure, is refused, and a pH outside `0 <= pH <= 14` is warned about.\n",
         ],
         references: &[
             "Plummer, L. N.; Busenberg, E. (1982). Geochim. Cosmochim. Acta 46(6), 1011-1040. Templeton, C. C. (1960). J. Chem. Eng. Data 5(4), 514-517. Marshall, W. L.; Slusher, R. (1966). J. Chem. Eng. Data 11(3), 339-340.",
@@ -2612,6 +2593,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.emulsion_viscosity",
         name: "Oil-water emulsion viscosity and phase inversion point",
+        summary: "Oil-water emulsion viscosity and phase-inversion water cut. Use it for multiphase pressure-drop and pump-sizing screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -2619,13 +2601,7 @@ pub static CALCS: &[CalcForm] = &[
             "WC_inv = 1 / (1 + (mu_o/mu_w)^0.25 (rho_w/rho_o)^0.5), clamped to [0.20, 0.90], shifted by 0.10 (t - 0.5), clamped to [0.15, 0.95]\n\nW/O below WC_inv: mu_c = mu_o, mu_d = mu_w, phi = WC\nO/W at or above:   mu_c = mu_w, mu_d = mu_o, phi = 1 - WC\n\nmu_eff = mu_c * mu_r\nmu_r: Einstein 1 + 2.5 phi; Taylor 1 + 2.5 phi (mu_d + 0.4 mu_c)/(mu_d + mu_c)\n      Brinkman (1 - phi)^-2.5; Pal-Rhodes (1 - phi/phi_max)^(-2.5 phi_max)\n      Woelflin exp(k phi), k 2.5 | 4 | 6; Richardson exp((2.5 + 5 t) phi)\n\nmu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is present",
         ),
         assumptions: &[
-            "the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.\n",
-            "**the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.\n",
-            "**the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.\n",
-            "**the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.\n",
-            "**the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.\n",
-            "the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.\n",
-            "the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.\n",
+            "The mixture is an oil-water emulsion. The model describes the dispersed-phase viscosity and the inversion point, not a gas-liquid or three-phase system.\n",
         ],
         references: &[
             "Arirachakaran, S.; Ogbe, D. O.; Economides, M. J. (1989). An analysis of oil/water flow phenomena in horizontal pipes. SPE 18836.",
@@ -2743,7 +2719,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the maximum dispersed-phase packing fraction, 0.74 as the class's default.\n",
+                description: "The maximum dispersed-phase packing fraction. Defaults to 0.74.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -2934,6 +2910,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.erosion_prediction",
         name: "API RP 14E erosional velocity and DNV RP O501 sand erosion",
+        summary: "Erosional velocity and sand-erosion rate from API RP 14E and DNV RP O501. Use it to screen a line or fitting for sand and droplet erosion.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -2941,14 +2918,7 @@ pub static CALCS: &[CalcForm] = &[
             "Ve = C / sqrt(rho_lb_ft3), ft/s -> m/s by 0.3048, rho_lb_ft3 = rho_kg_m3 * 0.062428\n\nE = K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)   [kg sand per kg sand]\nVp = V * (0.9 | 0.8 | 0.7) from the Stokes number\nrate = E * sand_rate * year / rho_wall / A_eroded\n\nrisk: rate > 1.0 mm/yr or ratio > 1.5 critical; > 0.5 or > 1.0 high; > 0.1 or > 0.8 medium",
         ),
         assumptions: &[
-            "the class takes mm, kg/day, mm/yr and years; this calc takes metres, kg/s, seconds and returns SI rates, with the class's 365.25-day year converting the wall loss.\n",
-            "**the erosional velocity is API RP 14E**: `C / sqrt(rho)` in the class's lb/ft3 and ft/s, converted back by 0.3048; a zero mixture density gives zero rather than an infinity.\n",
-            "**the sand rate is DNV RP O501**: `K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)`, with K 2e-9 for the steels and 1e-9 or 5e-10 for Inconel, titanium and tungsten carbide, and n 2.6 or 2.3.\n",
-            "**the geometry enters three ways**: its factor, its impact angle and its eroded area - elbow `pi D^2 * 0.1`, tee and blind tee half the bore, reducer 0.3, choke 0.2, weld a thin ring and straight the unit length.\n",
-            "**the particle velocity is the mixture velocity times 0.9, 0.8 or 0.7**, chosen by a Stokes number of 10 or 1; the straight pipe takes the class's empirical `K Vp^n sand 0.01` branch instead.\n",
-            "the wall density is 7850 kg/m3 except titanium's 4500 and Inconel's 8440; the erosion rate is `mm/yr` and the remaining wall subtracts the cumulative loss and the corrosion allowance.\n",
-            "**the geometry and material names are the enum values**; the class's `bend`, `contraction`, `valve`, `22cr`, `25cr` and `inconel_625` aliases fold into them and are not separately named.\n",
-            "the class's gas and liquid densities and velocities have setters and are read by nothing, so they are not inputs; its maximum-velocity helper and sand-load defaults are separate surfaces.\n",
+            "The flow is a gas or multiphase stream carrying sand through a listed geometry and material. The result is a screening rate; a detailed erosion assessment is a CFD or test programme.\n",
         ],
         references: &["API RP 14E and DNV-RP-O501."],
         inputs: &[
@@ -3043,7 +3013,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/(m**2*s)"),
                 dimension: Some("mass_flux"),
                 values: &[],
-                description: "the produced sand rate, which the class states in kg/day.\n",
+                description: "The produced sand rate.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -3064,7 +3034,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the sand particle diameter, which the class states in mm.\n",
+                description: "The sand particle diameter.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -3186,7 +3156,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the API RP 14E C factor, 100 as the class's default.\n",
+                description: "The API RP 14E C factor. Defaults to 100.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -3406,6 +3376,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.firozabadi_ramley_interface_tension",
         name: "Interface tension from the Firoozabadi-Ramey correlation",
+        summary: "Gas-liquid interface tension from the Firoozabadi-Ramey correlation. Use it for multiphase-flow and separator screening when interfacial tension is not measured.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -3413,9 +3384,7 @@ pub static CALCS: &[CalcForm] = &[
             "sigma = (a1 * (|rho_2 - rho_1|/1000)**(b1 + 1) / (T/Tc_pseudo)**0.3125)**4 / 1000, where (a1, b1) is 2.2062/-0.94716 for |rho_2 - rho_1|/1000 below 0.2, 2.915/-0.76852 below 0.5, and 3.3858/-0.62590 otherwise.",
         ),
         assumptions: &[
-            "the two densities are mass densities in kg/m**3; the division by `1000` puts their difference in the g/cm**3-like unit the fitted constants were published against.\n",
-            "the correlation is the class's `calcSurfaceTension`, not its `calcPureComponentSurfaceTension` (a Macleod-Sugden pure-component form the mixture path does not call).\n",
-            "the class answers 0.0 when the system has fewer than two phases; this calculation's inputs are two states, so that guard has no input here.\n",
+            "The two states are the coexisting gas and liquid phases, and the first state is the one whose pseudo-critical temperature the correlation uses.\n",
         ],
         references: &[],
         inputs: &[
@@ -3540,6 +3509,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.fuller_schettler_giddings_diffusivity",
         name: "Gas binary diffusivity from the Fuller-Schettler-Giddings correlation",
+        summary: "Gas binary diffusivity from the Fuller-Schettler-Giddings correlation. Use it for gas mixing and mass-transfer estimates when diffusion volumes are known.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -3547,10 +3517,8 @@ pub static CALCS: &[CalcForm] = &[
             "D = 1.013e-3 * T**1.75 * sqrt(1/MA + 1/MB) / (P * (VA**(1/3) + VB**(1/3))**2)   [cm**2/s], with MA and MB in g/mol, P in bar, T in K and VA, VB in cm**3/mol; D*1e-4 recovers m**2/s.",
         ),
         assumptions: &[
-            "`VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.\n",
-            "**the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.\n",
-            "the temperature is the gas phase's own, and a state outside the class's validated `[200, 2000]` K is *warned* about rather than refused, which is `Diffusivity.enableTemperatureWarnings` over `T_MIN`/`T_MAX`.\n",
-            "the correlation is for a *binary* pair in the gas phase; the class answers a matrix over the phase's components, and this id is one entry of it.\n",
+            "the temperature is the gas phase's own; outside `[200, 2000]` K the calculation warns rather than refuses.\n",
+            "the correlation is for a binary pair in the gas phase; a mixture's diffusivity is one entry of its matrix.\n",
         ],
         references: &[
             "Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966). \\\"A new method for prediction of binary gas-phase diffusion coefficients.\\\" Ind. Eng. Chem. 58(5), 18-27. DOI 10.1021/ie50677a007.",
@@ -3587,7 +3555,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m**3/mol"),
                 dimension: Some("molar_volume"),
                 values: &[],
-                description: "",
+                description: "Diffusion volume of the first component.\n",
                 range: &[],
                 default: None,
             },
@@ -3692,6 +3660,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.hayduk_minhas_diffusivity",
         name: "Liquid binary diffusivity from the Hayduk-Minhas correlation",
+        summary: "Liquid binary diffusivity from the Hayduk-Minhas correlation. Use it for liquid-phase mass-transfer screening when a solute molar volume and viscosity are available.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -3699,8 +3668,8 @@ pub static CALCS: &[CalcForm] = &[
             "paraffin: D = 13.3e-8 * T**1.47 * eta**(10.2/VA - 0.791) / VA**0.71;  aqueous: D = 1.25e-8 * (VA**-0.19 - 0.292) * T**1.52 * eta**(9.58/VA - 1.12),  with VA in cm**3/mol, eta in cP and T in K; VA is clamped to [20, 500] cm**3/mol and eta to [0.1, 100] cP, the aqueous volume term is floored at 0.01, and D*1e-4 recovers m**2/s.",
         ),
         assumptions: &[
-            "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n",
-            "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n",
+            "The form selects the solvent correlation: `paraffin` for hydrocarbons, `aqueous` for water-rich solvents. The caller chooses; this calculation does not detect water content.",
+            "the molar volume and viscosity are clamped to `[20, 500]` cm**3/mol and `[0.1, 100]` cP; the correlation is not applied outside them.\n",
             "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n",
         ],
         references: &[
@@ -3798,12 +3767,14 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.heat_of_vaporization",
         name: "Heat of vaporization",
+        summary: "Latent heat of vaporisation from a temperature-dependent correlation. Use it for duty and flash calculations when a component's latent heat is needed.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: Some("hov = 1e-3 * c0 * (1 - Tr)**(c1 + c2*Tr + c3*Tr**2)"),
         assumptions: &[
             "`Tr` is reduced against the critical temperature the caller supplies.\n",
+            "the correlation is a fit of limited range; the library's data are inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), and this calculation reproduces them rather than repairing them.\n",
             "this calc returns a pure-component property and says nothing about a mixture or a phase.\n",
         ],
         references: &[
@@ -3817,7 +3788,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The first heat-of-vaporisation coefficient, in the correlation's internal scale.\n",
                 range: &[],
                 default: None,
             },
@@ -3941,6 +3912,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.iapws_henry_law",
         name: "Henry constant of a gas in water, from the IAPWS guideline",
+        summary: "Henry constant of a gas in water from the IAPWS guideline. Use it for aqueous absorption and stripping screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -3948,9 +3920,8 @@ pub static CALCS: &[CalcForm] = &[
             "kH = 10*exp(ln(22.064) + S(tau)/Tr + a/Tr + b*tau**0.355/Tr + c*Tr**-0.41*exp(tau)), Tr = T/647.096, tau = 1 - Tr, S(tau) = sum_i A_i*tau**B_i, A = [-7.85951783, 1.84408259, -11.7866497, 22.6807411, -15.9618719, 1.80122502], B = [1.0, 1.5, 3.0, 3.5, 4.0, 7.5]",
         ),
         assumptions: &[
-            "the table is 14 gases with three fitted constants and a fitted window each, and `gas` is the table's vocabulary rather than the databank's: `krypton`, `xenon` and `carbon monoxide` are rows here and are not components this library carries data for.",
+            "the standard state is limiting `f/x` at pure-water saturation, with water's critical constants and the six-term Wagner series for its saturation pressure. The result is in pascals.\n",
             "**`status` is the fitted window, not the domain.** A row is fitted over its own range and the equation over liquid water, so a temperature inside liquid water and outside the row's window is **returned** with `guideline_extrapolation` rather than refused.",
-            "`rms_log_residual` is the row's own reported fit quality in `ln kH`. It is a property of the row and not of `T`, and it is returned because it is what says how far an extrapolation should be trusted.",
             "the guideline is stated for a **pure-water** solvent. A brine changes the reference state, and the phase that reads this is where that is decided - the model has no composition input and does not pretend otherwise.",
         ],
         references: &[
@@ -4059,6 +4030,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.iapws_saturation_pressure",
         name: "Saturation pressure of water, IAPWS-IF97 Region 4",
+        summary: "Saturation pressure of water from the IAPWS-IF97 Region 4 formulation. Use it for steam, water and humid-gas calculations where an accurate water vapour pressure is needed.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4066,8 +4038,6 @@ pub static CALCS: &[CalcForm] = &[
             "p_sat = (2C / (-B + sqrt(B**2 - 4*A*C)))**4, with theta = T + n9/(T - n10), A = theta**2 + n1*theta + n2, B = n3*theta**2 + n4*theta + n5, C = n6*theta**2 + n7*theta + n8 and n1..n10 = [1167.0521452767, -724213.16703206, -17.073846940092, 12020.82470247, -3232555.0322333, 14.91510861353, -4823.2657361591, 405113.40542057, -0.23855557567849, 650.17534844798]",
         ),
         assumptions: &[
-            "**this is the boundary everything else in IF97 is selected by.** `eos.water_phase` asks it whether a state is Region 1 or Region 2, and the ten coefficients are the IAPWS release's own - not a fit of this library's and not a rearrangement of `eos.antoine_vapor_pressure`'s row for water.",
-            "`eos.pure_saturation` is a *different* answer to the same question: it is the pressure where a Peng-Robinson fluid's two roots cross, which is a property of that cubic and not of water. A water dew point wants this one.",
             "**the domain is the Region 4 curve's own, `[273.15, 647.096)` K**: below the triple point it is not liquid water and at the critical point the two phases meet. Both ends are `error` and neither is extrapolated to.",
         ],
         references: &[
@@ -4117,6 +4087,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.ideal_gas_cp",
         name: "Ideal-gas heat capacity from a polynomial",
+        summary: "Ideal-gas heat capacity from a polynomial in temperature. Use it for gas duty and heat-exchanger screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4249,11 +4220,13 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.liquid_heat_capacity",
         name: "Liquid heat capacity",
+        summary: "Liquid heat capacity from a temperature polynomial. Use it for liquid duty and heat-exchanger screening.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: Some("cp = 1e-3 * (c0 + c1*T + c2*T**2 + c3*T**3 + c4*T**4)"),
         assumptions: &[
+            "the polynomial is a fit of limited range; it is zero for most hydrocarbons in the library, which carry only an ideal-gas heat capacity.\n",
             "this calc returns a pure-component property and says nothing about a mixture.\n",
         ],
         references: &[
@@ -4267,7 +4240,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The constant term, in the correlation's internal scale.\n",
                 range: &[],
                 default: None,
             },
@@ -4381,13 +4354,14 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.liquid_viscosity_pure",
         name: "One component's pure-liquid viscosity from the LIQVISC correlation",
+        summary: "Pure-liquid viscosity from the LIQVISC correlation, with its pressure correction. Use it for pump and line pressure-drop screening when no measured viscosity is available.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: None,
         assumptions: &[
             "**this is not the phase's viscosity.** It is one component's, at the phase's `(T, P)` and by the component's own LIQVISC parameters - the `eta_B` the liquid diffusivity correlations take, where the phase's own viscosity is PFCT's and a different number.\n",
-            "**both are on the rate-based column's path**: an oil phase's `PFCTViscosityMethodHeavyOil` inherits the common-phase class, so its n-butane comes out at zero, where an aqueous phase's \"polynom\" model is the liquid class.\n",
+            "Above the component's critical temperature the answer is 0.5 cP whatever the model, and a component with no model index answers 0.7 cP.",
         ],
         references: &[
             "Lucas, K. (1981). \\\"Die Druckabhängigkeit der Viskosität von Flüssigkeiten.\\\" Chemie Ingenieur Technik 53(1), 29-32. DOI 10.1002/cite.330530107. The pressure correction `getViscosityPressureCorrection` applies.\n",
@@ -4400,7 +4374,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["common_phase", "liquid"],
-                description: "",
+                description: "Which LIQVISC ladder to use: `common_phase` or `liquid`.\n",
                 range: &[],
                 default: None,
             },
@@ -4411,7 +4385,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The component's LIQVISC model index: 1, 2, 3 or 4. Zero answers the 0.7 cP sentinel.\n",
                 range: &[],
                 default: None,
             },
@@ -4609,6 +4583,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.matcop5_prumr_alpha",
         name: "Five-parameter Mathias-Copeman alpha function",
+        summary: "Five-parameter Mathias-Copeman alpha function for a cubic equation of state. Use it when a cubic EOS needs this attraction-temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4759,6 +4734,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.matcop_alpha",
         name: "Mathias-Copeman alpha function",
+        summary: "Three-parameter Mathias-Copeman alpha function for a cubic equation of state. Use it when a cubic EOS needs this attraction-temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4864,6 +4840,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.matcop_pr_alpha",
         name: "Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback",
+        summary: "Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback. Use it when a cubic EOS needs this form above and below the critical temperature.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4872,7 +4849,6 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n",
-            "above the critical temperature (``Tr > 1``), or when the first coefficient is below 1e-20, the alpha falls back to the standard Peng-Robinson form, which needs the acentric factor for ``m``.\n",
         ],
         references: &[
             "Mathias, P. M.; Copeman, T. W. (1983). \"Extension of the Peng-Robinson equation of state to complex mixtures: evaluation of the various forms of the local composition concept.\" Fluid Phase Equilib. 13, 91-108. DOI 10.1016/0378-3812(83)80084-3.",
@@ -4984,6 +4960,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.matcop_prumr_alpha",
         name: "Mathias-Copeman alpha function with the UMR-PR fallback",
+        summary: "Mathias-Copeman alpha function with the UMR-PR fallback. Use it when a cubic EOS needs this form across the critical point.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -4992,7 +4969,6 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n",
-            "the fallback ``m`` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n",
         ],
         references: &[
             "Mathias, P. M.; Copeman, T. W. (1983). \"Extension of the Peng-Robinson equation of state to complex mixtures: evaluation of the various forms of the local composition concept.\" Fluid Phase Equilib. 13, 91-108. DOI 10.1016/0378-3812(83)80084-3.",
@@ -5104,6 +5080,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.matcop_prumr_new_alpha",
         name: "Five-parameter Mathias-Copeman alpha function, UMR-PR new variant",
+        summary: "Five-parameter Mathias-Copeman alpha function, UMR-PR new variant. Use it when a cubic EOS needs this attraction-temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5112,7 +5089,6 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "the five Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n",
-            "the fallback ``m`` is the UMR-PR kappa, a fourth-order fit in the acentric factor, unlike `matcop5_prumr_alpha` whose fallback uses the standard Peng-Robinson kappa.\n",
         ],
         references: &[
             "Tasios, I.; et al. (2025). Fluid Phase Equilib. DOI 10.1016/j.fluid.2024.114241 - the five-parameter form for non-self-associating compounds in UMR-CPA.",
@@ -5255,6 +5231,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.mollerup_alpha",
         name: "Mollerup alpha function",
+        summary: "Mollerup alpha function for a cubic equation of state. Use it when the attraction term follows the Mollerup temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5357,6 +5334,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.nitric_sulfuric_acid_vapor_pressure",
         name: "Pure-component vapour pressures of water, nitric acid and sulfuric acid",
+        summary: "Vapour pressures of water, nitric acid and sulfuric acid from component-specific correlations. Use it for acid-absorption and condensation screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5364,10 +5342,8 @@ pub static CALCS: &[CalcForm] = &[
             "p_water = 100*10**(8.42926609 - 1827.17843/T - 71208.271/T**2); p_nitric = 133.322368421*10**(7.57628 - 1470.385/(T - 43.0)); p_sulfuric = 101325*exp(-10156.0/T + 16.259)",
         ),
         assumptions: &[
-            "three correlations, not one form with three coefficient sets: water is a log10 polynomial in `1/T`, nitric acid an Antoine in `log10(P/torr)`, sulfuric acid a `ln(P/atm)` straight line. Each is ported with its own unit factor, `100`, `133.322368421` and `101325`.",
-            "the three come back together because they are always wanted together: a phase over this system needs all three pure-component pressures at one temperature, and three calculations would be three chances to evaluate them at different ones.",
+            "the validity is per species, not per formula class. Water and sulfuric acid are stated for roughly 190-298 K and nitric acid's Antoine for roughly 190-400 K; the range below is the conservative envelope.\n",
             "the range is a *warning* rather than an error: the arithmetic is well defined outside it and a caller inspecting the extrapolation is doing something legitimate. The nitric-acid form alone has a pole at `T = 43 K`, which is an error.",
-            "the water correlation reaches 610.4 Pa at 273.15 K against a measured 611 Pa, which is the check that says the unit factor is `mbar` and not the bar the rest of this library works in.",
         ],
         references: &[
             "Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). \"Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature.\" Journal of Geophysical Research 101(D20), 25967-25977. DOI 10.1029/96JD02155",
@@ -5460,6 +5436,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.parachor_surface_tension",
         name: "Surface tension from the parachor (Macleod-Sugden)",
+        summary: "Surface tension from the parachor (Macleod-Sugden) relation. Use it for multiphase and packing screening when a parachor is available.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5468,7 +5445,7 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "a pure component: the two densities are the liquid and vapour of one substance at the interface state, so the mole fractions divide out.\n",
-            "**a CPA mixture reads `PARACHOR_CPA`** and every other mixture reads `PARACHOR` (upstream PR #4004); the associating, UMR-CPA and electrolyte CPA builders select it, so the input here is whichever column the caller's mixture carries.\n",
+            "the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which is a separate per-component sum.\n",
         ],
         references: &[
             "Macleod, D. B. (1923). \"On a relation between surface tension and density.\" Trans. Faraday Soc. 19, 38-41. DOI 10.1039/TF9231900038.",
@@ -5585,6 +5562,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pitzer_scale_activity",
         name: "Binary Pitzer activity coefficients for a scale-forming brine",
+        summary: "Binary Pitzer activity coefficients for a scale-forming brine. Use it for mineral solubility and scaling estimates in concentrated electrolytes.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5592,13 +5570,7 @@ pub static CALCS: &[CalcForm] = &[
             "I = 0.5 m (nu_c z_c^2 + nu_a z_a^2)\n\naPhi = A ln10 / 3,  f = -aPhi (sqrt(I)/(1 + b sqrt(I)) + 2/b ln(1 + b sqrt(I)))\n\nB_gamma = 2 beta0 + 2 beta1 (1 - (1 + x - x^2/2) exp(-x))/(alpha1^2 I),  x = alpha1 sqrt(I)\n\nln(gamma) = |z_c z_a| f + m (2 nu_c nu_a/nu) B_gamma + m^2 (3 (nu_c nu_a)^1.5/nu) C",
         ),
         assumptions: &[
-            "**the parameters are the PHREEQC `pitzer.dat` sets the tree already vendors**: `data/components/PitzerPhreeqc.csv`, read through the same catalogue the electrolyte models use, a family the table does not carry being zero as the class's padding makes it.\n",
             "the model is **binary by construction**: eight salts' mean coefficients and nine ions' mapped coefficients, with no theta/psi mixing matrix; a brine whose topology needs one is outside it.\n",
-            "the six-term expression is about 298.15 K: `A0 + A1(1/T - 1/Tr) + A2 ln(T/Tr) + A3(T - Tr) + A4(T^2 - Tr^2) + A5(1/T^2 - 1/Tr^2)`.\n",
-            "**trace ions are mapped by the MacInnes convention**: a divalent is `mean(salt)^3 / gamma_NaCl^2`, bicarbonate is `gamma_NaHCO3^2 / gamma_NaCl`, and sodium and chloride are the NaCl mean coefficient itself.\n",
-            "**the mean coefficient computes its own ionic strength from the salt molality** and ignores the configured one; only the mapped coefficients use the configured strength. At a zero molality the mean is exactly one.\n",
-            "the salt's `alpha1`/`alpha2` are 2/0 except CaCl2 and NaHCO3, which take 2/12; the beta2 term is added only when alpha2 is positive and beta2 is not zero.\n",
-            "the class refuses a non-positive temperature and a negative ionic strength or molality in its constructor; this calc refuses them by range rather than in prose.\n",
         ],
         references: &[
             "Pitzer, K. S. (1991). Activity Coefficients in Electrolyte Solutions, 2nd edition. Hamer, W. J.; Wu, Y.-C. (1972). J. Phys. Chem. Ref. Data 1, 1047-1100. PHREEQC version 3 `pitzer.dat`.",
@@ -5930,6 +5902,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr78_kappa",
         name: "Peng-Robinson (1978) attraction-parameter coefficient",
+        summary: "Peng-Robinson (1978) attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the 1978 kappa form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -5978,6 +5951,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_alpha_ab",
         name: "Peng-Robinson alpha function and reduced attraction parameters",
+        summary: "Peng-Robinson alpha function and reduced attraction parameters. Use it to evaluate the EOS attraction term at a reduced temperature and pressure.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6111,6 +6085,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_danesh_alpha",
         name: "Danesh alpha function",
+        summary: "Danesh alpha function for a Peng-Robinson EOS. Use it when the attraction term follows Danesh's temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6185,6 +6160,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_delft1998_alpha",
         name: "Peng-Robinson alpha function, Delft (1998)",
+        summary: "Peng-Robinson alpha function with the Delft (1998) kappa form. Use it when a Peng-Robinson EOS needs this attraction-temperature dependence.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6260,6 +6236,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_departure",
         name: "Peng-Robinson fugacity coefficient and departure functions",
+        summary: "Peng-Robinson fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in a Peng-Robinson EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6426,6 +6403,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_gassem2001_alpha",
         name: "Gassem (2001) alpha function",
+        summary: "Gassem (2001) alpha function for a cubic equation of state. Use it when the attraction term follows this exponential temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6500,6 +6478,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_kappa",
         name: "Peng-Robinson attraction-parameter coefficient",
+        summary: "Peng-Robinson attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the standard kappa form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6548,6 +6527,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_lee_kesler_alpha",
         name: "Peng-Robinson alpha function with a Soave-form m-factor",
+        summary: "Peng-Robinson alpha function with a Soave-form m-factor. Use it when a Peng-Robinson EOS is fitted with the Lee-Kesler m correlation.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6622,6 +6602,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_mass_density",
         name: "Mass density from a molar volume",
+        summary: "Mass density from a molar volume and molar mass. Use it to convert a cubic EOS molar volume into the density a hydraulic calculation needs.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6706,6 +6687,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_molar_volume",
         name: "Molar volume from a compressibility factor",
+        summary: "Molar volume from a compressibility factor, temperature and pressure. Use it to turn a cubic EOS root into a volume.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -6819,13 +6801,14 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_peneloux_shift",
         name: "Peng-Robinson Peneloux volume-translation parameter",
+        summary: "Peng-Robinson Peneloux volume-translation parameter. Use it to correct a Peng-Robinson molar volume for the Peneloux shift.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: Some("c = 0.50033*(0.25969 - Z_RA)*R*Tc/Pc,  Z_RA = 0.29056 - 0.08775*omega"),
         assumptions: &[
             "the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - this calc has no databank and no second source; all three come from the caller and are taken at face value.\n",
-            "**the fallback is the wrong answer for 132 of the 348 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the *sign* is wrong: `+2.929079e-6` from the table against `-8.05e-8` from the correlation, a 14% density difference.\n",
+            "the shift is a volume translation only: it corrects the reported molar volume and density and does not change phase equilibrium.\n",
             "applying the shift is the caller's step: `v_corr = v - sum_i x_i*c_i`, with `v` from `eos.pr_molar_volume` and the per-component shifts mixed linearly.\n",
         ],
         references: &[
@@ -6893,7 +6876,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The Rackett compressibility Z_RA from the databank. Zero means the databank carries none and the acentric-factor correlation is used.\n",
                 range: &[],
                 default: None,
             },
@@ -6930,6 +6913,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.pr_z_factor",
         name: "Peng-Robinson compressibility factor",
+        summary: "Peng-Robinson compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with a cubic EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7070,6 +7054,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.prsv_kappa",
         name: "Peng-Robinson-Stryjek-Vera alpha-function coefficient",
+        summary: "Peng-Robinson-Stryjek-Vera attraction-parameter coefficient. Use it when a cubic EOS needs the PRSV kappa form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7164,6 +7149,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.rachford_rice_binary",
         name: "Rachford-Rice vapour fraction, for a binary",
+        summary: "Vapour fraction of a two-component mixture from its composition and K-values. Use it for a binary flash when the phase split is needed.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7300,6 +7286,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.rackett_molar_volume",
         name: "Saturated liquid molar volume from the Rackett equation",
+        summary: "Saturated liquid molar volume from the Rackett equation. Use it for liquid density estimates when critical properties and an acentric factor are known.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7309,7 +7296,6 @@ pub static CALCS: &[CalcForm] = &[
         assumptions: &[
             "the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - all three come from the caller.\n",
             "`Z_RA` is the Yamada-Gunn correlation `0.29056 - 0.08775*omega`; this library ships no databank Rackett Z, so the correlation is the whole value.\n",
-            "`R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.\n",
             "the volume is the *saturated liquid* molar volume; it is not corrected for compression above the vapour pressure.\n",
             "the correlation is a fit of limited range; for a mixture the Li (1971) mixing rules compose these pure volumes, which is a model this calc does not do.\n",
         ],
@@ -7429,6 +7415,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.rk_alpha_ab",
         name: "Redlich-Kwong alpha function and reduced attraction parameters",
+        summary: "Redlich-Kwong alpha function and reduced attraction parameters. Use it to evaluate the RK attraction term at a reduced temperature and pressure.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7440,7 +7427,6 @@ pub static CALCS: &[CalcForm] = &[
             "`Tr` and `Pr` are reduced against a critical point that is correct for the component intended. NOT CHECKED.\n",
             "the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.\n",
             "A and B are the reduced parameters of the Redlich-Kwong cubic and go with that cubic's mixing rules.\n",
-            "**`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, the same pair Soave's correlation is built on.\n",
         ],
         references: &[
             "Redlich, O.; Kwong, J. N. S. (1949). \\\"On the Thermodynamics of Solutions. V.\\\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.",
@@ -7547,6 +7533,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.rk_departure",
         name: "Redlich-Kwong fugacity coefficient and departure functions",
+        summary: "Redlich-Kwong fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in a Redlich-Kwong EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7557,7 +7544,6 @@ pub static CALCS: &[CalcForm] = &[
             "**`z` is a root of the cubic that `a_reduced` and `b_reduced` define.** NOT CHECKED here, and not checkable: it would mean solving the cubic.\n",
             "the departure functions are relative to the ideal-gas state at the same temperature and pressure.\n",
             "no mixing rule is applied. These are pure-component departure functions, computed from the composition-weighted `A` and `B` a caller passes.\n",
-            "the alpha derivative `psi` is the constant `-1/2` - RK's `1/sqrt(Tr)` has no fitted coefficient, so `psi` and `T*dpsi/dT` are constants and this calc takes neither `kappa` nor `Tr`.\n",
         ],
         references: &[
             "Redlich, O.; Kwong, J. N. S. (1949). \\\"On the Thermodynamics of Solutions. V.\\\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.",
@@ -7682,6 +7668,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.scale_inhibitor_performance",
         name: "Screening performance of an oilfield scale inhibitor",
+        summary: "Screening performance of an oilfield scale inhibitor from temperature, total dissolved solids, saturation ratio and calcium. Use it to compare inhibitor dosage options.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7689,13 +7676,7 @@ pub static CALCS: &[CalcForm] = &[
             "MIC = MIC_base * f_T(T) * f_TDS(TDS) * f_SR(SR) * f_Ca(Ca)\n\nf_T = 1 for T <= knee, exp(slope (T - knee)) above it\nf_TDS = max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))\nf_SR = max(0.5, 1 + 0.6 log10(max(1, SR)/5))\nf_Ca = 1 + 0.5 log10(Ca/1000) for phosphonate above 1000 mg/L Ca, else 1\n\nrecommended = 1.5 MIC\nratio = dose/MIC\nefficiency = 0.85 ratio below MIC, min(1, 0.85 + 0.15 (1 - exp(-(ratio - 1)))) at or above it",
         ),
         assumptions: &[
-            "the class takes mg/L, degrees Celsius and the saturation *ratio* `SR = IAP/Ksp`; this calc takes kg/m3 and kelvin, and the ratio as stated.\n",
-            "**the base MIC is a table**: CaCO3 5, BaSO4 10, SrSO4 8, CaSO4 6, FeCO3 12 mg/L, times a chemistry factor (phosphonate 1.0, polymaleate 1.2, polyacrylate 1.4, phosphate ester 1.1, vinyl sulphonate 1.3), times 0.8 for barite on phosphonate and 0.9 for calcite on polymaleate.\n",
-            "**the temperature knee is per chemistry**: phosphonate and vinyl sulphonate 100 C at 0.015, polymaleate 130 C at 0.012, polyacrylate 120 C at 0.013, phosphate ester 150 C at 0.010; at or below the knee the factor is one.\n",
-            "the TDS factor is `max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))` and the saturation factor `max(0.5, 1 + 0.6 log10(max(1, SR)/5))`, so both floors are reachable and both clamps use a one mg/L or one ratio input.\n",
-            "**the calcium penalty applies to phosphonate alone** and only above 1000 mg/L: `1 + 0.5 log10(Ca/1000)`. A polyacrylate at the same calcium carries no penalty.\n",
-            "the recommended dose is 1.5 times the MIC, `efficiency` is 0 when no dose is stated, and `adequate` is `ratio >= 1`.\n",
-            "**the class's four warnings are predicates**: thermal degradation (phosphonate above 175 C), calcium-phosphonate precipitation (above 2000 mg/L Ca), extreme supersaturation (SR > 100) and cold phosphate-ester solubility (below 40 C), reported as flags.\n",
+            "The inhibitor is one of the listed chemistries and the water is a produced or injection brine. The result is a screening dose, not a vendor performance guarantee.\n",
         ],
         references: &[
             "Kan, A. T.; Tomson, M. B. (2010). SPE 130901. Sorbie, K. S.; Mackay, E. J. (2000). SPE 169787. NACE TM0374.",
@@ -7958,6 +7939,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.scale_kinetics",
         name: "Screening precipitation kinetics from a saturation index",
+        summary: "Precipitation kinetics from a saturation index: induction time and growth rates. Use it to screen how fast a supersaturated brine may scale.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -7965,12 +7947,8 @@ pub static CALCS: &[CalcForm] = &[
             "S = 10^SI\n\nt_ind = k_n exp(B / (ln S)^2)\n\ng_rxn = k_r (S - 1)^n\n\ng_mt = k_m (c_bulk - c_eq) * 37e-6\n\nthe effective rate is the smaller of the two, or the reaction rate when no transport data are given",
         ),
         assumptions: &[
-            "the class works in hours, mm/yr and mol/L; this calc takes seconds, m/s and mol/m3 and converts at the boundary, keeping the class's year of `3.1536e7` seconds and its calcite molar volume of `37 cm3/mol`.\n",
             "**below or at saturation nothing forms**: `S <= 1` gives an infinite induction time, zero growth and a regime of `NONE`, and the infinite value is not a number the result hulls.\n",
             "**the induction time is classical nucleation**, `k_n exp(B/(ln S)^2)`, so it falls sharply with supersaturation and is undefined at S = 1.\n",
-            "the surface growth is `k_r (S - 1)^n` in mm/yr, the parabolic law with order two by default; the transport growth is `k_m (c_bulk - c_eq) * 37e-6` in m/s before the class multiplies it to mm/yr.\n",
-            "**the regime is the smaller growth rate**, and a transport rate of zero means the class has no transport data and reaction controls by default - not that transport is infinitely fast.\n",
-            "the setters clamp a negative constant, coefficient or concentration to zero, so a clamped row evaluates rather than refusing; the port does the same.\n",
         ],
         references: &[],
         inputs: &[
@@ -8165,7 +8143,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "`REACTION`, `TRANSPORT` or `NONE`, the class's own labels.\n",
+                description: "`REACTION`, `TRANSPORT` or `NONE`.\n",
                 optional: false,
             },
         ],
@@ -8234,6 +8212,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.scale_mass",
         name: "Scale mass precipitated from a supersaturation index",
+        summary: "Mass of scale precipitated from a supersaturation index and ion concentrations. Use it to estimate a scaling mass from a water analysis.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -8241,12 +8220,7 @@ pub static CALCS: &[CalcForm] = &[
             "fraction = min(1 - 10**(-SI), 0.99)\n\nmoles = min(c_cation, c_anion) * fraction\n\nmass = moles * M_mineral",
         ),
         assumptions: &[
-            "**the answer is the class's approximation, not an equilibrium.** It takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount; an exact calculation would iterate the equilibrium.\n",
-            "the fraction is **capped at 0.99**, so every SI above about 2 gives the same mass; the capture's SI 2.5 and SI 5 rows are identical.\n",
-            "an SI at or below zero returns zero before the fraction is computed; the limiting concentration is still reported.\n",
-            "the five minerals differ only in molar mass: CaCO3 100.09, BaSO4 233.39, SrSO4 183.68, CaSO4 136.14, FeCO3 115.85 g/mol - the class's own constants.\n",
-            "**the class's held water volume is never read by the calculation**: `setWaterVolume` only feeds a JSON report. The mass is per litre, and this calc takes no volume.\n",
-            "the class's results map is never populated and its `toJson` always reports an empty list; neither is a calculation, so both are outside this spec.\n",
+            "The answer is an approximation, not an equilibrium: it takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount. An exact calculation would iterate the equilibrium.",
         ],
         references: &[],
         inputs: &[
@@ -8394,6 +8368,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.scale_prediction",
         name: "Mineral-scale saturation indices from a water analysis",
+        summary: "Mineral-scale saturation indices from a water analysis, with ionic-strength activity coefficients. Use it to screen a produced or injection water for scaling.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -8401,16 +8376,10 @@ pub static CALCS: &[CalcForm] = &[
             "I = TDS/40000\n\nlog10(gamma_z) = -A z^2 (sqrt(I)/(1 + sqrt(I)) - 0.3 I),  A = 1.8246e6 sqrt(rho) / (eps T)^(3/2)\n\nSI_j = log10(IAP_j / Ksp_j),  IAP_j = (c_cation gamma_z)(c_anion gamma_z)\n\nwith the free ion concentrations after five ion-pair sweeps, and Ksp_j from the class's five temperature correlations with the pressure correction exp(-dV (P - 1.01325)/(83.1446 T)).",
         ),
         assumptions: &[
-            "the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.\n",
-            "`I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.\n",
-            "the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.\n",
-            "**ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.\n",
-            "**the auto-pH path is broken upstream and is reproduced.** `calcHenryCO2`'s coefficients give `log10(KH)` about 48.7 at 25 C, so auto pH lands near -45 and the carbonate indices near -50; a manual pH is the physical route. Its gate needs `auto_ph`, positive CO2 partial pressure and bicarbonate.\n",
-            "**an absent ion gives an absent index**: no barium or no sulphate leaves the barite SI unset, no strontium the celestite one, no iron the siderite one; the class returns NaN for each and this calc returns no value.\n",
-            "the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.\n",
-            "**the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.\n",
-            "Ksp is in `(mol/L)^2` and is reported dimensionless, as `eos.scale_saturation_ratio`'s `solubility_product` is; `log10` of each is reported beside it for the literature pins.\n",
-            "the risk list is the class's locale-formatted strings and is not a calculation; the count and the flag are reported instead.\n",
+            "The auto-pH path is unreliable: its coefficients can drive the estimated pH far below the physical range. Use a measured or manually supplied pH.",
+            "An absent ion gives an absent index: no barium or no sulphate leaves the barite index unset, and likewise for celestite and siderite.",
+            "Ksp is in `(mol/L)^2` and is reported dimensionless; `log10` of each is reported beside it.",
+            "the risk list is a count and a flag, not a list of formatted strings.\n",
         ],
         references: &[
             "Plummer, L. N.; Busenberg, E. (1982). Geochim. Cosmochim. Acta 46(6), 1011-1040. Monnin, C. (1999). Chem. Geol. 157, 193-203. Greenberg, J.; Tomson, M. (1992). Appl. Geochem. 7(2), 185-190. Garrels, R. M.; Thompson, M. E. (1962). Am. J. Sci. 260, 57-66.",
@@ -8696,7 +8665,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "whether to estimate pH from the CO2 partial pressure and the bicarbonate. **The estimate is the class's as shipped** - see the assumptions.\n",
+                description: "Whether to estimate pH from the CO2 partial pressure and the bicarbonate concentration.\n",
                 range: &[],
                 default: None,
             },
@@ -8755,7 +8724,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the pH the calculation used: the input, or the class's estimate.\n",
+                description: "The pH the calculation used: the input, or the estimated value.\n",
                 optional: false,
             },
             CalcOutput {
@@ -8800,7 +8769,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mol/m**3"),
                 dimension: Some("amount_concentration"),
                 values: &[],
-                description: "total barium, which the class does not ion-pair.\n",
+                description: "Total barium, not ion-paired.\n",
                 optional: false,
             },
             CalcOutput {
@@ -8827,7 +8796,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mol/m**3"),
                 dimension: Some("amount_concentration"),
                 values: &[],
-                description: "total sodium, divided by the class's getter constant `22989.77`.\n",
+                description: "Total sodium concentration.\n",
                 optional: false,
             },
             CalcOutput {
@@ -9101,16 +9070,15 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.scale_saturation_ratio",
         name: "Scale saturation ratio of one salt",
+        summary: "Saturation ratio of one scale-forming salt from its ion concentrations and solubility product. Use it to decide whether a brine is supersaturated.",
         namespace: "eos",
         available: true,
         refusal: None,
         equation: None,
         assumptions: &[
-            "**`FeS` is modified by the hydrogen-ion molality**, and only for it: without an `H3O+` component the salt is skipped entirely, and with one the Ksp is multiplied by `x(H3O+)/(x_water M_water)` before the pressure correction.",
-            "`Vdelta` is in **cm3/mol** and the pressure term's `R` is `83.1446`, which is that unit's gas constant - the term is dimensionless as written and a port that used `8.3144621` against a cm3/mol volume would be out by `1e4`.",
-            "the reference pressure is **1.01325 bar**, so the correction vanishes at one atmosphere and not at zero.",
-            "the activity coefficients are the **caller's**, and they are the phase model's own. A port that computed them here would be porting `getActivityCoefficient` as well, which is the electrolyte family's and not this one's.",
-            "the salt row is read from `data/components/COMPSALT.csv`, which the P8 electrolyte models already read; the name is matched as the table spells it, so `CaSO4_A` and `CaSO4_G` are two rows and not one salt with a setting.",
+            "The ion concentrations are the aqueous phase's mole fractions. A brine whose ions are stated needs no reactive speciation.",
+            "The activity coefficients are the caller's, from the phase model; this calculation does not compute them.",
+            "The water activity is the caller's; it is not recomputed here.",
         ],
         references: &[
             "Plummer, L. N.; Busenberg, E. (1982). \"The solubilities of calcite, aragonite and vaterite in CO2-H2O solutions between 0 and 90 C.\" Geochimica et Cosmochimica Acta 46(6), 1011-1040. DOI 10.1016/0016-7037(82)90056-4.",
@@ -9244,7 +9212,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mol/kg"),
                 dimension: Some("molality"),
                 values: &[],
-                description: "",
+                description: "The hydrogen ion's molality, read for `FeS` alone. Required for `FeS` and ignored by every other salt.\n",
                 range: &[],
                 default: None,
             },
@@ -9325,6 +9293,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.schwartzentruber_alpha",
         name: "Schwartzentruber-Renon alpha function",
+        summary: "Schwartzentruber-Renon alpha function for a cubic equation of state. Use it when the attraction term follows this temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -9332,7 +9301,6 @@ pub static CALCS: &[CalcForm] = &[
             "alpha = (1 + m*(1 - sqrt(Tr)) - p1*(1 - Tr)*(1 + p2*Tr + p3*Tr**2))**2 with m = 0.48508 + 1.55191*omega - 0.15613*omega**2",
         ),
         assumptions: &[
-            "the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.\n",
             "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n",
         ],
         references: &[
@@ -9445,6 +9413,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.siddiqi_lucas_diffusivity",
         name: "Liquid binary diffusivity from the Siddiqi-Lucas correlation",
+        summary: "Liquid binary diffusivity from the Siddiqi-Lucas correlation. Use it for liquid-phase mass-transfer screening with an aqueous or organic solvent.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -9452,8 +9421,8 @@ pub static CALCS: &[CalcForm] = &[
             "aqueous: D = 2.98e-7 * eta**-1.026 * VA**-0.5473 * T;  organic: D = 9.89e-8 * eta**-0.907 * VA**-0.45 * VB**0.265 * T,  with VA and VB in cm**3/mol, eta in cP and T in K; eta is floored at 0.01 cP, and D*1e-4 recovers m**2/s.",
         ),
         assumptions: &[
-            "`VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).\n",
-            "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n",
+            "The form selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise. The caller chooses; this calculation does not detect water content.",
+            "the viscosity is floored at 0.01 cP; the correlation is not applied below it.\n",
             "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n",
         ],
         references: &[
@@ -9566,6 +9535,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.solid_fugacity",
         name: "Pure solid fugacity coefficient",
+        summary: "Pure solid fugacity coefficient from fusion properties. Use it for wax and solid-formation screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -9573,8 +9543,7 @@ pub static CALCS: &[CalcForm] = &[
             "phi_solid = phi_liq(T, P) * exp( -dH_fus/(R T) (1 - T/T_tp)\n                                    + dCp_SL/(R T) (T_tp - T)\n                                    - dCp_SL/R ln(T_tp/T)\n                                    - dV_sl (1 - P_bar)/(R T) )\n\nwhere `phi_liq` is the pure component's liquid root on the cubic the fluid runs, at the state's own (T, P), and `P_bar` is the pressure in bar, so the volume term is referred to one atmosphere.",
         ),
         assumptions: &[
-            "the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.",
-            "the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form.",
+            "The solid is a pure component and the caller has already decided that it can form. The calculation returns the solid's fugacity coefficient; it does not test thermodynamic stability.\n",
         ],
         references: &[
             "Prausnitz, J. M.; Lichtenthaler, R. N.; de Azevedo, E. G. (1999). \"Molecular Thermodynamics of Fluid-Phase Equilibria.\", 3rd ed., Prentice Hall. The solid-liquid fugacity ratio this is the exponential of.",
@@ -9629,7 +9598,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("J/(mol*K)"),
                 dimension: Some("molar_heat_capacity"),
                 values: &[],
-                description: "",
+                description: "The solid-liquid heat-capacity difference at the triple point.\n",
                 range: &[],
                 default: None,
             },
@@ -9726,7 +9695,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["pr", "srk"],
-                description: "",
+                description: "The cubic equation of state the fluid runs, which is also the one the reference liquid is built from.\n",
                 range: &[],
                 default: None,
             },
@@ -9791,6 +9760,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.soreide_whitson_alpha",
         name: "Soreide-Whitson alpha function for water",
+        summary: "Soreide-Whitson alpha function for water in a cubic equation of state. Use it for water-containing mixtures with a salinity correction.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -9875,6 +9845,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.srk_alpha_ab",
         name: "Soave-Redlich-Kwong alpha function and reduced attraction parameters",
+        summary: "Soave-Redlich-Kwong alpha function and reduced attraction parameters. Use it to evaluate the SRK attraction term at a reduced temperature and pressure.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10009,6 +9980,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.srk_departure",
         name: "Soave-Redlich-Kwong fugacity coefficient and departure functions",
+        summary: "Soave-Redlich-Kwong fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in an SRK EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10174,6 +10146,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.srk_kappa",
         name: "Soave-Redlich-Kwong attraction-parameter coefficient",
+        summary: "Soave-Redlich-Kwong attraction-parameter coefficient from the acentric factor. Use it when assembling an SRK EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10222,6 +10195,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.srk_peneloux_shift",
         name: "Soave-Redlich-Kwong Peneloux volume-translation parameter",
+        summary: "Soave-Redlich-Kwong Peneloux volume-translation parameter. Use it to correct an SRK molar volume for the Peneloux shift.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10296,7 +10270,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The Rackett compressibility Z_RA. Absent or zero uses the acentric-factor correlation.\n",
                 range: &[],
                 default: None,
             },
@@ -10333,6 +10307,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.srk_z_factor",
         name: "Soave-Redlich-Kwong compressibility factor",
+        summary: "Soave-Redlich-Kwong compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with an SRK EOS.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10474,6 +10449,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.tbp_fraction_properties",
         name: "TBP pseudo-component properties",
+        summary: "Pseudo-component properties for a TBP cut from its boiling point, density and molar mass. Use it to build a characterised oil fraction.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10482,10 +10458,6 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "**a cut is two numbers**, a molar mass and a normal liquid density, and everything a cubic needs follows from them. That is what `addTBPfraction` is: it evaluates these correlations and hands the results to a component.",
-            "**the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.",
-            "**above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.",
-            "**`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.",
-            "`calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.",
             "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.",
         ],
         references: &[
@@ -10552,7 +10524,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa"),
                 dimension: Some("pressure"),
                 values: &[],
-                description: "",
+                description: "Critical pressure, in pascals.\n",
                 optional: false,
             },
             CalcOutput {
@@ -10579,7 +10551,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.\n",
                 optional: false,
             },
         ],
@@ -10620,6 +10592,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.twu_kappa",
         name: "Twu attraction-parameter coefficient",
+        summary: "Twu attraction-parameter coefficient from the acentric factor. Use it when assembling a cubic EOS with the Twu kappa form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10665,6 +10638,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.twucoon_alpha",
         name: "Twu-Coon alpha function",
+        summary: "Twu-Coon alpha function for a cubic equation of state. Use it when the attraction term follows the Twu-Coon temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10739,6 +10713,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.twucoon_param_alpha",
         name: "Twu-Coon parameter alpha function",
+        summary: "Twu-Coon parameter alpha function. Use it when a cubic EOS needs this attraction-temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10842,6 +10817,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.twucoon_statoil_alpha",
         name: "Twu-Coon Statoil alpha function",
+        summary: "Twu-Coon Statoil alpha function. Use it when a cubic EOS needs this attraction-temperature form for heavy components.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10945,6 +10921,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.tyn_calus_diffusivity",
         name: "Liquid binary diffusivity from the Tyn-Calus correlation",
+        summary: "Liquid binary diffusivity from the Tyn-Calus correlation. Use it for liquid-phase mass-transfer screening when molar volumes and viscosity are known.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -10953,7 +10930,7 @@ pub static CALCS: &[CalcForm] = &[
         ),
         assumptions: &[
             "`VA` and `VB` are the solute and solvent liquid molar volumes at the normal boiling point; the caller gets them as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n",
-            "`eta` is the *solvent* viscosity at `T`, in the same unit the correlation expects (cP); a caller converts a Pa*s viscosity by multiplying by 1000.\n",
+            "the molar volumes and viscosity are clamped to `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.\n",
             "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n",
         ],
         references: &[
@@ -11051,6 +11028,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.umrpr_alpha",
         name: "UMR-PR alpha function",
+        summary: "UMR-PR alpha function. Use it when a cubic EOS needs the UMR-PR attraction-temperature form.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -11058,7 +11036,6 @@ pub static CALCS: &[CalcForm] = &[
             "alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.384401 + 1.52276*omega - 0.213808*omega**2 + 0.034616*omega**3 - 0.001976*omega**4",
         ),
         assumptions: &[
-            "the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n",
             "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n",
         ],
         references: &[
@@ -11126,6 +11103,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.vdw1f_mix_binary",
         name: "van der Waals one-fluid mixing, for a binary",
+        summary: "van der Waals one-fluid mixing rules for a binary mixture. Use it to combine pure-component attraction and co-volume parameters with an interaction parameter.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -11282,6 +11260,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.wax_solid_fugacity",
         name: "Wax solid fugacity coefficient",
+        summary: "Wax solid fugacity coefficient from fusion properties and heat capacity. Use it for wax-appearance and solid-formation screening.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -11289,10 +11268,7 @@ pub static CALCS: &[CalcForm] = &[
             "phi_wax = phi_liq(T, P) * exp( -dH_fus/(R T) (1 - T/T_tp) + dCp_SL/R (T_tp/T - 1 - ln(T_tp/T)) - (v_liq - v_sol)(P - P_ref)/(R T) )\n\nwhere `phi_liq` and `v_liq` are the **cut's own** one-component liquid on the cubic the fluid runs, at the state's own (T, P); `v_sol = 0.9 v_liq`; `dCp_SL = (0.3033 M - 4.635e-4 M T) * 4.184` with `M` the molar mass in g/mol; and `P_ref` is one bar.",
         ),
         assumptions: &[
-            "**the coefficient is a pure-component quantity**: `SolidFug = x f_liq exp(...)` and `fugacityCoefficient = SolidFug/(P x)`, so the mole fraction cancels and nothing of the mixture is left in it.",
-            "the heat-capacity difference is Pedersen's fit `(0.3033 M - 4.635e-4 M T) * 4.184` in J/(mol K) with `M` in g/mol, and `4.184` is the calorie.",
-            "`R` is `8.3144621`, which the class's compiled form states as a literal.",
-            "the coefficient is a ratio to `P x` and so dimensionless, and it is `1e50` for a component that is not a wax former: that is the class's marker for \"this substance does not precipitate\" and not a number to compute with, so this calc takes a former and says nothing about the other case.",
+            "The coefficient is a ratio to `P x` and so dimensionless. It is `1e50` for a component that is not a wax former, which is a marker rather than a number to compute with; this calculation takes a former and says nothing about the other case.",
         ],
         references: &[
             "Pedersen, K. S.; Skovborg, P.; Rønningsen, H. P. (1991). \"Wax precipitation from North Sea crude oils. 4. Thermodynamic modeling.\" Energy & Fuels 5(6), 924-932. DOI 10.1021/ef00030a020.",
@@ -11348,7 +11324,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa"),
                 dimension: Some("pressure"),
                 values: &[],
-                description: "",
+                description: "The cut's critical pressure, in pascals.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -11369,7 +11345,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The cut's acentric factor, which sets the reference liquid's alpha through `eos.srk_kappa`.\n",
                 range: &[],
                 default: None,
             },
@@ -11380,7 +11356,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("J/mol"),
                 dimension: Some("molar_energy"),
                 values: &[],
-                description: "",
+                description: "The cut's heat of fusion.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -11401,7 +11377,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("K"),
                 dimension: Some("thermodynamic_temperature"),
                 values: &[],
-                description: "",
+                description: "The cut's triple-point temperature.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -11464,7 +11440,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["pr", "srk"],
-                description: "",
+                description: "The cubic equation of state the fluid runs, which is also the one the reference liquid is built from.\n",
                 range: &[],
                 default: None,
             },
@@ -11525,6 +11501,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "eos.wilke_chang_diffusivity",
         name: "Liquid binary diffusivity from the Wilke-Chang correlation",
+        summary: "Liquid binary diffusivity from the Wilke-Chang correlation. Use it for liquid-phase mass-transfer screening with an associating solvent.",
         namespace: "eos",
         available: true,
         refusal: None,
@@ -11534,7 +11511,7 @@ pub static CALCS: &[CalcForm] = &[
         assumptions: &[
             "`phi` is the solvent association parameter; the caller resolves it from the solvent's name with `components.wilke_chang_phi` (water 2.26, methanol 1.9, non-associated 1.0).\n",
             "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n",
-            "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n",
+            "the molar volume and viscosity are clamped to `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.\n",
             "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n",
         ],
         references: &[
@@ -11647,6 +11624,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.choked_flow_area",
         name: "Choked-flow throat area for an ideal gas",
+        summary: "Sizes the minimum flow area for choked gas flow through a restriction from mass flow, upstream density, pressure and heat-capacity ratio. Use it for relief and vent-path screening.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -11802,6 +11780,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.control_valve_cv",
         name: "Liquid flow through a control valve from its flow coefficient",
+        summary: "Liquid flow through a control valve from its flow coefficient, pressure drop and specific gravity. Use it to size a valve trim or check an existing valve at a duty.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -11917,6 +11896,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.crane_k_factors",
         name: "Fitting resistance coefficients by the equivalent-length method",
+        summary: "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation.",
         namespace: "hydraulics",
         available: false,
         refusal: Some(
@@ -12010,6 +11990,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.darcy_weisbach",
         name: "Darcy-Weisbach pressure drop",
+        summary: "Pressure drop for steady flow in a circular pipe from the Darcy-Weisbach relation. Use it for line sizing and pump-head checks once a friction factor is known.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12215,6 +12196,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.friction_factor_colebrook",
         name: "Colebrook-White friction factor (implicit)",
+        summary: "Solves the Colebrook-White equation for the Darcy friction factor at a Reynolds number and relative roughness. Use it where the implicit turbulent-flow factor is required.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12357,6 +12339,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.friction_factor_haaland",
         name: "Haaland friction factor (explicit)",
+        summary: "Explicit Haaland approximation to the Colebrook-White friction factor. Use it for fast turbulent-flow pressure-drop estimates.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12474,6 +12457,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.friction_factor_swamee_jain",
         name: "Swamee-Jain friction factor (explicit)",
+        summary: "Explicit Swamee-Jain approximation to the Colebrook-White friction factor. Use it for turbulent-flow pressure-drop estimates where an explicit form is preferred.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12610,6 +12594,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.orifice_flow",
         name: "Flow through an orifice from the pressure difference across it",
+        summary: "Flow through an orifice from the pressure difference across it, the hole diameter, discharge coefficient and density. Use it for restriction and meter sizing.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12763,6 +12748,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.packing_hydraulics",
         name: "A packed bed's flooding, load, pressure drop and film coefficients",
+        summary: "A packed bed's flooding velocity, operating load, pressure drop and film coefficients from its packing, flows and properties. Use it to rate a packed column or check its hydraulic margin.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -12770,11 +12756,6 @@ pub static CALCS: &[CalcForm] = &[
             "The Eckert GPDC fit for the flooding velocity, `log10(Y) = -1.668 - 1.085 x - 0.297 x**2` with `x = log10(FLV)` and `FLV = (L/V) sqrt(rho_v/rho_l)` clamped to `[0.005, 5]`; Leva's dry pressure drop `dp/dz = Fp rho_v u_v**2 / eps**3 * 0.01`, corrected by `10**(C L)`; and Onda's three: the wetted area `a_w/a = 1 - exp(-1.45 (sigma_c/sigma)**0.75 Re_l**0.1 Fr_l**-0.05 We_l**0.2)` clamped to `[0.2, 1]`, `kGa = 5.23 (a D_G/dp**2) Re_v**0.7 Sc_v**(1/3)` and `kLa = 0.0051 Re_l2**(2/3) Sc_l**-0.5 (a dp)**0.4 / (rho_l/(mu_l g))**(1/3) * a_w`.",
         ),
         assumptions: &[
-            "**the packing resolves by name; an unknown name is refused.** The 22 built-ins are the reference, and `Packing.csv` adds material-qualified rows beside them (`Pall-Ring-50-plastic`) without replacing one. A `placeholder` row is not a packing (upstream PR #4405).\n",
-            "**the normalisation is the class's**: lowercased with every non-alphanumeric removed, so `Pall-Ring-50`, `pallring 50` and `PALL_RING_50` are one key.\n",
-            "**the four correlations are the class's own, with its constants**: the Eckert fit's three coefficients, Onda's `5.23` and `0.0051`, Leva's `0.01` scale and its `0.015` liquid-loading coefficient (`0.010` for structured) - written inline, not published.\n",
-            "**the HETP is a two-resistance combination at a stripping factor of one, clamped twice**: never below `0.1` m and never above twice the empirical estimate - `0.12 + 0.012 dp` scaled by `1 + 0.1 (D - 1)` for random, `100/a + 0.1` for structured. Both captured rows take the upper clamp.\n",
-            "**the wetting check and the design verdict are the class's own thresholds**: a minimum wetting rate of `5e-5` m**3/(m**2 s) for a random packing and `2.5e-5` for a structured one, and a design window of 40 to 80 per cent of flood. Both captured random rows fall below the minimum.\n",
             "the vapour film coefficient depends on the vapour side alone, so the two rows that differ only in liquid load answer the same `kGa` (\\(3.6836\\) against \\(3.6836\\)) while their `kLa` differ two-and-a-half-fold.\n",
         ],
         references: &[
@@ -12790,7 +12771,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the packing's name or an alias, which the library resolves; an unknown name is refused, as the class's `require` does since upstream PR #4405.\n",
+                description: "The packing's name or an alias; an unknown name is refused.\n",
                 range: &[],
                 default: None,
             },
@@ -13032,7 +13013,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the packing's relative hydraulic capacity, which scales the flooding velocity. One is the class's default.\n",
+                description: "The packing's relative hydraulic capacity, which scales the flooding velocity. Defaults to one.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -13382,6 +13363,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.packing_sizing",
         name: "A packed bed's required column diameter from its flooding velocity",
+        summary: "The column diameter a packed bed needs to stay below a chosen fraction of flooding. Use it for packed-column diameter sizing from vapour and liquid loads.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -13389,13 +13371,6 @@ pub static CALCS: &[CalcForm] = &[
             "u_design = u_flood * f; q_v = m_v / max(rho_v, 0.01); A = q_v / u_design; d_raw = sqrt(4 A / pi); then d is rounded **up** to the next standard vessel size. `roundToStandardDiameter`'s table is `0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0` - thirty-one sizes, in hundredths to 1.2, then in fifths and tenths, then in halves - and `ceil(2 d)/2` above 8.0.",
         ),
         assumptions: &[
-            "**the trial diameter does not enter the flooding velocity.** The class sets `columnDiameter = 1.0` and then calls `calculateFloodingVelocity`, which reads neither the diameter nor any area - so the trial is inert and the sizing is a closed form rather than an iteration.\n",
-            "**the rounding is up, over a fixed table of thirty-one sizes** - the one the equation lists - so a raw `0.2893` m answers `0.3` m and never `0.2893`. The vessel is bought rather than machined, and the raw diameter is reported beside it.\n",
-            "**the table's floor is `0.3` m, and it is reached.** A raw diameter of `0.0930` m answers `0.3` m - the capture's light-load row - so the floor is a real bound on the answer rather than a formality.\n",
-            "**`FLV` is clamped to `[0.005, 5.0]`, and the ceiling binds.** The capture's high-liquid row (`L/V = 34.3`) and its light-load row (`L/V = 175`) saturate at `5.0` and answer the same flooding velocity to sixteen digits.\n",
-            "**the sizing reads the packing's factor and the liquid's viscosity, and nothing else.** The capture carries the vapour's viscosity and the surface tension because the same probe prints the full hydraulics beside the size; this method reads neither.\n",
-            "**a zero vapour flow does not reach the guard, and a zero capacity factor does.** `FLV` clamps to `0.005` rather than to zero, so no vapour still gets a positive flood, an area of zero and the `0.3` m floor; only a zero capacity factor makes `uDesign <= 0`, where the answer is the `1.0` m trial.\n",
-            "the vapour density is floored at `0.01` kg/m**3 in the volumetric flow, and the mass flows are the tray's own: a packing does not change them.\n",
             "**the sizing is not a design check.** It returns the narrowest standard vessel that keeps the vapour at the design fraction of flood; whether that is a *good* design is `hydraulics.packing_hydraulics`'s `design_ok`.\n",
         ],
         references: &[
@@ -13409,7 +13384,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the packing's name or an alias, which the library resolves; an unknown name is refused, as the class's `require` does since upstream PR #4405. Only its factor is read here.\n",
+                description: "The packing's name or an alias; an unknown name is refused. Only its factor is read here.\n",
                 range: &[],
                 default: None,
             },
@@ -13536,7 +13511,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the packing's relative hydraulic capacity factor, which scales the flooding velocity. One is the class's default.\n",
+                description: "The packing's relative hydraulic capacity factor, which scales the flooding velocity. Defaults to one.\n",
                 range: &[],
                 default: None,
             },
@@ -13680,6 +13655,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.pump_power",
         name: "Pump shaft power from flow, head and efficiency",
+        summary: "Shaft power a pump needs from flow, head and efficiency at its operating point. Use it to size a driver or check a pump duty before a hydraulic study.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -13832,6 +13808,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.reynolds_number",
         name: "Reynolds number for pipe flow",
+        summary: "Reynolds number for pipe flow from density, velocity, diameter and viscosity. Use it to choose the flow regime and the right friction-factor correlation.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -13980,6 +13957,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.tray_hydraulics",
         name: "A tray's flooding, weeping, entrainment, pressure drop and efficiency",
+        summary: "A tray's flooding, weeping, entrainment, pressure drop and efficiency from its geometry and loads. Use it to screen tray hydraulic limits before a detailed column rating.",
         namespace: "hydraulics",
         available: true,
         refusal: None,
@@ -13987,12 +13965,7 @@ pub static CALCS: &[CalcForm] = &[
             "The Fair capacity factor `K` interpolated over tray spacing and corrected by `exp(-1.463 FLV**0.842) / exp(-1.463 0.1**0.842)` and by `(sigma/0.020)**0.2`; Souders-Brown `u_flood = K sqrt((rho_l - rho_v)/rho_v)`; Sinnott's weeping minimum `u_min = [K_w - 0.90 (25.4 - d_h)] / sqrt(rho_v)` with `K_w = 7 + 0.27 sqrt(h_w + h_ow)`; Fair's entrainment `psi = a (percent_flood/100)**b`; and a tray pressure drop of a dry orifice term `51 (u_h/C_o)**2 rho_v/rho_l`, the liquid head `h_w + h_ow`, and a residual head `6 sigma/(rho_l g d_h)`, all in mm of liquid.",
         ),
         assumptions: &[
-            "**the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.",
-            "**the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.",
-            "**`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.",
-            "**`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.",
-            "**the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.",
-            "**`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.\n",
+            "The tray is a crossflow sieve, valve or bubble-cap tray with the declared geometry. The result is a hydraulic screen, not a tray-efficiency or column-rating calculation.\n",
         ],
         references: &[
             "Fair, J. R. (1961). \\\"How to predict sieve tray entrainment and flooding.\\\" Petro/Chem Engineer 33(10), 45-52. The capacity-factor chart the flooding velocity is fitted from, and the entrainment correlation.",
@@ -14082,7 +14055,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the weir length. **At or below zero means the class derives it** as `0.73 D`, and that derived value is what is reported and what every crest term reads.\n",
+                description: "The weir length. At or below zero derives it as `0.73 D`, and the derived value is what is reported and used.\n",
                 range: &[],
                 default: None,
             },
@@ -14114,7 +14087,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the hole diameter, which the weeping minimum and the residual head both read. **In millimetres**, which is the unit the class's two correlations are written in.\n",
+                description: "The hole diameter, read by the weeping minimum and the residual head.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -14156,7 +14129,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the design flooding fraction. **Stored and never read** by any of the twenty-four answers, which is the class's own state rather than this port's omission.\n",
+                description: "The design flooding fraction. Stored but not read by this calculation.\n",
                 range: &[],
                 default: None,
             },
@@ -14679,16 +14652,13 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "reactions.equilibrium_constant",
         name: "Equilibrium constant of one reaction",
+        summary: "Equilibrium constant of one reaction from its fitted coefficients at a temperature. Use it to check reaction direction and extent before a reactive flash.",
         namespace: "reactions",
         available: true,
         refusal: None,
         equation: None,
         assumptions: &[
-            "**the four coefficients are fitted, not derived.** `K2` carries the van't Hoff term, `K3` the heat-capacity term and `K4` a linear one; `K4` is zero in all but a handful of rows. A port that dropped the `ln T` term would still agree with the capture near 298 K and diverge away from it.",
-            "**the three tables are different standard states, not a fallback chain.** `CO2water`'s `K1` is `253.235548` on the standard source against `653.705141388` on the Pitzer one: the two answers cross near 313 K and differ by 24 percent at 423 K.",
-            "`TREF` is `298.15` in every row of all three tables and **the correlation does not read it**: it is the temperature the fit is anchored at, so `ln K` at `T = TREF` is not any particular value. Nothing here uses it.",
             "**the heat's sign is about the reaction as the table writes it.** A negative `dH` is exothermic in the forward direction the row's stoichiometry gives - `CO2 + H2O -> H2CO3` for `CO2water` - and says nothing about the reverse, which is the same row read backwards.",
-            "**the lookup does not consult `usereaction`**, matching `ChemicalReactionFactory.getChemicalReaction`, which selects on the name alone. Seven of the standard table's 47 rows carry 1, so `methanecombustion` is dormant and is still answered here.",
             "no pressure dependence: `K` is a function of temperature and the row alone. A pressure correction would be a different standard state and is not in this correlation.",
         ],
         references: &[
@@ -14714,7 +14684,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["standard", "pitzer", "kent-eisenberg"],
-                description: "",
+                description: "Which reaction table the row is read from: `standard`, `pitzer` or `kent-eisenberg`. Required because the three are different standard states.\n",
                 range: &[],
                 default: None,
             },
@@ -14820,6 +14790,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.boiling_heat_transfer",
         name: "Flow boiling heat transfer, Chen and Gungor-Winterton",
+        summary: "Flow-boiling heat-transfer coefficient from the Chen and Gungor-Winterton methods. Use it to estimate an evaporator tube-side coefficient when no test data are available.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -14827,14 +14798,7 @@ pub static CALCS: &[CalcForm] = &[
             "h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0.75*(rho_l/rho_v)**0.41); X_tt = ((1-x)/x)**0.9*(rho_v/rho_l)**0.5*(mu_l/mu_v)**0.1",
         ),
         assumptions: &[
-            "**the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.\n",
-            "**the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.\n",
-            "**the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.\n",
-            "**the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.\n",
-            "**the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.\n",
-            "**the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.\n",
-            "**the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.\n",
-            "**the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.\n",
+            "The flow is saturated boiling in a plain tube. Subcooled boiling and dryout are not modelled, and the quality is clamped inside the correlation's range.\n",
         ],
         references: &[
             "Chen, J.C. (1966). \"Correlation for boiling heat transfer to saturated fluids in convective flow.\" I&EC Process Design and Development 5(3), 322-329. The superposition and the two factors.",
@@ -15156,7 +15120,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number.\n",
+                description: "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n",
                 range: &[],
                 default: None,
             },
@@ -15346,6 +15310,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.conduction_plane_wall",
         name: "Steady conduction through a plane wall",
+        summary: "Steady heat flow through a plane wall from its conductivity, area, thickness and temperature difference. Use it for insulation and wall-loss screening.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -15476,6 +15441,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.fouling_model",
         name: "Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal",
+        summary: "Heat-exchanger fouling resistance with time for the fixed, Kern-Seaton and Ebert-Panchal models. Use it to estimate a fouling allowance or a cleaning interval.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -15483,15 +15449,7 @@ pub static CALCS: &[CalcForm] = &[
             "dRf/dt = alpha*Re**beta*exp(-E/(R*Tw)) - gamma*tau_w*Rf; Rf(t) = Rf_inf*(1 - exp(-t/tau)); tau_w = f/8*rho*v**2",
         ),
         assumptions: &[
-            "**the operating conditions are always applied** through the class's `updateConditions` (`Re = rho v D/mu`, `tau_w = f/8 rho v**2`), with its `calcDarcyFriction`; the class's cached field defaults are not a reachable state.\n",
-            "**the Ebert-Panchal resistance at a time is the analytical approach to `Rf_inf = deposition/(gamma tau_w)`**, `Rf_inf (1 - exp(-t/tau))` with `tau = 1/(gamma tau_w)` in hours, and a zero removal coefficient answers linear growth `deposition*t*3600`.\n",
-            "**the deposition is `alpha Re**beta exp(-E/(R Tw))` with `R = 8.314` and the rate converted to hours by `3600`**, and a non-positive wall temperature or Reynolds number answers a zero rate, as the class guards.\n",
-            "**the threshold temperature is `-E/(R ln(rate/(alpha Re**beta)))`**, answers zero outside its guards, and **answers the class's `Double.MAX_VALUE` sentinel when the logarithm is non-negative** - the state where any deposition exceeds the threshold rate.\n",
-            "**the threshold velocity is the class's 50-step bisection over `[0.1, 10]` m/s** on `Rf_inf = fixed_fouling_resistance`, so it stops at `10` when the asymptote stays above the fixed resistance across the bracket, and at `0.1` when it never does.\n",
-            "**the time to a target resistance is `-tau ln(1 - target/Rf_inf)`**, answering `-1` when the target is at or beyond the asymptote, `0` for the fixed model - whose resistance does not grow - and `-0.0` where the asymptote is the `MAX_VALUE` sentinel.\n",
-            "**the stateful `advanceTime` path is an optional Euler step**: `euler_steps` steps of `euler_step_hours`, adding `rate * euler_step_hours` to the current resistance for Ebert-Panchal only, flooring at zero, and incrementing the operating time for every model. Absent steps are zero.\n",
-            "**`time_hours` drives the analytical resistance of both time-dependent models** while `current_fouling_resistance` is the state after the Euler steps; for Kern-Seaton that state is `Rf_max (1 - exp(-operating_time/tau))`, as the class's no-argument getter answers.\n",
-            "**the fouling resistance and rate are declared dimensionless** because the vocabulary and `uom` carry no area-specific resistance or its rate; the SI units are m**2*K/W and m**2*K/(W*h) in the descriptions, the `k_ga` precedent.\n",
+            "The fouling parameters are the caller's estimate for one mechanism. The result is a resistance with time, not a guaranteed cleaning interval or a plant-specific fouling prediction.\n",
         ],
         references: &[
             "Ebert, W.; Panchal, C.B. (1997). \"Analysis of Exxon Crude-Oil Slip-Stream Coking Data.\" Fouling Mitigation of Industrial Heat-Exchange Equipment, Begell House, 451-460. The threshold model.",
@@ -15696,7 +15654,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the fixed TEMA resistance in m**2*K/W, used by the fixed model and as the threshold-velocity comparison. The class's default is `0.000176`.\n",
+                description: "The fixed TEMA resistance, used by the fixed model and as the threshold-velocity comparison. Defaults to 0.000176 m**2*K/W.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -15717,7 +15675,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the Kern-Seaton asymptotic resistance in m**2*K/W. The class's default is `0.0005`.\n",
+                description: "The Kern-Seaton asymptotic resistance. Defaults to 0.0005 m**2*K/W.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -15738,7 +15696,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("h"),
                 dimension: Some("time"),
                 values: &[],
-                description: "the Kern-Seaton time constant. The class's default is `2000` h.\n",
+                description: "The Kern-Seaton time constant. Defaults to 2000 h.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -15881,7 +15839,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m/s"),
                 dimension: Some("velocity"),
                 values: &[],
-                description: "the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.\n",
+                description: "The velocity at which the asymptote crosses the fixed resistance.\n",
                 optional: false,
             },
             CalcOutput {
@@ -15926,7 +15884,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa"),
                 dimension: Some("pressure"),
                 values: &[],
-                description: "`f/8*rho*v**2` with the class's Darcy friction factor.\n",
+                description: "`f/8*rho*v**2`, using the Darcy friction factor.\n",
                 optional: false,
             },
         ],
@@ -16043,6 +16001,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.incremental_zone_analysis",
         name: "A shell-and-tube exchanger's incremental zone analysis",
+        summary: "A shell-and-tube exchanger rated in incremental zones along the tube, with the local tube-side regime and shell-side coefficient. Use it where the coefficient changes with quality or temperature.",
         namespace: "thermal",
         available: false,
         refusal: Some(
@@ -16052,15 +16011,7 @@ pub static CALCS: &[CalcForm] = &[
             "h_tube = Shah(q) | Gungor-Winterton(q) | Nu*k/d_i; h_shell = Kern; 1/U = 1/h_shell + R_f,s + d_o*ln(d_o/d_i)/(2*k_w) + (d_o/d_i)*R_f,t + (d_o/d_i)/h_tube; LMTD from the four zone temperatures; A = Q/(U*LMTD)",
         ),
         assumptions: &[
-            "**`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.\n",
-            "**the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.\n",
-            "**the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.\n",
-            "**the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.\n",
-            "**the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**\n",
-            "**the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.\n",
-            "**the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.\n",
-            "**a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.\n",
-            "**omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.\n",
+            "The zones are the caller's. The calculation rates each zone with the declared geometry and does not subdivide or reorder them.\n",
         ],
         references: &[
             "Shah, M.M. (1979). \"A general correlation for heat transfer during film condensation inside pipes.\" Int. J. Heat Mass Transfer 22(4), 547-556. The condensing coefficient.",
@@ -16076,7 +16027,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube inside diameter. Defaults to 0.01483 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16097,7 +16048,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube outside diameter. Defaults to 0.01905 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16118,7 +16069,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube length, divided equally between zones for the pressure drops. Defaults to 6.096 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16139,7 +16090,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube count. A pass's flow area is `tube_count / tube_passes` tubes. Defaults to 100.\n",
                 range: &[CalcRange {
                     min: Some(1.0),
                     min_inclusive: true,
@@ -16160,7 +16111,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube passes. Defaults to 2.\n",
                 range: &[CalcRange {
                     min: Some(1.0),
                     min_inclusive: true,
@@ -16181,7 +16132,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The shell inside diameter. Defaults to 0.5 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16202,7 +16153,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The baffle spacing, which sets the shell-side drop's per-zone baffle count. Defaults to 0.2 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16223,7 +16174,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube pitch. Defaults to 0.02381 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16244,7 +16195,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The tube layout: `true` is triangular. Defaults to `true`.\n",
                 range: &[],
                 default: None,
             },
@@ -16255,7 +16206,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "",
+                description: "The tube-wall thermal conductivity. Defaults to 52 W/(m*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -16276,7 +16227,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -16297,7 +16248,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -16318,7 +16269,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the zones, in the caller's order; the class neither reorders nor subdivides them.\n",
+                description: "The zones, in the caller's order; they are neither reordered nor subdivided.\n",
                 range: &[],
                 default: None,
             },
@@ -16482,6 +16433,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.lmtd_correction_factor",
         name: "The LMTD correction factor for a shell-and-tube exchanger",
+        summary: "The LMTD correction factor for a shell-and-tube exchanger from its terminal temperatures and pass arrangement. Use it to convert a counterflow mean temperature difference to the exchanger's own.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -16489,12 +16441,6 @@ pub static CALCS: &[CalcForm] = &[
             "R = (T_h,in - T_h,out)/(T_c,out - T_c,in); P = (T_c,out - T_c,in)/(T_h,in - T_c,in); F_t = sqrt(R*R+1)*ln((1-P)/(1-R*P)) / ((R-1)*ln((2-P*(R+1-sqrt(R*R+1)))/(2-P*(R+1+sqrt(R*R+1)))))",
         ),
         assumptions: &[
-            "**`R` and `P` are the class's ratios**: `R = (Th_in - Th_out)/(Tc_out - Tc_in)` with a zero cold-side change answering 1.0, and `P = (Tc_out - Tc_in)/(Th_in - Tc_in)` with a zero hot-cold inlet difference answering 0.\n",
-            "**the single-shell formula is the analytic Bowman-Mueller-Nagle relation**, with the `R = 1` special case inside `|R - 1| < 1e-6`, the `R*P >= 1` temperature-cross zero, and the general branch clamped to `[0, 1]`.\n",
-            "**the `R = 1` branch is not clamped**, unlike the general branch; its ratio is the formula's own, which stays below one on the captured states but is not forced there.\n",
-            "**multi-pass P is converted to a per-shell `P1` before the single-shell formula**, with the `R = 1` branch `P/(N-(N-1)P)`; an undefined or out-of-range `P1` answers 1.0 rather than zero, which is why the cross row reads 1.0 at two passes.\n",
-            "**`required_shell_passes` scans one to six and answers -1 when none reaches `MIN_ACCEPTABLE_FT = 0.75`.**\n",
-            "**a shell-pass count below one is the class's clamp to one**, not a refusal.\n",
             "**the four temperatures enter only as differences**, so any consistent unit works; the spec states K and the differences are the same.\n",
         ],
         references: &[
@@ -16594,7 +16540,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the number of shell passes the stated `ft` is for. Absent is `1`; below one is the class's clamp to one.\n",
+                description: "The number of shell passes the stated `ft` is for. Defaults to 1; below one is clamped to one.\n",
                 range: &[],
                 default: None,
             },
@@ -16633,7 +16579,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the correction factor for one shell pass, the class's dedicated wrapper.\n",
+                description: "The correction factor for one shell pass.\n",
                 optional: false,
             },
             CalcOutput {
@@ -16642,7 +16588,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the correction factor for two shell passes, the class's dedicated wrapper.\n",
+                description: "The correction factor for two shell passes.\n",
                 optional: false,
             },
             CalcOutput {
@@ -16708,6 +16654,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.shah_condensation",
         name: "In-tube condensation heat transfer, Shah's correlation",
+        summary: "In-tube condensation heat-transfer coefficient from Shah's correlation. Use it to estimate a condenser tube-side coefficient across the vapour-quality range.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -16715,13 +16662,7 @@ pub static CALCS: &[CalcForm] = &[
             "h_lo = 0.023*(G*D/mu_l)**0.8*(cp_l*mu_l/k_l)**0.4*k_l/D; h = h_lo*((1-x)**0.8 + 3.8*x**0.76*(1-x)**0.04/Pr**0.38)",
         ),
         assumptions: &[
-            "**the local coefficient clamps the quality to `[0, 1]` and the reduced pressure to `[0.001, 0.44]`.** At a quality of one both terms vanish and the answer is zero; a quality at or below zero clamps to zero and answers the liquid-only coefficient.\n",
-            "**the liquid-only coefficient is Dittus-Boelter**, `0.023 Re_lo**0.8 Pr_l**0.4 k/D`, and it is the `h_lo` the local, average and vertical entries take - the path `IncrementalZoneAnalysis` takes.\n",
-            "**the average is Simpson's rule** with `n = max(4, intervals)` rounded up to even, and the class's `sum*|dx|/3`: the two `|x_out - x_in|` factors in its expression cancel.\n",
-            "**the vertical coefficient is shear-dominated above `Jg = 0.98`**, where it is the local coefficient; below it, the gravity branch `max(h_shah, 1.32 Pr**-1/3 h_lo (1-x)**0.8)` runs, with `Pr` floored at 0.001 and not capped.\n",
-            "**a liquid density not above the vapour makes the `Jg` denominator non-positive and falls back to the shear-dominated local coefficient**, as the class does.\n",
-            "**the validity bands are `0.001 <= Pr <= 0.44`, `Re_lo >= 350` and `4 <= G <= 820`**, over the stated values rather than the clamped ones.\n",
-            "**the class's external `h_lo` entry is not a separate input**: the composed calc computes it, which is the consumer's path.\n",
+            "The validity bands are `0.001 <= Pr <= 0.44`, `Re_lo >= 350` and `4 <= G <= 820`, applied to the values the caller states.",
         ],
         references: &[
             "Shah, M.M. (1979). \"A general correlation for heat transfer during film condensation inside pipes.\" Int. J. Heat Mass Transfer 22, 547-556. The local coefficient.",
@@ -16938,7 +16879,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number.\n",
+                description: "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n",
                 range: &[],
                 default: None,
             },
@@ -17080,6 +17021,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.shell_and_tube_design",
         name: "A shell-and-tube exchanger's detailed TEMA design",
+        summary: "A detailed shell-and-tube exchanger design from a duty and stream data, applying TEMA layout and ASME wall rules. Use it to size a new exchanger.",
         namespace: "thermal",
         available: false,
         refusal: Some(
@@ -17089,17 +17031,7 @@ pub static CALCS: &[CalcForm] = &[
             "N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head clearance, snapped to a standard size; t_shell = P*R/(S*E - 0.6*P); t_UHX = G*sqrt(F*P/S); MAWP = S*E*t/(R + 0.6*t); hydro = 1.3*MAWP*S(20)/S(T)",
         ),
         assumptions: &[
-            "**the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.\n",
-            "**the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.\n",
-            "**the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.\n",
-            "**NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.\n",
-            "**the price test is `contains(\"STAINLESS\")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.\n",
-            "**the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.\n",
-            "**weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.\n",
-            "**the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.\n",
-            "**the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.\n",
-            "**the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.\n",
-            "**a zero or negative flow, or a thermal side with any property missing, is refused.** The class answers the all-or-none breach with a zero coefficient and a `NaN` drop.\n",
+            "A zero or negative flow, or a thermal side with any property missing, is refused rather than answered with a zero coefficient or a NaN pressure drop.",
         ],
         references: &[
             "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th ed. The configuration classes and the minimum wall and spacing tables.",
@@ -17114,7 +17046,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The three-letter TEMA designation, e.g. `AES`. Defaults to `AES`.\n",
                 range: &[],
                 default: None,
             },
@@ -17125,7 +17057,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["R", "C", "B"],
-                description: "",
+                description: "The construction class: severe, moderate or light service. Defaults to `R`.\n",
                 range: &[],
                 default: None,
             },
@@ -17136,7 +17068,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m**2"),
                 dimension: Some("area"),
                 values: &[],
-                description: "",
+                description: "The required heat-transfer area, which the tube count divides. Defaults to 100 m**2.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -17157,7 +17089,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("bar"),
                 dimension: Some("pressure"),
                 values: &[],
-                description: "",
+                description: "The shell-side design pressure. Defaults to 10 bar.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -17178,7 +17110,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("bar"),
                 dimension: Some("pressure"),
                 values: &[],
-                description: "",
+                description: "The tube-side design pressure. Defaults to 10 bar.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -17199,7 +17131,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("K"),
                 dimension: Some("thermodynamic_temperature"),
                 values: &[],
-                description: "",
+                description: "The design temperature; the allowable stress is derated at 200, 300 and 400 C. Defaults to 150 C.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -17220,7 +17152,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The shell material grade, looked up by exact name. Defaults to `SA-516-70`.\n",
                 range: &[],
                 default: None,
             },
@@ -17231,7 +17163,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The tube material grade, looked up by exact name. Defaults to `SA-179`.\n",
                 range: &[],
                 default: None,
             },
@@ -17248,7 +17180,7 @@ pub static CALCS: &[CalcForm] = &[
                     "tube_3_4_inch",
                     "tube_1_inch",
                 ],
-                description: "",
+                description: "The standard tube size. Defaults to `tube_3_4_inch`.\n",
                 range: &[],
                 default: None,
             },
@@ -17259,7 +17191,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube length. Defaults to 6096 mm.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -17280,7 +17212,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube passes. Defaults to 2.\n",
                 range: &[CalcRange {
                     min: Some(1.0),
                     min_inclusive: true,
@@ -17301,7 +17233,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The shell joint efficiency, used by UG-37 and UG-27 rather than the shell-wall formula. Defaults to 0.85.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -17322,7 +17254,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The nozzle finished inside diameter. Defaults to 150 mm.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -17343,7 +17275,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The nozzle wall thickness. Defaults to 7.11 mm.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -17364,7 +17296,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "Whether the NACE assessment runs. Defaults to false.\n",
                 range: &[],
                 default: None,
             },
@@ -17569,7 +17501,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the class's own name.\n",
+                description: "The TEMA construction class.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17596,7 +17528,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.\n",
+                description: "The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17668,7 +17600,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the class's fixed `2.108` mm.\n",
+                description: "The minimum tube wall thickness.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17704,7 +17636,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the class's pattern description, `Triangular 30°`.\n",
+                description: "The tube pitch pattern, e.g. `Triangular 30°`.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17749,7 +17681,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the class's fixed `Single Segmental`.\n",
+                description: "The baffle type, e.g. `Single Segmental`.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17776,7 +17708,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the class's fixed `0.25`.\n",
+                description: "The baffle cut, e.g. 0.25.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17812,7 +17744,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("mm"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the UHX-13 thickness, floored at the class minimum.\n",
+                description: "The UHX-13 tubesheet thickness, floored at the minimum.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17857,7 +17789,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m**2"),
                 dimension: Some("area"),
                 values: &[],
-                description: "the available reinforcement area per UG-37, the class mm**2 divided by 1e6.\n",
+                description: "The available reinforcement area per UG-37.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17893,7 +17825,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the shell material's compliance flag; false for every grade, as the class reads it.\n",
+                description: "Whether the shell material meets NACE.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17911,7 +17843,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the shell hardness in HV, the class's fixed 248.\n",
+                description: "The shell hardness in HV.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17929,7 +17861,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the assessment's issue strings, in the class's order.\n",
+                description: "The NACE assessment's issue strings.\n",
                 optional: false,
             },
             CalcOutput {
@@ -17938,7 +17870,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the standards the pipeline applied, in the class's order.\n",
+                description: "The standards the design pipeline applied.\n",
                 optional: false,
             },
             CalcOutput {
@@ -18533,6 +18465,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.shell_and_tube_rating",
         name: "A shell-and-tube exchanger's thermal-hydraulic rating",
+        summary: "A shell-and-tube exchanger's thermal-hydraulic rating from its geometry and stream data. Use it to check whether an existing exchanger meets a duty.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -18540,16 +18473,7 @@ pub static CALCS: &[CalcForm] = &[
             "h_tube = Nu * k_tube / d_f; h_shell = h_ideal * Jc * Jl * Jb * Js * Jr; 1/U = 1/h_shell + R_f_shell + d_o*ln(d_o/d_i)/(2*k_w) + (d_o/d_i)*R_f_tube + d_o/(d_f*h_tube); dP_tube = N_p*(f*L/d_f*rho*v**2/2 + 2.5*rho*v**2/2)",
         ),
         assumptions: &[
-            "**the port implements `calculateStrict()`, not `calculate()`.** An invalid state is refused; the permissive path's silent zeros are not published as an answer.\n",
-            "**`tubeHeating` is set by the equipment path from the outlet temperature and read by no arithmetic here.** The tube correlation is Gnielinski above Re 3000, the class's 3.66 below 2300, and its own linear interpolation between.\n",
-            "**`Js` is computed with the central baffle spacing three times**, as the class does, so it is exactly 1.0; the inlet and outlet spacings are never varied.\n",
-            "**`bypassArea <= 0` is estimated as `(shell_id - 0.9*shell_id) * baffle_spacing`**, which the class caches on the calculator; the pure form recomputes the same number.\n",
-            "**the Darcy friction factor is 64/Re below 2300 and the smooth Swamee-Jain form** `0.25/log10(5.74/Re**0.9)**2` above, the class's own helper rather than the library's Colebrook.\n",
-            "**the deposit layer is validated on assignment**: a thickness that leaves `tube_id - 2*t <= 0` is refused, and a non-positive conductivity is refused even at zero thickness.\n",
-            "**the outside area is `pi * tube_od * tube_length * tube_count`**, one count per physical tube and independent of passes; an inner deposit leaves it unchanged.\n",
-            "**the Bell-Delaware factors are 1.0 on the Kern path**, as the class leaves them; `Jr` is 1.0 above Re 100, and `Jc` is `0.55 + 0.72*Fc`.\n",
-            "**the twenty shell-side helpers are `BellDelawareMethod`'s, with its inline constants.** The port does not substitute a published correlation where the class hard-codes a coefficient.\n",
-            "**the strict geometry guards are the class's**: `OD > ID`, `pitch > OD`, shell ID > OD, baffle spacing no greater than tube length, equal tubes per pass, `0 < baffle_cut < 0.5`, and the Bell-Delaware clearance bounds.\n",
+            "The geometry must satisfy the exchanger's consistency rules: `OD > ID`, `pitch > OD`, shell ID > OD, baffle spacing no greater than tube length, equal tubes per pass, `0 < baffle_cut < 0.5`, and the Bell-Delaware clearance bounds.",
         ],
         references: &[
             "Bell, K.J. (1981). \"Delaware Method for Shell-Side Design.\" In Heat Exchangers: Thermal-Hydraulic Fundamentals and Design, Hemisphere Publishing. The shell-side correction factors.",
@@ -18565,7 +18489,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube outside diameter, used by the shell-side correlations and the outside area. Defaults to 0.01905 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18586,7 +18510,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The nominal tube inside diameter, before any deposit layer. Defaults to 0.01483 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18607,7 +18531,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube length, used by the outside area and the straight-tube friction term. Defaults to 6.096 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18628,7 +18552,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The nominal tube count; it must divide evenly by `tube_passes`. Defaults to 100.\n",
                 range: &[],
                 default: None,
             },
@@ -18639,7 +18563,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube passes; each pass's flow area is `tube_count / tube_passes` tubes. Defaults to 2.\n",
                 range: &[],
                 default: None,
             },
@@ -18650,7 +18574,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube pitch, used by the shell-side equivalent diameter and crossflow area. Defaults to 0.02381 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18671,7 +18595,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The tube layout: `true` is triangular (staggered), `false` is square (inline). Defaults to `true`.\n",
                 range: &[],
                 default: None,
             },
@@ -18682,7 +18606,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The shell inside diameter. Defaults to 0.5 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18703,7 +18627,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The central baffle spacing. Defaults to 0.2 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18724,7 +18648,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The baffle count, which sets the shell-side pressure drop's compartment count. Defaults to 10.\n",
                 range: &[CalcRange {
                     min: Some(1.0),
                     min_inclusive: true,
@@ -18745,7 +18669,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The fractional baffle cut, between zero and one half. Defaults to 0.25.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18766,7 +18690,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "",
+                description: "The tube-wall thermal conductivity. Defaults to 52 W/(m*K), carbon steel.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18787,7 +18711,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/m**3"),
                 dimension: Some("mass_density"),
                 values: &[],
-                description: "",
+                description: "The tube-side fluid's mass density. Defaults to 800 kg/m**3.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18808,7 +18732,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa*s"),
                 dimension: Some("dynamic_viscosity"),
                 values: &[],
-                description: "",
+                description: "The tube-side fluid's dynamic viscosity. Defaults to 5e-4 Pa*s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18829,7 +18753,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("J/(kg*K)"),
                 dimension: Some("specific_heat_capacity"),
                 values: &[],
-                description: "",
+                description: "The tube-side fluid's specific heat capacity. Defaults to 2500 J/(kg*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18850,7 +18774,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "",
+                description: "The tube-side fluid's thermal conductivity. Defaults to 0.13 W/(m*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18871,7 +18795,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/s"),
                 dimension: Some("mass_rate"),
                 values: &[],
-                description: "",
+                description: "The tube-side mass flow. Defaults to 10 kg/s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18892,7 +18816,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/m**3"),
                 dimension: Some("mass_density"),
                 values: &[],
-                description: "",
+                description: "The shell-side fluid's mass density. Defaults to 1.5 kg/m**3.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18913,7 +18837,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa*s"),
                 dimension: Some("dynamic_viscosity"),
                 values: &[],
-                description: "",
+                description: "The shell-side fluid's bulk dynamic viscosity. Defaults to 1.5e-5 Pa*s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18934,7 +18858,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("J/(kg*K)"),
                 dimension: Some("specific_heat_capacity"),
                 values: &[],
-                description: "",
+                description: "The shell-side fluid's specific heat capacity. Defaults to 1100 J/(kg*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18955,7 +18879,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "",
+                description: "The shell-side fluid's thermal conductivity. Defaults to 0.025 W/(m*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18976,7 +18900,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/s"),
                 dimension: Some("mass_rate"),
                 values: &[],
-                description: "",
+                description: "The shell-side mass flow. Defaults to 5 kg/s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -18997,7 +18921,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -19018,7 +18942,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -19039,7 +18963,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["kern", "bell_delaware"],
-                description: "",
+                description: "The shell-side method. Defaults to `kern`.\n",
                 range: &[],
                 default: None,
             },
@@ -19071,7 +18995,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "the deposit's thermal conductivity. Absent is the class's `1.0`; it is ignored when the thickness is zero, but a non-positive value is refused.\n",
+                description: "The deposit's thermal conductivity. Defaults to 1.0; it is ignored when the thickness is zero, but a non-positive value is refused.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -19092,7 +19016,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("Pa*s"),
                 dimension: Some("dynamic_viscosity"),
                 values: &[],
-                description: "the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity, as the class does; zero is refused.\n",
+                description: "The shell-side viscosity at the tube wall. Absent or negative selects the bulk viscosity; zero is refused.\n",
                 range: &[],
                 default: None,
             },
@@ -19135,7 +19059,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the tube-to-baffle hole clearance. Absent is the class's `0.0004` m.\n",
+                description: "The tube-to-baffle hole clearance. Defaults to 0.0004 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -19156,7 +19080,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the shell-to-baffle clearance. Absent is the class's `0.003` m.\n",
+                description: "The shell-to-baffle clearance. Defaults to 0.003 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -19177,7 +19101,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m**2"),
                 dimension: Some("area"),
                 values: &[],
-                description: "the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`, as the class does.\n",
+                description: "The bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -19334,7 +19258,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times.\n",
+                description: "The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here.\n",
                 optional: false,
             },
             CalcOutput {
@@ -19524,6 +19448,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.shell_and_tube_vibration",
         name: "A shell-and-tube exchanger's tube-vibration screen",
+        summary: "A shell-and-tube exchanger's tube-vibration screen from its geometry, flow and natural frequency. Use it to flag a bundle at risk of flow-induced vibration.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -19531,13 +19456,7 @@ pub static CALCS: &[CalcForm] = &[
             "f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rho_t*A_t + rho_ti*A_c + rho_s*pi/4*d_o**2; f_vs = St*V/d_o; V_crit = K*f_n*d_o*sqrt(2*pi*zeta*m_eff/(rho_s*d_o**2)); f_ac = n*c/(2*W)",
         ),
         assumptions: &[
-            "**the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.\n",
-            "**the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.\n",
-            "**Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.\n",
-            "**the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.\n",
-            "**the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.\n",
-            "**a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.\n",
-            "**the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.\n",
+            "The screen checks vortex shedding, fluid-elastic instability and acoustic resonance for the declared bundle. It flags risk; it is not a substitute for a detailed vibration analysis.\n",
         ],
         references: &[
             "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th edition, RCB-4.6. The four vibration mechanisms and the screening practice.",
@@ -19762,7 +19681,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m/s"),
                 dimension: Some("velocity"),
                 values: &[],
-                description: "the speed of sound in the shell-side fluid; `340` m/s is the class's gas example.\n",
+                description: "The speed of sound in the shell-side fluid; 340 m/s is the gas example.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -19861,7 +19780,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "`V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.\n",
+                description: "`V / (0.5 * V_crit)`; critical above one.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20015,6 +19934,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.tema_standard",
         name: "TEMA configuration, class limits and layout rules",
+        summary: "TEMA construction class, configuration limits, recommended designation and a relative cost factor. Use it to select a shell-and-tube configuration and check its layout rules.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -20022,16 +19942,7 @@ pub static CALCS: &[CalcForm] = &[
             "cost = 1 + front + shell + rear; N = int(A_eff / a_tube); L_max = L_band * material_factor; S_min = max(D/5, floor); S_max = D",
         ),
         assumptions: &[
-            "**every length is SI metres**; the class's millimetre constants (wall 12.7, 9.5, 6.35 mm; corrosion 4.76, 3.18, 2.11 mm; spans 660, 889, 1067, 1321 mm; floors 50.8 and 38.1 mm) are converted at the table boundary, and only the inch echo is declared in inches.\n",
-            "**the configuration is built from its three letters**, so a designation outside the class's ten-common table is accepted as a custom configuration rather than a null lookup - the table is a lookup of the same triple, not a different set of rules.\n",
-            "**the configuration cost factor starts at one and adds the class's steps in its order**: front `D` 0.4, `A` 0.15, `C` or `N` 0.1; shell `K` 0.3, `F` 0.2; rear `T` 0.25, `S` 0.2, `P` or `W` 0.15.\n",
-            "**a bundle is removable, and handles thermal expansion, when the rear head is floating (`P`, `S`, `T` or `W`) or is the `U`-tube**, which is the class's own predicate.\n",
-            "**the tube count truncates to an integer**: the bundle clearance removes one tube diameter on each side, the pass lanes scale the area by `1 - 0.05 (passes - 1)`, and a tube occupies `pitch**2 sqrt(3)/2` (triangular) or `pitch**2` (square).\n",
-            "**the unsupported span is the diameter band (12.7, 19.05 or 25.4 mm, else 1321 mm) times a material factor**, matched by upper-cased substring: `STAINLESS`/`SS` 0.95, `COPPER`/`CU` 0.75, `TITANIUM`/`TI` 0.90, else one.\n",
-            "**the tube-size enum stops at 25.4 mm, so the 1321 mm band is unreachable through this calculation**; the capture's 28 mm row pins the class's own method.\n",
-            "**the minimum baffle spacing is `max(shell/5, 50.8 mm)`**, with `38.1 mm` as the floor for class `B`, and the maximum is the shell diameter.\n",
-            "**the recommended designation is the class's four-branch string tree, published verbatim**, and it is not required to be a designation in the common table - `AEW` is a recommendation the table does not hold.\n",
-            "**the tube size's available wall-thickness rows are carried by the enum and read by no formula here**, so only the outside diameter and its inch echo are published.\n",
+            "The configuration is one of the TEMA designations. The limits and the relative cost factor come from the TEMA tables this calculation carries, not from a vendor quotation.\n",
         ],
         references: &[
             "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th edition. The head, shell and rear-head letters, the construction classes and their limits, the tube pitches, the baffle types and the unsupported-span table.",
@@ -20241,7 +20152,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the tube material name, matched by upper-cased substring for the span factor. Absent is no factor, as the class's null.\n",
+                description: "The tube material name, matched by upper-cased substring for the span factor. Absent means no factor.\n",
                 range: &[],
                 default: None,
             },
@@ -20280,7 +20191,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "whether the rear head handles thermal expansion, the class's second name for the same predicate.\n",
+                description: "Whether the rear head handles thermal expansion.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20289,7 +20200,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the construction class's cost factor relative to class `B`.\n",
+                description: "The construction class's cost factor relative to class `B`.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20298,7 +20209,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the class's minimum tube wall.\n",
+                description: "The minimum tube wall thickness for the class.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20307,7 +20218,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the class's minimum corrosion allowance.\n",
+                description: "The minimum corrosion allowance for the class.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20397,7 +20308,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the class's maximum unsupported tube span for the diameter band and material.\n",
+                description: "The maximum unsupported tube span for the diameter band and material.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20406,7 +20317,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the greater of one fifth of the shell diameter and the class's floor.\n",
+                description: "The greater of one fifth of the shell diameter and the minimum baffle spacing.\n",
                 optional: false,
             },
             CalcOutput {
@@ -20424,7 +20335,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "the designation the class's four-branch recommendation answers.\n",
+                description: "The recommended TEMA designation.\n",
                 optional: false,
             },
         ],
@@ -20577,6 +20488,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.tube_insert_model",
         name: "Tube-insert heat-transfer enhancement and pressure-drop penalty",
+        summary: "Heat-transfer enhancement and pressure-drop penalty of a tube insert from its type and geometry. Use it to screen whether an insert is worth the extra pressure drop.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -20584,15 +20496,7 @@ pub static CALCS: &[CalcForm] = &[
             "h_ratio = h_enhanced/h_plain; f_ratio = f_enhanced/f_plain; PEC = h_ratio/f_ratio**(1/3); h_enhanced = h_plain*h_ratio; dP_enhanced = dP_plain*f_ratio",
         ),
         assumptions: &[
-            "**the twisted tape's twist ratio is floored at `2`**, so a ratio of one answers the ratio-of-two enhancement; the tape thickness **cancels** in the blockage factor because the class writes `t/(t/0.05)`, which is `0.05` for any non-zero thickness.\n",
-            "**the blockage factor is `pi/(pi - 4 t w/(t/0.05))` clamped to `[1, 1.5]`** and feeds both the laminar and the turbulent branches of the tape correlations.\n",
-            "**the tape's laminar branches read neither Reynolds nor Prandtl number**, being `(1 + 0.769/y)**(1/3)` times the blockage and `(1 + 2.75/y)` times its `1.29` power.\n",
-            "**the tape's turbulent heat ratio is `(1 + 2/y) blockage**0.8 / swirl**0.2`** and its friction `(1 + 2.75/y) swirl**0.8`**, with `swirl = sqrt(1 + (pi/(2y))**2)` and both floored at one.\n",
-            "**a Reynolds number exactly at a boundary takes the upper branch**: the tape and wire matrix switch at `2300` with a strict `<`, and the wire matrix switches at `500` likewise.\n",
-            "**the wire matrix's `effectiveRe = Re (1 + 3 density)` is computed and unread**, and its laminar friction is `1.5 (1 + 8 density)` independent of Reynolds number.\n",
-            "**the coiled wire's coil pitch cancels against itself** (`p/(p/e)` is the roughness ratio for any non-zero pitch) and its laminar branches answer `1 + 10 e` for both ratios, reading neither Reynolds nor Prandtl number.\n",
-            "**the coiled wire's turbulent correlations are the class's simplified Ravigururajan-Bergles forms**, with the helix angle in degrees and both the `p/D` and `Pr` powers applied as the class writes them.\n",
-            "**the performance evaluation criterion divides the heat ratio by the cube root of the friction ratio**, so a laminar tape can score below one, and `applyEnhancement` multiplies the plain coefficient and drop by the two ratios.\n",
+            "The insert is one of the twisted-tape or coiled-wire types declared, and the result is a ratio to the plain tube at the same flow. It is not a full exchanger rating.\n",
         ],
         references: &[
             "Manglik, R.M.; Bergles, A.E. (1993). \"Heat transfer and pressure drop correlations for twisted-tape inserts in isothermal tubes.\" Journal of Heat Transfer 115(4), 881-889. The twisted-tape forms.",
@@ -20701,7 +20605,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the twisted tape's `y = H/(2D)`, floored at `2`. Absent is the class's `5`.\n",
+                description: "The twisted tape's `y = H/(2D)`, floored at 2. Defaults to 5.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -20722,7 +20626,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the tape thickness. Absent is `0.001`; it cancels in the blockage factor and is carried for the class's own state.\n",
+                description: "The tape thickness. Defaults to 0.001; it cancels in the blockage factor.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -20971,6 +20875,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.two_phase_pressure_drop",
         name: "Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck",
+        summary: "Two-phase pressure gradient from the Friedel and Muller-Steinhagen-Heck methods. Use it to size a line or check an exchanger tube side carrying a vapour-liquid mixture.",
         namespace: "thermal",
         available: true,
         refusal: None,
@@ -20978,16 +20883,7 @@ pub static CALCS: &[CalcForm] = &[
             "dPdz_F = phi_lo**2*dPdz_lo; phi_lo**2 = E + 3.24*F*H/(Fr**0.045*We**0.035); dPdz_MSH = (A + 2*(B-A)*x)*(1-x)**(1/3) + B*x**3; dPdz_grav = rho_tp*9.81; dP_accel = G**2*(M_out - M_in)",
         ),
         assumptions: &[
-            "**the Friedel gradient is `phi_lo**2` times the all-liquid Fanning gradient** `4 f_lo G**2/(2 rho_l D)`, and every helper answers zero for a non-positive flux, diameter, density or viscosity, as the class's guards do.\n",
-            "**the multiplier's Froude and Weber terms are floored at `1e-10`**, and a non-positive surface tension answers the class's `We = 1e6` sentinel rather than refusing - the branch the capture pins as `no_surface_tension`.\n",
-            "**the Fanning friction factor is `16/Re` below 2300 and the Blasius `0.079 Re**-0.25` above**, with zero at a non-positive Reynolds number.\n",
-            "**quality is clamped to `[0, 1]`**; below `1e-10` the Friedel gradient answers the all-liquid gradient, and at quality one the multiplier's `F` is zero, so the answer is the all-vapour term `E`.\n",
-            "**the averaged entry is Simpson's rule over the quality range** with `n = max(4, intervals)` raised to even, and `|sum*dx/3/(x_out-x_in)|` times the length, so the two sweep directions agree to rounding.\n",
-            "**an equal pair of endpoint qualities answers the single-point drop at that quality**, and a non-positive length answers zero in the class - which the composed calculation refuses at the boundary instead.\n",
-            "**the Muller-Steinhagen-Heck gradient is `(A + 2(B-A)x)(1-x)**(1/3) + B x**3`**, with `A` and `B` the all-liquid and all-vapour gradients; at either endpoint it reduces to the same gradient the Friedel entry answers there.\n",
-            "**the gravitational gradient uses the homogeneous void fraction** `alpha = 1/(1 + (1-x)/x * rho_v/rho_l)`, with the endpoints pinned to 0 and 1, and `g = 9.81`.\n",
-            "**the acceleration term is `G**2 (momentum_out - momentum_in)`** with the same void fraction and endpoint pins, so a falling quality answers a negative number - a pressure recovery, not a drop.\n",
-            "**the zone analysis consumes `calcFriedelPressureDrop` at a single average quality**; the averaged entry here is the class's separate Simpson integration over a quality range, not the zone analysis's own averaging.\n",
+            "The flow is a steady, fully developed vapour-liquid mixture in a circular tube. The methods are pressure-gradient correlations, not a flow-regime map.\n",
         ],
         references: &[
             "Friedel, L. (1979). \"Improved friction pressure drop correlations for horizontal and vertical two-phase pipe flow.\" European Two-Phase Flow Group Meeting, Ispra, Italy, Paper E2.",
@@ -21002,7 +20898,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/(m**2*s)"),
                 dimension: Some("mass_flux"),
                 values: &[],
-                description: "the total mass flux. Zero is the class's guarded zero for every flow term.\n",
+                description: "The total mass flux. Zero gives zero for every flow term.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -21160,7 +21056,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("N/m"),
                 dimension: Some("surface_tension"),
                 values: &[],
-                description: "the surface tension. Zero selects the class's `We = 1e6` sentinel.\n",
+                description: "The surface tension. Zero selects the large-Weber-number sentinel.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -21203,7 +21099,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number.\n",
+                description: "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n",
                 range: &[],
                 default: None,
             },
@@ -21345,6 +21241,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "thermal.zone_rating",
         name: "A shell-and-tube exchanger rated zone by zone",
+        summary: "A shell-and-tube exchanger rated zone by zone, with the local regime and an optional per-zone override. Use it where a single overall coefficient hides a changing duty.",
         namespace: "thermal",
         available: false,
         refusal: Some(
@@ -21354,12 +21251,7 @@ pub static CALCS: &[CalcForm] = &[
             "U_i = evaluate(geometry, zone_i); A_i = dutyFraction_i * totalDuty_i / (U_i * lmtd_i) when U_i > 0 and lmtd_i > 0, else 0",
         ),
         assumptions: &[
-            "**the port implements the class's permissive `calculate()` arithmetic, and refuses the states that path would leave unanswered.** A zone whose transport properties are not positive finite is refused, not given a zero or NaN coefficient.\n",
-            "**a zone overrides only the eight transport properties** - density, viscosity, cp and conductivity on each side. Mass flows, fouling, the deposit layer, wall viscosity, sealing, clearances, bypass, method and every geometry stay the base request's.\n",
-            "**`required_area` is `duty_fraction * total_duty / (U * lmtd)` and is zero when either `U` or `lmtd` is non-positive**, the class's own ternary. A negative duty fraction is multiplied, not refused.\n",
-            "**the class restores the eight properties after each zone but not the results.** The port computes every zone from its declared inputs, so no coefficient from an earlier zone can reach a later one.\n",
-            "**`lmtd` is a caller-supplied temperature difference in K, not a computed LMTD.** This path never reads the four terminal temperatures; the zone's own number is the one used.\n",
-            "**the zone name is echoed unchanged and may be empty.** The port invents no name and applies no fallback.\n",
+            "The zone boundaries and duties are the caller's. The calculation rates each zone independently; it does not solve the exchanger as one coupled system.\n",
         ],
         references: &[],
         inputs: &[
@@ -21370,7 +21262,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube outside diameter. Defaults to 0.01905 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21391,7 +21283,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The nominal tube inside diameter, before any deposit layer. Defaults to 0.01483 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21412,7 +21304,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube length. Defaults to 6.096 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21433,7 +21325,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube count; it must divide evenly by `tube_passes`. Defaults to 100.\n",
                 range: &[],
                 default: None,
             },
@@ -21444,7 +21336,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube passes. Defaults to 2.\n",
                 range: &[],
                 default: None,
             },
@@ -21455,7 +21347,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The tube pitch. Defaults to 0.02381 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21476,7 +21368,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &[],
-                description: "",
+                description: "The tube layout: `true` is triangular. Defaults to `true`.\n",
                 range: &[],
                 default: None,
             },
@@ -21487,7 +21379,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The shell inside diameter. Defaults to 0.5 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21508,7 +21400,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "",
+                description: "The central baffle spacing. Defaults to 0.2 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21529,7 +21421,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The baffle count. Defaults to 10.\n",
                 range: &[CalcRange {
                     min: Some(1.0),
                     min_inclusive: true,
@@ -21550,7 +21442,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The fractional baffle cut, between zero and one half. Defaults to 0.25.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21571,7 +21463,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "",
+                description: "The tube-wall thermal conductivity. Defaults to 52 W/(m*K).\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21592,7 +21484,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/s"),
                 dimension: Some("mass_rate"),
                 values: &[],
-                description: "",
+                description: "The tube-side mass flow, which no zone overrides. Defaults to 10 kg/s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21613,7 +21505,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("kg/s"),
                 dimension: Some("mass_rate"),
                 values: &[],
-                description: "",
+                description: "The shell-side mass flow, which no zone overrides. Defaults to 5 kg/s.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21634,7 +21526,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -21655,7 +21547,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("dimensionless"),
                 dimension: Some("dimensionless"),
                 values: &[],
-                description: "",
+                description: "The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -21676,7 +21568,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: None,
                 dimension: None,
                 values: &["kern", "bell_delaware"],
-                description: "",
+                description: "The shell-side method. Defaults to `kern`.\n",
                 range: &[],
                 default: None,
             },
@@ -21719,7 +21611,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("W/(m*K)"),
                 dimension: Some("thermal_conductivity"),
                 values: &[],
-                description: "the deposit's thermal conductivity. Absent is the class's `1.0`; a non-positive value is refused even at zero thickness.\n",
+                description: "The deposit's thermal conductivity. Defaults to 1.0; a non-positive value is refused even at zero thickness.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: false,
@@ -21783,7 +21675,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the tube-to-baffle hole clearance. Absent is the class's `0.0004` m.\n",
+                description: "The tube-to-baffle hole clearance. Defaults to 0.0004 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,
@@ -21804,7 +21696,7 @@ pub static CALCS: &[CalcForm] = &[
                 unit: Some("m"),
                 dimension: Some("length"),
                 values: &[],
-                description: "the shell-to-baffle clearance. Absent is the class's `0.003` m.\n",
+                description: "The shell-to-baffle clearance. Defaults to 0.003 m.\n",
                 range: &[CalcRange {
                     min: Some(0.0),
                     min_inclusive: true,

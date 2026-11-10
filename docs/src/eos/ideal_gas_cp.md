@@ -4,6 +4,8 @@
 
 `eos.ideal_gas_cp`
 
+Ideal-gas heat capacity from a polynomial in temperature. Use it for gas duty and heat-exchanger screening.
+
 ## Equation
 
 $$
@@ -49,7 +51,7 @@ cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4
 | `cp > 0` | warns `OUT_OF_VALID_RANGE` | a heat capacity of zero or below, which is how a fitted polynomial evaluated beyond its range presents. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

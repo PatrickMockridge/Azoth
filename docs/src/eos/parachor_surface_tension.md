@@ -4,6 +4,8 @@
 
 `eos.parachor_surface_tension`
 
+Surface tension from the parachor (Macleod-Sugden) relation. Use it for multiphase and packing screening when a parachor is available.
+
 ## Equation
 
 $$
@@ -23,6 +25,16 @@ sigma = 1e-3 * (parachor*1e-6*(rho_l/M - rho_v/M))**4,  with rho in kg/m**3 and 
 `calcPureComponentSurfaceTension`, ported verbatim: `1e-3 * pow(parachor*1e-6 * (rho_l/M - rho_v/M), 4)`
 
 DOI: [10.1039/TF9231900038](https://doi.org/10.1039/TF9231900038)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the parachor parameter is in (mN/m)**(1/4) * cm**3/mol, the mixed unit NeqSim stores in `PARACHOR`; it is declared dimensionless because no vocabulary unit expresses a fractional power of a non-SI unit.
+
+- **a CPA mixture reads `PARACHOR_CPA`** and every other mixture reads `PARACHOR` (upstream PR #4004); the associating, UMR-CPA and electrolyte CPA builders select it, so the input here is whichever column the caller's mixture carries.
+
 
 ## Inputs
 
@@ -50,19 +62,15 @@ DOI: [10.1039/TF9231900038](https://doi.org/10.1039/TF9231900038)
 | `rho_v >= 0` | warns `OUT_OF_VALID_RANGE` | A negative vapour density is not a state; zero is the low-temperature limit. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the parachor parameter is in (mN/m)**(1/4) * cm**3/mol, the mixed unit NeqSim stores in `PARACHOR`; it is declared dimensionless because no vocabulary unit expresses a fractional power of a non-SI unit.
-
 - a pure component: the two densities are the liquid and vapour of one substance at the interface state, so the mole fractions divide out.
 
-- the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which NeqSim's `calcSurfaceTension` adds as a per-component sum.
-
-- **a CPA mixture reads `PARACHOR_CPA`** and every other mixture reads `PARACHOR` (upstream PR #4004); the associating, UMR-CPA and electrolyte CPA builders select it, so the input here is whichever column the caller's mixture carries.
+- the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which is a separate per-component sum.
 
 
 

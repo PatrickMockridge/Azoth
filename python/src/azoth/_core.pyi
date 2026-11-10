@@ -507,13 +507,13 @@ class IncrementalZoneRow:
 
 @final
 class NaceIssueRow:
-    """the assessment's issue strings, in the class's order."""
+    """The NACE assessment's issue strings."""
 
     message: str
 
 @final
 class AppliedStandardRow:
-    """the standards the pipeline applied, in the class's order."""
+    """The standards the design pipeline applied."""
 
     name: str
 

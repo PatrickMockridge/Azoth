@@ -1,8 +1,10 @@
 id = "hydraulics.tray_hydraulics"
 name = "A tray's flooding, weeping, entrainment, pressure drop and efficiency"
+summary = "A tray's flooding, weeping, entrainment, pressure drop and efficiency from its geometry and loads. Use it to screen tray hydraulic limits before a detailed column rating."
 equation = "The Fair capacity factor `K` interpolated over tray spacing and corrected by `exp(-1.463 FLV**0.842) / exp(-1.463 0.1**0.842)` and by `(sigma/0.020)**0.2`; Souders-Brown `u_flood = K sqrt((rho_l - rho_v)/rho_v)`; Sinnott's weeping minimum `u_min = [K_w - 0.90 (25.4 - d_h)] / sqrt(rho_v)` with `K_w = 7 + 0.27 sqrt(h_w + h_ow)`; Fair's entrainment `psi = a (percent_flood/100)**b`; and a tray pressure drop of a dry orifice term `51 (u_h/C_o)**2 rho_v/rho_l`, the liquid head `h_w + h_ow`, and a residual head `6 sigma/(rho_l g d_h)`, all in mm of liquid."
 latex = '''u_{\mathrm{flood}} = K(S,\mathrm{FLV})\left(\frac{\sigma}{\sigma_0}\right)^{0.2} f_t \sqrt{\frac{\rho_\ell-\rho_v}{\rho_v}}, \qquad K(S,\mathrm{FLV}) = \frac{k(S)\,e^{-1.463\,\mathrm{FLV}^{0.842}}}{e^{-1.463\,(0.1)^{0.842}}}'''
-assumptions = ["**the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.", "**the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.", "**`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.", "**`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.", "**the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.", "**`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.\n"]
+assumptions = ["The tray is a crossflow sieve, valve or bubble-cap tray with the declared geometry. The result is a hydraulic screen, not a tray-efficiency or column-rating calculation.\n"]
+notes = ["**the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.", "**the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.", "**`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.", "**`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.", "**the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.", "**`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.\n"]
 references = ["Fair, J. R. (1961). \\\"How to predict sieve tray entrainment and flooding.\\\" Petro/Chem Engineer 33(10), 45-52. The capacity-factor chart the flooding velocity is fitted from, and the entrainment correlation.", "Sinnott, R. K. (2005). \\\"Chemical Engineering Design\\\", 4th ed., Butterworth-Heinemann, ch. 11. The weeping minimum vapour velocity and the weir-crest formula.", "O'Connell, H. E. (1946). \\\"Plate efficiency of fractionating and absorbing columns and absorbers.\\\" Trans. AIChE 42, 741-755. The tray efficiency.", "Kister, H. Z. (1992). \\\"Distillation Design\\\", McGraw-Hill, Table 6.3. The tabulated capacity factors the Fair chart is read at.", "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/internals/TrayHydraulicsCalculator.java` is the port source.", "`validation/neqsim/captures/tray_hydraulics_probe.tsv` - eight states driven through the calculator directly, each printing the sixteen inputs it was given and all twenty-four answers.\n"]
 [source]
 standard = "NeqSim master `TrayHydraulicsCalculator`"
@@ -23,19 +25,19 @@ unit = "m"
 description = "the weir height, which the liquid head and the weeping chart take in millimetres.\n"
 [inputs.weir_length]
 unit = "m"
-description = "the weir length. **At or below zero means the class derives it** as `0.73 D`, and that derived value is what is reported and what every crest term reads.\n"
+description = "The weir length. At or below zero derives it as `0.73 D`, and the derived value is what is reported and used.\n"
 [inputs.downcommer_area_fraction]
 unit = "dimensionless"
 description = "the downcomer area as a fraction of the total, which fixes the active area as `1 - 2` of it.\n"
 [inputs.hole_diameter]
 unit = "mm"
-description = "the hole diameter, which the weeping minimum and the residual head both read. **In millimetres**, which is the unit the class's two correlations are written in.\n"
+description = "The hole diameter, read by the weeping minimum and the residual head.\n"
 [inputs.hole_area_fraction]
 unit = "dimensionless"
 description = "the hole area as a fraction of the active area, read for a `sieve` tray alone.\n"
 [inputs.design_flood_fraction]
 unit = "dimensionless"
-description = "the design flooding fraction. **Stored and never read** by any of the twenty-four answers, which is the class's own state rather than this port's omission.\n"
+description = "The design flooding fraction. Stored but not read by this calculation.\n"
 [inputs.vapor_mass_flow]
 unit = "kg/s"
 description = "the vapour's mass flow.\n"

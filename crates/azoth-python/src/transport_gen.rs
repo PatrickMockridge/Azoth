@@ -1557,7 +1557,7 @@ pub struct PyBeggsBrillSegmentResult {
     /// the volume-weighted no-slip mixture viscosity.
     #[pyo3(get)]
     pub no_slip_viscosity: PyQty,
-    /// the no-slip Reynolds number, with the class's field-unit factor.
+    /// The no-slip Reynolds number.
     #[pyo3(get)]
     pub reynolds: f64,
     /// the single-phase Darcy friction factor.
@@ -9318,7 +9318,7 @@ pub struct PyScaleKineticsResult {
     /// the rate-controlling growth rate.
     #[pyo3(get)]
     pub effective_growth_rate: PyQty,
-    /// `REACTION`, `TRANSPORT` or `NONE`, the class's own labels.
+    /// `REACTION`, `TRANSPORT` or `NONE`.
     #[pyo3(get)]
     pub limiting_regime: String,
     /// Caveats, deduplicated.
@@ -9448,7 +9448,7 @@ pub struct PyScalePredictionResult {
     /// the Davies coefficient for a monovalent ion.
     #[pyo3(get)]
     pub monovalent_activity_coefficient: f64,
-    /// the pH the calculation used: the input, or the class's estimate.
+    /// The pH the calculation used: the input, or the estimated value.
     #[pyo3(get)]
     pub ph_used: f64,
     /// free calcium after ion pairing.
@@ -9463,7 +9463,7 @@ pub struct PyScalePredictionResult {
     /// free bicarbonate after ion pairing.
     #[pyo3(get)]
     pub free_bicarbonate: PyQty,
-    /// total barium, which the class does not ion-pair.
+    /// Total barium, not ion-paired.
     #[pyo3(get)]
     pub total_barium: PyQty,
     /// total strontium.
@@ -9472,7 +9472,7 @@ pub struct PyScalePredictionResult {
     /// total iron.
     #[pyo3(get)]
     pub total_iron: PyQty,
-    /// total sodium, divided by the class's getter constant `22989.77`.
+    /// Total sodium concentration.
     #[pyo3(get)]
     pub total_sodium: PyQty,
     /// calcite's solubility product, in `(mol/L)^2`.
@@ -10520,7 +10520,7 @@ pub struct PyTbpFractionPropertiesResult {
     /// Critical temperature.
     #[pyo3(get)]
     pub tc: PyQty,
-    /// Critical pressure. NeqSim's correlation is written in bar and this reports pascals.
+    /// Critical pressure, in pascals.
     #[pyo3(get)]
     pub pc: PyQty,
     /// Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.
@@ -10529,7 +10529,7 @@ pub struct PyTbpFractionPropertiesResult {
     /// Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.
     #[pyo3(get)]
     pub acentric_factor: f64,
-    /// The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.
+    /// The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.
     #[pyo3(get)]
     pub attraction_exponent: f64,
     /// Caveats, deduplicated.
@@ -21909,7 +21909,7 @@ pub struct PyFoulingModelResult {
     /// the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
     #[pyo3(get)]
     pub threshold_wall_temperature: PyQty,
-    /// the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.
+    /// The velocity at which the asymptote crosses the fixed resistance.
     #[pyo3(get)]
     pub threshold_velocity: PyQty,
     /// the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
@@ -21924,7 +21924,7 @@ pub struct PyFoulingModelResult {
     /// `rho*v*D/mu` of the stated conditions.
     #[pyo3(get)]
     pub reynolds_number: f64,
-    /// `f/8*rho*v**2` with the class's Darcy friction factor.
+    /// `f/8*rho*v**2`, using the Darcy friction factor.
     #[pyo3(get)]
     pub wall_shear_stress: PyQty,
     /// Caveats, deduplicated.
@@ -22093,10 +22093,10 @@ pub struct PyLmtdCorrectionFactorResult {
     /// the correction factor for the stated number of shell passes.
     #[pyo3(get)]
     pub ft: f64,
-    /// the correction factor for one shell pass, the class's dedicated wrapper.
+    /// The correction factor for one shell pass.
     #[pyo3(get)]
     pub ft_1_shell_pass: f64,
-    /// the correction factor for two shell passes, the class's dedicated wrapper.
+    /// The correction factor for two shell passes.
     #[pyo3(get)]
     pub ft_2_shell_passes: f64,
     /// the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
@@ -22221,7 +22221,7 @@ pub struct PyShellAndTubeDesignResult {
     /// the designation, echoed.
     #[pyo3(get)]
     pub tema_designation: String,
-    /// the class's own name.
+    /// The TEMA construction class.
     #[pyo3(get)]
     pub tema_class: String,
     /// the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
@@ -22230,7 +22230,7 @@ pub struct PyShellAndTubeDesignResult {
     /// the inside diameter plus twice the wall.
     #[pyo3(get)]
     pub shell_outside_diameter: PyQty,
-    /// the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.
+    /// The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.
     #[pyo3(get)]
     pub shell_wall_thickness: PyQty,
     /// the specification and grade, e.g. `ASME-II-A SA-516-70`.
@@ -22254,7 +22254,7 @@ pub struct PyShellAndTubeDesignResult {
     /// the standard tube outside diameter.
     #[pyo3(get)]
     pub tube_outer_diameter: PyQty,
-    /// the class's fixed `2.108` mm.
+    /// The minimum tube wall thickness.
     #[pyo3(get)]
     pub tube_wall_thickness: PyQty,
     /// the tube length, echoed.
@@ -22266,7 +22266,7 @@ pub struct PyShellAndTubeDesignResult {
     /// `tube_outer_diameter * 1.25`.
     #[pyo3(get)]
     pub tube_pitch: PyQty,
-    /// the class's pattern description, `Triangular 30°`.
+    /// The tube pitch pattern, e.g. `Triangular 30°`.
     #[pyo3(get)]
     pub tube_pitch_pattern: String,
     /// the specification and grade of the tube material.
@@ -22281,7 +22281,7 @@ pub struct PyShellAndTubeDesignResult {
     /// the tube material's conductivity from the table.
     #[pyo3(get)]
     pub tube_thermal_conductivity: PyQty,
-    /// the class's fixed `Single Segmental`.
+    /// The baffle type, e.g. `Single Segmental`.
     #[pyo3(get)]
     pub baffle_type: String,
     /// `(tube_length - 2*spacing)/spacing` floored, at least one.
@@ -22290,7 +22290,7 @@ pub struct PyShellAndTubeDesignResult {
     /// 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
     #[pyo3(get)]
     pub baffle_spacing: PyQty,
-    /// the class's fixed `0.25`.
+    /// The baffle cut, e.g. 0.25.
     #[pyo3(get)]
     pub baffle_cut: f64,
     /// the required area, echoed.
@@ -22302,7 +22302,7 @@ pub struct PyShellAndTubeDesignResult {
     /// `(actual - required)/required`.
     #[pyo3(get)]
     pub area_margin: f64,
-    /// the UHX-13 thickness, floored at the class minimum.
+    /// The UHX-13 tubesheet thickness, floored at the minimum.
     #[pyo3(get)]
     pub tubesheet_thickness_uhx: PyQty,
     /// the shell MAWP per UG-27.
@@ -22317,7 +22317,7 @@ pub struct PyShellAndTubeDesignResult {
     /// the same on the tube side.
     #[pyo3(get)]
     pub hydro_test_pressure_tube: PyQty,
-    /// the available reinforcement area per UG-37, the class mm**2 divided by 1e6.
+    /// The available reinforcement area per UG-37.
     #[pyo3(get)]
     pub nozzle_reinforcement_area: PyQty,
     /// whether the available area meets the required one.
@@ -22329,22 +22329,22 @@ pub struct PyShellAndTubeDesignResult {
     /// the stated partial pressure, echoed when the assessment runs.
     #[pyo3(get)]
     pub h2s_partial_pressure: Option<PyQty>,
-    /// the shell material's compliance flag; false for every grade, as the class reads it.
+    /// Whether the shell material meets NACE.
     #[pyo3(get)]
     pub shell_nace_compliant: bool,
     /// the tube material's compliance flag, likewise.
     #[pyo3(get)]
     pub tube_nace_compliant: bool,
-    /// the shell hardness in HV, the class's fixed 248.
+    /// The shell hardness in HV.
     #[pyo3(get)]
     pub shell_max_hardness: f64,
     /// the tube hardness in HV, likewise.
     #[pyo3(get)]
     pub tube_max_hardness: f64,
-    /// the assessment's issue strings, in the class's order.
+    /// The NACE assessment's issue strings.
     #[pyo3(get)]
     pub nace_issues: Vec<PyNaceIssueRow>,
-    /// the standards the pipeline applied, in the class's order.
+    /// The standards the design pipeline applied.
     #[pyo3(get)]
     pub applied_standards: Vec<PyAppliedStandardRow>,
     /// the thermal block's tube-side coefficient.
@@ -22830,7 +22830,7 @@ pub struct PyShellAndTubeRatingResult {
     /// the bundle-bypass correction factor; 1.0 on the Kern path.
     #[pyo3(get)]
     pub jb: f64,
-    /// the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times.
+    /// The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here.
     #[pyo3(get)]
     pub js: f64,
     /// the adverse-temperature-gradient correction factor; 1.0 above Re 100.
@@ -22943,7 +22943,7 @@ pub struct PyShellAndTubeVibrationResult {
     /// Connors' critical crossflow velocity for fluid-elastic instability.
     #[pyo3(get)]
     pub critical_velocity: PyQty,
-    /// `V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.
+    /// `V / (0.5 * V_crit)`; critical above one.
     #[pyo3(get)]
     pub velocity_ratio: f64,
     /// whether the velocity ratio exceeds one.
@@ -23035,16 +23035,16 @@ pub struct PyTemaStandardResult {
     /// whether the rear head allows the bundle to be removed.
     #[pyo3(get)]
     pub bundle_removable: bool,
-    /// whether the rear head handles thermal expansion, the class's second name for the same predicate.
+    /// Whether the rear head handles thermal expansion.
     #[pyo3(get)]
     pub good_thermal_expansion: bool,
-    /// the construction class's cost factor relative to class `B`.
+    /// The construction class's cost factor relative to class `B`.
     #[pyo3(get)]
     pub class_cost_factor: f64,
-    /// the class's minimum tube wall.
+    /// The minimum tube wall thickness for the class.
     #[pyo3(get)]
     pub min_tube_wall_thickness: PyQty,
-    /// the class's minimum corrosion allowance.
+    /// The minimum corrosion allowance for the class.
     #[pyo3(get)]
     pub min_corrosion_allowance: PyQty,
     /// the standard tube size's outside diameter.
@@ -23074,16 +23074,16 @@ pub struct PyTemaStandardResult {
     /// the truncated bundle-area estimate at the stated pitch and passes.
     #[pyo3(get)]
     pub estimated_tube_count: f64,
-    /// the class's maximum unsupported tube span for the diameter band and material.
+    /// The maximum unsupported tube span for the diameter band and material.
     #[pyo3(get)]
     pub max_unsupported_span: PyQty,
-    /// the greater of one fifth of the shell diameter and the class's floor.
+    /// The greater of one fifth of the shell diameter and the minimum baffle spacing.
     #[pyo3(get)]
     pub min_baffle_spacing: PyQty,
     /// the shell inside diameter.
     #[pyo3(get)]
     pub max_baffle_spacing: PyQty,
-    /// the designation the class's four-branch recommendation answers.
+    /// The recommended TEMA designation.
     #[pyo3(get)]
     pub recommended_designation: String,
     /// Caveats, deduplicated.

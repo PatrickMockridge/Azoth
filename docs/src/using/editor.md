@@ -7,6 +7,8 @@ uploaded.
 
 **[Open the editor →](https://patrickmockridge.github.io/azoth/)**
 
+This page is part of the user manual; [Using azoth](./index.md) is its start.
+
 ![The editor showing the demo flowsheet](../images/editor.png)
 
 ## First five minutes
@@ -62,4 +64,5 @@ and **Report** prints or saves a case file with the drawing, the streams, the re
 caveats and the source record.
 
 The **Calculations** switch opens a separate workspace for the library's standalone calculations.
-See [calculation sheets](./calculations.md).
+See [calculation sheets](./calculations.md) for the workspace and
+[reading a calculation page](./reading-a-calculation.md) for the reference page a sheet links to.

@@ -1,16 +1,10 @@
 id = "eos.solid_fugacity"
 name = "Pure solid fugacity coefficient"
+summary = "Pure solid fugacity coefficient from fusion properties. Use it for wax and solid-formation screening."
 equation = "phi_solid = phi_liq(T, P) * exp( -dH_fus/(R T) (1 - T/T_tp)\n                                    + dCp_SL/(R T) (T_tp - T)\n                                    - dCp_SL/R ln(T_tp/T)\n                                    - dV_sl (1 - P_bar)/(R T) )\n\nwhere `phi_liq` is the pure component's liquid root on the cubic the fluid runs, at the state's own (T, P), and `P_bar` is the pressure in bar, so the volume term is referred to one atmosphere."
 latex = '''\\phi^{solid} = \\phi^{liq}(T,P)\\exp\\left[-\\frac{\\Delta H_{fus}}{RT}\\left(1-\\frac{T}{T_{tp}}\\right) + \\frac{\\Delta C_{p,SL}}{RT}(T_{tp}-T) - \\frac{\\Delta C_{p,SL}}{R}\\ln\\frac{T_{tp}}{T} - \\frac{\\Delta V_{SL}(P_{bar}-1)}{RT}\\right]'''
-assumptions = [
-    "**this is NeqSim's `ComponentSolid.fugcoef2`**, the **tabulated** solid route: the heat of fusion, the triple point and the heat capacity come from a component's own columns rather than from a correlation. That is what tells it apart from `eos.parahydrogen_solid_phase`'s Helmholtz equation.",
-    "**the reference phase is a *liquid*** - `fugcoef2` initialises it `PhaseType.LIQUID` - and it is the host's own class, so `eos` is a real input and not a label. NeqSim's other entry, `fugcoef`, uses a *gas* reference at the component's solid vapour pressure instead, and is a different model.",
-    "**the heat-capacity difference is an input, because NeqSim computes it two ways**: from the table as `-(cp_solid(T_tp) - cp_liquid(T_tp))` for every component, and **hardcoded to `37.12` for the one named `water`**. Measured, the table gives water `38.0276196`, so reading it there is 2.4 % out.",
-    "the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.",
-    "the volume term is referred to `P = 1` in NeqSim's **bar**-valued code, so in pascals the bracket is `(P/1e5 - 1)` - and its `R` is `8.3144621`, the one `Component` states as a literal.",
-    "**verified against NeqSim to 14 digits** on the capture's water at 273.15 K and 10 bara: this gives `0.0004079887721484625` against `0.000407988772148464`.",
-    "the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form.",
-]
+assumptions = ["The solid is a pure component and the caller has already decided that it can form. The calculation returns the solid's fugacity coefficient; it does not test thermodynamic stability.\n"]
+notes = ["**this is NeqSim's `ComponentSolid.fugcoef2`**, the **tabulated** solid route: the heat of fusion, the triple point and the heat capacity come from a component's own columns rather than from a correlation. That is what tells it apart from `eos.parahydrogen_solid_phase`'s Helmholtz equation.", "**the reference phase is a *liquid*** - `fugcoef2` initialises it `PhaseType.LIQUID` - and it is the host's own class, so `eos` is a real input and not a label. NeqSim's other entry, `fugcoef`, uses a *gas* reference at the component's solid vapour pressure instead, and is a different model.", "**the heat-capacity difference is an input, because NeqSim computes it two ways**: from the table as `-(cp_solid(T_tp) - cp_liquid(T_tp))` for every component, and **hardcoded to `37.12` for the one named `water`**. Measured, the table gives water `38.0276196`, so reading it there is 2.4 % out.", "the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.", "the volume term is referred to `P = 1` in NeqSim's **bar**-valued code, so in pascals the bracket is `(P/1e5 - 1)` - and its `R` is `8.3144621`, the one `Component` states as a literal.", "**verified against NeqSim to 14 digits** on the capture's water at 273.15 K and 10 bara: this gives `0.0004079887721484625` against `0.000407988772148464`.", "the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form."]
 references = [
     "Prausnitz, J. M.; Lichtenthaler, R. N.; de Azevedo, E. G. (1999). \"Molecular Thermodynamics of Fluid-Phase Equilibria.\", 3rd ed., Prentice Hall. The solid-liquid fugacity ratio this is the exponential of.",
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentSolid.fugcoef2` is the port source, with `Component.getPureComponentCpSolid` and `getPureComponentSolidDensity` for the table it reads.",
@@ -27,7 +21,7 @@ unit = "K"
 description = "Its triple-point temperature, from `TRIPLEPOINTTEMPERATURE`.\n"
 [inputs.delta_cp_sl]
 unit = "J/(mol*K)"
-description = "The solid-liquid heat-capacity difference **at the triple point**, which the caller states: NeqSim takes it from the table and overrides it to `37.12` for water.\n"
+description = "The solid-liquid heat-capacity difference at the triple point.\n"
 [inputs.delta_solid_volume]
 unit = "m**3/mol"
 description = "The solid's molar volume less the liquid's, at the triple point. Zero where the table states no solid density.\n"
@@ -50,7 +44,7 @@ description = "absolute pressure\n"
 type = "enum"
 values = ["pr", "srk"]
 optional = true
-description = "the cubic the fluid runs, which is also the one the reference liquid is built from - NeqSim clones the host phase's class, so this is a real choice"
+description = "The cubic equation of state the fluid runs, which is also the one the reference liquid is built from.\n"
 [outputs]
 [outputs.fugacity_coefficient]
 unit = "dimensionless"

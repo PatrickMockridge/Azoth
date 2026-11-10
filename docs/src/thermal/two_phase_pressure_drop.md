@@ -4,6 +4,8 @@
 
 `thermal.two_phase_pressure_drop`
 
+Two-phase pressure gradient from the Friedel and Muller-Steinhagen-Heck methods. Use it to size a line or check an exchanger tube side carrying a vapour-liquid mixture.
+
 ## Equation
 
 $$
@@ -22,11 +24,37 @@ dPdz_F = phi_lo**2*dPdz_lo; phi_lo**2 = E + 3.24*F*H/(Fr**0.045*We**0.035); dPdz
 
 `calcFriedelGradient`, `calcFriedelPressureDrop`, `calcFriedelAveragePressureDrop`, `calcMullerSteinhagenHeckGradient`, `calcGravitationalGradient` and `calcAccelerationPressureDrop`, with `calcFanningFriction` and `calcMomentumFlux` as their leaves.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the Friedel gradient is `phi_lo**2` times the all-liquid Fanning gradient** `4 f_lo G**2/(2 rho_l D)`, and every helper answers zero for a non-positive flux, diameter, density or viscosity, as the class's guards do.
+
+- **the multiplier's Froude and Weber terms are floored at `1e-10`**, and a non-positive surface tension answers the class's `We = 1e6` sentinel rather than refusing - the branch the capture pins as `no_surface_tension`.
+
+- **the Fanning friction factor is `16/Re` below 2300 and the Blasius `0.079 Re**-0.25` above**, with zero at a non-positive Reynolds number.
+
+- **quality is clamped to `[0, 1]`**; below `1e-10` the Friedel gradient answers the all-liquid gradient, and at quality one the multiplier's `F` is zero, so the answer is the all-vapour term `E`.
+
+- **the averaged entry is Simpson's rule over the quality range** with `n = max(4, intervals)` raised to even, and `|sum*dx/3/(x_out-x_in)|` times the length, so the two sweep directions agree to rounding.
+
+- **an equal pair of endpoint qualities answers the single-point drop at that quality**, and a non-positive length answers zero in the class - which the composed calculation refuses at the boundary instead.
+
+- **the Muller-Steinhagen-Heck gradient is `(A + 2(B-A)x)(1-x)**(1/3) + B x**3`**, with `A` and `B` the all-liquid and all-vapour gradients; at either endpoint it reduces to the same gradient the Friedel entry answers there.
+
+- **the gravitational gradient uses the homogeneous void fraction** `alpha = 1/(1 + (1-x)/x * rho_v/rho_l)`, with the endpoints pinned to 0 and 1, and `g = 9.81`.
+
+- **the acceleration term is `G**2 (momentum_out - momentum_in)`** with the same void fraction and endpoint pins, so a falling quality answers a negative number - a pressure recovery, not a drop.
+
+- **the zone analysis consumes `calcFriedelPressureDrop` at a single average quality**; the averaged entry here is the class's separate Simpson integration over a quality range, not the zone analysis's own averaging.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `mass_flux` | kg/(m**2*s) | the total mass flux. Zero is the class's guarded zero for every flow term. |
+| `mass_flux` | kg/(m**2*s) | The total mass flux. Zero gives zero for every flow term. |
 | `vapor_quality` | dimensionless | the local vapour quality, clamped to `[0, 1]` by the gradient entries. |
 | `tube_inner_diameter` | m | the tube inner diameter. |
 | `tube_length` | m | the tube length, which the single-point and averaged drops multiply the gradient by. |
@@ -34,10 +62,10 @@ dPdz_F = phi_lo**2*dPdz_lo; phi_lo**2 = E + 3.24*F*H/(Fr**0.045*We**0.035); dPdz
 | `vapor_density` | kg/m**3 | the vapour density. |
 | `liquid_viscosity` | Pa*s | the liquid dynamic viscosity, in the all-liquid Reynolds number. |
 | `vapor_viscosity` | Pa*s | the vapour dynamic viscosity, in the all-vapour Reynolds number. |
-| `surface_tension` | N/m | the surface tension. Zero selects the class's `We = 1e6` sentinel. |
+| `surface_tension` | N/m | The surface tension. Zero selects the large-Weber-number sentinel. |
 | `quality_in` | dimensionless | the inlet quality of the averaged range, clamped to `[0, 1]`. |
 | `quality_out` | dimensionless | the outlet quality of the averaged range, clamped to `[0, 1]`. |
-| `intervals` | dimensionless | *Optional.* the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number. |
+| `intervals` | dimensionless | *Optional.* The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four. |
 
 
 ## Outputs
@@ -66,31 +94,13 @@ dPdz_F = phi_lo**2*dPdz_lo; phi_lo**2 = E + 3.24*F*H/(Fr**0.045*We**0.035); dPdz
 | `surface_tension >= 0` | raises | zero selects the class's `1e6` Weber sentinel; a negative surface tension is refused. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the Friedel gradient is `phi_lo**2` times the all-liquid Fanning gradient** `4 f_lo G**2/(2 rho_l D)`, and every helper answers zero for a non-positive flux, diameter, density or viscosity, as the class's guards do.
-
-- **the multiplier's Froude and Weber terms are floored at `1e-10`**, and a non-positive surface tension answers the class's `We = 1e6` sentinel rather than refusing - the branch the capture pins as `no_surface_tension`.
-
-- **the Fanning friction factor is `16/Re` below 2300 and the Blasius `0.079 Re**-0.25` above**, with zero at a non-positive Reynolds number.
-
-- **quality is clamped to `[0, 1]`**; below `1e-10` the Friedel gradient answers the all-liquid gradient, and at quality one the multiplier's `F` is zero, so the answer is the all-vapour term `E`.
-
-- **the averaged entry is Simpson's rule over the quality range** with `n = max(4, intervals)` raised to even, and `|sum*dx/3/(x_out-x_in)|` times the length, so the two sweep directions agree to rounding.
-
-- **an equal pair of endpoint qualities answers the single-point drop at that quality**, and a non-positive length answers zero in the class - which the composed calculation refuses at the boundary instead.
-
-- **the Muller-Steinhagen-Heck gradient is `(A + 2(B-A)x)(1-x)**(1/3) + B x**3`**, with `A` and `B` the all-liquid and all-vapour gradients; at either endpoint it reduces to the same gradient the Friedel entry answers there.
-
-- **the gravitational gradient uses the homogeneous void fraction** `alpha = 1/(1 + (1-x)/x * rho_v/rho_l)`, with the endpoints pinned to 0 and 1, and `g = 9.81`.
-
-- **the acceleration term is `G**2 (momentum_out - momentum_in)`** with the same void fraction and endpoint pins, so a falling quality answers a negative number - a pressure recovery, not a drop.
-
-- **the zone analysis consumes `calcFriedelPressureDrop` at a single average quality**; the averaged entry here is the class's separate Simpson integration over a quality range, not the zone analysis's own averaging.
+- The flow is a steady, fully developed vapour-liquid mixture in a circular tube. The methods are pressure-gradient correlations, not a flow-regime map.
 
 
 

@@ -1,9 +1,10 @@
 /**
- * One calculation sheet: inputs, one Calculate, and the answer.
+ * One calculation sheet: what it is for, what it needs, what it returns, and when to believe it.
  *
  * **The inputs are the unit-op form's fields.** `CalcInput` is structurally `FormParameter`, so
  * the same control chooses a number, a select, a switch or a text box and converts the chosen
- * unit set on the way in. A sheet holds SI magnitudes; the field shows the set in force.
+ * unit set on the way in. A sheet holds SI magnitudes; the field shows the set in force. The row
+ * layout is the sheet's, because a reader needs the explanation beside the control.
  *
  * **The calculation is explicit.** Editing marks the result stale; Calculate is the only call
  * that runs physics, because a flash or a column rating is not free.
@@ -13,7 +14,8 @@ import { ParameterField } from "../ParameterField";
 import { DraftField } from "../DraftField";
 import type { Units } from "../../state/units";
 import type { SheetCommand } from "../../wire/sheetCommands";
-import { formatQuantity } from "../../wire/field";
+import { quantityParts } from "../../wire/field";
+import { calcManualUrl } from "../../manual";
 import type { CalcForm, CalcInput, CalcOutput, Sheet, SheetValue } from "../../wire/types";
 
 export function CalcSheet({
@@ -71,7 +73,15 @@ export function CalcSheet({
               }
             }}
           />
-          <span className="calculation">{sheet.calculation}</span>
+          <div className="calculation">
+            {form === undefined ? null : <span className="calc-name">{form.name}</span>}
+            <span className="calc-id">{sheet.calculation}</span>
+            {form === undefined ? null : (
+              <span className={`calc-badge ${form.provenance.verification}`}>
+                {verificationLabel(form.provenance.verification)}
+              </span>
+            )}
+          </div>
         </div>
         <div className="calc-sheet-actions">
           {form?.available && form.worked_example !== undefined ? (
@@ -100,30 +110,64 @@ export function CalcSheet({
 
       {form === undefined ? null : (
         <>
-          <div className="calc-inputs">
-            {form.inputs.map((input) => (
-              <div className="calc-input" key={input.name}>
+          <section className="calc-about">
+            <p className="calc-summary">{form.summary}</p>
+            <div className="calc-about-links">
+              <a href={calcManualUrl(form.id)} target="_blank" rel="noreferrer">
+                Read the full manual and validity notes
+              </a>
+            </div>
+            {form.equation === null ? null : (
+              <details className="calc-details">
+                <summary>Equation</summary>
+                <pre>{form.equation}</pre>
+              </details>
+            )}
+            {form.references.length === 0 ? null : (
+              <details className="calc-details">
+                <summary>Source and references</summary>
+                <ul>
+                  {form.references.map((reference) => (
+                    <li key={reference}>{reference}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </section>
+
+          <section className="calc-section">
+            <h3>Inputs</h3>
+            <div className="calc-inputs">
+              {form.inputs.map((input) => (
                 <ParameterField
+                  key={input.name}
+                  layout="row"
                   parameter={input}
                   value={sheet.inputs[input.name] ?? ""}
                   units={units}
                   onChange={(value) => write(input, value)}
+                  action={
+                    input.required ? null : (
+                      <button
+                        type="button"
+                        className="clear"
+                        title="leave this input unset and let the calculation use its own default"
+                        onClick={() =>
+                          onCommand({
+                            command: "unset_input",
+                            sheet: sheet.id,
+                            input: input.name,
+                          })
+                        }
+                      >
+                        clear
+                      </button>
+                    )
+                  }
                 />
-                {input.required ? null : (
-                  <button
-                    type="button"
-                    className="clear"
-                    title="leave this input unset and let the calculation use its own default"
-                    onClick={() =>
-                      onCommand({ command: "unset_input", sheet: sheet.id, input: input.name })
-                    }
-                  >
-                    clear
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
 
           {sheet.diagnostics.length > 0 ? (
             <div className="calc-diagnostics">
@@ -142,61 +186,64 @@ export function CalcSheet({
             </div>
           )}
 
-          {sheet.result === null && sheet.error === null ? (
-            <p className="note">no answer yet; press Calculate</p>
-          ) : null}
-
-          {sheet.result === null ? null : (
-            <>
-              <table className="grid calc-results">
-                <thead>
-                  <tr>
-                    <th scope="col">output</th>
-                    <th scope="col">value</th>
-                    <th scope="col">unit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {form.outputs.map((output) => (
-                    <tr key={output.name}>
-                      <th scope="row" title={output.description}>
-                        {output.name}
-                      </th>
-                      <td data-num>{shown(sheet.result?.outputs[output.name], output, units)}</td>
-                      <td className="unit">{unitOf(sheet.result?.outputs[output.name], output)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {sheet.result.warnings.length === 0 ? null : (
-                <div className="calc-warnings">
-                  <h3>Warnings</h3>
-                  {sheet.result.warnings.map((warning, index) => (
-                    <p key={`${warning.code}:${index}`}>
-                      <strong>{warning.code}</strong> {warning.message}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {form.equation === null ? null : (
-            <details className="calc-details">
-              <summary>Equation</summary>
-              <pre>{form.equation}</pre>
-            </details>
-          )}
           {form.assumptions.length === 0 ? null : (
-            <details className="calc-details">
-              <summary>Assumptions</summary>
+            <section className="calc-section calc-validity">
+              <h3>When this applies</h3>
+              <p className="calc-section-note">
+                These conditions are not checked at runtime. The result means what it says only
+                when they hold; the checked limits beside each input are enforced.
+              </p>
               <ul>
                 {form.assumptions.map((assumption) => (
                   <li key={assumption}>{assumption}</li>
                 ))}
               </ul>
-            </details>
+            </section>
           )}
+
+          <section className="calc-section">
+            <h3>Results</h3>
+            {sheet.result === null ? (
+              <p className="note">
+                {sheet.error === null ? "not calculated yet; press Calculate" : "not calculated"}
+              </p>
+            ) : null}
+            <div className="calc-outputs">
+              {form.outputs.map((output) => {
+                const value = sheet.result?.outputs[output.name];
+                return (
+                  <div className="calc-output" key={output.name}>
+                    <div className="calc-output-text">
+                      <div className="head">
+                        <span className="name">{output.name}</span>
+                        {output.optional ? <span className="optional">optional</span> : null}
+                      </div>
+                      <p className="description">{output.description}</p>
+                    </div>
+                    <div className="calc-output-value">
+                      <span className="value">
+                        {sheet.result === null ? "—" : shown(value, output, units)}
+                      </span>
+                      <span className="unit">
+                        {sheet.result === null ? "" : unitOf(value, output, units)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {sheet.result !== null && sheet.result.warnings.length > 0 ? (
+              <div className="calc-warnings">
+                <h4>Warnings</h4>
+                {sheet.result.warnings.map((warning, index) => (
+                  <p key={`${warning.code}:${index}`}>
+                    <strong>{warning.code}</strong> {warning.message}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </section>
+
           <details className="calc-details">
             <summary>Model check</summary>
             <dl>
@@ -213,11 +260,30 @@ export function CalcSheet({
                 {form.provenance.tests_active} active, {form.provenance.tests_skipped} skipped
               </dd>
             </dl>
+            <p>
+              <a href={`${calcManualUrl(form.id)}#notes`} target="_blank" rel="noreferrer">
+                Implementation notes in the manual
+              </a>
+            </p>
           </details>
         </>
       )}
     </article>
   );
+}
+
+/** The verification status as a reader's words rather than an enum's spelling. */
+function verificationLabel(status: string): string {
+  switch (status) {
+    case "verified":
+      return "verified";
+    case "partially_verified":
+      return "partially verified";
+    case "source_needed":
+      return "source needed";
+    default:
+      return "unverified";
+  }
 }
 
 /** One output as a reader sees it, in the unit set in force. */
@@ -229,23 +295,28 @@ function shown(value: SheetValue | undefined, output: CalcOutput, units: Units):
     return value.join(", ");
   }
   if (typeof value === "object") {
-    return formatQuantity(value.magnitude_si, value.unit, 6, units);
+    return quantityParts(value.magnitude_si, value.unit, 6, units).value;
   }
   if (typeof value === "number" && output.kind === "quantity") {
     return output.unit === null || output.unit === "dimensionless"
       ? String(value)
-      : formatQuantity(value, output.unit, 6, units);
+      : quantityParts(value, output.unit, 6, units).value;
   }
   return String(value);
 }
 
-/** The unit a value is in, where it has one. */
-function unitOf(value: SheetValue | undefined, output: CalcOutput): string {
-  if (value === null || value === undefined) {
-    return output.unit ?? "—";
+/** The unit a value is in, in the unit set in force, or `—` where it has none. */
+function unitOf(value: SheetValue | undefined, output: CalcOutput, units: Units): string {
+  if (value === null || value === undefined || Array.isArray(value)) {
+    return output.unit === null || output.unit === "dimensionless" ? "—" : output.unit;
   }
-  if (typeof value === "object" && !Array.isArray(value)) {
-    return value.unit;
+  if (typeof value === "object") {
+    return quantityParts(value.magnitude_si, value.unit, 6, units).unit;
   }
-  return output.kind === "quantity" ? (output.unit ?? "—") : "—";
+  if (typeof value === "number" && output.kind === "quantity") {
+    return output.unit === null || output.unit === "dimensionless"
+      ? "—"
+      : quantityParts(value, output.unit, 6, units).unit;
+  }
+  return "—";
 }

@@ -1,16 +1,10 @@
 id = "thermal.lmtd_correction_factor"
 name = "The LMTD correction factor for a shell-and-tube exchanger"
+summary = "The LMTD correction factor for a shell-and-tube exchanger from its terminal temperatures and pass arrangement. Use it to convert a counterflow mean temperature difference to the exchanger's own."
 equation = "R = (T_h,in - T_h,out)/(T_c,out - T_c,in); P = (T_c,out - T_c,in)/(T_h,in - T_c,in); F_t = sqrt(R*R+1)*ln((1-P)/(1-R*P)) / ((R-1)*ln((2-P*(R+1-sqrt(R*R+1)))/(2-P*(R+1+sqrt(R*R+1)))))"
 latex = '''F_t = \frac{\sqrt{R^2+1}\,\ln\!\left(\frac{1-P}{1-RP}\right)}{(R-1)\ln\!\left(\frac{2-P(R+1-\sqrt{R^2+1})}{2-P(R+1+\sqrt{R^2+1})}\right)}'''
-assumptions = [
-    "**`R` and `P` are the class's ratios**: `R = (Th_in - Th_out)/(Tc_out - Tc_in)` with a zero cold-side change answering 1.0, and `P = (Tc_out - Tc_in)/(Th_in - Tc_in)` with a zero hot-cold inlet difference answering 0.\n",
-    "**the single-shell formula is the analytic Bowman-Mueller-Nagle relation**, with the `R = 1` special case inside `|R - 1| < 1e-6`, the `R*P >= 1` temperature-cross zero, and the general branch clamped to `[0, 1]`.\n",
-    "**the `R = 1` branch is not clamped**, unlike the general branch; its ratio is the formula's own, which stays below one on the captured states but is not forced there.\n",
-    "**multi-pass P is converted to a per-shell `P1` before the single-shell formula**, with the `R = 1` branch `P/(N-(N-1)P)`; an undefined or out-of-range `P1` answers 1.0 rather than zero, which is why the cross row reads 1.0 at two passes.\n",
-    "**`required_shell_passes` scans one to six and answers -1 when none reaches `MIN_ACCEPTABLE_FT = 0.75`.**\n",
-    "**a shell-pass count below one is the class's clamp to one**, not a refusal.\n",
-    "**the four temperatures enter only as differences**, so any consistent unit works; the spec states K and the differences are the same.\n",
-]
+assumptions = ["**the four temperatures enter only as differences**, so any consistent unit works; the spec states K and the differences are the same.\n"]
+notes = ["**`R` and `P` are the class's ratios**: `R = (Th_in - Th_out)/(Tc_out - Tc_in)` with a zero cold-side change answering 1.0, and `P = (Tc_out - Tc_in)/(Th_in - Tc_in)` with a zero hot-cold inlet difference answering 0.\n", "**the single-shell formula is the analytic Bowman-Mueller-Nagle relation**, with the `R = 1` special case inside `|R - 1| < 1e-6`, the `R*P >= 1` temperature-cross zero, and the general branch clamped to `[0, 1]`.\n", "**the `R = 1` branch is not clamped**, unlike the general branch; its ratio is the formula's own, which stays below one on the captured states but is not forced there.\n", "**multi-pass P is converted to a per-shell `P1` before the single-shell formula**, with the `R = 1` branch `P/(N-(N-1)P)`; an undefined or out-of-range `P1` answers 1.0 rather than zero, which is why the cross row reads 1.0 at two passes.\n", "**`required_shell_passes` scans one to six and answers -1 when none reaches `MIN_ACCEPTABLE_FT = 0.75`.**\n", "**a shell-pass count below one is the class's clamp to one**, not a refusal.\n"]
 references = [
     "Kern, D.Q. (1950). Process Heat Transfer. McGraw-Hill. The R and P ratios and the correction-factor use.",
     "Bowman, R.A.; Mueller, A.C.; Nagle, W.M. (1940). \"Mean temperature difference in design.\" Trans. ASME 62, 283-294. The multi-pass correction-factor relation.",
@@ -37,7 +31,7 @@ description = "the cold stream's outlet temperature.\n"
 [inputs.shell_passes]
 unit = "dimensionless"
 optional = true
-description = "the number of shell passes the stated `ft` is for. Absent is `1`; below one is the class's clamp to one.\n"
+description = "The number of shell passes the stated `ft` is for. Defaults to 1; below one is clamped to one.\n"
 [outputs]
 [outputs.r]
 unit = "dimensionless"
@@ -50,10 +44,10 @@ unit = "dimensionless"
 description = "the correction factor for the stated number of shell passes.\n"
 [outputs.ft_1_shell_pass]
 unit = "dimensionless"
-description = "the correction factor for one shell pass, the class's dedicated wrapper.\n"
+description = "The correction factor for one shell pass.\n"
 [outputs.ft_2_shell_passes]
 unit = "dimensionless"
-description = "the correction factor for two shell passes, the class's dedicated wrapper.\n"
+description = "The correction factor for two shell passes.\n"
 [outputs.required_shell_passes]
 unit = "dimensionless"
 description = "the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.\n"

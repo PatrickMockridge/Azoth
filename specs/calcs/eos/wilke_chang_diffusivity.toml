@@ -1,8 +1,10 @@
 id = "eos.wilke_chang_diffusivity"
 name = "Liquid binary diffusivity from the Wilke-Chang correlation"
+summary = "Liquid binary diffusivity from the Wilke-Chang correlation. Use it for liquid-phase mass-transfer screening with an associating solvent."
 equation = "D = 7.4e-8 * (phi*M)**0.5 * T / (eta*VA**0.6)   [cm**2/s],  with phi the solvent association parameter, M in g/mol, VA in cm**3/mol, eta in cP and T in K; VA is clamped to [20, 600] cm**3/mol and eta to [0.01, 500] cP, and D*1e-4 recovers m**2/s."
 latex = '''D_{AB}^0 = 7.4\times10^{-8}\,\frac{(\phi_B M_B)^{1/2}\,T}{\eta_B\,V_A^{0.6}}'''
-assumptions = ["`phi` is the solvent association parameter; the caller resolves it from the solvent's name with `components.wilke_chang_phi` (water 2.26, methanol 1.9, non-associated 1.0).\n", "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n", "the molar volume and viscosity are clamped to NeqSim's `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+assumptions = ["`phi` is the solvent association parameter; the caller resolves it from the solvent's name with `components.wilke_chang_phi` (water 2.26, methanol 1.9, non-associated 1.0).\n", "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n", "the molar volume and viscosity are clamped to `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+notes = ["`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n"]
 references = ["Wilke, C. R.; Chang, P. (1955). \\\"Correlation of diffusion coefficients in dilute solutions.\\\" AIChE J. 1(2), 264-270. DOI 10.1002/aic.690010222."]
 [source]
 standard = "Wilke, C. R.; Chang, P. (1955)"

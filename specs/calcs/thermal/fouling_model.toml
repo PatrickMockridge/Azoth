@@ -1,18 +1,10 @@
 id = "thermal.fouling_model"
 name = "Heat-exchanger fouling, fixed, Kern-Seaton and Ebert-Panchal"
+summary = "Heat-exchanger fouling resistance with time for the fixed, Kern-Seaton and Ebert-Panchal models. Use it to estimate a fouling allowance or a cleaning interval."
 equation = "dRf/dt = alpha*Re**beta*exp(-E/(R*Tw)) - gamma*tau_w*Rf; Rf(t) = Rf_inf*(1 - exp(-t/tau)); tau_w = f/8*rho*v**2"
 latex = '''\frac{dR_f}{dt} = \alpha Re^{\beta} e^{-E/(R T_w)} - \gamma \tau_w R_f, \qquad R_f(t) = R_{f,\infty}\left(1 - e^{-t/\tau}\right)'''
-assumptions = [
-    "**the operating conditions are always applied** through the class's `updateConditions` (`Re = rho v D/mu`, `tau_w = f/8 rho v**2`), with its `calcDarcyFriction`; the class's cached field defaults are not a reachable state.\n",
-    "**the Ebert-Panchal resistance at a time is the analytical approach to `Rf_inf = deposition/(gamma tau_w)`**, `Rf_inf (1 - exp(-t/tau))` with `tau = 1/(gamma tau_w)` in hours, and a zero removal coefficient answers linear growth `deposition*t*3600`.\n",
-    "**the deposition is `alpha Re**beta exp(-E/(R Tw))` with `R = 8.314` and the rate converted to hours by `3600`**, and a non-positive wall temperature or Reynolds number answers a zero rate, as the class guards.\n",
-    "**the threshold temperature is `-E/(R ln(rate/(alpha Re**beta)))`**, answers zero outside its guards, and **answers the class's `Double.MAX_VALUE` sentinel when the logarithm is non-negative** - the state where any deposition exceeds the threshold rate.\n",
-    "**the threshold velocity is the class's 50-step bisection over `[0.1, 10]` m/s** on `Rf_inf = fixed_fouling_resistance`, so it stops at `10` when the asymptote stays above the fixed resistance across the bracket, and at `0.1` when it never does.\n",
-    "**the time to a target resistance is `-tau ln(1 - target/Rf_inf)`**, answering `-1` when the target is at or beyond the asymptote, `0` for the fixed model - whose resistance does not grow - and `-0.0` where the asymptote is the `MAX_VALUE` sentinel.\n",
-    "**the stateful `advanceTime` path is an optional Euler step**: `euler_steps` steps of `euler_step_hours`, adding `rate * euler_step_hours` to the current resistance for Ebert-Panchal only, flooring at zero, and incrementing the operating time for every model. Absent steps are zero.\n",
-    "**`time_hours` drives the analytical resistance of both time-dependent models** while `current_fouling_resistance` is the state after the Euler steps; for Kern-Seaton that state is `Rf_max (1 - exp(-operating_time/tau))`, as the class's no-argument getter answers.\n",
-    "**the fouling resistance and rate are declared dimensionless** because the vocabulary and `uom` carry no area-specific resistance or its rate; the SI units are m**2*K/W and m**2*K/(W*h) in the descriptions, the `k_ga` precedent.\n",
-]
+assumptions = ["The fouling parameters are the caller's estimate for one mechanism. The result is a resistance with time, not a guaranteed cleaning interval or a plant-specific fouling prediction.\n"]
+notes = ["**the operating conditions are always applied** through the class's `updateConditions` (`Re = rho v D/mu`, `tau_w = f/8 rho v**2`), with its `calcDarcyFriction`; the class's cached field defaults are not a reachable state.\n", "**the Ebert-Panchal resistance at a time is the analytical approach to `Rf_inf = deposition/(gamma tau_w)`**, `Rf_inf (1 - exp(-t/tau))` with `tau = 1/(gamma tau_w)` in hours, and a zero removal coefficient answers linear growth `deposition*t*3600`.\n", "**the deposition is `alpha Re**beta exp(-E/(R Tw))` with `R = 8.314` and the rate converted to hours by `3600`**, and a non-positive wall temperature or Reynolds number answers a zero rate, as the class guards.\n", "**the threshold temperature is `-E/(R ln(rate/(alpha Re**beta)))`**, answers zero outside its guards, and **answers the class's `Double.MAX_VALUE` sentinel when the logarithm is non-negative** - the state where any deposition exceeds the threshold rate.\n", "**the threshold velocity is the class's 50-step bisection over `[0.1, 10]` m/s** on `Rf_inf = fixed_fouling_resistance`, so it stops at `10` when the asymptote stays above the fixed resistance across the bracket, and at `0.1` when it never does.\n", "**the time to a target resistance is `-tau ln(1 - target/Rf_inf)`**, answering `-1` when the target is at or beyond the asymptote, `0` for the fixed model - whose resistance does not grow - and `-0.0` where the asymptote is the `MAX_VALUE` sentinel.\n", "**the stateful `advanceTime` path is an optional Euler step**: `euler_steps` steps of `euler_step_hours`, adding `rate * euler_step_hours` to the current resistance for Ebert-Panchal only, flooring at zero, and incrementing the operating time for every model. Absent steps are zero.\n", "**`time_hours` drives the analytical resistance of both time-dependent models** while `current_fouling_resistance` is the state after the Euler steps; for Kern-Seaton that state is `Rf_max (1 - exp(-operating_time/tau))`, as the class's no-argument getter answers.\n", "**the fouling resistance and rate are declared dimensionless** because the vocabulary and `uom` carry no area-specific resistance or its rate; the SI units are m**2*K/W and m**2*K/(W*h) in the descriptions, the `k_ga` precedent.\n"]
 references = [
     "Ebert, W.; Panchal, C.B. (1997). \"Analysis of Exxon Crude-Oil Slip-Stream Coking Data.\" Fouling Mitigation of Industrial Heat-Exchange Equipment, Begell House, 451-460. The threshold model.",
     "Kern, D.Q.; Seaton, R.E. (1959). \"A Theoretical Analysis of Thermal Surface Fouling.\" British Chemical Engineering 4(5), 258-262. The asymptotic model.",
@@ -57,13 +49,13 @@ unit = "dimensionless"
 description = "the removal rate constant in 1/(Pa*s), declared dimensionless because the vocabulary carries no inverse-pressure-time unit. Crude is `5e-9`, heavy crude `3e-9`.\n"
 [inputs.fixed_fouling_resistance]
 unit = "dimensionless"
-description = "the fixed TEMA resistance in m**2*K/W, used by the fixed model and as the threshold-velocity comparison. The class's default is `0.000176`.\n"
+description = "The fixed TEMA resistance, used by the fixed model and as the threshold-velocity comparison. Defaults to 0.000176 m**2*K/W.\n"
 [inputs.rf_max]
 unit = "dimensionless"
-description = "the Kern-Seaton asymptotic resistance in m**2*K/W. The class's default is `0.0005`.\n"
+description = "The Kern-Seaton asymptotic resistance. Defaults to 0.0005 m**2*K/W.\n"
 [inputs.time_constant]
 unit = "h"
-description = "the Kern-Seaton time constant. The class's default is `2000` h.\n"
+description = "The Kern-Seaton time constant. Defaults to 2000 h.\n"
 [inputs.time_hours]
 unit = "h"
 description = "the operating time the analytical resistance is asked at. Zero is the initial state.\n"
@@ -96,7 +88,7 @@ unit = "K"
 description = "the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.\n"
 [outputs.threshold_velocity]
 unit = "m/s"
-description = "the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.\n"
+description = "The velocity at which the asymptote crosses the fixed resistance.\n"
 [outputs.time_to_target]
 unit = "h"
 description = "the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.\n"
@@ -111,7 +103,7 @@ unit = "dimensionless"
 description = "`rho*v*D/mu` of the stated conditions.\n"
 [outputs.wall_shear_stress]
 unit = "Pa"
-description = "`f/8*rho*v**2` with the class's Darcy friction factor.\n"
+description = "`f/8*rho*v**2`, using the Darcy friction factor.\n"
 [[valid_range]]
 quantity = "velocity"
 min = 0

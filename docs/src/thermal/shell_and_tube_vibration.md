@@ -4,6 +4,8 @@
 
 `thermal.shell_and_tube_vibration`
 
+A shell-and-tube exchanger's tube-vibration screen from its geometry, flow and natural frequency. Use it to flag a bundle at risk of flow-induced vibration.
+
 ## Equation
 
 $$
@@ -22,6 +24,26 @@ f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rh
 
 `performScreening` and the four helpers it reads: `calcNaturalFrequency`, `calcVortexSheddingFrequency`, `calcCriticalVelocityConnors` and `calcAcousticFrequency`.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.
+
+- **the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.
+
+- **Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.
+
+- **the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.
+
+- **the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.
+
+- **a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.
+
+- **the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -36,7 +58,7 @@ f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rh
 | `shell_fluid_density` | kg/m**3 | the shell-side fluid's density, in the hydrodynamic mass and in Connors' criterion. |
 | `tube_fluid_density` | kg/m**3 | the tube-side fluid's density, in the internal mass. |
 | `shell_inside_diameter` | m | the shell inside diameter, which sets the first acoustic mode. |
-| `sonic_velocity` | m/s | the speed of sound in the shell-side fluid; `340` m/s is the class's gas example. |
+| `sonic_velocity` | m/s | The speed of sound in the shell-side fluid; 340 m/s is the gas example. |
 | `damping_ratio` | dimensionless | the tube damping ratio, typically `0.03` in liquid and `0.01` in gas. |
 | `triangular_pitch` | - | the tube layout: `true` triangular (Connors 3.3), `false` square (3.4). |
 
@@ -50,7 +72,7 @@ f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rh
 | `vortex_shedding_ratio` | dimensionless | `f_vs / f_n`; critical when strictly between 0.8 and 1.2. |
 | `vortex_shedding_critical` | - | whether the shedding ratio is inside the 0.8-1.2 band. |
 | `critical_velocity` | m/s | Connors' critical crossflow velocity for fluid-elastic instability. |
-| `velocity_ratio` | dimensionless | `V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one. |
+| `velocity_ratio` | dimensionless | `V / (0.5 * V_crit)`; critical above one. |
 | `fluid_elastic_critical` | - | whether the velocity ratio exceeds one. |
 | `acoustic_frequency` | 1/s | the first acoustic resonance frequency of the shell cavity, Hz. |
 | `acoustic_ratio` | dimensionless | `f_vs / f_ac`; critical when strictly between 0.8 and 1.2. |
@@ -76,25 +98,13 @@ f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rh
 | `damping_ratio >= 0` | raises | Connors' criterion takes the square root of the damping; zero is the undamped limit. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.
-
-- **the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.
-
-- **Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.
-
-- **the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.
-
-- **the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.
-
-- **a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.
-
-- **the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.
+- The screen checks vortex shedding, fluid-elastic instability and acoustic resonance for the declared bundle. It flags risk; it is not a substitute for a detailed vibration analysis.
 
 
 

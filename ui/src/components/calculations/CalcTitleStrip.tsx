@@ -7,6 +7,7 @@
  */
 
 import { DraftField } from "../DraftField";
+import { manualHome } from "../../manual";
 import { WorkspaceSwitch, type Workspace } from "./WorkspaceSwitch";
 import type { Theme } from "../../state/theme";
 import type { Units } from "../../state/units";
@@ -43,7 +44,7 @@ export function CalcTitleStrip({
       <h1>azoth</h1>
       <a
         className="screening"
-        href="https://github.com/PatrickMockridge/azoth/blob/main/docs/src/index.md#not-for-design-work-yet"
+        href={`${manualHome()}index.html#not-for-design-work-yet`}
         target="_blank"
         rel="noreferrer"
         title="the port is incomplete, so these are screening values and not design deliverables"

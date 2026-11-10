@@ -1,8 +1,10 @@
 id = "eos.liquid_viscosity_pure"
 name = "One component's pure-liquid viscosity from the LIQVISC correlation"
+summary = "Pure-liquid viscosity from the LIQVISC correlation, with its pressure correction. Use it for pump and line pressure-drop screening when no measured viscosity is available."
 equation = "The LIQVISC model's form, times NeqSim's Lucas pressure correction: model 1 is `l1*T**l2`, model 2 `exp(l1 + l2/T)`, model 3 `exp(l1 + l2/T + l3*T + l4*T**2)` and model 4 `10**(l1*(1/T - 1/l2))`; the result is multiplied by `(pressure_correction + 1)/2`, where the correction is 1 above the critical temperature and otherwise the Lucas ratio of two polynomials in `T/Tc` and `P/Pc`."
 latex = '''\mu_i = \mu_i^{\mathrm{LIQVISC}}\,\frac{1 + \mathrm{corr}(T,P)}{2},\qquad \mathrm{corr} = \frac{1 + D\left(\frac{P/P_c}{2.118}\right)^{A}}{1 + C\,\omega\,P/P_c}'''
-assumptions = ["**this is not the phase's viscosity.** It is one component's, at the phase's `(T, P)` and by the component's own LIQVISC parameters - the `eta_B` the liquid diffusivity correlations take, where the phase's own viscosity is PFCT's and a different number.\n", "**NeqSim's two classes carry this ladder and disagree in one branch**: the common-phase one leaves model 2 **empty** (the component comes out at `0` cP), the liquid one implements it as `exp(l1 + l2/T)`. `form` selects which, because a phase gets whichever class its viscosity model extends.\n", "**both are on the rate-based column's path**: an oil phase's `PFCTViscosityMethodHeavyOil` inherits the common-phase class, so its n-butane comes out at zero, where an aqueous phase's \"polynom\" model is the liquid class.\n", "above the component's critical temperature the answer is `0.5` cP whatever the model, and a component with no model index at all answers `0.7` - NeqSim's two sentinels.\n", "the result is in Pa*s, where NeqSim's own value is in cP; the `1e-3` is the port's conversion and not part of the correlation.\n"]
+assumptions = ["**this is not the phase's viscosity.** It is one component's, at the phase's `(T, P)` and by the component's own LIQVISC parameters - the `eta_B` the liquid diffusivity correlations take, where the phase's own viscosity is PFCT's and a different number.\n", "Above the component's critical temperature the answer is 0.5 cP whatever the model, and a component with no model index answers 0.7 cP."]
+notes = ["**NeqSim's two classes carry this ladder and disagree in one branch**: the common-phase one leaves model 2 **empty** (the component comes out at `0` cP), the liquid one implements it as `exp(l1 + l2/T)`. `form` selects which, because a phase gets whichever class its viscosity model extends.\n", "**both are on the rate-based column's path**: an oil phase's `PFCTViscosityMethodHeavyOil` inherits the common-phase class, so its n-butane comes out at zero, where an aqueous phase's \"polynom\" model is the liquid class.\n", "the result is in Pa*s, where NeqSim's own value is in cP; the `1e-3` is the port's conversion and not part of the correlation.\n"]
 references = ["Yaws, C. L. (2003). \\\"Yaws' Handbook of Thermodynamic and Physical Properties of Chemical Compounds.\\\" Knovel. The four liquid-viscosity temperature forms, which NeqSim stores as `LIQVISC1..4` with a model index.\n", "Lucas, K. (1981). \\\"Die Druckabhängigkeit der Viskosität von Flüssigkeiten.\\\" Chemie Ingenieur Technik 53(1), 29-32. DOI 10.1002/cite.330530107. The pressure correction `getViscosityPressureCorrection` applies.\n", "`validation/neqsim/captures/phase_transport_probe.tsv` - per phase and per component, the LIQVISC model, its four parameters and the pure viscosity NeqSim answers, on four fluids.\n"]
 [source]
 standard = "NeqSim master `commonphasephysicalproperties/viscosity/Viscosity` and `liquidphysicalproperties/viscosity/Viscosity`"
@@ -12,10 +14,10 @@ doi = "10.1002/cite.330530107"
 [inputs.form]
 type = "enum"
 values = ["common_phase", "liquid"]
-description = "Which of NeqSim's two ladders: `common_phase`, whose model 2 branch is empty, or `liquid`, which implements it. See the assumptions.\n"
+description = "Which LIQVISC ladder to use: `common_phase` or `liquid`.\n"
 [inputs.model]
 unit = "dimensionless"
-description = "The component's LIQVISC model index: 1, 2, 3 or 4. Zero - NeqSim's `LIQVISC5` absent or unset - answers the `0.7` cP sentinel.\n"
+description = "The component's LIQVISC model index: 1, 2, 3 or 4. Zero answers the 0.7 cP sentinel.\n"
 [inputs.l1]
 unit = "dimensionless"
 description = "The component's `LIQVISC1`, whose unit depends on the model.\n"

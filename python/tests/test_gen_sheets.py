@@ -46,6 +46,36 @@ def test_the_catalogue_never_names_the_upstream_implementation() -> None:
     assert text.count("CalcForm {") == 98
 
 
+def test_every_calculation_says_what_it_is_for() -> None:
+    module: Any = tool()
+    for _, spec in module.documents():
+        summary = module.summary_of(spec)
+        assert "neqsim" not in summary.lower(), spec["id"]
+        assert len(summary) <= 300, spec["id"]
+
+
+def test_the_generator_refuses_a_missing_or_upstream_summary() -> None:
+    module: Any = tool()
+    with pytest.raises(SystemExit):
+        module.summary_of({"id": "x.y"})
+    with pytest.raises(SystemExit):
+        module.summary_of({"id": "x.y", "summary": "NeqSim's correlation"})
+
+
+def test_every_emitted_field_keeps_its_description() -> None:
+    """**A description the UI cannot show is not a description.** The catalogue sanitises upstream
+    names by dropping prose that carries them, so a field whose only text names the source would
+    reach the browser blank. The specs must say what each field means in words the front end can
+    use."""
+    module: Any = tool()
+    for _, spec in module.documents():
+        for declaration in [*spec["inputs"].values(), *spec["outputs"].values()]:
+            description = module.clean(str(declaration.get("description", "")))
+            assert description.strip() != "", spec["id"]
+        for assumption in spec.get("assumptions", []):
+            assert "neqsim" not in assumption.lower(), spec["id"]
+
+
 def test_the_shipped_books_match_the_document_schema() -> None:
     import json
     import tomllib

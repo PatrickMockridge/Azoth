@@ -1,9 +1,13 @@
 # azoth
 
-This book is the **human entry point** for azoth: how to install it, pick a calculation,
+This book is the **human entry point** for azoth: how to use the editor, pick a calculation,
 read its page, and call it. The **agentic entry point** is
 [the agentic section](./agentic/index.md) and, at the repository root, `CLAUDE.md` and
 `AGENTS.md`.
+
+**Use it in the browser:** [the editor](https://patrickmockridge.github.io/azoth/) for the
+flowsheet and its calculation book, then [calculation sheets](./using/calculations.md) and
+[reading a calculation page](./using/reading-a-calculation.md) for the guide.
 
 Start here: [install it](https://github.com/PatrickMockridge/azoth#install) - `azoth-engine`
 is not on PyPI yet, so a checkout is where 0.1 is built from - pick a calculation from
@@ -11,9 +15,9 @@ is not on PyPI yet, so a checkout is where 0.1 is built from - pick a calculatio
 worked example, then call it as the page shows or over arrays with
 [the batch API](#the-batch-api).
 
-Every calculation in this book ships with its equation, where the equation came
-from, the range in which it is validated, its assumptions, a worked example, and
-the tests that exercise it. Nothing here is prose written alongside code: every
+Every calculation in this book ships with a statement of what it is for, its equation, where
+the equation came from, the range in which it is validated, the conditions it does not check, a
+worked example, and the tests that exercise it. Nothing here is prose written alongside code: every
 page under [Equations of state](./eos/index.md), [Hydraulics](./hydraulics/index.md),
 [Unit operations](./process/index.md), [Reactions](./reactions/index.md) and
 [Heat transfer](./thermal/index.md) is **generated from the same specification files
@@ -52,12 +56,13 @@ Each page has the same shape, and the order is deliberate:
 
 | Section | Why it is there |
 |---|---|
+| What this is for | What the calculation computes and the decision it supports |
 | Equation | In LaTeX for a reader, and in the form the library evaluates, so you can check one against the other |
 | Source | Where the equation came from, and what about that attribution is not confirmed |
 | Notes | The reasoning you need in order to judge a number: where this implementation departs from its source, why a constant takes the value it does, which claims are unconfirmed |
 | Inputs and outputs | Names, units, and what they mean |
 | Valid range | The bounds, what happens when one is violated, and why each exists |
-| Assumptions | What is **not** checked at runtime, and is therefore your responsibility |
+| Conditions for a valid result | What is **not** checked at runtime, and is therefore your responsibility |
 | Worked example | A fully specified case you can reproduce by hand |
 | Tests | What is actually exercised, including what is deliberately skipped and why |
 

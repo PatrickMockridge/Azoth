@@ -4,6 +4,8 @@
 
 `thermal.lmtd_correction_factor`
 
+The LMTD correction factor for a shell-and-tube exchanger from its terminal temperatures and pass arrangement. Use it to convert a counterflow mean temperature difference to the exchanger's own.
+
 ## Equation
 
 $$
@@ -22,43 +24,9 @@ R = (T_h,in - T_h,out)/(T_c,out - T_c,in); P = (T_c,out - T_c,in)/(T_h,in - T_c,
 
 `calcFt`, `calcFtFromRP` and the four helpers behind them - `calcR`, `calcP`, `calcFtSingleShell`, `convertPtoPerShell` - plus `requiredShellPasses`.
 
-## Inputs
+## Notes
 
-| Name | Unit | Description |
-|---|---|---|
-| `hot_inlet_temperature` | K | the hot stream's inlet temperature; only its differences enter R and P. |
-| `hot_outlet_temperature` | K | the hot stream's outlet temperature. |
-| `cold_inlet_temperature` | K | the cold stream's inlet temperature. |
-| `cold_outlet_temperature` | K | the cold stream's outlet temperature. |
-| `shell_passes` | dimensionless | *Optional.* the number of shell passes the stated `ft` is for. Absent is `1`; below one is the class's clamp to one. |
-
-
-## Outputs
-
-| Name | Unit | Description |
-|---|---|---|
-| `r` | dimensionless | the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`. |
-| `p` | dimensionless | the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`. |
-| `ft` | dimensionless | the correction factor for the stated number of shell passes. |
-| `ft_1_shell_pass` | dimensionless | the correction factor for one shell pass, the class's dedicated wrapper. |
-| `ft_2_shell_passes` | dimensionless | the correction factor for two shell passes, the class's dedicated wrapper. |
-| `required_shell_passes` | dimensionless | the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does. |
-
-
-## Valid range
-
-| Bound | On violation | Why |
-|---|---|---|
-| `hot_inlet_temperature > 0` | raises | an absolute temperature. |
-| `hot_outlet_temperature > 0` | raises | an absolute temperature. |
-| `cold_inlet_temperature > 0` | raises | an absolute temperature. |
-| `cold_outlet_temperature > 0` | raises | an absolute temperature. |
-
-
-## Assumptions
-
-These are **not** checked at runtime. They are what the caller has to
-satisfy for the result to mean what it says.
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
 
 
 - **`R` and `P` are the class's ratios**: `R = (Th_in - Th_out)/(Tc_out - Tc_in)` with a zero cold-side change answering 1.0, and `P = (Tc_out - Tc_in)/(Th_in - Tc_in)` with a zero hot-cold inlet difference answering 0.
@@ -72,6 +40,46 @@ satisfy for the result to mean what it says.
 - **`required_shell_passes` scans one to six and answers -1 when none reaches `MIN_ACCEPTABLE_FT = 0.75`.**
 
 - **a shell-pass count below one is the class's clamp to one**, not a refusal.
+
+
+## Inputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `hot_inlet_temperature` | K | the hot stream's inlet temperature; only its differences enter R and P. |
+| `hot_outlet_temperature` | K | the hot stream's outlet temperature. |
+| `cold_inlet_temperature` | K | the cold stream's inlet temperature. |
+| `cold_outlet_temperature` | K | the cold stream's outlet temperature. |
+| `shell_passes` | dimensionless | *Optional.* The number of shell passes the stated `ft` is for. Defaults to 1; below one is clamped to one. |
+
+
+## Outputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `r` | dimensionless | the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`. |
+| `p` | dimensionless | the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`. |
+| `ft` | dimensionless | the correction factor for the stated number of shell passes. |
+| `ft_1_shell_pass` | dimensionless | The correction factor for one shell pass. |
+| `ft_2_shell_passes` | dimensionless | The correction factor for two shell passes. |
+| `required_shell_passes` | dimensionless | the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does. |
+
+
+## Valid range
+
+| Bound | On violation | Why |
+|---|---|---|
+| `hot_inlet_temperature > 0` | raises | an absolute temperature. |
+| `hot_outlet_temperature > 0` | raises | an absolute temperature. |
+| `cold_inlet_temperature > 0` | raises | an absolute temperature. |
+| `cold_outlet_temperature > 0` | raises | an absolute temperature. |
+
+
+## Conditions for a valid result
+
+These are **not** checked at runtime. They are what the caller has to
+satisfy for the result to mean what it says.
+
 
 - **the four temperatures enter only as differences**, so any consistent unit works; the spec states K and the differences are the same.
 

@@ -8,6 +8,7 @@
   "required": [
     "id",
     "name",
+    "summary",
     "equation",
     "latex",
     "inputs",
@@ -26,6 +27,11 @@
       "type": "string",
       "minLength": 1,
       "description": "Human-readable name, used as the doc page title."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the calculation computes and the engineering decision it supports, in one or two sentences. Written for a process engineer; no implementation or upstream-class detail."
     },
     "equation": {
       "type": "string",
@@ -79,9 +85,14 @@
     },
     "assumptions": {
       "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Conditions the caller controls that the calc relies on and that are NOT checked at runtime. User-facing validity prose; implementation and port detail belongs in `notes`."
+    },
+    "notes": {
+      "type": "array",
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 },
-      "description": "Physical assumptions the calc relies on that are NOT checked at runtime. Documented, not enforced - keep checked constraints in valid_range."
+      "description": "Implementation notes: where this port departs from its source, which branches or defaults are not carried, unit conversions and known deviations. Rendered in the manual, not in the browser."
     },
     "references": {
       "type": "array",

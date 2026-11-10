@@ -1,18 +1,10 @@
 id = "thermal.incremental_zone_analysis"
 name = "A shell-and-tube exchanger's incremental zone analysis"
+summary = "A shell-and-tube exchanger rated in incremental zones along the tube, with the local tube-side regime and shell-side coefficient. Use it where the coefficient changes with quality or temperature."
 equation = "h_tube = Shah(q) | Gungor-Winterton(q) | Nu*k/d_i; h_shell = Kern; 1/U = 1/h_shell + R_f,s + d_o*ln(d_o/d_i)/(2*k_w) + (d_o/d_i)*R_f,t + (d_o/d_i)/h_tube; LMTD from the four zone temperatures; A = Q/(U*LMTD)"
 latex = '''\frac{1}{U} = \frac{1}{h_o} + R_{f,o} + \frac{d_o \ln(d_o/d_i)}{2 k_w} + \frac{d_o}{d_i} R_{f,i} + \frac{d_o}{d_i h_i}'''
-assumptions = [
-    "**`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.\n",
-    "**the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.\n",
-    "**the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.\n",
-    "**the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.\n",
-    "**the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**\n",
-    "**the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.\n",
-    "**the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.\n",
-    "**a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.\n",
-    "**omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.\n",
-]
+assumptions = ["The zones are the caller's. The calculation rates each zone with the declared geometry and does not subdivide or reorder them.\n"]
+notes = ["**`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.\n", "**the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.\n", "**the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.\n", "**the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.\n", "**the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**\n", "**the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.\n", "**the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.\n", "**a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.\n", "**omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.\n"]
 references = [
     "Shah, M.M. (1979). \"A general correlation for heat transfer during film condensation inside pipes.\" Int. J. Heat Mass Transfer 22(4), 547-556. The condensing coefficient.",
     "Gungor, K.E.; Winterton, R.H.S. (1986). \"A general correlation for flow boiling in tubes and annuli.\" Int. J. Heat Mass Transfer 29(3), 351-358. The evaporating coefficient.",
@@ -27,44 +19,44 @@ edition = "`calculate()` with `calcTubeSideHTC`, `calcShellSideHTC`, `calcSingle
 [inputs]
 [inputs.tube_inside_diameter]
 unit = "m"
-description = "the tube inside diameter. NeqSim's default is `0.01483` m.\n"
+description = "The tube inside diameter. Defaults to 0.01483 m.\n"
 [inputs.tube_outside_diameter]
 unit = "m"
-description = "the tube outside diameter. NeqSim's default is `0.01905` m.\n"
+description = "The tube outside diameter. Defaults to 0.01905 m.\n"
 [inputs.tube_length]
 unit = "m"
-description = "the tube length, divided equally between the zones for the pressure drops. NeqSim's default is `6.096` m.\n"
+description = "The tube length, divided equally between zones for the pressure drops. Defaults to 6.096 m.\n"
 [inputs.tube_count]
 unit = "dimensionless"
-description = "the tube count; a pass's flow area is `tube_count / tube_passes` tubes. NeqSim's default is `100`.\n"
+description = "The tube count. A pass's flow area is `tube_count / tube_passes` tubes. Defaults to 100.\n"
 [inputs.tube_passes]
 unit = "dimensionless"
-description = "the tube passes. NeqSim's default is `2`.\n"
+description = "The tube passes. Defaults to 2.\n"
 [inputs.shell_inside_diameter]
 unit = "m"
-description = "the shell inside diameter. NeqSim's default is `0.5` m.\n"
+description = "The shell inside diameter. Defaults to 0.5 m.\n"
 [inputs.baffle_spacing]
 unit = "m"
-description = "the baffle spacing, which the shell-side drop's per-zone baffle count divides. NeqSim's default is `0.2` m.\n"
+description = "The baffle spacing, which sets the shell-side drop's per-zone baffle count. Defaults to 0.2 m.\n"
 [inputs.tube_pitch]
 unit = "m"
-description = "the tube pitch. NeqSim's default is `0.02381` m.\n"
+description = "The tube pitch. Defaults to 0.02381 m.\n"
 [inputs.triangular_pitch]
 type = "boolean"
-description = "the tube layout: `true` is triangular. NeqSim's default is `true`.\n"
+description = "The tube layout: `true` is triangular. Defaults to `true`.\n"
 [inputs.tube_wall_conductivity]
 unit = "W/(m*K)"
-description = "the tube-wall thermal conductivity. NeqSim's default is `52` W/(m*K).\n"
+description = "The tube-wall thermal conductivity. Defaults to 52 W/(m*K).\n"
 [inputs.fouling_tube]
 unit = "dimensionless"
-description = "the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`.\n"
+description = "The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176.\n"
 [inputs.fouling_shell]
 unit = "dimensionless"
-description = "the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`.\n"
+description = "The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176.\n"
 [inputs.zones]
 type = "record_list"
 row_type = "IncrementalZoneInput"
-description = "the zones, in the caller's order; the class neither reorders nor subdivides them.\n"
+description = "The zones, in the caller's order; they are neither reordered nor subdivided.\n"
 [inputs.zones.fields]
 [inputs.zones.fields.zone_name]
 type = "string"

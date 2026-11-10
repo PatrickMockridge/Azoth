@@ -1,16 +1,10 @@
 id = "eos.emulsion_viscosity"
 name = "Oil-water emulsion viscosity and phase inversion point"
+summary = "Oil-water emulsion viscosity and phase-inversion water cut. Use it for multiphase pressure-drop and pump-sizing screening."
 equation = "WC_inv = 1 / (1 + (mu_o/mu_w)^0.25 (rho_w/rho_o)^0.5), clamped to [0.20, 0.90], shifted by 0.10 (t - 0.5), clamped to [0.15, 0.95]\n\nW/O below WC_inv: mu_c = mu_o, mu_d = mu_w, phi = WC\nO/W at or above:   mu_c = mu_w, mu_d = mu_o, phi = 1 - WC\n\nmu_eff = mu_c * mu_r\nmu_r: Einstein 1 + 2.5 phi; Taylor 1 + 2.5 phi (mu_d + 0.4 mu_c)/(mu_d + mu_c)\n      Brinkman (1 - phi)^-2.5; Pal-Rhodes (1 - phi/phi_max)^(-2.5 phi_max)\n      Woelflin exp(k phi), k 2.5 | 4 | 6; Richardson exp((2.5 + 5 t) phi)\n\nmu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is present"
 latex = '''WC_{\mathrm{inv}} = \frac{1}{1 + (\mu_o/\mu_w)^{1/4}(\rho_w/\rho_o)^{1/2}}, \qquad \mu_{\mathrm{eff}} = \mu_c\,\mu_r\,f_{\mathrm{tight}}\,f_{\mathrm{demul}}}'''
-assumptions = [
-    "the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.\n",
-    "**the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.\n",
-    "**the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.\n",
-    "**the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.\n",
-    "**the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.\n",
-    "the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.\n",
-    "the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.\n",
-]
+assumptions = ["The mixture is an oil-water emulsion. The model describes the dispersed-phase viscosity and the inversion point, not a gas-liquid or three-phase system.\n"]
+notes = ["the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.\n", "**the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.\n", "**the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.\n", "**the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.\n", "**the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.\n", "the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.\n", "the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.\n"]
 references = [
     "NeqSim master, `pvtsimulation/flowassurance/EmulsionViscosityCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
     "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the nineteen states: all six models, the jammed packing fraction, Woelflin's three bands, both inversion clamps, the two water-cut ends, both tightness multipliers and two demulsifier efficiencies.",
@@ -37,7 +31,7 @@ unit = "dimensionless"
 description = "the water volume fraction.\n"
 [inputs.max_packing_fraction]
 unit = "dimensionless"
-description = "the maximum dispersed-phase packing fraction, 0.74 as the class's default.\n"
+description = "The maximum dispersed-phase packing fraction. Defaults to 0.74.\n"
 [inputs.model]
 type = "enum"
 values = ["einstein", "taylor", "brinkman", "pal_rhodes", "woelflin", "richardson"]

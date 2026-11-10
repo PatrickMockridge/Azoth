@@ -1,8 +1,10 @@
 id = "eos.mollerup_alpha"
 name = "Mollerup alpha function"
+summary = "Mollerup alpha function for a cubic equation of state. Use it when the attraction term follows the Mollerup temperature form."
 equation = "alpha = 1 + p1*(1/Tr - 1) + p2*Tr*ln(Tr) + p3*(Tr - 1)"
 latex = '''\alpha = 1 + p_1\left(\frac{1}{T_r} - 1\right) + p_2\,T_r\ln T_r + p_3\left(T_r - 1\right)'''
-assumptions = ["the three parameters are the caller's fitted Mollerup coefficients; NeqSim's default is all zero, which is the trivial alpha of one.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["the three parameters are the caller's fitted Mollerup coefficients; NeqSim's default is all zero, which is the trivial alpha of one.\n"]
 references = ["Mollerup, J. (1986). \"Thermodynamic properties from a cubic equation of state.\" Fluid Phase Equilib. 25, 329-352."]
 [source]
 standard = "NeqSim master `AttractiveTermMollerup`"

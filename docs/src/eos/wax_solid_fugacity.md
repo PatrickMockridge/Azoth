@@ -4,6 +4,8 @@
 
 `eos.wax_solid_fugacity`
 
+Wax solid fugacity coefficient from fusion properties and heat capacity. Use it for wax-appearance and solid-formation screening.
+
 ## Equation
 
 $$
@@ -24,19 +26,33 @@ where `phi_liq` and `v_liq` are the **cut's own** one-component liquid on the cu
 
 The default `Pedersen` wax component model. `ComponentWonWax`, `ComponentWaxWilson` and `ComponentCoutinhoWax` are the phase's other three and are carried.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is NeqSim's `ComponentWax.fugcoef2`**, the default `PhaseWax` component model - `PhaseWax.addComponent` builds a `ComponentWax` unless `setWaxComponentModel` names Won, Wilson or Coutinho. Those three are carried by name.
+- **the coefficient is a pure-component quantity**: `SolidFug = x f_liq exp(...)` and `fugacityCoefficient = SolidFug/(P x)`, so the mole fraction cancels and nothing of the mixture is left in it.
+- `phi_liq` and `v_liq` are the **cut's own** one-component liquid on the cubic the fluid runs - NeqSim's `setSolidRefFluidPhase` clones the host phase's class and adds this component alone - so they are computed here rather than taken, and `eos` is a real input.
+- **the pressure's reference is one bar, not zero.** `refPressure = 1.0` in NeqSim's code and its pressure is in bar, so in pascals the term is `(P - 1.0e5)`.
+- `v_sol = 0.9 v_liq` is NeqSim's shortcut for the solid's molar volume, and it is a *ratio* rather than a measured density - a port that read a real solid density would be wrong about this term. The term is three orders larger than the fusion term at 261 K, so it is not negligible.
+- the heat-capacity difference is Pedersen's fit `(0.3033 M - 4.635e-4 M T) * 4.184` in J/(mol K) with `M` in g/mol, and `4.184` is the calorie.
+- `R` is `8.3144621`, which the class's compiled form states as a literal.
+- **verified against NeqSim to `1e-14`** on seven cuts at 261 K and 5 bara. The capture prints the reference liquid's own coefficient beside the product, and the exponent recovered from them reproduces this expression exactly - the two halves were split on purpose.
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
 | `molar_mass` | kg/mol | The cut's molar mass. The heat-capacity difference is fitted in it. |
 | `tc` | K | The cut's critical temperature, which the reference liquid is a one-component phase at. |
-| `pc` | Pa | The cut's critical pressure, in the units the cubic takes. NeqSim holds it in bar internally and this states pascals. |
-| `omega` | dimensionless | The cut's acentric factor, which sets the reference liquid's alpha through `eos.srk_kappa`. **NeqSim overwrites it with the root of that polynomial whenever `AttractiveTermSrk.setm` is called**, so it is the value the component holds and not the one `calcAcentricFactor` returns. |
-| `heat_of_fusion` | J/mol | The cut's heat of fusion, which NeqSim fits as `0.1426/0.238845 M T_tp` with `M` in g/mol. |
-| `triple_point_temperature` | K | The cut's triple-point temperature, which NeqSim fits as `374.5 + 0.02617 M - 20172/M` with `M` in g/mol. |
+| `pc` | Pa | The cut's critical pressure, in pascals. |
+| `omega` | dimensionless | The cut's acentric factor, which sets the reference liquid's alpha through `eos.srk_kappa`. |
+| `heat_of_fusion` | J/mol | The cut's heat of fusion. |
+| `triple_point_temperature` | K | The cut's triple-point temperature. |
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
-| `eos` | pr / srk | *Optional.* the cubic the fluid runs, which is also the one the reference liquid is built from - NeqSim clones the host phase's class, so this is a real choice and not a label |
+| `eos` | pr / srk | *Optional.* The cubic equation of state the fluid runs, which is also the one the reference liquid is built from. |
 
 
 ## Outputs
@@ -59,21 +75,13 @@ The default `Pedersen` wax component model. `ComponentWonWax`, `ComponentWaxWils
 | `P > 0` | raises | an absolute pressure |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is NeqSim's `ComponentWax.fugcoef2`**, the default `PhaseWax` component model - `PhaseWax.addComponent` builds a `ComponentWax` unless `setWaxComponentModel` names Won, Wilson or Coutinho. Those three are carried by name.
-- **the coefficient is a pure-component quantity**: `SolidFug = x f_liq exp(...)` and `fugacityCoefficient = SolidFug/(P x)`, so the mole fraction cancels and nothing of the mixture is left in it.
-- `phi_liq` and `v_liq` are the **cut's own** one-component liquid on the cubic the fluid runs - NeqSim's `setSolidRefFluidPhase` clones the host phase's class and adds this component alone - so they are computed here rather than taken, and `eos` is a real input.
-- **the pressure's reference is one bar, not zero.** `refPressure = 1.0` in NeqSim's code and its pressure is in bar, so in pascals the term is `(P - 1.0e5)`.
-- `v_sol = 0.9 v_liq` is NeqSim's shortcut for the solid's molar volume, and it is a *ratio* rather than a measured density - a port that read a real solid density would be wrong about this term. The term is three orders larger than the fusion term at 261 K, so it is not negligible.
-- the heat-capacity difference is Pedersen's fit `(0.3033 M - 4.635e-4 M T) * 4.184` in J/(mol K) with `M` in g/mol, and `4.184` is the calorie.
-- `R` is `8.3144621`, which the class's compiled form states as a literal.
-- **verified against NeqSim to `1e-14`** on seven cuts at 261 K and 5 bara. The capture prints the reference liquid's own coefficient beside the product, and the exponent recovered from them reproduces this expression exactly - the two halves were split on purpose.
-- the coefficient is a ratio to `P x` and so dimensionless, and it is `1e50` for a component that is not a wax former: that is the class's marker for "this substance does not precipitate" and not a number to compute with, so this calc takes a former and says nothing about the other case.
+- The coefficient is a ratio to `P x` and so dimensionless. It is `1e50` for a component that is not a wax former, which is a marker rather than a number to compute with; this calculation takes a former and says nothing about the other case.
 
 
 

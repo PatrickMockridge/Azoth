@@ -1,11 +1,9 @@
 id = "eos.pr_kappa"
 name = "Peng-Robinson attraction-parameter coefficient"
+summary = "Peng-Robinson attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the standard kappa form."
 equation = "kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2"
 latex = '''\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}'''
-assumptions = ["""\
-    the acentric factor supplied is correct for the component intended. NOT CHECKED - this \
-    calc has no databank and no second source; omega comes from the caller and is taken at \
-    face value.""", "omega is taken as the constant Pitzer acentric factor evaluated at Tr = 0.7.\n", "the coefficient applies to the 1976 Peng-Robinson alpha function and to nothing else; a kappa from here is not comparable with one from another revision.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n", "this calc returns a coefficient, not an equation of state.\n"]
+assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED - this calc has no databank and no second source; omega comes from the caller and is taken at face value.", "omega is taken as the constant Pitzer acentric factor evaluated at Tr = 0.7.\n", "the coefficient applies to the 1976 Peng-Robinson alpha function and to nothing else; a kappa from here is not comparable with one from another revision.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n", "this calc returns a coefficient, not an equation of state.\n"]
 references = ["Peng, D. Y.; Robinson, D. B. (1976). \\\"A New Two-Constant Equation of State.\\\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.", "Pitzer, K. S. (1955). \\\"The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients.\\\" J. Am. Chem. Soc. 77(13), 3427-3433. DOI 10.1021/ja01618a002."]
 [source]
 standard = "Peng, D. Y.; Robinson, D. B. (1976)"

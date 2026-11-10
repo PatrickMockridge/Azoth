@@ -4,6 +4,8 @@
 
 `thermal.tema_standard`
 
+TEMA construction class, configuration limits, recommended designation and a relative cost factor. Use it to select a shell-and-tube configuration and check its layout rules.
+
 ## Equation
 
 $$
@@ -22,66 +24,9 @@ cost = 1 + front + shell + rear; N = int(A_eff / a_tube); L_max = L_band * mater
 
 the seven enum tables and `TEMAConfiguration`'s cost and head predicates, with `recommendConfiguration`, `calculateMinTubePitch`, `estimateTubeCount`, `getMaxUnsupportedSpan`, `getMinBaffleSpacing` and `getMaxBaffleSpacing`.
 
-## Inputs
+## Notes
 
-| Name | Unit | Description |
-|---|---|---|
-| `front_head` | A / B / C / N / D | the stationary head letter: channel with removable cover, bonnet, two integral channels or the special high-pressure closure. |
-| `shell` | E / F / G / H / J / K / X | the shell letter, which also carries the shell-side pressure drop factor. |
-| `rear_head` | L / M / N / P / S / T / U / W | the rear head letter; `P`, `S`, `T` and `W` are floating, and `U` is the U-tube. |
-| `tema_class` | R / C / B | the construction class: severe, moderate or light service. |
-| `tube_size` | tube_3_8_inch / tube_1_2_inch / tube_5_8_inch / tube_3_4_inch / tube_1_inch | the standard tube size: 3/8, 1/2, 5/8, 3/4 or 1 inch outside diameter. |
-| `pitch_pattern` | triangular_30 / triangular_60 / square_90 / square_45 | the tube layout: triangular or rotated triangular, square or rotated square. |
-| `baffle_type` | single_segmental / double_segmental / triple_segmental / no_tubes_in_window / disc_and_doughnut / rod_baffles | the baffle type, which carries its heat-transfer and pressure-drop factors relative to a single segmental. |
-| `shell_inside_diameter` | m | the shell inside diameter, which sets the bundle area, the baffle spacings and their floor. |
-| `tube_pitch` | m | the tube pitch, whose minimum the pattern declares and whose area the count divides by. |
-| `tube_passes` | dimensionless | the number of tube passes; each pass past the first takes five per cent of the bundle area. |
-| `needs_cleanable` | - | whether the shell side needs mechanical cleaning, in the recommendation. |
-| `large_temperature_difference` | - | whether the service has a large temperature differential, in the recommendation. |
-| `high_pressure` | - | whether the service is high pressure, in the recommendation. |
-| `hazardous` | - | whether the service is hazardous, in the recommendation. |
-| `tube_material` | - | *Optional.* the tube material name, matched by upper-cased substring for the span factor. Absent is no factor, as the class's null. |
-
-
-## Outputs
-
-| Name | Unit | Description |
-|---|---|---|
-| `configuration_cost_factor` | dimensionless | the configuration's relative cost factor, one for the plainest head, shell and rear. |
-| `shell_pressure_drop_factor` | dimensionless | the shell letter's pressure drop factor relative to an `E` shell. |
-| `bundle_removable` | - | whether the rear head allows the bundle to be removed. |
-| `good_thermal_expansion` | - | whether the rear head handles thermal expansion, the class's second name for the same predicate. |
-| `class_cost_factor` | dimensionless | the construction class's cost factor relative to class `B`. |
-| `min_tube_wall_thickness` | m | the class's minimum tube wall. |
-| `min_corrosion_allowance` | m | the class's minimum corrosion allowance. |
-| `tube_outer_diameter` | m | the standard tube size's outside diameter. |
-| `tube_outer_diameter_inch` | in | the same diameter in inches, which is how the size is named. |
-| `layout_angle` | dimensionless | the layout angle in degrees: 30, 60, 90 or 45. |
-| `min_pitch_ratio` | dimensionless | the pattern's minimum pitch over tube diameter. |
-| `pitch_heat_transfer_factor` | dimensionless | the pattern's heat-transfer factor relative to square 90. |
-| `baffle_heat_transfer_factor` | dimensionless | the baffle type's heat-transfer factor relative to a single segmental. |
-| `baffle_pressure_drop_factor` | dimensionless | the baffle type's pressure-drop factor relative to a single segmental. |
-| `min_tube_pitch` | m | `tube_outer_diameter * min_pitch_ratio`. |
-| `estimated_tube_count` | dimensionless | the truncated bundle-area estimate at the stated pitch and passes. |
-| `max_unsupported_span` | m | the class's maximum unsupported tube span for the diameter band and material. |
-| `min_baffle_spacing` | m | the greater of one fifth of the shell diameter and the class's floor. |
-| `max_baffle_spacing` | m | the shell inside diameter. |
-| `recommended_designation` | - | the designation the class's four-branch recommendation answers. |
-
-
-## Valid range
-
-| Bound | On violation | Why |
-|---|---|---|
-| `shell_inside_diameter > 0` | raises | the diameter divides the baffle spacing and sets the bundle area. |
-| `tube_pitch > 0` | raises | the tube count divides by its square. |
-| `tube_passes >= 1` | raises | a bundle has at least one pass; a non-integral count is refused. |
-
-
-## Assumptions
-
-These are **not** checked at runtime. They are what the caller has to
-satisfy for the result to mean what it says.
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
 
 
 - **every length is SI metres**; the class's millimetre constants (wall 12.7, 9.5, 6.35 mm; corrosion 4.76, 3.18, 2.11 mm; spans 660, 889, 1067, 1321 mm; floors 50.8 and 38.1 mm) are converted at the table boundary, and only the inch echo is declared in inches.
@@ -103,6 +48,71 @@ satisfy for the result to mean what it says.
 - **the recommended designation is the class's four-branch string tree, published verbatim**, and it is not required to be a designation in the common table - `AEW` is a recommendation the table does not hold.
 
 - **the tube size's available wall-thickness rows are carried by the enum and read by no formula here**, so only the outside diameter and its inch echo are published.
+
+
+## Inputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `front_head` | A / B / C / N / D | the stationary head letter: channel with removable cover, bonnet, two integral channels or the special high-pressure closure. |
+| `shell` | E / F / G / H / J / K / X | the shell letter, which also carries the shell-side pressure drop factor. |
+| `rear_head` | L / M / N / P / S / T / U / W | the rear head letter; `P`, `S`, `T` and `W` are floating, and `U` is the U-tube. |
+| `tema_class` | R / C / B | the construction class: severe, moderate or light service. |
+| `tube_size` | tube_3_8_inch / tube_1_2_inch / tube_5_8_inch / tube_3_4_inch / tube_1_inch | the standard tube size: 3/8, 1/2, 5/8, 3/4 or 1 inch outside diameter. |
+| `pitch_pattern` | triangular_30 / triangular_60 / square_90 / square_45 | the tube layout: triangular or rotated triangular, square or rotated square. |
+| `baffle_type` | single_segmental / double_segmental / triple_segmental / no_tubes_in_window / disc_and_doughnut / rod_baffles | the baffle type, which carries its heat-transfer and pressure-drop factors relative to a single segmental. |
+| `shell_inside_diameter` | m | the shell inside diameter, which sets the bundle area, the baffle spacings and their floor. |
+| `tube_pitch` | m | the tube pitch, whose minimum the pattern declares and whose area the count divides by. |
+| `tube_passes` | dimensionless | the number of tube passes; each pass past the first takes five per cent of the bundle area. |
+| `needs_cleanable` | - | whether the shell side needs mechanical cleaning, in the recommendation. |
+| `large_temperature_difference` | - | whether the service has a large temperature differential, in the recommendation. |
+| `high_pressure` | - | whether the service is high pressure, in the recommendation. |
+| `hazardous` | - | whether the service is hazardous, in the recommendation. |
+| `tube_material` | - | *Optional.* The tube material name, matched by upper-cased substring for the span factor. Absent means no factor. |
+
+
+## Outputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `configuration_cost_factor` | dimensionless | the configuration's relative cost factor, one for the plainest head, shell and rear. |
+| `shell_pressure_drop_factor` | dimensionless | the shell letter's pressure drop factor relative to an `E` shell. |
+| `bundle_removable` | - | whether the rear head allows the bundle to be removed. |
+| `good_thermal_expansion` | - | Whether the rear head handles thermal expansion. |
+| `class_cost_factor` | dimensionless | The construction class's cost factor relative to class `B`. |
+| `min_tube_wall_thickness` | m | The minimum tube wall thickness for the class. |
+| `min_corrosion_allowance` | m | The minimum corrosion allowance for the class. |
+| `tube_outer_diameter` | m | the standard tube size's outside diameter. |
+| `tube_outer_diameter_inch` | in | the same diameter in inches, which is how the size is named. |
+| `layout_angle` | dimensionless | the layout angle in degrees: 30, 60, 90 or 45. |
+| `min_pitch_ratio` | dimensionless | the pattern's minimum pitch over tube diameter. |
+| `pitch_heat_transfer_factor` | dimensionless | the pattern's heat-transfer factor relative to square 90. |
+| `baffle_heat_transfer_factor` | dimensionless | the baffle type's heat-transfer factor relative to a single segmental. |
+| `baffle_pressure_drop_factor` | dimensionless | the baffle type's pressure-drop factor relative to a single segmental. |
+| `min_tube_pitch` | m | `tube_outer_diameter * min_pitch_ratio`. |
+| `estimated_tube_count` | dimensionless | the truncated bundle-area estimate at the stated pitch and passes. |
+| `max_unsupported_span` | m | The maximum unsupported tube span for the diameter band and material. |
+| `min_baffle_spacing` | m | The greater of one fifth of the shell diameter and the minimum baffle spacing. |
+| `max_baffle_spacing` | m | the shell inside diameter. |
+| `recommended_designation` | - | The recommended TEMA designation. |
+
+
+## Valid range
+
+| Bound | On violation | Why |
+|---|---|---|
+| `shell_inside_diameter > 0` | raises | the diameter divides the baffle spacing and sets the bundle area. |
+| `tube_pitch > 0` | raises | the tube count divides by its square. |
+| `tube_passes >= 1` | raises | a bundle has at least one pass; a non-integral count is refused. |
+
+
+## Conditions for a valid result
+
+These are **not** checked at runtime. They are what the caller has to
+satisfy for the result to mean what it says.
+
+
+- The configuration is one of the TEMA designations. The limits and the relative cost factor come from the TEMA tables this calculation carries, not from a vendor quotation.
 
 
 

@@ -4,6 +4,8 @@
 
 `eos.scale_kinetics`
 
+Precipitation kinetics from a saturation index: induction time and growth rates. Use it to screen how fast a supersaturated brine may scale.
+
 ## Equation
 
 $$
@@ -30,6 +32,20 @@ the effective rate is the smaller of the two, or the reaction rate when no trans
 
 `evaluate` and the four setters' clamps, ported. The Gson report and the setters' storage are not.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class works in hours, mm/yr and mol/L; this calc takes seconds, m/s and mol/m3 and converts at the boundary, keeping the class's year of `3.1536e7` seconds and its calcite molar volume of `37 cm3/mol`.
+
+- the surface growth is `k_r (S - 1)^n` in mm/yr, the parabolic law with order two by default; the transport growth is `k_m (c_bulk - c_eq) * 37e-6` in m/s before the class multiplies it to mm/yr.
+
+- **the regime is the smaller growth rate**, and a transport rate of zero means the class has no transport data and reaction controls by default - not that transport is infinitely fast.
+
+- the setters clamp a negative constant, coefficient or concentration to zero, so a clamped row evaluates rather than refusing; the port does the same.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -53,7 +69,7 @@ the effective rate is the smaller of the two, or the reaction rate when no trans
 | `surface_limited_growth` | m/s | the surface-reaction growth rate. |
 | `transport_limited_growth` | m/s | the mass-transport growth rate; zero when no transport data are given. |
 | `effective_growth_rate` | m/s | the rate-controlling growth rate. |
-| `limiting_regime` | - | `REACTION`, `TRANSPORT` or `NONE`, the class's own labels. |
+| `limiting_regime` | - | `REACTION`, `TRANSPORT` or `NONE`. |
 
 
 ## Valid range
@@ -67,23 +83,15 @@ the effective rate is the smaller of the two, or the reaction rate when no trans
 | `equilibrium_concentration >= 0` | warns `OUT_OF_VALID_RANGE` | A concentration cannot be negative; the class clamps it to zero and the arithmetic still runs. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class works in hours, mm/yr and mol/L; this calc takes seconds, m/s and mol/m3 and converts at the boundary, keeping the class's year of `3.1536e7` seconds and its calcite molar volume of `37 cm3/mol`.
-
 - **below or at saturation nothing forms**: `S <= 1` gives an infinite induction time, zero growth and a regime of `NONE`, and the infinite value is not a number the result hulls.
 
 - **the induction time is classical nucleation**, `k_n exp(B/(ln S)^2)`, so it falls sharply with supersaturation and is undefined at S = 1.
-
-- the surface growth is `k_r (S - 1)^n` in mm/yr, the parabolic law with order two by default; the transport growth is `k_m (c_bulk - c_eq) * 37e-6` in m/s before the class multiplies it to mm/yr.
-
-- **the regime is the smaller growth rate**, and a transport rate of zero means the class has no transport data and reaction controls by default - not that transport is infinitely fast.
-
-- the setters clamp a negative constant, coefficient or concentration to zero, so a clamped row evaluates rather than refusing; the port does the same.
 
 
 

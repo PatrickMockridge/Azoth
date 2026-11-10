@@ -4,6 +4,8 @@
 
 `eos.pr_peneloux_shift`
 
+Peng-Robinson Peneloux volume-translation parameter. Use it to correct a Peng-Robinson molar volume for the Peneloux shift.
+
 ## Equation
 
 $$
@@ -24,6 +26,19 @@ A consistent correction for Redlich-Kwong-Soave volumes. Fluid Phase Equilibria,
 
 DOI: [10.1016/0378-3812(82)80002-2](https://doi.org/10.1016/0378-3812(82)80002-2)
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `Z_RA` is the Rackett compressibility: the caller's when `z_ra` is given and non-zero, else `0.29056 - 0.08775*omega`. **That is NeqSim's own rule** - `ComponentPR.getVolumeCorrection()` reads the databank's `RACKETZ` field and falls back to the correlation only where it is below `1e-10`.
+
+- **the fallback is the wrong answer for 132 of the 348 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the *sign* is wrong: `+2.929079e-6` from the table against `-8.05e-8` from the correlation, a 14% density difference.
+
+- `R` is the exact molar gas constant from the 2019 SI definition, not NeqSim's truncated `8.3144621` - the same value `eos.pr_molar_volume` uses, and the shift is subtracted from that calc's volume.
+
+- NeqSim's `ComponentPRvolcor.calculatePenelouxShift()` holds a second expression, `0.1154 - 0.4406*(0.29056 - 0.08775*omega)`, but it is private dead code - `getVolumeCorrection()` returns the `0.50033*(0.25969 - Z_RA)` form this ports.
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -31,7 +46,7 @@ DOI: [10.1016/0378-3812(82)80002-2](https://doi.org/10.1016/0378-3812(82)80002-2
 | `omega` | dimensionless | Acentric factor of the pure component, as in `eos.pr_kappa`. |
 | `Tc` | K | Critical temperature of the pure component. |
 | `Pc` | Pa | Critical pressure of the pure component. |
-| `z_ra` | dimensionless | *Optional.* The Rackett compressibility ``Z_RA``, the databank's NeqSim ``RACKETZ`` column. **A zero means the table carries none and the correlation is used** - NeqSim's own rule: ``ComponentPR.getVolumeCorrection()`` replaces the field with ``0.29056 - 0.08775*omega`` only where it is below ``1e-10``. |
+| `z_ra` | dimensionless | *Optional.* The Rackett compressibility Z_RA from the databank. Zero means the databank carries none and the acentric-factor correlation is used. |
 
 
 ## Outputs
@@ -49,7 +64,7 @@ DOI: [10.1016/0378-3812(82)80002-2](https://doi.org/10.1016/0378-3812(82)80002-2
 | `Pc > 0` | raises | `Pc` is a divisor; zero pressure is not a critical point and a negative one is not a state. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -57,15 +72,8 @@ satisfy for the result to mean what it says.
 
 - the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - this calc has no databank and no second source; all three come from the caller and are taken at face value.
 
-- `Z_RA` is the Rackett compressibility: the caller's when `z_ra` is given and non-zero, else `0.29056 - 0.08775*omega`. **That is NeqSim's own rule** - `ComponentPR.getVolumeCorrection()` reads the databank's `RACKETZ` field and falls back to the correlation only where it is below `1e-10`.
+- the shift is a volume translation only: it corrects the reported molar volume and density and does not change phase equilibrium.
 
-- **the fallback is the wrong answer for 132 of the 348 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the *sign* is wrong: `+2.929079e-6` from the table against `-8.05e-8` from the correlation, a 14% density difference.
-
-- `R` is the exact molar gas constant from the 2019 SI definition, not NeqSim's truncated `8.3144621` - the same value `eos.pr_molar_volume` uses, and the shift is subtracted from that calc's volume.
-
-- the shift is a volume translation only: it corrects the reported molar volume and density and does not change phase equilibrium, which NeqSim's own `SystemPrEosvolcor` documents.
-
-- NeqSim's `ComponentPRvolcor.calculatePenelouxShift()` holds a second expression, `0.1154 - 0.4406*(0.29056 - 0.08775*omega)`, but it is private dead code - `getVolumeCorrection()` returns the `0.50033*(0.25969 - Z_RA)` form this ports.
 - applying the shift is the caller's step: `v_corr = v - sum_i x_i*c_i`, with `v` from `eos.pr_molar_volume` and the per-component shifts mixed linearly.
 
 

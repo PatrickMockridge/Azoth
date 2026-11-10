@@ -4,6 +4,8 @@
 
 `eos.scale_inhibitor_performance`
 
+Screening performance of an oilfield scale inhibitor from temperature, total dissolved solids, saturation ratio and calcium. Use it to compare inhibitor dosage options.
+
 ## Equation
 
 $$
@@ -31,6 +33,26 @@ efficiency = 0.85 ratio below MIC, min(1, 0.85 + 0.15 (1 - exp(-(ratio - 1)))) a
 **NeqSim master `ScaleInhibitorPerformance`**
 
 `evaluate`, `baseMic`, `temperatureFactor`, `ionicStrengthFactor`, `saturationFactor`, `calciumFactor` and the warning predicates, ported. The enum setters' storage, the message strings and the Gson report are not.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class takes mg/L, degrees Celsius and the saturation *ratio* `SR = IAP/Ksp`; this calc takes kg/m3 and kelvin, and the ratio as stated.
+
+- **the base MIC is a table**: CaCO3 5, BaSO4 10, SrSO4 8, CaSO4 6, FeCO3 12 mg/L, times a chemistry factor (phosphonate 1.0, polymaleate 1.2, polyacrylate 1.4, phosphate ester 1.1, vinyl sulphonate 1.3), times 0.8 for barite on phosphonate and 0.9 for calcite on polymaleate.
+
+- **the temperature knee is per chemistry**: phosphonate and vinyl sulphonate 100 C at 0.015, polymaleate 130 C at 0.012, polyacrylate 120 C at 0.013, phosphate ester 150 C at 0.010; at or below the knee the factor is one.
+
+- the TDS factor is `max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))` and the saturation factor `max(0.5, 1 + 0.6 log10(max(1, SR)/5))`, so both floors are reachable and both clamps use a one mg/L or one ratio input.
+
+- **the calcium penalty applies to phosphonate alone** and only above 1000 mg/L: `1 + 0.5 log10(Ca/1000)`. A polyacrylate at the same calcium carries no penalty.
+
+- the recommended dose is 1.5 times the MIC, `efficiency` is 0 when no dose is stated, and `adequate` is `ratio >= 1`.
+
+- **the class's four warnings are predicates**: thermal degradation (phosphonate above 175 C), calcium-phosphonate precipitation (above 2000 mg/L Ca), extreme supersaturation (SR > 100) and cold phosphate-ester solubility (below 40 C), reported as flags.
+
 
 ## Inputs
 
@@ -70,25 +92,13 @@ efficiency = 0.85 ratio below MIC, min(1, 0.85 + 0.15 (1 - exp(-(ratio - 1)))) a
 | `available_dose >= 0` | raises | A dose cannot be negative. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class takes mg/L, degrees Celsius and the saturation *ratio* `SR = IAP/Ksp`; this calc takes kg/m3 and kelvin, and the ratio as stated.
-
-- **the base MIC is a table**: CaCO3 5, BaSO4 10, SrSO4 8, CaSO4 6, FeCO3 12 mg/L, times a chemistry factor (phosphonate 1.0, polymaleate 1.2, polyacrylate 1.4, phosphate ester 1.1, vinyl sulphonate 1.3), times 0.8 for barite on phosphonate and 0.9 for calcite on polymaleate.
-
-- **the temperature knee is per chemistry**: phosphonate and vinyl sulphonate 100 C at 0.015, polymaleate 130 C at 0.012, polyacrylate 120 C at 0.013, phosphate ester 150 C at 0.010; at or below the knee the factor is one.
-
-- the TDS factor is `max(0.5, 1 + 0.2 log10(max(1, TDS)/50000))` and the saturation factor `max(0.5, 1 + 0.6 log10(max(1, SR)/5))`, so both floors are reachable and both clamps use a one mg/L or one ratio input.
-
-- **the calcium penalty applies to phosphonate alone** and only above 1000 mg/L: `1 + 0.5 log10(Ca/1000)`. A polyacrylate at the same calcium carries no penalty.
-
-- the recommended dose is 1.5 times the MIC, `efficiency` is 0 when no dose is stated, and `adequate` is `ratio >= 1`.
-
-- **the class's four warnings are predicates**: thermal degradation (phosphonate above 175 C), calcium-phosphonate precipitation (above 2000 mg/L Ca), extreme supersaturation (SR > 100) and cold phosphate-ester solubility (below 40 C), reported as flags.
+- The inhibitor is one of the listed chemistries and the water is a produced or injection brine. The result is a screening dose, not a vendor performance guarantee.
 
 
 

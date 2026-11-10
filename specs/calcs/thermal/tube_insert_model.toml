@@ -1,18 +1,10 @@
 id = "thermal.tube_insert_model"
 name = "Tube-insert heat-transfer enhancement and pressure-drop penalty"
+summary = "Heat-transfer enhancement and pressure-drop penalty of a tube insert from its type and geometry. Use it to screen whether an insert is worth the extra pressure drop."
 equation = "h_ratio = h_enhanced/h_plain; f_ratio = f_enhanced/f_plain; PEC = h_ratio/f_ratio**(1/3); h_enhanced = h_plain*h_ratio; dP_enhanced = dP_plain*f_ratio"
 latex = '''\mathrm{PEC} = \frac{h_{enh}/h_{plain}}{\left(f_{enh}/f_{plain}\right)^{1/3}}'''
-assumptions = [
-    "**the twisted tape's twist ratio is floored at `2`**, so a ratio of one answers the ratio-of-two enhancement; the tape thickness **cancels** in the blockage factor because the class writes `t/(t/0.05)`, which is `0.05` for any non-zero thickness.\n",
-    "**the blockage factor is `pi/(pi - 4 t w/(t/0.05))` clamped to `[1, 1.5]`** and feeds both the laminar and the turbulent branches of the tape correlations.\n",
-    "**the tape's laminar branches read neither Reynolds nor Prandtl number**, being `(1 + 0.769/y)**(1/3)` times the blockage and `(1 + 2.75/y)` times its `1.29` power.\n",
-    "**the tape's turbulent heat ratio is `(1 + 2/y) blockage**0.8 / swirl**0.2`** and its friction `(1 + 2.75/y) swirl**0.8`**, with `swirl = sqrt(1 + (pi/(2y))**2)` and both floored at one.\n",
-    "**a Reynolds number exactly at a boundary takes the upper branch**: the tape and wire matrix switch at `2300` with a strict `<`, and the wire matrix switches at `500` likewise.\n",
-    "**the wire matrix's `effectiveRe = Re (1 + 3 density)` is computed and unread**, and its laminar friction is `1.5 (1 + 8 density)` independent of Reynolds number.\n",
-    "**the coiled wire's coil pitch cancels against itself** (`p/(p/e)` is the roughness ratio for any non-zero pitch) and its laminar branches answer `1 + 10 e` for both ratios, reading neither Reynolds nor Prandtl number.\n",
-    "**the coiled wire's turbulent correlations are the class's simplified Ravigururajan-Bergles forms**, with the helix angle in degrees and both the `p/D` and `Pr` powers applied as the class writes them.\n",
-    "**the performance evaluation criterion divides the heat ratio by the cube root of the friction ratio**, so a laminar tape can score below one, and `applyEnhancement` multiplies the plain coefficient and drop by the two ratios.\n",
-]
+assumptions = ["The insert is one of the twisted-tape or coiled-wire types declared, and the result is a ratio to the plain tube at the same flow. It is not a full exchanger rating.\n"]
+notes = ["**the twisted tape's twist ratio is floored at `2`**, so a ratio of one answers the ratio-of-two enhancement; the tape thickness **cancels** in the blockage factor because the class writes `t/(t/0.05)`, which is `0.05` for any non-zero thickness.\n", "**the blockage factor is `pi/(pi - 4 t w/(t/0.05))` clamped to `[1, 1.5]`** and feeds both the laminar and the turbulent branches of the tape correlations.\n", "**the tape's laminar branches read neither Reynolds nor Prandtl number**, being `(1 + 0.769/y)**(1/3)` times the blockage and `(1 + 2.75/y)` times its `1.29` power.\n", "**the tape's turbulent heat ratio is `(1 + 2/y) blockage**0.8 / swirl**0.2`** and its friction `(1 + 2.75/y) swirl**0.8`**, with `swirl = sqrt(1 + (pi/(2y))**2)` and both floored at one.\n", "**a Reynolds number exactly at a boundary takes the upper branch**: the tape and wire matrix switch at `2300` with a strict `<`, and the wire matrix switches at `500` likewise.\n", "**the wire matrix's `effectiveRe = Re (1 + 3 density)` is computed and unread**, and its laminar friction is `1.5 (1 + 8 density)` independent of Reynolds number.\n", "**the coiled wire's coil pitch cancels against itself** (`p/(p/e)` is the roughness ratio for any non-zero pitch) and its laminar branches answer `1 + 10 e` for both ratios, reading neither Reynolds nor Prandtl number.\n", "**the coiled wire's turbulent correlations are the class's simplified Ravigururajan-Bergles forms**, with the helix angle in degrees and both the `p/D` and `Pr` powers applied as the class writes them.\n", "**the performance evaluation criterion divides the heat ratio by the cube root of the friction ratio**, so a laminar tape can score below one, and `applyEnhancement` multiplies the plain coefficient and drop by the two ratios.\n"]
 references = [
     "Manglik, R.M.; Bergles, A.E. (1993). \"Heat transfer and pressure drop correlations for twisted-tape inserts in isothermal tubes.\" Journal of Heat Transfer 115(4), 881-889. The twisted-tape forms.",
     "Ravigururajan, T.S.; Bergles, A.E. (1996). \"Development and verification of general correlations for pressure drop and heat transfer in single-phase turbulent flow in enhanced tubes.\" Experimental Thermal and Fluid Science 13(1), 55-70. The coiled-wire forms.",
@@ -42,11 +34,11 @@ description = "the plain-tube pressure drop the penalty is applied to.\n"
 [inputs.twist_ratio]
 unit = "dimensionless"
 optional = true
-description = "the twisted tape's `y = H/(2D)`, floored at `2`. Absent is the class's `5`.\n"
+description = "The twisted tape's `y = H/(2D)`, floored at 2. Defaults to 5.\n"
 [inputs.tape_thickness]
 unit = "m"
 optional = true
-description = "the tape thickness. Absent is `0.001`; it cancels in the blockage factor and is carried for the class's own state.\n"
+description = "The tape thickness. Defaults to 0.001; it cancels in the blockage factor.\n"
 [inputs.tape_width_fraction]
 unit = "dimensionless"
 optional = true

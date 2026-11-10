@@ -1,5 +1,6 @@
 id = "characterization.tbp_cut_properties"
 name = "TBP cut properties by any of NeqSim's ten models"
+summary = "TBP cut properties by one of ten characterisation models. Use it to compare or build pseudo-component properties from a boiling cut."
 equation = "One dispatch over `TBPfractionModel.getAvailableModels()`, each model evaluating the same five quantities from a cut's g/mol molar mass `M` and its specific gravity `d`. The Pedersen family, which five of the ten are:\n\n  oil = M < 1120\n  tc = c_tc[oil][0]*d + c_tc[oil][1]*ln(M) + c_tc[oil][2]*M + c_tc[oil][3]/M                              [K]\n  pc = exp(0.01325 + c_pc[oil][0] + c_pc[oil][1]*d**c_pc[oil][4] + c_pc[oil][2]/M + c_pc[oil][3]/M**2)    [bar]\n  tb = 2e-6*M**3 - 0.0035*M**2 + 2.4003*M + 171.74                       if M < 540                       [K]\n  tb = 97.58*M**0.3323*d**0.04609                                       otherwise                        [K]\n  m  = c_m[oil][0] + c_m[oil][1]*M + c_m[oil][2]*d + c_m[oil][3]*M**2\n  omega = 3/7 * log10(pc / 1.01325) / (tc/tb - 1) - 1\n\nThe other five take their own forms: `PedersenPR2` substitutes a Soreide boiling point, `RiaziDaubert` its own exponential-power pair below `M = 300` and its parent above, `LeeKesler` and `Cavett` the Lee-Kesler pair with Cavett's API correction, `Twu` the n-alkane method with a Newton solve, and `Standing` the Riazi-Daubert pair without its switch. `validation/neqsim/captures/characterization_probe.tsv` carries every one of them, over twelve cuts."
 latex = '''\begin{aligned}
 T_{c} &= c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, &
@@ -7,15 +8,8 @@ P_{c} &= \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_
 \omega &= \frac{3}{7}\frac{\log_{10}(P_{c}/P_{\mathrm{ref}})}{T_{c}/T_{b} - 1} - 1, &
 m &= c_{0} + c_{1}M + c_{2}d + c_{3}M^{2}
 \end{aligned}'''
-assumptions = [
-    "**this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.",
-    "**the units are g/mol and specific gravity, and this states SI.** `molar_mass` crosses in kg/mol and `density` in kg/m3, and the kernels convert at the boundary; NeqSim's own caller passes g/mol. `pc` is computed in **bar** - its coefficients and `0.01325` say so - and reported in pascals.",
-    "**the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.",
-    "**`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.",
-    "**`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.",
-    "**four base-class quantities are not published.** `calcRacketZ` takes a flashed reference system. `calcParachorParameter`, `calcCriticalViscosity` and `calcCriticalVolume` have no unit NeqSim states anywhere, and `addTBPfraction` never calls `calcCriticalVolume` - it sets `critVol`.",
-    "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.\n",
-]
+assumptions = ["the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.\n"]
+notes = ["**this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.", "**the units are g/mol and specific gravity, and this states SI.** `molar_mass` crosses in kg/mol and `density` in kg/m3, and the kernels convert at the boundary; NeqSim's own caller passes g/mol. `pc` is computed in **bar** - its coefficients and `0.01325` say so - and reported in pascals.", "**the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.", "**`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.", "**`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.", "**four base-class quantities are not published.** `calcRacketZ` takes a flashed reference system. `calcParachorParameter`, `calcCriticalViscosity` and `calcCriticalVolume` have no unit NeqSim states anywhere, and `addTBPfraction` never calls `calcCriticalVolume` - it sets `critVol`."]
 references = [
     "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152.",
     "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press.",
@@ -33,10 +27,10 @@ edition = "`getAvailableModels()` returns `PedersenSRK`, `PedersenSRKHeavyOil`, 
 type = "enum"
 values = ["pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil", "riazi_daubert", "lee_kesler", "twu", "cavett", "standing"]
 optional = true
-description = "which of the ten models evaluates the cut. Absent takes the class's own default, `PedersenSRK` - `Characterise.TBPFractionModelName`, which is what `addTBPfraction` runs when nothing sets it.\n"
+description = "Which of the ten characterisation models evaluates the cut. Optional; absent uses the Pedersen SRK model.\n"
 [inputs.molar_mass]
 unit = "kg/mol"
-description = "The cut's molar mass. A pseudo-component has no databank row, so this is what stands in for its identity. NeqSim's correlations take g/mol and the kernels convert.\n"
+description = "The cut's molar mass. A pseudo-component has no databank row, so this stands in for its identity.\n"
 [inputs.density]
 unit = "kg/m**3"
 description = "The cut's normal liquid density at 15 C, which the correlations take as a specific gravity in g/cm3. The two are the same number in units a thousand apart.\n"

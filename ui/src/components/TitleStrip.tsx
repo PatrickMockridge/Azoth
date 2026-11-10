@@ -1,4 +1,5 @@
 import { asExecutionOrder } from "../wire/decode";
+import { manualHome } from "../manual";
 import { DraftField } from "./DraftField";
 import { WorkspaceSwitch, type Workspace } from "./calculations/WorkspaceSwitch";
 import { statusClass as classOf, statusWord } from "../state/status";
@@ -52,7 +53,7 @@ export function TitleStrip({
           fact here rather than in a footnote. The link is the book's own front-door statement. */}
       <a
         className="screening"
-        href="https://github.com/PatrickMockridge/azoth/blob/main/docs/src/index.md#not-for-design-work-yet"
+        href={`${manualHome()}index.html#not-for-design-work-yet`}
         target="_blank"
         rel="noreferrer"
         title="the port is incomplete, so these are screening values and not design deliverables"

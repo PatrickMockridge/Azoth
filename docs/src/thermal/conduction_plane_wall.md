@@ -4,6 +4,8 @@
 
 `thermal.conduction_plane_wall`
 
+Steady heat flow through a plane wall from its conductivity, area, thickness and temperature difference. Use it for insulation and wall-loss screening.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ Théorie analytique de la chaleur, Paris: Firmin Didot
 | `L > 0` | raises | `L` is a divisor, so `L = 0` is singular - and physically it is the infinite-heat-flow limit of a zero-thickness wall, which is not a state the steady plane-wall model describes. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

@@ -1,8 +1,10 @@
 id = "eos.liquid_heat_capacity"
 name = "Liquid heat capacity from NeqSim's polynomial"
+summary = "Liquid heat capacity from a temperature polynomial. Use it for liquid duty and heat-exchanger screening."
 equation = "cp = 1e-3 * (c0 + c1*T + c2*T**2 + c3*T**3 + c4*T**4)"
 latex = '''c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)'''
-assumptions = ["the five coefficients are the raw `cpliquid1..5` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/(mol*K)` from them. NOT CHECKED - the coefficients come from the caller.\n", "the polynomial is a fit of limited range; it is zero for most hydrocarbons NeqSim ships, which carry only an ideal-gas heat capacity.\n", "this calc returns a pure-component property and says nothing about a mixture.\n"]
+assumptions = ["the polynomial is a fit of limited range; it is zero for most hydrocarbons in the library, which carry only an ideal-gas heat capacity.\n", "this calc returns a pure-component property and says nothing about a mixture.\n"]
+notes = ["the five coefficients are the raw `cpliquid1..5` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/(mol*K)` from them. NOT CHECKED - the coefficients come from the caller.\n"]
 references = ["Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed. McGraw-Hill."]
 [source]
 standard = "NeqSim's `getPureComponentCpLiquid`"
@@ -10,7 +12,7 @@ edition = "the correlation NeqSim master evaluates in `thermo/component/Componen
 [inputs]
 [inputs.c0]
 unit = "dimensionless"
-description = "The constant term, NeqSim's internal scale.\n"
+description = "The constant term, in the correlation's internal scale.\n"
 [inputs.c1]
 unit = "dimensionless"
 description = "The coefficient of `T`.\n"

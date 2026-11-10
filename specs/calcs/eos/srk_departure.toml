@@ -1,5 +1,6 @@
 id = "eos.srk_departure"
 name = "Soave-Redlich-Kwong fugacity coefficient and departure functions"
+summary = "Soave-Redlich-Kwong fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in an SRK EOS."
 equation = """\
     psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))\n\
     I = ln((z + b_reduced)/z)\n\

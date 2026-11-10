@@ -7,8 +7,8 @@
 
 import { useEffect, useRef } from "react";
 
-import { formatQuantity } from "../../wire/field";
-import type { Units } from "../../state/units";
+import { quantityParts } from "../../wire/field";
+import { displayUnitOf, type Units } from "../../state/units";
 import type {
   CalcForm,
   CalcInput,
@@ -68,6 +68,7 @@ export function CalcReportView({
               {sheet.calculation}
               {form === undefined ? "" : ` · ${form.name}`}
             </p>
+            {form === undefined ? null : <p>{form.summary}</p>}
 
             {form === undefined ? (
               <p className="note">this calculation is not in this build</p>
@@ -78,6 +79,7 @@ export function CalcReportView({
                   <thead>
                     <tr>
                       <th scope="col">input</th>
+                      <th scope="col">meaning</th>
                       <th scope="col">value</th>
                       <th scope="col">unit</th>
                     </tr>
@@ -86,8 +88,9 @@ export function CalcReportView({
                     {form.inputs.map((input) => (
                       <tr key={input.name}>
                         <th scope="row">{input.name}</th>
+                        <td>{input.description}</td>
                         <td data-num>{inputText(sheet.inputs[input.name], input, units)}</td>
-                        <td className="unit">{input.unit ?? "—"}</td>
+                        <td className="unit">{unitText(input.unit, units)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -103,6 +106,7 @@ export function CalcReportView({
                     <thead>
                       <tr>
                         <th scope="col">output</th>
+                        <th scope="col">meaning</th>
                         <th scope="col">value</th>
                         <th scope="col">unit</th>
                       </tr>
@@ -111,14 +115,43 @@ export function CalcReportView({
                       {form.outputs.map((output) => (
                         <tr key={output.name}>
                           <th scope="row">{output.name}</th>
+                          <td>{output.description}</td>
                           <td data-num>
                             {outputText(sheet.result?.outputs[output.name], output, units)}
                           </td>
-                          <td className="unit">{output.unit ?? "—"}</td>
+                          <td className="unit">
+                            {outputUnit(sheet.result?.outputs[output.name], output, units)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                )}
+
+                {form.assumptions.length === 0 ? null : (
+                  <>
+                    <h3>When this applies</h3>
+                    <p>
+                      These conditions are not checked at runtime; the result means what it says
+                      only when they hold.
+                    </p>
+                    <ul>
+                      {form.assumptions.map((assumption) => (
+                        <li key={assumption}>{assumption}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {form.references.length === 0 ? null : (
+                  <>
+                    <h3>Source and references</h3>
+                    <ul>
+                      {form.references.map((reference) => (
+                        <li key={reference}>{reference}</li>
+                      ))}
+                    </ul>
+                  </>
                 )}
 
                 {sheet.result !== null && sheet.result.warnings.length > 0 ? (
@@ -169,6 +202,13 @@ export function CalcReportView({
   );
 }
 
+function unitText(unit: string | null, units: Units): string {
+  if (unit === null || unit === "dimensionless") {
+    return "—";
+  }
+  return displayUnitOf(units, unit) ?? unit;
+}
+
 function inputText(
   value: number | boolean | string | undefined,
   input: CalcInput,
@@ -180,7 +220,7 @@ function inputText(
   if (typeof value === "number" && input.unit !== null) {
     return input.unit === "dimensionless"
       ? String(value)
-      : formatQuantity(value, input.unit, 6, units);
+      : quantityParts(value, input.unit, 6, units).value;
   }
   return String(value);
 }
@@ -193,12 +233,23 @@ function outputText(value: SheetValue | undefined, output: CalcOutput, units: Un
     return value.join(", ");
   }
   if (typeof value === "object") {
-    return formatQuantity(value.magnitude_si, value.unit, 6, units);
+    return quantityParts(value.magnitude_si, value.unit, 6, units).value;
   }
   if (typeof value === "number" && output.kind === "quantity") {
     return output.unit === null || output.unit === "dimensionless"
       ? String(value)
-      : formatQuantity(value, output.unit, 6, units);
+      : quantityParts(value, output.unit, 6, units).value;
   }
   return String(value);
+}
+
+function outputUnit(
+  value: SheetValue | undefined,
+  output: CalcOutput,
+  units: Units,
+): string {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return displayUnitOf(units, value.unit) ?? value.unit;
+  }
+  return unitText(output.unit, units);
 }

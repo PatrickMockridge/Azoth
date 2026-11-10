@@ -4,6 +4,8 @@
 
 `eos.scale_prediction`
 
+Mineral-scale saturation indices from a water analysis, with ionic-strength activity coefficients. Use it to screen a produced or injection water for scaling.
+
 ## Equation
 
 $$
@@ -29,6 +31,24 @@ with the free ion concentrations after five ion-pair sweeps, and Ksp_j from the 
 
 `calculate`, `debyeHuckelA`, `calculateActivityCoefficient`, `correctForIonPairing`, `estimateCarbonateFromBicarbonate`, `estimatePH`, the five Ksp correlations and `applyPressureCorrection`, ported. The toJson surface is not.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.
+
+- `I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.
+
+- the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.
+
+- **ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.
+
+- the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.
+
+- **the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -46,7 +66,7 @@ with the free ion concentrations after five ion-pair sweeps, and Ksp_j from the 
 | `pressure` | Pa | absolute pressure, used by the Ksp pressure correction. |
 | `co2_partial_pressure` | Pa | CO2 partial pressure, read by the auto-pH path alone. |
 | `ph` | dimensionless | the water's pH; ignored when `auto_ph` is on and its gate holds. |
-| `auto_ph` | - | whether to estimate pH from the CO2 partial pressure and the bicarbonate. **The estimate is the class's as shipped** - see the assumptions. |
+| `auto_ph` | - | Whether to estimate pH from the CO2 partial pressure and the bicarbonate concentration. |
 | `second_order_pressure_correction` | - | whether to add the compressibility term to the Ksp pressure correction. |
 
 
@@ -58,15 +78,15 @@ with the free ion concentrations after five ion-pair sweeps, and Ksp_j from the 
 | `debye_huckel_a` | dimensionless | the Debye-Huckel A in log10 units at the state. |
 | `divalent_activity_coefficient` | dimensionless | the Davies coefficient for a divalent ion. |
 | `monovalent_activity_coefficient` | dimensionless | the Davies coefficient for a monovalent ion. |
-| `ph_used` | dimensionless | the pH the calculation used: the input, or the class's estimate. |
+| `ph_used` | dimensionless | The pH the calculation used: the input, or the estimated value. |
 | `free_calcium` | mol/m**3 | free calcium after ion pairing. |
 | `free_sulphate` | mol/m**3 | free sulphate after ion pairing. |
 | `free_carbonate` | mol/m**3 | free carbonate after ion pairing. |
 | `free_bicarbonate` | mol/m**3 | free bicarbonate after ion pairing. |
-| `total_barium` | mol/m**3 | total barium, which the class does not ion-pair. |
+| `total_barium` | mol/m**3 | Total barium, not ion-paired. |
 | `total_strontium` | mol/m**3 | total strontium. |
 | `total_iron` | mol/m**3 | total iron. |
-| `total_sodium` | mol/m**3 | total sodium, divided by the class's getter constant `22989.77`. |
+| `total_sodium` | mol/m**3 | Total sodium concentration. |
 | `ksp_calcite` | dimensionless | calcite's solubility product, in `(mol/L)^2`. |
 | `ksp_barite` | dimensionless | barite's solubility product. |
 | `ksp_celestite` | dimensionless | celestite's solubility product. |
@@ -105,31 +125,16 @@ with the free ion concentrations after five ion-pair sweeps, and Ksp_j from the 
 | `ph >= 0 and ph <= 14` | warns `OUT_OF_VALID_RANGE` | A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.
-
-- `I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.
-
-- the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.
-
-- **ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.
-
-- **the auto-pH path is broken upstream and is reproduced.** `calcHenryCO2`'s coefficients give `log10(KH)` about 48.7 at 25 C, so auto pH lands near -45 and the carbonate indices near -50; a manual pH is the physical route. Its gate needs `auto_ph`, positive CO2 partial pressure and bicarbonate.
-
-- **an absent ion gives an absent index**: no barium or no sulphate leaves the barite SI unset, no strontium the celestite one, no iron the siderite one; the class returns NaN for each and this calc returns no value.
-
-- the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.
-
-- **the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.
-
-- Ksp is in `(mol/L)^2` and is reported dimensionless, as `eos.scale_saturation_ratio`'s `solubility_product` is; `log10` of each is reported beside it for the literature pins.
-
-- the risk list is the class's locale-formatted strings and is not a calculation; the count and the flag are reported instead.
+- The auto-pH path is unreliable: its coefficients can drive the estimated pH far below the physical range. Use a measured or manually supplied pH.
+- An absent ion gives an absent index: no barium or no sulphate leaves the barite index unset, and likewise for celestite and siderite.
+- Ksp is in `(mol/L)^2` and is reported dimensionless; `log10` of each is reported beside it.
+- the risk list is a count and a flag, not a list of formatted strings.
 
 
 

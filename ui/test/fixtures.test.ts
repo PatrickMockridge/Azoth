@@ -85,8 +85,19 @@ describe("the catalogue", () => {
     for (const entry of calcs) {
       expect(entry.provenance.verification).not.toBe("");
       expect(entry.worked_example, `${entry.id} has no worked example`).toBeTypeOf("object");
+      // **The sheet's first two readings.** Every calculation says what it is for, and every
+      // field says what it means; a blank one is a blank line on the sheet.
+      expect(entry.summary.trim(), `${entry.id} has no summary`).not.toBe("");
+      expect(entry.summary.length).toBeLessThanOrEqual(300);
+      for (const field of [...entry.inputs, ...entry.outputs]) {
+        expect(field.description.trim(), `${entry.id}.${field.name}`).not.toBe("");
+      }
+      for (const assumption of entry.assumptions) {
+        expect(assumption.trim(), `${entry.id} has an empty assumption`).not.toBe("");
+      }
     }
     const pump = calcs.find((entry) => entry.id === "hydraulics.pump_power");
+    expect(pump?.summary).toContain("Shaft power");
     expect(pump?.inputs.map((input) => input.name)).toEqual(["rho", "q", "H", "eta"]);
     expect(pump?.outputs.map((output) => output.name)).toEqual(["power"]);
     expect(pump?.worked_example.rho).toBe(998);

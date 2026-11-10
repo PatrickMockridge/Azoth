@@ -4,6 +4,8 @@
 
 `hydraulics.orifice_flow`
 
+Flow through an orifice from the pressure difference across it, the hole diameter, discharge coefficient and density. Use it for restriction and meter sizing.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ q = Cd * (math.pi * d**2 / 4) * sqrt(2 * dP / rho)
 | `Cd <= 1` | raises | The ideal, lossless orifice passes exactly the ideal flow, so a coefficient above 1 would claim more flow than an obstruction of that area can pass. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

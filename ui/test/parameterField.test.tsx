@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ParameterField } from "../src/components/ParameterField";
@@ -62,5 +62,23 @@ describe("a parameter field", () => {
     fireEvent.change(input, { target: { value: "0.8" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onChange).toHaveBeenCalledWith(0.8);
+  });
+
+  it("puts the explanation in a row as the control's visible label", () => {
+    const rho = catalogue.calcs
+      ?.find((entry) => entry.id === "hydraulics.pump_power")
+      ?.inputs.find((entry) => entry.name === "rho");
+    if (rho === undefined) {
+      throw new Error("the pump's density input is not in the catalogue");
+    }
+    const { container } = render(
+      <ParameterField layout="row" parameter={rho} value={998} units={units} onChange={() => {}} />,
+    );
+
+    const description = screen.getByText(/density of the pumped fluid/i);
+    const input = container.querySelector("input");
+    expect(description.className).toBe("description");
+    expect(input?.getAttribute("aria-describedby")).toContain(description.id);
+    expect(screen.getByText(/checked limits/i)).toBeDefined();
   });
 });

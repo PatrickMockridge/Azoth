@@ -4,6 +4,8 @@
 
 `thermal.shah_condensation`
 
+In-tube condensation heat-transfer coefficient from Shah's correlation. Use it to estimate a condenser tube-side coefficient across the vapour-quality range.
+
 ## Equation
 
 $$
@@ -22,6 +24,24 @@ h_lo = 0.023*(G*D/mu_l)**0.8*(cp_l*mu_l/k_l)**0.4*k_l/D; h = h_lo*((1-x)**0.8 + 
 
 `calcLiquidOnlyHTC`, `calcLocalHTC`, `calcAverageHTC`, `calcVerticalTubeHTC` and `isInValidRange`, composed as the zone analysis uses them.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the local coefficient clamps the quality to `[0, 1]` and the reduced pressure to `[0.001, 0.44]`.** At a quality of one both terms vanish and the answer is zero; a quality at or below zero clamps to zero and answers the liquid-only coefficient.
+
+- **the liquid-only coefficient is Dittus-Boelter**, `0.023 Re_lo**0.8 Pr_l**0.4 k/D`, and it is the `h_lo` the local, average and vertical entries take - the path `IncrementalZoneAnalysis` takes.
+
+- **the average is Simpson's rule** with `n = max(4, intervals)` rounded up to even, and the class's `sum*|dx|/3`: the two `|x_out - x_in|` factors in its expression cancel.
+
+- **the vertical coefficient is shear-dominated above `Jg = 0.98`**, where it is the local coefficient; below it, the gravity branch `max(h_shah, 1.32 Pr**-1/3 h_lo (1-x)**0.8)` runs, with `Pr` floored at 0.001 and not capped.
+
+- **a liquid density not above the vapour makes the `Jg` denominator non-positive and falls back to the shear-dominated local coefficient**, as the class does.
+
+- **the class's external `h_lo` entry is not a separate input**: the composed calc computes it, which is the consumer's path.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -37,7 +57,7 @@ h_lo = 0.023*(G*D/mu_l)**0.8*(cp_l*mu_l/k_l)**0.4*k_l/D; h = h_lo*((1-x)**0.8 + 
 | `vapor_quality` | dimensionless | the local vapour quality, clamped to `[0, 1]` by the local coefficient. **One answers zero**, because both terms vanish there. |
 | `quality_in` | dimensionless | the inlet quality of the averaged range, clamped to `[0, 1]`. |
 | `quality_out` | dimensionless | the outlet quality of the averaged range, clamped to `[0, 1]`. |
-| `intervals` | dimensionless | *Optional.* the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number. |
+| `intervals` | dimensionless | *Optional.* The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four. |
 
 
 ## Outputs
@@ -66,26 +86,13 @@ h_lo = 0.023*(G*D/mu_l)**0.8*(cp_l*mu_l/k_l)**0.4*k_l/D; h = h_lo*((1-x)**0.8 + 
 | `reduced_pressure > 0` | raises | the class's guards return zero for a non-positive reduced pressure. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the local coefficient clamps the quality to `[0, 1]` and the reduced pressure to `[0.001, 0.44]`.** At a quality of one both terms vanish and the answer is zero; a quality at or below zero clamps to zero and answers the liquid-only coefficient.
-
-- **the liquid-only coefficient is Dittus-Boelter**, `0.023 Re_lo**0.8 Pr_l**0.4 k/D`, and it is the `h_lo` the local, average and vertical entries take - the path `IncrementalZoneAnalysis` takes.
-
-- **the average is Simpson's rule** with `n = max(4, intervals)` rounded up to even, and the class's `sum*|dx|/3`: the two `|x_out - x_in|` factors in its expression cancel.
-
-- **the vertical coefficient is shear-dominated above `Jg = 0.98`**, where it is the local coefficient; below it, the gravity branch `max(h_shah, 1.32 Pr**-1/3 h_lo (1-x)**0.8)` runs, with `Pr` floored at 0.001 and not capped.
-
-- **a liquid density not above the vapour makes the `Jg` denominator non-positive and falls back to the shear-dominated local coefficient**, as the class does.
-
-- **the validity bands are `0.001 <= Pr <= 0.44`, `Re_lo >= 350` and `4 <= G <= 820`**, over the stated values rather than the clamped ones.
-
-- **the class's external `h_lo` entry is not a separate input**: the composed calc computes it, which is the consumer's path.
-
+- The validity bands are `0.001 <= Pr <= 0.44`, `Re_lo >= 350` and `4 <= G <= 820`, applied to the values the caller states.
 
 
 

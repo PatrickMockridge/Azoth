@@ -58,6 +58,17 @@ describe("the calculations workspace", () => {
     await open();
 
     const sheet = screen.getByRole("tabpanel");
+    // **The explanation is on the sheet before the run.** A reader meets what the calculation is
+    // for, what each field means, what the output will be, and when the answer applies.
+    expect(
+      screen.getAllByText(/shaft power a pump needs from flow, head and efficiency/i).length,
+    ).toBeGreaterThan(0);
+    expect(within(sheet).getByText(/density of the pumped fluid/i)).toBeDefined();
+    expect(within(sheet).getByText(/shaft power the pump must be supplied with/i)).toBeDefined();
+    expect(within(sheet).getByText("When this applies")).toBeDefined();
+    const manual = within(sheet).getByRole("link", { name: /read the full manual/i });
+    expect(manual.getAttribute("href")).toMatch(/\/manual\/hydraulics\/pump_power\.html$/);
+
     fireEvent.click(within(sheet).getByRole("button", { name: "Calculate" }));
     await waitFor(() => expect(within(sheet).getByText(/3914\.8/)).toBeDefined());
     // No warning on the worked example, and the model check is present.

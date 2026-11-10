@@ -6,6 +6,7 @@
  */
 
 import { DockTabs } from "../property/DockTabs";
+import { manualHome } from "../../manual";
 import { CalcPicker } from "./CalcPicker";
 import { CalcSheet } from "./CalcSheet";
 import type { Units } from "../../state/units";
@@ -104,6 +105,12 @@ function CalcStarterHints() {
         <li>Press Calculate. A red sentence is the calculation refusing an input; a warning is a number that is valid but less certain.</li>
         <li>Save the book in TOML, and print or export a sheet when it needs to be a record.</li>
       </ol>
+      <p>
+        <a href={`${manualHome()}using/calculations.html`} target="_blank" rel="noreferrer">
+          Read the calculation-sheet guide
+        </a>{" "}
+        for the full explanation of a sheet.
+      </p>
     </div>
   );
 }

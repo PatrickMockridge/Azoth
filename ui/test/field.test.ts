@@ -6,10 +6,23 @@
  * — and a vector must reach the document as a list rather than as the string a text input holds.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { boundsOf, commandValue, controlFor, fieldText, formatQuantity, violates } from "../src/wire/field";
-import type { FormParameter } from "../src/wire/types";
+import {
+  boundsOf,
+  commandValue,
+  controlFor,
+  fieldText,
+  formatQuantity,
+  rangeTextIn,
+  violates,
+  violationOf,
+} from "../src/wire/field";
+import { unitsOf } from "../src/state/units";
+import { parseCatalogue } from "../src/wire/decode";
+import type { FormParameter, FormRange } from "../src/wire/types";
 
 function parameter(overrides: Partial<FormParameter> = {}): FormParameter {
   return {
@@ -128,5 +141,62 @@ describe("formatQuantity", () => {
     expect(formatQuantity(2_000_000, "Pa", 3)).toBe("2000000 Pa");
     expect(formatQuantity(416.0115678, "K")).toBe("416 K");
     expect(formatQuantity(0.0833, "mol/s")).toBe("0.0833 mol/s");
+  });
+});
+
+function range(overrides: Partial<FormRange> = {}): FormRange {
+  return {
+    min: null,
+    min_inclusive: true,
+    max: null,
+    max_inclusive: true,
+    equals: null,
+    band: "outside",
+    severity: "error",
+    code: "OUT_OF_VALID_RANGE",
+    rationale: "a bound",
+    ...overrides,
+  };
+}
+
+describe("violationOf", () => {
+  it("reads every range and names the one that fired", () => {
+    // The efficiency the field used to draw only the first bound of: a value above one must
+    // quote the upper bound's sentence, not the lower one's.
+    const ranges = [
+      range({ min: 0, min_inclusive: false, rationale: "the divisor" }),
+      range({ max: 1, rationale: "more out than in" }),
+    ];
+    expect(violationOf(ranges, 0)?.rationale).toBe("the divisor");
+    expect(violationOf(ranges, 1.2)?.rationale).toBe("more out than in");
+    expect(violationOf(ranges, 0.75)).toBeNull();
+    expect(violationOf(ranges, "high")).toBeNull();
+  });
+
+  it("inverts an inside band", () => {
+    const forbidden = [range({ min: 0.4, max: 0.6, band: "inside" })];
+    expect(violationOf(forbidden, 0.5)).not.toBeNull();
+    expect(violationOf(forbidden, 0.3)).toBeNull();
+  });
+});
+
+describe("rangeTextIn", () => {
+  it("states every bound in the reader's unit", () => {
+    const catalogue = parseCatalogue(
+      readFileSync(resolve("test/fixtures/catalogue.json"), "utf8"),
+    );
+    const field = unitsOf(catalogue, "field");
+    expect(
+      rangeTextIn(
+        [
+          range({ min: 0, min_inclusive: false }),
+          range({ max: 1 }),
+        ],
+        "dimensionless",
+        field,
+      ),
+    ).toBe("> 0 and <= 1");
+    // 273.15 K is exactly 32 degF; the bound is shown in the set the reader chose.
+    expect(rangeTextIn([range({ min: 273.15 })], "K", field)).toBe(">= 32");
   });
 });

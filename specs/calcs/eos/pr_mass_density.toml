@@ -1,11 +1,9 @@
 id = "eos.pr_mass_density"
 name = "Mass density from a molar volume"
+summary = "Mass density from a molar volume and molar mass. Use it to convert a cubic EOS molar volume into the density a hydraulic calculation needs."
 equation = "rho = M/v"
 latex = '''\rho = \frac{M}{v}'''
-assumptions = ["`M` is the molar mass of the same substance `v` describes. NOT CHECKED: the two are independent inputs with no relation this calc can see.\n", "`M` is in `kg/mol`. A caller who supplies the `g/mol` figure most tables quote gets a density 1000 times too small.\n", """\
-    the substance is a single phase and the volume is the phase the caller means. A density \
-    from a liquid root and one from a vapour root are both correct answers to different \
-    questions."""]
+assumptions = ["`M` is the molar mass of the same substance `v` describes. NOT CHECKED: the two are independent inputs with no relation this calc can see.\n", "`M` is in `kg/mol`. A caller who supplies the `g/mol` figure most tables quote gets a density 1000 times too small.\n", "the substance is a single phase and the volume is the phase the caller means. A density from a liquid root and one from a vapour root are both correct answers to different questions."]
 references = ["""\
     BIPM. \"The International System of Units (SI)\", 9th edition (2019). (the mole and the \
     kilogram, and therefore the units this calc divides)"""]

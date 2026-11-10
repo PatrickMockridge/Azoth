@@ -1,8 +1,10 @@
 id = "eos.matcop_pr_alpha"
 name = "Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback"
+summary = "Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback. Use it when a cubic EOS needs this form above and below the critical temperature."
 equation = "alpha = (1 + mc1*(1 - sqrt(Tr)) + mc2*(1 - sqrt(Tr))**2 + mc3*(1 - sqrt(Tr))**3)**2 below the critical point, else the standard PR form (1 + m*(1 - sqrt(Tr)))**2 with m = 0.37464 + 1.54226*omega - 0.26992*omega**2"
 latex = '''\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & T_r > 1 \text{ or } c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2'''
-assumptions = ["the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n", "above the critical temperature (``Tr > 1``), or when the first coefficient is below 1e-20, the alpha falls back to the standard Peng-Robinson form, which needs the acentric factor for ``m``.\n"]
+assumptions = ["the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n"]
+notes = ["above the critical temperature (``Tr > 1``), or when the first coefficient is below 1e-20, the alpha falls back to the standard Peng-Robinson form, which needs the acentric factor for ``m``.\n"]
 references = ["Mathias, P. M.; Copeman, T. W. (1983). \"Extension of the Peng-Robinson equation of state to complex mixtures: evaluation of the various forms of the local composition concept.\" Fluid Phase Equilib. 13, 91-108. DOI 10.1016/0378-3812(83)80084-3."]
 [source]
 standard = "NeqSim master `AttractiveTermMatCopPR`"

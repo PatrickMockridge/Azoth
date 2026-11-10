@@ -373,6 +373,8 @@ export interface CalcProvenance {
 export interface CalcForm {
   id: string;
   name: string;
+  /** What the calculation is for, in the spec's own authored words. */
+  summary: string;
   namespace: string;
   available: boolean;
   refusal: string | null;

@@ -25,7 +25,7 @@ class ActivityCoefficientRow:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class AppliedStandardRow:
-    """the standards the pipeline applied, in the class's order."""
+    """The standards the design pipeline applied."""
 
     #: one standard.
     name: str
@@ -553,7 +553,7 @@ class MineralEquilibriumRow:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class NaceIssueRow:
-    """the assessment's issue strings, in the class's order."""
+    """The NACE assessment's issue strings."""
 
     #: one issue.
     message: str

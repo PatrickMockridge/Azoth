@@ -4,6 +4,8 @@
 
 `thermal.zone_rating`
 
+A shell-and-tube exchanger rated zone by zone, with the local regime and an optional per-zone override. Use it where a single overall coefficient hides a changing duty.
+
 ## Equation
 
 $$
@@ -22,35 +24,53 @@ U_i = evaluate(geometry, zone_i); A_i = dutyFraction_i * totalDuty_i / (U_i * lm
 
 `calculateZones(ZoneDefinition[])` over the permissive `calculate()`; the per-zone rating arithmetic is `thermal.shell_and_tube_rating`'s, reused rather than transcribed twice.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the port implements the class's permissive `calculate()` arithmetic, and refuses the states that path would leave unanswered.** A zone whose transport properties are not positive finite is refused, not given a zero or NaN coefficient.
+
+- **a zone overrides only the eight transport properties** - density, viscosity, cp and conductivity on each side. Mass flows, fouling, the deposit layer, wall viscosity, sealing, clearances, bypass, method and every geometry stay the base request's.
+
+- **`required_area` is `duty_fraction * total_duty / (U * lmtd)` and is zero when either `U` or `lmtd` is non-positive**, the class's own ternary. A negative duty fraction is multiplied, not refused.
+
+- **the class restores the eight properties after each zone but not the results.** The port computes every zone from its declared inputs, so no coefficient from an earlier zone can reach a later one.
+
+- **`lmtd` is a caller-supplied temperature difference in K, not a computed LMTD.** This path never reads the four terminal temperatures; the zone's own number is the one used.
+
+- **the zone name is echoed unchanged and may be empty.** The port invents no name and applies no fallback.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `tube_outside_diameter` | m | the tube outside diameter. NeqSim's default is `0.01905` m. |
-| `tube_inside_diameter` | m | the nominal tube inside diameter, before any deposit layer. NeqSim's default is `0.01483` m. |
-| `tube_length` | m | the tube length. NeqSim's default is `6.096` m. |
-| `tube_count` | dimensionless | the tube count; it must divide evenly by `tube_passes`. NeqSim's default is `100`. |
-| `tube_passes` | dimensionless | the tube passes. NeqSim's default is `2`. |
-| `tube_pitch` | m | the tube pitch. NeqSim's default is `0.02381` m. |
-| `triangular_pitch` | - | the tube layout: `true` is triangular. NeqSim's default is `true`. |
-| `shell_inside_diameter` | m | the shell inside diameter. NeqSim's default is `0.5` m. |
-| `baffle_spacing` | m | the central baffle spacing. NeqSim's default is `0.2` m. |
-| `baffle_count` | dimensionless | the baffle count. NeqSim's default is `10`. |
-| `baffle_cut` | dimensionless | the fractional baffle cut, between zero and one half. NeqSim's default is `0.25`. |
-| `tube_wall_conductivity` | W/(m*K) | the tube-wall thermal conductivity. NeqSim's default is `52` W/(m*K). |
-| `tube_mass_flow` | kg/s | the tube-side mass flow, which no zone overrides. NeqSim's default is `10` kg/s. |
-| `shell_mass_flow` | kg/s | the shell-side mass flow, which no zone overrides. NeqSim's default is `5` kg/s. |
-| `fouling_tube` | dimensionless | the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`. |
-| `fouling_shell` | dimensionless | the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`. |
-| `shell_side_method` | kern / bell_delaware | the shell-side method. NeqSim's default is `kern`. |
+| `tube_outside_diameter` | m | The tube outside diameter. Defaults to 0.01905 m. |
+| `tube_inside_diameter` | m | The nominal tube inside diameter, before any deposit layer. Defaults to 0.01483 m. |
+| `tube_length` | m | The tube length. Defaults to 6.096 m. |
+| `tube_count` | dimensionless | The tube count; it must divide evenly by `tube_passes`. Defaults to 100. |
+| `tube_passes` | dimensionless | The tube passes. Defaults to 2. |
+| `tube_pitch` | m | The tube pitch. Defaults to 0.02381 m. |
+| `triangular_pitch` | - | The tube layout: `true` is triangular. Defaults to `true`. |
+| `shell_inside_diameter` | m | The shell inside diameter. Defaults to 0.5 m. |
+| `baffle_spacing` | m | The central baffle spacing. Defaults to 0.2 m. |
+| `baffle_count` | dimensionless | The baffle count. Defaults to 10. |
+| `baffle_cut` | dimensionless | The fractional baffle cut, between zero and one half. Defaults to 0.25. |
+| `tube_wall_conductivity` | W/(m*K) | The tube-wall thermal conductivity. Defaults to 52 W/(m*K). |
+| `tube_mass_flow` | kg/s | The tube-side mass flow, which no zone overrides. Defaults to 10 kg/s. |
+| `shell_mass_flow` | kg/s | The shell-side mass flow, which no zone overrides. Defaults to 5 kg/s. |
+| `fouling_tube` | dimensionless | The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176. |
+| `fouling_shell` | dimensionless | The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176. |
+| `shell_side_method` | kern / bell_delaware | The shell-side method. Defaults to `kern`. |
 | `zones` | - | the zones, in the caller's order; each carries its own transport properties and its caller-stated LMTD. |
 | `tube_fouling_layer_thickness` | m | *Optional.* a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer. |
-| `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* the deposit's thermal conductivity. Absent is the class's `1.0`; a non-positive value is refused even at zero thickness. |
+| `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* The deposit's thermal conductivity. Defaults to 1.0; a non-positive value is refused even at zero thickness. |
 | `shell_viscosity_wall` | Pa*s | *Optional.* the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity; zero is refused. |
 | `has_sealing` | - | *Optional.* whether sealing strips are installed. Absent is false. |
 | `sealing_pairs` | dimensionless | *Optional.* the sealing-strip pairs. Absent is `0`; a stated seal with no pair is refused in Bell-Delaware. |
-| `tube_to_baffle_clearance` | m | *Optional.* the tube-to-baffle hole clearance. Absent is the class's `0.0004` m. |
-| `shell_to_baffle_clearance` | m | *Optional.* the shell-to-baffle clearance. Absent is the class's `0.003` m. |
+| `tube_to_baffle_clearance` | m | *Optional.* The tube-to-baffle hole clearance. Defaults to 0.0004 m. |
+| `shell_to_baffle_clearance` | m | *Optional.* The shell-to-baffle clearance. Defaults to 0.003 m. |
 | `bypass_area` | m**2 | *Optional.* the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`. |
 
 
@@ -87,23 +107,13 @@ U_i = evaluate(geometry, zone_i); A_i = dutyFraction_i * totalDuty_i / (U_i * lm
 | `bypass_area >= 0` | raises | a bypass area cannot be negative; zero selects the class's estimate. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the port implements the class's permissive `calculate()` arithmetic, and refuses the states that path would leave unanswered.** A zone whose transport properties are not positive finite is refused, not given a zero or NaN coefficient.
-
-- **a zone overrides only the eight transport properties** - density, viscosity, cp and conductivity on each side. Mass flows, fouling, the deposit layer, wall viscosity, sealing, clearances, bypass, method and every geometry stay the base request's.
-
-- **`required_area` is `duty_fraction * total_duty / (U * lmtd)` and is zero when either `U` or `lmtd` is non-positive**, the class's own ternary. A negative duty fraction is multiplied, not refused.
-
-- **the class restores the eight properties after each zone but not the results.** The port computes every zone from its declared inputs, so no coefficient from an earlier zone can reach a later one.
-
-- **`lmtd` is a caller-supplied temperature difference in K, not a computed LMTD.** This path never reads the four terminal temperatures; the zone's own number is the one used.
-
-- **the zone name is echoed unchanged and may be empty.** The port invents no name and applies no fallback.
+- The zone boundaries and duties are the caller's. The calculation rates each zone independently; it does not solve the exchanger as one coupled system.
 
 
 

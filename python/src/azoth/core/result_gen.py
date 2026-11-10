@@ -641,7 +641,7 @@ class BeggsBrillSegmentResult(_HasWarnings):
     #: the volume-weighted no-slip mixture viscosity.
     no_slip_viscosity: Q
 
-    #: the no-slip Reynolds number, with the class's field-unit factor.
+    #: The no-slip Reynolds number.
     reynolds: float
 
     #: the single-phase Darcy friction factor.
@@ -3689,7 +3689,7 @@ class ScaleKineticsResult(_HasWarnings):
     #: the rate-controlling growth rate.
     effective_growth_rate: Q
 
-    #: `REACTION`, `TRANSPORT` or `NONE`, the class's own labels.
+    #: `REACTION`, `TRANSPORT` or `NONE`.
     limiting_regime: str
 
     #: Caveats.
@@ -3736,7 +3736,7 @@ class ScalePredictionResult(_HasWarnings):
     #: the Davies coefficient for a monovalent ion.
     monovalent_activity_coefficient: float
 
-    #: the pH the calculation used: the input, or the class's estimate.
+    #: The pH the calculation used: the input, or the estimated value.
     ph_used: float
 
     #: free calcium after ion pairing.
@@ -3751,7 +3751,7 @@ class ScalePredictionResult(_HasWarnings):
     #: free bicarbonate after ion pairing.
     free_bicarbonate: Q
 
-    #: total barium, which the class does not ion-pair.
+    #: Total barium, not ion-paired.
     total_barium: Q
 
     #: total strontium.
@@ -3760,7 +3760,7 @@ class ScalePredictionResult(_HasWarnings):
     #: total iron.
     total_iron: Q
 
-    #: total sodium, divided by the class's getter constant `22989.77`.
+    #: Total sodium concentration.
     total_sodium: Q
 
     #: calcite's solubility product, in `(mol/L)^2`.
@@ -4168,7 +4168,7 @@ class TbpFractionPropertiesResult(_HasWarnings):
     #: Critical temperature.
     tc: Q
 
-    #: Critical pressure. NeqSim's correlation is written in bar and this reports pascals.
+    #: Critical pressure, in pascals.
     pc: Q
 
     #: Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.
@@ -4177,7 +4177,7 @@ class TbpFractionPropertiesResult(_HasWarnings):
     #: Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.
     acentric_factor: float
 
-    #: The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.
+    #: The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.
     attraction_exponent: float
 
     #: Caveats.
@@ -8753,7 +8753,7 @@ class FoulingModelResult(_HasWarnings):
     #: the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
     threshold_wall_temperature: Q
 
-    #: the velocity at which the asymptote crosses the fixed resistance, by the class's bisection over `[0.1, 10]` m/s.
+    #: The velocity at which the asymptote crosses the fixed resistance.
     threshold_velocity: Q
 
     #: the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
@@ -8768,7 +8768,7 @@ class FoulingModelResult(_HasWarnings):
     #: `rho*v*D/mu` of the stated conditions.
     reynolds_number: float
 
-    #: `f/8*rho*v**2` with the class's Darcy friction factor.
+    #: `f/8*rho*v**2`, using the Darcy friction factor.
     wall_shear_stress: Q
 
     #: Caveats.
@@ -8824,10 +8824,10 @@ class LmtdCorrectionFactorResult(_HasWarnings):
     #: the correction factor for the stated number of shell passes.
     ft: float
 
-    #: the correction factor for one shell pass, the class's dedicated wrapper.
+    #: The correction factor for one shell pass.
     ft_1_shell_pass: float
 
-    #: the correction factor for two shell passes, the class's dedicated wrapper.
+    #: The correction factor for two shell passes.
     ft_2_shell_passes: float
 
     #: the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
@@ -8874,7 +8874,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the designation, echoed.
     tema_designation: str
 
-    #: the class's own name.
+    #: The TEMA construction class.
     tema_class: str
 
     #: the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
@@ -8883,7 +8883,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the inside diameter plus twice the wall.
     shell_outside_diameter: Q
 
-    #: the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.
+    #: The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.
     shell_wall_thickness: Q
 
     #: the specification and grade, e.g. `ASME-II-A SA-516-70`.
@@ -8907,7 +8907,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the standard tube outside diameter.
     tube_outer_diameter: Q
 
-    #: the class's fixed `2.108` mm.
+    #: The minimum tube wall thickness.
     tube_wall_thickness: Q
 
     #: the tube length, echoed.
@@ -8919,7 +8919,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: `tube_outer_diameter * 1.25`.
     tube_pitch: Q
 
-    #: the class's pattern description, `Triangular 30°`.
+    #: The tube pitch pattern, e.g. `Triangular 30°`.
     tube_pitch_pattern: str
 
     #: the specification and grade of the tube material.
@@ -8934,7 +8934,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the tube material's conductivity from the table.
     tube_thermal_conductivity: Q
 
-    #: the class's fixed `Single Segmental`.
+    #: The baffle type, e.g. `Single Segmental`.
     baffle_type: str
 
     #: `(tube_length - 2*spacing)/spacing` floored, at least one.
@@ -8943,7 +8943,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
     baffle_spacing: Q
 
-    #: the class's fixed `0.25`.
+    #: The baffle cut, e.g. 0.25.
     baffle_cut: float
 
     #: the required area, echoed.
@@ -8955,7 +8955,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: `(actual - required)/required`.
     area_margin: float
 
-    #: the UHX-13 thickness, floored at the class minimum.
+    #: The UHX-13 tubesheet thickness, floored at the minimum.
     tubesheet_thickness_uhx: Q
 
     #: the shell MAWP per UG-27.
@@ -8970,7 +8970,7 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the same on the tube side.
     hydro_test_pressure_tube: Q
 
-    #: the available reinforcement area per UG-37, the class mm**2 divided by 1e6.
+    #: The available reinforcement area per UG-37.
     nozzle_reinforcement_area: Q
 
     #: whether the available area meets the required one.
@@ -8982,22 +8982,22 @@ class ShellAndTubeDesignResult(_HasWarnings):
     #: the stated partial pressure, echoed when the assessment runs.
     h2s_partial_pressure: Q | None
 
-    #: the shell material's compliance flag; false for every grade, as the class reads it.
+    #: Whether the shell material meets NACE.
     shell_nace_compliant: bool
 
     #: the tube material's compliance flag, likewise.
     tube_nace_compliant: bool
 
-    #: the shell hardness in HV, the class's fixed 248.
+    #: The shell hardness in HV.
     shell_max_hardness: float
 
     #: the tube hardness in HV, likewise.
     tube_max_hardness: float
 
-    #: the assessment's issue strings, in the class's order.
+    #: The NACE assessment's issue strings.
     nace_issues: tuple[NaceIssueRow, ...]
 
-    #: the standards the pipeline applied, in the class's order.
+    #: The standards the design pipeline applied.
     applied_standards: tuple[AppliedStandardRow, ...]
 
     #: the thermal block's tube-side coefficient.
@@ -9169,7 +9169,7 @@ class ShellAndTubeRatingResult(_HasWarnings):
     #: the bundle-bypass correction factor; 1.0 on the Kern path.
     jb: float
 
-    #: the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times.
+    #: The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here.
     js: float
 
     #: the adverse-temperature-gradient correction factor; 1.0 above Re 100.
@@ -9200,7 +9200,7 @@ class ShellAndTubeVibrationResult(_HasWarnings):
     #: Connors' critical crossflow velocity for fluid-elastic instability.
     critical_velocity: Q
 
-    #: `V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.
+    #: `V / (0.5 * V_crit)`; critical above one.
     velocity_ratio: float
 
     #: whether the velocity ratio exceeds one.
@@ -9237,16 +9237,16 @@ class TemaStandardResult(_HasWarnings):
     #: whether the rear head allows the bundle to be removed.
     bundle_removable: bool
 
-    #: whether the rear head handles thermal expansion, the class's second name for the same predicate.
+    #: Whether the rear head handles thermal expansion.
     good_thermal_expansion: bool
 
-    #: the construction class's cost factor relative to class `B`.
+    #: The construction class's cost factor relative to class `B`.
     class_cost_factor: float
 
-    #: the class's minimum tube wall.
+    #: The minimum tube wall thickness for the class.
     min_tube_wall_thickness: Q
 
-    #: the class's minimum corrosion allowance.
+    #: The minimum corrosion allowance for the class.
     min_corrosion_allowance: Q
 
     #: the standard tube size's outside diameter.
@@ -9276,16 +9276,16 @@ class TemaStandardResult(_HasWarnings):
     #: the truncated bundle-area estimate at the stated pitch and passes.
     estimated_tube_count: float
 
-    #: the class's maximum unsupported tube span for the diameter band and material.
+    #: The maximum unsupported tube span for the diameter band and material.
     max_unsupported_span: Q
 
-    #: the greater of one fifth of the shell diameter and the class's floor.
+    #: The greater of one fifth of the shell diameter and the minimum baffle spacing.
     min_baffle_spacing: Q
 
     #: the shell inside diameter.
     max_baffle_spacing: Q
 
-    #: the designation the class's four-branch recommendation answers.
+    #: The recommended TEMA designation.
     recommended_designation: str
 
     #: Caveats.

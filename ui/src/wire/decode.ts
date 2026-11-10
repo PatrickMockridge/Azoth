@@ -623,6 +623,7 @@ function calcForm(value: unknown, path: string): CalcForm {
   return {
     id: str(raw.id, `${path}.id`),
     name: str(raw.name, `${path}.name`),
+    summary: str(raw.summary, `${path}.summary`),
     namespace: str(raw.namespace, `${path}.namespace`),
     available: bool(raw.available, `${path}.available`),
     refusal: nullable(raw.refusal, `${path}.refusal`, str),

@@ -46,7 +46,7 @@ impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficient
     }
 }
 
-/// the standards the pipeline applied, in the class's order.
+/// The standards the design pipeline applied.
 #[pyclass(
     frozen,
     skip_from_py_object,
@@ -1503,7 +1503,7 @@ impl From<&azoth_eos::results::MineralEquilibriumRow> for PyMineralEquilibriumRo
     }
 }
 
-/// the assessment's issue strings, in the class's order.
+/// The NACE assessment's issue strings.
 #[pyclass(
     frozen,
     skip_from_py_object,

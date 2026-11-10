@@ -1,5 +1,6 @@
 id = "eos.pr_departure"
 name = "Peng-Robinson fugacity coefficient and departure functions"
+summary = "Peng-Robinson fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in a Peng-Robinson EOS."
 equation = """\
     psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))\n\
     I = ln((z + (1 + 2**0.5)*b_reduced)/(z + (1 - 2**0.5)*b_reduced))\n\
@@ -35,9 +36,7 @@ latex = """\
     C\\left(\\psi - 1\\right)I, \\qquad \\frac{S^{R}}{R} = \\ln\\left(z - B\\right) + C\\psi \
     I, \\qquad \\frac{C_{p}^{R}}{R} = \\frac{H^{R}}{RT} + \
     T\\left(\\frac{\\partial}{\\partial T}\\frac{H^{R}}{RT}\\right)_{P}"""
-assumptions = ["**`z` is a root of the cubic that `a_reduced` and `b_reduced` define.** NOT CHECKED here, and not checkable: it would mean solving the cubic.\n", "`kappa` and `Tr` correspond to the state `a_reduced` and `b_reduced` describe. Also NOT CHECKED.\n", "the alpha function is the one whose logarithmic derivative `psi` is; Peng-Robinson's and PRSV's coefficients both feed it.\n", "the departure functions are relative to the ideal-gas state at the same temperature and pressure.\n", """\
-    no mixing rule is applied. These are pure-component departure functions, computed from \
-    the composition-weighted `A` and `B` a caller passes."""]
+assumptions = ["**`z` is a root of the cubic that `a_reduced` and `b_reduced` define.** NOT CHECKED here, and not checkable: it would mean solving the cubic.\n", "`kappa` and `Tr` correspond to the state `a_reduced` and `b_reduced` describe. Also NOT CHECKED.\n", "the alpha function is the one whose logarithmic derivative `psi` is; Peng-Robinson's and PRSV's coefficients both feed it.\n", "the departure functions are relative to the ideal-gas state at the same temperature and pressure.\n", "no mixing rule is applied. These are pure-component departure functions, computed from the composition-weighted `A` and `B` a caller passes."]
 references = ["Peng, D. Y.; Robinson, D. B. (1976). \\\"A New Two-Constant Equation of State.\\\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
 [source]
 standard = "Peng, D. Y.; Robinson, D. B. (1976)"

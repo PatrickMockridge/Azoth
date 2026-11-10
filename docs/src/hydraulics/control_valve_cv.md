@@ -4,6 +4,8 @@
 
 `hydraulics.control_valve_cv`
 
+Liquid flow through a control valve from its flow coefficient, pressure drop and specific gravity. Use it to size a valve trim or check an existing valve at a duty.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ q = CV_TO_SI * Cv * sqrt(dP / SG)
 | `SG > 0` | raises | specific gravity is a divisor inside the square root, so zero is singular and negative would make the root imaginary. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

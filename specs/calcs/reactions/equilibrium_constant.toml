@@ -1,17 +1,10 @@
 id = "reactions.equilibrium_constant"
 name = "Equilibrium constant of one reaction"
+summary = "Equilibrium constant of one reaction from its fitted coefficients at a temperature. Use it to check reaction direction and extent before a reactive flash."
 equation = "ln K = K1 + K2/T + K3*ln T + K4*T\n\nd(ln K)/dT = -K1/T**2 + K2/T + K3\n\ndH = d(ln K)/dT * R * T**2\n\nwith K1..K4 read from the named reaction's row in one of NeqSim's three reaction tables, and R = 8.3144621 J/(mol K) as NeqSim's `ThermodynamicConstantsInterface` fixes it."
 latex = '''\ln K = K_{1} + \frac{K_{2}}{T} + K_{3}\ln T + K_{4}T, \qquad \frac{d\ln K}{dT} = -\frac{K_{1}}{T^{2}} + \frac{K_{2}}{T} + K_{3}, \qquad \Delta H = \frac{d\ln K}{dT}RT^{2}'''
-assumptions = [
-    "**the four coefficients are fitted, not derived.** `K2` carries the van't Hoff term, `K3` the heat-capacity term and `K4` a linear one; `K4` is zero in all but a handful of rows. A port that dropped the `ln T` term would still agree with the capture near 298 K and diverge away from it.",
-    "**the three tables are different standard states, not a fallback chain.** `CO2water`'s `K1` is `253.235548` on the standard source against `653.705141388` on the Pitzer one: the two answers cross near 313 K and differ by 24 percent at 423 K.",
-    "`TREF` is `298.15` in every row of all three tables and **the correlation does not read it**: it is the temperature the fit is anchored at, so `ln K` at `T = TREF` is not any particular value. Nothing here uses it.",
-    "**the heat's sign is about the reaction as the table writes it.** A negative `dH` is exothermic in the forward direction the row's stoichiometry gives - `CO2 + H2O -> H2CO3` for `CO2water` - and says nothing about the reverse, which is the same row read backwards.",
-    "**the lookup does not consult `usereaction`**, matching `ChemicalReactionFactory.getChemicalReaction`, which selects on the name alone. Seven of the standard table's 47 rows carry 1, so `methanecombustion` is dormant and is still answered here.",
-    "**a duplicated name resolves to the first row.** `MDEAprot` appears twice in the standard table, `Austgen1989` with `usereaction` 0 and `Huttenhuis2005` with 1, and NeqSim's `dataSet.next()` takes the first - so the disabled row answers.",
-    "**the row's `ACTENERGY` and `R` columns are not read here.** They parameterise the rate law, which is a property of the same row and a different quantity; on the path NeqSim actually runs, a table reaction is put on the legacy temperature correlation, which ignores both.",
-    "no pressure dependence: `K` is a function of temperature and the row alone. A pressure correction would be a different standard state and is not in this correlation.",
-]
+assumptions = ["**the heat's sign is about the reaction as the table writes it.** A negative `dH` is exothermic in the forward direction the row's stoichiometry gives - `CO2 + H2O -> H2CO3` for `CO2water` - and says nothing about the reverse, which is the same row read backwards.", "no pressure dependence: `K` is a function of temperature and the row alone. A pressure correction would be a different standard state and is not in this correlation."]
+notes = ["**the four coefficients are fitted, not derived.** `K2` carries the van't Hoff term, `K3` the heat-capacity term and `K4` a linear one; `K4` is zero in all but a handful of rows. A port that dropped the `ln T` term would still agree with the capture near 298 K and diverge away from it.", "**the three tables are different standard states, not a fallback chain.** `CO2water`'s `K1` is `253.235548` on the standard source against `653.705141388` on the Pitzer one: the two answers cross near 313 K and differ by 24 percent at 423 K.", "`TREF` is `298.15` in every row of all three tables and **the correlation does not read it**: it is the temperature the fit is anchored at, so `ln K` at `T = TREF` is not any particular value. Nothing here uses it.", "**the lookup does not consult `usereaction`**, matching `ChemicalReactionFactory.getChemicalReaction`, which selects on the name alone. Seven of the standard table's 47 rows carry 1, so `methanecombustion` is dormant and is still answered here.", "**a duplicated name resolves to the first row.** `MDEAprot` appears twice in the standard table, `Austgen1989` with `usereaction` 0 and `Huttenhuis2005` with 1, and NeqSim's `dataSet.next()` takes the first - so the disabled row answers.", "**the row's `ACTENERGY` and `R` columns are not read here.** They parameterise the rate law, which is a property of the same row and a different quantity; on the path NeqSim actually runs, a table reaction is put on the legacy temperature correlation, which ignores both."]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReaction` is the port source: `getK(PhaseInterface)` for the constant and `getReactionHeat(PhaseInterface)` for the heat.",
     "van 't Hoff, J. H. (1884). \"Etudes de dynamique chimique.\" Frederik Muller & Co., Amsterdam. The `1/T` term and the relation the heat of reaction is read through.",
@@ -27,7 +20,7 @@ description = "The reaction's name as its table spells it - `CO2water`, `waterre
 [inputs.source]
 type = "enum"
 values = ["standard", "pitzer", "kent-eisenberg"]
-description = "which of NeqSim's three reaction tables the row is read from: `standard`, `pitzer` (the same reactions on a molality standard state, the only one whose rows carry a validation status) or `kent-eisenberg`. **Required rather than defaulting**: the three are different standard states.\n"
+description = "Which reaction table the row is read from: `standard`, `pitzer` or `kent-eisenberg`. Required because the three are different standard states.\n"
 [inputs.T]
 unit = "K"
 description = "absolute temperature at which the constant is evaluated. The correlation takes `ln T`, so it is bounded below by zero and not by a fitted range.\n"

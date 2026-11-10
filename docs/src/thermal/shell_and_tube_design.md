@@ -4,6 +4,8 @@
 
 `thermal.shell_and_tube_design`
 
+A detailed shell-and-tube exchanger design from a duty and stream data, applying TEMA layout and ASME wall rules. Use it to size a new exchanger.
+
 ## Equation
 
 $$
@@ -22,25 +24,53 @@ N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head
 
 `calculate()` single pass: tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the NACE assessment, the thermal and vibration block, weights and costs; the lookup is `loadMaterialFromDB`.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.
+
+- **the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.
+
+- **the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.
+
+- **the material table is NeqSim's 22-row design table, looked up by exact grade.** A grade that is not in it leaves the class's defaults (138/117 MPa, 52 W/(m K)) and the `Carbon Steel ...` strings.
+
+- **NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.
+
+- **the price test is `contains("STAINLESS")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.
+
+- **the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.
+
+- **weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.
+
+- **the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.
+
+- **the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.
+
+- **the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `tema_designation` | - | the three-letter TEMA designation, e.g. `AES`. NeqSim's default is `AES`. |
-| `tema_class` | R / C / B | the construction class: severe, moderate or light service. NeqSim's default is `R`. |
-| `required_area` | m**2 | the required heat-transfer area, which the tube count divides. NeqSim's default is `100` m**2. |
-| `shell_side_pressure` | bar | the shell-side design pressure. NeqSim's default is `10` bar. |
-| `tube_side_pressure` | bar | the tube-side design pressure. NeqSim's default is `10` bar. |
-| `design_temperature` | K | the design temperature; the class derates the allowable stress at 200/300/400 C. NeqSim's default is 150 C. |
-| `shell_material_grade` | - | the shell material grade, looked up in the vendored table by exact equality. NeqSim's default is `SA-516-70`. |
-| `tube_material_grade` | - | the tube material grade, likewise. NeqSim's default is `SA-179`. |
-| `tube_size` | tube_3_8_inch / tube_1_2_inch / tube_5_8_inch / tube_3_4_inch / tube_1_inch | the standard tube size. NeqSim's default is `tube_3_4_inch`. |
-| `tube_length` | mm | the tube length. NeqSim's default is `6096` mm. |
-| `tube_passes` | dimensionless | the tube passes. NeqSim's default is `2`. |
-| `shell_joint_efficiency` | dimensionless | the shell joint efficiency, used by UG-37 and UG-27 and not the shell-wall formula. NeqSim's default is `0.85`. |
-| `nozzle_diameter` | mm | the nozzle finished inside diameter. NeqSim's default is `150` mm. |
-| `nozzle_wall_thickness` | mm | the nozzle wall thickness. NeqSim's default is `7.11` mm. |
-| `sour_service_assessment` | - | whether the NACE assessment runs. NeqSim's default is false. |
+| `tema_designation` | - | The three-letter TEMA designation, e.g. `AES`. Defaults to `AES`. |
+| `tema_class` | R / C / B | The construction class: severe, moderate or light service. Defaults to `R`. |
+| `required_area` | m**2 | The required heat-transfer area, which the tube count divides. Defaults to 100 m**2. |
+| `shell_side_pressure` | bar | The shell-side design pressure. Defaults to 10 bar. |
+| `tube_side_pressure` | bar | The tube-side design pressure. Defaults to 10 bar. |
+| `design_temperature` | K | The design temperature; the allowable stress is derated at 200, 300 and 400 C. Defaults to 150 C. |
+| `shell_material_grade` | - | The shell material grade, looked up by exact name. Defaults to `SA-516-70`. |
+| `tube_material_grade` | - | The tube material grade, looked up by exact name. Defaults to `SA-179`. |
+| `tube_size` | tube_3_8_inch / tube_1_2_inch / tube_5_8_inch / tube_3_4_inch / tube_1_inch | The standard tube size. Defaults to `tube_3_4_inch`. |
+| `tube_length` | mm | The tube length. Defaults to 6096 mm. |
+| `tube_passes` | dimensionless | The tube passes. Defaults to 2. |
+| `shell_joint_efficiency` | dimensionless | The shell joint efficiency, used by UG-37 and UG-27 rather than the shell-wall formula. Defaults to 0.85. |
+| `nozzle_diameter` | mm | The nozzle finished inside diameter. Defaults to 150 mm. |
+| `nozzle_wall_thickness` | mm | The nozzle wall thickness. Defaults to 7.11 mm. |
+| `sour_service_assessment` | - | Whether the NACE assessment runs. Defaults to false. |
 | `h2s_partial_pressure` | bar | *Optional.* the H2S partial pressure, read only when the assessment runs. Absent is `0`; the sour threshold is 0.003 bar. |
 | `fouling_tube` | dimensionless | *Optional.* the tube-side fouling resistance in m**2*K/W for the thermal block. Absent is `0.000176`. |
 | `fouling_shell` | dimensionless | *Optional.* the shell-side fouling resistance in m**2*K/W, likewise. Absent is `0.000176`. |
@@ -62,10 +92,10 @@ N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head
 | Name | Unit | Description |
 |---|---|---|
 | `tema_designation` | - | the designation, echoed. |
-| `tema_class` | - | the class's own name. |
+| `tema_class` | - | The TEMA construction class. |
 | `shell_inside_diameter` | mm | the bundle diameter plus the rear-head clearance, snapped to a standard shell size. |
 | `shell_outside_diameter` | mm | the inside diameter plus twice the wall. |
-| `shell_wall_thickness` | mm | the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness. |
+| `shell_wall_thickness` | mm | The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness. |
 | `shell_material` | - | the specification and grade, e.g. `ASME-II-A SA-516-70`. |
 | `shell_material_grade` | - | the grade, echoed. |
 | `shell_allowable_stress` | MPa | the shell allowable stress after the temperature derating. |
@@ -73,37 +103,37 @@ N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head
 | `shell_joint_efficiency` | dimensionless | the joint efficiency, echoed. |
 | `tube_count` | dimensionless | the area-derived tube count, rounded up to a multiple of the passes. |
 | `tube_outer_diameter` | mm | the standard tube outside diameter. |
-| `tube_wall_thickness` | mm | the class's fixed `2.108` mm. |
+| `tube_wall_thickness` | mm | The minimum tube wall thickness. |
 | `tube_length` | mm | the tube length, echoed. |
 | `tube_passes` | dimensionless | the passes, echoed. |
 | `tube_pitch` | mm | `tube_outer_diameter * 1.25`. |
-| `tube_pitch_pattern` | - | the class's pattern description, `Triangular 30°`. |
+| `tube_pitch_pattern` | - | The tube pitch pattern, e.g. `Triangular 30°`. |
 | `tube_material` | - | the specification and grade of the tube material. |
 | `tube_material_grade` | - | the tube grade, echoed. |
 | `tube_allowable_stress` | MPa | the tube allowable stress after the temperature derating. |
 | `tube_thermal_conductivity` | W/(m*K) | the tube material's conductivity from the table. |
-| `baffle_type` | - | the class's fixed `Single Segmental`. |
+| `baffle_type` | - | The baffle type, e.g. `Single Segmental`. |
 | `baffle_count` | dimensionless | `(tube_length - 2*spacing)/spacing` floored, at least one. |
 | `baffle_spacing` | mm | 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span. |
-| `baffle_cut` | dimensionless | the class's fixed `0.25`. |
+| `baffle_cut` | dimensionless | The baffle cut, e.g. 0.25. |
 | `required_area` | m**2 | the required area, echoed. |
 | `actual_area` | m**2 | `tube_count * pi * d_o * L`. |
 | `area_margin` | dimensionless | `(actual - required)/required`. |
-| `tubesheet_thickness_uhx` | mm | the UHX-13 thickness, floored at the class minimum. |
+| `tubesheet_thickness_uhx` | mm | The UHX-13 tubesheet thickness, floored at the minimum. |
 | `mawp_shell_side` | bar | the shell MAWP per UG-27. |
 | `mawp_tube_side` | bar | the tube MAWP per UG-27. |
 | `hydro_test_pressure_shell` | bar | `1.3 * MAWP * S(20 C)/S(design)`. |
 | `hydro_test_pressure_tube` | bar | the same on the tube side. |
-| `nozzle_reinforcement_area` | m**2 | the available reinforcement area per UG-37, the class mm**2 divided by 1e6. |
+| `nozzle_reinforcement_area` | m**2 | The available reinforcement area per UG-37. |
 | `nozzle_reinforcement_adequate` | - | whether the available area meets the required one. |
 | `sour_service_required` | - | whether the H2S partial pressure exceeds the 0.003 bar threshold. |
 | `h2s_partial_pressure` | bar | *Optional.* the stated partial pressure, echoed when the assessment runs. |
-| `shell_nace_compliant` | - | the shell material's compliance flag; false for every grade, as the class reads it. |
+| `shell_nace_compliant` | - | Whether the shell material meets NACE. |
 | `tube_nace_compliant` | - | the tube material's compliance flag, likewise. |
-| `shell_max_hardness` | dimensionless | the shell hardness in HV, the class's fixed 248. |
+| `shell_max_hardness` | dimensionless | The shell hardness in HV. |
 | `tube_max_hardness` | dimensionless | the tube hardness in HV, likewise. |
-| `nace_issues` | - | the assessment's issue strings, in the class's order. |
-| `applied_standards` | - | the standards the pipeline applied, in the class's order. |
+| `nace_issues` | - | The NACE assessment's issue strings. |
+| `applied_standards` | - | The standards the design pipeline applied. |
 | `tube_side_heat_transfer_coefficient` | W/(m**2*K) | *Optional.* the thermal block's tube-side coefficient. |
 | `shell_side_heat_transfer_coefficient` | W/(m**2*K) | *Optional.* the thermal block's shell-side coefficient. |
 | `overall_heat_transfer_coefficient` | W/(m**2*K) | *Optional.* the thermal block's overall coefficient. |
@@ -162,36 +192,13 @@ N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head
 | `fouling_shell >= 0` | raises | a fouling resistance cannot be negative. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.
-
-- **the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.
-
-- **the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.
-
-- **the material table is NeqSim's 22-row design table, looked up by exact grade.** A grade that is not in it leaves the class's defaults (138/117 MPa, 52 W/(m K)) and the `Carbon Steel ...` strings.
-
-- **NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.
-
-- **the price test is `contains("STAINLESS")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.
-
-- **the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.
-
-- **weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.
-
-- **the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.
-
-- **the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.
-
-- **the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.
-
-- **a zero or negative flow, or a thermal side with any property missing, is refused.** The class answers the all-or-none breach with a zero coefficient and a `NaN` drop.
-
+- A zero or negative flow, or a thermal side with any property missing, is refused rather than answered with a zero coefficient or a NaN pressure drop.
 
 
 

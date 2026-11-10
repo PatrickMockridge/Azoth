@@ -4,6 +4,8 @@
 
 `eos.pitzer_scale_activity`
 
+Binary Pitzer activity coefficients for a scale-forming brine. Use it for mineral solubility and scaling estimates in concentrated electrolytes.
+
 ## Equation
 
 $$
@@ -27,6 +29,24 @@ ln(gamma) = |z_c z_a| f + m (2 nu_c nu_a/nu) B_gamma + m^2 (3 (nu_c nu_a)^1.5/nu
 **NeqSim master `PitzerScaleActivityModel`**
 
 `getMeanActivityCoefficient`, `calculateIonActivityCoefficients`, `meanAtEquivalentIonicStrength`, `betaGammaTerm` and `temperatureParameter`, ported.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the parameters are the PHREEQC `pitzer.dat` sets the tree already vendors**: `data/components/PitzerPhreeqc.csv`, read through the same catalogue the electrolyte models use, a family the table does not carry being zero as the class's padding makes it.
+
+- the six-term expression is about 298.15 K: `A0 + A1(1/T - 1/Tr) + A2 ln(T/Tr) + A3(T - Tr) + A4(T^2 - Tr^2) + A5(1/T^2 - 1/Tr^2)`.
+
+- **trace ions are mapped by the MacInnes convention**: a divalent is `mean(salt)^3 / gamma_NaCl^2`, bicarbonate is `gamma_NaHCO3^2 / gamma_NaCl`, and sodium and chloride are the NaCl mean coefficient itself.
+
+- **the mean coefficient computes its own ionic strength from the salt molality** and ignores the configured one; only the mapped coefficients use the configured strength. At a zero molality the mean is exactly one.
+
+- the salt's `alpha1`/`alpha2` are 2/0 except CaCl2 and NaHCO3, which take 2/12; the beta2 term is added only when alpha2 is positive and beta2 is not zero.
+
+- the class refuses a non-positive temperature and a negative ionic strength or molality in its constructor; this calc refuses them by range rather than in prose.
+
 
 ## Inputs
 
@@ -69,25 +89,13 @@ ln(gamma) = |z_c z_a| f + m (2 nu_c nu_a/nu) B_gamma + m^2 (3 (nu_c nu_a)^1.5/nu
 | `salt_molality >= 0` | raises | A molality cannot be negative; zero is the mean's exact one. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the parameters are the PHREEQC `pitzer.dat` sets the tree already vendors**: `data/components/PitzerPhreeqc.csv`, read through the same catalogue the electrolyte models use, a family the table does not carry being zero as the class's padding makes it.
-
 - the model is **binary by construction**: eight salts' mean coefficients and nine ions' mapped coefficients, with no theta/psi mixing matrix; a brine whose topology needs one is outside it.
-
-- the six-term expression is about 298.15 K: `A0 + A1(1/T - 1/Tr) + A2 ln(T/Tr) + A3(T - Tr) + A4(T^2 - Tr^2) + A5(1/T^2 - 1/Tr^2)`.
-
-- **trace ions are mapped by the MacInnes convention**: a divalent is `mean(salt)^3 / gamma_NaCl^2`, bicarbonate is `gamma_NaHCO3^2 / gamma_NaCl`, and sodium and chloride are the NaCl mean coefficient itself.
-
-- **the mean coefficient computes its own ionic strength from the salt molality** and ignores the configured one; only the mapped coefficients use the configured strength. At a zero molality the mean is exactly one.
-
-- the salt's `alpha1`/`alpha2` are 2/0 except CaCl2 and NaHCO3, which take 2/12; the beta2 term is added only when alpha2 is positive and beta2 is not zero.
-
-- the class refuses a non-positive temperature and a negative ionic strength or molality in its constructor; this calc refuses them by range rather than in prose.
 
 
 

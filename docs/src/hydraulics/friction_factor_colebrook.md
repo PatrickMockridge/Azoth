@@ -4,6 +4,8 @@
 
 `hydraulics.friction_factor_colebrook`
 
+Solves the Colebrook-White equation for the Darcy friction factor at a Reynolds number and relative roughness. Use it where the implicit turbulent-flow factor is required.
+
 ## Equation
 
 $$
@@ -54,7 +56,7 @@ DOI: [10.1680/ijoti.1939.13150](https://doi.org/10.1680/ijoti.1939.13150)
 | `relative_roughness <= 0.05` | warns `OUT_OF_VALID_RANGE` | Above epsilon/D ~ 0.05 the Moody/Colebrook framework is no longer meaningful. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

@@ -4,6 +4,8 @@
 
 `thermal.incremental_zone_analysis`
 
+A shell-and-tube exchanger rated in incremental zones along the tube, with the local tube-side regime and shell-side coefficient. Use it where the coefficient changes with quality or temperature.
+
 ## Equation
 
 $$
@@ -22,23 +24,47 @@ h_tube = Shah(q) | Gungor-Winterton(q) | Nu*k/d_i; h_shell = Kern; 1/U = 1/h_she
 
 `calculate()` with `calcTubeSideHTC`, `calcShellSideHTC`, `calcSinglePhaseHTC`, `calcOverallU`, `calcZoneLMTD`, `calcTubeSideMassFlux`, both zone pressure drops and the totals; the correlations are `ShahCondensation`, `BoilingHeatTransfer`, `TwoPhasePressureDrop` and `BellDelawareMethod`'s.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.
+
+- **the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.
+
+- **the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.
+
+- **the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.
+
+- **the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**
+
+- **the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.
+
+- **the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.
+
+- **a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.
+
+- **omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `tube_inside_diameter` | m | the tube inside diameter. NeqSim's default is `0.01483` m. |
-| `tube_outside_diameter` | m | the tube outside diameter. NeqSim's default is `0.01905` m. |
-| `tube_length` | m | the tube length, divided equally between the zones for the pressure drops. NeqSim's default is `6.096` m. |
-| `tube_count` | dimensionless | the tube count; a pass's flow area is `tube_count / tube_passes` tubes. NeqSim's default is `100`. |
-| `tube_passes` | dimensionless | the tube passes. NeqSim's default is `2`. |
-| `shell_inside_diameter` | m | the shell inside diameter. NeqSim's default is `0.5` m. |
-| `baffle_spacing` | m | the baffle spacing, which the shell-side drop's per-zone baffle count divides. NeqSim's default is `0.2` m. |
-| `tube_pitch` | m | the tube pitch. NeqSim's default is `0.02381` m. |
-| `triangular_pitch` | - | the tube layout: `true` is triangular. NeqSim's default is `true`. |
-| `tube_wall_conductivity` | W/(m*K) | the tube-wall thermal conductivity. NeqSim's default is `52` W/(m*K). |
-| `fouling_tube` | dimensionless | the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`. |
-| `fouling_shell` | dimensionless | the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`. |
-| `zones` | - | the zones, in the caller's order; the class neither reorders nor subdivides them. |
+| `tube_inside_diameter` | m | The tube inside diameter. Defaults to 0.01483 m. |
+| `tube_outside_diameter` | m | The tube outside diameter. Defaults to 0.01905 m. |
+| `tube_length` | m | The tube length, divided equally between zones for the pressure drops. Defaults to 6.096 m. |
+| `tube_count` | dimensionless | The tube count. A pass's flow area is `tube_count / tube_passes` tubes. Defaults to 100. |
+| `tube_passes` | dimensionless | The tube passes. Defaults to 2. |
+| `shell_inside_diameter` | m | The shell inside diameter. Defaults to 0.5 m. |
+| `baffle_spacing` | m | The baffle spacing, which sets the shell-side drop's per-zone baffle count. Defaults to 0.2 m. |
+| `tube_pitch` | m | The tube pitch. Defaults to 0.02381 m. |
+| `triangular_pitch` | - | The tube layout: `true` is triangular. Defaults to `true`. |
+| `tube_wall_conductivity` | W/(m*K) | The tube-wall thermal conductivity. Defaults to 52 W/(m*K). |
+| `fouling_tube` | dimensionless | The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176. |
+| `fouling_shell` | dimensionless | The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176. |
+| `zones` | - | The zones, in the caller's order; they are neither reordered nor subdivided. |
 
 
 ## Outputs
@@ -72,29 +98,13 @@ h_tube = Shah(q) | Gungor-Winterton(q) | Nu*k/d_i; h_shell = Kern; 1/U = 1/h_she
 | `fouling_shell >= 0` | raises | a fouling resistance cannot be negative. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.
-
-- **the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.
-
-- **the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.
-
-- **the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.
-
-- **the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**
-
-- **the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.
-
-- **the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.
-
-- **a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.
-
-- **omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.
+- The zones are the caller's. The calculation rates each zone with the declared geometry and does not subdivide or reorder them.
 
 
 

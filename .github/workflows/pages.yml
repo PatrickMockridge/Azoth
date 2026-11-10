@@ -1,9 +1,13 @@
 name: Pages
 
-# **The editor, where a browser can reach it.** The library compiles to wasm and the editor
-# already runs entirely in the page, so publication is a static artifact and not a deployment:
-# there is no server, no session and nothing to authenticate. `azoth serve` is the other door and
-# is not used here.
+# **The editor and the manual, where a browser can reach them.** The library compiles to wasm and
+# the editor already runs entirely in the page, so publication is a static artifact and not a
+# deployment: there is no server, no session and nothing to authenticate. `azoth serve` is the
+# other door and is not used here.
+#
+# The editor and the manual are built in separate jobs so a cold mdBook install cannot spend the
+# editor's budget; the deploy job merges the two artifacts into the same Pages root. The editor
+# keeps its relative base and stays at `/azoth/`; the manual is the sibling `/azoth/manual/`.
 #
 # The build is repeated rather than borrowed from CI, because a deploy has to be gated on the
 # artifact it is about to publish: `npm run build` runs the type check, `npm test` the wire and
@@ -26,6 +30,9 @@ on:
       - "specs/flowsheets/**"
       - "specs/calcs/**"
       - "specs/calcbooks/**"
+      - "specs/schema/**"
+      - "docs/**"
+      - "tools/check_links.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -40,7 +47,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-editor:
     name: build the editor
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -72,6 +79,57 @@ jobs:
         working-directory: ui
       - run: npm run check:dist
         working-directory: ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: editor
+          path: ui/dist
+
+  build-manual:
+    name: build the manual
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # The docs tools are Rust binaries; caching them keeps this job from spending its
+          # whole budget compiling mdBook and its preprocessors.
+          cache-all-crates: true
+      - name: Install mdBook and preprocessors
+        run: |
+          cargo install mdbook mdbook-katex mdbook-mermaid --locked
+      - name: Check internal links
+        run: python3 tools/check_links.py
+      - name: Build the book
+        run: mdbook build docs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manual
+          path: docs/book
+
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    needs: [build-editor, build-manual]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: editor
+          path: site
+      - uses: actions/download-artifact@v4
+        with:
+          name: manual
+          path: site/manual
+      # A deploy that cannot find the editor's front page or a manual page is not a deploy.
+      - name: Check the staged site
+        run: |
+          test -f site/index.html
+          test -f site/manual/index.html
+          test -f site/manual/hydraulics/pump_power.html
       # `enablement: true` asks GitHub to turn Pages on when it is not yet configured; a token
       # that cannot do that fails here rather than at the deploy with a less obvious message.
       - uses: actions/configure-pages@v5
@@ -79,15 +137,6 @@ jobs:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ui/dist
-
-  deploy:
-    name: deploy
-    runs-on: ubuntu-latest
-    needs: [build]
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4

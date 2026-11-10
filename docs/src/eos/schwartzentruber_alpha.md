@@ -4,6 +4,8 @@
 
 `eos.schwartzentruber_alpha`
 
+Schwartzentruber-Renon alpha function for a cubic equation of state. Use it when the attraction term follows this temperature form.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = (1 + m*(1 - sqrt(Tr)) - p1*(1 - Tr)*(1 + p2*Tr + p3*Tr**2))**2 with m = 
 **NeqSim master `AttractiveTermSchwartzentruber`**
 
 `alpha(temperature)`, ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.
+
 
 ## Inputs
 
@@ -47,13 +57,11 @@ alpha = (1 + m*(1 - sqrt(Tr)) - p1*(1 - Tr)*(1 + p2*Tr + p3*Tr**2))**2 with m = 
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

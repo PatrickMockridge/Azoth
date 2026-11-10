@@ -4,6 +4,8 @@
 
 `thermal.shell_and_tube_rating`
 
+A shell-and-tube exchanger's thermal-hydraulic rating from its geometry and stream data. Use it to check whether an existing exchanger meets a duty.
+
 ## Equation
 
 $$
@@ -22,43 +24,67 @@ h_tube = Nu * k_tube / d_f; h_shell = h_ideal * Jc * Jl * Jb * Js * Jr; 1/U = 1/
 
 `calculate()` and `calculateStrict()` with `calculateTubeSide`, `calculateShellSide` (Kern and Bell-Delaware), `calculateOverallU`, both pressure drops and `calcDarcyFriction`; the shell-side helpers are `BellDelawareMethod`'s.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the port implements `calculateStrict()`, not `calculate()`.** An invalid state is refused; the permissive path's silent zeros are not published as an answer.
+
+- **`tubeHeating` is set by the equipment path from the outlet temperature and read by no arithmetic here.** The tube correlation is Gnielinski above Re 3000, the class's 3.66 below 2300, and its own linear interpolation between.
+
+- **`Js` is computed with the central baffle spacing three times**, as the class does, so it is exactly 1.0; the inlet and outlet spacings are never varied.
+
+- **`bypassArea <= 0` is estimated as `(shell_id - 0.9*shell_id) * baffle_spacing`**, which the class caches on the calculator; the pure form recomputes the same number.
+
+- **the Darcy friction factor is 64/Re below 2300 and the smooth Swamee-Jain form** `0.25/log10(5.74/Re**0.9)**2` above, the class's own helper rather than the library's Colebrook.
+
+- **the deposit layer is validated on assignment**: a thickness that leaves `tube_id - 2*t <= 0` is refused, and a non-positive conductivity is refused even at zero thickness.
+
+- **the outside area is `pi * tube_od * tube_length * tube_count`**, one count per physical tube and independent of passes; an inner deposit leaves it unchanged.
+
+- **the Bell-Delaware factors are 1.0 on the Kern path**, as the class leaves them; `Jr` is 1.0 above Re 100, and `Jc` is `0.55 + 0.72*Fc`.
+
+- **the twenty shell-side helpers are `BellDelawareMethod`'s, with its inline constants.** The port does not substitute a published correlation where the class hard-codes a coefficient.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `tube_outside_diameter` | m | the tube outside diameter, which the shell-side correlations and the outside area use. NeqSim's default is `0.01905` m. |
-| `tube_inside_diameter` | m | the nominal tube inside diameter, before any deposit layer. NeqSim's default is `0.01483` m. |
-| `tube_length` | m | the tube length, which the outside area and the straight-tube friction term use. NeqSim's default is `6.096` m. |
-| `tube_count` | dimensionless | the nominal tube count; the class requires it to divide evenly by `tube_passes`. NeqSim's default is `100`. |
-| `tube_passes` | dimensionless | the tube passes; each pass's flow area is `tube_count / tube_passes` tubes. NeqSim's default is `2`. |
-| `tube_pitch` | m | the tube pitch, which the shell-side equivalent diameter and crossflow area read. NeqSim's default is `0.02381` m. |
-| `triangular_pitch` | - | the tube layout: `true` is triangular (staggered), `false` is square (inline). NeqSim's default is `true`. |
-| `shell_inside_diameter` | m | the shell inside diameter. NeqSim's default is `0.5` m. |
-| `baffle_spacing` | m | the central baffle spacing. NeqSim's default is `0.2` m. |
-| `baffle_count` | dimensionless | the baffle count, which the shell-side pressure drop's compartment count reads. NeqSim's default is `10`. |
-| `baffle_cut` | dimensionless | the fractional baffle cut, between zero and one half. NeqSim's default is `0.25`. |
-| `tube_wall_conductivity` | W/(m*K) | the tube-wall thermal conductivity. NeqSim's default is `52` W/(m*K), carbon steel. |
-| `tube_density` | kg/m**3 | the tube-side fluid's mass density. NeqSim's default is `800` kg/m**3. |
-| `tube_viscosity` | Pa*s | the tube-side fluid's dynamic viscosity. NeqSim's default is `5e-4` Pa*s. |
-| `tube_cp` | J/(kg*K) | the tube-side fluid's specific heat capacity. NeqSim's default is `2500` J/(kg*K). |
-| `tube_conductivity` | W/(m*K) | the tube-side fluid's thermal conductivity. NeqSim's default is `0.13` W/(m*K). |
-| `tube_mass_flow` | kg/s | the tube-side mass flow. NeqSim's default is `10` kg/s. |
-| `shell_density` | kg/m**3 | the shell-side fluid's mass density. NeqSim's default is `1.5` kg/m**3. |
-| `shell_viscosity` | Pa*s | the shell-side fluid's bulk dynamic viscosity. NeqSim's default is `1.5e-5` Pa*s. |
-| `shell_cp` | J/(kg*K) | the shell-side fluid's specific heat capacity. NeqSim's default is `1100` J/(kg*K). |
-| `shell_conductivity` | W/(m*K) | the shell-side fluid's thermal conductivity. NeqSim's default is `0.025` W/(m*K). |
-| `shell_mass_flow` | kg/s | the shell-side mass flow. NeqSim's default is `5` kg/s. |
-| `fouling_tube` | dimensionless | the tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. NeqSim's default is `0.000176`. |
-| `fouling_shell` | dimensionless | the shell-side fouling resistance in m**2*K/W, likewise. NeqSim's default is `0.000176`. |
-| `shell_side_method` | kern / bell_delaware | the shell-side method. NeqSim's default is `kern`. |
+| `tube_outside_diameter` | m | The tube outside diameter, used by the shell-side correlations and the outside area. Defaults to 0.01905 m. |
+| `tube_inside_diameter` | m | The nominal tube inside diameter, before any deposit layer. Defaults to 0.01483 m. |
+| `tube_length` | m | The tube length, used by the outside area and the straight-tube friction term. Defaults to 6.096 m. |
+| `tube_count` | dimensionless | The nominal tube count; it must divide evenly by `tube_passes`. Defaults to 100. |
+| `tube_passes` | dimensionless | The tube passes; each pass's flow area is `tube_count / tube_passes` tubes. Defaults to 2. |
+| `tube_pitch` | m | The tube pitch, used by the shell-side equivalent diameter and crossflow area. Defaults to 0.02381 m. |
+| `triangular_pitch` | - | The tube layout: `true` is triangular (staggered), `false` is square (inline). Defaults to `true`. |
+| `shell_inside_diameter` | m | The shell inside diameter. Defaults to 0.5 m. |
+| `baffle_spacing` | m | The central baffle spacing. Defaults to 0.2 m. |
+| `baffle_count` | dimensionless | The baffle count, which sets the shell-side pressure drop's compartment count. Defaults to 10. |
+| `baffle_cut` | dimensionless | The fractional baffle cut, between zero and one half. Defaults to 0.25. |
+| `tube_wall_conductivity` | W/(m*K) | The tube-wall thermal conductivity. Defaults to 52 W/(m*K), carbon steel. |
+| `tube_density` | kg/m**3 | The tube-side fluid's mass density. Defaults to 800 kg/m**3. |
+| `tube_viscosity` | Pa*s | The tube-side fluid's dynamic viscosity. Defaults to 5e-4 Pa*s. |
+| `tube_cp` | J/(kg*K) | The tube-side fluid's specific heat capacity. Defaults to 2500 J/(kg*K). |
+| `tube_conductivity` | W/(m*K) | The tube-side fluid's thermal conductivity. Defaults to 0.13 W/(m*K). |
+| `tube_mass_flow` | kg/s | The tube-side mass flow. Defaults to 10 kg/s. |
+| `shell_density` | kg/m**3 | The shell-side fluid's mass density. Defaults to 1.5 kg/m**3. |
+| `shell_viscosity` | Pa*s | The shell-side fluid's bulk dynamic viscosity. Defaults to 1.5e-5 Pa*s. |
+| `shell_cp` | J/(kg*K) | The shell-side fluid's specific heat capacity. Defaults to 1100 J/(kg*K). |
+| `shell_conductivity` | W/(m*K) | The shell-side fluid's thermal conductivity. Defaults to 0.025 W/(m*K). |
+| `shell_mass_flow` | kg/s | The shell-side mass flow. Defaults to 5 kg/s. |
+| `fouling_tube` | dimensionless | The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176. |
+| `fouling_shell` | dimensionless | The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176. |
+| `shell_side_method` | kern / bell_delaware | The shell-side method. Defaults to `kern`. |
 | `tube_fouling_layer_thickness` | m | *Optional.* a uniform deposit thickness measured inward from the nominal inner wall. Absent is `0`, which disables the layer. |
-| `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* the deposit's thermal conductivity. Absent is the class's `1.0`; it is ignored when the thickness is zero, but a non-positive value is refused. |
-| `shell_viscosity_wall` | Pa*s | *Optional.* the shell-side viscosity at the tube wall. Absent, or negative, selects the bulk viscosity, as the class does; zero is refused. |
+| `tube_fouling_layer_conductivity` | W/(m*K) | *Optional.* The deposit's thermal conductivity. Defaults to 1.0; it is ignored when the thickness is zero, but a non-positive value is refused. |
+| `shell_viscosity_wall` | Pa*s | *Optional.* The shell-side viscosity at the tube wall. Absent or negative selects the bulk viscosity; zero is refused. |
 | `has_sealing` | - | *Optional.* whether sealing strips are installed. Absent is false. |
 | `sealing_pairs` | dimensionless | *Optional.* the sealing-strip pairs. Absent is `0`; a stated seal with no pair is refused in Bell-Delaware. |
-| `tube_to_baffle_clearance` | m | *Optional.* the tube-to-baffle hole clearance. Absent is the class's `0.0004` m. |
-| `shell_to_baffle_clearance` | m | *Optional.* the shell-to-baffle clearance. Absent is the class's `0.003` m. |
-| `bypass_area` | m**2 | *Optional.* the bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`, as the class does. |
+| `tube_to_baffle_clearance` | m | *Optional.* The tube-to-baffle hole clearance. Defaults to 0.0004 m. |
+| `shell_to_baffle_clearance` | m | *Optional.* The shell-to-baffle clearance. Defaults to 0.003 m. |
+| `bypass_area` | m**2 | *Optional.* The bundle-to-shell bypass area. Absent or zero estimates it as `(shell_id - 0.9*shell_id) * baffle_spacing`. |
 
 
 ## Outputs
@@ -80,7 +106,7 @@ h_tube = Nu * k_tube / d_f; h_shell = h_ideal * Jc * Jl * Jb * Js * Jr; 1/U = 1/
 | `jc` | dimensionless | the baffle-cut correction factor; 1.0 on the Kern path. |
 | `jl` | dimensionless | the baffle-leakage correction factor; 1.0 on the Kern path. |
 | `jb` | dimensionless | the bundle-bypass correction factor; 1.0 on the Kern path. |
-| `js` | dimensionless | the unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here because the class passes the central spacing three times. |
+| `js` | dimensionless | The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here. |
 | `jr` | dimensionless | the adverse-temperature-gradient correction factor; 1.0 above Re 100. |
 
 
@@ -117,32 +143,13 @@ h_tube = Nu * k_tube / d_f; h_shell = h_ideal * Jc * Jl * Jb * Js * Jr; 1/U = 1/
 | `bypass_area >= 0` | raises | a bypass area cannot be negative; zero selects the class's estimate. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the port implements `calculateStrict()`, not `calculate()`.** An invalid state is refused; the permissive path's silent zeros are not published as an answer.
-
-- **`tubeHeating` is set by the equipment path from the outlet temperature and read by no arithmetic here.** The tube correlation is Gnielinski above Re 3000, the class's 3.66 below 2300, and its own linear interpolation between.
-
-- **`Js` is computed with the central baffle spacing three times**, as the class does, so it is exactly 1.0; the inlet and outlet spacings are never varied.
-
-- **`bypassArea <= 0` is estimated as `(shell_id - 0.9*shell_id) * baffle_spacing`**, which the class caches on the calculator; the pure form recomputes the same number.
-
-- **the Darcy friction factor is 64/Re below 2300 and the smooth Swamee-Jain form** `0.25/log10(5.74/Re**0.9)**2` above, the class's own helper rather than the library's Colebrook.
-
-- **the deposit layer is validated on assignment**: a thickness that leaves `tube_id - 2*t <= 0` is refused, and a non-positive conductivity is refused even at zero thickness.
-
-- **the outside area is `pi * tube_od * tube_length * tube_count`**, one count per physical tube and independent of passes; an inner deposit leaves it unchanged.
-
-- **the Bell-Delaware factors are 1.0 on the Kern path**, as the class leaves them; `Jr` is 1.0 above Re 100, and `Jc` is `0.55 + 0.72*Fc`.
-
-- **the twenty shell-side helpers are `BellDelawareMethod`'s, with its inline constants.** The port does not substitute a published correlation where the class hard-codes a coefficient.
-
-- **the strict geometry guards are the class's**: `OD > ID`, `pitch > OD`, shell ID > OD, baffle spacing no greater than tube length, equal tubes per pass, `0 < baffle_cut < 0.5`, and the Bell-Delaware clearance bounds.
-
+- The geometry must satisfy the exchanger's consistency rules: `OD > ID`, `pitch > OD`, shell ID > OD, baffle spacing no greater than tube length, equal tubes per pass, `0 < baffle_cut < 0.5`, and the Bell-Delaware clearance bounds.
 
 
 

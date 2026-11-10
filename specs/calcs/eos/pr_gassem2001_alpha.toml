@@ -1,8 +1,10 @@
 id = "eos.pr_gassem2001_alpha"
 name = "Gassem (2001) alpha function"
+summary = "Gassem (2001) alpha function for a cubic equation of state. Use it when the attraction term follows this exponential temperature form."
 equation = "alpha = exp((A + B*Tr)*(1 - Tr**(C + D*omega + E*omega**2))),  with A = 2.0, B = 0.836, C = 0.134, D = 0.508, E = -0.0467"
 latex = '''\alpha = \exp\!\left[(A + B T_r)\left(1 - T_r^{\,C + D\omega + E\omega^2}\right)\right]'''
-assumptions = ["the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.\n"]
 references = ["Gassem, K. A.; Danner, R. P. (2001). \"An alternative alpha function for the Peng-Robinson equation of state.\" J. Chem. Eng. Data."]
 [source]
 standard = "NeqSim master `AttractiveTermPrGassem2001`"

@@ -1,17 +1,11 @@
 id = "eos.beggs_brill_segment"
 name = "Beggs-and-Brill liquid holdup and pressure gradient for one pipe segment"
+summary = "Liquid holdup and pressure gradient for one pipe segment from the Beggs-and-Brill correlation. Use it for multiphase line pressure-drop screening."
 equation = "v_sl = q_l / A,  v_sg = q_g / A,  v_m = v_sl + v_sg,  lambda_l = v_sl / v_m\n\nFr = v_m^2 / (g_c D),  with the class's 32.174 ft/s2\n\nregime from L1 = 316 lambda^0.302, L2 = 0.0009252 lambda^-2.4684, L3 = 0.1 lambda^-1.4516, L4 = 0.5 lambda^-6.738\n\nE_l = C_regime(lambda, Fr) (1 + beta (sin 1.8 theta - sin^3(1.8 theta)/3)),  bounded to [lambda, 1]\n\ndp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y - 1.2) or the Beggs-Brill fit"
 latex = '''\lambda_l = \frac{v_{sl}}{v_m}, \qquad F_r = \frac{v_m^2}{g_c D}, \qquad E_l = C_{\mathrm{regime}}(\lambda_l, F_r)\left(1 + \beta\left(\sin 1.8\theta - \tfrac{1}{3}\sin^3 1.8\theta\right)\right)
 \frac{\mathrm{d}p}{\mathrm{d}z} = \rho_m g + f_{tp}\frac{\rho_{ns} v_m^2}{2D}, \qquad f_{tp} = f e^{S}'''
-assumptions = [
-    "**the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.\n",
-    "**the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.\n",
-    "**the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.\n",
-    "**the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.\n",
-    "**the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.\n",
-    "the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.\n",
-    "the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values, which is how the class combines its two liquid phases.\n",
-]
+assumptions = ["the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values.\n"]
+notes = ["**the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.\n", "**the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.\n", "**the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.\n", "**the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.\n", "**the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.\n", "the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.\n"]
 references = [
     "NeqSim master, `process/equipment/pipeline/PipeBeggsAndBrills.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
     "`validation/neqsim/captures/pipe_beggs_and_brills_probe.tsv` - the `correlation` rows, one flashed segment per fluid and inclination with its phase properties and correlation outputs, and the twelve line states that reach every regime.",
@@ -82,7 +76,7 @@ unit = "Pa*s"
 description = "the volume-weighted no-slip mixture viscosity.\n"
 [outputs.reynolds]
 unit = "dimensionless"
-description = "the no-slip Reynolds number, with the class's field-unit factor.\n"
+description = "The no-slip Reynolds number.\n"
 [outputs.friction_factor]
 unit = "dimensionless"
 description = "the single-phase Darcy friction factor.\n"

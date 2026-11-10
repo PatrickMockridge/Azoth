@@ -4,6 +4,8 @@
 
 `eos.umrpr_alpha`
 
+UMR-PR alpha function. Use it when a cubic EOS needs the UMR-PR attraction-temperature form.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.384401 + 1.52276*omega - 0.213808*o
 `alpha(temperature)`, ported verbatim
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.
+
 
 ## Inputs
 
@@ -46,13 +56,11 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

@@ -2,9 +2,9 @@
 
 # Unit operations
 
-Every calculation in this section is generated from its specification. Each page shows the equation, where it came from, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it.
+Every calculation in this section is generated from its specification. Each page states what the calculation is for, the equation and where it came from, the range in which it is validated, the conditions it does not check, a worked example, and the tests that exercise it.
 
-| Calculation | Equation | Source |
+| Calculation | What it is for | Source |
 |---|---|---|
 
 ## Models

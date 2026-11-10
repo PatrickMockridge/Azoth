@@ -1,8 +1,10 @@
 id = "eos.soreide_whitson_alpha"
 name = "Soreide-Whitson alpha function for water"
+summary = "Soreide-Whitson alpha function for water in a cubic equation of state. Use it for water-containing mixtures with a salinity correction."
 equation = "alpha = (1 + 0.453*(1 - Tr*(1 - 0.0103*salinity**1.1)) + 0.0034*((1/Tr)**3 - 1))**2"
 latex = '''\alpha = \left[1 + 0.453\left(1 - T_r\left(1 - 0.0103\,S^{1.1}\right)\right) + 0.0034\left(T_r^{-3} - 1\right)\right]^2'''
-assumptions = ["`salinity` is the molality (mol NaCl / kg H2O), the unit the Soreide-Whitson correlation expects; it is declared dimensionless because the vocabulary carries no molality unit.\n", "the correlation is for water; for any other component NeqSim's class delegates to the 1978 Peng-Robinson alpha (`pr78_kappa`), which is ported separately.\n"]
+assumptions = ["`salinity` is the molality (mol NaCl / kg H2O), the unit the Soreide-Whitson correlation expects; it is declared dimensionless because the vocabulary carries no molality unit.\n"]
+notes = ["the correlation is for water; for any other component NeqSim's class delegates to the 1978 Peng-Robinson alpha (`pr78_kappa`), which is ported separately.\n"]
 references = ["Soreide, I.; Whitson, C. H. (1992). \"Peng-Robinson predictions for hydrocarbons, CO2, N2, and H2S with pure water and NaCl brine.\" Fluid Phase Equilib. 77, 217-240."]
 [source]
 standard = "NeqSim master `AttractiveTermSoreideWhitson`"

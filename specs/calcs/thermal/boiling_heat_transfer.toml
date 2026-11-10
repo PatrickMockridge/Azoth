@@ -1,17 +1,10 @@
 id = "thermal.boiling_heat_transfer"
 name = "Flow boiling heat transfer, Chen and Gungor-Winterton"
+summary = "Flow-boiling heat-transfer coefficient from the Chen and Gungor-Winterton methods. Use it to estimate an evaporator tube-side coefficient when no test data are available."
 equation = "h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0.75*(rho_l/rho_v)**0.41); X_tt = ((1-x)/x)**0.9*(rho_v/rho_l)**0.5*(mu_l/mu_v)**0.1"
 latex = '''h_{tp} = h_l F + h_{nuc} S, \qquad h_{GW} = h_l\left[1 + 3000\,Bo^{0.86} + 1.12\left(\frac{x}{1-x}\right)^{0.75}\left(\frac{\rho_l}{\rho_v}\right)^{0.41}\right]'''
-assumptions = [
-    "**the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.\n",
-    "**the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.\n",
-    "**the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.\n",
-    "**the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.\n",
-    "**the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.\n",
-    "**the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.\n",
-    "**the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.\n",
-    "**the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.\n",
-]
+assumptions = ["The flow is saturated boiling in a plain tube. Subcooled boiling and dryout are not modelled, and the quality is clamped inside the correlation's range.\n"]
+notes = ["**the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.\n", "**the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.\n", "**the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.\n", "**the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.\n", "**the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.\n", "**the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.\n", "**the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.\n", "**the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.\n"]
 references = [
     "Chen, J.C. (1966). \"Correlation for boiling heat transfer to saturated fluids in convective flow.\" I&EC Process Design and Development 5(3), 322-329. The superposition and the two factors.",
     "Forster, H.K.; Zuber, N. (1955). \"Dynamics of vapor bubbles and boiling heat transfer.\" AIChE Journal 1(4), 531-535. The nucleate term.",
@@ -76,7 +69,7 @@ description = "the outlet quality of the averaged range, clamped to `[0.001, 0.9
 [inputs.intervals]
 unit = "dimensionless"
 optional = true
-description = "the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number.\n"
+description = "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n"
 [inputs.horizontal]
 type = "boolean"
 optional = true

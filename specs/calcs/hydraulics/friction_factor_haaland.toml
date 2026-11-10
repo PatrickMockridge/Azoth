@@ -1,13 +1,11 @@
 id = "hydraulics.friction_factor_haaland"
 name = "Haaland friction factor (explicit)"
+summary = "Explicit Haaland approximation to the Colebrook-White friction factor. Use it for fast turbulent-flow pressure-drop estimates."
 equation = "f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2"
 latex = """\
     f = \\left[-1.8\\,\\log_{10}\\!\\left[\\left(\\frac{\\varepsilon/D}{3.7}\\right)^{1.11} \
     + \\frac{6.9}{Re}\\right]\\right]^{-2}"""
-assumptions = ["fully turbulent flow", "circular pipe running full", "steady, fully developed, single-phase, incompressible flow", "uniform sand-grain roughness of height epsilon", "Newtonian fluid", "accuracy within about 2% of the Colebrook equation over the range above", """\
-    the roughness is the sand-grain equivalent, which is what the correlation was fitted to; \
-    a pipe whose real surface differs in character will not be described by it however well \
-    epsilon is estimated"""]
+assumptions = ["fully turbulent flow", "circular pipe running full", "steady, fully developed, single-phase, incompressible flow", "uniform sand-grain roughness of height epsilon", "Newtonian fluid", "accuracy within about 2% of the Colebrook equation over the range above", "the roughness is the sand-grain equivalent, which is what the correlation was fitted to; a pipe whose real surface differs in character will not be described by it however well epsilon is estimated"]
 references = ["Haaland, S. E. (1983). \"Simple and explicit formulas for the friction factor in turbulent pipe flow.\" Journal of Fluids Engineering, 105(1), 89-90.", "Colebrook, C. F. (1939). \"Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws.\" J. Inst. Civ. Eng., 11(4), 133-156."]
 [source]
 standard = "Haaland, S. E. (1983)"

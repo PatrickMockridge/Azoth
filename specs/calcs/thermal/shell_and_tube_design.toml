@@ -1,21 +1,10 @@
 id = "thermal.shell_and_tube_design"
 name = "A shell-and-tube exchanger's detailed TEMA design"
+summary = "A detailed shell-and-tube exchanger design from a duty and stream data, applying TEMA layout and ASME wall rules. Use it to size a new exchanger."
 equation = "N_t = ceil(A_req / (pi*d_o*L)); shell ID from the bundle area plus the rear-head clearance, snapped to a standard size; t_shell = P*R/(S*E - 0.6*P); t_UHX = G*sqrt(F*P/S); MAWP = S*E*t/(R + 0.6*t); hydro = 1.3*MAWP*S(20)/S(T)"
 latex = '''t = \frac{P R}{S E - 0.6 P}, \qquad t_{UHX} = G \sqrt{\frac{F P}{S}}, \qquad MAWP = \frac{S E t}{R + 0.6 t}'''
-assumptions = [
-    "**the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.\n",
-    "**the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.\n",
-    "**the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.\n",
-    "**the material table is NeqSim's 22-row design table, looked up by exact grade.** A grade that is not in it leaves the class's defaults (138/117 MPa, 52 W/(m K)) and the `Carbon Steel ...` strings.\n",
-    "**NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.\n",
-    "**the price test is `contains(\"STAINLESS\")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.\n",
-    "**the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.\n",
-    "**weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.\n",
-    "**the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.\n",
-    "**the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.\n",
-    "**the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.\n",
-    "**a zero or negative flow, or a thermal side with any property missing, is refused.** The class answers the all-or-none breach with a zero coefficient and a `NaN` drop.\n",
-]
+assumptions = ["A zero or negative flow, or a thermal side with any property missing, is refused rather than answered with a zero coefficient or a NaN pressure drop."]
+notes = ["**the pipeline is single-pass**: TEMA configuration, material lookup, tube bundle, shell dimensions, baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal and vibration block, weights and costs. Nothing iterates.\n", "**the geometry is millimetres and the pressures bar/MPa**: the ASME formulas use `P*0.1` MPa, MAWP is multiplied by 10 to bar, and the thermal core is fed metres and pascals.\n", "**the fixed defaults are carried, not settable**: tube wall 2.108 mm, corrosion 3.175 mm shell and 0 tube, triangular-30 pitch at ratio 1.25, single-segmental baffles at 25 per cent cut, 85 per cent joint efficiency and 248 HV.\n", "**the material table is NeqSim's 22-row design table, looked up by exact grade.** A grade that is not in it leaves the class's defaults (138/117 MPa, 52 W/(m K)) and the `Carbon Steel ...` strings.\n", "**NACE compliance is `Yes`.equalsIgnoreCase against a `true`/`false` column, so every grade reads not compliant.** The port reproduces the defect; the sour threshold itself is 0.003 bar, exclusive.\n", "**the price test is `contains(\"STAINLESS\")` against the specification string `ASME-II-A SA-...`, so every grade prices as carbon steel at 1.5 USD/kg.** The 5 USD/kg branch is unreachable.\n", "**the shell minimum wall is the TEMA tube-wall minimum of the class**, and the weight uses a separate tubesheet estimate rather than the reported UHX-13 thickness.\n", "**weights use 7850 kg/m3 for steel and 1000 for water**, and the material row's density is not read. `shell_joint_efficiency` reaches UG-37 and UG-27, not the shell-wall formula.\n", "**the vibration screen fixes E 200 GPa, tube density 7850, sonic velocity `sqrt(1.4*8314*300/29)` and damping 0.03/0.01 by shell density**, and it reads the tube-side fluid density, which may be zero.\n", "**the costs are USD and the vocabulary has no currency unit**, so the three costs are dimensionless with USD named in their descriptions.\n", "**the class appends to its standards list without clearing**, so a second `calculate()` duplicates entries; this port returns one assessment per call.\n"]
 references = [
     "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th ed. The configuration classes and the minimum wall and spacing tables.",
     "ASME Boiler and Pressure Vessel Code, Section VIII Division 1 (2019). UHX-13 tubesheets, UG-37 reinforcement, UG-27 shell thicknesses and UG-99 hydrostatic test.",
@@ -29,51 +18,51 @@ edition = "`calculate()` single pass: tube bundle, shell dimensions, baffles, UH
 [inputs]
 [inputs.tema_designation]
 type = "string"
-description = "the three-letter TEMA designation, e.g. `AES`. NeqSim's default is `AES`.\n"
+description = "The three-letter TEMA designation, e.g. `AES`. Defaults to `AES`.\n"
 [inputs.tema_class]
 type = "enum"
 values = ["R", "C", "B"]
-description = "the construction class: severe, moderate or light service. NeqSim's default is `R`.\n"
+description = "The construction class: severe, moderate or light service. Defaults to `R`.\n"
 [inputs.required_area]
 unit = "m**2"
-description = "the required heat-transfer area, which the tube count divides. NeqSim's default is `100` m**2.\n"
+description = "The required heat-transfer area, which the tube count divides. Defaults to 100 m**2.\n"
 [inputs.shell_side_pressure]
 unit = "bar"
-description = "the shell-side design pressure. NeqSim's default is `10` bar.\n"
+description = "The shell-side design pressure. Defaults to 10 bar.\n"
 [inputs.tube_side_pressure]
 unit = "bar"
-description = "the tube-side design pressure. NeqSim's default is `10` bar.\n"
+description = "The tube-side design pressure. Defaults to 10 bar.\n"
 [inputs.design_temperature]
 unit = "K"
-description = "the design temperature; the class derates the allowable stress at 200/300/400 C. NeqSim's default is 150 C.\n"
+description = "The design temperature; the allowable stress is derated at 200, 300 and 400 C. Defaults to 150 C.\n"
 [inputs.shell_material_grade]
 type = "string"
-description = "the shell material grade, looked up in the vendored table by exact equality. NeqSim's default is `SA-516-70`.\n"
+description = "The shell material grade, looked up by exact name. Defaults to `SA-516-70`.\n"
 [inputs.tube_material_grade]
 type = "string"
-description = "the tube material grade, likewise. NeqSim's default is `SA-179`.\n"
+description = "The tube material grade, looked up by exact name. Defaults to `SA-179`.\n"
 [inputs.tube_size]
 type = "enum"
 values = ["tube_3_8_inch", "tube_1_2_inch", "tube_5_8_inch", "tube_3_4_inch", "tube_1_inch"]
-description = "the standard tube size. NeqSim's default is `tube_3_4_inch`.\n"
+description = "The standard tube size. Defaults to `tube_3_4_inch`.\n"
 [inputs.tube_length]
 unit = "mm"
-description = "the tube length. NeqSim's default is `6096` mm.\n"
+description = "The tube length. Defaults to 6096 mm.\n"
 [inputs.tube_passes]
 unit = "dimensionless"
-description = "the tube passes. NeqSim's default is `2`.\n"
+description = "The tube passes. Defaults to 2.\n"
 [inputs.shell_joint_efficiency]
 unit = "dimensionless"
-description = "the shell joint efficiency, used by UG-37 and UG-27 and not the shell-wall formula. NeqSim's default is `0.85`.\n"
+description = "The shell joint efficiency, used by UG-37 and UG-27 rather than the shell-wall formula. Defaults to 0.85.\n"
 [inputs.nozzle_diameter]
 unit = "mm"
-description = "the nozzle finished inside diameter. NeqSim's default is `150` mm.\n"
+description = "The nozzle finished inside diameter. Defaults to 150 mm.\n"
 [inputs.nozzle_wall_thickness]
 unit = "mm"
-description = "the nozzle wall thickness. NeqSim's default is `7.11` mm.\n"
+description = "The nozzle wall thickness. Defaults to 7.11 mm.\n"
 [inputs.sour_service_assessment]
 type = "boolean"
-description = "whether the NACE assessment runs. NeqSim's default is false.\n"
+description = "Whether the NACE assessment runs. Defaults to false.\n"
 [inputs.h2s_partial_pressure]
 unit = "bar"
 optional = true
@@ -137,7 +126,7 @@ type = "string"
 description = "the designation, echoed.\n"
 [outputs.tema_class]
 type = "string"
-description = "the class's own name.\n"
+description = "The TEMA construction class.\n"
 [outputs.shell_inside_diameter]
 unit = "mm"
 description = "the bundle diameter plus the rear-head clearance, snapped to a standard shell size.\n"
@@ -146,7 +135,7 @@ unit = "mm"
 description = "the inside diameter plus twice the wall.\n"
 [outputs.shell_wall_thickness]
 unit = "mm"
-description = "the ASME circumferential-stress thickness, floored at the class minimum and rounded to a plate thickness.\n"
+description = "The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.\n"
 [outputs.shell_material]
 type = "string"
 description = "the specification and grade, e.g. `ASME-II-A SA-516-70`.\n"
@@ -170,7 +159,7 @@ unit = "mm"
 description = "the standard tube outside diameter.\n"
 [outputs.tube_wall_thickness]
 unit = "mm"
-description = "the class's fixed `2.108` mm.\n"
+description = "The minimum tube wall thickness.\n"
 [outputs.tube_length]
 unit = "mm"
 description = "the tube length, echoed.\n"
@@ -182,7 +171,7 @@ unit = "mm"
 description = "`tube_outer_diameter * 1.25`.\n"
 [outputs.tube_pitch_pattern]
 type = "string"
-description = "the class's pattern description, `Triangular 30°`.\n"
+description = "The tube pitch pattern, e.g. `Triangular 30°`.\n"
 [outputs.tube_material]
 type = "string"
 description = "the specification and grade of the tube material.\n"
@@ -197,7 +186,7 @@ unit = "W/(m*K)"
 description = "the tube material's conductivity from the table.\n"
 [outputs.baffle_type]
 type = "string"
-description = "the class's fixed `Single Segmental`.\n"
+description = "The baffle type, e.g. `Single Segmental`.\n"
 [outputs.baffle_count]
 unit = "dimensionless"
 description = "`(tube_length - 2*spacing)/spacing` floored, at least one.\n"
@@ -206,7 +195,7 @@ unit = "mm"
 description = "0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.\n"
 [outputs.baffle_cut]
 unit = "dimensionless"
-description = "the class's fixed `0.25`.\n"
+description = "The baffle cut, e.g. 0.25.\n"
 [outputs.required_area]
 unit = "m**2"
 description = "the required area, echoed.\n"
@@ -218,7 +207,7 @@ unit = "dimensionless"
 description = "`(actual - required)/required`.\n"
 [outputs.tubesheet_thickness_uhx]
 unit = "mm"
-description = "the UHX-13 thickness, floored at the class minimum.\n"
+description = "The UHX-13 tubesheet thickness, floored at the minimum.\n"
 [outputs.mawp_shell_side]
 unit = "bar"
 description = "the shell MAWP per UG-27.\n"
@@ -233,7 +222,7 @@ unit = "bar"
 description = "the same on the tube side.\n"
 [outputs.nozzle_reinforcement_area]
 unit = "m**2"
-description = "the available reinforcement area per UG-37, the class mm**2 divided by 1e6.\n"
+description = "The available reinforcement area per UG-37.\n"
 [outputs.nozzle_reinforcement_adequate]
 type = "boolean"
 description = "whether the available area meets the required one.\n"
@@ -246,26 +235,26 @@ optional = true
 description = "the stated partial pressure, echoed when the assessment runs.\n"
 [outputs.shell_nace_compliant]
 type = "boolean"
-description = "the shell material's compliance flag; false for every grade, as the class reads it.\n"
+description = "Whether the shell material meets NACE.\n"
 [outputs.tube_nace_compliant]
 type = "boolean"
 description = "the tube material's compliance flag, likewise.\n"
 [outputs.shell_max_hardness]
 unit = "dimensionless"
-description = "the shell hardness in HV, the class's fixed 248.\n"
+description = "The shell hardness in HV.\n"
 [outputs.tube_max_hardness]
 unit = "dimensionless"
 description = "the tube hardness in HV, likewise.\n"
 [outputs.nace_issues]
 type = "record_list"
-description = "the assessment's issue strings, in the class's order.\n"
+description = "The NACE assessment's issue strings.\n"
 [outputs.nace_issues.fields]
 [outputs.nace_issues.fields.message]
 type = "string"
 description = "one issue.\n"
 [outputs.applied_standards]
 type = "record_list"
-description = "the standards the pipeline applied, in the class's order.\n"
+description = "The standards the design pipeline applied.\n"
 [outputs.applied_standards.fields]
 [outputs.applied_standards.fields.name]
 type = "string"

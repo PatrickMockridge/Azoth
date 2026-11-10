@@ -4,6 +4,8 @@
 
 `eos.co2_water_diffusivity`
 
+Diffusivity of carbon dioxide in water from the Tammi correlation. Use it for CO2 absorption and stripping mass-transfer screening.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ d = 0.03389 * exp(-2213.7/T) * 1e-4,  with T in K; the 1e-4 recovers m**2/s from
 the correlation NeqSim master evaluates in `CO2water.calcBinaryDiffusionCoefficient`, ported verbatim
 
 DOI: [10.1021/je00051a011](https://doi.org/10.1021/je00051a011)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the activation temperature `2213.7` and prefactor `0.03389` are NeqSim's, tuned in cm**2/s; the `1e-4` recovers m**2/s.
+
 
 ## Inputs
 
@@ -45,15 +55,13 @@ DOI: [10.1021/je00051a011](https://doi.org/10.1021/je00051a011)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the correlation is for CO2 diffusing in water, and carries no solute or solvent argument - NeqSim's `CO2water` method returns the same value whatever pair it is asked for.
-
-- the activation temperature `2213.7` and prefactor `0.03389` are NeqSim's, tuned in cm**2/s; the `1e-4` recovers m**2/s.
+- the correlation is for CO2 diffusing in water; it takes no other solute or solvent.
 
 
 

@@ -4,6 +4,8 @@
 
 `eos.liquid_heat_capacity`
 
+Liquid heat capacity from a temperature polynomial. Use it for liquid duty and heat-exchanger screening.
+
 ## Equation
 
 $$
@@ -22,11 +24,19 @@ cp = 1e-3 * (c0 + c1*T + c2*T**2 + c3*T**3 + c4*T**4)
 
 the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the five coefficients are the raw `cpliquid1..5` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/(mol*K)` from them. NOT CHECKED - the coefficients come from the caller.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `c0` | dimensionless | The constant term, NeqSim's internal scale. |
+| `c0` | dimensionless | The constant term, in the correlation's internal scale. |
 | `c1` | dimensionless | The coefficient of `T`. |
 | `c2` | dimensionless | The coefficient of `T**2`. |
 | `c3` | dimensionless | The coefficient of `T**3`. |
@@ -48,15 +58,13 @@ the correlation NeqSim master evaluates in `thermo/component/Component.java`, po
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the five coefficients are the raw `cpliquid1..5` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/(mol*K)` from them. NOT CHECKED - the coefficients come from the caller.
-
-- the polynomial is a fit of limited range; it is zero for most hydrocarbons NeqSim ships, which carry only an ideal-gas heat capacity.
+- the polynomial is a fit of limited range; it is zero for most hydrocarbons in the library, which carry only an ideal-gas heat capacity.
 
 - this calc returns a pure-component property and says nothing about a mixture.
 

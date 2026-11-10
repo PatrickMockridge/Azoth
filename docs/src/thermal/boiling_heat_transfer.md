@@ -4,6 +4,8 @@
 
 `thermal.boiling_heat_transfer`
 
+Flow-boiling heat-transfer coefficient from the Chen and Gungor-Winterton methods. Use it to estimate an evaporator tube-side coefficient when no test data are available.
+
 ## Equation
 
 $$
@@ -21,6 +23,28 @@ h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0
 **NeqSim process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java**
 
 `calcChenHTC`, `calcGungorWintertonHTC`, `calcGungorWintertonCorrectedHTC`, the Martinelli and factor helpers, and `calcAverageHTC`, composed as the zone analysis uses them.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.
+
+- **the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.
+
+- **the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.
+
+- **the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.
+
+- **the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.
+
+- **the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.
+
+- **the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.
+
+- **the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.
+
 
 ## Inputs
 
@@ -42,7 +66,7 @@ h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0
 | `vapor_quality` | dimensionless | the local vapour quality, clamped to `[0.001, 0.999]` by the local entries. |
 | `quality_in` | dimensionless | the inlet quality of the averaged range, clamped to `[0.001, 0.999]`. |
 | `quality_out` | dimensionless | the outlet quality of the averaged range, clamped to `[0.001, 0.999]`. |
-| `intervals` | dimensionless | *Optional.* the Simpson's-rule interval count. Absent is `20`; the class raises it to at least four and to an even number. |
+| `intervals` | dimensionless | *Optional.* The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four. |
 | `horizontal` | - | *Optional.* whether the tube is horizontal, which enables the stratified correction below `Fr_l = 0.05`. Absent is false. |
 
 
@@ -78,27 +102,13 @@ h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0
 | `heat_flux >= 0` | raises | a heat flux cannot be negative; zero makes the boiling number zero. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.
-
-- **the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.
-
-- **the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.
-
-- **the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.
-
-- **the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.
-
-- **the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.
-
-- **the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.
-
-- **the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.
+- The flow is saturated boiling in a plain tube. Subcooled boiling and dryout are not modelled, and the quality is clamped inside the correlation's range.
 
 
 

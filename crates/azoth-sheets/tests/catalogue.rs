@@ -81,6 +81,41 @@ fn every_available_calculation_has_scalar_inputs_and_outputs() {
 }
 
 #[test]
+fn every_calculation_says_what_it_is_for_and_every_field_says_what_it_means() {
+    for form in forms() {
+        assert!(!form.summary.is_empty(), "{} has no summary", form.id);
+        assert!(
+            !form.summary.to_lowercase().contains("neqsim"),
+            "{}'s summary names the upstream implementation",
+            form.id
+        );
+        for input in form.inputs {
+            assert!(
+                !input.description.trim().is_empty(),
+                "{}'s input {} has no description",
+                form.id,
+                input.name
+            );
+        }
+        for output in form.outputs {
+            assert!(
+                !output.description.trim().is_empty(),
+                "{}'s output {} has no description",
+                form.id,
+                output.name
+            );
+        }
+        for assumption in form.assumptions {
+            assert!(
+                !assumption.to_lowercase().contains("neqsim"),
+                "{}'s assumption names the upstream implementation",
+                form.id
+            );
+        }
+    }
+}
+
+#[test]
 fn every_calculation_has_its_provenance() {
     for form in forms() {
         assert!(

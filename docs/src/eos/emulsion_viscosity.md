@@ -4,6 +4,8 @@
 
 `eos.emulsion_viscosity`
 
+Oil-water emulsion viscosity and phase-inversion water cut. Use it for multiphase pressure-drop and pump-sizing screening.
+
 ## Equation
 
 $$
@@ -32,6 +34,26 @@ mu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is p
 
 `calculate`, `calculateInversionPoint`, the six relative-viscosity models and the tightness and demulsifier corrections. The viscosity-curve sweep and the Gson report are compositions, and the unused setters are stored only.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.
+
+- **the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.
+
+- **the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.
+
+- **the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.
+
+- **the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.
+
+- the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.
+
+- the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -41,7 +63,7 @@ mu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is p
 | `oil_density` | kg/m**3 | the oil phase's density. |
 | `water_density` | kg/m**3 | the water phase's density. |
 | `water_cut` | dimensionless | the water volume fraction. |
-| `max_packing_fraction` | dimensionless | the maximum dispersed-phase packing fraction, 0.74 as the class's default. |
+| `max_packing_fraction` | dimensionless | The maximum dispersed-phase packing fraction. Defaults to 0.74. |
 | `model` | einstein / taylor / brinkman / pal_rhodes / woelflin / richardson | the relative-viscosity model. |
 | `tightness_factor` | dimensionless | the emulsion tightness, which shifts the inversion point and scales the viscosity above 0.5. |
 | `demulsifier_present` | - | whether a demulsifier is dosed. |
@@ -72,25 +94,13 @@ mu_eff *= 1 + 2 (t - 0.5) when t > 0.5; *= 1 - 0.5 eff when the demulsifier is p
 | `max_packing_fraction > 0 and max_packing_fraction <= 1` | raises | A packing fraction lies in (0, 1]. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class takes cP and a water-cut fraction; this calc takes Pa*s for the two viscosities and the water cut as a volume fraction, and returns Pa*s.
-
-- **the inversion point is Arirachakaran's correlation**, clamped to `[0.20, 0.90]` as the class clamps it, shifted by `0.10 (t - 0.5)` and clamped again to `[0.15, 0.95]`.
-
-- **the continuous phase is oil below the inversion point and water at or above it**, so the dispersed fraction is the water cut or its complement and the effective viscosity is the continuous phase's times the relative one.
-
-- **the six models are the class's**: Einstein and Taylor for dilute suspensions, Brinkman's `(1-phi)^-2.5`, Pal-Rhodes with the maximum packing fraction and its 1e6 jam, Woelflin's three coefficients and Richardson's exponential.
-
-- **the tightness correction applies only above 0.5**, as `1 + 2 (t - 0.5)`, and a demulsifier at an efficiency `e` reduces the effective viscosity by at most half: `1 - 0.5 e`.
-
-- the class's temperature, pressure, interfacial-tension and shear-rate setters reach only its JSON and no arithmetic, so they are not inputs; the viscosity-versus-water-cut sweep is a caller's loop.
-
-- the `phi >= 1` branch and the unknown-model default are not reachable through this calc: the inversion clamps keep the dispersed fraction below one, and the model is an enum.
+- The mixture is an oil-water emulsion. The model describes the dispersed-phase viscosity and the inversion point, not a gas-liquid or three-phase system.
 
 
 

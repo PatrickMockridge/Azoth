@@ -4,6 +4,8 @@
 
 `eos.costald_molar_volume`
 
+Saturated liquid molar volume from the COSTALD equation. Use it for liquid density and volumetric-flow estimates when critical properties and an acentric factor are known.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ v = V* * V_R0 * (1 - omega*V_Rdelta),  V_R0 = 1 - 1.52816*tau**(1/3) + 1.43907*t
 A new correlation for saturated densities of liquids and their mixtures. AIChE J., 25(4), 653-663
 
 DOI: [10.1002/aic.690250412](https://doi.org/10.1002/aic.690250412)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the characteristic volume `V*` is back-calculated from the normal liquid density at 288.71 K, falling back to the critical volume when the density is absent or the reduced standard temperature reaches 0.9 - the same order NeqSim's `getCharacteristicVolume` follows.
+
 
 ## Inputs
 
@@ -52,15 +62,13 @@ DOI: [10.1002/aic.690250412](https://doi.org/10.1002/aic.690250412)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - the acentric factor, critical constants, molar mass and normal liquid density are those of the component intended. NOT CHECKED - they come from the caller.
-
-- the characteristic volume `V*` is back-calculated from the normal liquid density at 288.71 K, falling back to the critical volume when the density is absent or the reduced standard temperature reaches 0.9 - the same order NeqSim's `getCharacteristicVolume` follows.
 
 - the volume is the *saturated* liquid molar volume; the Aalto compressed-liquid correction and the NASTALD polar correction are not applied here (the latter is name-based and belongs to a later model).
 

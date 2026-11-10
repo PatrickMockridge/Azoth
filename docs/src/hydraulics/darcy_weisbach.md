@@ -4,6 +4,8 @@
 
 `hydraulics.darcy_weisbach`
 
+Pressure drop for steady flow in a circular pipe from the Darcy-Weisbach relation. Use it for line sizing and pump-head checks once a friction factor is known.
+
 ## Equation
 
 $$
@@ -56,7 +58,7 @@ dP = f * (L / D) * (rho * v**2 / 2)
 | `re >= 2000 and re <= 4000 (violation lies inside this band)` | warns `TRANSITIONAL_FLOW` | The friction factor, and therefore the pressure drop, is genuinely indeterminate in this band. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

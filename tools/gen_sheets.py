@@ -11,9 +11,11 @@ the generated tables. This tool projects them into `crates/azoth-sheets/src/cata
 
 **The catalogue is a UI projection, not a second spec.** Two editorial rules are applied here and
 stated rather than hidden: the four calculations with table-shaped inputs or outputs are carried
-with `available = false` and a refusal, and any prose that names the upstream implementation is
-dropped or replaced. The library, CLI and docs keep the full record; a front end that showed the
-upstream Java class path was the defect that made this projection sanitized.
+with `available = false` and a refusal, and prose that names the upstream implementation is
+dropped. A summary cannot be dropped - it is the sheet's first line - so an empty or upstream
+summary stops the generator rather than reaching the browser blank. The library, CLI and docs keep
+the full record; a front end that showed the upstream Java class path was the defect that made
+this projection sanitized.
 """
 
 from __future__ import annotations
@@ -91,6 +93,23 @@ def humanise(calc_id: str) -> str:
 def name_of(spec: dict) -> str:
     name = str(spec["name"])
     return humanise(spec["id"]) if UPSTREAM in name.lower() else name
+
+
+def summary_of(spec: dict) -> str:
+    """The authored purpose line, which the UI must be able to show verbatim.
+
+    **Not a fallback and not a clean-up.** A summary that is empty or names the upstream
+    implementation is a spec defect: the browser would show a blank or drop the line, and the
+    sheet would be left without the one explanation the reader needs before filling a field.
+    """
+    summary = " ".join(str(spec.get("summary", "")).split())
+    if summary == "":
+        raise SystemExit(f"gen_sheets: {spec['id']} has no summary") from None
+    if UPSTREAM in summary.lower():
+        raise SystemExit(
+            f"gen_sheets: {spec['id']}'s summary names the upstream implementation"
+        ) from None
+    return summary
 
 
 def dimension_of(unit: object) -> str | None:
@@ -255,6 +274,7 @@ def emit_output(entry: dict) -> str:
 def emit(spec: dict) -> str:
     unavailable = complex_inputs(spec) or complex_outputs(spec)
     name = name_of(spec)
+    summary = summary_of(spec)
     equation = spec.get("equation")
     equation = None if equation is None or UPSTREAM in str(equation).lower() else str(equation)
     assumptions = clean_list([str(value) for value in spec.get("assumptions", [])])
@@ -273,6 +293,7 @@ def emit(spec: dict) -> str:
     return (
         "    CalcForm { "
         f"id: {rust_str(spec['id'])}, name: {rust_str(name)}, "
+        f"summary: {rust_str(summary)}, "
         f"namespace: {rust_str(spec['id'].split('.', 1)[0])}, "
         f"available: {'false' if unavailable else 'true'}, "
         f"refusal: {opt_str(REFUSAL if unavailable else None)}, "

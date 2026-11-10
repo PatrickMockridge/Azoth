@@ -1,8 +1,10 @@
 id = "eos.umrpr_alpha"
 name = "UMR-PR alpha function"
+summary = "UMR-PR alpha function. Use it when a cubic EOS needs the UMR-PR attraction-temperature form."
 equation = "alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.384401 + 1.52276*omega - 0.213808*omega**2 + 0.034616*omega**3 - 0.001976*omega**4"
 latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4'''
-assumptions = ["the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n"]
 references = ["Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
 [source]
 standard = "NeqSim master `AttractiveTermUMRPRU`"

@@ -144,6 +144,17 @@
   color: var(--text-dim);
 }
 
+/* A printed meaning column is prose, not a workbook cell; it wraps rather than widening the page. */
+.report .grid th,
+.report .grid td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.report .grid td:not(:first-child) {
+  padding-inline-start: var(--s4);
+}
+
 .report-statement {
   margin-block: var(--s6);
   padding-block-start: var(--s4);

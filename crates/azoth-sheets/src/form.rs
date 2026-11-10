@@ -69,6 +69,8 @@ pub struct CalcOutput {
 pub struct CalcForm {
     pub id: &'static str,
     pub name: &'static str,
+    /// What the calculation is for, in the spec's own authored words.
+    pub summary: &'static str,
     pub namespace: &'static str,
     pub available: bool,
     pub refusal: Option<&'static str>,

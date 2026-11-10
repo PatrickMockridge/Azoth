@@ -4,6 +4,8 @@
 
 `hydraulics.packing_hydraulics`
 
+A packed bed's flooding velocity, operating load, pressure drop and film coefficients from its packing, flows and properties. Use it to rate a packed column or check its hydraulic margin.
+
 ## Equation
 
 $$
@@ -24,11 +26,27 @@ The Eckert GPDC fit for the flooding velocity, `log10(Y) = -1.668 - 1.085 x - 0.
 
 DOI: [10.1252/jcej.1.56](https://doi.org/10.1252/jcej.1.56)
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the packing resolves by name; an unknown name is refused.** The 22 built-ins are the reference, and `Packing.csv` adds material-qualified rows beside them (`Pall-Ring-50-plastic`) without replacing one. A `placeholder` row is not a packing (upstream PR #4405).
+
+- **the normalisation is the class's**: lowercased with every non-alphanumeric removed, so `Pall-Ring-50`, `pallring 50` and `PALL_RING_50` are one key.
+
+- **the four correlations are the class's own, with its constants**: the Eckert fit's three coefficients, Onda's `5.23` and `0.0051`, Leva's `0.01` scale and its `0.015` liquid-loading coefficient (`0.010` for structured) - written inline, not published.
+
+- **the HETP is a two-resistance combination at a stripping factor of one, clamped twice**: never below `0.1` m and never above twice the empirical estimate - `0.12 + 0.012 dp` scaled by `1 + 0.1 (D - 1)` for random, `100/a + 0.1` for structured. Both captured rows take the upper clamp.
+
+- **the wetting check and the design verdict are the class's own thresholds**: a minimum wetting rate of `5e-5` m**3/(m**2 s) for a random packing and `2.5e-5` for a structured one, and a design window of 40 to 80 per cent of flood. Both captured random rows fall below the minimum.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `packing` | - | the packing's name or an alias, which the library resolves; an unknown name is refused, as the class's `require` does since upstream PR #4405. |
+| `packing` | - | The packing's name or an alias; an unknown name is refused. |
 | `column_diameter` | m | the column's internal diameter, which every velocity is per unit area of. |
 | `packed_height` | m | the packed height, which the total pressure drop and the theoretical-stage count read. |
 | `vapor_mass_flow` | kg/s | the vapour's mass flow. |
@@ -40,7 +58,7 @@ DOI: [10.1252/jcej.1.56](https://doi.org/10.1252/jcej.1.56)
 | `surface_tension` | N/m | the interfacial surface tension, which the wetted area compares with the packing's critical one. |
 | `vapor_diffusivity` | m**2/s | the vapour's diffusivity, which the gas film coefficient's Schmidt number takes. |
 | `liquid_diffusivity` | m**2/s | the liquid's diffusivity, likewise. |
-| `hydraulic_capacity_factor` | dimensionless | the packing's relative hydraulic capacity, which scales the flooding velocity. One is the class's default. |
+| `hydraulic_capacity_factor` | dimensionless | The packing's relative hydraulic capacity, which scales the flooding velocity. Defaults to one. |
 
 
 ## Outputs
@@ -91,21 +109,11 @@ DOI: [10.1252/jcej.1.56](https://doi.org/10.1252/jcej.1.56)
 | `hydraulic_capacity_factor > 0` | raises | a negative relative capacity would give a negative flooding velocity |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- **the packing resolves by name; an unknown name is refused.** The 22 built-ins are the reference, and `Packing.csv` adds material-qualified rows beside them (`Pall-Ring-50-plastic`) without replacing one. A `placeholder` row is not a packing (upstream PR #4405).
-
-- **the normalisation is the class's**: lowercased with every non-alphanumeric removed, so `Pall-Ring-50`, `pallring 50` and `PALL_RING_50` are one key.
-
-- **the four correlations are the class's own, with its constants**: the Eckert fit's three coefficients, Onda's `5.23` and `0.0051`, Leva's `0.01` scale and its `0.015` liquid-loading coefficient (`0.010` for structured) - written inline, not published.
-
-- **the HETP is a two-resistance combination at a stripping factor of one, clamped twice**: never below `0.1` m and never above twice the empirical estimate - `0.12 + 0.012 dp` scaled by `1 + 0.1 (D - 1)` for random, `100/a + 0.1` for structured. Both captured rows take the upper clamp.
-
-- **the wetting check and the design verdict are the class's own thresholds**: a minimum wetting rate of `5e-5` m**3/(m**2 s) for a random packing and `2.5e-5` for a structured one, and a design window of 40 to 80 per cent of flood. Both captured random rows fall below the minimum.
 
 - the vapour film coefficient depends on the vapour side alone, so the two rows that differ only in liquid load answer the same `kGa` (\(3.6836\) against \(3.6836\)) while their `kLa` differ two-and-a-half-fold.
 

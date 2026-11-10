@@ -1,14 +1,11 @@
 id = "eos.rachford_rice_binary"
 name = "Rachford-Rice vapour fraction, for a binary"
+summary = "Vapour fraction of a two-component mixture from its composition and K-values. Use it for a binary flash when the phase split is needed."
 equation = "beta = -(z1*(K1 - 1) + (1 - z1)*(K2 - 1)) / ((K1 - 1)*(K2 - 1))"
 latex = """\
     \\beta = -\\frac{z_{1}\\left(K_{1} - 1\\right) + z_{2}\\left(K_{2} - \
     1\\right)}{\\left(K_{1} - 1\\right)\\left(K_{2} - 1\\right)}"""
-assumptions = ["""\
-    both K-values are for the same temperature and pressure. They are the caller's, and this \
-    calc has no way to know they describe one state.""", "the K-values are consistent with each other in the thermodynamic sense - derived from fugacity coefficients for the same mixture.\n", """\
-    the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no \
-    single `vapour_fraction`, and a feed with a non-condensable component is not describable this way.""", "no stability test is performed; a `vapour_fraction` inside `[0, 1]` says the equation has a solution there, not that the feed should split.\n"]
+assumptions = ["both K-values are for the same temperature and pressure. They are the caller's, and this calc has no way to know they describe one state.", "the K-values are consistent with each other in the thermodynamic sense - derived from fugacity coefficients for the same mixture.\n", "the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no single `vapour_fraction`, and a feed with a non-condensable component is not describable this way.", "no stability test is performed; a `vapour_fraction` inside `[0, 1]` says the equation has a solution there, not that the feed should split.\n"]
 references = ["Rachford, H. H.; Rice, J. D. (1952). \\\"Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium.\\\" J. Pet. Technol. 4(10), 19-3. DOI 10.2118/952327-G"]
 [source]
 standard = "Rachford, H. H.; Rice, J. D. (1952)"

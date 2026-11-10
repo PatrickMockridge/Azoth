@@ -7,9 +7,18 @@
  * have to infer from a tooltip.
  */
 
+import { manualHome } from "../manual";
+
 export function Help() {
   return (
     <div className="help">
+      <p>
+        <a href={manualHome()} target="_blank" rel="noreferrer">
+          Open the user manual
+        </a>{" "}
+        for the task guides, the calculation reference and the full validity notes.
+      </p>
+
       <h2>Getting started</h2>
       <p>
         A flowsheet is <strong>feeds</strong>, <strong>unit operations</strong> and{" "}
@@ -66,14 +75,30 @@ export function Help() {
         Pick a calculation from the list, fill its inputs and press <strong>Calculate</strong>;
         <strong>Load worked example</strong> fills the calculation&apos;s own published example.
         A book holds several sheets, is saved in TOML, and can be printed as a report. The four
-        calculations whose inputs or outputs are tables are listed and not yet available.
+        calculations whose inputs or outputs are tables are listed and not yet available. See
+        the{" "}
+        <a
+          href={`${manualHome()}using/calculations.html`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          calculation-sheet guide
+        </a>{" "}
+        for the layout and the unit-set behaviour.
       </p>
 
       <h2>What this is not</h2>
       <p>
         The port is incomplete and every shipped model is marked unverified or partially
-        verified. Treat the numbers as screening values, not as design deliverables; the book&apos;s
-        front page states what is missing.
+        verified. Treat the numbers as screening values, not as design deliverables;{" "}
+        <a
+          href={`${manualHome()}index.html#not-for-design-work-yet`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          the manual&apos;s front page
+        </a>{" "}
+        states what is missing.
       </p>
     </div>
   );

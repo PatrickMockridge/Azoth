@@ -4,6 +4,8 @@
 
 `hydraulics.crane_k_factors`
 
+Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation.
+
 ## Equation
 
 $$
@@ -47,7 +49,7 @@ K = f_t * sum(n_ld for each fitting)
 | `n_fittings >= 1` | raises | An empty fitting list is a caller error rather than a physical state - the calculation would silently return zero loss, which reads as "no fittings" when the caller may have meant to pass some. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

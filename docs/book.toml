@@ -12,6 +12,8 @@ after = ["links"]
 [preprocessor.mermaid]
 
 [output.html]
+# The book is published beside the editor at /azoth/manual/; internal links stay relative.
+site-url = "/azoth/manual/"
 git-repository-url = "https://github.com/PatrickMockridge/azoth"
 # `smart-punctuation` in mdBook 0.5; the key was `curly-quotes` in 0.4 and the
 # old name is a hard error rather than a warning.

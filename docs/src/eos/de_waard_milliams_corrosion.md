@@ -4,6 +4,8 @@
 
 `eos.de_waard_milliams_corrosion`
 
+CO2, H2S and elemental-sulfur corrosion rate from the De Waard-Milliams correlation. Use it to screen a wet-gas or multiphase line for corrosion allowance.
+
 ## Equation
 
 $$
@@ -31,6 +33,28 @@ V_FeS = min(exp(7.96 - 2320/T + 0.67 ln pH2S), 100) mm/yr
 **NeqSim master `DeWaardMilliamsCorrosion`**
 
 `calculateBaselineRate`, the four correction factors, `getSulfurCorrosionRate`, `getFeSCorrosionRate`, `getFeCO3SaturationIndex`, `getCorrosionSeverity`, `getFeSScaleMorphology` and `estimateCorrosionAllowance`. The comprehensive map, the temperature sweep and the Gson report are compositions.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class takes C, bar, kg/(m2 yr) and mm/yr; this calc takes kelvin, pascal, kg/(m2 s) and returns m/s over the class's 365.25-day year.
+
+- **the baseline is de Waard-Milliams 1991**, `log10(V) = 5.8 - 1710/T_K + 0.67 log10(pCO2)` mm/yr, zero at or below a zero pCO2.
+
+- **the pH correction is de Waard-Lotz**, `10^(0.32(pHsat - pH))` at or above the saturation pH and one below it; `pHsat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C`.
+
+- **the scale correction** is one below 60 C; above 80 C and pH 5 it is `max(0.1, 1 - min(0.7, (T_C-80)*0.01*(pH-4)))`, whose 0.1 floor the 0.7 cap keeps out of reach.
+
+- the glycol factor is one at zero, 0.05 above 0.8 and `1-x` between; the flow factor is one to 1 m/s and `min(v^0.8, 5)` above; the inhibitor factor is one minus the efficiency clamped to `[0, 1]`.
+
+- **sulfur and H2S add to the CO2 rate**: sulfur as 1.74 kg Fe per kg S8 over steel's 7850 kg/m3, FeS as `min(exp(7.96 - 2320/T_K + 0.67 ln pH2S), 100)` mm/yr.
+
+- the severity bands are NORSOK M-001 on the corrected CO2-plus-sulfur rate; the FeCO3 index and the morphology are the class's estimates; sour service is H2S above 0.003 bar.
+
+- the class's total-pressure and pipe-diameter setters reach only its JSON and no arithmetic, and the three correction flags have no setters, so neither becomes an input.
+
 
 ## Inputs
 
@@ -81,27 +105,13 @@ V_FeS = min(exp(7.96 - 2320/T + 0.67 ln pH2S), 100) mm/yr
 | `design_life >= 0` | raises | A design life is a duration, not a signed quantity. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class takes C, bar, kg/(m2 yr) and mm/yr; this calc takes kelvin, pascal, kg/(m2 s) and returns m/s over the class's 365.25-day year.
-
-- **the baseline is de Waard-Milliams 1991**, `log10(V) = 5.8 - 1710/T_K + 0.67 log10(pCO2)` mm/yr, zero at or below a zero pCO2.
-
-- **the pH correction is de Waard-Lotz**, `10^(0.32(pHsat - pH))` at or above the saturation pH and one below it; `pHsat = 3.71 - 0.5 log10(pCO2) + 0.00133 T_C`.
-
-- **the scale correction** is one below 60 C; above 80 C and pH 5 it is `max(0.1, 1 - min(0.7, (T_C-80)*0.01*(pH-4)))`, whose 0.1 floor the 0.7 cap keeps out of reach.
-
-- the glycol factor is one at zero, 0.05 above 0.8 and `1-x` between; the flow factor is one to 1 m/s and `min(v^0.8, 5)` above; the inhibitor factor is one minus the efficiency clamped to `[0, 1]`.
-
-- **sulfur and H2S add to the CO2 rate**: sulfur as 1.74 kg Fe per kg S8 over steel's 7850 kg/m3, FeS as `min(exp(7.96 - 2320/T_K + 0.67 ln pH2S), 100)` mm/yr.
-
-- the severity bands are NORSOK M-001 on the corrected CO2-plus-sulfur rate; the FeCO3 index and the morphology are the class's estimates; sour service is H2S above 0.003 bar.
-
-- the class's total-pressure and pipe-diameter setters reach only its JSON and no arithmetic, and the three correction flags have no setters, so neither becomes an input.
+- The line carries wet CO2, H2S or elemental sulfur, and the surface is carbon steel. The correlation is a screening rate for that service, not a prediction for a protected or non-ferrous surface.
 
 
 

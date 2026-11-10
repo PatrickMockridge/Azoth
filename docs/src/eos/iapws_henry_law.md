@@ -4,6 +4,8 @@
 
 `eos.iapws_henry_law`
 
+Henry constant of a gas in water from the IAPWS guideline. Use it for aqueous absorption and stripping screening.
+
 ## Equation
 
 $$
@@ -21,6 +23,17 @@ kH = 10*exp(ln(22.064) + S(tau)/Tr + a/Tr + b*tau**0.355/Tr + c*Tr**-0.41*exp(ta
 **IAPWS G7-04**
 
 The guideline equation as NeqSim master implements it in `IapwsHenryLaw`, with its 14 gas rows and the fitted window each row carries.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the table is 14 gases with three fitted constants and a fitted window each, and `gas` is the table's vocabulary rather than the databank's: `krypton`, `xenon` and `carbon monoxide` are rows here and are not components this library carries data for.
+- **the branch is selected by a name, and NeqSim's aliasing is part of the selection**: a row answers to its formula (`ch4`) and to its name (`methane`), case-insensitively, so which row a string means is a lookup rule and not a chemistry one. The boundary resolves it; `gas` is already a row.
+- the consumer decides what an extrapolation means, and NeqSim's consumers differ: `ComponentGE` turns it into the insoluble limit rather than using the number, and `ComponentGePitzer` does the same where the phase has ions.
+- the derivative is `d(ln kH)/dT` in `1/K`, NeqSim's `getLnHenryCoefficientTemperatureDerivative`, and it comes from the same temperature as the constant. A caller differentiating the constant takes this rather than differencing.
+- `rms_log_residual` is the row's own reported fit quality in `ln kH`. It is a property of the row and not of `T`, and it is returned because it is what says how far an extrapolation should be trusted.
 
 ## Inputs
 
@@ -48,19 +61,15 @@ The guideline equation as NeqSim master implements it in `IapwsHenryLaw`, with i
 | `T >= 273.15 and T < 647.096` | raises | The guideline is defined over liquid water: below the triple point it is not water and at the critical temperature the reference state ceases to exist. This is the domain, which is an error; a departure from a row's own fitted window is the `status` output instead. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the standard state is **limiting `f/x` at pure-water saturation**, and the arithmetic is NeqSim's own: 647.096 K, 22.064 MPa and the six-term Wagner series for water's saturation pressure. NeqSim's method returns bar and this model returns pascals, a factor of `1e5`.
-- the table is 14 gases with three fitted constants and a fitted window each, and `gas` is the table's vocabulary rather than the databank's: `krypton`, `xenon` and `carbon monoxide` are rows here and are not components this library carries data for.
-- **the branch is selected by a name, and NeqSim's aliasing is part of the selection**: a row answers to its formula (`ch4`) and to its name (`methane`), case-insensitively, so which row a string means is a lookup rule and not a chemistry one. The boundary resolves it; `gas` is already a row.
+- the standard state is limiting `f/x` at pure-water saturation, with water's critical constants and the six-term Wagner series for its saturation pressure. The result is in pascals.
+
 - **`status` is the fitted window, not the domain.** A row is fitted over its own range and the equation over liquid water, so a temperature inside liquid water and outside the row's window is **returned** with `guideline_extrapolation` rather than refused.
-- the consumer decides what an extrapolation means, and NeqSim's consumers differ: `ComponentGE` turns it into the insoluble limit rather than using the number, and `ComponentGePitzer` does the same where the phase has ions.
-- the derivative is `d(ln kH)/dT` in `1/K`, NeqSim's `getLnHenryCoefficientTemperatureDerivative`, and it comes from the same temperature as the constant. A caller differentiating the constant takes this rather than differencing.
-- `rms_log_residual` is the row's own reported fit quality in `ln kH`. It is a property of the row and not of `T`, and it is returned because it is what says how far an extrapolation should be trusted.
 - the guideline is stated for a **pure-water** solvent. A brine changes the reference state, and the phase that reads this is where that is decided - the model has no composition input and does not pretend otherwise.
 
 

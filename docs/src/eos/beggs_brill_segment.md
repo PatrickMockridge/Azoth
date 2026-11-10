@@ -4,6 +4,8 @@
 
 `eos.beggs_brill_segment`
 
+Liquid holdup and pressure gradient for one pipe segment from the Beggs-and-Brill correlation. Use it for multiphase line pressure-drop screening.
+
 ## Equation
 
 $$
@@ -30,6 +32,24 @@ dp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y -
 **NeqSim master `PipeBeggsAndBrills`**
 
 `calcFlowRegime`, `calcHydrostaticPressureDifference`, `inclinationCorrectedHoldup`, `calcFrictionPressureLoss`, `homogeneousDensity`, `homogeneousViscosity` and the Baker-Swerdloff surface tension, ported. The flash, the segment march and the heat transfer are not.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.
+
+- **the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.
+
+- **the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.
+
+- **the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.
+
+- **the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.
+
+- the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.
+
 
 ## Inputs
 
@@ -60,7 +80,7 @@ dp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y -
 | `superficial_mixture_velocity` | m/s | their sum. |
 | `no_slip_density` | kg/m**3 | the volume-weighted no-slip mixture density. |
 | `no_slip_viscosity` | Pa*s | the volume-weighted no-slip mixture viscosity. |
-| `reynolds` | dimensionless | the no-slip Reynolds number, with the class's field-unit factor. |
+| `reynolds` | dimensionless | The no-slip Reynolds number. |
 | `friction_factor` | dimensionless | the single-phase Darcy friction factor. |
 | `two_phase_friction_factor` | dimensionless | `f exp(S)`, the Beggs-Brill two-phase multiplier applied. |
 | `hydrostatic_drop` | Pa | the elevation term over the segment. |
@@ -85,25 +105,13 @@ dp = rho_m g dz + f_tp rho_ns v_m^2 L / (2 D),  f_tp = f exp(S),  S = ln(2.2 y -
 | `roughness >= 0` | warns `OUT_OF_VALID_RANGE` | A negative roughness is a caller's mistake; it enters the friction factor through a positive power of epsilon/D. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the class's field-unit constants are reproduced**: the segment state is computed in ft, lb/ft3 and cP, with 32.174 ft/s2 in the Froude number, 32.2 ft/s2 in the hydrostatic term, and the class's 1.48727e-5 bar per lb/(ft s2) to return the drop in Pa.
-
-- **the regime is Beggs and Brill's four-way classification** with the class's L1..L4 and its published branch order: segregated, transition, intermittent, distributed, plus `single_phase` for a stream with no gas or no liquid.
-
-- **the transition region interpolates the two corrected holdups**, not the horizontal ones, with `A = (L3 - Fr)/(L3 - L2)`; the holdup is then bounded by the no-slip liquid fraction and one.
-
-- **the surface tension is the class's Baker-Swerdloff fit** from the liquid gravity, temperature and pressure, clamped at 1 dyne/cm, and feeds the Duns-Ros liquid velocity number.
-
-- **the inclination correction uses the class's `sin(1.8 theta)`** with theta in radians from `asin(elevation/length)`; a distributed uphill segment has a zero coefficient, and a downhill one uses the single downhill fit.
-
-- the friction factor is laminar `64/Re`, the class's 2300-4000 interpolation, or Haaland above it; `S` is the Beggs-Brill two-phase multiplier from `y = lambda/E_l^2`.
-
-- the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values, which is how the class combines its two liquid phases.
+- the liquid is one phase: an oil/water mixture's density and viscosity are the caller's volume-weighted values.
 
 
 

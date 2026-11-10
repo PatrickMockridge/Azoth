@@ -4,6 +4,8 @@
 
 `eos.antoine_vapor_pressure`
 
+Saturation pressure of a pure component from an Antoine-type correlation. Use it for boiling, flash and relief screening when a fitted vapour-pressure curve is available.
+
 ## Equation
 
 $$
@@ -28,16 +30,36 @@ p_sat = { dippr101: exp(A + B/T + C*ln(T) + D*T**E); pow10: 1e5*10**(A - B/(T + 
 
 the four correlations NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.
+
+- the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.
+
+- `form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.
+
+- `E` decides the form and not only the label: a non-zero `E` selects `dippr101` unless the label is `pow10` or `pow10KPa`, which keep precedence because their coefficients are log10-based. This is NeqSim's own rule, `Component.usesDipprVaporPressureCorrelation`.
+
+- the rule matters because twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label `log`, which names the two-term exponential. Reading the label alone returns `i-pentane` at 8.3e38 bar where the correlation gives 0.918.
+
+- `Tc` and `Pc` are used only by the Wagner form; the other three ignore them.
+
+- the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `A` | dimensionless | The first Antoine coefficient, NeqSim's internal scale. |
+| `A` | dimensionless | The first Antoine coefficient, in the correlation's internal scale. |
 | `B` | dimensionless | The second Antoine coefficient. |
 | `C` | dimensionless | The third Antoine coefficient. |
 | `D` | dimensionless | The fourth Antoine coefficient, used only by the Wagner form. |
 | `E` | dimensionless | The fifth Antoine coefficient, the DIPPR-101 exponent. Used by `dippr101` and ignored by the other four; a non-zero value also selects that form. |
-| `form` | dippr101 / pow10 / pow10kpa / exp / wagner | The correlation form, one of the five NeqSim evaluates. `dippr101` is selected by a non-zero `E` rather than by the label; see the assumptions. |
+| `form` | dippr101 / pow10 / pow10kpa / exp / wagner | The correlation form. `dippr101` is selected by a non-zero `E` rather than by the label; see the assumptions. |
 | `Tc` | K | Critical temperature, used only by the Wagner form. |
 | `Pc` | Pa | Critical pressure, used only by the Wagner form. |
 | `T` | K | Absolute temperature. |
@@ -59,28 +81,13 @@ the four correlations NeqSim master evaluates in `thermo/component/Component.jav
 | `Pc > 0` | raises | `Pc` scales the Wagner form; a non-positive value is not a critical pressure. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- `none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.
-
-- the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.
-
-- `form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.
-
-- `E` decides the form and not only the label: a non-zero `E` selects `dippr101` unless the label is `pow10` or `pow10KPa`, which keep precedence because their coefficients are log10-based. This is NeqSim's own rule, `Component.usesDipprVaporPressureCorrelation`.
-
-- the rule matters because twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label `log`, which names the two-term exponential. Reading the label alone returns `i-pentane` at 8.3e38 bar where the correlation gives 0.918.
-
-- `Tc` and `Pc` are used only by the Wagner form; the other three ignore them.
-
-- the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.
-
-- **the evaluated pressure must be finite, positive and at or below `Pc`** (upstream PR #4106, `b7ee7300`): an extrapolation past the critical pressure is unavailable rather than clipped, and this port refuses it where the class returns `NaN`.
-
+- The evaluated pressure must be finite, positive and at or below `Pc`. An extrapolation past the critical pressure is refused rather than clipped.
 
 
 

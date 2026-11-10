@@ -4,6 +4,8 @@
 
 `eos.mollerup_alpha`
 
+Mollerup alpha function for a cubic equation of state. Use it when the attraction term follows the Mollerup temperature form.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = 1 + p1*(1/Tr - 1) + p2*Tr*ln(Tr) + p3*(Tr - 1)
 **NeqSim master `AttractiveTermMollerup`**
 
 `alpha(temperature)`, ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the three parameters are the caller's fitted Mollerup coefficients; NeqSim's default is all zero, which is the trivial alpha of one.
+
 
 ## Inputs
 
@@ -46,13 +56,11 @@ alpha = 1 + p1*(1/Tr - 1) + p2*Tr*ln(Tr) + p3*(Tr - 1)
 | `Tr > 0` | raises | the formula takes `1/Tr` and `ln(Tr)`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- the three parameters are the caller's fitted Mollerup coefficients; NeqSim's default is all zero, which is the trivial alpha of one.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

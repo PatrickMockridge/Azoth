@@ -4,6 +4,8 @@
 
 `eos.erosion_prediction`
 
+Erosional velocity and sand-erosion rate from API RP 14E and DNV RP O501. Use it to screen a line or fitting for sand and droplet erosion.
+
 ## Equation
 
 $$
@@ -28,6 +30,28 @@ risk: rate > 1.0 mm/yr or ratio > 1.5 critical; > 0.5 or > 1.0 high; > 0.1 or > 
 
 `calculate`, the material constants and densities, the geometry factors and areas, the impact-angle function, the particle-velocity estimate and `assessRisk`. The corrosion-protection velocity helper, the sand-load defaults and the Gson report are separate surfaces.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the class takes mm, kg/day, mm/yr and years; this calc takes metres, kg/s, seconds and returns SI rates, with the class's 365.25-day year converting the wall loss.
+
+- **the erosional velocity is API RP 14E**: `C / sqrt(rho)` in the class's lb/ft3 and ft/s, converted back by 0.3048; a zero mixture density gives zero rather than an infinity.
+
+- **the sand rate is DNV RP O501**: `K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)`, with K 2e-9 for the steels and 1e-9 or 5e-10 for Inconel, titanium and tungsten carbide, and n 2.6 or 2.3.
+
+- **the geometry enters three ways**: its factor, its impact angle and its eroded area - elbow `pi D^2 * 0.1`, tee and blind tee half the bore, reducer 0.3, choke 0.2, weld a thin ring and straight the unit length.
+
+- **the particle velocity is the mixture velocity times 0.9, 0.8 or 0.7**, chosen by a Stokes number of 10 or 1; the straight pipe takes the class's empirical `K Vp^n sand 0.01` branch instead.
+
+- the wall density is 7850 kg/m3 except titanium's 4500 and Inconel's 8440; the erosion rate is `mm/yr` and the remaining wall subtracts the cumulative loss and the corrosion allowance.
+
+- **the geometry and material names are the enum values**; the class's `bend`, `contraction`, `valve`, `22cr`, `25cr` and `inconel_625` aliases fold into them and are not separately named.
+
+- the class's gas and liquid densities and velocities have setters and are read by nothing, so they are not inputs; its maximum-velocity helper and sand-load defaults are separate surfaces.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -36,14 +60,14 @@ risk: rate > 1.0 mm/yr or ratio > 1.5 critical; > 0.5 or > 1.0 high; > 0.1 or > 
 | `mixture_velocity` | m/s | the mixture velocity. |
 | `pipe_diameter` | m | the pipe's internal diameter. |
 | `wall_thickness` | m | the clean wall thickness. |
-| `sand_rate` | kg/(m**2*s) | the produced sand rate, which the class states in kg/day. |
-| `sand_particle_diameter` | m | the sand particle diameter, which the class states in mm. |
+| `sand_rate` | kg/(m**2*s) | The produced sand rate. |
+| `sand_particle_diameter` | m | The sand particle diameter. |
 | `sand_particle_density` | kg/m**3 | the sand particle density. |
 | `mixture_viscosity` | Pa*s | the mixture's dynamic viscosity, for the Stokes number. |
 | `geometry` | straight / elbow / tee / blind_tee / reducer / choke / weld | the fitting the erosion is assessed at. |
 | `bend_radius_ratio` | dimensionless | the bend radius over the diameter, which sets an elbow's factor and impact angle. |
 | `pipe_material` | carbon_steel / duplex_steel / super_duplex / 13cr / inconel / titanium / tungsten_carbide | the wall material, for its erosion constant, exponent and density. |
-| `api_c_factor` | dimensionless | the API RP 14E C factor, 100 as the class's default. |
+| `api_c_factor` | dimensionless | The API RP 14E C factor. Defaults to 100. |
 | `corrosion_allowance` | m | the corrosion allowance the remaining wall subtracts. |
 | `design_life` | s | the exposure time the cumulative loss is scaled by. |
 
@@ -80,27 +104,13 @@ risk: rate > 1.0 mm/yr or ratio > 1.5 critical; > 0.5 or > 1.0 high; > 0.1 or > 
 | `design_life >= 0` | raises | A design life is a duration, not a signed quantity. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the class takes mm, kg/day, mm/yr and years; this calc takes metres, kg/s, seconds and returns SI rates, with the class's 365.25-day year converting the wall loss.
-
-- **the erosional velocity is API RP 14E**: `C / sqrt(rho)` in the class's lb/ft3 and ft/s, converted back by 0.3048; a zero mixture density gives zero rather than an infinity.
-
-- **the sand rate is DNV RP O501**: `K F(alpha) Vp^n (dp/dp_ref)^0.2 GF (rho_p/rho_ref)`, with K 2e-9 for the steels and 1e-9 or 5e-10 for Inconel, titanium and tungsten carbide, and n 2.6 or 2.3.
-
-- **the geometry enters three ways**: its factor, its impact angle and its eroded area - elbow `pi D^2 * 0.1`, tee and blind tee half the bore, reducer 0.3, choke 0.2, weld a thin ring and straight the unit length.
-
-- **the particle velocity is the mixture velocity times 0.9, 0.8 or 0.7**, chosen by a Stokes number of 10 or 1; the straight pipe takes the class's empirical `K Vp^n sand 0.01` branch instead.
-
-- the wall density is 7850 kg/m3 except titanium's 4500 and Inconel's 8440; the erosion rate is `mm/yr` and the remaining wall subtracts the cumulative loss and the corrosion allowance.
-
-- **the geometry and material names are the enum values**; the class's `bend`, `contraction`, `valve`, `22cr`, `25cr` and `inconel_625` aliases fold into them and are not separately named.
-
-- the class's gas and liquid densities and velocities have setters and are read by nothing, so they are not inputs; its maximum-velocity helper and sand-load defaults are separate surfaces.
+- The flow is a gas or multiphase stream carrying sand through a listed geometry and material. The result is a screening rate; a detailed erosion assessment is a CFD or test programme.
 
 
 

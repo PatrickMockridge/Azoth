@@ -1,5 +1,6 @@
 id = "eos.prsv_kappa"
 name = "Peng-Robinson-Stryjek-Vera alpha-function coefficient"
+summary = "Peng-Robinson-Stryjek-Vera attraction-parameter coefficient. Use it when a cubic EOS needs the PRSV kappa form."
 equation = """\
     kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 + \
     kappa1*(1 + Tr**0.5)*(0.7 - Tr)"""
@@ -7,9 +8,7 @@ latex = """\
     \\kappa = 0.378893 + 1.4897153\\,\\omega - 0.17131848\\,\\omega^{2} + \
     0.0196554\\,\\omega^{3} + \\kappa_{1}\\left(1 + \\sqrt{T_{r}}\\right)\\left(0.7 - \
     T_{r}\\right)"""
-assumptions = ["`kappa1` is a fitted parameter for the substance intended, and its correctness is NOT CHECKED - this library ships no values for it.\n", "**`kappa1 = 0` is not the same as Peng-Robinson.** The acentric-only polynomial here, `0.378893 + 1.4897153*omega - ...`, is a different correlation from `eos.pr_kappa`'s.\n", "the alpha function this coefficient feeds is unchanged from Peng-Robinson, so `eos.pr_alpha_ab` serves both.\n", """\
-    the range of reduced temperatures and acentric factors over which the correlation was \
-    fitted is NOT established, and no bound asserts one.""", "this is the 1986 PRSV of the cited paper; PRSV2 is a later revision of the pure-compound parameter.\n"]
+assumptions = ["`kappa1` is a fitted parameter for the substance intended, and its correctness is NOT CHECKED - this library ships no values for it.\n", "**`kappa1 = 0` is not the same as Peng-Robinson.** The acentric-only polynomial here, `0.378893 + 1.4897153*omega - ...`, is a different correlation from `eos.pr_kappa`'s.\n", "the alpha function this coefficient feeds is unchanged from Peng-Robinson, so `eos.pr_alpha_ab` serves both.\n", "the range of reduced temperatures and acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.", "this is the 1986 PRSV of the cited paper; PRSV2 is a later revision of the pure-compound parameter.\n"]
 references = ["Stryjek, R.; Vera, J. H. (1986). \\\"PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures.\\\" Can. J. Chem. Eng. 64(2), 323-333. DOI 10.1002/cjce.5450640224.", "Pitzer, K. S. (1955). \\\"The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients.\\\" J. Am. Chem. Soc. 77(13), 3427-3433. DOI 10.1021/ja01618a002."]
 [source]
 standard = "Stryjek, R.; Vera, J. H. (1986)"

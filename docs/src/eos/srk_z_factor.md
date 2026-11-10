@@ -4,6 +4,8 @@
 
 `eos.srk_z_factor`
 
+Soave-Redlich-Kwong compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with an SRK EOS.
+
 ## Equation
 
 $$
@@ -52,7 +54,7 @@ DOI: [10.1021/cr60137a013](https://doi.org/10.1021/cr60137a013)
 | `a_reduced >= 0` | raises | `A` is a squared term times a positive coefficient, so it cannot be negative for any real input to `eos.srk_alpha_ab`; zero is permitted as the hard-sphere limit. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

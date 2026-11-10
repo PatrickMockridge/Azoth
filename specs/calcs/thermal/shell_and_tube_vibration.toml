@@ -1,16 +1,10 @@
 id = "thermal.shell_and_tube_vibration"
 name = "A shell-and-tube exchanger's tube-vibration screen"
+summary = "A shell-and-tube exchanger's tube-vibration screen from its geometry, flow and natural frequency. Use it to flag a bundle at risk of flow-induced vibration."
 equation = "f_n = C_n/(2*pi)*sqrt(E*I/(m_eff*L**4)); I = pi/64*(d_o**4 - d_i**4); m_eff = rho_t*A_t + rho_ti*A_c + rho_s*pi/4*d_o**2; f_vs = St*V/d_o; V_crit = K*f_n*d_o*sqrt(2*pi*zeta*m_eff/(rho_s*d_o**2)); f_ac = n*c/(2*W)"
 latex = '''f_n = \frac{C_n}{2\pi}\sqrt{\frac{E I}{m_\mathrm{eff} L^4}}, \qquad I = \frac{\pi}{64}\left(d_o^4 - d_i^4\right)'''
-assumptions = [
-    "**the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.\n",
-    "**the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.\n",
-    "**Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.\n",
-    "**the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.\n",
-    "**the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.\n",
-    "**a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.\n",
-    "**the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.\n",
-]
+assumptions = ["The screen checks vortex shedding, fluid-elastic instability and acoustic resonance for the declared bundle. It flags risk; it is not a substitute for a detailed vibration analysis.\n"]
+notes = ["**the screening fixes the natural frequency's end condition at `pinned`.** The class's `calcNaturalFrequency` also has `fixed` (Cn 22.37) and `clamped-pinned` (15.42), measured in the capture as evidence; `performScreening` never states either.\n", "**the Strouhal number is Fitzhugh's pitch correction**, `0.22*(1+0.2/(r-0.8))` for `1 < r < 3`, not the nominal 0.22. On the captured state r 1.2499 gives 0.3178, and the 33.37 Hz it answers is the class's own '~23 Hz' test comment.\n", "**Connors' constant is 3.3 triangular and 3.4 square**, and the compared velocity is `V/(0.5*V_crit)`, the class's `FLUIDELASTIC_SAFETY_FACTOR`.\n", "**the acoustic frequency is `mode*c/(2*ID)`**, the class's simplified form with no tube-presence correction; `calcEffectiveAcousticVelocity` has no `src/main` caller, so nothing reaches it.\n", "**the three critical bands are strict `0.8 < ratio < 1.2`**, and `passed` is the conjunction of their negations.\n", "**a zero natural frequency makes the class answer `Double.MAX_VALUE` and pass**; the port refuses the geometry that produces it (`ID >= OD`), so the sentinel is unreachable.\n", "**the vortex ratio is 0 when the natural frequency is 0**, and the velocity ratio is 0 when the critical velocity is the sentinel; both are the class's own guards.\n"]
 references = [
     "TEMA (2019). Standards of the Tubular Exchanger Manufacturers Association, 10th edition, RCB-4.6. The four vibration mechanisms and the screening practice.",
     "Connors, H.J. (1978). \"Fluid-elastic vibration of tube arrays excited by cross flow.\" In Flow-Induced Vibration in Heat Exchangers, ASME. The critical-velocity criterion.",
@@ -54,7 +48,7 @@ unit = "m"
 description = "the shell inside diameter, which sets the first acoustic mode.\n"
 [inputs.sonic_velocity]
 unit = "m/s"
-description = "the speed of sound in the shell-side fluid; `340` m/s is the class's gas example.\n"
+description = "The speed of sound in the shell-side fluid; 340 m/s is the gas example.\n"
 [inputs.damping_ratio]
 unit = "dimensionless"
 description = "the tube damping ratio, typically `0.03` in liquid and `0.01` in gas.\n"
@@ -79,7 +73,7 @@ unit = "m/s"
 description = "Connors' critical crossflow velocity for fluid-elastic instability.\n"
 [outputs.velocity_ratio]
 unit = "dimensionless"
-description = "`V / (0.5 * V_crit)`, the class's safety-factor comparison; critical above one.\n"
+description = "`V / (0.5 * V_crit)`; critical above one.\n"
 [outputs.fluid_elastic_critical]
 type = "boolean"
 description = "whether the velocity ratio exceeds one.\n"

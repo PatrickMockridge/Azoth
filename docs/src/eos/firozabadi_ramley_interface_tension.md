@@ -4,6 +4,8 @@
 
 `eos.firozabadi_ramley_interface_tension`
 
+Gas-liquid interface tension from the Firoozabadi-Ramey correlation. Use it for multiphase-flow and separator screening when interfacial tension is not measured.
+
 ## Equation
 
 $$
@@ -23,6 +25,20 @@ sigma = (a1 * (|rho_2 - rho_1|/1000)**(b1 + 1) / (T/Tc_pseudo)**0.3125)**4 / 100
 `calcSurfaceTension`, ported verbatim: the piecewise corresponding-states form over the density difference and the first phase's pseudo-critical temperature.
 
 DOI: [10.2118/88-03-03](https://doi.org/10.2118/88-03-03)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `Tc_pseudo` is the **first** phase's pseudo-critical temperature, `sum(x_i Tc_i)` over that phase's composition; NeqSim takes it from the first argument of `calcSurfaceTension`, so a caller that supplies the second phase's answers a different `Tr`.
+
+- the two densities are mass densities in kg/m**3; the division by `1000` puts their difference in the g/cm**3-like unit the fitted constants were published against.
+
+- the correlation is the class's `calcSurfaceTension`, not its `calcPureComponentSurfaceTension` (a Macleod-Sugden pure-component form the mixture path does not call).
+
+- the class answers 0.0 when the system has fewer than two phases; this calculation's inputs are two states, so that guard has no input here.
+
 
 ## Inputs
 
@@ -51,19 +67,13 @@ DOI: [10.2118/88-03-03](https://doi.org/10.2118/88-03-03)
 | `rho_2 > 0` | raises | A phase with no mass density has no interface. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- `Tc_pseudo` is the **first** phase's pseudo-critical temperature, `sum(x_i Tc_i)` over that phase's composition; NeqSim takes it from the first argument of `calcSurfaceTension`, so a caller that supplies the second phase's answers a different `Tr`.
-
-- the two densities are mass densities in kg/m**3; the division by `1000` puts their difference in the g/cm**3-like unit the fitted constants were published against.
-
-- the correlation is the class's `calcSurfaceTension`, not its `calcPureComponentSurfaceTension` (a Macleod-Sugden pure-component form the mixture path does not call).
-
-- the class answers 0.0 when the system has fewer than two phases; this calculation's inputs are two states, so that guard has no input here.
+- The two states are the coexisting gas and liquid phases, and the first state is the one whose pseudo-critical temperature the correlation uses.
 
 
 

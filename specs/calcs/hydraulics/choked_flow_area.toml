@@ -1,5 +1,6 @@
 id = "hydraulics.choked_flow_area"
 name = "Choked-flow throat area for an ideal gas"
+summary = "Sizes the minimum flow area for choked gas flow through a restriction from mass flow, upstream density, pressure and heat-capacity ratio. Use it for relief and vent-path screening."
 equation = "A = m_dot / (sqrt(k * rho0 * P0) * (2 / (k + 1))**((k + 1) / (2 * (k - 1))))"
 latex = '''A = \frac{\dot m}{\sqrt{k\,\rho_0 P_0}\,\left(\frac{2}{k+1}\right)^{\frac{k+1}{2(k-1)}}}'''
 assumptions = ["The gas is ideal, with constant specific heats.", "The flow is choked: the pressure downstream of the throat is below the critical ratio.", "The expansion is isentropic: adiabatic and frictionless through the throat.", "the area is the throat - the minimum area - and the flow there is one-dimensional and normal to it", "There are no inlet or outlet losses, no back-pressure correction and no rupture-disc or combination factors.", "The gas is single-phase at the throat.", "`k` is constant through the expansion.", "Stagnation conditions upstream: the approach velocity is negligible."]

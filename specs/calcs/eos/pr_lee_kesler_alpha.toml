@@ -1,8 +1,10 @@
 id = "eos.pr_lee_kesler_alpha"
 name = "Peng-Robinson alpha function with a Soave-form m-factor"
+summary = "Peng-Robinson alpha function with a Soave-form m-factor. Use it when a Peng-Robinson EOS is fitted with the Lee-Kesler m correlation."
 equation = "alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.480 + 1.574*omega - 0.176*omega**2"
 latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.480 + 1.574\omega - 0.176\omega^2'''
-assumptions = ["despite the class name, this is the Soave (SRK) m-factor applied within the Peng-Robinson alpha form, not the Lee-Kesler BWR enthalpy method; NeqSim retains the class for backward compatibility.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["despite the class name, this is the Soave (SRK) m-factor applied within the Peng-Robinson alpha form, not the Lee-Kesler BWR enthalpy method; NeqSim retains the class for backward compatibility.\n"]
 references = ["Soave, G. (1972). \"Equilibrium constants from a modified Redlich-Kwong equation of state.\" Chem. Eng. Sci. 27(6), 1197-1203."]
 [source]
 standard = "NeqSim master `AttractiveTermPrLeeKesler`"

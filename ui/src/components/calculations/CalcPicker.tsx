@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 
+import { manualHome } from "../../manual";
 import type { CalcForm } from "../../wire/types";
 
 const NAMESPACES: { id: string; label: string }[] = [
@@ -40,7 +41,8 @@ export function CalcPicker({
     (form) =>
       needle === "" ||
       form.name.toLowerCase().includes(needle) ||
-      form.id.toLowerCase().includes(needle),
+      form.id.toLowerCase().includes(needle) ||
+      form.summary.toLowerCase().includes(needle),
   );
   const common = COMMON.map((id) => forms.find((form) => form.id === id)).filter(
     (form): form is CalcForm => form !== undefined,
@@ -77,6 +79,9 @@ export function CalcPicker({
         })}
         {matches.length === 0 ? <p className="note">nothing matches “{query}”</p> : null}
       </div>
+      <a className="calc-manual-link" href={manualHome()} target="_blank" rel="noreferrer">
+        Browse the user manual
+      </a>
     </div>
   );
 }
@@ -92,6 +97,9 @@ function Entry({ form, onAdd }: { form: CalcForm; onAdd: (form: CalcForm) => voi
       >
         {form.name}
       </button>
+      <p className="calc-entry-summary" title={form.summary}>
+        {form.summary}
+      </p>
       {form.available ? null : <p className="refusal">{form.refusal}</p>}
     </div>
   );
