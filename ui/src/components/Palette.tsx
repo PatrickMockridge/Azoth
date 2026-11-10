@@ -50,7 +50,6 @@ export function Palette({ forms, onAdd }: PaletteProps) {
               onClick={() => onAdd(form.id)}
             >
               <span className="name">{form.name}</span>
-              <span className="tag">{form.parameters.length}</span>
             </button>
           ))}
         </div>

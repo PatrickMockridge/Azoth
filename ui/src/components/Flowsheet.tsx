@@ -163,9 +163,37 @@ function derive(
 ): { nodes: Node[]; edges: Edge[] } {
   const streams = envelope.session?.streams ?? {};
   const forms = new Map((catalogue?.unit_ops ?? []).map((form) => [form.id, form]));
-  const flagged = new Set(
-    envelope.diagnostics.map((diagnostic) => diagnosticNode(diagnostic.target)),
-  );
+
+  // **A node's worst diagnostic and an edge's diagnostic are two readings of the same list.**
+  // The canvas used one boolean for a node, so a warning looked like an error; and it did not mark
+  // an edge at all. Both are derived here, not held as a second state.
+  const severityById = new Map<string, "error" | "warning">();
+  const severityByEdge = new Map<string, "error" | "warning">();
+  for (const diagnostic of envelope.diagnostics) {
+    const id = diagnosticNode(diagnostic.target);
+    if (id !== "") {
+      const current = severityById.get(id);
+      if (current !== "error") {
+        severityById.set(id, diagnostic.severity);
+      }
+    }
+    if (diagnostic.target.kind === "edge") {
+      severityByEdge.set(
+        `${diagnostic.target.from}\u0000${diagnostic.target.to}`,
+        diagnostic.severity,
+      );
+    }
+  }
+
+  const connected = new Set<string>();
+  for (const edge of envelope.flowsheet.graph.edges) {
+    if (edge.sourceHandle !== null) {
+      connected.add(edge.sourceHandle);
+    }
+    if (edge.targetHandle !== null) {
+      connected.add(edge.targetHandle);
+    }
+  }
 
   const nodes: Node[] = envelope.flowsheet.graph.nodes.map((node: GraphNode) => {
     const form = node.data.unit === undefined ? undefined : forms.get(node.data.unit);
@@ -173,7 +201,8 @@ function derive(
       graph: node,
       ...(form === undefined ? {} : { form }),
       readout: readoutOf(node, envelope, units),
-      bad: flagged.has(node.id),
+      severity: severityById.get(node.id) ?? null,
+      connected,
     };
     return {
       id: node.id,
@@ -197,8 +226,18 @@ function derive(
       animated: edge.data.kind === "recycle",
       // **A tear is stroked in its own hue**, and the class is where the stylesheet learns which
       // edge this is: `animated` is xyflow's own and says nothing about *why* the edge moves, and
-      // `domAttributes` is typed as SVG attributes, which `data-*` is not.
-      className: edge.data.kind === "recycle" ? "tear" : "",
+      // `domAttributes` is typed as SVG attributes, which `data-*` is not. A diagnostic on the
+      // pair adds the same reading in the error/warning colour.
+      className: [
+        edge.data.kind === "recycle" ? "tear" : "",
+        severityByEdge.get(`${edge.data.from}\u0000${edge.data.to}`) === "error"
+          ? "bad"
+          : severityByEdge.get(`${edge.data.from}\u0000${edge.data.to}`) === "warning"
+            ? "warn"
+            : "",
+      ]
+        .filter((part) => part !== "")
+        .join(" "),
       ...(stream === undefined
         ? {}
         : {

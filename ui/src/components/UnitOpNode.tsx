@@ -37,7 +37,10 @@ export type NodePayload = {
   graph: GraphNode;
   form?: Form;
   readout: Readout[];
-  bad: boolean;
+  /** The worst diagnostic about this object, or none. */
+  severity: "error" | "warning" | null;
+  /** The handles an edge already uses, so a port can show whether it is wired. */
+  connected: ReadonlySet<string>;
 };
 
 /**
@@ -82,20 +85,40 @@ function handlesOf(port: FormPort, graph: GraphNode): string[] {
   return ports?.find((candidate) => candidate.name === port.name)?.handles ?? [];
 }
 
-/** Every handle this node draws, with the place its port's side puts it. */
-function slotsOf(form: Form | undefined, graph: GraphNode): Slot[] {
+/**
+ * Every handle this node draws, with the place its port's side puts it.
+ *
+ * **The distribution is per side, not per port.** A port's handles used to be spread within that
+ * port alone, so two single-handle ports on the same side both landed at 50% and one was drawn on
+ * top of the other - the heat exchanger's two inlets looked like one. A side is the space a reader
+ * sees, so every handle on one is distributed across it in declaration order.
+ */
+export function portSlots(form: Form | undefined, graph: GraphNode): Slot[] {
   const unit = graph.data.unit ?? "";
-  return (form?.ports ?? []).flatMap((port) =>
-    handlesOf(port, graph).map((handle, index, all) => ({
+  const slots: Slot[] = (form?.ports ?? []).flatMap((port) =>
+    handlesOf(port, graph).map((handle) => ({
       handle,
       port: port.name,
       direction: port.direction,
       side: sideOf(unit, port.name, port.direction),
-      // Evenly along the side, never at an end: a handle at 0% sits on the corner an edge would
-      // leave from anyway, and one at 100% reads as belonging to the next side.
-      at: (index + 1) / (all.length + 1),
+      at: 0,
     })),
   );
+
+  const sides = new Map<Side, Slot[]>();
+  for (const slot of slots) {
+    const group = sides.get(slot.side) ?? [];
+    group.push(slot);
+    sides.set(slot.side, group);
+  }
+  for (const group of sides.values()) {
+    // Evenly along the side, never at an end: a handle at 0% sits on the corner an edge would
+    // leave from anyway, and one at 100% reads as belonging to the next side.
+    group.forEach((slot, index) => {
+      slot.at = (index + 1) / (group.length + 1);
+    });
+  }
+  return slots;
 }
 
 /** The offset along a side a handle sits at, which is the axis the side does not fix. */
@@ -108,18 +131,19 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
   // **No cast.** The canvas is handed this payload by `Flowsheet`, which builds it from the graph
   // document, and `NodeProps<AppNode>` is what makes that a statement about the type rather than
   // an assertion in the component that reads it.
-  const { graph, form, readout, bad } = data;
+  const { graph, form, readout, severity, connected } = data;
 
   if (graph.role !== "instance") {
     // A boundary stream: one handle on the side the stream leaves or arrives at, named by the
     // stream itself, so a feed's handle id is the feed's own path.
     const leaving = graph.role === "input";
     return (
-      <div className={`stream${selected === true ? " selected" : ""}${bad ? " bad" : ""}`}>
+      <div className={`stream${selected === true ? " selected" : ""}${severity === "error" ? " bad" : severity === "warning" ? " warn" : ""}`}>
         <Handle
           type={leaving ? "source" : "target"}
           position={leaving ? Position.Right : Position.Left}
           id={graph.data.name}
+          className={`handle${connected.has(graph.data.name) ? " connected" : " unconnected"}`}
         />
         {graph.data.name}
         <div className="hint">{graph.role === "input" ? "feed" : "product"}</div>
@@ -133,14 +157,15 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
   }
 
   return (
-    <div className={`unit${selected === true ? " selected" : ""}${bad ? " bad" : ""}`}>
-      {slotsOf(form, graph).map((slot) => (
+    <div className={`unit${selected === true ? " selected" : ""}${severity === "error" ? " bad" : severity === "warning" ? " warn" : ""}`}>
+      {portSlots(form, graph).map((slot) => (
         <Handle
           key={slot.handle}
           type={slot.direction === "in" ? "target" : "source"}
           position={POSITION[slot.side]}
           id={slot.handle}
           title={slot.port}
+          className={`handle${connected.has(slot.handle) ? " connected" : " unconnected"}`}
           style={offset(slot)}
         />
       ))}
@@ -148,7 +173,7 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
         kind={glyphFor(graph.data.unit)}
         sense={senseFor(graph.data.unit)}
         selected={selected === true}
-        flagged={bad}
+        flagged={severity === "error"}
       />
       <header>{graph.data.unit_name ?? graph.data.unit ?? "unknown unit"}</header>
       <div className="id">
