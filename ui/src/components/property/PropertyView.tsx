@@ -163,7 +163,13 @@ function sheet(
       return result === undefined ? null : <StagesSheet result={result} units={units} />;
     case "conditions":
       return node === null ? null : (
-        <ConditionsSheet envelope={envelope} node={node} units={units} onCommand={onCommand} />
+        <ConditionsSheet
+          catalogue={catalogue}
+          envelope={envelope}
+          node={node}
+          units={units}
+          onCommand={onCommand}
+        />
       );
     case "composition":
       return node === null ? null : (

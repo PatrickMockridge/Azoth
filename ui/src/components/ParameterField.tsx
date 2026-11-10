@@ -13,6 +13,8 @@
  * physics and not about the display.
  */
 
+import { useState } from "react";
+
 import { displayUnitOf, inDisplayUnit, type Units } from "../state/units";
 import {
   boundsOf,
@@ -35,11 +37,24 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
   const control = controlFor(parameter.kind);
   const bounds = boundsOf(parameter);
   const text = fieldTextIn(value, parameter.unit, units);
+
+  /**
+   * **The field is a draft until the typing stops.**
+   *
+   * An edit used to be one command per keystroke: `340` was three commands, two of them states
+   * the checker could see, and a served door made three round trips. The draft is form state and
+   * not a document copy; Apply is blur or Enter, Escape throws it away, and a select still
+   * commits at once because choosing an option is a finished gesture.
+   */
+  const [draft, setDraft] = useState<string | null>(null);
+  const shownText = draft ?? text;
+  const pending =
+    draft === null ? value : commandValueIn(parameter.kind, draft, parameter.unit, units);
   // **The violation is checked in the document's unit**, which is the value this holds: the
   // model's range is stated against the physics, so a temperature typed in `°F` has already
   // become a kelvin by the time it is compared with the bound.
-  const outside = violates(bounds, value);
-  const empty = value === undefined || value === null;
+  const outside = violates(bounds, pending);
+  const empty = (draft ?? text) === "";
   // The unit the field shows, and the bounds in it - so an input's own `min`/`max` are the
   // numbers a reader sees rather than the ones the document holds.
   const shown = displayUnitOf(units, parameter.unit);
@@ -49,6 +64,12 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
       : inDisplayUnit(units, bound, parameter.unit);
   const write = (raw: string) =>
     onChange(commandValueIn(parameter.kind, raw, parameter.unit, units));
+  const commit = () => {
+    if (draft !== null) {
+      write(draft);
+      setDraft(null);
+    }
+  };
 
   return (
     <div className="field">
@@ -90,10 +111,18 @@ export function ParameterField({ parameter, value, units, onChange }: ParameterF
       ) : (
         <input
           className={outside ? "violating" : ""}
-          value={text}
+          value={shownText}
           inputMode={control === "number" ? "decimal" : "text"}
           placeholder={control === "list" ? "0.5, 0.3, 0.2" : ""}
-          onChange={(event) => write(event.target.value)}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              commit();
+            } else if (event.key === "Escape") {
+              setDraft(null);
+            }
+          }}
           {...(at(bounds.min) === null ? {} : { min: at(bounds.min) as number })}
           {...(at(bounds.max) === null ? {} : { max: at(bounds.max) as number })}
         />

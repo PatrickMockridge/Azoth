@@ -1,4 +1,5 @@
 import { status, statusClass } from "./TitleStrip";
+import type { Units } from "../state/units";
 import type { Envelope } from "../wire/types";
 
 /**
@@ -10,7 +11,8 @@ import type { Envelope } from "../wire/types";
  * way out, so "units: SI" is a statement of fact - see `docs/src/architecture/middleware.md` on
  * what a unit set would take.
  */
-export function StatusBar({ envelope }: { envelope: Envelope | null }) {
+export function StatusBar({ envelope, units }: { envelope: Envelope | null; units: Units }) {
+  const set = units.sets.find((candidate) => candidate.id === units.active);
   const instances =
     envelope?.flowsheet.graph.nodes.filter((node) => node.role === "instance").length ?? 0;
   const recycles =
@@ -45,7 +47,10 @@ export function StatusBar({ envelope }: { envelope: Envelope | null }) {
       )}
       <span className="spacer" />
       <span>
-        units <span className="value">SI</span>
+        units{" "}
+        <span className="value">
+          {set?.name ?? (units.active === "" ? "—" : units.active)}
+        </span>
       </span>
       <span>
         document{" "}

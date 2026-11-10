@@ -129,9 +129,10 @@ describe("the editor", () => {
     fireEvent.click(heater as HTMLElement);
     await waitFor(() => expect(screen.getAllByText("outlet_temperature").length).toBeGreaterThan(0));
 
-    // A field's `onChange` is what the app listens to; the value goes out as `set_parameter`.
+    // A field commits when the typing stops; the value goes out as one `set_parameter`.
     const field = screen.getByDisplayValue("320");
     fireEvent.change(field, { target: { value: "340" } });
+    fireEvent.blur(field);
 
     // The edit landed, so the values are older than the document...
     await waitFor(() => expect(pill(container)).toBe("stale"));
@@ -344,6 +345,7 @@ describe("the editor", () => {
 
     const chooser = () => container.querySelector<HTMLSelectElement>("select.units");
     fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "field" } });
+    expect(container.querySelector(".status-bar")?.textContent).toContain("Field");
     fireEvent.click(container.querySelector<HTMLElement>('[data-id="instance:hx1"]') as HTMLElement);
     await waitFor(() => expect(screen.getAllByText("outlet_temperature").length).toBeGreaterThan(0));
 
@@ -355,6 +357,7 @@ describe("the editor", () => {
     const field = screen.getByDisplayValue("116.33");
 
     fireEvent.change(field, { target: { value: "200" } });
+    fireEvent.blur(field);
     await waitFor(() => expect(pill(container)).toBe("stale"));
 
     // **Back to SI to read what was stored.** 200 °F is 366.483 K, so a document that received the
@@ -490,5 +493,30 @@ describe("the editor", () => {
     expect(window.localStorage.getItem("azoth.units")).toBe("field");
     // The run did not change: only what is drawn did. The workbook's rows are the same rows.
     expect(container.querySelectorAll(".dock .grid tbody tr")).toHaveLength(7);
+  });
+
+  it("selects a feed instead of deleting it, and edits it through the feed form", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const row = container.querySelector<HTMLElement>(".side .boundary-row .entry");
+    expect(row).not.toBeNull();
+    fireEvent.click(row as HTMLElement);
+
+    // The click selected the feed, which is what the old row did not do: it removed the feed and
+    // every connection that drew from it.
+    expect(nodeIds(container)).toContain("input:feed_1");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Edit feed" })).toBeDefined());
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit feed" }));
+    const conditions = container.querySelectorAll<HTMLInputElement>(
+      ".feed-editor .conditions input",
+    );
+    expect(conditions).toHaveLength(3);
+    fireEvent.change(conditions[2] as HTMLInputElement, { target: { value: "340" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply changes" }));
+
+    await waitFor(() => expect(pill(container)).toBe("stale"));
+    expect(nodeIds(container)).toContain("input:feed_1");
   });
 });

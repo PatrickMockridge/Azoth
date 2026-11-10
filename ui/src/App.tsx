@@ -387,7 +387,13 @@ export function App() {
             }
           />
           {envelope === null ? null : (
-            <BoundaryPanel envelope={envelope} units={units} onCommand={send} />
+            <BoundaryPanel
+              catalogue={catalogue}
+              envelope={envelope}
+              units={units}
+              onCommand={send}
+              onSelect={setSelected}
+            />
           )}
         </aside>
 
@@ -476,7 +482,7 @@ export function App() {
         )}
       </Dock>
 
-      <StatusBar envelope={envelope} />
+      <StatusBar envelope={envelope} units={units} />
     </div>
   );
 }
