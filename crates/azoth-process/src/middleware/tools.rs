@@ -195,6 +195,11 @@ pub fn tools(palette: &[UnitOpSpec]) -> Vec<Tool> {
                 req("y", number("The row, in pixels.")),
             ],
         ),
+        tool(
+            "set_name",
+            "Set the case's name, which is the heading a reader and a report use.",
+            vec![req("name", string("The case's name."))],
+        ),
     ]
 }
 

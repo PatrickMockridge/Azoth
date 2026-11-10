@@ -45,6 +45,8 @@ function stubFetch(): void {
 async function open() {
   // The first-run card is another test's subject; these tests are about the editor behind it.
   window.localStorage.setItem("azoth.welcome", "seen");
+  // Each case starts in SI; a unit choice from an earlier test is a reader's, not this case's.
+  window.localStorage.removeItem("azoth.units");
   const { App } = await import("../src/App");
   const rendered = render(<App />);
   // The demo's first node only exists once the module has loaded and the document was opened.
@@ -253,7 +255,7 @@ describe("the editor", () => {
     // library holds, and it has to be the numbers the canvas is drawing.
     const download = stubDownload();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(download.names).toEqual(["flowsheets.demo.toml"]));
+    await waitFor(() => expect(download.names).toEqual(["Feed_pump_heat_separate_recycle.toml"]));
     expect(await textOf(only(download.blobs))).toContain(`hx1 = [${after[0]}.0, ${after[1]}.0]`);
   });
 
@@ -567,6 +569,35 @@ describe("the editor", () => {
 
     await waitFor(() => expect(pill(container)).toBe("stale"));
     expect(nodeIds(container)).toContain("input:feed_1");
+  });
+
+  it("names the case, saves by that name, and marks it unsaved until it is saved", async () => {
+    stubFetch();
+    const download = stubDownload();
+    const { container } = await open();
+
+    const name = screen.getByLabelText("Case name");
+    fireEvent.change(name, { target: { value: "My case" } });
+    fireEvent.blur(name);
+    await waitFor(() => expect(screen.getByDisplayValue("My case")).toBeDefined());
+    expect(screen.getByText("unsaved")).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(download.names).toEqual(["My_case.toml"]));
+    await waitFor(() => expect(screen.queryByText("unsaved")).toBeNull());
+
+    // An edit is unsaved again; New asks first, and a no leaves the document in place.
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    fireEvent.click(container.querySelector<HTMLElement>('[data-id="instance:hx1"]') as HTMLElement);
+    const field = await screen.findByDisplayValue("320");
+    fireEvent.change(field, { target: { value: "330" } });
+    fireEvent.blur(field);
+    await waitFor(() => expect(screen.getByText("unsaved")).toBeDefined());
+
+    Object.defineProperty(window, "confirm", { value: () => false, configurable: true });
+    fireEvent.click(screen.getByRole("button", { name: "New" }));
+    expect(idPill(container)).toBe("flowsheets.demo");
   });
 
   it("prints a solved case and exports the workbook", async () => {

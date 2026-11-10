@@ -1,4 +1,5 @@
 import { asExecutionOrder } from "../wire/decode";
+import { DraftField } from "./DraftField";
 import { statusClass as classOf, statusWord } from "../state/status";
 import type { Envelope, ExecutionOrder } from "../wire/types";
 import type { Theme } from "../state/theme";
@@ -17,6 +18,8 @@ export function TitleStrip({
   session,
   theme,
   units,
+  unsaved,
+  onName,
   onOrder,
   onTheme,
   onUnits,
@@ -26,6 +29,9 @@ export function TitleStrip({
   session: boolean;
   theme: Theme;
   units: Units;
+  /** The document differs from the one last opened or saved. */
+  unsaved: boolean;
+  onName: (name: string) => void;
   onOrder: (order: ExecutionOrder) => void;
   onTheme: () => void;
   onUnits: (id: string) => void;
@@ -48,6 +54,25 @@ export function TitleStrip({
       >
         not for design work yet
       </a>
+      {envelope === null ? null : (
+        <div className="case-name">
+          <DraftField
+            value={envelope.flowsheet.name}
+            kind="text"
+            label="Case name"
+            onCommit={(value) => {
+              if (typeof value === "string") {
+                onName(value);
+              }
+            }}
+          />
+          {unsaved ? (
+            <span className="unsaved" title="the document has edits that are not saved">
+              unsaved
+            </span>
+          ) : null}
+        </div>
+      )}
       <span className="spacer" />
       {envelope === null ? null : (
         <>

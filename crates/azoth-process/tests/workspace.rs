@@ -31,6 +31,21 @@ fn opened() -> Workspace {
 }
 
 #[test]
+fn a_case_has_a_name_the_header_can_set() {
+    let mut workspace = opened();
+    assert_eq!(
+        workspace.flowsheet().name,
+        "Feed, pump, heat, separate, recycle"
+    );
+    workspace
+        .apply(&Command::SetName {
+            name: "North field test".into(),
+        })
+        .expect("the name lands");
+    assert_eq!(workspace.flowsheet().name, "North field test");
+}
+
+#[test]
 fn an_edit_rechecks_and_the_values_go_stale() {
     let mut workspace = opened();
     assert!(workspace.ok(), "the shipped document is sound");

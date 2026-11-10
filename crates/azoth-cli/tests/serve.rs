@@ -251,8 +251,8 @@ fn the_catalogue_is_the_palette_the_process_loaded() {
     assert_eq!(status, 200);
     assert_eq!(
         catalogue["tools"].as_array().map(Vec::len),
-        Some(15),
-        "the fifteen commands, which `/mcp` serves the same way"
+        Some(16),
+        "the sixteen commands, which `/mcp` serves the same way"
     );
 
     // **A body that asks for two things has two answers**, so it is a request this server cannot

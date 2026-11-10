@@ -59,6 +59,31 @@
   background: var(--warn-tint);
 }
 
+.bar .case-name {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.bar .case-name input {
+  width: 12rem;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.bar .unsaved {
+  color: var(--warn);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+}
+
 .bar .build {
   color: var(--text-dim);
   font-size: var(--fs-xs);

@@ -1885,6 +1885,28 @@
         "type": "object"
       },
       "name": "set_position"
+    },
+    {
+      "description": "Set the case's name, which is the heading a reader and a report use.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "set_name",
+            "description": "The command's name."
+          },
+          "name": {
+            "description": "The case's name.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "set_name"
     }
   ],
   "unit_ops": [

@@ -51,6 +51,12 @@ import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types"
 const HOSTED =
   "azoth serve holds one document for the life of its process — restart it with --flowsheet F to serve another";
 
+/** The file stem for a case: its name, or its id when the name has nothing usable. */
+function fileStem(name: string, id: string): string {
+  const stem = name.trim().replace(/[^A-Za-z0-9._-]+/g, "_");
+  return stem === "" ? id : stem;
+}
+
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
@@ -83,6 +89,9 @@ export function App() {
    * anything, and the card is one click from gone.
    */
   const [welcome, setWelcome] = useState(readWelcome);
+
+  /** The document text as it was last opened or saved, so "unsaved" is a fact and not a guess. */
+  const [savedDocument, setSavedDocument] = useState<string | null>(null);
 
   /** The printable report, a view over the last run and not a second call. */
   const [reporting, setReporting] = useState(false);
@@ -137,6 +146,7 @@ export function App() {
         }
         setSession(opened.session);
         setEnvelope(opened.envelope);
+        setSavedDocument(opened.envelope.flowsheet.document);
         setSelected(null);
         setFault(null);
       },
@@ -169,6 +179,17 @@ export function App() {
     applyTheme(theme);
   }, [theme]);
 
+  /**
+   * The document has edits that were never saved.
+   *
+   * **Not the same fact as `dirty`,** which says the values are older than the document. A case
+   * can be run and still unsaved, and both have to be said separately.
+   */
+  const unsaved =
+    envelope !== null &&
+    savedDocument !== null &&
+    envelope.flowsheet.document !== savedDocument;
+
   /** Hand a document to the library: the Demo button, New, or a file. */
   const open = useCallback(
     (text: string) => {
@@ -176,9 +197,15 @@ export function App() {
       if (loaded === null || loaded.kind !== "openable") {
         return;
       }
+      if (
+        unsaved &&
+        !window.confirm("This case has unsaved changes. Open another and lose them?")
+      ) {
+        return;
+      }
       land(loaded.open(text));
     },
-    [land],
+    [land, unsaved],
   );
 
   /** The card has been dealt with: gone for this visit, and not shown again here. */
@@ -303,10 +330,35 @@ export function App() {
     if (envelope === null) {
       return;
     }
-    void saveDocument(`${envelope.flowsheet.id}.toml`, envelope.flowsheet.document).catch(
+    const document = envelope.flowsheet.document;
+    const stem = fileStem(envelope.flowsheet.name, envelope.flowsheet.id);
+    void saveDocument(`${stem}.toml`, document).then(
+      () => setSavedDocument(document),
       (error: unknown) => setFault(String(error)),
     );
   }, [envelope]);
+
+  /** Set the case's own name, which the report and the saved file take. */
+  const setCaseName = useCallback(
+    (name: string) => {
+      if (name.trim() !== "") {
+        send({ command: "set_name", name: name.trim() });
+      }
+    },
+    [send],
+  );
+
+  useEffect(() => {
+    if (!unsaved) {
+      return;
+    }
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
 
   const node = envelope === null ? null : selectedNode(envelope, selected);
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
@@ -318,6 +370,8 @@ export function App() {
         session={session !== null}
         theme={theme}
         units={units}
+        unsaved={unsaved}
+        onName={setCaseName}
         onOrder={setOrder}
         onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
         onUnits={chooseUnits}

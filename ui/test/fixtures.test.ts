@@ -64,7 +64,7 @@ describe("the catalogue", () => {
     expect(catalogue.unit_ops.filter((entry) => entry.model === null).map((e) => e.id)).toEqual([
       "unit_ops.simple_absorber",
     ]);
-    expect(catalogue.tools).toHaveLength(15);
+    expect(catalogue.tools).toHaveLength(16);
   });
 
   it("carries the kind a field needs, which is nowhere in the palette", () => {
