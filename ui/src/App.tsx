@@ -51,6 +51,12 @@ import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types"
 const HOSTED =
   "azoth serve holds one document for the life of its process — restart it with --flowsheet F to serve another";
 
+/** One document the editor has stood at, for undo and redo. */
+interface Snapshot {
+  document: string;
+  selected: string | null;
+}
+
 /** The file stem for a case: its name, or its id when the name has nothing usable. */
 function fileStem(name: string, id: string): string {
   const stem = name.trim().replace(/[^A-Za-z0-9._-]+/g, "_");
@@ -93,6 +99,17 @@ export function App() {
   /** The document text as it was last opened or saved, so "unsaved" is a fact and not a guess. */
   const [savedDocument, setSavedDocument] = useState<string | null>(null);
 
+  /**
+   * **Undo is a history of documents, not a stack of inverse commands.** Every envelope carries
+   * `flowsheet.document`, so a snapshot is the save format; a restore opens it through the same
+   * door an example does. The strings are not a second live document and nothing derives from
+   * them except the undo itself.
+   */
+  const [history, setHistory] = useState<Snapshot[]>([]);
+  const [future, setFuture] = useState<Snapshot[]>([]);
+  const lastDocument = useRef<string | null>(null);
+  const restoring = useRef(false);
+
   /** The printable report, a view over the last run and not a second call. */
   const [reporting, setReporting] = useState(false);
   const canReport =
@@ -107,6 +124,8 @@ export function App() {
    * executor's own sentence beside the checker's list; the Messages panel is where a fix starts.
    */
   const canSolve = session !== null && envelope !== null && envelope.ok;
+  const canUndo = openable && history.length > 0;
+  const canRedo = openable && future.length > 0;
 
   const middleware = useRef<Door | null>(null);
 
@@ -147,6 +166,11 @@ export function App() {
         setSession(opened.session);
         setEnvelope(opened.envelope);
         setSavedDocument(opened.envelope.flowsheet.document);
+        // A newly opened case has no edits behind it.
+        setHistory([]);
+        setFuture([]);
+        lastDocument.current = opened.envelope.flowsheet.document;
+        restoring.current = false;
         setSelected(null);
         setFault(null);
       },
@@ -159,6 +183,108 @@ export function App() {
       },
     );
   }, []);
+
+  /** Record the document an edit is about to leave, so Undo has somewhere to return. */
+  useEffect(() => {
+    if (envelope === null) {
+      return;
+    }
+    const document = envelope.flowsheet.document;
+    if (lastDocument.current === null) {
+      lastDocument.current = document;
+      return;
+    }
+    if (document === lastDocument.current) {
+      return;
+    }
+    if (restoring.current) {
+      restoring.current = false;
+      lastDocument.current = document;
+      return;
+    }
+    const previous = lastDocument.current;
+    lastDocument.current = document;
+    setHistory((entries) => [...entries.slice(-49), { document: previous, selected: null }]);
+    setFuture([]);
+  }, [envelope]);
+
+  /** Restore a snapshot through the door, without resetting the history it came from. */
+  const restore = useCallback((snapshot: Snapshot) => {
+    const loaded = middleware.current;
+    if (loaded === null || loaded.kind !== "openable") {
+      return;
+    }
+    restoring.current = true;
+    void loaded.open(snapshot.document).then(
+      (opened) => {
+        setSession(opened.session);
+        setEnvelope(opened.envelope);
+        setSelected(snapshot.selected);
+        setFault(null);
+      },
+      (error: unknown) => {
+        restoring.current = false;
+        setFault(String(error));
+      },
+    );
+  }, []);
+
+  const undo = useCallback(() => {
+    if (history.length === 0 || envelope === null) {
+      return;
+    }
+    const previous = history[history.length - 1];
+    if (previous === undefined) {
+      return;
+    }
+    setFuture((entries) => [
+      { document: envelope.flowsheet.document, selected },
+      ...entries.slice(0, 49),
+    ]);
+    setHistory(history.slice(0, -1));
+    restore(previous);
+  }, [history, envelope, selected, restore]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0 || envelope === null) {
+      return;
+    }
+    const next = future[0];
+    if (next === undefined) {
+      return;
+    }
+    setHistory((entries) => [
+      ...entries.slice(-49),
+      { document: envelope.flowsheet.document, selected },
+    ]);
+    setFuture(future.slice(1));
+    restore(next);
+  }, [future, envelope, selected, restore]);
+
+  // **The keyboard path is the conventional one**, and it stays out of a text field so the
+  // browser's own undo is not stolen from a draft.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest("input, textarea, select, [contenteditable='true']") !== null
+      ) {
+        return;
+      }
+      event.preventDefault();
+      if (event.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   /**
    * The library's units and sets, resolved against the catalogue and the remembered choice.
@@ -391,6 +517,22 @@ export function App() {
             }
           >
             Solve
+          </button>
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            title={openable ? "undo the last edit" : "undo is not available on a served document"}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={!canRedo}
+            title={openable ? "redo the last undone edit" : "redo is not available on a served document"}
+          >
+            Redo
           </button>
           <button
             type="button"

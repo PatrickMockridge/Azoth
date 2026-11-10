@@ -227,6 +227,29 @@ describe("the editor", () => {
     expect(screen.queryByText(/connections; it takes one/)).toBeNull();
   });
 
+  it("undoes and redoes an edit through a document snapshot", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const heaterEntry = [...container.querySelectorAll<HTMLElement>("aside.side .entry")].find(
+      (entry) => entry.textContent?.includes("Heater"),
+    );
+    fireEvent.click(heaterEntry as HTMLElement);
+    await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Undo" })).toHaveProperty("disabled", false),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(nodeIds(container)).not.toContain("instance:heater_1"));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Redo" })).toHaveProperty("disabled", false),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    await waitFor(() => expect(nodeIds(container)).toContain("instance:heater_1"));
+  });
+
   /**
    * **The one wire command no other gesture test reaches.** `set_position` goes out of
    * `onNodeDragStop`, and a drag is the one gesture a synthetic event cannot produce cheaply:
