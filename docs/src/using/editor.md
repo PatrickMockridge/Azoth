@@ -11,6 +11,8 @@ uploaded.
 
 ## First five minutes
 
+![The welcome card over the demo flowsheet](../images/welcome.png)
+
 1. The demo opens on its own: a feed, a pump, a heater, a separator and a liquid recycle.
 2. Press **Solve**. The status changes from `stale` to `solved`, and each connection shows the
    temperature and pressure the run reached.
