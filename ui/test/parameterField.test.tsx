@@ -80,5 +80,58 @@ describe("a parameter field", () => {
     expect(description.className).toBe("description");
     expect(input?.getAttribute("aria-describedby")).toContain(description.id);
     expect(screen.getByText(/checked limits/i)).toBeDefined();
+    // **The unit is beside the value, not in the text column.** Its display spelling is the
+    // engineering one; the raw catalogue string stays on the title for a reader who needs it.
+    const unit = container.querySelector(".field-control .field-value .unit");
+    expect(unit?.textContent).toBe("kg/m³");
+    expect(unit?.getAttribute("title")).toBe("kg/m**3");
+    expect(container.querySelector(".field-text .unit")).toBeNull();
+    expect(container.querySelector(".status.required")?.textContent).toBe("required");
+  });
+
+  it("marks an optional field persistently", () => {
+    const separator = catalogue.unit_ops?.find((entry) => entry.id === "unit_ops.separator");
+    const optional = separator?.parameters.find((entry) => entry.name === "heat_input");
+    if (optional === undefined) {
+      throw new Error("the separator's heat input is not in the catalogue");
+    }
+    const { container } = render(
+      <ParameterField
+        layout="row"
+        parameter={optional}
+        value={0}
+        units={units}
+        onChange={() => {}}
+      />,
+    );
+    expect(container.querySelector(".status.optional")?.textContent).toBe("optional");
+  });
+
+  it("shows no unit label for a dimensionless value", () => {
+    if (parameter === undefined) {
+      throw new Error("the pump's efficiency is not in the catalogue");
+    }
+    const { container } = render(
+      <ParameterField layout="row" parameter={parameter} value={0.75} units={units} onChange={() => {}} />,
+    );
+    expect(container.querySelector(".field-value .unit")).toBeNull();
+  });
+
+  it("keeps the flowsheet's stacked field unit in its head", () => {
+    const pump = catalogue.unit_ops?.find((entry) => entry.id === "unit_ops.pump");
+    const pressure = pump?.parameters.find((entry) => entry.name === "outlet_pressure");
+    if (pressure === undefined) {
+      throw new Error("the pump's outlet pressure is not in the catalogue");
+    }
+    const { container } = render(
+      <ParameterField
+        parameter={pressure}
+        value={1_000_000}
+        units={units}
+        onChange={() => {}}
+      />,
+    );
+    expect(container.querySelector(".field .head .unit")?.textContent).toBe("Pa");
+    expect(container.querySelector(".field-control")).toBeNull();
   });
 });

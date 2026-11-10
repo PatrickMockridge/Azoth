@@ -8,7 +8,7 @@
 import { useEffect, useRef } from "react";
 
 import { quantityParts } from "../../wire/field";
-import { displayUnitOf, type Units } from "../../state/units";
+import { displayUnitOf, engineeringUnit, type Units } from "../../state/units";
 import type {
   CalcForm,
   CalcInput,
@@ -29,8 +29,17 @@ export function CalcReportView({
   onClose: () => void;
 }) {
   const close = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const previous = document.activeElement;
     close.current?.focus();
+    return () => {
+      if (previous instanceof HTMLElement) {
+        previous.focus();
+      }
+    };
+  }, []);
+  useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -41,7 +50,31 @@ export function CalcReportView({
   }, [onClose]);
 
   return (
-    <div className="report" role="dialog" aria-modal="true" aria-label="Calculation book">
+    <div
+      ref={dialog}
+      className="report"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Calculation book"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") {
+          return;
+        }
+        const buttons = [...(dialog.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        if (first === undefined || last === undefined) {
+          return;
+        }
+        if (event.shiftKey && document.activeElement === first) {
+          last.focus();
+          event.preventDefault();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          first.focus();
+          event.preventDefault();
+        }
+      }}
+    >
       <header className="report-head">
         <div>
           <h2>{envelope.book.name}</h2>
@@ -206,7 +239,7 @@ function unitText(unit: string | null, units: Units): string {
   if (unit === null || unit === "dimensionless") {
     return "—";
   }
-  return displayUnitOf(units, unit) ?? unit;
+  return engineeringUnit(displayUnitOf(units, unit) ?? unit);
 }
 
 function inputText(
@@ -249,7 +282,8 @@ function outputUnit(
   units: Units,
 ): string {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-    return displayUnitOf(units, value.unit) ?? value.unit;
+    const shown = displayUnitOf(units, value.unit) ?? value.unit;
+    return shown === "dimensionless" ? "—" : engineeringUnit(shown);
   }
   return unitText(output.unit, units);
 }

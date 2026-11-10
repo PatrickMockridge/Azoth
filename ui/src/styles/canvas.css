@@ -13,7 +13,7 @@
   background: var(--bg-canvas);
 }
 
-.unit {
+.unit-plate {
   position: relative;
   /* A 72px glyph plus a label on each side; the label never has to sit on the drawing. */
   min-width: 190px;
@@ -21,6 +21,9 @@
    * **A fixed plate, so the nozzles do not move when a readout appears.** Handles are placed at
    * percentages of the node's measured height; a node that grew with its result rows moved every
    * edge endpoint under the reader. The readout is clipped here and shown in full in the overview.
+   *
+   * **The plate is not `.unit`.** `unit` is the semantic class of a unit string in a field, a table
+   * or a result; an unscoped `.unit` rule here put a 168px plate around every one of them.
    */
   height: 168px;
   overflow: hidden;
@@ -30,9 +33,9 @@
   box-shadow: var(--e-node);
 }
 
-.unit header,
-.unit .id,
-.unit .readout {
+.unit-plate header,
+.unit-plate .id,
+.unit-plate .readout {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -93,34 +96,34 @@
   background: var(--bg-canvas);
 }
 
-.unit.selected {
+.unit-plate.selected {
   border-color: var(--accent);
 }
 
-.unit.bad {
+.unit-plate.bad {
   border-color: var(--error);
 }
 
 /* A warning is not a refusal. */
-.unit.warn {
+.unit-plate.warn {
   border-color: var(--warn);
 }
 
-.unit header {
+.unit-plate header {
   padding: var(--s3) var(--s5);
   border-bottom: 1px solid var(--line);
   font-weight: 600;
   color: var(--text-strong);
 }
 
-.unit .id {
+.unit-plate .id {
   padding: var(--s1) var(--s5) var(--s4);
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
 }
 
-.unit .readout {
+.unit-plate .readout {
   padding: 0 var(--s5) var(--s4);
   font-size: var(--fs-xs);
   color: var(--ok);

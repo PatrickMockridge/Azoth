@@ -35,7 +35,7 @@
   z-index: 20;
   overflow-y: auto;
   padding: var(--s6);
-  background: var(--bg);
+  background: var(--bg-app);
   color: var(--text);
 }
 
@@ -168,7 +168,6 @@
   }
 
   :root {
-    --bg: #fff;
     --bg-panel: #fff;
     --bg-raised: #fff;
     --text: #111;

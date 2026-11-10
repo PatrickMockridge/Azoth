@@ -10,9 +10,11 @@
  * that runs physics, because a flash or a column rating is not free.
  */
 
+import { useId } from "react";
+
 import { ParameterField } from "../ParameterField";
 import { DraftField } from "../DraftField";
-import type { Units } from "../../state/units";
+import { engineeringUnit, type Units } from "../../state/units";
 import type { SheetCommand } from "../../wire/sheetCommands";
 import { quantityParts } from "../../wire/field";
 import { calcManualUrl } from "../../manual";
@@ -37,6 +39,10 @@ export function CalcSheet({
   onName: (name: string) => void;
   onRemove: () => void;
 }) {
+  const missingId = useId();
+  const blocked = blockedReason(sheet);
+  const staleResult = sheet.stale && sheet.result !== null;
+
   const write = (input: CalcInput, value: unknown) => {
     if (value === "") {
       onCommand({ command: "unset_input", sheet: sheet.id, input: input.name });
@@ -60,21 +66,11 @@ export function CalcSheet({
   };
 
   return (
-    <article className="calc-sheet">
+    <article className="calc-sheet" data-stale={staleResult ? "true" : undefined}>
       <header className="calc-sheet-head">
         <div className="calc-sheet-name">
-          <DraftField
-            value={sheet.name}
-            kind="text"
-            label="Sheet name"
-            onCommit={(value) => {
-              if (typeof value === "string" && value.trim() !== "") {
-                onName(value.trim());
-              }
-            }}
-          />
+          <h2 className="calc-name">{form?.name ?? sheet.calculation}</h2>
           <div className="calculation">
-            {form === undefined ? null : <span className="calc-name">{form.name}</span>}
             <span className="calc-id">{sheet.calculation}</span>
             {form === undefined ? null : (
               <span className={`calc-badge ${form.provenance.verification}`}>
@@ -82,6 +78,19 @@ export function CalcSheet({
               </span>
             )}
           </div>
+          <label className="calc-sheet-rename">
+            <span className="calc-sheet-rename-label">Sheet name</span>
+            <DraftField
+              value={sheet.name}
+              kind="text"
+              label="Sheet name"
+              onCommit={(value) => {
+                if (typeof value === "string" && value.trim() !== "") {
+                  onName(value.trim());
+                }
+              }}
+            />
+          </label>
         </div>
         <div className="calc-sheet-actions">
           {form?.available && form.worked_example !== undefined ? (
@@ -94,11 +103,8 @@ export function CalcSheet({
             className="primary"
             onClick={onCalculate}
             disabled={!sheet.ready}
-            title={
-              sheet.ready
-                ? "run this calculation"
-                : `fill the required inputs first: ${sheet.missing.join(", ")}`
-            }
+            aria-describedby={blocked === null ? undefined : missingId}
+            title={blocked ?? "run this calculation"}
           >
             Calculate
           </button>
@@ -107,6 +113,12 @@ export function CalcSheet({
           </button>
         </div>
       </header>
+
+      {blocked === null ? null : (
+        <p className="calc-missing" id={missingId} role="status">
+          {blocked}
+        </p>
+      )}
 
       {form === undefined ? null : (
         <>
@@ -151,7 +163,8 @@ export function CalcSheet({
                       <button
                         type="button"
                         className="clear"
-                        title="leave this input unset and let the calculation use its own default"
+                        aria-label={`Clear ${input.name}`}
+                        title="leave this input unset; the calculation uses its declared default or omits what needs it"
                         onClick={() =>
                           onCommand({
                             command: "unset_input",
@@ -202,15 +215,24 @@ export function CalcSheet({
           )}
 
           <section className="calc-section">
-            <h3>Results</h3>
+            <h3>
+              Results
+              {staleResult ? <span className="calc-stale-badge">out of date</span> : null}
+            </h3>
             {sheet.result === null ? (
               <p className="note">
                 {sheet.error === null ? "not calculated yet; press Calculate" : "not calculated"}
               </p>
             ) : null}
+            {staleResult ? (
+              <p className="calc-stale" role="status">
+                These are the last calculated values; the inputs changed after the last Calculate.
+              </p>
+            ) : null}
             <div className="calc-outputs">
               {form.outputs.map((output) => {
                 const value = sheet.result?.outputs[output.name];
+                const unit = sheet.result === null ? "" : unitOf(value, output, units);
                 return (
                   <div className="calc-output" key={output.name}>
                     <div className="calc-output-text">
@@ -224,8 +246,8 @@ export function CalcSheet({
                       <span className="value">
                         {sheet.result === null ? "—" : shown(value, output, units)}
                       </span>
-                      <span className="unit">
-                        {sheet.result === null ? "" : unitOf(value, output, units)}
+                      <span className="unit" title={unit === "" ? undefined : unit}>
+                        {unit === "" ? "" : engineeringUnit(unit)}
                       </span>
                     </div>
                   </div>
@@ -272,6 +294,23 @@ export function CalcSheet({
   );
 }
 
+/**
+ * Why Calculate is unavailable, in the words the sheet and the ribbon can both show.
+ *
+ * **`ready` is not "missing inputs".** A sheet can be unready because a value's kind is refused,
+ * with `missing` empty; the fallback keeps that state explainable instead of rendering an empty
+ * list after a colon.
+ */
+export function blockedReason(sheet: Sheet): string | null {
+  if (sheet.ready) {
+    return null;
+  }
+  if (sheet.missing.length > 0) {
+    return `Required before Calculate: ${sheet.missing.join(", ")}.`;
+  }
+  return sheet.diagnostics[0]?.message ?? "This sheet cannot run until its inputs are valid.";
+}
+
 /** The verification status as a reader's words rather than an enum's spelling. */
 function verificationLabel(status: string): string {
   switch (status) {
@@ -311,7 +350,8 @@ function unitOf(value: SheetValue | undefined, output: CalcOutput, units: Units)
     return output.unit === null || output.unit === "dimensionless" ? "—" : output.unit;
   }
   if (typeof value === "object") {
-    return quantityParts(value.magnitude_si, value.unit, 6, units).unit;
+    const unit = quantityParts(value.magnitude_si, value.unit, 6, units).unit;
+    return unit === "dimensionless" ? "—" : unit;
   }
   if (typeof value === "number" && output.kind === "quantity") {
     return output.unit === null || output.unit === "dimensionless"

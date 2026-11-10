@@ -72,6 +72,7 @@ export function CalcsWorkspace({
               className="calc-sheet-panel"
               role="tabpanel"
               id={`sheet-${current.id}`}
+              aria-labelledby={`tab-${current.id}`}
             >
               <CalcSheet
                 form={form}

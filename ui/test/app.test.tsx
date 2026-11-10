@@ -89,6 +89,10 @@ describe("the editor", () => {
       "instance:sep1",
       "product:vapour_product",
     ]);
+    // **The node plate is not the unit label.** An unscoped `.unit` rule put a 168px plate
+    // around every field's unit string; the plate is `.unit-plate` and no node carries `.unit`.
+    expect(container.querySelectorAll(".react-flow__node .unit-plate").length).toBeGreaterThan(0);
+    expect(container.querySelector(".react-flow__node .unit")).toBeNull();
   });
 
   it("labels every connection point with its direction and stream", async () => {

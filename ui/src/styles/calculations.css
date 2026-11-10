@@ -54,6 +54,7 @@
 
 .calc-side {
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: var(--s4);
   border-inline-end: 1px solid var(--line);
   background: var(--bg-panel);
@@ -87,6 +88,18 @@
 
 .calc-search {
   width: 100%;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+}
+
+.calc-search::placeholder {
+  color: var(--text-dim);
 }
 
 .calc-list {
@@ -124,7 +137,7 @@
 }
 
 .calc-entry button:disabled {
-  color: var(--text-faint);
+  color: var(--text-dim);
   cursor: default;
 }
 
@@ -141,7 +154,7 @@
   padding-inline: var(--s2);
   overflow: hidden;
   color: var(--text-dim);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-sm);
   line-height: var(--lh-body);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -159,8 +172,9 @@
   flex-direction: column;
   gap: var(--s5);
   width: 100%;
-  max-width: 78rem;
+  max-width: 72rem;
   min-height: 0;
+  margin-inline: auto;
   overflow-y: auto;
   scrollbar-gutter: stable;
   padding: var(--s5) var(--s6);
@@ -180,16 +194,17 @@
   display: flex;
   flex: 1 1 20rem;
   flex-direction: column;
-  gap: var(--s1);
+  gap: var(--s2);
   min-width: 0;
 }
 
-.calc-sheet-name input {
-  width: 100%;
-  min-width: 0;
+.calc-sheet-name .calc-name {
+  margin: 0;
   color: var(--text-strong);
-  font-size: var(--fs-md);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xl);
   font-weight: 600;
+  line-height: var(--lh-tight);
 }
 
 .calc-sheet-name .calculation {
@@ -203,14 +218,35 @@
   font-size: var(--fs-2xs);
 }
 
-.calc-sheet-name .calc-name {
+.calc-sheet-name .calc-id {
+  overflow-wrap: anywhere;
+}
+
+.calc-sheet-rename {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  max-width: 24rem;
+}
+
+.calc-sheet-rename-label {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.calc-sheet-name input {
+  width: 100%;
+  min-width: 0;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-input);
   color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
-}
-
-.calc-sheet-name .calc-id {
-  overflow-wrap: anywhere;
 }
 
 .calc-badge {
@@ -257,8 +293,50 @@
 }
 
 .calc-sheet-actions button:disabled {
-  color: var(--text-faint);
+  color: var(--text-dim);
   cursor: default;
+}
+
+.calc-sheet-actions button.primary:disabled {
+  border-color: var(--line-strong);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+}
+
+/* **A disabled button says why in visible prose.** A `title` on a disabled control is not
+   reachable by pointer in the browsers this editor supports, so the reason cannot live there. */
+.calc-missing {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-inline-start: 2px solid var(--warn);
+  background: var(--bg-panel);
+  color: var(--warn);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+}
+
+.calc-stale-badge {
+  margin-inline-start: var(--s3);
+  padding: 1px var(--s2);
+  border: 1px solid var(--warn);
+  border-radius: var(--r-pill);
+  color: var(--warn);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.calc-stale {
+  margin: 0;
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-body);
+}
+
+/* A value older than the inputs is still a value; the warn colour says so without hiding it. */
+.calc-sheet[data-stale="true"] .calc-output-value .value {
+  color: var(--warn);
 }
 
 /*
@@ -270,7 +348,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  max-width: 64rem;
   padding: var(--s5);
   border: 1px solid var(--line);
   border-radius: var(--r3);
@@ -293,7 +370,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  max-width: 64rem;
 }
 
 .calc-section h3 {
@@ -328,9 +404,17 @@
   min-width: 0;
 }
 
+/* The optional action is a quiet line under the value, not a second button in the row. */
 .field-row .clear {
   align-self: flex-start;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  text-decoration: underline;
 }
 
 .calc-outputs {
@@ -398,6 +482,7 @@
 }
 
 .calc-output-value .unit {
+  overflow-wrap: anywhere;
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
@@ -417,7 +502,7 @@
 
 .calc-results,
 .calc-warnings {
-  max-width: 64rem;
+  min-width: 0;
 }
 
 .calc-warnings h4 {
@@ -430,7 +515,6 @@
 }
 
 .calc-details {
-  max-width: 52rem;
   color: var(--text-dim);
 }
 
@@ -499,6 +583,10 @@
   .calc-workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .calc-sheet {
+    padding-inline: var(--s4);
   }
 
   .calc-side {

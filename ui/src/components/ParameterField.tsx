@@ -19,7 +19,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 
-import { displayUnitOf, inDisplayUnit, type Units } from "../state/units";
+import { displayUnitOf, inDisplayUnit, unitLabelOf, type Units } from "../state/units";
 import {
   boundsOf,
   commandValueIn,
@@ -74,8 +74,10 @@ export function ParameterField({
   const outside = violation !== null;
   const empty = (draft ?? text) === "";
   // The unit the field shows, and the bounds in it - so an input's own `min`/`max` are the
-  // numbers a reader sees rather than the ones the document holds.
-  const shown = displayUnitOf(units, parameter.unit);
+  // numbers a reader sees rather than the ones the document holds. The raw spelling stays on the
+  // title, because that is the string the catalogue and a CSV carry.
+  const rawUnit = displayUnitOf(units, parameter.unit);
+  const shown = unitLabelOf(units, parameter.unit);
   const at = (bound: number | null) =>
     bound === null || parameter.unit === null || units === null
       ? bound
@@ -107,6 +109,8 @@ export function ParameterField({
         id={inputId}
         value={text}
         aria-label={layout === "row" ? undefined : parameter.name}
+        aria-required={parameter.required}
+        aria-invalid={outside ? true : undefined}
         aria-describedby={describedBy === "" ? undefined : describedBy}
         onChange={(event) => write(event.target.value)}
       >
@@ -122,6 +126,8 @@ export function ParameterField({
         id={inputId}
         value={text}
         aria-label={layout === "row" ? undefined : parameter.name}
+        aria-required={parameter.required}
+        aria-invalid={outside ? true : undefined}
         aria-describedby={describedBy === "" ? undefined : describedBy}
         onChange={(event) => write(event.target.value)}
       >
@@ -138,6 +144,8 @@ export function ParameterField({
         id={inputId}
         className={outside ? "violating" : ""}
         aria-label={layout === "row" ? undefined : parameter.name}
+        aria-required={parameter.required}
+        aria-invalid={outside ? true : undefined}
         aria-describedby={describedBy === "" ? undefined : describedBy}
         value={shownText}
         inputMode={control === "number" ? "decimal" : "text"}
@@ -156,15 +164,34 @@ export function ParameterField({
       />
     );
 
-  const head = (
+  const status = (
+    <span
+      className={`status ${parameter.required ? "required" : "optional"}`}
+      title={
+        parameter.required
+          ? "a kernel cannot run without it"
+          : "left unset, the calculation uses its declared default or omits what needs it"
+      }
+    >
+      {parameter.required ? "required" : "optional"}
+    </span>
+  );
+
+  const head = (withStatus: boolean, withUnit: boolean) => (
     <div className="head">
       <span className="name">{parameter.name}</span>
-      {parameter.required && empty ? (
+      {withStatus ? (
+        status
+      ) : parameter.required && empty ? (
         <span className="required" title="a kernel cannot run without it">
           *
         </span>
       ) : null}
-      {shown === null ? null : <span className="unit">{shown}</span>}
+      {withUnit && shown !== null ? (
+        <span className="unit" title={rawUnit ?? undefined}>
+          {shown}
+        </span>
+      ) : null}
     </div>
   );
 
@@ -189,7 +216,7 @@ export function ParameterField({
     return (
       <div className="field field-row">
         <div className="field-text">
-          {head}
+          {head(true, false)}
           {explanation}
           {limits === null ? null : (
             <div className="limits" id={limitsId}>
@@ -199,7 +226,14 @@ export function ParameterField({
           {violationHint}
         </div>
         <div className="field-control">
-          {controlElement}
+          <div className="field-value">
+            {controlElement}
+            {shown === null ? null : (
+              <span className="unit" title={rawUnit ?? undefined}>
+                {shown}
+              </span>
+            )}
+          </div>
           {action}
         </div>
       </div>
@@ -208,7 +242,7 @@ export function ParameterField({
 
   return (
     <div className="field">
-      {head}
+      {head(false, true)}
       {controlElement}
       {violationHint}
       {explanation}

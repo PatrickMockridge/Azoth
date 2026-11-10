@@ -130,6 +130,13 @@
   gap: var(--s3);
 }
 
+.ribbon-note {
+  max-width: 24rem;
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-body);
+}
+
 .ribbon-label {
   color: var(--text-dim);
   font-size: var(--fs-2xs);
@@ -196,6 +203,15 @@
   border-color: var(--accent-hi);
 }
 
+/* **A disabled primary is not an invitation.** Leaving the accent fill makes a dead control look
+   like the main action; the raised well and muted text say it cannot run yet. */
+.bar .primary:disabled,
+.ribbon .primary:disabled {
+  border-color: var(--line-strong);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+}
+
 .bar select,
 .ribbon select {
   height: var(--ctl-h);
@@ -205,6 +221,19 @@
   color: var(--text);
   background: var(--bg-raised);
   font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* **A set is a reading choice, so its name is visible.** The select's value alone ("SI") does not
+   say what it is a set of; the label is not hover-only. */
+.units-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.units-label {
+  color: var(--text-dim);
   font-size: var(--fs-xs);
 }
 

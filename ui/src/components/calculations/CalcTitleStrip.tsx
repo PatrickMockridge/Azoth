@@ -75,22 +75,28 @@ export function CalcTitleStrip({
       {envelope === null ? null : (
         <>
           <span className="chip">{envelope.book.id}</span>
-          <span className={`chip ${state.className}`}>{state.word}</span>
+          <span role="status" aria-live="polite" className={`chip ${state.className}`}>
+            {state.word}
+          </span>
         </>
       )}
       {units.sets.length === 0 ? null : (
-        <select
-          className="units"
-          value={units.active}
-          title="the unit a value is read in; the calculation stores SI and the field shows the set"
-          onChange={(event) => onUnits(event.target.value)}
-        >
-          {units.sets.map((set) => (
-            <option key={set.id} value={set.id}>
-              {set.name}
-            </option>
-          ))}
-        </select>
+        <label className="units-choice">
+          <span className="units-label">Units</span>
+          <select
+            className="units"
+            value={units.active}
+            aria-label="Unit set"
+            title="the unit a value is read in; the calculation stores SI and the field shows the set"
+            onChange={(event) => onUnits(event.target.value)}
+          >
+            {units.sets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       <span className="build" title="the library version, and the commit this page was built from">
         v{version}

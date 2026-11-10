@@ -18,6 +18,7 @@ import type { SheetDoor, SheetOpened, SheetSession } from "../../wire/session";
 import type { SheetCommand } from "../../wire/sheetCommands";
 import type { CalcForm, Catalogue, SheetEnvelope } from "../../wire/types";
 import { CalcReportView } from "./CalcReportView";
+import { blockedReason } from "./CalcSheet";
 import { CalcTitleStrip } from "./CalcTitleStrip";
 import { CalcsWorkspace } from "./CalcsWorkspace";
 import type { Workspace } from "./WorkspaceSwitch";
@@ -314,6 +315,7 @@ export function CalculationsApp({
 
   const sheets = envelope?.book.sheets ?? [];
   const current = sheets.find((sheet) => sheet.id === active) ?? sheets[0];
+  const blocked = current === undefined ? null : blockedReason(current);
   const canReport = envelope !== null && envelope.ok && !envelope.dirty;
   const canUndo = openable && history.length > 0;
   const canRedo = openable && future.length > 0;
@@ -334,7 +336,14 @@ export function CalculationsApp({
       />
 
       <div className="ribbon">
-        <RibbonGroup label="Run">
+        <RibbonGroup
+          label="Run"
+          note={
+            blocked === null ? undefined : (
+              <span id="ribbon-calculate-reason">{blocked}</span>
+            )
+          }
+        >
           <button
             type="button"
             className="primary"
@@ -344,12 +353,11 @@ export function CalculationsApp({
               }
             }}
             disabled={current === undefined || !current.ready}
+            aria-describedby={blocked === null ? undefined : "ribbon-calculate-reason"}
             title={
               current === undefined
                 ? "add a calculation sheet first"
-                : current.ready
-                  ? "run this sheet"
-                  : `fill the required inputs first: ${current.missing.join(", ")}`
+                : blocked ?? "run this sheet"
             }
           >
             Calculate

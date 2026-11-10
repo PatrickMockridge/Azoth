@@ -20,14 +20,19 @@ page, so a long form reaches its bottom without moving the picker or the tabs.
 
 A sheet is meant to be read top to bottom, before a number is typed:
 
+- The header names the calculation, states its id and verification badge, and carries the
+  **Sheet name** field whose value labels the sheet's tab.
 - **About this calculation** states the purpose, links to the full reference page, and holds the
   equation and the source references.
-- **Inputs** is one labelled line per field. The explanation is the visible label; the symbol and
-  unit are its metadata; the checked limits are stated in the unit set in force.
+- **Inputs** is one labelled line per field. The explanation is the visible label; the symbol,
+  required/optional status and unit sit beside it, on the same line as the value. The checked
+  limits are stated in the unit set in force.
 - **When this applies** lists the conditions the calculation does not check at runtime. They are
   the caller's responsibility, and a result inside every checked limit can still be meaningless
   if they do not hold.
 - **Results** shows every declared output with its meaning and unit, even before the first run.
+  After an input changes, the last values stay visible but are marked **out of date** until
+  Calculate runs again.
 
 ## Fill and calculate
 

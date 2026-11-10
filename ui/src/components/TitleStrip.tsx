@@ -109,18 +109,22 @@ export function TitleStrip({
           unit, and Solve has no opinion about which. The sets are the library's, so a set added to
           the vocabulary appears here without an edit. */}
       {units.sets.length === 0 ? null : (
-        <select
-          className="units"
-          value={units.active}
-          title="the unit a value is read in; the library declares the sets, and this changes the display and not the document"
-          onChange={(event) => onUnits(event.target.value)}
-        >
-          {units.sets.map((set) => (
-            <option key={set.id} value={set.id}>
-              {set.name}
-            </option>
-          ))}
-        </select>
+        <label className="units-choice">
+          <span className="units-label">Units</span>
+          <select
+            className="units"
+            value={units.active}
+            aria-label="Unit set"
+            title="the unit a value is read in; the library declares the sets, and this changes the display and not the document"
+            onChange={(event) => onUnits(event.target.value)}
+          >
+            {units.sets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       <span
         className="build"

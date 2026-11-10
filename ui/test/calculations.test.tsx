@@ -62,6 +62,17 @@ describe("the calculations workspace", () => {
     // it; without that the content grew past the clipped main column.
     expect(sheet.className).toBe("calc-sheet-panel");
     expect(sheet.querySelector(".calc-sheet")).not.toBeNull();
+    // **The panel and the selected tab name each other.** The tab already points at the panel;
+    // `aria-labelledby` is the other half of the association a screen reader reads.
+    const selected = screen.getByRole("tab", { selected: true });
+    expect(sheet.getAttribute("aria-labelledby")).toBe(selected.id);
+    // **The sheet says what it is before it asks for a value.** The calculation name is the
+    // heading; the editable sheet name is visibly labelled rather than masquerading as a title.
+    expect(
+      within(sheet).getByRole("heading", { name: /pump shaft power/i }),
+    ).toBeDefined();
+    expect(within(sheet).getByText("Sheet name")).toBeDefined();
+    expect(within(sheet).getByLabelText("Sheet name")).toBeDefined();
     // **The explanation is on the sheet before the run.** A reader meets what the calculation is
     // for, what each field means, what the output will be, and when the answer applies.
     expect(
@@ -70,6 +81,7 @@ describe("the calculations workspace", () => {
     expect(within(sheet).getByText(/density of the pumped fluid/i)).toBeDefined();
     expect(within(sheet).getByText(/shaft power the pump must be supplied with/i)).toBeDefined();
     expect(within(sheet).getByText("When this applies")).toBeDefined();
+    expect(within(sheet).getByText("kg/m³")).toBeDefined();
     const manual = within(sheet).getByRole("link", { name: /read the full manual/i });
     expect(manual.getAttribute("href")).toMatch(/\/manual\/hydraulics\/pump_power\.html$/);
 
@@ -79,6 +91,39 @@ describe("the calculations workspace", () => {
     expect(within(sheet).queryByText("Warnings")).toBeNull();
     fireEvent.click(within(sheet).getByText("Model check"));
     expect(within(sheet).getAllByText("hydraulics.pump_power").length).toBeGreaterThan(0);
+  });
+
+  it("says which required input blocks Calculate", async () => {
+    stubFetch();
+    await open();
+    const sheet = screen.getByRole("tabpanel");
+    const input = within(sheet).getByLabelText(/density of the pumped fluid/i);
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.blur(input);
+
+    await waitFor(() => {
+      const button = within(sheet).getByRole("button", { name: "Calculate" }) as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+      expect(within(sheet).getByText(/required before calculate:/i)).toBeDefined();
+      expect(button.getAttribute("aria-describedby")).not.toBeNull();
+    });
+  });
+
+  it("marks a result out of date when an input changes", async () => {
+    stubFetch();
+    await open();
+    const sheet = screen.getByRole("tabpanel");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Calculate" }));
+    await waitFor(() => expect(within(sheet).getByText(/3914\.8/)).toBeDefined());
+
+    const input = within(sheet).getByLabelText(/density of the pumped fluid/i);
+    fireEvent.change(input, { target: { value: "999" } });
+    fireEvent.blur(input);
+
+    await waitFor(() => {
+      expect(within(sheet).getByText("out of date")).toBeDefined();
+      expect(within(sheet).getByText(/inputs changed after the last calculate/i)).toBeDefined();
+    });
   });
 
   it("lists the table-shaped calculations and says why they cannot be added", async () => {

@@ -11,7 +11,14 @@
 
 import { describe, expect, it } from "vitest";
 
-import { displayOf, inDisplayUnit, readUnitSet, rememberUnitSet, unitsOf } from "../src/state/units";
+import {
+  displayOf,
+  engineeringUnit,
+  inDisplayUnit,
+  readUnitSet,
+  rememberUnitSet,
+  unitsOf,
+} from "../src/state/units";
 import fixture from "./fixtures/catalogue.json";
 import type { Catalogue } from "../src/wire/types";
 
@@ -103,6 +110,15 @@ describe("the unit reader", () => {
     const si = unitsOf(catalogue, "si");
     expect(displayOf(si, "K")).toEqual({ unit: "K", factor: 1, offset: 0 });
     expect(inDisplayUnit(si, 300, "K")).toBe(300);
+  });
+
+  it("renders a vocabulary unit in engineering notation", () => {
+    expect(engineeringUnit("kg/m**3")).toBe("kg/m³");
+    expect(engineeringUnit("Pa*m**6/mol**2")).toBe("Pa·m⁶/mol²");
+    expect(engineeringUnit("J/(mol*K)")).toBe("J/(mol·K)");
+    expect(engineeringUnit("1/K**2")).toBe("1/K²");
+    expect(engineeringUnit("Btu/(lb*degF)")).toBe("Btu/(lb·°F)");
+    expect(engineeringUnit("°F")).toBe("°F");
   });
 
   it("remembers the choice under one key", () => {

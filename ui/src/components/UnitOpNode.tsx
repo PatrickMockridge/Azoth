@@ -196,7 +196,7 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
 
   const slots = portSlots(form, graph);
   return (
-    <div className={`unit${selected === true ? " selected" : ""}${severity === "error" ? " bad" : severity === "warning" ? " warn" : ""}`}>
+    <div className={`unit-plate${selected === true ? " selected" : ""}${severity === "error" ? " bad" : severity === "warning" ? " warn" : ""}`}>
       {slots.map((slot) => (
         <Handle
           key={slot.handle}
