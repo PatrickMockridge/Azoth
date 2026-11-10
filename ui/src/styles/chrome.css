@@ -33,6 +33,39 @@
   flex: 1;
 }
 
+/*
+ * The screening status and the build stamp.
+ *
+ * **A link, because it is a statement with a source.** It is deliberately not a `.pill`: those
+ * are the status and the document's identity, and `ui/test/xyflow-env.ts` reads the first and
+ * last of them. This is a caution about the whole page.
+ */
+.bar .screening {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--warn);
+  border-radius: var(--r3);
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.bar .screening:hover {
+  background: var(--warn-tint);
+}
+
+.bar .build {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* --- the ribbon ------------------------------------------------------------ */
 
 /*

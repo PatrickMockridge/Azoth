@@ -29,9 +29,24 @@ export function TitleStrip({
   onTheme: () => void;
   onUnits: (id: string) => void;
 }) {
+  // The commit the page was built from, where the deploy stamps it. A cached page can then be
+  // told apart from a fresh one without opening the devtools network panel.
+  const build = (import.meta.env.VITE_AZOTH_BUILD ?? "").trim();
   return (
     <header className="bar">
       <h1>azoth</h1>
+      {/* **The status, before any number is believable.** The port is incomplete and every
+          result ships `unverified` or `partially_verified`; a process engineer must meet that
+          fact here rather than in a footnote. The link is the book's own front-door statement. */}
+      <a
+        className="screening"
+        href="https://github.com/PatrickMockridge/Azoth/blob/main/docs/src/index.md#not-for-design-work-yet"
+        target="_blank"
+        rel="noreferrer"
+        title="the port is incomplete, so these are screening values and not design deliverables"
+      >
+        not for design work yet
+      </a>
       <span className="spacer" />
       {envelope === null ? null : (
         <>
@@ -74,6 +89,13 @@ export function TitleStrip({
           ))}
         </select>
       )}
+      <span
+        className="build"
+        title="the library version, and the commit this page was built from where the deploy names it"
+      >
+        v{envelope?.provenance.version ?? "—"}
+        {build === "" ? "" : ` · ${build.slice(0, 7)}`}
+      </span>
       <button
         type="button"
         className="button"
