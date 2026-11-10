@@ -436,6 +436,10 @@ jobs:
         working-directory: ui
       - run: npm run build
         working-directory: ui
+      # The built artifact, served under the path Pages uses: a relative build can be right on
+      # disk and wrong when served under `/Azoth/`, which is what this asks the page itself.
+      - run: npm run check:dist
+        working-directory: ui
       # **The boundary the Rust tests cannot reach.** Every function in `azoth-wasm` is a call
       # into the wire layer and a string out, so what is untested there is the seam itself: that
       # a wasm-bindgen constructor works, that a `Result` arrives as a JS exception rather than a
