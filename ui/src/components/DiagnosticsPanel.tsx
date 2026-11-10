@@ -35,7 +35,7 @@ export function DiagnosticsPanel({ diagnostics, runError, onSelect }: Diagnostic
         {diagnostics.length === 0 ? "" : ` · ${errors} error${errors === 1 ? "" : "s"}`}
       </h2>
       {diagnostics.length === 0 ? (
-        <p className="note">the checker has no objection to this document</p>
+        <p className="note">the model check has no objection to this document</p>
       ) : (
         diagnostics.map((diagnostic, index) => (
           <button
