@@ -63,6 +63,33 @@ const POSITION: Record<Side, Position> = {
   right: Position.Right,
 };
 
+/** Port names that are only a direction, so a label does not read `IN inlet`. */
+const GENERIC = new Set(["in", "inlet", "out", "outlet"]);
+
+/**
+ * The visible text beside one handle.
+ *
+ * **The direction is a word and the port is its name**, so a reader does not have to know that a
+ * left-hand dot is an inlet. A port called `hot_in` says `IN hot`; a bare `inlet` says `IN`; a
+ * three-way splitter's `products` become `OUT 1`, `OUT 2`, `OUT 3`. The number is only there when
+ * a port draws more than one handle, because a number on a single connection is noise.
+ */
+export function portLabel(slot: Slot): string {
+  const prefix = slot.direction === "in" ? "IN" : "OUT";
+  let name = slot.port
+    .replace(/_(in|out|inlet|outlet)$/i, "")
+    .replace(/_/g, " ")
+    .trim();
+  if (GENERIC.has(name.toLowerCase())) {
+    name = "";
+  }
+  if (name.toLowerCase() === "products") {
+    name = slot.count > 1 ? "" : "product";
+  }
+  const number = slot.count > 1 ? ` ${slot.index + 1}` : "";
+  return name === "" ? `${prefix}${number}` : `${prefix} ${name}${number}`;
+}
+
 /** One handle: which port it belongs to, which side it sits on, and how far along that side. */
 type Slot = {
   handle: string;
@@ -70,6 +97,9 @@ type Slot = {
   direction: "in" | "out";
   side: Side;
   at: number;
+  /** Its place among the handles of that port, and how many there are. */
+  index: number;
+  count: number;
 };
 
 /**
@@ -96,12 +126,14 @@ function handlesOf(port: FormPort, graph: GraphNode): string[] {
 export function portSlots(form: Form | undefined, graph: GraphNode): Slot[] {
   const unit = graph.data.unit ?? "";
   const slots: Slot[] = (form?.ports ?? []).flatMap((port) =>
-    handlesOf(port, graph).map((handle) => ({
+    handlesOf(port, graph).map((handle, index, handles) => ({
       handle,
       port: port.name,
       direction: port.direction,
       side: sideOf(unit, port.name, port.direction),
       at: 0,
+      index,
+      count: handles.length,
     })),
   );
 
@@ -143,10 +175,16 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
           type={leaving ? "source" : "target"}
           position={leaving ? Position.Right : Position.Left}
           id={graph.data.name}
+          aria-label={leaving ? "outlet feed" : "inlet product"}
           className={`handle${connected.has(graph.data.name) ? " connected" : " unconnected"}`}
         />
+        <span
+          className={`port-label ${leaving ? "right out" : "left in"}`}
+          title={leaving ? "outlet feed" : "inlet product"}
+        >
+          {leaving ? "OUT feed" : "IN product"}
+        </span>
         {graph.data.name}
-        <div className="hint">{graph.role === "input" ? "feed" : "product"}</div>
         {readout.map((line) => (
           <div key={line.port} className="readout">
             {line.text}
@@ -156,18 +194,30 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
     );
   }
 
+  const slots = portSlots(form, graph);
   return (
     <div className={`unit${selected === true ? " selected" : ""}${severity === "error" ? " bad" : severity === "warning" ? " warn" : ""}`}>
-      {portSlots(form, graph).map((slot) => (
+      {slots.map((slot) => (
         <Handle
           key={slot.handle}
           type={slot.direction === "in" ? "target" : "source"}
           position={POSITION[slot.side]}
           id={slot.handle}
           title={slot.port}
+          aria-label={`${slot.direction === "in" ? "inlet" : "outlet"} ${slot.port}`}
           className={`handle${connected.has(slot.handle) ? " connected" : " unconnected"}`}
           style={offset(slot)}
         />
+      ))}
+      {slots.map((slot) => (
+        <span
+          key={`label:${slot.handle}`}
+          className={`port-label ${slot.side} ${slot.direction}`}
+          style={offset(slot)}
+          title={`${slot.direction === "in" ? "inlet" : "outlet"} ${slot.port}`}
+        >
+          {portLabel(slot)}
+        </span>
       ))}
       <Glyph
         kind={glyphFor(graph.data.unit)}

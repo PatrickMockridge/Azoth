@@ -25,7 +25,8 @@ uploaded.
 
 ## The drawing
 
-- Drag from an outlet handle to an inlet handle to connect two objects.
+- Drag from an outlet handle to an inlet handle to connect two objects. Every connection point
+  says `IN` or `OUT`; a two-stream exchanger labels `hot` and `cold` on each side.
 - Click an object to select it; drag a unit operation to move it.
 - Delete or Backspace, or **Remove** in the object's window, removes the selected object. A removed
   feed takes its connections with it; **Undo** restores it.

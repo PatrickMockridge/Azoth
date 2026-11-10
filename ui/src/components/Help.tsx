@@ -30,7 +30,7 @@ export function Help() {
         <dt>Move</dt>
         <dd>Drag a unit operation. Nothing is recomputed by moving it.</dd>
         <dt>Connect</dt>
-        <dd>Drag from an outlet handle to an inlet handle. A stream is named by the outlet that produces it.</dd>
+        <dd>Drag from an outlet handle to an inlet handle. A stream is named by the outlet that produces it. Every connection point is labelled <strong>IN</strong> or <strong>OUT</strong>; a two-stream exchanger labels <strong>hot</strong> and <strong>cold</strong> on each side.</dd>
         <dt>Remove</dt>
         <dd>Select and press Delete or Backspace, or use Remove in the object&apos;s window. A removed feed takes its connections with it. Undo restores it.</dd>
         <dt>Tear</dt>

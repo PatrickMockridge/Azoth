@@ -87,6 +87,29 @@ describe("the editor", () => {
     ]);
   });
 
+  it("labels every connection point with its direction and stream", async () => {
+    stubFetch();
+    const { container } = await open();
+    const labels = [...container.querySelectorAll(".port-label")].map(
+      (label) => label.textContent,
+    );
+    // A single-inlet machine and a boundary stream do not have to be inferred either.
+    expect(labels).toEqual(expect.arrayContaining(["IN", "OUT"]));
+    expect(labels).toEqual(expect.arrayContaining(["OUT feed", "IN product"]));
+
+    // **The heat exchanger is the four-handle case.** It is not in the demo, so it is added from
+    // the palette; the labels appear before anything is wired.
+    fireEvent.click(screen.getByRole("button", { name: "Heat exchanger" }));
+    await waitFor(() => {
+      const added = [...container.querySelectorAll(".port-label")].map(
+        (label) => label.textContent,
+      );
+      expect(added).toEqual(
+        expect.arrayContaining(["IN hot", "IN cold", "OUT hot", "OUT cold"]),
+      );
+    });
+  });
+
   it("starts stale, and Solve makes it solved", async () => {
     stubFetch();
     const { container } = await open();
