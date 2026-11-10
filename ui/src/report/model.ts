@@ -150,7 +150,6 @@ export function buildCaseReport(
       node.data.name,
       entry?.unit ?? node.data.unit ?? "—",
       entry?.model ?? "—",
-      entry?.source ?? "—",
       entry?.verification ?? "—",
       shortHash(entry?.spec_sha256 ?? null) ?? "—",
       shortHash(entry?.rust_sha256 ?? null) ?? "—",
@@ -236,8 +235,8 @@ export function buildCaseReport(
         rows: tearRows,
       },
       {
-        title: "Source and checks",
-        headers: ["unit operation", "entry", "model", "source", "verification", "spec", "kernel"],
+        title: "Model checks",
+        headers: ["unit operation", "entry", "model", "verification", "spec", "kernel"],
         rows: provenanceRows,
       },
     ],

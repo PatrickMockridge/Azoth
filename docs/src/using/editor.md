@@ -44,9 +44,8 @@ It never changes the document, and solving has no opinion about it.
 
 ## What the numbers mean
 
-**Source & checks** on a unit operation names the model, the NeqSim class it was ported from, how
-far the model is verified, and the hashes of the declaration and the kernel that produced the
-number. **Caveats** on a result sheet are the calculation's own warnings — a bound that could not
+**Checks** on a unit operation names the model, how far it is verified, and the hashes of the
+declaration and the kernel that produced the number. **Caveats** on a result sheet are the calculation's own warnings — a bound that could not
 be checked, a correlation at the edge of its range.
 
 The port is incomplete. Every shipped model is marked `unverified` or `partially_verified`, and

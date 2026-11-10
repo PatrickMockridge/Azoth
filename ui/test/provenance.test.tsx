@@ -62,11 +62,11 @@ describe("what a document rests on", () => {
     expect(shortHash(null)).toBeNull();
   });
 
-  it("renders the source and the verification, in the library's words", () => {
+  it("renders the model and the verification, in the library's words", () => {
     render(<ProvenanceSheet envelope={envelope} instance="hx1" />);
-    expect(screen.getByText("NeqSim process/equipment/heatexchanger/Heater.java")).toBeDefined();
     expect(screen.getByText("partially_verified")).toBeDefined();
     expect(screen.getByText("process.heater")).toBeDefined();
+    expect(screen.queryByText(/NeqSim/)).toBeNull();
   });
 
   it("says so, rather than showing nothing, where the document has no entry", () => {

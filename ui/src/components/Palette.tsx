@@ -45,7 +45,11 @@ export function Palette({ forms, onAdd }: PaletteProps) {
               key={form.id}
               type="button"
               className={`entry${form.runnable ? "" : " refused"}`}
-              title={form.refusal ?? form.source ?? form.id}
+              title={
+                form.runnable
+                  ? `add ${form.name} to the flowsheet`
+                  : (form.refusal ?? "the executor refuses this entry")
+              }
               disabled={!form.runnable}
               onClick={() => onAdd(form.id)}
             >

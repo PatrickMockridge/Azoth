@@ -56,8 +56,8 @@ export function Help() {
         <strong>Messages</strong> holds the model check's findings and any run error; click one to
         select the object it is about. A unit operation&apos;s <strong>Results</strong> sheet holds
         what it reached that is not on an outlet stream, and its <strong>Caveats</strong> are the
-        calculation&apos;s own warnings. <strong>Source &amp; checks</strong> names the model, where
-        it came from and how far it is verified.
+        calculation&apos;s own warnings. <strong>Checks</strong> names the model and how far it is
+        verified.
       </p>
 
       <h2>What this is not</h2>

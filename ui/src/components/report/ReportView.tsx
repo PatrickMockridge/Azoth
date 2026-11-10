@@ -131,7 +131,7 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
 
       <p className="report-statement">
         The report is a reading of one run of the document above. It is not a design deliverable;
-        the source and verification of each model are printed in Source and checks.
+        each model and its verification are printed in Model checks.
       </p>
     </section>
   );

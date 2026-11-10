@@ -37,8 +37,8 @@ describe("the case report", () => {
     expect(table(report, "Streams")?.rows.map((row) => row[0])).toContain("hx1.outlet");
     const results = table(report, "Results and caveats")?.rows ?? [];
     expect(results.some((row) => row[0] === "hx1" && row[1] === "outlet_duty")).toBe(true);
-    const source = table(report, "Source and checks")?.rows ?? [];
-    expect(source.some((row) => row[2] === "process.heater")).toBe(true);
+    const checks = table(report, "Model checks")?.rows ?? [];
+    expect(checks.some((row) => row[2] === "process.heater")).toBe(true);
     expect(report.diagnostics.rows).toEqual([]);
   });
 

@@ -36,7 +36,7 @@ const LABELS: Record<TabId, string> = {
   profiles: "Profiles",
   performance: "Performance",
   results: "Results",
-  provenance: "Source & checks",
+  provenance: "Checks",
 };
 
 /**
