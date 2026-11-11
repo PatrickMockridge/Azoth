@@ -10,7 +10,7 @@ flowsheet and its calculation book, then [calculation sheets](./using/calculatio
 [reading a calculation page](./using/reading-a-calculation.md) for the guide.
 
 Start here: [install it](https://github.com/PatrickMockridge/azoth#install) - `azoth-engine`
-is not on PyPI yet, so a checkout is where 0.1 is built from - pick a calculation from
+is on PyPI - pick a calculation from
 [What is implemented](#what-is-implemented), read its page for the equation, range and
 worked example, then call it as the page shows or over arrays with
 [the batch API](#the-batch-api).

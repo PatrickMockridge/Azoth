@@ -148,15 +148,16 @@ yet](docs/src/index.md#not-for-design-work-yet) about the placeholder fitting co
 
 ## Install
 
-**Not on PyPI yet.** `azoth-engine` is the name 0.1 will publish under, and 0.1 is
-**to be announced** - it goes up once the Python surface is settled. Nothing is uploaded
-under that name today, so `pip install azoth-engine` has nothing to fetch. Until then,
-from a checkout:
+**On PyPI as `azoth-engine`.** Python 3.12 or later:
 
 ```bash
-pip install maturin
-pip install .
+pip install azoth-engine
 ```
+
+Wheels are published for Linux (x86_64 and aarch64), macOS (Intel and Apple silicon) and
+Windows; any other platform builds from the sdist, which needs `maturin` and a Rust toolchain.
+Every release is signed with cosign keyless signing, and the signature bundles are attached
+to the [GitHub release](https://github.com/PatrickMockridge/azoth/releases).
 
 The distribution name is `azoth-engine` because `azoth` is taken on PyPI; `import azoth`
 is what the package has always been and is unchanged by it.

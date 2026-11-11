@@ -265,15 +265,14 @@ that reads as finished.
   this server has no token, no issuer and no quota — and `402 Payment Required` is in the status
   map beside it, because the transport must be able to answer *payment required* rather than *bad
   request*, which are different instructions to a client. A test drives both halves.
-- **A publishable distribution, and the two things only a person can do.** The wheel and the sdist
-  are built, signed, verified and — by the `pypi` job, on a `v*` tag — uploaded to the index under
-  the name **`azoth-engine`**, which Trusted Publishing exchanges this workflow's OIDC token for.
+- **A publishable distribution, on the index.** The wheel and the sdist are built, signed,
+  verified and — by the `pypi` job, on a `v*` tag — uploaded to PyPI under the name
+  **`azoth-engine`**, which Trusted Publishing exchanges this workflow's OIDC token for.
   `import azoth` does not change: the distribution's name and the module's are allowed to differ,
-  which is what makes the taken name `azoth` a non-problem rather than a rebranding. What is not
-  done is the two things no CI job can do for you: a PyPI account with 2FA, and a *pending
-  publisher* for `azoth-engine` naming this repository, `release.yml` and no environment. Until
-  that exists, the job fails at the exchange — with PyPI's own message about the claim, not a
-  silent no-op — and no tag has been pushed, so nothing is on the index yet. The `sdist` and the
+  which is what makes the taken name `azoth` a non-problem rather than a rebranding. The
+  *pending publisher* for `azoth-engine` names this repository, `release.yml` and no environment;
+  `v0.1.3` is the first tag through it, and a failed exchange fails the job with PyPI's own
+  message about the claim rather than a silent no-op. The `sdist` and the
   wheel are also walked by `check_wheel_data.py`: for what they must not carry (`ui/`, the built
   browser module, and every repository tree but the one below), and, for the sdist, for whether it
   carries what the Rust sources embed. `specs/unit_ops/` is that one exemption, and it is a build
