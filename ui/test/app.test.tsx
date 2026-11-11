@@ -440,6 +440,26 @@ describe("the editor", () => {
     expect(screen.queryByRole("dialog", { name: "Command palette" })).toBeNull();
   });
 
+  it("hides and shows the Cyberpunk HUD rails and opens the palette from the strip", async () => {
+    stubFetch();
+    const { container } = await open({
+      "azoth.appearance": JSON.stringify({ layout: "cyberpunk", theme: "dark" }),
+    });
+    const app = container.querySelector(".app");
+    expect(app?.getAttribute("data-hud-palette")).toBe("on");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide Navigator" }));
+    expect(app?.getAttribute("data-hud-palette")).toBe("off");
+    fireEvent.click(screen.getByRole("button", { name: "Show Navigator" }));
+    expect(app?.getAttribute("data-hud-palette")).toBe("on");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide Workbook" }));
+    expect(app?.getAttribute("data-hud-workbook")).toBe("off");
+
+    fireEvent.click(screen.getByRole("button", { name: "Open the command palette" }));
+    expect(screen.getByRole("dialog", { name: "Command palette" })).toBeDefined();
+  });
+
   it("opens in Windows XP light, and remembers the layout and colour chosen", async () => {
     stubFetch();
     await open();

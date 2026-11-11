@@ -137,6 +137,16 @@ export function App() {
   const [reporting, setReporting] = useState(false);
   /** The command palette is the Cyberpunk shell's; it is closed by any other layout. */
   const [paletteOpen, setPaletteOpen] = useState(false);
+  /** The Cyberpunk HUD's visible rails; the Mac and XP shells ignore the attributes. */
+  const [hudState, setHudState] = useState<Record<string, boolean>>({
+    palette: true,
+    inspector: true,
+    workbook: true,
+    commands: true,
+  });
+  const toggleHud = useCallback((id: string) => {
+    setHudState((current) => ({ ...current, [id]: current[id] === false }));
+  }, []);
   const canReport =
     envelope !== null &&
     envelope.ok &&
@@ -677,6 +687,10 @@ export function App() {
       className={`app${workspace === "calculations" ? " off" : ""}`}
       hidden={workspace === "calculations"}
       ref={appRoot}
+      data-hud-palette={hudState.palette ? "on" : "off"}
+      data-hud-inspector={hudState.inspector ? "on" : "off"}
+      data-hud-workbook={hudState.workbook ? "on" : "off"}
+      data-hud-commands={hudState.commands ? "on" : "off"}
     >
       <input
         ref={openInput}
@@ -706,6 +720,17 @@ export function App() {
         onOrder={setOrder}
         onAppearance={setAppearance}
         onUnits={chooseUnits}
+        hud={{
+          controls: [
+            { id: "palette", label: "Navigator", short: "Nav" },
+            { id: "inspector", label: "Inspector", short: "Insp" },
+            { id: "workbook", label: "Workbook", short: "WkBk" },
+            { id: "commands", label: "Toolbar", short: "Deck" },
+          ],
+          state: hudState,
+          onToggle: toggleHud,
+          onCommands: () => setPaletteOpen(true),
+        }}
       />
 
       <div className="ribbon" data-window="commands">
@@ -920,7 +945,7 @@ export function App() {
         }}
         size={dockSize}
         onSize={setDockSize}
-        managed={appearance.layout === "mac"}
+        managed={appearance.layout === "mac" || appearance.layout === "cyberpunk"}
       >
         <div role="tabpanel" id={`sheet-${docked}`}>
         {docked === "help" ? (

@@ -2,6 +2,7 @@ import { asExecutionOrder } from "../wire/decode";
 import { manualHome } from "../manual";
 import { AppearanceMenu } from "./AppearanceMenu";
 import { DraftField } from "./DraftField";
+import { HudControls, type HudControl } from "./HudControls";
 import { MenuBar } from "./MenuBar";
 import { WorkspaceSwitch, type Workspace } from "./calculations/WorkspaceSwitch";
 import { statusClass as classOf, statusWord } from "../state/status";
@@ -36,11 +37,19 @@ export function TitleStrip({
   onOrder,
   onAppearance,
   onUnits,
+  hud,
 }: {
   envelope: Envelope | null;
   /** Whether a session is open, which is what makes the order settable. */
   session: boolean;
   menus: readonly MenuSpec[];
+  /** The Cyberpunk rail controls; hidden by CSS in the other layouts. */
+  hud?: {
+    controls: readonly HudControl[];
+    state: Record<string, boolean>;
+    onToggle: (id: string) => void;
+    onCommands: () => void;
+  };
   appearance: Appearance;
   units: Units;
   /** The document differs from the one last opened or saved. */
@@ -149,6 +158,14 @@ export function TitleStrip({
           {build === "" ? "" : ` · ${build.slice(0, 7)}`}
         </span>
         <AppearanceMenu appearance={appearance} onChange={onAppearance} />
+        {hud === undefined ? null : (
+          <HudControls
+            controls={hud.controls}
+            state={hud.state}
+            onToggle={hud.onToggle}
+            onCommands={hud.onCommands}
+          />
+        )}
       </div>
     </header>
   );

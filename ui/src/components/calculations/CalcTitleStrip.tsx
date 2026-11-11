@@ -10,6 +10,7 @@
 
 import { AppearanceMenu } from "../AppearanceMenu";
 import { DraftField } from "../DraftField";
+import { HudControls, type HudControl } from "../HudControls";
 import { MenuBar } from "../MenuBar";
 import { manualHome } from "../../manual";
 import { WorkspaceSwitch, type Workspace } from "./WorkspaceSwitch";
@@ -30,10 +31,17 @@ export function CalcTitleStrip({
   onWorkspace,
   onAppearance,
   onUnits,
+  hud,
 }: {
   envelope: SheetEnvelope | null;
   workspace: Workspace;
   menus: readonly MenuSpec[];
+  hud?: {
+    controls: readonly HudControl[];
+    state: Record<string, boolean>;
+    onToggle: (id: string) => void;
+    onCommands: () => void;
+  };
   appearance: Appearance;
   units: Units;
   unsaved: boolean;
@@ -115,6 +123,14 @@ export function CalcTitleStrip({
           {build === "" ? "" : ` · ${build.slice(0, 7)}`}
         </span>
         <AppearanceMenu appearance={appearance} onChange={onAppearance} />
+        {hud === undefined ? null : (
+          <HudControls
+            controls={hud.controls}
+            state={hud.state}
+            onToggle={hud.onToggle}
+            onCommands={hud.onCommands}
+          />
+        )}
       </div>
     </header>
   );

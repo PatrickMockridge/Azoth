@@ -1,36 +1,61 @@
 /*
- * Cyberpunk: the 1-2-3 terminal that grew up.
+ * Cyberpunk: a full-bleed canvas with a HUD over it.
  *
- * **One band, neon rules, and a scanline that is decoration.** The layout keeps the title and its
- * tools on one line, strips the radii, sets labels in the mono face and lets the accent do the
- * pointing; the scanline is a fixed overlay under the modal layer, so it never intercepts a
- * gesture or paints over a dialog. Tone cells decide whether the neon is on black, graphite or
- * bone paper.
+ * **The drawing is the page.** The document window is the whole viewport at z0; the Navigator,
+ * Inspector, Workbook and command deck float above it as translucent rails with a neon edge and
+ * a header. The telemetry strip at the top carries the case, the settings and the rail toggles.
+ * The canvas is never a toggle: hiding a rail never hides the process.
+ *
+ * No ancestor of a panel may gain a `transform`, `filter` or `backdrop-filter`; the Appearance
+ * popover, the command palette and the report are fixed layers that must escape the shell.
  */
 
 [data-layout="cyberpunk"] .app {
+  display: block;
   position: relative;
   height: 100%;
   margin: 0;
   border: 0;
+  overflow: hidden;
 }
 
+/* --- the telemetry strip ---------------------------------------------------- */
+
 [data-layout="cyberpunk"] .bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  height: var(--hud-bar-h);
   flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--s4);
+  padding: 0 var(--s4);
+  border-bottom: 1px solid var(--accent);
+  background: var(--surface-bar);
+  color: var(--titlebar-text);
+  box-shadow: 0 0 10px var(--glow-accent);
+  /* Above the document and the rails, below the report/overview (20); its own popovers live in
+     this context, which is why the value is high enough for the Appearance panel to clear the
+     rails but not so high that the strip prints over a modal. */
+  z-index: 16;
 }
 
 [data-layout="cyberpunk"] .bar-identity {
   width: auto;
-  flex: 0 0 auto;
-  padding-inline-end: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  gap: var(--s4);
+  color: inherit;
 }
 
 [data-layout="cyberpunk"] .bar-tools {
   width: auto;
-  flex: 1;
-  border-top: 0;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
   background: transparent;
-  color: var(--titlebar-text);
+  color: inherit;
 }
 
 [data-layout="cyberpunk"] .bar h1 {
@@ -40,6 +65,10 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   text-shadow: 0 0 8px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .menubar {
+  display: none;
 }
 
 [data-layout="cyberpunk"] .bar-tools .build,
@@ -53,16 +82,204 @@
   background: transparent;
 }
 
-[data-layout="cyberpunk"] .bar {
-  border-bottom: 1px solid var(--accent);
-  box-shadow: 0 0 10px var(--glow-accent);
+/* --- the HUD's boxes -------------------------------------------------------- */
+
+[data-layout="cyberpunk"] .body,
+[data-layout="cyberpunk"] .calc-body,
+[data-layout="cyberpunk"] .calc-workspace {
+  display: contents;
 }
+
+[data-layout="cyberpunk"] [data-window] {
+  position: absolute;
+  display: flex;
+  z-index: 10;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--hud-border);
+  background: var(--surface-hud);
+  box-shadow: 0 0 12px var(--glow-accent);
+}
+
+/* The document is the page; the worksheet is the calculation book's page. */
+[data-layout="cyberpunk"] [data-window="document"] {
+  inset: 0;
+  z-index: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-layout="cyberpunk"] [data-window="worksheet"] {
+  inset: var(--hud-bar-h) 0 0 0;
+  z-index: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-layout="cyberpunk"] [data-window="document"] .window-title,
+[data-layout="cyberpunk"] [data-window="document"] .window-grip,
+[data-layout="cyberpunk"] [data-window="worksheet"] .window-title,
+[data-layout="cyberpunk"] [data-window="worksheet"] .window-grip {
+  display: none;
+}
+
+[data-layout="cyberpunk"] [data-window="document"] .window-body {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-canvas);
+}
+
+[data-layout="cyberpunk"] [data-window="worksheet"] .window-body {
+  overflow: hidden;
+  background: var(--surface-panel);
+}
+
+[data-layout="cyberpunk"] [data-window="commands"] {
+  left: var(--hud-gap);
+  top: calc(var(--hud-bar-h) + var(--hud-gap));
+  width: min(var(--deck-w), calc(100% - 2 * var(--hud-gap)));
+  height: auto;
+  min-height: var(--deck-h);
+  z-index: 12;
+}
+
+[data-layout="cyberpunk"] [data-window="commands"] .window-title,
+[data-layout="cyberpunk"] [data-window="commands"] .window-grip {
+  display: none;
+}
+
+[data-layout="cyberpunk"] [data-window="commands"] .window-body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--s3) var(--s4);
+  overflow: visible;
+}
+
+[data-layout="cyberpunk"] [data-window="palette"] {
+  left: var(--hud-gap);
+  top: calc(var(--hud-bar-h) + 2 * var(--hud-gap) + var(--deck-h));
+  bottom: calc(var(--head-h) + var(--dock-h) + 3 * var(--hud-gap));
+  width: var(--tools-w);
+}
+
+[data-layout="cyberpunk"] [data-window="picker"] {
+  left: var(--hud-gap);
+  top: calc(var(--hud-bar-h) + 2 * var(--hud-gap) + var(--deck-h));
+  bottom: var(--hud-gap);
+  width: var(--tools-w);
+}
+
+[data-layout="cyberpunk"] [data-window="inspector"] {
+  right: var(--hud-gap);
+  top: calc(var(--hud-bar-h) + var(--hud-gap));
+  bottom: calc(var(--head-h) + var(--hud-gap));
+  width: var(--inspector-w);
+}
+
+[data-layout="cyberpunk"] [data-window="workbook"] {
+  left: calc(var(--tools-w) + 2 * var(--hud-gap));
+  right: calc(var(--inspector-w) + 2 * var(--hud-gap));
+  bottom: calc(var(--head-h) + var(--hud-gap));
+  height: var(--dock-h);
+}
+
+[data-layout="cyberpunk"] .status-bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9;
+  height: var(--head-h);
+  padding: 0 var(--s4);
+  border-top: 1px solid var(--accent);
+  background: var(--surface-status);
+}
+
+[data-layout="cyberpunk"] .status-bar .window-title {
+  display: none;
+}
+
+[data-layout="cyberpunk"] .status-bar .window-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s3);
+  overflow: hidden;
+  font-size: var(--fs-2xs);
+}
+
+[data-layout="cyberpunk"] .window-title {
+  display: flex;
+  height: var(--window-title-h);
+  flex: 0 0 var(--window-title-h);
+  align-items: center;
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface-panel-2);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+[data-layout="cyberpunk"] .window-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
+}
+
+[data-layout="cyberpunk"] [data-window="workbook"] .window-body {
+  overflow: hidden;
+}
+
+[data-layout="cyberpunk"] .window-grip {
+  display: none;
+}
+
+/* The HUD rails are toggles; the canvas and the status strip never are. */
+[data-layout="cyberpunk"] .app[data-hud-palette="off"] [data-window="palette"],
+[data-layout="cyberpunk"] .app[data-hud-inspector="off"] [data-window="inspector"],
+[data-layout="cyberpunk"] .app[data-hud-workbook="off"] [data-window="workbook"],
+[data-layout="cyberpunk"] .app[data-hud-commands="off"] [data-window="commands"],
+[data-layout="cyberpunk"] .app[data-hud-picker="off"] [data-window="picker"] {
+  display: none;
+}
+
+/* --- the command deck ------------------------------------------------------- */
 
 [data-layout="cyberpunk"] .ribbon {
-  border-bottom: 1px solid var(--line-strong);
+  align-items: center;
+  gap: var(--s2);
+  padding: 0;
 }
 
-/* Controls: a dark key with a neon hairline; hover is a glow, not a lift. */
+[data-layout="cyberpunk"] .ribbon-group {
+  padding: 0 var(--s3);
+}
+
+[data-layout="cyberpunk"] .ribbon-group + .ribbon-group {
+  border-left: 1px solid var(--line-strong);
+}
+
+[data-layout="cyberpunk"] .ribbon-label {
+  display: none;
+}
+
+[data-layout="cyberpunk"] .dock-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- controls --------------------------------------------------------------- */
+
 [data-layout="cyberpunk"] button,
 [data-layout="cyberpunk"] .button,
 [data-layout="cyberpunk"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
@@ -131,7 +348,8 @@
   color: var(--accent-ink);
 }
 
-/* Tabs: flat, angular, with the active one lit from below. */
+/* --- tabs, nodes, overlays -------------------------------------------------- */
+
 [data-layout="cyberpunk"] .tab {
   border: 1px solid var(--tab-border);
   border-bottom: 0;
@@ -150,19 +368,6 @@
   border-bottom-color: var(--accent);
 }
 
-/* Panels are outlined, not filled; the field behind them is the texture. */
-[data-layout="cyberpunk"] .side,
-[data-layout="cyberpunk"] .dock,
-[data-layout="cyberpunk"] .status-bar {
-  border-color: var(--line-strong);
-}
-
-[data-layout="cyberpunk"] .status-bar {
-  border-top-color: var(--accent);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 [data-layout="cyberpunk"] .unit-plate {
   border: 1px solid var(--node-border);
   box-shadow: none;
@@ -171,6 +376,7 @@
 [data-layout="cyberpunk"] .unit-plate.selected {
   border-color: var(--accent);
   box-shadow: 0 0 10px var(--glow-accent);
+  animation: azoth-hud-pulse var(--t-pulse) var(--ease) infinite;
 }
 
 [data-layout="cyberpunk"] .unit-plate header {
@@ -183,6 +389,12 @@
 [data-layout="cyberpunk"] .stream {
   border: 1px solid var(--frame);
   background: var(--node-face);
+}
+
+/* The first-run card is above the rails and below the scanline and the modal layer. The document
+   window deliberately has no z-index, so a fixed child can join the root stacking context. */
+[data-layout="cyberpunk"] .welcome {
+  z-index: 14;
 }
 
 [data-layout="cyberpunk"] .overview,
@@ -203,7 +415,6 @@
   text-transform: uppercase;
 }
 
-/* Scrollbars: a square neon thumb on the page's own black. */
 [data-layout="cyberpunk"] *::-webkit-scrollbar-thumb {
   border: 0;
   border-radius: 0;
@@ -214,15 +425,11 @@
   background: var(--scrollbar-track);
 }
 
-/* A recycle is the one edge that glows; the rest stay quiet so the drawing remains readable. */
 [data-layout="cyberpunk"] .react-flow__edge.tear .react-flow__edge-path {
   filter: drop-shadow(0 0 3px var(--glow-accent));
 }
 
-/*
- * The scanline. It sits on the static app, not the transformed xyflow viewport, so panning does
- * not repaint it, and below the modal layer so a dialog is read without a screen door.
- */
+/* The scanline sits on the static app, below the modal layer. */
 [data-layout="cyberpunk"] .app::after {
   content: "";
   position: fixed;
@@ -234,4 +441,20 @@
     transparent 0 2px,
     var(--texture) 2px 3px
   );
+}
+
+@keyframes azoth-hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-layout="cyberpunk"] .unit-plate.selected {
+    animation: none;
+  }
 }

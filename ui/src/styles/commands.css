@@ -177,3 +177,25 @@
   padding: var(--s3);
   color: var(--text-dim);
 }
+
+/* The HUD rail switches exist in the DOM for every layout, but only Cyberpunk shows them. */
+.hud-controls {
+  display: none;
+  align-items: center;
+  gap: var(--s1);
+}
+
+[data-layout="cyberpunk"] .hud-controls {
+  display: flex;
+}
+
+.hud-controls .hud-toggle[aria-pressed="false"] {
+  color: var(--text-dim);
+  border-color: var(--line-strong);
+}
+
+.hud-controls .hud-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text-strong);
+}

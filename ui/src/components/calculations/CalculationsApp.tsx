@@ -70,6 +70,13 @@ export function CalculationsApp({
   const [fault, setFault] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [hudState, setHudState] = useState<Record<string, boolean>>({
+    picker: true,
+    commands: true,
+  });
+  const toggleHud = useCallback((id: string) => {
+    setHudState((current) => ({ ...current, [id]: current[id] === false }));
+  }, []);
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
 
@@ -440,7 +447,13 @@ export function CalculationsApp({
   }, [appearance.layout, hidden, reporting]);
 
   return (
-    <div className={`app calculations${hidden ? " off" : ""}`} hidden={hidden} ref={appRoot}>
+    <div
+      className={`app calculations${hidden ? " off" : ""}`}
+      hidden={hidden}
+      ref={appRoot}
+      data-hud-picker={hudState.picker ? "on" : "off"}
+      data-hud-commands={hudState.commands ? "on" : "off"}
+    >
       <input
         ref={openInput}
         className="sr-only"
@@ -468,6 +481,15 @@ export function CalculationsApp({
         onWorkspace={onWorkspace}
         onAppearance={onAppearance}
         onUnits={onUnits}
+        hud={{
+          controls: [
+            { id: "picker", label: "Picker", short: "Pick" },
+            { id: "commands", label: "Toolbar", short: "Deck" },
+          ],
+          state: hudState,
+          onToggle: toggleHud,
+          onCommands: () => setPaletteOpen(true),
+        }}
       />
 
       <div className="ribbon" data-window="commands">

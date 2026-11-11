@@ -229,6 +229,15 @@
   --surface-window-title: var(--surface-bar);
   --window-shadow: var(--e2);
   --window-grip: 0px;
+  --hud-bar-h: 0px;
+  --hud-gap: 0px;
+  --tools-w: 0px;
+  --inspector-w: 0px;
+  --dock-h: 0px;
+  --deck-h: 0px;
+  --deck-w: 0px;
+  --surface-hud: var(--surface-panel);
+  --hud-border: var(--line-strong);
 
   /* The Macintosh desktop's resting geometry; the window manager overwrites these inline. */
   --commands-x: 1%;
@@ -489,6 +498,15 @@
   );
   --window-shadow: 2px 2px 0 var(--frame);
   --window-grip: 16px;
+  --hud-bar-h: 0px;
+  --hud-gap: 0px;
+  --tools-w: 0px;
+  --inspector-w: 0px;
+  --dock-h: 0px;
+  --deck-h: 0px;
+  --deck-w: 0px;
+  --surface-hud: var(--surface-panel);
+  --hud-border: var(--line-strong);
 
   --focus-w: 1px;
   --focus-style: dotted;
@@ -797,11 +815,20 @@
   --menubar-h: 0px;
   --menubar-ink: var(--text);
   --surface-menubar: var(--surface-bar);
-  --window-title-h: 0px;
+  --window-title-h: 24px;
   --window-title-ink: var(--text);
   --surface-window-title: var(--surface-panel);
   --window-shadow: var(--e3);
   --window-grip: 0px;
+  --hud-bar-h: 40px;
+  --hud-gap: 10px;
+  --tools-w: 260px;
+  --inspector-w: 300px;
+  --dock-h: 190px;
+  --deck-h: 92px;
+  --deck-w: 720px;
+  --surface-hud: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  --hud-border: var(--accent);
 
   --focus-w: 2px;
   --focus-style: solid;

@@ -269,31 +269,13 @@
   cursor: nwse-resize;
 }
 
-/* The ribbon is the body of the Tools window; the window owns its frame and padding. */
+/* The ribbon is the body of the Tools window; the window owns its frame. */
 [data-layout="mac"] .ribbon {
   padding: 0;
-  border: 0;
-  background: transparent;
 }
 
 [data-layout="mac"] .ribbon-group {
   padding: 0 var(--s3);
-}
-
-[data-layout="mac"] .dock {
-  border: 0;
-  background: transparent;
-}
-
-[data-layout="mac"] .status-bar {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-[data-layout="mac"] .side {
-  border: 0;
-  background: transparent;
 }
 
 [data-layout="mac"] .dock-body {
