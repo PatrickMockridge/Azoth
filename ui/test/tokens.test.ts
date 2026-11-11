@@ -124,6 +124,7 @@ const LAYOUT_TOKENS: readonly string[] = [
   "focus-style",
   "focus-offset",
   "surface-app",
+  "surface-workspace",
   "surface-canvas",
   "surface-panel",
   "surface-panel-2",

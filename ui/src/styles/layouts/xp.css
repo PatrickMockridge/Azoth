@@ -1,11 +1,10 @@
 /*
- * Windows XP / Luna: the default.
+ * Windows XP / Luna: one MDI application.
  *
- * **Shape is Luna, colour is the tone cell.** Every rule here is scoped to `[data-layout="xp"]`
- * and reads a token; a colour literal here would be a value the Mac and cyberpunk cells could not
- * reach, and the token test refuses one. The desktop frame, the five-stop title bar, the beveled
- * controls and the folder tabs are the period's signatures; the exact greys and blues come from
- * `tokens.css`, so neutral ("silver") and dark ("Royale Noir") keep the same shape.
+ * **Three bands in the old top row.** The title bar is the Luna gradient, the menu bar is the
+ * cream row beneath it, and the settings are the cream tool row beneath that. The commands are a
+ * classic toolbar below; the workspace is a sunken grey MDI client area with docked Explorer
+ * panes and a white document child. The panels are the same components the other shells use.
  */
 
 [data-layout="xp"] .app {
@@ -17,37 +16,73 @@
   background: var(--bg-panel);
 }
 
-/* The title bar: white bold text over the blue, with the tool row a cream toolbar under it. */
+/* --- the title, menu and tool rows ------------------------------------------ */
+
 [data-layout="xp"] .bar {
-  box-shadow: inset 0 1px 0 var(--e-highlight), inset 0 -1px 0 var(--titlebar-d);
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0;
+  border-bottom: var(--frame-w) solid var(--frame);
+  background: var(--surface-tools);
+  box-shadow: none;
 }
 
 [data-layout="xp"] .bar-identity {
-  min-height: var(--head-h);
-  padding-inline: var(--s5);
+  display: flex;
+  width: 100%;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s6);
+  padding: var(--s1) var(--s5);
+  border-bottom: 1px solid var(--bevel-dark);
+  background: var(--surface-bar);
+  color: var(--titlebar-text);
+  box-shadow: inset 0 1px 0 var(--e-highlight);
 }
 
 [data-layout="xp"] .bar h1 {
+  color: var(--titlebar-text);
   font-size: var(--fs-lg);
   letter-spacing: 0;
   text-shadow: 0 1px 1px color-mix(in srgb, var(--titlebar-d) 70%, transparent);
 }
 
-[data-layout="xp"] .bar-identity .screening,
-[data-layout="xp"] .bar-identity .pill {
+[data-layout="xp"] .bar .screening,
+[data-layout="xp"] .bar .pill {
+  border-color: var(--pill-border);
+  background: var(--pill-face);
   box-shadow: none;
 }
 
-[data-layout="xp"] .bar-tools {
+[data-layout="xp"] .bar-identity .menubar {
+  order: 10;
+  flex: 0 0 100%;
+  height: var(--menubar-h);
+  margin-inline: calc(-1 * var(--s5));
+  padding: var(--s1) var(--s5) 0;
   border-top: 1px solid var(--bevel-dark);
-  box-shadow: inset 0 1px 0 var(--bevel-light);
+  background: var(--surface-menubar);
+  color: var(--menubar-ink);
 }
 
-[data-layout="xp"] .ribbon {
-  box-shadow: inset 0 1px 0 var(--bevel-light);
+[data-layout="xp"] .bar-tools {
+  width: 100%;
+  flex: 0 0 100%;
+  padding: var(--s1) var(--s5);
+  border: 0;
+  border-top: 1px solid var(--bevel-light);
+  background: var(--surface-tools);
+  color: var(--text);
 }
 
-/* Controls: a three-stop face, a 1px dark outline and a white inner highlight. */
+[data-layout="xp"] .bar-tools .build,
+[data-layout="xp"] .bar-tools .units-label {
+  color: var(--text-dim);
+}
+
+/* --- controls --------------------------------------------------------------- */
+
 [data-layout="xp"] button,
 [data-layout="xp"] .button,
 [data-layout="xp"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
@@ -72,7 +107,6 @@
   box-shadow: inset 1px 1px 2px color-mix(in srgb, var(--ctl-border) 35%, transparent);
 }
 
-/* Rows and links are buttons in the DOM but not controls on a face. */
 [data-layout="xp"] .entry,
 [data-layout="xp"] .tree-row,
 [data-layout="xp"] .diagnostic,
@@ -83,6 +117,12 @@
   background: transparent;
   box-shadow: none;
   color: var(--text);
+}
+
+[data-layout="xp"] .workspace-switch {
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
 }
 
 [data-layout="xp"] .workspace-switch button {
@@ -110,7 +150,140 @@
   border-color: var(--accent-hi);
 }
 
-/* Folder tabs, with the active one joined to the pane by a short accent rule. */
+/* --- the toolbar ------------------------------------------------------------ */
+
+[data-layout="xp"] .ribbon {
+  align-items: stretch;
+  gap: 0;
+  padding: var(--s2) var(--s5);
+  border-bottom: var(--frame-w) solid var(--frame);
+  background: var(--surface-ribbon);
+  box-shadow: inset 0 1px 0 var(--bevel-light);
+}
+
+[data-layout="xp"] .ribbon-group {
+  justify-content: flex-start;
+  gap: var(--s1);
+  padding: 0 var(--s5);
+}
+
+[data-layout="xp"] .ribbon-group + .ribbon-group {
+  border-left: 1px solid var(--line);
+}
+
+[data-layout="xp"] .ribbon-controls {
+  gap: var(--s2);
+}
+
+[data-layout="xp"] .ribbon-controls button,
+[data-layout="xp"] .ribbon-controls .button {
+  height: auto;
+  min-height: calc(var(--ctl-h) * 2);
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s2) var(--s4);
+  font-size: var(--fs-xs);
+}
+
+[data-layout="xp"] .ribbon-label {
+  padding-top: var(--s1);
+  border-top: 1px solid var(--line);
+}
+
+/* --- the MDI client --------------------------------------------------------- */
+
+[data-layout="xp"] .body,
+[data-layout="xp"] .calc-workspace {
+  gap: var(--s3);
+  min-height: 0;
+  padding: var(--s3);
+  background: var(--surface-workspace);
+}
+
+[data-layout="xp"] .body {
+  display: grid;
+  grid-template-columns: var(--col-nav) 1fr var(--col-dock);
+}
+
+[data-layout="xp"] .side,
+[data-layout="xp"] .canvas,
+[data-layout="xp"] .side.right,
+[data-layout="xp"] .dock,
+[data-layout="xp"] .calc-side,
+[data-layout="xp"] .calc-main {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-panel);
+  box-shadow: inset 0 1px 0 var(--bevel-light);
+}
+
+[data-layout="xp"] .window-title {
+  display: flex;
+  height: var(--window-title-h);
+  flex: 0 0 var(--window-title-h);
+  align-items: center;
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface-panel-2);
+  color: var(--text);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+}
+
+[data-layout="xp"] [data-window="document"] .window-title,
+[data-layout="xp"] [data-window="worksheet"] .window-title {
+  background: var(--surface-bar);
+  color: var(--titlebar-text);
+  font-size: var(--fs-xs);
+}
+
+[data-layout="xp"] .window-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
+}
+
+[data-layout="xp"] [data-window="document"] .window-body,
+[data-layout="xp"] [data-window="worksheet"] .window-body {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-canvas);
+  box-shadow: inset 1px 1px 2px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+[data-layout="xp"] [data-window="commands"] .window-title,
+[data-layout="xp"] [data-window="status"] .window-title {
+  display: none;
+}
+
+[data-layout="xp"] [data-window="commands"] .window-body,
+[data-layout="xp"] [data-window="status"] .window-body {
+  display: contents;
+}
+
+[data-layout="xp"] .window-grip {
+  display: none;
+}
+
+[data-layout="xp"] .dock {
+  border-top: 1px solid var(--line-strong);
+}
+
+[data-layout="xp"] .dock .window-body {
+  overflow: hidden;
+}
+
+[data-layout="xp"] .dock .window-title {
+  background: var(--surface-panel-2);
+}
+
+/* --- tabs, tables, status --------------------------------------------------- */
+
 [data-layout="xp"] .tab {
   position: relative;
   border: 1px solid var(--tab-border);
@@ -134,25 +307,23 @@
   background: var(--accent);
 }
 
-/* Panels are raised faces; a dock and a status bar are sunken ones. */
-[data-layout="xp"] .side,
-[data-layout="xp"] .dock {
-  background: var(--surface-panel);
-}
-
 [data-layout="xp"] .status-bar {
+  padding: 0 var(--s3);
+  border-top: var(--frame-w) solid var(--frame);
   box-shadow: inset 0 1px 0 var(--bevel-dark);
 }
 
-[data-layout="xp"] .status-bar .value {
+[data-layout="xp"] .status-bar > .window-body > span:not(.spacer) {
   padding-inline: var(--s2);
   border: 1px solid var(--well-border);
   background: var(--well);
 }
 
-/* A node is a small XP window: a Luna header over a white body. */
+/* --- the MDI document and the nodes ---------------------------------------- */
+
 [data-layout="xp"] .unit-plate {
   border-color: var(--node-border);
+  box-shadow: var(--node-shadow);
 }
 
 [data-layout="xp"] .unit-plate header {
@@ -164,7 +335,6 @@
   background: var(--well);
 }
 
-/* The overlay windows wear the same title bar. */
 [data-layout="xp"] .overview-head {
   border-bottom: 1px solid var(--bevel-dark);
   background: var(--surface-bar);

@@ -81,7 +81,7 @@ it("titles the regions as separate windows and hides the dock splitter", async (
     expect(title?.textContent?.trim(), id).not.toBe("");
   }
   expect(windowOf(container, "palette").querySelector(".window-title")?.textContent).toBe(
-    "Palette",
+    "Navigator",
   );
   expect(windowOf(container, "workbook").querySelector(".window-title")?.textContent).toBe(
     "Workbook",

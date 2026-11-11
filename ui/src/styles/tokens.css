@@ -101,6 +101,7 @@
 
   /* shape: paints, read only in `background` */
   --surface-app: linear-gradient(180deg, #7ba2d8 0%, #a8c6e8 55%, #8fb3e8 100%);
+  --surface-workspace: var(--bg-canvas);
   --surface-canvas: var(--bg-canvas);
   --surface-panel: var(--bg-panel);
   --surface-panel-2: var(--bg-panel-2);
@@ -499,6 +500,7 @@
     )
     0 0 / 4px 4px;
   --surface-canvas: var(--bg-canvas);
+  --surface-workspace: var(--bg-panel);
   --surface-panel: var(--bg-panel);
   --surface-panel-2: var(--bg-panel-2);
   --surface-raised: var(--bg-raised);
@@ -806,6 +808,7 @@
   --focus-offset: 1px;
 
   --surface-app: linear-gradient(180deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
+  --surface-workspace: var(--bg-app);
   --surface-canvas: var(--bg-canvas);
   --surface-panel: var(--bg-panel);
   --surface-panel-2: var(--bg-panel-2);

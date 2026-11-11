@@ -823,7 +823,7 @@ export function App() {
             flowsheet *has*, the palette what can be added, and the boundary what it is between —
             and each selects or commands through the one envelope the app holds. */}
         <aside className="side" data-window="palette">
-          <WindowChrome title="Palette">
+          <WindowChrome title="Navigator">
           {envelope === null ? null : (
             <Navigation
               catalogue={catalogue}
