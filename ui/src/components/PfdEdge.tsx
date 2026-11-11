@@ -14,6 +14,7 @@ import {
   type EdgeProps,
   type Position,
 } from "@xyflow/react";
+import { useMemo } from "react";
 
 import { route, type Rect, type Side } from "../pfd/route";
 
@@ -85,9 +86,11 @@ export function PfdEdge({
   label,
   data,
 }: EdgeProps) {
-  const routing = routeDataOf(data);
-  const routed =
-    routing === null
+  // A drag changes the handle points every frame; the route is memoised on those points rather
+  // than recomputed by every unrelated re-render of the canvas.
+  const routed = useMemo(() => {
+    const routing = routeDataOf(data);
+    return routing === null
       ? null
       : route({
           sx: sourceX,
@@ -100,6 +103,15 @@ export function PfdEdge({
           recycle: routing.recycle,
           lane: routing.lane,
         });
+  }, [
+    data,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  ]);
 
   const [fallback, fallbackX, fallbackY] = getSmoothStepPath({
     sourceX,

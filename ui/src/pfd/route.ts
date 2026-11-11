@@ -253,10 +253,64 @@ export function route(input: RouteInput): Route | null {
   const key = (state: State): string => `${state.x},${state.y},${state.dir}`;
   const distance = new Map<string, number>();
   const previous = new Map<string, State>();
-  const queue: { state: State; cost: number }[] = [];
+  type Entry = { state: State; cost: number; priority: number };
+  const heap: Entry[] = [];
+  const earlier = (a: Entry, b: Entry): boolean => a.priority < b.priority;
+  const push = (entry: Entry): void => {
+    heap.push(entry);
+    let index = heap.length - 1;
+    while (index > 0) {
+      const parent = Math.floor((index - 1) / 2);
+      const parentEntry = heap[parent];
+      const entryHere = heap[index];
+      if (parentEntry === undefined || entryHere === undefined || !earlier(entryHere, parentEntry)) {
+        break;
+      }
+      heap[parent] = entryHere;
+      heap[index] = parentEntry;
+      index = parent;
+    }
+  };
+  const pop = (): Entry | undefined => {
+    const top = heap[0];
+    const last = heap.pop();
+    if (top === undefined || last === undefined) {
+      return top;
+    }
+    if (heap.length > 0) {
+      heap[0] = last;
+      let index = 0;
+      while (true) {
+        const left = index * 2 + 1;
+        const right = left + 1;
+        let smallest = index;
+        for (const candidate of [left, right]) {
+          const here = heap[candidate];
+          const best = heap[smallest];
+          if (here !== undefined && best !== undefined && earlier(here, best)) {
+            smallest = candidate;
+          }
+        }
+        if (smallest === index) {
+          break;
+        }
+        const a = heap[index];
+        const b = heap[smallest];
+        if (a === undefined || b === undefined) {
+          break;
+        }
+        heap[index] = b;
+        heap[smallest] = a;
+        index = smallest;
+      }
+    }
+    return top;
+  };
+  const heuristic = (point: Point): number =>
+    Math.abs(point.x - (xList[endXi] ?? 0)) + Math.abs(point.y - (yList[endYi] ?? 0));
   const startState: State = { x: startXi, y: startYi, dir: -1 };
   distance.set(key(startState), 0);
-  queue.push({ state: startState, cost: 0 });
+  push({ state: startState, cost: 0, priority: heuristic(start) });
 
   const moves = [
     { dx: 1, dy: 0, dir: 0 },
@@ -266,9 +320,8 @@ export function route(input: RouteInput): Route | null {
   ];
   let goal: State | null = null;
 
-  while (queue.length > 0) {
-    queue.sort((a, b) => a.cost - b.cost);
-    const next = queue.shift();
+  while (heap.length > 0) {
+    const next = pop();
     if (next === undefined) {
       break;
     }
@@ -303,7 +356,7 @@ export function route(input: RouteInput): Route | null {
       if (cost < (distance.get(key(state)) ?? Number.POSITIVE_INFINITY)) {
         distance.set(key(state), cost);
         previous.set(key(state), current);
-        queue.push({ state, cost });
+        push({ state, cost, priority: cost + heuristic(b) });
       }
     }
   }
